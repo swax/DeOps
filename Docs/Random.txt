@@ -1,0 +1,429 @@
+
+problems solving
+    end to end (user to user) security within organization
+    IT management of networks, firewalls, setups, VPNs
+    massive scale coordination
+    auto quality control / responsibility / accountibility
+	offer general internet services for the first time not only decentralized by also scalable
+
+motivation
+	**location independence
+	make IT obsolete
+	change how people work together 
+	repay loans / parents
+	working on dream project, no one else involved, doing my own thing
+    
+
+
+selling points
+	inherently insecure communication system at companies
+	   no more spam
+	   no faking
+	   everything encrypted and signed by default
+	   even real time communication is secure no matter if the employee is inside out outside
+	   
+	hackers no longer the problem, people are now the weakest link in security with-in organizations
+		http://www.theage.com.au/news/breaking/the-enemy-within-the-firewall/2006/03/13/1142098393208.html
+	   
+	open source projects succeeed when there is a clear structure to the project
+		http://www.economist.com/business/displaystory.cfm?story_id=5624944
+	
+	enterprise software to allow collaboration using AJAX / web 2.0
+		http://news.com.com/Web+2.0+meets+the+enterprise/2100-1012_3-6066138.html?tag=nefd.lede
+	
+	Why Email is a Bad Collaboration Tool
+		http://blog.centraldesktop.com/comments.php?y=06&m=05&entry=entry060501-194015
+	
+	The Failure of Information Security.
+		http://www.securityabsurdity.com/failure.php
+	
+	Game Company - Pay attention to part where different teams manage their content differently, no real coordination between teams
+		http://www.downloadsquad.com/2006/05/19/how-to-create-your-own-game-company-part-two/
+	
+	How can I get my family in multiple states synced together to share files (vpn was everyone's best answer)
+		http://ask.slashdot.org/article.pl?sid=06/06/01/0136229
+	
+	How sql manages its distributed development (irc), doesnt scale well
+		http://money.cnn.com/2006/05/31/magazines/fortune/mysql_greatteams_fortune/index.htm
+	
+	Companies Read Employee E-mail (even execs)
+		http://www.wired.com/news/wireservice/0,71071-0.html?tw=rss.index
+	
+	Command problems kill netBSD
+		http://mail-index.netbsd.org/netbsd-users/2006/08/30/0016.html
+		
+	Emergency communication
+		http://www.networkworld.com/research/2006/090406-sept11-first-responders.html
+	
+	Groups vs Individuals in Decision making
+		http://www.inc.com/magazine/20060901/column-freedman.html
+	
+	Groupthink - Review
+		http://www.afirstlook.com/archive/groupthink.cfm?source=archther
+
+	Exactly one of the purposes app is being built, internal admins abusing power, reading top level communications	
+		http://www.computerworld.com/action/article.do?command=viewArticleBasic&taxonomyName=storage&articleId=9004274&taxonomyId=19&intsrc=kc_feat
+
+	BestBuy implementing wide scale work anywere, started company CultureRx to help other companies do the same
+		http://biz.yahoo.com/special/allbiz120606_article1.html
+		http://culturerx.com/
+		
+	Mail sycning between desktop / laptop
+		http://ask.slashdot.org/askslashdot/06/12/30/0028211.shtml
+		
+	Google describes an IT crisis, where IT is outsourced because companies cant handle security / sharing / synching / etc..
+		http://www.networkworld.com/news/2007/012307-google-apps.html?page=3
+	
+	Flu-Pandemic would require company employees to work from home
+		http://www.computerworld.com/action/article.do?command=viewArticleBasic&articleId=9011125
+		
+	Large open-source projects need dynamic management, let member re-oganize project structure by their collective will, bottom up
+	They also still majorly need a cohesive environment in which to quickly and effectively coordinate
+		http://lists.freedesktop.org/archives/compiz/2007-February/001413.html
+		
+	Andy Tanenbaum: The problem is co-ordinating things. Projects like GNU, MINIX, or LINUX only hold together if one person is in charge. 
+	Linus Torvalds: Yes, coordination is a big problem, and I don't think linux will move away from me as "head surgeon" for some time..
+	
+	accountability - signed tasks that can be tracked  
+	transparent organization - no longer have to explain power structure
+	De-0ps: Cathedral Meets Bazaar
+	bottup up hierarchy
+	the base truely does control the rulers
+	real time democracy
+	self organizing higher echelons
+	this is going to let people organize a large project in a secure decentralized manner
+	people feel stressed today at their jobs, too many emails, lack or direction and what to do
+		they feel like they're working more and getting less accomplished
+		De-Ops streamlines communication between people, offers transparency to planning, stresses people out less
+		Email is something insecure, used to communicate with people outsid the companey
+	peerarchy??
+	backup is as easy as starting up two clients
+	memory optimized, signatures, etc.. mostly stored on disk, only necessary stuff loaded in app memory
+	can work when dns system goes down
+	create a system that can let a massive amount of indivuals organize and cooridinate dynamically
+
+	quote - The problem is that capitalism gives no incentive to the average worker to care at all about doing more than the minimum needed to avoid public humiliation and/or firing.
+			There are organisation theories that maintain that people basically want to do good work but are hampered by the classical organisation structure because they do not see the 
+			result of their work (and do not observe wether they're doing their work the right way) and do not get the means to make sure that problems are solved. As a result they are 
+			alienated from the true purpose of their work and fall back on preventing humiliation or firing and basically 'going through the motions'.
+			But these organisation theories are not known in the anglo-saxon world, at least to my knowledge, because they go against the business culture of central top-down direction.
+			posted by jouke at 12:40 AM PST on January 28 metafilter
+
+	Gnucleus like a lot of other open source projects suffered from a poor command structure.  Basically I handled all the patches
+		myself, it was hard to organize and delegate tasks as there wasn't a common place for all the developers to exist it.  Also
+		it suffered from myself becoming a 'lame duck' project lead.  This happens to many open source projects.  And with a centrally
+		controlled project site, it is extremely hard to change command structure at all.  With de-ops command structure can be
+		effortlessly changed on the fly, keeping the project moving alone when someone drops the ball.  The bottom up hierarchy ensures
+		power is a privledge entrusted by the subordintes and can be taken away as a result of poor performance.  The most typical
+		result of current inflexibility is the dreaded fork which splits development power and creates more problems then it intends
+		to solve.
+		
+	Bring the power of cvs to the common man by making it intuitive
+
+Main Jobs 
+	Components - board, calendar, common storage
+	Optimizing - bandiwdth, cpu, mem
+	Testing - network modeling
+	Installer / Securing build
+	Linux version - Remote
+	
+Side Jobs
+	Website / graphics - SA
+	Translation / Satellite dlls
+	Payment system - regnow.com
+	Documentation - Local
+	Games - Local
+
+Tools
+	dotfuscator
+	profiler
+	certicom ecc
+	simulation machine, multi-core athlon, lots of memory
+
+other	
+	increasing rudp/udp max packet size increased transfer speed, but is more jumpy
+		because decrypt buffer getting full for some reason
+	increasing receive buffer sizes would probably smooth stuff out but requires more memory
+	same with increase packet sizes, send/recv maps take more memory
+	routing depth needs to be even accross network or replication can messup, one persons maxdistance is lower then someone elses
+
+
+Scenarios 
+	any large group that spans large amounts of area
+	self management of computational resources, no systems admin or IT guys required
+	Quick server-less operation setup, admin-less
+	Non-Profits
+	Large academic projects multiple universities
+	transnational projects
+	military
+	maintain operations during disaster, corporate re-location, pandemic
+	** independent large news organization - talk to journalism students maybe, could be very cool, teams investigating single story (news with higher research to content ratio)
+	design like a virus, imagine someone getting it and easily telling someone else, have a msg, 'someone missing from your org?, invite them!', encourage spreading
+		infiltrate orgs from low levels, and replace their services from within
+	
+	small business, 20 people
+		dont need any servers or IT staff
+		just a router to the internet
+		staff runs de-ops and now they are able to organize (files, planning, comm)
+		nothing extra for 'VPN' everything is accessible from anywhere 
+		dont need a webmaster, dont need to be online to access files, most things cached locally
+	
+Startup Tips
+	Copy your De-Ops profile to all your computers to stay sychronized no matter where you are
+	Put De-Ops on a USB thumbdrive, it will be the only 'computer' you need
+	Someone missing from your organization? Send them an invitation to your group.  De-Ops was designed to grow!
+	
+
+Games / Exercises
+	Web based
+	People assigned resources
+	Given goal to acheive
+	Must coordinate to get the highest score
+	Optimize program so people can coordinate better
+	ex. putting simlated fires out , controlling person, air, and material resources
+
+Plugin system
+	Get third party devs to add value to de-ops, prevent competition
+	Let them create objects for sync across network like file / mail
+	Let them have cutom interfaces
+	Devices*, cam, voice chat, inventory, etc.. permissions attached
+		sentinal - watches for unauthorized nodes by Dht lookups, tracks
+	Remote computer access, files, shutdown, rdesktop, etc..
+
+Packets
+	Transport
+		Network
+		Comm
+		Padding
+	Data
+		Signed
+		Profile
+		Link
+
+p2p
+	has a purpose, network with balanced resource
+	from simple centralized server to millions of intelligent self-organizing nodes
+
+
+Why using .NET
+	no real experience with java
+	Easier to debug
+	Unicode ready
+	Fast UI dev
+	Blindingly Fast compile
+	Cryptography built in
+	Xml built in
+	Better organization, implement third party libs faster easier
+	packet load isnt as high as supernode based p2p networks
+	   so shitty network packet parsing, compression, encrytion efficiency with managed code
+	   doesnt kill performance
+	easier to completely restructure / reorganize code for easier understanding
+	single cs file, no headers as long as in right namespace everything works
+	easy to work with clipboard
+	splitters
+	interface docking and anchoring
+	ide builder in general, no resource files all straight code
+	No include file hell, namespaces provide easy and working code organization
+	code very transparent and can be decompiled veeery easily, good for open source i guess
+	dont have to init class variables
+	timer is in different thread so locking must be done
+		with mfc it was all done by message pump, same with socket events
+	
+	My general feeling is that they should have just made this the new version of mfc and screw managed bs
+	
+	if every function can call an exception, is there any guarentee that my next line of code will run, must everything
+	be put into to a try catch block, at least with c++ i was prepared for a function throwing an error
+	
+	so easy to forget all the time fixing compile errors, now almost entirely prevented by intellisense
+	
+	2.0/2005
+		Generics
+		Auto-Rename
+		Auto-Method generate
+		Find all instances of
+		Better splitters/toolstrip
+		
+VS 2005 over 2003
+	auto formatting tabs for pasted code, etc..
+	find all instances of function/variable reliably
+	change function/variable name automatically
+	partial classes to seperate large classes and form designer code
+	underlined errors in source files
+	automatic function generation with correct parameters and returns
+	
+Pros to c++
+	Ability to manipulate/pass buffers more freely
+	Overlaying types/structs into and out of buffers
+	People starting with c# have no idea how objects are passed and
+	   copied, really easy to make inefficient software if no experience
+	   with c++
+	what i really wanted was a new c++ programming framework
+	compiled code not transparent / easily decompiled
+	ints and pointers evaluate to bools without overhead
+	
+Anonymity vs Security
+	Being anonymous means in and outgoing traffic is proxied
+	Proxying traffic means less security
+	Best security, the two nodes communicating are directly connected
+	Anonymity can still be semi-achived by setting full tcp/udp firewall mode
+		Not fool proof because proxy is selected based on closest matching id
+	Real solution 
+		Parrell network based on randomIDs
+		When node joins network, it chooses randomID, searches for it, and asks the
+		closest to join the internal network with their own publicid
+		not totoally fair though with network so unbalanced between router and firewalled nodes
+	Also more secure when you can verify sender's ip address/lookup
+		
+Operations
+	Instead of using an op id to prefix packet, each operation has an encryption key
+	Packets checked incoming if can be read, global, if not operation
+	Each operation uses different port so multiple ops on single computer still works
+	First 8 of op key stored on network
+	Makes harder for other to infiltrate ops because they only have ID not whole key
+	
+Invites 
+	Use invite file, xml that contains operation info
+	For public, can be posted on web site, private / secret can be emailed
+	Contains cached IPs
+	Contains pass key, inviting host sends out orders to op telling of pass key
+	Once new node joins network, initial trust is created by matching pass key
+	Orders contains info about invite to people know
+			
+publish location instead of direct ping pongs because everyone on net might care is very top is online
+	but very top doesnt care about all the subs
+	helps take load of very topz
+	
+Access
+	Public
+		Connected to global
+		Search for proejct name on global
+		Invites general
+	Private
+		Connected to global
+		Invites signed / password protected
+	Secret
+		Not connected to global
+		Invites signed / password protected
+
+Storing
+	Do search for 20 closest nodes to store ID
+	Send store command to those nodes
+	Re-publish stored keys each hour
+	Re-publish op ID each 24 hours
+	keys expire after 24 hours
+	If node id noticed with id closer to value, publish value
+
+Command
+	dont have higher as a seperate link because then it can get confusing if new profile and link data not received
+		in this case, even if new link confirmations not recieved structure can still be made out with warning signgs
+		we know to search for for updated link information
+		
+	tree based on peoples uplinks, not downlinks
+	no link down because cant visually display multiple requests to link down to
+	bottom up is better anyways, no pressure to become lower than someone else, you decide who YOU trust
+	
+Features
+	Ability to use screenname anywhere with usb flash
+	Network data in G2 (tiny binary xml) and compressed
+	Auto proxy for firewalled nodes
+	Can run without udp support by being proxied
+	Random port
+	All data zipped udp/tcp as a fingerprint deterence
+	not a publishing network, maximize node position
+	next gen Dht buckets that reduce network hops
+	completely managed, no pinvokes, no unsafe code
+	
+Transfers
+	Encrypted / Compressed
+	Resume
+	
+Password
+	No max length
+	Can include unicode characters
+	Password sha1 hashed
+	Sha1 used as key and IV for AES 192 encryption of keypair file 
+	
+Why P2P
+	Freen Open Source application without need for cost of servers because it is p2p
+	Controlled by users
+	Compare to waste, gnutella, napster, other IM clients
+	P2P decentralization of all systems is the future
+	Centralized is naturally easier to develop client server, specific roles
+	Decentralized each node is both client and server and must self organize itself into a workable
+	   mesh.  much more intelligence must be programmed, behavior is very important everyone
+	   effects everyone else
+	modeled after biological systems, the program is the cell organizing with other cells
+	
+Dht
+	No exponetial creation of packets, total packet output of network is equal to or less than total network input
+	Bucket size 20
+	Find Nodes return size 20
+	Simultaneous search nodes 3
+	
+
+
+Other known Dht apps
+	emule Dht
+	overnet
+	kenosis
+	neonet
+	
+naming ideas
+	ExecOps
+	Control / organization / management
+	Operations 
+	Omni / mobile 
+	Advanced / superior / complex 
+	Technology / knowledge / skill / expertise
+	AutoOps
+	Unified command structure
+	durable / robust / reliable
+	workgroup transfer protocol
+	decentralized echelon protocol
+	roachNet
+	Prepared
+	nuOps
+	
+	De-Ops
+	
+	i got de opped
+	
+	mission control
+	
+	
+	tool for focusing a team towards a mission
+	
+	hones in a group of people on an objective
+	
+	efficiently coordinates a force to accomplish a goal
+	
+	large team organized to achieve targets
+	
+	hones / sharpens
+	
+	cool
+		mission control
+		force
+		sharpen
+		
+		cordination
+		
+		revolution
+
+	think of devguard decision
+	im a developer, needed something secure for source code, devguard was subliminally the choice
+
+
+	i have large group, need to coordinate it
+	
+	group		coord
+	team
+	crowd
+	org
+	worker
+	together
+	mob mobilizer
+	
+	crowd coordination
+	
+	gnuclear waste

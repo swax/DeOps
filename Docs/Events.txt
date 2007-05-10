@@ -1,0 +1,304 @@
+
+Network Timer
+	Tcp Timer ->
+	Dht Timer ->
+	Search Control Timer ->
+	Buddy Timers ->
+	Bootstrap Timer ->
+	
+Tcp Timer
+	If proxy required
+		Check for known closer IDs every 30 secs
+		Attempt Connect Proxy ->
+	Connection Timer ->
+	For each connection to be removed
+		If connection was proxied
+			Remove any searches connection had going
+		If connection was a proxy server
+			Add any searches back to pending searches list
+
+Connect Proxy
+	Called by Tcp Handler Timer
+	Find contacts in routing table that are closer than connected proxies
+	Attempt closer contact
+		If NATed send udp proxy request
+		If firewalled attempt tcp and send udp ping
+		Don't retry contact for 10 minutes
+				
+Connection Timers
+	Update bandwidth
+	Disconnect if proxy request not acknowledged after 10 secs
+	Send tcp ping if no data for 30 secs
+	Disconnect if dead for 60 secs
+	Send proxied nodes potential closer proxy hosts every 60 secs
+	Flush send buffer
+
+Dht Timer
+	Do self search every hour
+	Focus on single bucket each second
+	If less than 8 contacts in bucket, refresh
+		If not firewalled, and more than 15 mins since last refresh
+			Serach for random node in bucket space
+	Find oldest node in bucket
+		Attempt to udp ping node
+		After 2 attempts remove node if bucket more than half full
+		Wait 30 seconds between attempts
+
+Search Control Timer
+	Count active non-proxied searches
+	If count less than 3 and pending searches
+		Activate pending search with ID closest to local ID
+	For each Search
+		If finished remove
+		Search Timer ->
+	For each Search to be removed
+		If Search was proxied for connected node
+			Send Contact Search Ack to proxied node
+
+Search Timers
+	Return if search finished
+	Return if search being handled by proxy server
+	Finish Search if no contacts left to try
+	For each of the closest 3 contacts
+		Mark contact as done if it replied
+		Send contact search request if none sent
+		Send another if no reply after 5 secs
+		Put contact on tried list if no response after 15 secs
+	If closest 3 contacts have replied mark the search finished
+
+Buddy Timers
+	Send Buddy Packets ->
+	If buddy active
+		Send buddy ping every 30 secs
+		If pong not received after 30 secs set buddy to offline
+	
+Send Buddy Packets
+	For each packet in tracker list
+		If 10 secs since last attempt
+			Sync known addresses for buddy with addresses attempted by packet
+			If no known addresses to send to, hold packet
+			Find address with least amount of retries
+			Send packet to that address
+			If no ack required remove packet from tracker
+			If 2 attempts tried on all known addresses remove packet from tracker
+
+Bootstrap Timer
+	If no updates to routing for 3 mins
+		If IP cache empty and 30 mins since last web update
+			Download web cache
+		If IP cache has entries
+			Ping first 10 nodes in cache
+			Move nodes to bottom of list
+			Set retry for nodes to 10 mis
+		If firewalled and more than 10 secs have passed since startup (to test for at least NAT)
+			Try outbound tcp connect to next host in IP cache
+			Set retry for host to 10 mins
+
+Tcp Events
+	Connect
+		Send Ping over tcp
+	
+	Accept
+		Attach new node, we must be a proxy server
+		Setup compression
+		Wait for ping from node
+		
+	Receive
+		Inflate data
+		Parse packets
+	
+	Send
+		Try send more data
+		Deflate data in send buffer
+		
+	Receive Known Contact List
+		***
+		
+	Receive Bye
+		***
+		
+Receive Ping
+	Udp
+		Add source to routing if its not firewalled
+		Send udp pong
+	Tcp
+		Set firewall mode to open if received from an incomming connection
+		If remote host marked as firewalled, and haven't tested their firewall yet
+			Make outbound tcp connection to them
+		Send tcp pong
+		
+Receive Pong
+	Udp	
+		Update firewall mode to NAT
+		If routing unresponsive, meaning ping was sent for bootstrap purposes
+			Send contact search request for self to node
+		Add source to routing
+	Tcp
+		Add source to routing if we made the outbound connection to the node
+		If proxy mode for node unset
+			If we are firewalled and need a server proxy
+				Send tcp proxy request
+			Else
+				Disconnect from node
+
+Receive Proxy Request
+	Udp
+		Send udp Proxy Ack
+			Get list from routing of nodes close to requester's ID
+			Set accept to true if we are a proxy server and room available
+	Tcp
+		Disconnect if we are a not a proxy server or room not available
+		Send tcp Proxy Ack
+		Check if our proxy server is overloaded, disconnect furthest ID
+		
+Receive Proxy Acknowledgement
+	Add contacts in list to routing
+	If firewall set to open or ack not flagged to accept
+		If received tcp disconnect
+		return
+	
+	Udp
+		Add source to routing
+		Try tcp connection to node
+	Tcp
+		Mark node as our proxy server
+		Disconnect furthest proxy if too many connected
+		For each active buddy
+			Ping to alert them of new proxy address
+	
+Receive Contact Search Request
+	Tcp and from host we have agreed to proxy for
+		Count total searches being done by node, return if search a duplicate
+		If less than 3 active searches
+			Start search for proxied node
+	Udp
+		Add source to routing if its not firewalled
+		Build Contact Search Ack
+			Mark if target ID being proxied by us
+			Get list of closest IDs to target ID
+			Send Contact Search Ack
+
+Receive Contact Search Acknowledgement
+	Add Contact List to Routing
+	If Udp add source to routing
+	Find Search ack is meant for
+	Mark host in search lookup list to done
+	If target node is proxied by responding host
+		If received tcp
+			Target's proxy is set to first element in Contact List
+		Else
+			Mark search as found
+	If Tcp
+		This was a proxied search, when Ack received search is over, mark as finished
+			
+Receive Buddy Packet
+	If packet targeted at our ID
+		Use session ID to determine which buddy packet is from
+		Decrypt packet payload
+		Handle Buddy Packet type ->
+		
+	Else packet not targeted for local host
+		If targeted for proxied node
+			Strip forward data
+			Forward tcp to host
+		If forward data set
+			Strip forward data
+			Forward udp to host
+
+Receive Buddy Session Request Unkown
+	If ID of contact matches a buddy
+		If buddy already marked as active, close ***change for mirroring
+		Else Receive Buddy Session Request ->
+	Else buddy unknown
+		Add to buddy list
+		Receive Buddy Session Request ->
+			
+Receive Buddy Acknowledgement
+	Find packet with same ack ID in tracker
+	If ack for ping, mark pong  received
+	If ack for message, confirm message received by remote host
+	Put the host that packet was received from at top of known address list for host
+	Remove packet from tracker
+
+Receive Buddy Session Request
+	Check sender ID, dont send ack
+	Throw exception if buddy already marked as active
+	If session ID of request different ***mirroring support multiple sessions
+		Flush send tracker
+		Reset encryption
+	Update proxy list for host
+	Send ack for packet because new proxies set
+	Set outbound private encryption
+	Send Session Acknowledgement
+	If internal key for buddy unkown, send Key Request
+	If Buddy not an accepted buddy, send Close
+	If Buddy is accepted
+		If inbound encryption unknown
+			Send negotiating Session Request
+		Else
+			Set buddy to active
+
+Receive Buddy Session Acknowledgement
+	Check sender ID and send ack
+	Throw exception if inbound encryption not set
+	If Session Ack marked as accepted and outbound encrypt set, set buddy as active
+	If Session Ack marked as denied, set buddy offline
+
+Receive Buddy Key Request
+	Check sender ID and send ack
+	Set outbound encryption
+	Send Key Ack containing internal key
+	
+Receive Buddy Key Acknowledgement
+	Check sender ID and send ack
+	Check internal key matches buddy Dht ID
+	Set buddy internal key
+	Save profile
+	*** check if buddy accepted/denied already to prevent flooding
+	Ask local user to accept/deny new buddy
+
+Receive Buddy Ping
+	Check sender ID, dont send ack
+	Update proxy list for host
+	Send ack for packet because new proxies set
+	
+Receive Buddy Message
+	Check sender ID and send ack
+	Relay message to user interface
+	
+Receive Buddy Close
+	Check sender ID and send ack
+	Set buddy status to offline
+
+Send File to Buddy
+	Select File
+	Hash File
+	Create new KimTransfer
+	Send_TransferRequest
+	
+Receive Transfer Request
+	Display transfer dialog to user
+	Send Transfer Ack udp
+	If user accepted transfer attempt tcp connection
+	
+Receive Transfer Request Ack
+	Update interface that user has received request
+	
+Receive Transfer Acknowledgement
+	If not accepted
+		Mark as transfer as denied and return
+	If already sending file
+		discard request
+	Attempt tcp connect to user if one does not exist yet
+	Send Transfer Data
+	
+Receive Transfer Data
+	Check if start byte equals current expected byte
+	Write data to file
+	If file complete, hash file and check
+	Update interface
+	
+Receive Transfer Data Ack
+	Ony received when sending udp
+	Call Send Transfer Data
+	(for tcp Send Transfer Data is called when OnSend is called)

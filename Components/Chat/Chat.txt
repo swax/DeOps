@@ -1,0 +1,52 @@
+
+invoke needs to be changed to begin invoke
+
+profile/link change (node) (subscribe)
+	if node is self (possible room change)
+		if have confirmed uplink
+			ensure top room exists, CreateRoom
+				remove members
+				re-add members
+				if locs exist for unconnected members, connect
+				refresh room
+		else remove top room if exists, CloseRoom
+	
+		if confirmed downlinks
+			ensure bottom room exists, CreateRoom
+				remove members
+				re-add members
+				if locs exist for unconnected members, connect
+				refresh room
+		else remove bottom room, CloseRoom
+	
+	else someone else
+		search all rooms for node, remove
+			UpdateRoom remove
+		find where node belongs
+			UpdateRoom add
+
+		
+new loc
+	if not connected to node, connect
+	
+socket update
+	if connected/disconnected UpdateRoom refresh
+
+interface init
+	foreach room
+		CreateRoom
+
+events
+	CreateRoom(view)
+		if no tab for id, create
+			add top or bottom pane
+			
+	CloseRoom(view)
+		if no top or bottom, close entire tab
+		else hide missing pane
+		
+	RefreshRoom(view)
+	
+	UpdateRoom(view, node, ChatUpdateType)
+		
+	ChatUpdateType (add, remove, refresh)

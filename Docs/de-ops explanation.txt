@@ -1,0 +1,42 @@
+
+
+Goals --------------------------
+Goal is to mimic organizational structure within the org
+Create sense of transparency
+Large scale coordination system allows people to arrange themselves into a hierarchial structure
+100, 1000, 10000, calable
+usually would require large IT support, and static structure, servers for mail, files, etc..
+DeOps is inherently secure with trust relationships
+
+Decentralized ----------------------
+Equal member every node, same security as everyone, homogeneous, inherently secure
+Fast easy setup network, no security, no servers no IT, no problems..
+Aids in synchronization, backing up data, means reliability and fault tolerance
+Dynamic, can change shape and function on the fly
+As changes take place security is 100% retained
+
+Hierarchy -------------------------
+Allows strong links between each other and hence lines that connect everyone
+Alternate hierarchial strucutres achieving the goal of a function/project matrix within the organization
+
+Comm ------------
+IM
+Chat hi/low
+Mail, send persistant send files
+Board, public forum per node, post reply
+
+Planning ------------------------
+Calander / Log, bi-directional history of progress
+Todo
+
+Pro / Std differences
+compartmentalization vs total transparency
+flexible enc vs fixed on enc
+$$ vs free
+extra components, voice, cam, etc..
+
+Storage ----------
+Common file system - common repository of files across the whole network, changes happen along hierarchial lines up-approved, down-update
+
+Datebase ------
+Component with the most potential

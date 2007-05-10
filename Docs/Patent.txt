@@ -1,0 +1,65 @@
+
+what is the process I want to patent?
+	System and method of distributed bottom-up command and control
+	
+	bottom-up is the keyword I need to differentiate from other systems
+
+	system upon which services can be built on top of that are inherently secure (mail, IM, storage)
+
+	split communication system that allows simultaneous communication between higher and lower levels while maintaining security
+	
+	data objects in system
+		signed
+		respect hierarchy
+		cached at close peers
+		inheritable, mail, im, chat, location, plans
+		
+	users control their own polocies and who access data objects
+
+	No admin, admin-less, client/server distinction
+	
+	a platform upon which services can be built that inheret decentralization, security, persistance features
+
+search keywords
+	military related ah-hoc, distributed battlefield, blah, blah
+
+	command & control
+	management
+	
+	hierarchy
+	echelon
+	*bottom-up (uplink?)
+	
+	*coordination
+	collaboration
+
+	encrypted
+	secure
+
+	distributed
+	*decentralized
+
+research
+	reviewed
+		issued: p2p - 113
+		issued: hierarchy AND decentralized - 447
+		apps: hierarchy AND decentralized - 530
+		apps: "bottom up" AND decentralized	- 46
+		issued: "bottom up" AND decentralized	- 25
+		command AND control, title only, keep going...
+			
+	related
+		20050256735 Method and system for network-based, distributed, real-time command and control of an enterprise
+		20040064512 Instant messaging using distributed indexes (IM overlayed ontop of what I'm patenting)
+		20040064693 Distributed indexing of identity information in a peer-to-peer network 
+		20020026478 Method and apparatus for forming linked multi-user groups of shared software applications (links but no hierarchy)
+		 6,584,493  Multiparty conferencing and collaboration system utilizing a per-host model command, control and communication structure (application sharing/control)
+
+Patent Application
+	Claims
+	Description
+		Technical field
+		Background
+		Summary
+		Figures
+		Detailed Description

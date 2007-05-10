@@ -1,0 +1,34 @@
+
+
+when client starts dont start republishing cached data on the network until we are established to
+prevent spamming the network with files that are already cached.  we wait until we have found our place
+in the network and keep track of data that is absent.  once established we can publish that missing data
+for link, mail, plan, profile, board, etc objects
+
+once establish wait 10 seconds for local nodes to send us patch files so that we can make sure objects
+in local area are marked so we dont republish them
+
+	when search for self complete
+		set established in network class
+		
+	per object
+		load
+			fix current republishing strat / focus tags etc..
+			mark data as unique
+			
+		if establishing
+			cache - dont send  publishes
+			dont replicate
+			on patch 
+				unmark unique objects
+				put missing objects in temp objects list, max 500, remove farthest
+				dont download
+			
+		on establish event
+			set dhtbounds on all objects
+			publish unique data in bounds
+			download temp objects in bounds
+			
+		timer
+			prune downloadlaters
+

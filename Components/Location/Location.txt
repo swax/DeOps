@@ -1,0 +1,7 @@
+network time
+	loc packet includes utc time
+	all times chat/im/mail/board logged utc, then changed dynamically to systems timezone
+	dictionary<nodeid, time offset>
+	if more than 3 nodes, and median is more than 5 mins offset, set network time to medien
+	
+away / away message

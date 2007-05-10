@@ -1,0 +1,454 @@
+
+how to work with desynchs
+
+testing then work on integration
+	get integrated list from working, same pointer in item object
+	integrated list of lastest infos
+
+functionality
+	accept
+		add to integration list
+		work through process and figure if rescan is necessary
+
+
+double click open local temp files/*folders
+
+how does add/replace work with unlocked files
+	
+info panel
+	add
+	menu for folders
+	
+in info title, if file doesnt exist show download hyper link
+
+onclick open whatever close javascript menu
+carry over notes when accepting changes, edit notes box needs to be larger, convert \n to <br>
+if remote file exists mark as unlocked
+unlocking / locking remote files
+hyperlink file to open
+allow user to integrate changes
+add integration to file structure
+use integration data when doing a diff
+show failed diffs
+check if file / dir has same name when renaming / creating in storage system
+get working with how visual studio does saves, crazy rename / delete / create process
+support multiple select - right click download
+on app close - remove all storage folders, especially for users that are not us
+
+delete history when file locked, or folder locked
+support visibility
+if file exists in history, put lock unlock icon next to item, as well as bold entry
+	use same unlock checking mechanisms with warning dialogs for overwrites
+halfopactity overlay for temp items
+	
+
+temp local files not kept in tree because it would screw up folder/file events if they were
+test creating temp files / dirs
+	
+	
+explanation: in order for lowers to automatically inherit new versions, you must integrate their changes
+	
+diff
+
+	if hashes
+		clicking apply / integrate asks user to perform that action
+
+	integrating change from above, inherits their integration list, 
+	our lower integrations remain the same
+
+	intergrated row only shown for hash discrepencies
+
+	test re-name file propagation
+
+	changes / integrated / history - yellow / green / blue
+
+	Changes 
+		download
+		open
+		review (diff)
+		replace - locally stored copy with this - should remove change log once button hit
+		accept (check mark) mouse over - signals changes have been integrated into file
+		action
+		date time
+		notes
+		
+		after replace / local modify - show accept button
+		
+	integrated is hidden div
+		download
+		open
+		diff
+		reject
+	
+	intergrated only kept on top level
+		lastest changes from subs
+	
+	files/folders have List<hash> integrated, associated with whats been merged
+
+	when storage control auto-integrates, add high level to integration list
+		so that changes to local file doesn't cause dysnch to show up with higher level
+		red triangle will be reserved for real conflicts
+
+	change archive to ghosts (pacman logo) - ghosts are files that were either deleted or moved, they serve as markers for others to use
+		when syncronizing their file system to yours
+		delete permanently if no history exists of file
+		ghost folders white folders with black outlines and eyes!
+	
+	storage control - higher level storage update - merge
+		revise working
+		step through each file folder by uid, update files that have been integrated or are in history
+		if working already moded, we have to wait for user to save changes, otherwise, autosave
+
+	regular save / commit puts red tag on file if no matched yet, forget little center icons
+
+	visibility - who / levels down (these 2 settings replace higher / lower direct etc..)
+		on regional link change do visibility check of local files to see if they still conform, ghost them
+			restored / created - file visible with-in x sub-levels of <user>
+			file only visible with-in x sub-levels of <user>
+
+
+	Diff window
+		Show selected file
+		radio button
+			local file
+			changes combo
+			integrated combo
+			history combo
+			
+		Diff Tool show current as link
+			allow user to select different apps per file type
+			default open both
+
+		ok / cancel button
+
+drag / drop - in/out, across folders
+remote - download, unlock, open, re-lock
+save/discard persist over open / close?
+
+
+
+conflicts - overwriting on unlock / deleting temps on lock
+	unlock - scan for files that already exist
+	lock - lock files - tag errors, also temps
+		report on errors / temps
+		
+	locking should alert user when error occurs deleting certain files, folders files unlocked delete/ignore
+		doing this is a whole lot faster than packing, plus avoid locked unpacking and tracing, also get sub-dir locking
+		show paths of where files are, when user goes there will see untracked as greyed out
+		put list in text box, uneditable
+
+
+
+
+storage tasks
+	give items / nodes overlay lists, during draw, overlays drawn as well - transparency is one such overlay
+	find transparent folder icon - pull from a dll somewhere, both normal and open
+	delete folder that is selected - clear file view
+	drag/drop moving between folders, more testing
+	changes / save labels not even, zoom in and align
+	click on icon should select as well
+	default page in web interface (total files size/count) / unlocked count
+	show folders pane if there are sub folders from root
+	test multi-project file system
+	if system empty, nothing selected display 'drag file in to add to system' - root folder shows default instructions
+	refine history, dynamic compare with last entry (name, attribs, loc), multiple modifies in same pass
+		maybe should just keep note, and append it as user changes?
+		only show open file icon next to unique hash entries
+		think about flags, should flag even be set in readymodify?
+
+	make note on interface if local file (hash) not present in storage system, like encryption error of some sort causes it to not be placed
+		blue if pending processing, if failed, turn back to grey
+	test locking / unlocking big files, determine if progress bar or notification of some sort needed, maybe queue them like hashing
+	trigger to lock all unlocked on guiclose
+	test periodic saves of working / and verify load from working file works
+	on close, hang if still hash processing
+	support multi-file/folder operations
+	sorting of listview
+	open folder icon in folder tree
+	folders have red / blue dots in center if subfolders contains changes
+	
+plans
+	old plans not being deleted? seems like extra files in dir, try loading solo and updating local plan file
+	shutdown in the middle of the causing load corruption?			
+	***move saving estimates to savelocal
+
+		
+let text input control acceptTabs for composeMain and postForm, remove smilies
+
+crits 
+look at replacing common code with delegates
+
+nat/block keep list of recent search ids/kadids so duplicate results arent sent out
+check natted are finding closest nodes to proxy off of
+
+use rudp when available to transmit link / loc data
+with rudp now being used, should analyze purely global network
+
+
+search revisions
+	give components priority?? link over location, etc..
+	make sure search result locations get to file download
+	make sure store locations get to file download direct search -> store response works through firewalls
+	both have the ability to be proxied
+
+	record source kaddi with value
+	on download try source, id isnt in location list, search for it, need that ID key to connect
+
+	by the time key gets checked for download, profile / link headers should have right key if source is the same, if not gotta search
+
+	search/download priority high (view) normal (network) low (research)
+	forward searches to proxies
+	if blocked send acks tcp to be forwarded
+	analyze contact info sent in acks
+	ensure correct contact info gets to transfer control, if blocked/natted/open ensure all work
+	make sure download isnt started without sources
+
+	search results need to transfer location info over to downloader
+	what does search result from firewalled host look like?
+	search results seem to only go out udp
+	
+	**location info should include array of latest versions of each component
+		so local area can update for everyone on login to the network
+		storage, plans, profile - need latest fetched data of local area
+		location data needs to be stored when user is offline for this to work
+
+now
+	re-publishing mail
+	permanent locations, no ttl except for global
+	locking of resources, lay out flow
+
+
+test
+	more accurate replication - link/location/profile/mail
+	check that data is cachced 8 closest to ID, record cached link files in sim interface
+	links timing out when traversing strucuture
+	maxes / focus purging for all components - links/locs/profiles/mail
+	link.getlocs / getlocsbelow
+	link/plan research timer
+
+Core
+    moe de-ops source
+    
+    old projects not cleared from components during savelocal, save / ditch / option?
+     
+	Rudp
+		location updates
+		route data over session if desination the same	
+		
+	Location Control
+		global replication
+		make persistant so status panel can display last seen, also loaded can go straight to the cache
+		might be problem with different client ids
+
+	IM Control
+		Saved/Loaded my main IM interface
+		Internal interface
+		Log Interface - in chat log
+		If link is unknown, then name is unkown, make sure to search for name and update interface
+		4 node network, running, send IM caused collection modified error in im_view:displaylog
+		
+	Chat Control
+		Custom rooms
+		dont mention disconnect unless connection was made, also in IM
+		log does chat/im - setup like yahoo chat log
+		
+	Mail Control
+	    debug send/recv mail
+		tagging messages, filter by tags
+		add user link that pops up encapsulated link chooser control (LinkPanel), 
+			does queries, receives updates, etc.. (put in add task win also)
+		double clicking on name loacates them in link tree in panel
+		use labels for organization - for example a project label could be tagged on, so we could filter regarding project x
+		
+	Board Control
+		Archiving, attaching files
+	
+	Profile
+		Search / Transfer process painfully slow in real time mode, analyze
+		project specific motds use divs/javascript to show / hide?
+
+
+Interface
+
+	Internal 
+		expand a little more (names associated with sessions/transfers/searches/publish)
+
+	Link
+		sometimes on link changes, cannot select confirm link even though node is pending
+
+	Profile
+		time out loading
+		seperate interface for MOTD editing, grey out in normal profile editor
+			MOTD packets seperate, flagged with ProjectID
+
+	operation list toolbar: select, link(dropdown), IM, Mail (quick stuff)
+
+	Invite 
+		password protected invite file
+		invite contains singed, who invited
+		Keep deops.net file with as many ips as possible on load
+		delete invite file when new user created
+	
+	Groups on buddy list
+		Locals
+		Tabs, etc.. so permanent tabs can be kept on people, grey if offline
+		
+	Graphics
+		right click, drop down menus, component
+		  storage  - drive
+		  profile  - license
+		  mail     - mailbox
+		  board    - post it
+		  chat     - chat bubble
+		  goals    - dart
+		  schedule -
+
+	ticker
+		link update, board, mail, plan, online,
+		scroller higher level broadcast
+		on open scroll - welcome to de-ops 1.023, and pending assignments mails, status of systems
+			after that only scroll when stuff happens
+		click - display list (log) of all recent messages
+		black with red/blue/grey text depending on level of message
+		
+
+Simulator
+	add collection test to simulator by randomly accessing de-op collections in seperate sim thread
+	record max udp burst sizes, or do packet size distribution histogram
+
+
+search
+	index components in local area of dht network
+	search - sends query to that area of network target is in
+	
+
+quick
+	test with null global, even have option for secret at this point?
+	ensure callers know what to do when tcpcontrol.sendpacket is overloaded
+	bandwidth chart
+	subclass collections, create auto locked collections
+	use localfilekey for all file names so name diff per computer
+	IM/Chat right click font view, right click timestamp view
+	finish self search and then start bucket replication so startup doesnt spit out massive patches
+	component dir also encoded with local key / trimmed to 8 chars
+	interface 
+		treeview ex not using themed +/- / scrollbars
+		listbox header resize doesn't stop when col 0 is width 0
+		listbox/tree not full size when no border is active
+	Selecting people for task/mail should be drop down combo add/remove (add pops up link panel dialog so exact choice can be made) [prevent name forging]
+	cache files missing from component header - do in load header
+			dont delete old path in Cache<component> function, until new header saved: move - save headers - delete old files
+	run save headers every 10 secs - every sec is too often, and slows simmy
+			
+Future
+	notification area of changes in all components, click brings user to change, or can discard
+	Nodes that say they proxy for node x have signed auth from x
+	Ping includes auth test for id
+    variable internal / private key schemes and sizes, ECC
+    linear contact merging / split system?
+    5 connections in same op but all blocked able to form active op network by proxying throgh global
+    customizable logo/icons
+    good leadership/management guide
+    web based problem simulation, people assigned roles, sim starts, try to solve, katrina sim ;)
+    database to storage system (for use with bug trackers, inventories, etc..)
+    network determined time that emails / messages are tagged with to prevent one computers off clock from screwing crap up
+		intergrate with location component
+    detect when computer changes then prompt user for location string update
+    project/op name and other settings should be taken from whoever is the root node of self, info in projectdata
+    quota storage space per node, interface to show, per component storage req as well as over all memory auditing interface
+    implementing help button on all dialogs
+    lock read/write individually, let multiple reads go at same time
+    voice chat in rooms / IM using skype API - can get to land lines
+    whiteboard
+    load goal/board/mail archives serperately to speed load / reduce memory usage
+    
+    security
+		able to change Op ID in client - for project forks or if project is majorly compramised
+			new Op ID can be secure mailed to entire org, or pointer can be put in link file (went to op id x)
+			
+		signed invitation files - so that if bad people get in, we know who signed them in
+    
+    store caching 
+		used when high load
+		how to keep cache entries up to date?
+		cache entries only last for like 5 mins
+		requester do theh caching, or should requested auto-cache if load too high
+			auto-caching might not hit the nodes that requesting nodes would be likely to hit
+
+	udp packet throttle **** especially for patches
+		backlog for packets, for patches, etc.. not for rudp
+		packet cache for more than 4k sent in second
+		cache should go for 60 seconds make, 240k, bleed cache out, first in first out
+		Alert if packet cache has any entries at all
+		check in sim if node sending more than x packets per sec
+		
+Compartmentalization
+	sign with level key, mark with level version of key signed
+	when link version updated
+		if subordinates removed
+			create new level key
+			level version set to current link file version
+		encrypt and sign level key with each of the sub ordinates key
+	compartmentalized data is encrypted with level key
+	only sub-ordinates at the time of specific objects compartmentalization have access to level
+	board - post contains reply key to simplify many needed level keys
+	level key for high / low
+	
+	branch compart
+		branch key encoded with level key
+		lower links encode higher branch keys with their level key to lowers
+		branch version same as level?
+		
+	'set permissions dialog' that all components can implement, user can click 'permissions..' button to set
+	
+Release security
+    throwing load exception in obfuscated code?
+	Ensure unnessesary strings arent exposed
+	Online tracking, embedd JMG internal key
+	Obfuscate
+	Sign
+	detatch simulator
+	Install app into GAC, strong name
+	Pre-compile with ngen, http://msdn.microsoft.com/vcsharp/default.aspx?pull=/msdnmag/issues/06/05/CLRInsideOut/default.aspx
+	send out random garbage and random times to random hosts, sometimes with char stings like 'hola como estas' just to mess
+	    sniffers up a lil more 
+
+website
+	wiki based
+	hire international people, in charge of translation / international sites
+		give commission of revenue for sales
+	go international ASAP, domestic market is a bear, international is more receptive of new tech like this
+	
+Pro
+	Commercial use
+	Security improvements
+	Mobile version
+	Voice/video chat, try to make it as polished as possible like full screen meeting  interface
+	Server Mode
+	Signed.. something.. (email?) that is authenticated by others and adds value
+		PRO image in upper left of blue bar if user has signed auth key from meee
+	Private / Secret Projects
+	Flash drive with program and encrypted file system on it, truely portable personal computer
+	Lock instance in sentiant mode, required login to activate interface, but underneath still working, acting as server for files
+	Single file storage
+	Auto language translation - use little drop down flags on left hand side project bar
+	componentized, pro version lets you set visibility(up/down) on files/messages, free version everything is transparent
+	
+
+link navigation
+	path - /project/name/component - smart filling in along the way
+
+	home would go to /fusion/Myself/Profile
+	project ex - /fusion/project/myself/links
+
+	fusion://main -> links
+	fusion://project -> links
+	fusion://project/name -> available component list
+	fusion://project/name/component -> component
+	
+	or
+		top buttons only for self
+		double click doesnt change focused user
+		can only view other node's views by right clicking on them
+		switching projects, switches main view to that project
+		no project selection in individual component interface

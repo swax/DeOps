@@ -1,0 +1,115 @@
+
+High gear - Able to collab through de-ops
+	Working on translations
+	Working on port to linux/mono
+	Working on testing
+
+company valuation
+	Need to figure pre-money valuation of compnay
+	Investor invests money
+	pre-money + investment = post-money valuation
+	investor owns share of company of whatevery portion investment was of
+
+	need to find good data for pre-money valuation
+
+	http://www.caycon.com/valuation.php#bottom - i suck
+	http://www.askdavetaylor.com/how_much_equity_does_a_vc_take_when_funding_a_startup.html
+
+	
+Competitor info
+	Price per client
+	Downloads
+	Sales figures
+	Market share
+	
+Products
+	Collaboration
+		Groove
+			Client $180 per user, Enterprise Relay Server, $14,995; Groove Enterprise Management Server, $19,995; Groove Enterprise Integration Server, $9,995.
+			40 percent enterprise, Fortune 1000; 40 percent public sector [government, organizations, NGOs etc.]; and 20 percent small business.
+			Revenue of 12 million in 2003, future?
+			Install base?
+			Windows only**
+		Sharepoint
+			$70 per user, $4,000 per server, $30,0000 for customer accessible server
+			"We expect $400 million revenue from that product line [sharepoint], faster than any other product in Microsoft's history" Steve Ballmer
+			Microsoft has a 51 percent share of the integrated collaborative environment marketplace, according to a recent IDC report, which represents a 10 percent lead over its nearest competitor, based on 2004 revenue figures.
+			Install base?
+		WASTE
+			Free
+			300,000 downloads over 3 years
+		Groupwise
+			 $130 per user
+		project data manage?
+	Directory Servies
+		Novell eDirectory
+			eDirectory $0.50 per user
+			Analysts expect that in the year 2000, revenue for directory services products will reach $5 billion—five times the amount of directory services revenue for 1998.
+			80% percent of Fortune 500 companies
+			install base 40 million users
+		MS Active Directory
+			$40 per user, $400 server
+			Giga projects the Active Directory management technologies market to grow to $165 million in 2003 and to $235 million in 2004.
+			
+			
+Reports 
+	Gartner 2004
+		Revenue by 2010 in this market will exceed $500 million anually 
+	Worldwide Collaborative Product Development Applications 2006-2010 Forecast: A First Look at a Stable 2005
+		http://www.idc.com/getdoc.jsp?containerId=35067
+
+Notes			
+	Implementing directory services is difficult and requires re-structuring the the corporation
+	Similiar to directory services, but its not a directory of computer resources, its a directory of people resources
+	get accurate numbers for market analysis table
+	
+Potential People
+	P2P Space
+		Justin Frankel - Winamp
+		Michael Stokes - Shareaza
+		Matt Zyzik - FileScope
+			chiefdreegfleer@methodus2000.com
+			Fungus Eye Entertainment, LLC
+			26 McGovern Drive
+			Melville, NY 11747
+			MZyzik@optonline.net
+		Jed McCaleb - edonkey
+		bram cohen - bittorrent
+	Open Source Collaborative
+	Mono
+		Simon.. something..
+	Other
+		Richard Schwartz - usefullness?, consultant to companies about collaboration, lotus ibm sttizuff
+		
+		
+sent
+  NorthEast
+    6/13 barn.org
+    6/13 neastangels.com
+  San Fran
+    6/27 angelsforum.com
+    6/27 sandhillangels.com
+    6/27 bandangels.com   - response
+    6/27 angelscorner.com - 2nd response 
+
+
+not sent
+  san fran
+    http://www.nvp.com
+    http://www.genevavc.com
+    http://www.dfj.com
+    http://www.ggangels.com
+    http://www.selbyventures.com
+    http://www.humwin.com
+    http://www.smartforest.com/
+    http://www.capitalvalleyventures.com/
+
+  LA
+    http://www.berkus.com
+    http://www.clearstone.com
+
+  http://www.hubangels.com - boston
+  http://www.mosaicvp.com - toronto
+  http://www.sigmapartners.com - boston / SF
+  http://www.capybaraventures.com - portland
+

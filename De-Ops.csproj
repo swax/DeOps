@@ -1,0 +1,780 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release Sim|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <BaseAddress>285212672</BaseAddress>
+    <Optimize>true</Optimize>
+    <DebugType>
+    </DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ProjectType>Local</ProjectType>
+    <ProductVersion>8.0.50727</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{83CFFBE4-8EB9-446D-851A-3874799F3172}</ProjectGuid>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ApplicationIcon>rank.ico</ApplicationIcon>
+    <AssemblyKeyContainerName>
+    </AssemblyKeyContainerName>
+    <AssemblyName>De-Ops</AssemblyName>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
+    <DefaultClientScript>JScript</DefaultClientScript>
+    <DefaultHTMLPageLayout>Grid</DefaultHTMLPageLayout>
+    <DefaultTargetSchema>IE50</DefaultTargetSchema>
+    <DelaySign>false</DelaySign>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>DeOps</RootNamespace>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+    <StartupObject>DeOps.Startup</StartupObject>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <BaseAddress>285212672</BaseAddress>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <ConfigurationOverrideFile>
+    </ConfigurationOverrideFile>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DocumentationFile>
+    </DocumentationFile>
+    <DebugSymbols>true</DebugSymbols>
+    <FileAlignment>4096</FileAlignment>
+    <NoStdLib>false</NoStdLib>
+    <NoWarn>
+    </NoWarn>
+    <Optimize>false</Optimize>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <RemoveIntegerChecks>false</RemoveIntegerChecks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>4</WarningLevel>
+    <DebugType>full</DebugType>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <BaseAddress>285212672</BaseAddress>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <ConfigurationOverrideFile>
+    </ConfigurationOverrideFile>
+    <DefineConstants>TRACE</DefineConstants>
+    <DocumentationFile>
+    </DocumentationFile>
+    <DebugSymbols>false</DebugSymbols>
+    <FileAlignment>4096</FileAlignment>
+    <NoStdLib>false</NoStdLib>
+    <NoWarn>
+    </NoWarn>
+    <Optimize>true</Optimize>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <RemoveIntegerChecks>false</RemoveIntegerChecks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>4</WarningLevel>
+    <DebugType>none</DebugType>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug Sim|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <BaseAddress>285212672</BaseAddress>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <Optimize>false</Optimize>
+    <CodeAnalysisRules>
+    </CodeAnalysisRules>
+    <WarningLevel>3</WarningLevel>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System">
+      <Name>System</Name>
+    </Reference>
+    <Reference Include="System.Data">
+      <Name>System.Data</Name>
+    </Reference>
+    <Reference Include="System.Design" />
+    <Reference Include="System.Drawing">
+      <Name>System.Drawing</Name>
+    </Reference>
+    <Reference Include="System.Windows.Forms">
+      <Name>System.Windows.Forms</Name>
+    </Reference>
+    <Reference Include="System.Xml">
+      <Name>System.XML</Name>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Components\Board\BoardControl.cs" />
+    <Compile Include="Components\Board\BoardPackets.cs" />
+    <Compile Include="Components\Board\BoardView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\Board\BoardView.Designer.cs">
+      <DependentUpon>BoardView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Board\PostImages.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>PostImages.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Board\PostMessage.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\Board\PostMessage.Designer.cs">
+      <DependentUpon>PostMessage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Chat\ChatControl.cs" />
+    <Compile Include="Components\Chat\ChatPackets.cs" />
+    <Compile Include="Components\IM\IMControl.cs" />
+    <Compile Include="Components\IM\IMPackets.cs" />
+    <Compile Include="Components\Plan\Goals\EditGoal.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Plan\Goals\EditGoal.Designer.cs">
+      <DependentUpon>EditGoal.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Plan\Goals\EditPlanItem.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Plan\Goals\EditPlanItem.Designer.cs">
+      <DependentUpon>EditPlanItem.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Plan\Goals\GoalPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\Plan\Goals\GoalPanel.Designer.cs">
+      <DependentUpon>GoalPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Plan\Goals\GoalsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\Plan\Goals\GoalsView.Designer.cs">
+      <DependentUpon>GoalsView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Plan\Goals\ProgressText.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\Plan\Goals\ProgressText.Designer.cs">
+      <DependentUpon>ProgressText.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Plan\Schedule\BlockRow.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\Plan\Schedule\BlockRow.Designer.cs">
+      <DependentUpon>BlockRow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Plan\Schedule\DateArrows.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>DateArrows.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Plan\Schedule\EditBlock.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Plan\Schedule\EditBlock.Designer.cs">
+      <DependentUpon>EditBlock.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Plan\Schedule\DateSlider.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\Plan\Schedule\DateSlider.Designer.cs">
+      <DependentUpon>DateSlider.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Plan\Schedule\ScheduleView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\Plan\Schedule\ScheduleView.Designer.cs">
+      <DependentUpon>ScheduleView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Plan\PlanControl.cs" />
+    <Compile Include="Components\Plan\PlanPackets.cs" />
+    <Compile Include="Components\Plan\Goals\AddPeople.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Plan\Goals\AddPeople.Designer.cs">
+      <DependentUpon>AddPeople.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Profile\EditTemplate.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Profile\EditTemplate.Designer.cs">
+      <DependentUpon>EditTemplate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Link\LinkControl.cs" />
+    <Compile Include="Components\Link\LinkPackets.cs" />
+    <Compile Include="Components\Location\LocationControl.cs" />
+    <Compile Include="Components\Location\LocationPackets.cs" />
+    <Compile Include="Components\Mail\MailControl.cs" />
+    <Compile Include="Components\Mail\MailPackets.cs" />
+    <Compile Include="Components\OpComponent.cs" />
+    <Compile Include="Components\Profile\EditProfile.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Profile\EditProfile.Designer.cs">
+      <DependentUpon>EditProfile.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Profile\PreviewTemplate.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Profile\PreviewTemplate.Designer.cs">
+      <DependentUpon>PreviewTemplate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Profile\ProfileControl.cs" />
+    <Compile Include="Components\Profile\ProfilePackets.cs" />
+    <Compile Include="Components\Storage\DetailsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Storage\DetailsForm.Designer.cs">
+      <DependentUpon>DetailsForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Storage\InfoPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\Storage\InfoPanel.Designer.cs">
+      <DependentUpon>InfoPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Storage\StorageControl.cs" />
+    <Compile Include="Components\Storage\StoragePackets.cs" />
+    <Compile Include="Components\Storage\StorageView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\Storage\StorageView.Designer.cs">
+      <DependentUpon>StorageView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Storage\StorageRes.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>StorageRes.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Storage\UnlockForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Storage\UnlockForm.Designer.cs">
+      <DependentUpon>UnlockForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Storage\WorkingStorage.cs" />
+    <Compile Include="Components\Transfer\TransferControl.cs" />
+    <Compile Include="Components\Transfer\TransferPackets.cs" />
+    <Compile Include="Implementation\Dht\DhtBucket.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Implementation\Dht\DhtNetwork.cs" />
+    <Compile Include="Implementation\Dht\DhtRouting.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Implementation\Dht\DhtSearch.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Implementation\Dht\DhtSearchControl.cs" />
+    <Compile Include="Implementation\Dht\DhtStore.cs" />
+    <Compile Include="Implementation\OpCore.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Implementation\Identity.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Implementation\Protocol\G2Header.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Implementation\Protocol\G2Protocol.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Implementation\Protocol\Packets\PacketsComm.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Implementation\Protocol\Packets\PacketsNet.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Implementation\Protocol\Packets\PacketsFile.cs" />
+    <Compile Include="Implementation\Transport\RudpHandler.cs" />
+    <Compile Include="Implementation\Transport\RudpSession.cs" />
+    <Compile Include="Implementation\Transport\RudpSocket.cs" />
+    <Compile Include="Implementation\Transport\TcpConnect.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Implementation\Transport\TcpHandler.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Implementation\Transport\UdpHandler.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Components\Chat\RoomView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\Chat\RoomView.Designer.cs">
+      <DependentUpon>RoomView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Chat\ChatSplit.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\Chat\ChatSplit.Designer.cs">
+      <DependentUpon>ChatSplit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Chat\ChatView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\Chat\ChatView.Designer.cs">
+      <DependentUpon>ChatView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\IM\IM_View.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\IM\IM_View.Designer.cs">
+      <DependentUpon>IM_View.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Mail\ComposeMail.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\Mail\ComposeMail.Designer.cs">
+      <DependentUpon>ComposeMail.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Mail\MailView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\Mail\MailView.Designer.cs">
+      <DependentUpon>MailView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\GetTextDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\GetTextDialog.Designer.cs">
+      <DependentUpon>GetTextDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\NewProjectForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\NewProjectForm.Designer.cs">
+      <DependentUpon>NewProjectForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Profile\ProfileView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Components\Profile\ProfileView.Designer.cs">
+      <DependentUpon>ProfileView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Views\TreeListViewEx\ContainerListView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Interface\Views\TreeListViewEx\IParentChildList.cs" />
+    <Compile Include="Interface\Views\TreeListViewEx\StringTools.cs" />
+    <Compile Include="Interface\Views\TreeListViewEx\TreeListView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Interface\Views\TreeListView\ContainerListView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Interface\Views\TreeListView\IParentChildList.cs" />
+    <Compile Include="Interface\Views\TreeListView\TreeListView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Interface\Views\uxWrapper.cs" />
+    <Compile Include="Interface\Views\ViewShell.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Interface\Views\ViewShell.Designer.cs">
+      <DependentUpon>ViewShell.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Views\TextInput.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Interface\Views\TextInput.Designer.cs">
+      <DependentUpon>TextInput.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Views\ExternalView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Views\ExternalView.Designer.cs">
+      <DependentUpon>ExternalView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Link\EditLink.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Link\EditLink.Designer.cs">
+      <DependentUpon>EditLink.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Tools\ConsoleForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Tools\CrawlerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Tools\GraphForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Tools\InternalsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Tools\PacketsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\InviteForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\InviteForm.Designer.cs">
+      <DependentUpon>InviteForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\MainForm.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Interface\MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Startup\LoaderForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Startup\LoaderForm.Designer.cs">
+      <DependentUpon>LoaderForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Startup\NewOpForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Startup\NewOpForm.Designer.cs">
+      <DependentUpon>NewOpForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Tools\SearchForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Tools\SearchForm.Designer.cs">
+      <DependentUpon>SearchForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <Compile Include="Simulator\LegendForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Simulator\LegendForm.Designer.cs">
+      <DependentUpon>LegendForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Simulator\NetView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Simulator\NetView.Designer.cs">
+      <DependentUpon>NetView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Simulator\SimForm.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Simulator\SimForm.Designer.cs">
+      <DependentUpon>SimForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Simulator\InternetSim.cs" />
+    <Compile Include="Simulator\TrackFile.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Simulator\TrackFile.Designer.cs">
+      <DependentUpon>TrackFile.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Startup.cs" />
+    <Compile Include="Test.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Utilities.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Win32.cs" />
+    <Content Include="Components\Board\Board.txt" />
+    <Content Include="Components\Chat\Chat.txt" />
+    <Content Include="Components\Link\Link.txt" />
+    <Content Include="Components\Location\Location.txt" />
+    <Content Include="Components\Plan\Plan.txt" />
+    <Content Include="Components\Profile\Profile.txt" />
+    <Content Include="Components\Storage\storage.txt" />
+    <Content Include="Components\Storage\storage2.txt" />
+    <Content Include="Docs\Events.txt" />
+    <Content Include="Components\Mail\Mail.txt" />
+    <Content Include="Docs\Patent.txt" />
+    <Content Include="Docs\People.txt" />
+    <Content Include="Docs\Protocol.txt" />
+    <Content Include="Docs\Random.txt" />
+    <Content Include="Docs\Investment.txt" />
+    <Content Include="Docs\Security.txt" />
+    <Content Include="Docs\Todo.txt" />
+    <None Include="Graphics\locked.png" />
+    <None Include="Graphics\unlocked.png" />
+    <None Include="Graphics\archive.png" />
+    <None Include="Graphics\folder.png" />
+    <None Include="Graphics\posts\post.png" />
+    <None Include="Graphics\posts\post_down.png" />
+    <None Include="Graphics\posts\post_up.png" />
+    <None Include="Graphics\posts\posthigh.png" />
+    <None Include="Graphics\posts\posthigh_down.png" />
+    <None Include="Graphics\posts\posthigh_up.png" />
+    <None Include="Graphics\posts\postlow.png" />
+    <None Include="Graphics\posts\postlow_down.png" />
+    <None Include="Graphics\posts\postlow_up.png" />
+    <None Include="Graphics\locked.gif" />
+    <None Include="Graphics\unlocked.gif" />
+    <None Include="Graphics\edit.gif" />
+    <None Include="Graphics\open.gif" />
+    <None Include="Graphics\diff.gif" />
+    <None Include="Graphics\archfolder.png" />
+    <None Include="Graphics\changes\higher.png" />
+    <None Include="Graphics\changes\lower.png" />
+    <None Include="Graphics\storage\download.gif" />
+    <None Include="Graphics\storage\dl_cancel.gif" />
+    <None Include="Graphics\storage\downloadCancel.gif" />
+    <None Include="Graphics\storage\Higher.png" />
+    <None Include="Graphics\storage\Lower.png" />
+    <None Include="Graphics\storage\DownloadSmall.png" />
+    <None Include="Graphics\storage\GhostFolder.png" />
+    <None Include="Graphics\storage\Folder.png" />
+    <None Include="Graphics\storage\Ghost.png" />
+    <None Include="Graphics\storage\Temp.png" />
+    <None Include="Graphics\storage\reject.gif" />
+    <None Include="Graphics\storage\replace.gif" />
+    <None Include="Graphics\storage\extend1.gif" />
+    <None Include="Graphics\storage\close.gif" />
+    <None Include="Graphics\storage\extend2.gif" />
+    <None Include="Graphics\storage\accept.gif" />
+    <Content Include="Implementation\Design.txt" />
+    <Content Include="rank.ico" />
+    <None Include="Graphics\leftarrow.png" />
+    <None Include="Graphics\rightarrow.png" />
+    <None Include="Graphics\tv_plus.bmp" />
+    <None Include="Graphics\tv_minus.bmp" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <EmbeddedResource Include="Components\Board\BoardView.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>BoardView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Board\PostImages.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>PostImages.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Board\PostMessage.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>PostMessage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Chat\RoomView.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>RoomView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Chat\ChatSplit.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ChatSplit.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Chat\ChatView.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ChatView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\IM\IM_View.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>IM_View.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Mail\ComposeMail.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ComposeMail.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Mail\MailView.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MailView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Plan\Goals\EditGoal.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>EditGoal.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Plan\Goals\EditPlanItem.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>EditPlanItem.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Plan\Goals\GoalPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>GoalPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Plan\Goals\GoalsView.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>GoalsView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Plan\Goals\ProgressText.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ProgressText.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Plan\Schedule\BlockRow.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>BlockRow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Plan\Schedule\DateArrows.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>DateArrows.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Plan\Schedule\EditBlock.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>EditBlock.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Plan\Schedule\DateSlider.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>DateSlider.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Plan\Schedule\ScheduleView.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ScheduleView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Plan\Goals\AddPeople.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>AddPeople.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Profile\EditProfile.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>EditProfile.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Profile\EditTemplate.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>EditTemplate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Profile\PreviewTemplate.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>PreviewTemplate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Storage\DetailsForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>DetailsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Storage\InfoPanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>InfoPanel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Storage\StorageView.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>StorageView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Storage\StorageRes.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>StorageRes.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Storage\UnlockForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>UnlockForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\GetTextDialog.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>GetTextDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\NewProjectForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>NewProjectForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Profile\ProfileView.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ProfileView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Views\TreeListViewEx\ContainerListView.resx">
+      <DependentUpon>ContainerListView.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Views\TreeListViewEx\TreeListView.resx">
+      <DependentUpon>TreeListView.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Views\TreeListView\ContainerListView.resx">
+      <DependentUpon>ContainerListView.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Views\TextInput.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>TextInput.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Views\ExternalView.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ExternalView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Link\EditLink.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>EditLink.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Tools\ConsoleForm.resx">
+      <DependentUpon>ConsoleForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Tools\CrawlerForm.resx">
+      <DependentUpon>CrawlerForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Tools\GraphForm.resx">
+      <DependentUpon>GraphForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Tools\InternalsForm.resx">
+      <DependentUpon>InternalsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Tools\PacketsForm.resx">
+      <DependentUpon>PacketsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\InviteForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>InviteForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Startup\LoaderForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>LoaderForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\MainForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Startup\NewOpForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>NewOpForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Tools\SearchForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>SearchForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Views\TreeListView\TreeListView.resx">
+      <DependentUpon>TreeListView.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Simulator\LegendForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>LegendForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Simulator\NetView.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>NetView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Simulator\SimForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>SimForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Simulator\TrackFile.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>TrackFile.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+</Project>

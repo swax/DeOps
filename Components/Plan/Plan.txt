@@ -1,0 +1,35 @@
+
+mark unconfirmed
+
+
+---------------------
+
+bottom line not painted over
+themed scroll bar (scrollbar renderer?)
+tree lines sometimes arent painted correctly
+scroll/zoom should have end buttons with mouse over states
+	plus minus button uses 7 increment
+	
+---------
+
+outlook change to schedule - currently outlook system not enforcing sense of community, but individualism
+	items should guide subordinates, other programs can handle personal schedule
+	
+cant not show unconfirmed because local may be linked to an unconfirmed
+
+
+
+--- notes ---
+
+jobs are used because the word conveys a more long term and permanent meaning
+
+people can take an assigned job and break it up into tasks based on how 'they' want it done
+	this serves to prevent micromanagement as different people achive the same goals in different ways
+	
+why not my personal schedule?
+	there are programs for that, outlook, etc.. the schedule in de-ops gives focus to all subordinates
+	of what the current mission is
+	
+unconfirmed access to plan?
+	if a whole branch becomes sub to a node but is not confirmed it could be 'leeching'
+	need to foster confirmation into hierarchy before plan is devulged

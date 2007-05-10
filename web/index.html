@@ -1,0 +1,157 @@
+<html>
+<head>
+<title>De-Ops</title>
+
+<script type="text/javascript">
+
+function SelectMain()
+{
+	document.all["img1"].src="main_on.jpg";
+	document.all["img2"].src="team_off.jpg";
+	document.all["img3"].src="contact_off.jpg";
+	
+	document.all["div1"].style.display="";
+	document.all["div2"].style.display="none";
+	document.all["div3"].style.display="none";
+}
+
+function SelectTeam()
+{
+	document.all["img1"].src="main_off.jpg";
+	document.all["img2"].src="team_on.jpg";
+	document.all["img3"].src="contact_off.jpg";
+
+	document.all["div1"].style.display="none";
+	document.all["div2"].style.display="";
+	document.all["div3"].style.display="none";
+}
+
+function SelectContact()
+{
+	document.all["img1"].src="main_off.jpg";
+	document.all["img2"].src="team_off.jpg";
+	document.all["img3"].src="contact_on.jpg";
+
+	document.all["div1"].style.display="none";
+	document.all["div2"].style.display="none";
+	document.all["div3"].style.display="";
+}
+
+</script>
+
+<style type="text/css">
+	a {-moz-outline:none;}
+</style>
+
+</head>
+<body bgcolor=#000000 style="-moz-outline: none;">
+
+
+<div style="position:absolute; top:50; left:50; width: 800px; height: 551px; z-index:1">
+<img src="gemini.jpg">
+</div>
+
+
+<div style="position:absolute; top:165; left:59; width: 191px; height: 80px; z-index:2">
+<a href="#"><img id="img1" src="main_on.jpg" border=0 onclick="SelectMain()"></a>
+</div>
+
+
+<div style="position:absolute; top:245; left:59; width: 191px; height: 80px; z-index:2">
+<a href="#"><img id="img2" src="team_off.jpg" border=0 onclick="SelectTeam()"></a>
+</div>
+
+
+<div style="position:absolute; top:325; left:59; width: 191px; height: 80px; z-index:2">
+<a href="#"><img id="img3" src="contact_off.jpg" border=0 onclick="SelectContact()"></a>
+</div>
+
+
+<div style="position:absolute; top:165; left:250; width: 590px; height: 428px; z-index:2; overflow:auto;">
+
+
+<div id="div1" style="margin-top:40;margin-left:40;margin-bottom:20;margin-right:20; ">
+<span style="font-weight:lighter;text-align:justify">
+
+<p>If you had 1,000 people around the world ready to work on a project, how would you get started?  What tools would you use get this organization up and running as soon as possible?  What you want is to experience your far flung organization as a cohesive community that values progress.</p>
+
+<p>De-Ops is built for the quick and dynamic coordination of distributed users. With our application people can come together in a common environment and organize themselves into a strong hierarchy of trust.  Overlaid on this secure foundation are the services that facilitate successful coordination.</p>
+
+	<ul> 
+	<li>Communication</li>
+		<ul> 
+		<li>Email - Fully secure, never transmitted in the 'open'</li>
+		<li>Message Boards</li>
+		<li>Chat / Whiteboard / Voice</li>
+		</ul>
+	<li>Synchronized Data </li>
+		<ul> 
+		<li>File Systems - Version controlled</li>
+		<li>Databases - Made easy so data can be compliled fast</li>
+		</ul>
+	<li>Planning</li>
+		<ul> 
+		<li>Scheduling - Layered and inheritable</li>
+		<li>Goal Tracking - Assignable sub-goals</li>
+		</ul>
+	<li>Sub-Projects</li>
+		<ul>
+		<li>Full realization of the matrix organization in software</li>
+		<li>Totally seperate command structure</li>
+		</ul>
+	</ul>
+
+<p>These are basic services we’ve all seen before, but for the first time with a hierarchical foundation which gives them exciting properties for continually evolving organizations.  Things like quality control of the file system was difficult before,  but now changes are ensured to be reviewed as they move to higher echelons of the organization.</p>
+
+<p>De-Ops is a self-contained client-side application that can run on or off the network.  It locally caches all necessary files which are always kept securely encrypted.  An organization based on De-Ops has a low probability of being compromised by a computer being lost or hacked.  And because it’s client-side, internet access, or server issues will not stall the entire organization.</p>
+
+</span>
+</div>
+
+
+<div id="div2" style="margin-top:40;margin-left:40;margin-bottom:20;margin-right:20; display:none;">
+<span style="font-weight:lighter;text-align:justify;font-size: small">
+
+<p><span style="font-weight:bold;font-size:medium;">John Marshall</span> is a passionate software developer who has been actively pushing the boundaries of P2P technology for the past 7 years.  His aim is to push past the client-server model, and give applications real intelligence to self-manage themselves.</p>
+
+
+<p>John started out with Gnucleus, the first open-source client for the Gnutella file sharing network (at one time it was #1 on SourceForge.)  Through Gnucleus John forged numerous relationships with people and companies in the P2P space.  He worked closely with LimeWire and BearShare to push the Gnutella protocol further.  He also did contract work for iMesh, and StreamCast to create a new version of their Morpheus client (over 100 million downloads.)</p>
+
+
+<p>Over the years John has continually worked with developers around the world.  He has experienced first-hand the scalability limits of distributed projects.  In regards of quality control, bugs entering source repositories as the number of developers increased.  As well as the communication overload as project members increased.</p>
+
+
+<p>For the past few years John has been designing and building the De-Ops platform to solve his coordination problem. Numerous field tested and advanced P2P technologies have been brought in. Full quality control systems have been built to simulate working networks.  And many years worth of building successful end-user experiences are being put to the test.</p>
+
+
+<p>Mr. Marshall is also a busy academic who is almost finished with a BS in Industrial Engineering, and a MS in Operations Research at Northeastern University.  He has been able to improve low-level technologies with stochastic modeling, and complexity theory. In addition, he's brought together his coordination strategy with studies in human-machine systems, and engineering psychology.</p>
+
+
+<p><span style="font-weight:bold;font-size:medium;">Pejman Makhfi</span> is a Silicon Valley technology veteran, serial entrepreneur and angel investor in the high-tech industry. Pejman has more than fifteen years of progressive experience in providing consultancy services and best practices to entrepreneurs, technology investors, and forward-thinking Startups.</p>
+
+<p>Widely known as a leader in the field of Business Process Automation and Knowledge Modeling, Pejman has an extensive background in the software and financial industries and has been the key architect for several award-winning industry leaders, such as FinancialCircuit and Savvion.</p>
+
+<p>Today, Pejman is the Managing Director of a private angel group and is a member of Venture Mentoring Service where he provides assistance and guidance to several early-stage companies.</p>
+
+<p>His background includes executive position at TEN, a top Silicon Valley technology incubator hosting more than fifty Start-ups. Pejman managed TEN’s R&D as well as advised startups on the issues and trends affecting early stage and emerging growth companies. Since its inception, TEN has helped launch of over sixty Startups, including eBay, iPrint, Xros, Vertical Networks, Right Works, and Intruvert Networks.</p>
+
+<p>Mr. Makhfi holds a B.S./M.S. degree in Computer Science from Dortmund University in Germany and is an internationally licensed Project Manager (PMP) as well as a certified Lean Six Sigma Black Belt (SSBB). He has authored multiple Patents and standards and is an active contributor to organizations such as "IEEE Neural Networks Society", "American Association for Artificial Intelligence" and “American Society for Quality”.</p>
+</span>
+</div>
+
+
+<div id="div3" style="margin-top:40;margin-left:40;margin-bottom:20;margin-right:20;display:none;">
+<span style="font-weight: lighter;text-align:justify">
+
+<center>	
+Send us your feedback<br>
+<a href="mailto:contact@deops.net">contact@deops.net</a>
+</center>
+
+</span>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,161 @@
+
+
+mail
+	compose
+		search for mail hash if stored or not
+	ack
+		search for mail hash (type ack) if stored or not
+	unacked list
+		
+		
+		
+
+
+mail component
+	load
+		foreach unacked message
+			check network to make sure mail header still cached
+			if not, re-store
+
+	send mail
+		create mail file
+		create mail header
+		
+		add to unacked file
+		increment unacked version
+		post unacked header
+		
+		post mail header, stop if ack
+
+	store mail header
+		if sender version less than stored unacked version for sender
+			get unacked header
+		if file hash in unacked list or no unacked list present
+			if dont have mail file
+				start transfer for mail file
+		else
+			delete mail
+			
+	mail transfer complete
+		if target is local node
+			alert user
+			post mail ack
+		else
+			check nodes unacked list
+				
+	store mail ack
+		if for us
+			take file hash off unacked list
+			post unacked header
+		not for us
+			if sender version less than stored unacked version for sender
+				get unacked list
+			if file hash on unacked list
+				store
+			else
+				reject
+
+	recevie unacked list store
+		if newer
+			start transfer for unacked list
+			
+	unacked list transfer complete
+		check all cached mails for host, if we have mails that are now acked, remove them
+		
+	
+			
+	
+data structures
+	mail header
+		signed
+			sender unack list version
+			sender id
+			target key
+			file key encrypted with targets public key
+			file hash
+			file size
+			
+	mail ack store
+		signed
+			sender unack list version
+			sender id
+			target key
+			file hash
+			
+	unacked header
+		signed
+			my key
+			version
+			file hash
+			file size
+	
+	mail file
+		local stored in name/data/mail
+		cached stored in name/data/mail/cache
+	
+		name - "sourceid-hash" (encoded
+		mail header
+		hashed
+			encrypted with file key
+				mail file packet
+					subject
+					date
+					to Dhtids []
+					cc Dhtids []
+					contained []
+						type (message, file)
+						name
+						start pos
+						length
+				contained files
+				
+	file unacked
+		unacked store
+		hashed
+			unacked data packet []
+				target id
+				file hash	
+			
+	*file search (how are generic searches done)?
+		Dht id location
+		object type
+		hash
+		size			
+			
+
+Network
+	Search functions
+		unacked header
+			min version
+		file
+			Dht id loc
+			hash
+			size
+	
+	Store function
+		unacked header
+		mail header
+		mail ack
+		
+	Post
+		unacked header
+		mail header
+		mail ack
+
+
+	
+	    // mail id (enc with local key) 16 bytes ?    
+        // mail id, keytoID of hash
+        // target id
+
+        // when mail list box loaded up can easily look up mail id
+        // then count how many outstanding there are and how many sent to and come up with number
+        // remove duplicates from to/cc
+
+    // mail / ack
+        // open unacked file and look for id
+
+    // local
+        // open unacked file, decrypt and build map from result
+        // recrypt on new results
+
