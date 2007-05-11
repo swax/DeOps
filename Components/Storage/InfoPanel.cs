@@ -29,6 +29,7 @@ namespace DeOps.Components.Storage
         bool WatchTransfers;
 
         Dictionary<ulong, StorageItem> CurrentChanges = new Dictionary<ulong, StorageItem>();
+        Dictionary<ulong, StorageItem> CurrentIntegrated = new Dictionary<ulong, StorageItem>();
 
         List<StorageItem> History  = new List<StorageItem>();
 
@@ -137,6 +138,8 @@ namespace DeOps.Components.Storage
 
                                     <?=changes?>
 
+                                    <?=integrated?>
+
                                     <?=history?>
 
                                 </body>
@@ -145,7 +148,7 @@ namespace DeOps.Components.Storage
 
         const string ChangesTemplate = @"<table cellspacing=0 cellpadding=2>
                                         <tr>
-	                                        <td colspan=5 bgcolor=Khaki><span style='font-size:12px;font-weight:bold;'>Changes</span></td>
+	                                        <td colspan=5 bgcolor=#ffcc66><span style='font-size:12px;font-weight:bold;'>Changes</span></td>
 	                                    </tr>
 
                                         <?=next_changes_row?>
@@ -169,6 +172,33 @@ namespace DeOps.Components.Storage
                                             </tr>
                                                     
                                             <?=next_changes_row?>";
+
+        const string IntegratedTemplate = @"<table cellspacing=0 cellpadding=2>
+                                        <tr>
+	                                        <td colspan=5 bgcolor=#99cc99><span style='font-size:12px;font-weight:bold;'>Integrated</span></td>
+	                                    </tr>
+
+                                        <?=next_integrated_row?>
+
+                                        </table>
+                                        <br>";
+
+        const string IntegratedRowTemplate = @"<tr>
+	                                            <td <?=bgcolor?>><?=menu?></td>
+                                                <td <?=bgcolor?> ><?=who?></td>
+	                                            <td <?=bgcolor?> ><?=action?></td>
+	                                            <td <?=bgcolor?> ><?=date?></td>
+	                                            <td <?=bgcolor?> ><?=note?></td>
+                                            </tr>
+                                                    
+                                            <?=next_integrated_row?>";
+
+        const string IntegratedDownloadRow = @"<tr>
+	                                            <td <?=bgcolor?>></td>
+                                                <td <?=bgcolor?> colspan=4><i><?=status?></i></td>
+                                            </tr>
+                                                    
+                                            <?=next_integrated_row?>";
 
 
         const string HistoryTemplate = @"<table cellspacing=0 cellpadding=2>
@@ -346,14 +376,16 @@ namespace DeOps.Components.Storage
                 IsFile = true;
                 CurrentItem = file.Details;
                 CurrentPath = file.GetPath();
-                CurrentChanges = file.Changes;
+                CurrentChanges = file.GetRealChanges();
+                CurrentIntegrated = file.Integrated;
             }
             else
             {
                 IsFile = false;
                 CurrentItem = folder.Details;
                 CurrentPath = folder.GetPath();
-                CurrentChanges = folder.Changes;
+                CurrentChanges = folder.GetRealChanges();
+                CurrentIntegrated = folder.Integrated;
             }
 
             Reset.Clear();
@@ -371,8 +403,10 @@ namespace DeOps.Components.Storage
             <?=name?> 
             <?=note?>
             <?=revs?>
+            <?=changes?>
+            <?=intergrated?>
             <?=history?>
-            <?=changes?>*/
+            */
 
             if (!temp && Local)
             {
@@ -420,6 +454,7 @@ namespace DeOps.Components.Storage
 
             if (temp || CurrentItem.UID == 0) // root folder
             {
+                Html.Replace("<?=integrated?>", "");
                 Html.Replace("<?=history?>", "");
 
                 FinishWriting(Html);
@@ -429,6 +464,16 @@ namespace DeOps.Components.Storage
             }
 
             
+            // integrated
+            if (CurrentIntegrated.Count > 0)
+            {
+                Html.Replace("<?=integrated?>", IntegratedTemplate);
+                GetIntegratedRows(Html);
+            }
+            else
+                Html.Replace("<?=integrated?>", "");
+
+
             // history
             Html.Replace("<?=history?>", HistoryTemplate);
 
@@ -590,6 +635,85 @@ namespace DeOps.Components.Storage
             highers.AddRange(lowers);
 
             return highers;
+        }
+
+
+        private void GetIntegratedRows(StringBuilder html)
+        {
+            StorageItem original = null;
+            if (IsFile && !CurrentFile.Temp)
+                original = CurrentFile.Details;
+            if (!IsFile && !CurrentFolder.Temp)
+                original = CurrentFolder.Details;
+
+            int i = 1;
+
+
+            foreach (ChangeRow row in SortChanges(CurrentIntegrated))
+            {
+                html.Replace("<?=next_integrated_row?>", IntegratedRowTemplate);
+
+                string color = null;
+                if(row.Higher)
+                    color =  (i % 2 == 0) ? "bgcolor=#ffd7d7" : "bgcolor=#ffe1e1";
+                else
+                    color =  (i % 2 == 0) ? "bgcolor=#ffd7d7" : "bgcolor=#e1e1ff";
+
+                html.Replace("<?=bgcolor?>", color);
+
+                // if file exists
+                if (IsFile)
+                {
+                    StorageFile file = (StorageFile)row.Item;
+
+                    string id = "i" + i.ToString();
+                    html.Replace("<?=menu?>", MenuTemplate);
+                    html.Replace("<?=menu_id?>", id);
+                    html.Replace("<?=menu_img_id?>", id + "img");
+
+                    AddReset(id);
+
+                    if (Storages.FileExists(file))
+                    {
+                        html.Replace("<?=next_menu_row?>", GetMenuRow("integrate.open." + row.ID.ToString(), "Open", ImgOpen));
+                        html.Replace("<?=next_menu_row?>", GetMenuRow("integrate.diff." + row.ID.ToString(), "Diff", ImgDiff));
+
+                        html.Replace("<?=next_menu_row?>", GetMenuRow("integrate.replace." + row.ID.ToString(), "Replace", ImgReplace));
+                        html.Replace("<?=next_menu_row?>", GetMenuRow("integrate.reject." + row.ID.ToString(), "Not Integrated", ImgReject));
+                    }
+                    else
+                    {
+                        string status = Storages.FileStatus(file);
+
+                        if (status == null)
+                            html.Replace("<?=next_menu_row?>", GetMenuRow("integrate.download." + row.ID.ToString(), "Download", ImgDownload));
+                        else
+                        {
+                            html.Replace("<?=next_menu_row?>", GetMenuRow("integrate.dlcancel." + row.ID.ToString(), "Cancel", ImgDownloadCancel));
+
+                            html.Replace("<?=next_integrated_row?>", IntegratedDownloadRow);
+                            html.Replace("<?=bgcolor?>", color);
+                            html.Replace("<?=status?>", status);
+
+                            WatchTransfers = true;
+                        }
+                    }
+
+                    html.Replace("<?=next_menu_row?>", "");
+                }
+                else
+                    html.Replace("<?=menu?>", "");
+
+
+                html.Replace("<?=who?>", row.Name);
+                html.Replace("<?=action?>", Storages.ItemDiff(row.Item, original).ToString());
+                html.Replace("<?=date?>", row.Item.Date.ToString());
+                html.Replace("<?=note?>", row.Item.Note != null ? row.Item.Note : "");
+
+                i++;
+            }
+
+            html.Replace("<?=next_integrated_row?>", "");
         }
 
 
@@ -797,7 +921,10 @@ namespace DeOps.Components.Storage
 
                 if (parts[1] == "open")
                 {
-                    Storages.UnlockFile(id, ParentView.ProjectID, CurrentFolder.GetPath() + "\\" + file.Name, file);
+                    string finalpath = Storages.UnlockFile(id, ParentView.ProjectID, CurrentFolder.GetPath() + "\\" + file.Name, file);
+
+                    if (finalpath != null && File.Exists(finalpath))
+                        System.Diagnostics.Process.Start(finalpath);
                 }
 
                 if (parts[1] == "diff")
@@ -808,7 +935,7 @@ namespace DeOps.Components.Storage
                 if (parts[1] == "accept")
                 {
 
-                    ParentView.Working.IntegrateFile(CurrentFolder.GetPath(), file); 
+                    ParentView.Working.IntegrateFile(CurrentFolder.GetPath(), id, file); 
 
                     // integrate triggers file update, triggering icon / page change
 
@@ -831,6 +958,31 @@ namespace DeOps.Components.Storage
                 }
             }
 
+            if (parts[0] == "integrate")
+            {
+                ulong id = ulong.Parse(parts[2]);
+
+                file = (StorageFile) CurrentIntegrated[id];
+
+                if (parts[1] == "open")
+                {
+                    string finalpath = Storages.UnlockFile(id, ParentView.ProjectID, CurrentFolder.GetPath() + "\\" + file.Name, file);
+
+                    if (finalpath != null && File.Exists(finalpath))
+                        System.Diagnostics.Process.Start(finalpath);
+                }
+
+                if (parts[1] == "diff")
+                {
+
+                }
+
+                if (parts[1] == "reject")
+                {
+                    ParentView.Working.UnintegrateFile(CurrentFolder.GetPath(), id, file);
+                }
+
+            }
 
             if (parts[0] == "history")
             {

@@ -1,4 +1,6 @@
 
+temp local files not kept in tree because it would screw up folder/file events if they were
+
 rewrite docs 
 	delete / create only done through de-ops interface, not file system
 

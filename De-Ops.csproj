@@ -154,7 +154,7 @@
       <DependentUpon>EditPlanItem.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.Designer.cs">
       <DependentUpon>GoalPanel.cs</DependentUpon>
@@ -172,7 +172,7 @@
       <DependentUpon>ProgressText.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.Designer.cs">
       <DependentUpon>BlockRow.cs</DependentUpon>
@@ -195,7 +195,7 @@
       <DependentUpon>DateSlider.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\ScheduleView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\ScheduleView.Designer.cs">
       <DependentUpon>ScheduleView.cs</DependentUpon>
@@ -250,7 +250,7 @@
     <Compile Include="Components\Storage\StorageControl.cs" />
     <Compile Include="Components\Storage\StoragePackets.cs" />
     <Compile Include="Components\Storage\StorageView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Storage\StorageView.Designer.cs">
       <DependentUpon>StorageView.cs</DependentUpon>
@@ -474,7 +474,7 @@
       <DependentUpon>NetView.cs</DependentUpon>
     </Compile>
     <Compile Include="Simulator\SimForm.cs">
-      <SubType>Component</SubType>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Simulator\SimForm.Designer.cs">
       <DependentUpon>SimForm.cs</DependentUpon>

@@ -2087,8 +2087,8 @@ namespace DeOps.Components.Storage
                 Overlays.Add(2);
 
             bool showHigher = false, showLower = false;
-            
-            foreach (ulong id in Changes.Keys)
+
+            foreach (ulong id in GetRealChanges().Keys)
                 if (View.HigherIDs.Contains(id))
                     showHigher = true;
                 else
@@ -2099,6 +2099,31 @@ namespace DeOps.Components.Storage
 
             if (showLower)
                 this.Overlays.Add(1);
+        }
+
+        internal Dictionary<ulong, StorageItem> GetRealChanges()
+        {
+            Dictionary<ulong, StorageItem> realChanges = new Dictionary<ulong, StorageItem>();
+
+            foreach (ulong id in Changes.Keys)
+            {
+                bool add = true;
+                StorageItem change = Changes[id];
+
+                // dont display if current file is equal to this change
+                if (!Temp && View.Storages.ItemDiff(change, Details) == StorageActions.None)
+                    add = false;
+
+                // dont display if change is integrated
+                if (Integrated.ContainsKey(id))
+                    if (View.Storages.ItemDiff(change, Integrated[id]) == StorageActions.None)
+                        add = false;
+
+                if (add)
+                    realChanges.Add(id, change);
+            }
+
+            return realChanges;
         }
 
         public override string ToString()
@@ -2207,7 +2232,7 @@ namespace DeOps.Components.Storage
 
             bool showHigher = false, showLower = false;
 
-            foreach (ulong id in Changes.Keys)
+            foreach (ulong id in GetRealChanges().Keys)
                 if (View.HigherIDs.Contains(id))
                     showHigher = true;
                 else
@@ -2218,6 +2243,56 @@ namespace DeOps.Components.Storage
 
             if (showLower)
                 Overlays.Add(1);
+        }
+
+        internal Dictionary<ulong, StorageItem> GetRealChanges()
+        {
+            Dictionary<ulong, StorageItem> realChanges = new Dictionary<ulong, StorageItem>();
+
+            foreach (ulong id in Changes.Keys)
+            {
+                bool add = true;
+                StorageItem change = Changes[id];
+
+                // dont display if current file is equal to this change
+                if (!Temp && View.Storages.ItemDiff(change, Details) == StorageActions.None)
+                    add = false;
+
+                // dont display if change is integrated
+                if (Integrated.ContainsKey(id))
+                    if (View.Storages.ItemDiff(change, Integrated[id]) == StorageActions.None)
+                        add = false;
+
+                if (add)
+                    realChanges.Add(id, change);
+            }
+
+            return realChanges;
+        }
+
+        internal Dictionary<ulong, StorageItem> GetRealIntegrated()
+        {
+            Dictionary<ulong, StorageItem> realIntegrated = new Dictionary<ulong, StorageItem>();
+
+            foreach (ulong id in Integrated.Keys)
+            {
+                bool add = true;
+                StorageItem integrate = Integrated[id];
+
+                // dont display if current file is equal to this change
+                if (View.Storages.ItemDiff(integrate, Details) == StorageActions.None)
+                    add = false;
+
+                // dont display if this file isnt the lastest from the person id
+                if (Changes.ContainsKey(id))
+                    if (View.Storages.ItemDiff(integrate, Changes[id]) != StorageActions.None)
+                        add = false;
+
+                if (add)
+                    realIntegrated.Add(id, integrate);
+            }
+
+            return realIntegrated;
         }
 
         public override string ToString()

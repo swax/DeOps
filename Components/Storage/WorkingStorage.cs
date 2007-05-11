@@ -794,7 +794,7 @@ namespace DeOps.Components.Storage
             Storages.CallFileUpdate(ProjectID, path, file.Info.UID, WorkingChange.Updated);
         }
 
-        internal void IntegrateFile(string path, StorageFile change)
+        internal void IntegrateFile(string path, ulong who, StorageFile change)
         {
             // put file in local's integration map for this user id
 
@@ -802,7 +802,7 @@ namespace DeOps.Components.Storage
             LocalFolder folder = GetLocalFolder(path);
             LocalFile file = folder.Files[change.UID];
 
-            file.Integrated[change.UID] = change.Clone();
+            file.Integrated[who] = change.Clone();
             change.SetFlag(StorageFlags.Modified);
 
             Modified = true;
@@ -810,6 +810,24 @@ namespace DeOps.Components.Storage
 
             Storages.CallFileUpdate(ProjectID, path, file.Info.UID, WorkingChange.Updated);
         }
+
+        internal void UnintegrateFile(string path, ulong who, StorageFile change)
+        {
+            // put file in local's integration map for this user id
+
+
+            LocalFolder folder = GetLocalFolder(path);
+            LocalFile file = folder.Files[change.UID];
+
+            file.Integrated.Remove(who);
+            file.Info.SetFlag(StorageFlags.Modified);
+
+            Modified = true;
+            PeriodicSave = true;
+
+            Storages.CallFileUpdate(ProjectID, path, file.Info.UID, WorkingChange.Updated);
+        }
+
 
         internal void DeleteFile(string path, string name)
         {
