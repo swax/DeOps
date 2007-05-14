@@ -121,7 +121,7 @@
     <Compile Include="Components\Board\BoardControl.cs" />
     <Compile Include="Components\Board\BoardPackets.cs" />
     <Compile Include="Components\Board\BoardView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Board\BoardView.Designer.cs">
       <DependentUpon>BoardView.cs</DependentUpon>
@@ -160,7 +160,7 @@
       <DependentUpon>GoalPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.Designer.cs">
       <DependentUpon>GoalsView.cs</DependentUpon>
@@ -172,7 +172,7 @@
       <DependentUpon>ProgressText.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.Designer.cs">
       <DependentUpon>BlockRow.cs</DependentUpon>
@@ -195,7 +195,7 @@
       <DependentUpon>DateSlider.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\ScheduleView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\ScheduleView.Designer.cs">
       <DependentUpon>ScheduleView.cs</DependentUpon>
@@ -250,7 +250,7 @@
     <Compile Include="Components\Storage\StorageControl.cs" />
     <Compile Include="Components\Storage\StoragePackets.cs" />
     <Compile Include="Components\Storage\StorageView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Storage\StorageView.Designer.cs">
       <DependentUpon>StorageView.cs</DependentUpon>
@@ -374,14 +374,6 @@
     <Compile Include="Interface\Views\TreeListViewEx\TreeListView.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Interface\Views\TreeListView\ContainerListView.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Interface\Views\TreeListView\IParentChildList.cs" />
-    <Compile Include="Interface\Views\TreeListView\TreeListView.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Interface\Views\uxWrapper.cs" />
     <Compile Include="Interface\Views\ViewShell.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -428,7 +420,7 @@
       <DependentUpon>InviteForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Interface\MainForm.cs">
-      <SubType>Component</SubType>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Interface\MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
@@ -474,7 +466,7 @@
       <DependentUpon>NetView.cs</DependentUpon>
     </Compile>
     <Compile Include="Simulator\SimForm.cs">
-      <SubType>Form</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Simulator\SimForm.Designer.cs">
       <DependentUpon>SimForm.cs</DependentUpon>
@@ -693,10 +685,6 @@
       <DependentUpon>TreeListView.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Views\TreeListView\ContainerListView.resx">
-      <DependentUpon>ContainerListView.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
     <EmbeddedResource Include="Interface\Views\TextInput.resx">
       <SubType>Designer</SubType>
       <DependentUpon>TextInput.cs</DependentUpon>
@@ -743,10 +731,6 @@
     <EmbeddedResource Include="Interface\Tools\SearchForm.resx">
       <SubType>Designer</SubType>
       <DependentUpon>SearchForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Views\TreeListView\TreeListView.resx">
-      <DependentUpon>TreeListView.cs</DependentUpon>
-      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <SubType>Designer</SubType>

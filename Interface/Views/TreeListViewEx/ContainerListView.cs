@@ -36,6 +36,7 @@ using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 using System.Windows.Forms.Design;
+using System.Windows.Forms.VisualStyles;
 
 namespace DeOps.Interface.TLVex
 {
@@ -1436,7 +1437,7 @@ namespace DeOps.Interface.TLVex
 				bool val;
 				try
 				{
-                    val = /*visualStyles*/ true && uxTheme.IsAppThemed(); // hack - setting being set back to false by form designer
+                    val = /*visualStyles*/ true && Application.RenderWithVisualStyles; // hack - setting being set back to false by form designer
 				}
 				catch
 				{
@@ -1499,8 +1500,8 @@ namespace DeOps.Interface.TLVex
 			DrawBackground(g, r);
 			DrawRows(g, r);
 			DrawHeaders(g, r);
-			DrawExtra(g, r);			
-			DrawBorder(g, r);			
+			//DrawExtra(g, r);			
+			//DrawBorder(g, r);			
 		}
 
 		protected override void OnResize(EventArgs e)
@@ -2725,6 +2726,10 @@ namespace DeOps.Interface.TLVex
             }
 		}
 
+        VisualStyleRenderer HeaderNormal = new VisualStyleRenderer(VisualStyleElement.Header.Item.Normal);
+        VisualStyleRenderer HeaderHot = new VisualStyleRenderer(VisualStyleElement.Header.Item.Hot);
+        VisualStyleRenderer HeaderPressed = new VisualStyleRenderer(VisualStyleElement.Header.Item.Pressed);
+
 		protected virtual void DrawHeadersStyled(Graphics g, Rectangle r)
 		{
 			if (headerStyle != ColumnHeaderStyle.None)
@@ -2738,35 +2743,39 @@ namespace DeOps.Interface.TLVex
 				int lp = r.Left;
 				int tp = r.Top+1;
 
-				System.IntPtr hdc = g.GetHdc();
+
+
+				//System.IntPtr hdc = g.GetHdc();
 				try
 				{
 					// render column headers and trailing column header					
 					for (i=0; i<columns.Count; i++)
 					{
 						colwid = (columns[i].ScaleStyle == ColumnScaleStyle.Spring ? springWid : columns[i].Width);
-						if (headerStyle == ColumnHeaderStyle.Clickable && columns[i].Pressed)
-							uxTheme.DrawBackground("HEADER", "HEADERITEM", "PRESSED", hdc,
-								lp_scr+last, tp, 
-								colwid, headerBuffer,
-								lp, tp, r.Width-6, headerBuffer);
-						else if (headerStyle != ColumnHeaderStyle.None && columns[i].Hovered)
-							uxTheme.DrawBackground("HEADER", "HEADERITEM", "HOT", hdc,
-								lp_scr+last, tp, 
-								colwid, headerBuffer,  
-								lp, tp, r.Width-6, headerBuffer);
-						else
-							uxTheme.DrawBackground("HEADER", "HEADERITEM", "NORMAL", hdc,
-								lp_scr+last, tp, 
-								colwid, headerBuffer,  
-								lp, tp, r.Width-6, headerBuffer);
+                        if (headerStyle == ColumnHeaderStyle.Clickable && columns[i].Pressed)
+                            HeaderPressed.DrawBackground(g,
+                                                        new Rectangle(lp_scr + last, tp, colwid, headerBuffer),
+                                                        new Rectangle(lp, tp, r.Width - 6, headerBuffer));
+
+                        else if (headerStyle != ColumnHeaderStyle.None && columns[i].Hovered)
+                            HeaderHot.DrawBackground(g,
+                                                        new Rectangle(lp_scr + last, tp, colwid, headerBuffer),
+                                                        new Rectangle(lp, tp, r.Width - 6, headerBuffer));
+
+                        else
+                            HeaderNormal.DrawBackground(g,
+                                                        new Rectangle(lp_scr + last, tp, colwid, headerBuffer),
+                                                        new Rectangle(lp, tp, r.Width - 6, headerBuffer));
 						last += colwid;
 					}
 					// only render trailing column header if the end of the
 					// last column ends before the boundary of the listview 
 					if (!(r.Left+last+2-hscrollBar.Value > r.Left+r.Width))
 					{
-						uxTheme.DrawBackground("HEADER", "HEADERITEM", "NORMAL", hdc, lp_scr+last, tp, r.Width-last-2+hscrollBar.Value, headerBuffer,  r.Left, /* r.Top BMS 2003/05/22 */ tp, r.Width, headerBuffer);
+                        HeaderNormal.DrawBackground(g, 
+                            new Rectangle(lp_scr + last, tp, r.Width - last - 2 + hscrollBar.Value, headerBuffer), 
+                            new Rectangle( r.Left, /* r.Top BMS 2003/05/22 */ tp, r.Width, headerBuffer));
+
 					}
 				}
 				catch
@@ -2774,7 +2783,7 @@ namespace DeOps.Interface.TLVex
 				}
 				finally
 				{
-					g.ReleaseHdc(hdc);
+					//g.ReleaseHdc(hdc);
 				}
 
 				last = 1;

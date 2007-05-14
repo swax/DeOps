@@ -55,6 +55,8 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using System.Windows.Forms.VisualStyles;
+
 
 namespace DeOps.Interface.TLVex
 {
@@ -1165,16 +1167,16 @@ namespace DeOps.Interface.TLVex
 						{
 							if (index == 0 && level == 0)
 							{
-								RenderPlus(g, r.Left+lb+eb/2-4-hscrollBar.Value, r.Top+hb+eb/2-4, 8, 8, node);
+                                RenderPlus(g, r.Left + lb + 3 - hscrollBar.Value, r.Top + hb + 3, 16, 16, node);
 							}
 							else if (index == count-1)
 							{
 
-								RenderPlus(g, r.Left+lb+eb/2-4-hscrollBar.Value, r.Top+hb+itemheight*totalRend+eb/2-4, 8, 8, node);
+                                RenderPlus(g, r.Left + lb + 3 - hscrollBar.Value, r.Top + hb + itemheight * totalRend + 3, 16, 16, node);
 							}
 							else
 							{
-								RenderPlus(g, r.Left+lb+eb/2-4-hscrollBar.Value, r.Top+hb+itemheight*totalRend+eb/2-4, 8, 8, node);
+                                RenderPlus(g, r.Left + lb + 3 - hscrollBar.Value, r.Top + hb + itemheight * totalRend + 3, 16, 16, node);
 							}
 						}
 					}
@@ -1248,14 +1250,17 @@ namespace DeOps.Interface.TLVex
 				}
 		}
 
+        VisualStyleRenderer GlyphClosed = new VisualStyleRenderer(VisualStyleElement.TreeView.Glyph.Closed);
+        VisualStyleRenderer GlyphOpened = new VisualStyleRenderer(VisualStyleElement.TreeView.Glyph.Opened);
+
 		private void RenderPlus(Graphics g, int x, int y, int w, int h, TreeListNode node)
 		{
 			if (VisualStyles)
 			{
-				if (node.IsExpanded)
-					g.DrawImage(bmpMinus, x, y);
+                if (node.IsExpanded)
+                    GlyphOpened.DrawBackground(g, new Rectangle(x, y, w, h));
 				else
-					g.DrawImage(bmpPlus, x, y);
+					GlyphClosed.DrawBackground(g, new Rectangle(x, y, w, h));
 			}
 			else
 			{

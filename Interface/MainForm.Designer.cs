@@ -125,7 +125,7 @@ namespace DeOps.Interface
             this.CommandTree.GridLineColor = System.Drawing.Color.WhiteSmoke;
             this.CommandTree.HeaderMenu = null;
             this.CommandTree.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
-            this.CommandTree.ItemHeight = 16;
+            this.CommandTree.ItemHeight = 20;
             this.CommandTree.ItemMenu = null;
             this.CommandTree.LabelEdit = false;
             this.CommandTree.Location = new System.Drawing.Point(0, 0);
@@ -139,7 +139,6 @@ namespace DeOps.Interface
             this.CommandTree.StateImageList = null;
             this.CommandTree.TabIndex = 0;
             this.CommandTree.Text = "treeListViewEx1";
-            this.CommandTree.VisualStyles = false;
             this.CommandTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseDoubleClick);
             this.CommandTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseClick);
             this.CommandTree.SelectedItemChanged += new System.EventHandler(this.CommandTree_SelectedItemChanged);

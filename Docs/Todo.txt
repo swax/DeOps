@@ -2,7 +2,7 @@
 
 fresh test with sim running
 
-
+headers disappearing when items in listbox
 
 how to work with desynchs
 how does add/replace work with unlocked files
