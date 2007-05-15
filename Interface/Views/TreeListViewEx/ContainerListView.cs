@@ -1500,8 +1500,8 @@ namespace DeOps.Interface.TLVex
 			DrawBackground(g, r);
 			DrawRows(g, r);
 			DrawHeaders(g, r);
-			//DrawExtra(g, r);			
-			//DrawBorder(g, r);			
+			DrawExtra(g, r);			
+			DrawBorder(g, r);			
 		}
 
 		protected override void OnResize(EventArgs e)
@@ -2589,7 +2589,7 @@ namespace DeOps.Interface.TLVex
 						&& (tp_scr+(rowHeight*i)+2 < r.Top+r.Height-2-hsize))
 					{
 						g.Clip = new Region(new Rectangle(r.Left+2, r.Top+headerBuffer+2, r.Width-vsize-5, r.Height-hsize-5));
-
+                       
 						int rowSelWidth = (allColsWidth < (r.Width-5) || hscrollBar.Visible ? allColsWidth : r.Width-5);
 						if (!fullRowSelect)
 							rowSelWidth = iColWidth /* BMS 2003-05-24 */ -2;
@@ -2695,6 +2695,8 @@ namespace DeOps.Interface.TLVex
 					}
 				}
 			}
+
+            g.ResetClip();
 		}
 
 		protected virtual void DrawExtra(Graphics g, Rectangle r)
