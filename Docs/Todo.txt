@@ -6,6 +6,16 @@ how to work with desynchs
 how does add/replace work with unlocked files
 
 
+unlocking/locking 
+
+	test interface / pages updating
+	test locking / unlocking folders / subs
+	test complete locking / deleting of history file
+
+	mark existing files as unlocked on startup
+	hash existing files to see if modified as well
+		might not be good if old files put where new ones should be, user should be told of conflict
+
 conflicts 
 	
 	lock
@@ -34,7 +44,6 @@ in info title, if file doesnt exist show download hyper link
 if remote file exists mark as unlocked
 
 
-onclick open whatever close javascript menu
 carry over notes when accepting changes, edit notes box needs to be larger, convert \n to <br>
 show failed diffs
 get working with how visual studio does saves, crazy rename / delete / create process
@@ -45,6 +54,7 @@ delete history when file locked, or folder locked
 support visibility
 test creating temp files / dirs
 	
+use path class to check for invalid characters
 	
 explanation: in order for lowers to automatically inherit new versions, you must integrate their changes
 	

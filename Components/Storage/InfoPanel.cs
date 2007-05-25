@@ -390,7 +390,8 @@ namespace DeOps.Components.Storage
 
             Reset.Clear();
 
-            bool unlocked = CurrentItem.IsFlagged(StorageFlags.Unlocked);
+            bool unlocked = CurrentItem.IsFlagged(StorageFlags.Unlocked) ||
+                            (IsFile && Storages.IsHistoryUnlocked(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), CurrentFile.Archived));
             bool archived = CurrentItem.IsFlagged(StorageFlags.Archived);
             bool temp = IsFile ? file.Temp : folder.Temp;
 
@@ -411,16 +412,18 @@ namespace DeOps.Components.Storage
             if (!temp && Local)
             {
                 if(unlocked)
-                    Html.Replace("<?=image?>", "<a href='http://toggle_lock'><img border= 0 src='" + ImgUnlocked + "'></a>");
+                    Html.Replace("<?=image?>", "<a href='http://main.lock_complete'><img border= 0 src='" + ImgUnlocked + "'></a>");
                 else
-                    Html.Replace("<?=image?>", "<a href='http://toggle_lock'><img border= 0 src='" + ImgLocked + "'></a>");
+                    Html.Replace("<?=image?>", "<a href='http://main.unlock'><img border= 0 src='" + ImgLocked + "'></a>");
             }
             else
                 Html.Replace("<?=image?>", "");
 
 
             string displayName = CurrentItem.Name;
-            if (!IsFile)
+            if (IsFile)
+                displayName = "<a class=menulink href='http://main.open'>" + displayName + "</a>";
+            else
                 displayName += " Folder";
 
             if (unlocked)
@@ -435,8 +438,8 @@ namespace DeOps.Components.Storage
                 Html.Replace("<?=note?>", "Temporary - Will be deleted when containing folder is locked");
             else if (archived)
                 Html.Replace("<?=note?>", "Ghosted - A file that used to exist here, either moved or deleted");
-            else if(unlocked)
-                Html.Replace("<?=note?>", "Unlocked to <a href='http://open_folder'>here</a>");
+            else if (CurrentItem.IsFlagged(StorageFlags.Unlocked)) // if local unlocked
+                Html.Replace("<?=note?>", "Unlocked to <a href='http://main.openfolder'>here</a>");
             else
                 Html.Replace("<?=note?>", "");
 
@@ -479,11 +482,11 @@ namespace DeOps.Components.Storage
 
 
             if (CurrentItem.Revs == 0)
-                Html.Replace("<?=revs?>", Local ? "<a href='http://revs'>All</a> " : "All ");
+                Html.Replace("<?=revs?>", Local ? "<a href='http://main.revs'>All</a> " : "All ");
             else
             {
                 if (Local)
-                    Html.Replace("<?=revs?>", "<a href='http://revs'>Last " + CurrentItem.Revs.ToString() + "</a> ");
+                    Html.Replace("<?=revs?>", "<a href='http://main.revs'>Last " + CurrentItem.Revs.ToString() + "</a> ");
                 else
                     Html.Replace("<?=revs?>", "Last " + CurrentItem.Revs.ToString() + " ");
             }
@@ -559,8 +562,12 @@ namespace DeOps.Components.Storage
                 {
                     StorageFile file = (StorageFile)row.Item;
 
+                    string unlocked = "";
+                    if(Storages.IsFileUnlocked(row.ID, ParentView.ProjectID, CurrentFolder.GetPath(), file, false))
+                        unlocked = "<a href='http://change.lock." + row.ID.ToString() + "'><img border= 0 src='" + ImgUnlocked + "'></a>";
+
                     string id = "c" + i.ToString();
-                    html.Replace("<?=menu?>", MenuTemplate);
+                    html.Replace("<?=menu?>", MenuTemplate + unlocked);
                     html.Replace("<?=menu_id?>", id);
                     html.Replace("<?=menu_img_id?>", id + "img");
 
@@ -666,8 +673,12 @@ namespace DeOps.Components.Storage
                 {
                     StorageFile file = (StorageFile)row.Item;
 
+                    string unlocked = "";
+                    if (Storages.IsFileUnlocked(row.ID, ParentView.ProjectID, CurrentFolder.GetPath(), file, false))
+                        unlocked = "<a href='http://integrate.lock." + row.ID.ToString() + "'><img border= 0 src='" + ImgUnlocked + "'></a>";
+
                     string id = "i" + i.ToString();
-                    html.Replace("<?=menu?>", MenuTemplate);
+                    html.Replace("<?=menu?>", MenuTemplate + unlocked);
                     html.Replace("<?=menu_id?>", id);
                     html.Replace("<?=menu_img_id?>", id + "img");
 
@@ -729,7 +740,7 @@ namespace DeOps.Components.Storage
             <?=note?> 
             <?=edit?> 
              <?=next_history_row?>*/
-
+           
             /*
               menu
               menu_img_id
@@ -767,8 +778,14 @@ namespace DeOps.Components.Storage
                 {
                     StorageFile file = (StorageFile) item;
 
+                    string unlocked = "";
+                    if ((i == 1 && Storages.IsFileUnlocked(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, false)) ||
+                        Storages.IsFileUnlocked(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, true))
+                        unlocked = "<a href='http://history.lock." + i.ToString() + "'><img border= 0 src='" + ImgUnlocked + "'></a>";
+
+
                     string id = "h" + i.ToString();
-                    html.Replace("<?=menu?>", MenuTemplate);
+                    html.Replace("<?=menu?>", MenuTemplate + unlocked);
                     html.Replace("<?=menu_id?>", id);
                     html.Replace("<?=menu_img_id?>", id + "img");
 
@@ -829,7 +846,7 @@ namespace DeOps.Components.Storage
 
         private string GetMenuRow(string link, string text, string img)
         {
-            return "<tr><td style='font-size:12px;'><a class=menulink href='http://" + link + "'><img border=0 src='" + img + "' class=menurow> " + text + "</a></td></tr><?=next_menu_row?>";
+            return "<tr><td style='font-size:12px;'><a class=menulink href='http://" + link + "' onclick='Reset()'><img border=0 src='" + img + "' class=menurow> " + text + "</a></td></tr><?=next_menu_row?>";
         }
 
         private void AddReset(string id)
@@ -854,59 +871,98 @@ namespace DeOps.Components.Storage
             string[] parts = url.Split(new char[] { '.' });
 
 
-            if (parts[0] == "toggle_lock")
+            StorageFile file = null;
+            bool historyFile = false;
+
+            if (parts[0] == "main")
             {
-                if (IsFile)
-                    ParentView.ToggleFileLock(CurrentFile);
+                if(IsFile)
+                    file = (StorageFile) CurrentFile.Details;
 
-                else
-                    ParentView.ToggleFolderLock(CurrentFolder);
-            }
-
-            if (parts[0] == "open_folder")
-            {
-                 string windir = Environment.GetEnvironmentVariable("WINDIR");
-                System.Diagnostics.Process prc = new System.Diagnostics.Process();
-                prc.StartInfo.FileName = windir + @"\explorer.exe";
-                prc.StartInfo.Arguments = ParentView.Working.RootPath + CurrentFolder.GetPath();
-                prc.Start();
-            }
-
-            if (parts[0] == "revs")
-            {
-                string defaultRevs = (CurrentItem.Revs == 0) ? "all" : CurrentItem.Revs.ToString();
-
-                GetTextDialog dialog = new GetTextDialog("Edit Revisions", "Enter number of revisions to save. To save everything type 'all'", defaultRevs);
-
-                if (dialog.ShowDialog(this) == DialogResult.OK)
+                if (parts[1] == "lock_complete")
                 {
-                    int newRevs = 0;
+                    if (IsFile)
+                    {
+                        Storages.LockFileCompletely(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), CurrentFile.Archived);
 
-                    if (string.Compare(dialog.ResultBox.Text, "all", true) == 0)
-                        newRevs = 0;
+                        CurrentFile.Update();
+                        Refresh();
+                    }
                     else
                     {
-                        int tryRev;
-                        int.TryParse(dialog.ResultBox.Text, out tryRev);
+                        bool subs = false;
 
-                        if (tryRev != 0)
-                            newRevs = tryRev;
+                        if (CurrentFolder.Nodes.Count > 0)
+                            if (MessageBox.Show("Lock sub-folders as well?", "Lock", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                                subs = true;
+
+                        ParentView.LockFolder(CurrentFolder, subs);
                     }
+                }
 
-                    if(newRevs != CurrentItem.Revs)
-                        try
+                if (parts[1] == "unlock")
+                {
+                    if (IsFile)
+                    {
+                        ParentView.UnlockFile(CurrentFile);
+
+                        CurrentFile.Update();
+                        Refresh();
+                    }
+                    else
+                    {
+                        bool subs = false;
+
+                        if (CurrentFolder.Nodes.Count > 0)
+                            if (MessageBox.Show("Unlock sub-folders as well?", "Unlock", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                                subs = true;
+
+                        ParentView.UnlockFolder(CurrentFolder, subs);
+                    }
+                }
+
+                if (parts[1] == "openfolder")
+                {
+                    string windir = Environment.GetEnvironmentVariable("WINDIR");
+                    System.Diagnostics.Process prc = new System.Diagnostics.Process();
+                    prc.StartInfo.FileName = windir + @"\explorer.exe";
+                    prc.StartInfo.Arguments = Storages.GetRootPath(ParentView.DhtID, ParentView.ProjectID) + "\\" + CurrentFolder.GetPath();
+                    prc.Start();
+                }
+
+                if (parts[1] == "revs")
+                {
+                    string defaultRevs = (CurrentItem.Revs == 0) ? "all" : CurrentItem.Revs.ToString();
+
+                    GetTextDialog dialog = new GetTextDialog("Edit Revisions", "Enter number of revisions to save. To save everything type 'all'", defaultRevs);
+
+                    if (dialog.ShowDialog(this) == DialogResult.OK)
+                    {
+                        int newRevs = 0;
+
+                        if (string.Compare(dialog.ResultBox.Text, "all", true) == 0)
+                            newRevs = 0;
+                        else
                         {
-                            ParentView.Working.SetRevs(CurrentPath, IsFile, (byte)newRevs);
+                            int tryRev;
+                            int.TryParse(dialog.ResultBox.Text, out tryRev);
+
+                            if (tryRev != 0)
+                                newRevs = tryRev;
                         }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(ex.Message);
-                        }
+
+                        if (newRevs != CurrentItem.Revs)
+                            try
+                            {
+                                ParentView.Working.SetRevs(CurrentPath, IsFile, (byte)newRevs);
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show(ex.Message);
+                            }
+                    }
                 }
             }
-
-
-            StorageFile file = null;
 
             if (parts[0] == "change")
             {
@@ -917,14 +973,6 @@ namespace DeOps.Components.Storage
                 if(parts[1] == "add")
                 {
                     ParentView.Working.TrackFile(CurrentFolder.GetPath(), file);
-                }
-
-                if (parts[1] == "open")
-                {
-                    string finalpath = Storages.UnlockFile(id, ParentView.ProjectID, CurrentFolder.GetPath() + "\\" + file.Name, file);
-
-                    if (finalpath != null && File.Exists(finalpath))
-                        System.Diagnostics.Process.Start(finalpath);
                 }
 
                 if (parts[1] == "diff")
@@ -964,14 +1012,6 @@ namespace DeOps.Components.Storage
 
                 file = (StorageFile) CurrentIntegrated[id];
 
-                if (parts[1] == "open")
-                {
-                    string finalpath = Storages.UnlockFile(id, ParentView.ProjectID, CurrentFolder.GetPath() + "\\" + file.Name, file);
-
-                    if (finalpath != null && File.Exists(finalpath))
-                        System.Diagnostics.Process.Start(finalpath);
-                }
-
                 if (parts[1] == "diff")
                 {
 
@@ -988,35 +1028,6 @@ namespace DeOps.Components.Storage
             {
                 int index = int.Parse(parts[2]) - 1;
                 file = (StorageFile)History[index];
-
-
-                if (parts[1] == "open")
-                {
-                    // current file
-                    if (file == CurrentFile.Details)
-                    {
-                        ParentView.OpenFile(CurrentFile);
-                        e.Cancel = true;
-                        return;
-                    }
-
-                    // archived file
-                    string name = file.Name;
-
-                    int pos = name.LastIndexOf('.');
-                    if (pos == -1)
-                        pos = name.Length;
-
-                    name = name.Insert(pos, "-" + Utilities.BytestoHex(file.InternalHash, 0, 3, false));
-
-                    string path = CurrentFolder.GetPath() + "\\.history\\" + name;
-
-                    string finalpath = Storages.UnlockFile(ParentView.DhtID, ParentView.ProjectID, path, file);
-
-
-                    if (finalpath != null && File.Exists(finalpath))
-                        System.Diagnostics.Process.Start(finalpath);
-                }
 
                 if (parts[1] == "diff")
                 {
@@ -1046,6 +1057,25 @@ namespace DeOps.Components.Storage
 
             if (file != null)
             {
+                if (parts[1] == "open")
+                {
+                    string finalpath = Storages.UnlockFile(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, historyFile);
+
+                    if (finalpath != null && File.Exists(finalpath))
+                        System.Diagnostics.Process.Start(finalpath);
+
+                    CurrentFile.Update();
+                    Refresh();
+                }
+
+                if (parts[1] == "lock")
+                {
+                    Storages.LockFile(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, historyFile);
+
+                    CurrentFile.Update();
+                    Refresh();
+                }
+
                 if (parts[1] == "download")
                 {
                     Storages.DownloadFile(ParentView.DhtID, file);

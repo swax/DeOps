@@ -150,7 +150,7 @@ namespace DeOps.Components.Storage
             }
         }
 
-        private void StartFileWatcher()
+        internal void StartFileWatcher()
         {
             if (FileWatcher != null)
             {
@@ -172,7 +172,7 @@ namespace DeOps.Components.Storage
             FileWatcher.EnableRaisingEvents = true;
         }
 
-        private void StartFolderWatcher()
+        internal void StartFolderWatcher()
         {
             if (FolderWatcher != null)
             {
@@ -606,70 +606,17 @@ namespace DeOps.Components.Storage
             }
         }
 
-
-
-        internal void LockFile(string dirpath, LocalFile file)
-        {
-            // delete file
-            try
-            {
-                string path = RootPath + dirpath + "\\" + file.Info.Name;
-                if (File.Exists(path))
-                    File.Delete(path);
-            }
-            catch { }
-
-            // remove flag
-            file.Info.RemoveFlag(StorageFlags.Unlocked);
-
-            Storages.CallFileUpdate(ProjectID, dirpath, file.Info.UID, WorkingChange.Updated);
-        }
-
         internal void UnlockFile(string dirpath, LocalFile file)
         {
-            // create directory
-            Directory.CreateDirectory(RootPath + dirpath);
-
-            string finalpath = Storages.UnlockFile(Core.LocalDhtID, ProjectID, dirpath + "\\" + file.Info.Name, file.Info);
+            string finalpath = Storages.UnlockFile(Core.LocalDhtID, ProjectID, dirpath, file.Info, false);
 
             // set flag
             if (File.Exists(finalpath))
             {
-                Storages.CallFileUpdate(ProjectID, dirpath, file.Info.UID, WorkingChange.Updated);
-
                 // set watch on root path
                 StartFileWatcher();
                 StartFolderWatcher();
             }
-        }
-
-        internal void ToggleFileLock(string dirpath, string filename)
-        {
-            LocalFolder folder = GetLocalFolder(dirpath);
-            LocalFile file = folder.GetFile(filename);
-
-            if (file == null)
-                return;
-
-            if (file.Info.IsFlagged(StorageFlags.Unlocked))
-                LockFile(dirpath, file);
-            else
-                UnlockFile(dirpath, file);
-
-            Storages.CallFileUpdate(ProjectID, dirpath, file.Info.UID, WorkingChange.Updated);
-        }
-
-        internal void ToggleFolderLock(string dirpath, bool subs)
-        {
-            LocalFolder folder = GetLocalFolder(dirpath);
-
-            if (folder == null)
-                return;
-
-            if (folder.Info.IsFlagged(StorageFlags.Unlocked))
-                LockFolder(dirpath, folder, subs);
-            else
-                UnlockFolder(dirpath, folder, subs);
         }
 
         internal void LockAll()
@@ -680,7 +627,7 @@ namespace DeOps.Components.Storage
         internal void LockFolder(string dirpath, LocalFolder folder, bool subs)
         {
             foreach (LocalFile file in folder.Files.Values)
-                LockFile(dirpath, file);
+                Storages.LockFileCompletely(Core.LocalDhtID, ProjectID, dirpath, file.Archived);
 
             folder.Info.RemoveFlag(StorageFlags.Unlocked);
 
@@ -700,34 +647,6 @@ namespace DeOps.Components.Storage
             catch { }
 
             Storages.CallFolderUpdate(ProjectID, Utilities.StripOneLevel(dirpath), folder.Info.UID, WorkingChange.Updated);
-        }
-
-        internal void UnlockFolder(string dirpath, LocalFolder folder, bool subs)
-        {
-            Directory.CreateDirectory(RootPath + dirpath);
-
-            if (Directory.Exists(RootPath + dirpath))
-            {
-                // set flag
-                folder.Info.SetFlag(StorageFlags.Unlocked);
-
-                // unlock files
-                foreach (LocalFile file in folder.Files.Values)
-                    if (!file.Info.IsFlagged(StorageFlags.Archived))
-                        UnlockFile(dirpath, file);
-
-                // unlock subfolders
-                if (subs)
-                    foreach (LocalFolder subfolder in folder.Folders.Values)
-                        if (!subfolder.Info.IsFlagged(StorageFlags.Archived))
-                            UnlockFolder(dirpath + "\\" + subfolder.Info.Name, subfolder, subs);
-
-                // set watch on root path
-                StartFileWatcher();
-                StartFolderWatcher();
-
-                Storages.CallFolderUpdate(ProjectID, Utilities.StripOneLevel(dirpath), folder.Info.UID, WorkingChange.Updated);
-            }
         }
 
 

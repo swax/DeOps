@@ -134,8 +134,12 @@ namespace DeOps.Interface
         {
             foreach (Control item in InternalView.Controls)
                 if (item is ViewShell)
+                {
                     if (!((ViewShell)item).Fin())
                         return false;
+
+                    item.Dispose();
+                }
 
             InternalView.Controls.Clear();
             return true;

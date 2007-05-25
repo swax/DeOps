@@ -343,7 +343,7 @@
       <DependentUpon>ComposeMail.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Mail\MailView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Mail\MailView.Designer.cs">
       <DependentUpon>MailView.cs</DependentUpon>
@@ -466,7 +466,7 @@
       <DependentUpon>NetView.cs</DependentUpon>
     </Compile>
     <Compile Include="Simulator\SimForm.cs">
-      <SubType>Component</SubType>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Simulator\SimForm.Designer.cs">
       <DependentUpon>SimForm.cs</DependentUpon>
@@ -522,8 +522,6 @@
     <None Include="Graphics\open.gif" />
     <None Include="Graphics\diff.gif" />
     <None Include="Graphics\archfolder.png" />
-    <None Include="Graphics\changes\higher.png" />
-    <None Include="Graphics\changes\lower.png" />
     <None Include="Graphics\storage\download.gif" />
     <None Include="Graphics\storage\dl_cancel.gif" />
     <None Include="Graphics\storage\downloadCancel.gif" />
@@ -544,8 +542,6 @@
     <Content Include="rank.ico" />
     <None Include="Graphics\leftarrow.png" />
     <None Include="Graphics\rightarrow.png" />
-    <None Include="Graphics\tv_plus.bmp" />
-    <None Include="Graphics\tv_minus.bmp" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

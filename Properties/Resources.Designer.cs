@@ -80,19 +80,5 @@ namespace DeOps.Properties {
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
-        
-        internal static System.Drawing.Bitmap tv_minus {
-            get {
-                object obj = ResourceManager.GetObject("tv_minus", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        internal static System.Drawing.Bitmap tv_plus {
-            get {
-                object obj = ResourceManager.GetObject("tv_plus", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
     }
 }

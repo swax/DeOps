@@ -133,8 +133,6 @@ namespace DeOps.Interface.TLVex
 		protected ListDictionary pmRects;
 		protected ListDictionary nodeRowRects;
 
-		protected Bitmap bmpMinus, bmpPlus;
-
 		private TreeListNode curNode = null;
 		private TreeListNode firstSelectedNode = null;
 		public TreeListNode virtualParent = null;
@@ -164,13 +162,6 @@ namespace DeOps.Interface.TLVex
 
 			nodeRowRects = new ListDictionary();
 			pmRects = new ListDictionary();	
-
-			// Use reflection to load the
-			// embedded bitmaps for the
-			// styles plus and minus icons
-            bmpMinus = DeOps.Properties.Resources.tv_minus;
-            bmpPlus = DeOps.Properties.Resources.tv_plus;
-
 		}
 		#endregion
 

@@ -1072,8 +1072,13 @@ namespace DeOps.Components.Storage
             {
                 if (!node.Temp)
                 {
+                    if(node.Details.IsFlagged(StorageFlags.Unlocked))
+                        menu.MenuItems.Add(new FolderMenuItem("Lock", node, Folder_Lock));
+                    else
+                        menu.MenuItems.Add(new FolderMenuItem("Unlock", node, Folder_Unlock));
+
                     string toggle = node.Details.IsFlagged(StorageFlags.Unlocked) ? "Lock" : "Unlock";
-                    menu.MenuItems.Add(new FolderMenuItem(toggle, node, Folder_ToggleLock));
+                    
                 }
                 else
                     menu.MenuItems.Add(new FolderMenuItem("Add to Storage", node, Folder_Add)); // remove in web interface\
@@ -1130,13 +1135,17 @@ namespace DeOps.Components.Storage
             if (IsLocal && !clicked.Temp)
                 if (clicked.IsFolder)
                 {
-                    string toggle = clicked.Folder.Details.IsFlagged(StorageFlags.Unlocked) ? "Lock" : "Unlock";
-                    menu.MenuItems.Add(new FolderMenuItem(toggle, clicked.Folder, Folder_ToggleLock));
+                    if(clicked.Folder.Details.IsFlagged(StorageFlags.Unlocked))
+                        menu.MenuItems.Add(new FolderMenuItem("Lock", clicked.Folder, Folder_Lock));
+                    else
+                        menu.MenuItems.Add(new FolderMenuItem("Unlock", clicked.Folder, Folder_Unlock));       
                 }
                 else if (clicked.Details != null)
                 {
-                    string toggle = clicked.Details.IsFlagged(StorageFlags.Unlocked) ? "Lock" : "Unlock";
-                    menu.MenuItems.Add(new FileMenuItem(toggle, clicked, File_ToggleLock));
+                    if(clicked.IsUnlocked())
+                        menu.MenuItems.Add(new FileMenuItem("Lock", clicked, File_Lock));
+                    else
+                        menu.MenuItems.Add(new FileMenuItem("Unlock", clicked, File_Unlock));
                 }
 
             // details
@@ -1290,26 +1299,44 @@ namespace DeOps.Components.Storage
             }
         }
 
-        void File_ToggleLock(object sender, EventArgs e)
+        void File_Lock(object sender, EventArgs e)
         {
             FileMenuItem item = sender as FileMenuItem;
 
             if (item == null)
                 return;
 
-            ToggleFileLock(item.File);
+            LockFile(item.File);
+
+            
         }
 
-        internal void ToggleFileLock(FileItem file)
+        void File_Unlock(object sender, EventArgs e)
         {
-            try
-            {
-                Working.ToggleFileLock(file.Folder.GetPath(), file.Details.Name);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error: " + ex.Message);
-            }
+            FileMenuItem item = sender as FileMenuItem;
+
+            if (item == null)
+                return;
+
+            UnlockFile(item.File);
+        }
+
+        internal string UnlockFile(FileItem file)
+        {
+            string path = Storages.UnlockFile(DhtID, ProjectID, file.Folder.GetPath(), (StorageFile)file.Details, false);
+
+            file.Update();
+            SelectedInfo.Refresh();
+
+            return path;
+        }
+
+        internal void LockFile(FileItem file)
+        {
+            Storages.LockFileCompletely(DhtID, ProjectID, file.Folder.GetPath(), file.Archived);
+
+            file.Update();
+            SelectedInfo.Refresh();
         }
 
         void File_Details(object sender, EventArgs e)
@@ -1428,37 +1455,99 @@ namespace DeOps.Components.Storage
             }
         }
 
-        internal void Folder_ToggleLock(object sender, EventArgs e)
+        internal void Folder_Lock(object sender, EventArgs e)
         {
             FolderMenuItem item = sender as FolderMenuItem;
 
             if (item == null)
                 return;
 
-            ToggleFolderLock(item.Folder);
-
-            
-        }
-
-        internal void ToggleFolderLock(FolderNode folder)
-        {
             bool subs = false;
 
-            if (folder.Nodes.Count > 0)
-            {
-                string toggle = folder.Details.IsFlagged(StorageFlags.Unlocked) ? "Lock" : "Unlock";
-
-                if (MessageBox.Show(toggle + " sub-folders as well?", toggle, MessageBoxButtons.YesNo) == DialogResult.Yes)
+            if (item.Folder.Nodes.Count > 0)
+                if (MessageBox.Show("Lock sub-folders as well?", "Lock", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     subs = true;
+
+            LockFolder(item.Folder, subs);
+
+            SelectFolder(SelectedFolder);
+        }
+
+        internal void Folder_Unlock(object sender, EventArgs e)
+        {
+            FolderMenuItem item = sender as FolderMenuItem;
+
+            if (item == null)
+                return;
+            
+            bool subs = false;
+
+            if (item.Folder.Nodes.Count > 0)
+                if (MessageBox.Show("Unlock sub-folders as well?", "Unlock", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                    subs = true;
+
+            UnlockFolder(item.Folder, subs);
+
+            SelectFolder(SelectedFolder);
+
+            // set watch unlocked directories for changes
+            if (Working != null)
+            {
+                Working.StartFileWatcher();
+                Working.StartFolderWatcher();
             }
+        }
+
+        internal void LockFolder(FolderNode folder, bool subs)
+        {
+            string path = folder.GetPath();
+
+            foreach (FileItem file in folder.Files.Values)
+                if(!file.Temp)
+                    Storages.LockFileCompletely(DhtID, ProjectID, path, file.Archived);
+
+            folder.Details.RemoveFlag(StorageFlags.Unlocked);
+            folder.Update();
+
+            if (subs)
+                foreach (FolderNode subfolder in folder.Folders.Values)
+                    if (!subfolder.Temp)
+                        LockFolder(subfolder, subs);
 
             try
             {
-                Working.ToggleFolderLock(folder.GetPath(), subs);
+                path = Storages.GetRootPath(DhtID, ProjectID) + path;
+
+                if (Directory.Exists(path) &&
+                    Directory.GetDirectories(path).Length == 0 &&
+                    Directory.GetFiles(path).Length == 0)
+                    Directory.Delete(path, true);
             }
-            catch (Exception ex)
+            catch { }
+        }
+
+        internal void UnlockFolder(FolderNode folder, bool subs)
+        {
+            string path = folder.GetPath();
+            string root = Storages.GetRootPath(DhtID, ProjectID);
+
+            Directory.CreateDirectory(root + path);
+
+            if (Directory.Exists(root + path))
             {
-                MessageBox.Show("Error: " + ex.Message);
+                // set flag
+                folder.Details.SetFlag(StorageFlags.Unlocked);
+
+                // unlock files
+                foreach (FileItem file in folder.Files.Values)
+                    if (!file.Temp && !file.Details.IsFlagged(StorageFlags.Archived))
+                        Storages.UnlockFile(DhtID, ProjectID, path, (StorageFile)file.Details, false);
+
+                // unlock subfolders
+                if (subs)
+                    foreach (FolderNode subfolder in folder.Folders.Values)
+                        if (!subfolder.Details.IsFlagged(StorageFlags.Archived))
+                            UnlockFolder(subfolder, subs);
             }
         }
 
@@ -1790,10 +1879,7 @@ namespace DeOps.Components.Storage
                 {
                     foreach (ulong id in file.Changes.Keys)
                         if (file.Changes[id] == file.Details)
-                        {
-                            path = Storages.UnlockFile(id, ProjectID, file.GetPath(), (StorageFile)file.Details);
-                            file.Update();
-                        }
+                            path = UnlockFile(file);
                 }
 
                 // local temp file
@@ -1803,21 +1889,7 @@ namespace DeOps.Components.Storage
 
             // non temp file
             else
-            {
-                // local file
-                if (Working != null)
-                {
-                    if (!file.Details.IsFlagged(StorageFlags.Unlocked))
-                        Working.ToggleFileLock(file.Folder.GetPath(), file.Details.Name);
-
-                    path = Working.RootPath + file.Folder.GetPath() + "\\" + file.Details.Name;
-                }
-
-                // non-local file
-                else
-                    path = Storages.UnlockFile(DhtID, ProjectID, file.GetPath(), (StorageFile)file.Details);
-
-            }
+                path = UnlockFile(file);
 
             if (path != null && File.Exists(path))
                 Process.Start(path);
@@ -1943,7 +2015,7 @@ namespace DeOps.Components.Storage
                 StorageFile file = (StorageFile) DragSelect.Details;
 
                 if (e.Action == DragAction.Drop && Storages.FileExists(file))
-                    Storages.UnlockFile(DhtID, ProjectID, DragSelect.GetPath(), file);
+                    UnlockFile(DragSelect);
                 
                 DragSelect = null;
                 Dragging = false;
@@ -2192,7 +2264,6 @@ namespace DeOps.Components.Storage
         {
             Text = Details.Name;
 
-
             if (Details.IsFlagged(StorageFlags.Modified))
                 ForeColor = Color.DarkRed;
             else if (Temp || Details.IsFlagged(StorageFlags.Archived))
@@ -2200,7 +2271,7 @@ namespace DeOps.Components.Storage
             else
                 ForeColor = Color.Black;
 
-            if (Details.IsFlagged(StorageFlags.Unlocked))
+            if (IsUnlocked())
                 this.Font = View.BoldFont;
             else
                 this.Font = View.RegularFont;
@@ -2210,6 +2281,12 @@ namespace DeOps.Components.Storage
 
             if (!Temp)
                 SubItems[1].Text = Details.Date.ToString();
+        }
+
+        internal bool IsUnlocked()
+        {
+            return Details.IsFlagged(StorageFlags.Unlocked) ||
+                View.Storages.IsHistoryUnlocked(View.DhtID, View.ProjectID, Folder.GetPath(), Archived);
         }
 
         internal string GetPath()

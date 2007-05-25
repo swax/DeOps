@@ -42,8 +42,10 @@ namespace DeOps.Interface
             if (!Shell.Fin())
                 return false;
 
+  
             Close();
             Main.ExternalViews.Remove(this);
+            Shell.Dispose();
 
             return true;
         }

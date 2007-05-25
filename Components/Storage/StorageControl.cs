@@ -1181,7 +1181,44 @@ namespace DeOps.Components.Storage
             return Core.Transfers.GetStatus(ComponentID.Storage, file.Hash, file.Size);
         }
 
-        internal string UnlockFile(ulong dht, uint project, string path, StorageFile file)
+        internal bool IsFileUnlocked(ulong dht, uint project, string path, StorageFile file, bool history)
+        {
+            string finalpath = GetRootPath(dht, project) + path;
+
+            if (history)
+                finalpath += "\\.history\\" + GetHistoryName(file);
+            else
+                finalpath += "\\" + file.Name;
+
+            return File.Exists(finalpath);
+        }
+
+        internal bool IsHistoryUnlocked(ulong dht, uint project, string path, LinkedList<StorageItem> archived)
+        {
+            string finalpath = GetRootPath(dht, project) + path + "\\.history\\";
+
+            foreach (StorageFile file in archived)
+                if (File.Exists(finalpath + GetHistoryName(file)))
+                    return true;
+
+            return false;
+        }
+
+        private string GetHistoryName(StorageFile file)
+        {
+            string name = file.Name;
+
+            int pos = name.LastIndexOf('.');
+            if (pos == -1)
+                pos = name.Length;
+
+            name = name.Insert(pos, "-" + Utilities.BytestoHex(file.InternalHash, 0, 3, false));
+
+            return name;
+        }
+
+
+        internal string UnlockFile(ulong dht, uint project, string path, StorageFile file, bool history)
         {
             // path needs to include name, because for things like history files name is diff than file.Info
 
@@ -1229,8 +1266,74 @@ namespace DeOps.Components.Storage
                 info.IsReadOnly = true;
             }
 
+            // local
+            else if (Working.ContainsKey(project) )
+            {
+                // let caller trigger event because certain ops unlock multiple files
+
+                // set watch on root path
+                Working[project].StartFileWatcher();
+                Working[project].StartFolderWatcher();
+            }
+
             return finalpath;
         }
+
+        internal void LockFileCompletely(ulong dht, uint project, string path,LinkedList<StorageItem> archived)
+        {
+            StorageFile main = (StorageFile) archived.First.Value;
+            
+            string dirpath = GetRootPath(dht, project) + path;
+
+            // delete main file
+            string finalpath = dirpath + "\\" + main.Name;
+
+            if (File.Exists(finalpath))
+                File.Delete(finalpath);
+
+            main.RemoveFlag(StorageFlags.Unlocked);
+
+
+            // delete archived files
+            finalpath = dirpath + "\\.history\\";
+
+            foreach (StorageFile file in archived)
+            {
+                string historyPath = finalpath + GetHistoryName(file);
+
+                if (File.Exists(historyPath))
+                    File.Delete(finalpath);
+
+                file.RemoveFlag(StorageFlags.Unlocked);
+            }
+
+            // delete history folder
+            try
+            {
+                if (Directory.Exists(finalpath) &&
+                    Directory.GetDirectories(finalpath).Length == 0 &&
+                    Directory.GetFiles(finalpath).Length == 0)
+                    Directory.Delete(finalpath, true);
+            }
+            catch { }
+        }
+
+
+        internal void LockFile(ulong dht, uint project, string path, StorageFile file, bool history)
+        {
+            string finalpath = GetRootPath(dht, project) + path;
+
+            if (history)
+                finalpath += "\\.history\\" + GetHistoryName(file);
+            else
+                finalpath += "\\" + file.Name;
+
+            if (File.Exists(finalpath))
+                File.Delete(finalpath);
+
+            file.RemoveFlag(StorageFlags.Unlocked);
+        }
+
 
         internal StorageActions ItemDiff(StorageItem item, StorageItem original)
         {
