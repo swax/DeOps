@@ -606,19 +606,6 @@ namespace DeOps.Components.Storage
             }
         }
 
-        internal void UnlockFile(string dirpath, LocalFile file)
-        {
-            string finalpath = Storages.UnlockFile(Core.LocalDhtID, ProjectID, dirpath, file.Info, false);
-
-            // set flag
-            if (File.Exists(finalpath))
-            {
-                // set watch on root path
-                StartFileWatcher();
-                StartFolderWatcher();
-            }
-        }
-
         internal void LockAll()
         {
             LockFolder("", RootFolder, true);
@@ -626,8 +613,10 @@ namespace DeOps.Components.Storage
 
         internal void LockFolder(string dirpath, LocalFolder folder, bool subs)
         {
+            List<LockError> errors = new List<LockError>();
+
             foreach (LocalFile file in folder.Files.Values)
-                Storages.LockFileCompletely(Core.LocalDhtID, ProjectID, dirpath, file.Archived);
+                Storages.LockFileCompletely(Core.LocalDhtID, ProjectID, dirpath, file.Archived, errors);
 
             folder.Info.RemoveFlag(StorageFlags.Unlocked);
 

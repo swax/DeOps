@@ -409,7 +409,7 @@ namespace DeOps.Components.Storage
             <?=history?>
             */
 
-            if (!temp && Local)
+            if (!temp)
             {
                 if(unlocked)
                     Html.Replace("<?=image?>", "<a href='http://main.lock_complete'><img border= 0 src='" + ImgUnlocked + "'></a>");
@@ -883,10 +883,7 @@ namespace DeOps.Components.Storage
                 {
                     if (IsFile)
                     {
-                        Storages.LockFileCompletely(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), CurrentFile.Archived);
-
-                        CurrentFile.Update();
-                        Refresh();
+                        ParentView.LockFile(CurrentFile);
                     }
                     else
                     {
@@ -897,6 +894,9 @@ namespace DeOps.Components.Storage
                                 subs = true;
 
                         ParentView.LockFolder(CurrentFolder, subs);
+
+                        ParentView.RefreshFileList();
+                        Refresh();
                     }
                 }
 
@@ -918,6 +918,9 @@ namespace DeOps.Components.Storage
                                 subs = true;
 
                         ParentView.UnlockFolder(CurrentFolder, subs);
+
+                        ParentView.RefreshFileList();
+                        Refresh();
                     }
                 }
 
@@ -1028,6 +1031,9 @@ namespace DeOps.Components.Storage
             {
                 int index = int.Parse(parts[2]) - 1;
                 file = (StorageFile)History[index];
+
+                if (index != 0)
+                    historyFile = true;
 
                 if (parts[1] == "diff")
                 {

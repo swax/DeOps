@@ -237,7 +237,7 @@ namespace DeOps.Components.Storage
             else
             {
                 SelectedFolder.EnsureVisible();
-                SelectFolder(SelectedFolder);
+                RefreshFileList();
             }
 
             
@@ -854,7 +854,7 @@ namespace DeOps.Components.Storage
                         if ((treeParent != null && treeParent == SelectedFolder) ||
                             (treeFolder != null && treeFolder == SelectedFolder)) // re-naming un-tracked
                         {
-                            SelectFolder(SelectedFolder);
+                            RefreshFileList();
                             return;
                         }
                     }
@@ -909,7 +909,7 @@ namespace DeOps.Components.Storage
                 }
 
                 if (treeParent != null && treeParent == SelectedFolder)
-                    SelectFolder(SelectedFolder);
+                    RefreshFileList();
 
                 FolderTreeView.Invalidate();
 
@@ -1067,22 +1067,16 @@ namespace DeOps.Components.Storage
 
             ContextMenu menu = new ContextMenu();
 
-
-            if (IsLocal)
+            if (!node.Temp)
             {
-                if (!node.Temp)
-                {
-                    if(node.Details.IsFlagged(StorageFlags.Unlocked))
-                        menu.MenuItems.Add(new FolderMenuItem("Lock", node, Folder_Lock));
-                    else
-                        menu.MenuItems.Add(new FolderMenuItem("Unlock", node, Folder_Unlock));
-
-                    string toggle = node.Details.IsFlagged(StorageFlags.Unlocked) ? "Lock" : "Unlock";
-                    
-                }
+                if (node.Details.IsFlagged(StorageFlags.Unlocked))
+                    menu.MenuItems.Add(new FolderMenuItem("Lock", node, Folder_Lock));
                 else
-                    menu.MenuItems.Add(new FolderMenuItem("Add to Storage", node, Folder_Add)); // remove in web interface\
+                    menu.MenuItems.Add(new FolderMenuItem("Unlock", node, Folder_Unlock));
             }
+            else
+                menu.MenuItems.Add(new FolderMenuItem("Add to Storage", node, Folder_Add)); // remove in web interface\
+
 
             if (node != RootFolder && !node.Temp)
                 menu.MenuItems.Add(new FolderMenuItem("Details", node, Folder_Details));
@@ -1096,7 +1090,7 @@ namespace DeOps.Components.Storage
 
                 menu.MenuItems.Add(new FolderMenuItem("Delete", node, Folder_Delete));
             }
-            
+
 
             if (menu.MenuItems.Count > 0)
                 menu.Show(FolderTreeView, e.Location);
@@ -1132,7 +1126,7 @@ namespace DeOps.Components.Storage
                 menu.MenuItems.Add(new FileMenuItem("Add to Storage", clicked, File_Add)); // remove in web interface\
 
             // lock
-            if (IsLocal && !clicked.Temp)
+            if (!clicked.Temp)
                 if (clicked.IsFolder)
                 {
                     if(clicked.Folder.Details.IsFlagged(StorageFlags.Unlocked))
@@ -1307,8 +1301,6 @@ namespace DeOps.Components.Storage
                 return;
 
             LockFile(item.File);
-
-            
         }
 
         void File_Unlock(object sender, EventArgs e)
@@ -1333,7 +1325,15 @@ namespace DeOps.Components.Storage
 
         internal void LockFile(FileItem file)
         {
-            Storages.LockFileCompletely(DhtID, ProjectID, file.Folder.GetPath(), file.Archived);
+            List<LockError> errors = new List<LockError>();
+
+            Storages.LockFileCompletely(DhtID, ProjectID, file.Folder.GetPath(), file.Archived, errors);
+
+            if (errors.Count > 0)
+            {
+                LockMessage message = new LockMessage(LockMessageMode.LockError, errors);
+                message.ShowDialog(this);
+            }
 
             file.Update();
             SelectedInfo.Refresh();
@@ -1470,7 +1470,7 @@ namespace DeOps.Components.Storage
 
             LockFolder(item.Folder, subs);
 
-            SelectFolder(SelectedFolder);
+            RefreshFileList();
         }
 
         internal void Folder_Unlock(object sender, EventArgs e)
@@ -1488,7 +1488,7 @@ namespace DeOps.Components.Storage
 
             UnlockFolder(item.Folder, subs);
 
-            SelectFolder(SelectedFolder);
+            RefreshFileList();
 
             // set watch unlocked directories for changes
             if (Working != null)
@@ -1500,11 +1500,13 @@ namespace DeOps.Components.Storage
 
         internal void LockFolder(FolderNode folder, bool subs)
         {
+            List<LockError> errors = new List<LockError>();
+
             string path = folder.GetPath();
 
             foreach (FileItem file in folder.Files.Values)
                 if(!file.Temp)
-                    Storages.LockFileCompletely(DhtID, ProjectID, path, file.Archived);
+                    Storages.LockFileCompletely(DhtID, ProjectID, path, file.Archived, errors);
 
             folder.Details.RemoveFlag(StorageFlags.Unlocked);
             folder.Update();
@@ -1537,6 +1539,7 @@ namespace DeOps.Components.Storage
             {
                 // set flag
                 folder.Details.SetFlag(StorageFlags.Unlocked);
+                folder.Update();
 
                 // unlock files
                 foreach (FileItem file in folder.Files.Values)
@@ -1580,7 +1583,7 @@ namespace DeOps.Components.Storage
 
                     // if selected folder / selected items / info panel in uid map - refresh
                     if (RescanFolderMap.ContainsKey(SelectedFolder.Details.UID))
-                        SelectFolder(SelectedFolder);
+                        RefreshFileList();
 
                     foreach (FileItem item in FileListView.Items)
                         if (item.IsFolder && RescanFolderMap.ContainsKey(item.Details.UID))
@@ -1785,7 +1788,7 @@ namespace DeOps.Components.Storage
         {
             splitContainer1.Panel1Collapsed = !FoldersButton.Checked;
 
-            SelectFolder(SelectedFolder); // puts .. dir if needed
+            RefreshFileList(); // puts .. dir if needed
         }
 
 
@@ -2021,6 +2024,11 @@ namespace DeOps.Components.Storage
                 Dragging = false;
             }
         }
+
+        internal void RefreshFileList()
+        {
+            SelectFolder(SelectedFolder);
+        }
     }
 
     internal class FolderNode : TreeListNode 
@@ -2088,6 +2096,9 @@ namespace DeOps.Components.Storage
 
 
             UpdateOverlay();
+
+            if(TreeList != null)
+                TreeList.Invalidate();
         }
 
         internal string GetPath()

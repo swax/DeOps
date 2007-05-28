@@ -1,26 +1,20 @@
 
-
-fresh test with sim running
-
 how to work with desynchs
 how does add/replace work with unlocked files
 
+how to delete readonly files
 
 unlocking/locking 
 
-	test interface / pages updating
-	test locking / unlocking folders / subs
-	test complete locking / deleting of history file
-
-	mark existing files as unlocked on startup
+	maybe on startup everything is marked as locked, even if exists, forcing unlock to choke and user has to make decision
 	hash existing files to see if modified as well
 		might not be good if old files put where new ones should be, user should be told of conflict
 
-conflicts 
-	
 	lock
+	
 		aggregate errors
-		delete history items
+		lock as much as we can, override file.delelete / directory.delete to aggregate errors without throwing
+		dont delete whole folder, log temps
 		report error files in list box
 			1. temp file warnings, delete / ignore / cancel
 			2. unable to delete error, suggest user has files open
@@ -28,21 +22,18 @@ conflicts
 				
 	unlock
 		aggregate warnings of files that exist, display in listbox
+		also note files that dont exist in cache but should be unlocked
 		Overwrite / Use (mark to be hashed) / Cancel
+
 
 	check if file / dir has same name when renaming / creating in storage system	
 
-	lock status - check history as well for info panel and list view
-	
 	after hash
 		if file modified, and hash is equal to unmodified, remove modified flag
 	
 
 
 double click open local temp files/*folders
-in info title, if file doesnt exist show download hyper link
-if remote file exists mark as unlocked
-
 
 carry over notes when accepting changes, edit notes box needs to be larger, convert \n to <br>
 show failed diffs
@@ -50,7 +41,6 @@ get working with how visual studio does saves, crazy rename / delete / create pr
 support multiple select - right click download
 on app close - remove all storage folders, especially for users that are not us
 
-delete history when file locked, or folder locked
 support visibility
 test creating temp files / dirs
 	
@@ -81,6 +71,7 @@ diff
 		revise working
 		step through each file folder by uid, update files that have been integrated or are in history
 		if working already moded, we have to wait for user to save changes, otherwise, autosave
+		check for dupes file names with diff uids when merging in new highers, mark as conflict
 		
 	visibility - who / levels down (these 2 settings replace higher / lower direct etc..)
 		on regional link change do visibility check of local files to see if they still conform, ghost them

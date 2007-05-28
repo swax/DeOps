@@ -1224,9 +1224,12 @@ namespace DeOps.Components.Storage
 
             string finalpath = GetRootPath(dht, project) + path;
 
-            string dir = Utilities.StripOneLevel(finalpath);
+            finalpath += history ? "\\.history\\" : "\\";
 
-            Directory.CreateDirectory(dir);
+            Directory.CreateDirectory(finalpath);
+
+            finalpath += history ? GetHistoryName(file) : file.Name;
+
 
             // extract file
             if (FileMap.ContainsKey(file.HashID) && File.Exists(GetFilePath(file.HashID)) && !File.Exists(finalpath))
@@ -1263,7 +1266,7 @@ namespace DeOps.Components.Storage
             if (dht != Core.LocalDhtID)
             {
                 FileInfo info = new FileInfo(finalpath);
-                info.IsReadOnly = true;
+                //info.IsReadOnly = true;
             }
 
             // local
@@ -1279,7 +1282,7 @@ namespace DeOps.Components.Storage
             return finalpath;
         }
 
-        internal void LockFileCompletely(ulong dht, uint project, string path,LinkedList<StorageItem> archived)
+        internal void LockFileCompletely(ulong dht, uint project, string path, LinkedList<StorageItem> archived, List<LockError> errors)
         {
             StorageFile main = (StorageFile) archived.First.Value;
             
@@ -1289,9 +1292,8 @@ namespace DeOps.Components.Storage
             string finalpath = dirpath + "\\" + main.Name;
 
             if (File.Exists(finalpath))
-                File.Delete(finalpath);
-
-            main.RemoveFlag(StorageFlags.Unlocked);
+                if (DeleteFile(finalpath, errors))
+                    main.RemoveFlag(StorageFlags.Unlocked);
 
 
             // delete archived files
@@ -1302,20 +1304,53 @@ namespace DeOps.Components.Storage
                 string historyPath = finalpath + GetHistoryName(file);
 
                 if (File.Exists(historyPath))
-                    File.Delete(finalpath);
-
-                file.RemoveFlag(StorageFlags.Unlocked);
+                    if(DeleteFile(historyPath, errors))
+                        file.RemoveFlag(StorageFlags.Unlocked);
             }
 
             // delete history folder
+            DeleteFolder(finalpath, errors);
+         
+        }
+
+ 
+        private bool DeleteFile(string path, List<LockError> errors)
+        {
             try
             {
-                if (Directory.Exists(finalpath) &&
-                    Directory.GetDirectories(finalpath).Length == 0 &&
-                    Directory.GetFiles(finalpath).Length == 0)
-                    Directory.Delete(finalpath, true);
+                File.Delete(path);
+
+                if (File.Exists(path))
+                {
+                    errors.Add(new LockError(path, "Unable to delete file", true));
+                    return false;
+                }
             }
-            catch { }
+            catch(Exception ex)
+            {
+                errors.Add(new LockError(path, ex.Message, true));
+                return false;
+            }
+
+            return true;
+        }
+
+        private void DeleteFolder(string path, List<LockError> errors)
+        {
+            try
+            {
+                if (Directory.Exists(path) &&
+                    Directory.GetDirectories(path).Length == 0 &&
+                    Directory.GetFiles(path).Length == 0)
+                    Directory.Delete(path, true);
+
+                if (Directory.Exists(path))
+                    errors.Add(new LockError(path, "Unable to delete folder", false));
+            }
+            catch (Exception ex)
+            {
+                errors.Add(new LockError(path, ex.Message, false));
+            }
         }
 
 
