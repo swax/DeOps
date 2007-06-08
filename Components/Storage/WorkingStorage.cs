@@ -150,47 +150,56 @@ namespace DeOps.Components.Storage
             }
         }
 
-        internal void StartFileWatcher()
+        internal void StartWatchers()
         {
-            if (FileWatcher != null)
+            try
             {
+                if (FileWatcher == null)
+                {
+                    FileWatcher = new FileSystemWatcher(RootPath, "");
+
+                    FileWatcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite;
+
+                    FileWatcher.IncludeSubdirectories = true;
+
+                    FileWatcher.Changed += new FileSystemEventHandler(OnFileChanged);
+                    FileWatcher.Created += new FileSystemEventHandler(OnFileChanged);
+                    FileWatcher.Deleted += new FileSystemEventHandler(OnFileChanged);
+                    FileWatcher.Renamed += new RenamedEventHandler(OnFileRenamed);
+
+                }
+
                 FileWatcher.EnableRaisingEvents = true;
-                return;
+
+
+                if (FolderWatcher == null)
+                {
+                    FolderWatcher = new FileSystemWatcher(RootPath, "");
+
+                    FolderWatcher.NotifyFilter = NotifyFilters.DirectoryName | NotifyFilters.LastWrite;
+
+                    FolderWatcher.IncludeSubdirectories = true;
+
+                    FolderWatcher.Created += new FileSystemEventHandler(OnFolderChanged);
+                    FolderWatcher.Deleted += new FileSystemEventHandler(OnFolderChanged);
+                    FolderWatcher.Renamed += new RenamedEventHandler(OnFolderRenamed);
+                }
+
+                FolderWatcher.EnableRaisingEvents = true;
             }
-
-            FileWatcher = new FileSystemWatcher(RootPath, "*");
-
-            FileWatcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite;
-
-            FileWatcher.IncludeSubdirectories = true;
-
-            FileWatcher.Changed += new FileSystemEventHandler(OnFileChanged);
-            FileWatcher.Created += new FileSystemEventHandler(OnFileChanged);
-            FileWatcher.Deleted += new FileSystemEventHandler(OnFileChanged);
-            FileWatcher.Renamed += new RenamedEventHandler(OnFileRenamed);
-
-            FileWatcher.EnableRaisingEvents = true;
+            catch { }
         }
 
-        internal void StartFolderWatcher()
+        internal void StopWatchers()
         {
-            if (FolderWatcher != null)
-            {
-                FolderWatcher.EnableRaisingEvents = true;
-                return;
-            }
+            FileWatcher.EnableRaisingEvents = false;
+            FileWatcher.Dispose();
+            FileWatcher = null;
 
-            FolderWatcher = new FileSystemWatcher(RootPath, "*");
+            FolderWatcher.EnableRaisingEvents = false;
+            FolderWatcher.Dispose();
+            FolderWatcher = null;
 
-            FolderWatcher.NotifyFilter = NotifyFilters.DirectoryName | NotifyFilters.LastWrite;
-
-            FolderWatcher.IncludeSubdirectories = true;
-
-            FolderWatcher.Created += new FileSystemEventHandler(OnFolderChanged);
-            FolderWatcher.Deleted += new FileSystemEventHandler(OnFolderChanged);
-            FolderWatcher.Renamed += new RenamedEventHandler(OnFolderRenamed);
-
-            FolderWatcher.EnableRaisingEvents = true;
         }
 
         internal void TrackFile(string path)
@@ -210,7 +219,7 @@ namespace DeOps.Components.Storage
 
             folder.AddFile(file);
 
-            Storages.MarkforHash(file, RootPath + dir + "\\" + name);
+            Storages.MarkforHash(file, RootPath + dir + "\\" + name, ProjectID);
             Modified = true;
             PeriodicSave = true;
 
@@ -349,10 +358,7 @@ namespace DeOps.Components.Storage
                 if (e.ChangeType == WatcherChangeTypes.Changed)
                 {
                     if (file != null)
-                    {
-                        ReadyChange(file);
-                        Storages.MarkforHash(file, e.FullPath);
-                    }
+                        Storages.MarkforHash(file, e.FullPath, ProjectID);
                 }
 
                 if (e.ChangeType == WatcherChangeTypes.Deleted)

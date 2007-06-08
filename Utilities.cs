@@ -515,6 +515,15 @@ namespace DeOps
 
             return path.Substring(0, pos);
         }
+
+        internal static void OpenFolder(string path)
+        {
+            string windir = Environment.GetEnvironmentVariable("WINDIR");
+            System.Diagnostics.Process prc = new System.Diagnostics.Process();
+            prc.StartInfo.FileName = windir + @"\explorer.exe";
+            prc.StartInfo.Arguments = path;
+            prc.Start();
+        }
     }
 
 

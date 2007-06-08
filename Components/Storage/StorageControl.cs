@@ -980,9 +980,9 @@ namespace DeOps.Components.Storage
             }
         }
 
-        internal void MarkforHash(LocalFile file, string path)
+        internal void MarkforHash(LocalFile file, string path, uint project)
         {
-            HashPack pack = new HashPack(file, path);
+            HashPack pack = new HashPack(file, path, project);
 
             lock (HashQueue)
                 if (!HashQueue.Contains(pack))
@@ -1111,6 +1111,11 @@ namespace DeOps.Components.Storage
                     FileMap[info.HashID] = file;
                     InternalFileMap[info.InternalHashID] = file;
 
+                    // if hash is different than previous mark as modified
+                    if (!Utilities.MemCompare(file.Hash, pack.OldHash))
+                        if (Working.ContainsKey(pack.Project))
+                            Working[pack.Project].ReadyChange(pack.File);
+
                     HashQueue.Dequeue(); // try to hash until finished without exception (wait for access to file)
                     derefed = false; // make sure we only deref once per file
                 }
@@ -1197,9 +1202,10 @@ namespace DeOps.Components.Storage
         {
             string finalpath = GetRootPath(dht, project) + path + "\\.history\\";
 
-            foreach (StorageFile file in archived)
-                if (File.Exists(finalpath + GetHistoryName(file)))
-                    return true;
+            if(Directory.Exists(finalpath))
+                foreach (StorageFile file in archived)
+                    if (File.Exists(finalpath + GetHistoryName(file)))
+                        return true;
 
             return false;
         }
@@ -1218,7 +1224,7 @@ namespace DeOps.Components.Storage
         }
 
 
-        internal string UnlockFile(ulong dht, uint project, string path, StorageFile file, bool history)
+        internal string UnlockFile(ulong dht, uint project, string path, StorageFile file, bool history, List<LockError> errors)
         {
             // path needs to include name, because for things like history files name is diff than file.Info
 
@@ -1226,46 +1232,88 @@ namespace DeOps.Components.Storage
 
             finalpath += history ? "\\.history\\" : "\\";
 
-            Directory.CreateDirectory(finalpath);
-
+            if (!CreateFolder(finalpath, errors, false))
+                return null;
+            
             finalpath += history ? GetHistoryName(file) : file.Name;
 
 
-            // extract file
-            if (FileMap.ContainsKey(file.HashID) && File.Exists(GetFilePath(file.HashID)) && !File.Exists(finalpath))
+            // file not in storage
+            if(!FileMap.ContainsKey(file.HashID) || !File.Exists(GetFilePath(file.HashID)))
             {
-                try
+                errors.Add(new LockError(finalpath, "", true, LockErrorType.Missing));
+                return null;
+            }
+
+            // check if already unlocked
+            if (File.Exists(finalpath) && file.IsFlagged(StorageFlags.Unlocked))
+                return finalpath;
+
+            // file already exists
+            if(File.Exists(finalpath))
+            {
+               
+                // ask user about local
+                if (dht == Core.LocalDhtID)
                 {
-                    string tempPath = Core.GetTempPath();
-                    FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
+                    errors.Add(new LockError(finalpath, "", true, LockErrorType.Existing, file, history));
 
-                    FileStream encFile = new FileStream(GetFilePath(file.HashID), FileMode.Open, FileAccess.Read);
-                    CryptoStream stream = new CryptoStream(encFile, file.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
-
-                    int read = FileBufferSize;
-                    while (read == FileBufferSize)
-                    {
-                        read = stream.Read(FileBuffer, 0, FileBufferSize);
-                        tempFile.Write(FileBuffer, 0, read);
-                    }
-
-                    tempFile.Close();
-                    stream.Close();
-
-                    // move to official path
-                    File.Move(tempPath, finalpath);
+                    return null;
                 }
-                catch (Exception ex)
+
+                // overwrite remote
+                else
                 {
-                    Core.OperationNet.UpdateLog("Storage", "UnlockFile: " + ex.Message);
+                    try
+                    {
+                        File.Delete(finalpath);
+                    }
+                    catch
+                    {
+                        // not an existing error, dont want to give user option to 'use' the old remote file
+                        errors.Add(new LockError(finalpath, "", true, LockErrorType.Unexpected, file, history));
+                        return null;
+                    }
                 }
             }
+
+
+            // extract file
+            try
+            {
+                string tempPath = Core.GetTempPath();
+                FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
+
+                FileStream encFile = new FileStream(GetFilePath(file.HashID), FileMode.Open, FileAccess.Read);
+                CryptoStream stream = new CryptoStream(encFile, file.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+
+                int read = FileBufferSize;
+                while (read == FileBufferSize)
+                {
+                    read = stream.Read(FileBuffer, 0, FileBufferSize);
+                    tempFile.Write(FileBuffer, 0, read);
+                }
+
+                tempFile.Close();
+                stream.Close();
+
+                // move to official path
+                File.Move(tempPath, finalpath);
+            }
+            catch (Exception ex)
+            {
+                Core.OperationNet.UpdateLog("Storage", "UnlockFile: " + ex.Message);
+
+                errors.Add(new LockError(finalpath, "", true, LockErrorType.Unexpected, file, history));
+                return null;
+            }
+        
 
             file.SetFlag(StorageFlags.Unlocked);
 
             if (dht != Core.LocalDhtID)
             {
-                FileInfo info = new FileInfo(finalpath);
+                //FileInfo info = new FileInfo(finalpath);
                 //info.IsReadOnly = true;
             }
 
@@ -1275,8 +1323,7 @@ namespace DeOps.Components.Storage
                 // let caller trigger event because certain ops unlock multiple files
 
                 // set watch on root path
-                Working[project].StartFileWatcher();
-                Working[project].StartFolderWatcher();
+                Working[project].StartWatchers();
             }
 
             return finalpath;
@@ -1292,67 +1339,94 @@ namespace DeOps.Components.Storage
             string finalpath = dirpath + "\\" + main.Name;
 
             if (File.Exists(finalpath))
-                if (DeleteFile(finalpath, errors))
+                if (DeleteFile(finalpath, errors, false))
                     main.RemoveFlag(StorageFlags.Unlocked);
 
-
-            // delete archived files
+            // delete archived file
             finalpath = dirpath + "\\.history\\";
 
-            foreach (StorageFile file in archived)
+            if (Directory.Exists(finalpath))
             {
-                string historyPath = finalpath + GetHistoryName(file);
+                List<string> stillLocked = new List<string>();
+            
+                foreach (StorageFile file in archived)
+                {
+                    string historyPath = finalpath + GetHistoryName(file);
 
-                if (File.Exists(historyPath))
-                    if(DeleteFile(historyPath, errors))
-                        file.RemoveFlag(StorageFlags.Unlocked);
+                    if (File.Exists(historyPath))
+                        if (DeleteFile(historyPath, errors, false))
+                            file.RemoveFlag(StorageFlags.Unlocked);
+                        else
+                            stillLocked.Add(historyPath);
+                }
+
+                // delete history folder
+                DeleteFolder(finalpath, errors, stillLocked);
             }
-
-            // delete history folder
-            DeleteFolder(finalpath, errors);
-         
         }
 
- 
-        private bool DeleteFile(string path, List<LockError> errors)
+
+        internal bool DeleteFile(string path, List<LockError> errors, bool temp)
         {
             try
             {
                 File.Delete(path);
-
-                if (File.Exists(path))
-                {
-                    errors.Add(new LockError(path, "Unable to delete file", true));
-                    return false;
-                }
             }
             catch(Exception ex)
             {
-                errors.Add(new LockError(path, ex.Message, true));
+                errors.Add(new LockError(path, ex.Message, true, temp ? LockErrorType.Temp : LockErrorType.Blocked ));
                 return false;
             }
 
             return true;
         }
 
-        private void DeleteFolder(string path, List<LockError> errors)
+        internal void DeleteFolder(string path, List<LockError> errors, List<string> stillLocked)
         {
             try
             {
-                if (Directory.Exists(path) &&
-                    Directory.GetDirectories(path).Length == 0 &&
-                    Directory.GetFiles(path).Length == 0)
-                    Directory.Delete(path, true);
+                if (Directory.GetDirectories(path).Length > 0 || Directory.GetFiles(path).Length > 0)
+                {
+                    foreach (string directory in Directory.GetDirectories(path))
+                        if (stillLocked != null && !stillLocked.Contains(directory))
+                            errors.Add(new LockError(directory, "", false, LockErrorType.Temp));
 
-                if (Directory.Exists(path))
-                    errors.Add(new LockError(path, "Unable to delete folder", false));
+                    foreach (string file in Directory.GetFiles(path))
+                        if (stillLocked != null && !stillLocked.Contains(file))
+                            errors.Add(new LockError(file, "", true, LockErrorType.Temp));
+                }
+                else
+                {
+                    foreach (WorkingStorage working in Working.Values)
+                        if (path == working.RootPath)
+                            working.StopWatchers();
+
+                    Directory.Delete(path, true);
+                }
             }
             catch (Exception ex)
             {
-                errors.Add(new LockError(path, ex.Message, false));
+                errors.Add(new LockError(path, ex.Message, false,  LockErrorType.Blocked));
             }
         }
 
+        internal bool CreateFolder(string path, List<LockError> errors, bool subs)
+        {
+            try
+            {
+                Directory.CreateDirectory(path);
+            }
+            catch (Exception ex)
+            {
+                LockError error = new LockError(path, ex.Message, true, LockErrorType.Unexpected);
+                error.Subs = subs;
+                errors.Add(error);
+
+                return false;
+            }
+
+            return true;
+        }
 
         internal void LockFile(ulong dht, uint project, string path, StorageFile file, bool history)
         {
@@ -1457,11 +1531,15 @@ namespace DeOps.Components.Storage
     {
         internal LocalFile File;
         internal string Path;
+        internal byte[] OldHash;
+        internal uint Project;
 
-        internal HashPack(LocalFile file, string path)
+        internal HashPack(LocalFile file, string path, uint project)
         {
             File = file;
             Path = path;
+            OldHash = file.Info.Hash;
+            Project = project;
         }
 
         public override bool Equals(object obj)

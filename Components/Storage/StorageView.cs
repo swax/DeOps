@@ -669,30 +669,34 @@ namespace DeOps.Components.Storage
 
             // if folder unlocked, add untracked folders, mark temp
             if(folder.Details.IsFlagged(StorageFlags.Unlocked) && Directory.Exists(dirpath))
-                foreach (string dir in Directory.GetDirectories(dirpath))
+                try
                 {
-                    string name = Path.GetFileName(dir);
-
-                    if (name.CompareTo(".history") == 0)
-                        continue;
-
-                    if (folder.GetFolder(name) != null)
-                        continue;
-
-                    StorageFolder details = new StorageFolder();
-                    details.Name = name;
-
-                    FileItem tempFolder = new FileItem(this, new FolderNode(this, details, folder, true));
-
-                    if (string.Compare(tempFolder.GetPath(), infoPath, true) == 0)
+                    foreach (string dir in Directory.GetDirectories(dirpath))
                     {
-                        infoSet = true;
-                        tempFolder.Selected = true;
-                        SelectedInfo.ShowItem(tempFolder.Folder, null);
-                    }
+                        string name = Path.GetFileName(dir);
 
-                    FileListView.Items.Add(tempFolder);
+                        if (name.CompareTo(".history") == 0)
+                            continue;
+
+                        if (folder.GetFolder(name) != null)
+                            continue;
+
+                        StorageFolder details = new StorageFolder();
+                        details.Name = name;
+
+                        FileItem tempFolder = new FileItem(this, new FolderNode(this, details, folder, true));
+
+                        if (string.Compare(tempFolder.GetPath(), infoPath, true) == 0)
+                        {
+                            infoSet = true;
+                            tempFolder.Selected = true;
+                            SelectedInfo.ShowItem(tempFolder.Folder, null);
+                        }
+
+                        FileListView.Items.Add(tempFolder);
+                    }
                 }
+                catch { }
 
             // add tracked files
             foreach (FileItem file in folder.Files.Values)
@@ -712,29 +716,33 @@ namespace DeOps.Components.Storage
 
             // if folder unlocked, add untracked files, mark temp
             if (folder.Details.IsFlagged(StorageFlags.Unlocked) && Directory.Exists(dirpath))
-                foreach (string filepath in Directory.GetFiles(dirpath))
+                try
                 {
-                    string name = Path.GetFileName(filepath);
-
-                    if (folder.GetFile(name) != null)
-                        continue;
-
-
-                    StorageFile details = new StorageFile();
-                    details.Name = name;
-                    details.InternalSize = new FileInfo(filepath).Length;
-
-                    FileItem tempFile = new FileItem(this, folder, details, true);
-
-                    if (string.Compare(tempFile.GetPath(), infoPath, true) == 0)
+                    foreach (string filepath in Directory.GetFiles(dirpath))
                     {
-                        infoSet = true;
-                        tempFile.Selected = true;
-                        SelectedInfo.ShowItem(folder, tempFile);
-                    }
+                        string name = Path.GetFileName(filepath);
 
-                    FileListView.Items.Add(tempFile);
+                        if (folder.GetFile(name) != null)
+                            continue;
+
+
+                        StorageFile details = new StorageFile();
+                        details.Name = name;
+                        details.InternalSize = new FileInfo(filepath).Length;
+
+                        FileItem tempFile = new FileItem(this, folder, details, true);
+
+                        if (string.Compare(tempFile.GetPath(), infoPath, true) == 0)
+                        {
+                            infoSet = true;
+                            tempFile.Selected = true;
+                            SelectedInfo.ShowItem(folder, tempFile);
+                        }
+
+                        FileListView.Items.Add(tempFile);
+                    }
                 }
+                catch { }
 
             UpdateListItems();
 
@@ -1009,7 +1017,7 @@ namespace DeOps.Components.Storage
              }
         }
 
-        private FolderNode GetFolderNode(string path)
+        internal FolderNode GetFolderNode(string path)
         {
             // path: \a\b\c
 
@@ -1315,7 +1323,11 @@ namespace DeOps.Components.Storage
 
         internal string UnlockFile(FileItem file)
         {
-            string path = Storages.UnlockFile(DhtID, ProjectID, file.Folder.GetPath(), (StorageFile)file.Details, false);
+            List<LockError> errors = new List<LockError>();
+
+            string path = Storages.UnlockFile(DhtID, ProjectID, file.Folder.GetPath(), (StorageFile)file.Details, false, errors);
+
+            LockMessage.Alert(this, errors);
 
             file.Update();
             SelectedInfo.Refresh();
@@ -1329,11 +1341,7 @@ namespace DeOps.Components.Storage
 
             Storages.LockFileCompletely(DhtID, ProjectID, file.Folder.GetPath(), file.Archived, errors);
 
-            if (errors.Count > 0)
-            {
-                LockMessage message = new LockMessage(LockMessageMode.LockError, errors);
-                message.ShowDialog(this);
-            }
+            LockMessage.Alert(this, errors);
 
             file.Update();
             SelectedInfo.Refresh();
@@ -1468,7 +1476,11 @@ namespace DeOps.Components.Storage
                 if (MessageBox.Show("Lock sub-folders as well?", "Lock", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     subs = true;
 
-            LockFolder(item.Folder, subs);
+            List<LockError> errors = new List<LockError>();
+
+            LockFolder(item.Folder, subs, errors);
+
+            LockMessage.Alert(this, errors);
 
             RefreshFileList();
         }
@@ -1486,27 +1498,36 @@ namespace DeOps.Components.Storage
                 if (MessageBox.Show("Unlock sub-folders as well?", "Unlock", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     subs = true;
 
-            UnlockFolder(item.Folder, subs);
+            List<LockError> errors = new List<LockError>();
+
+            UnlockFolder(item.Folder, subs, errors);
+
+            LockMessage.Alert(this, errors);
 
             RefreshFileList();
 
             // set watch unlocked directories for changes
             if (Working != null)
-            {
-                Working.StartFileWatcher();
-                Working.StartFolderWatcher();
-            }
+                Working.StartWatchers();
         }
 
-        internal void LockFolder(FolderNode folder, bool subs)
+        internal void LockFolder(FolderNode folder, bool subs, List<LockError> errors)
         {
-            List<LockError> errors = new List<LockError>();
-
             string path = folder.GetPath();
 
+            string wholepath = Storages.GetRootPath(DhtID, ProjectID) + path;
+
+            List<string> stillLocked = new List<string>();
+
             foreach (FileItem file in folder.Files.Values)
-                if(!file.Temp)
+                if (!file.Temp)
+                {
                     Storages.LockFileCompletely(DhtID, ProjectID, path, file.Archived, errors);
+
+                    string filepath = wholepath + "\\" + file.Details.Name;
+                    if (File.Exists(filepath))
+                        stillLocked.Add(filepath);
+                }
 
             folder.Details.RemoveFlag(StorageFlags.Unlocked);
             folder.Update();
@@ -1514,26 +1535,18 @@ namespace DeOps.Components.Storage
             if (subs)
                 foreach (FolderNode subfolder in folder.Folders.Values)
                     if (!subfolder.Temp)
-                        LockFolder(subfolder, subs);
+                        LockFolder(subfolder, subs, errors);
 
-            try
-            {
-                path = Storages.GetRootPath(DhtID, ProjectID) + path;
-
-                if (Directory.Exists(path) &&
-                    Directory.GetDirectories(path).Length == 0 &&
-                    Directory.GetFiles(path).Length == 0)
-                    Directory.Delete(path, true);
-            }
-            catch { }
+            Storages.DeleteFolder(wholepath, errors, stillLocked);
         }
 
-        internal void UnlockFolder(FolderNode folder, bool subs)
+        internal void UnlockFolder(FolderNode folder, bool subs, List<LockError> errors)
         {
             string path = folder.GetPath();
             string root = Storages.GetRootPath(DhtID, ProjectID);
 
-            Directory.CreateDirectory(root + path);
+            if(!Storages.CreateFolder(root + path, errors, subs))
+                return;
 
             if (Directory.Exists(root + path))
             {
@@ -1544,13 +1557,13 @@ namespace DeOps.Components.Storage
                 // unlock files
                 foreach (FileItem file in folder.Files.Values)
                     if (!file.Temp && !file.Details.IsFlagged(StorageFlags.Archived))
-                        Storages.UnlockFile(DhtID, ProjectID, path, (StorageFile)file.Details, false);
+                        Storages.UnlockFile(DhtID, ProjectID, path, (StorageFile)file.Details, false, errors);
 
                 // unlock subfolders
                 if (subs)
                     foreach (FolderNode subfolder in folder.Folders.Values)
                         if (!subfolder.Details.IsFlagged(StorageFlags.Archived))
-                            UnlockFolder(subfolder, subs);
+                            UnlockFolder(subfolder, subs, errors);
             }
         }
 

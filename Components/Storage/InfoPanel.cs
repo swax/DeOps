@@ -779,7 +779,7 @@ namespace DeOps.Components.Storage
                     StorageFile file = (StorageFile) item;
 
                     string unlocked = "";
-                    if ((i == 1 && Storages.IsFileUnlocked(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, false)) ||
+                    if ((i == 1 && CurrentItem.IsFlagged(StorageFlags.Unlocked)) ||
                         Storages.IsFileUnlocked(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, true))
                         unlocked = "<a href='http://history.lock." + i.ToString() + "'><img border= 0 src='" + ImgUnlocked + "'></a>";
 
@@ -893,7 +893,11 @@ namespace DeOps.Components.Storage
                             if (MessageBox.Show("Lock sub-folders as well?", "Lock", MessageBoxButtons.YesNo) == DialogResult.Yes)
                                 subs = true;
 
-                        ParentView.LockFolder(CurrentFolder, subs);
+                        List<LockError> errors = new List<LockError>();
+
+                        ParentView.LockFolder(CurrentFolder, subs, errors);
+
+                        LockMessage.Alert(ParentView, errors);
 
                         ParentView.RefreshFileList();
                         Refresh();
@@ -917,8 +921,12 @@ namespace DeOps.Components.Storage
                             if (MessageBox.Show("Unlock sub-folders as well?", "Unlock", MessageBoxButtons.YesNo) == DialogResult.Yes)
                                 subs = true;
 
-                        ParentView.UnlockFolder(CurrentFolder, subs);
+                        List<LockError> errors = new List<LockError>();
 
+                        ParentView.UnlockFolder(CurrentFolder, subs, errors);
+
+                        LockMessage.Alert(ParentView, errors);
+                        
                         ParentView.RefreshFileList();
                         Refresh();
                     }
@@ -926,11 +934,7 @@ namespace DeOps.Components.Storage
 
                 if (parts[1] == "openfolder")
                 {
-                    string windir = Environment.GetEnvironmentVariable("WINDIR");
-                    System.Diagnostics.Process prc = new System.Diagnostics.Process();
-                    prc.StartInfo.FileName = windir + @"\explorer.exe";
-                    prc.StartInfo.Arguments = Storages.GetRootPath(ParentView.DhtID, ParentView.ProjectID) + "\\" + CurrentFolder.GetPath();
-                    prc.Start();
+                    Utilities.OpenFolder(Storages.GetRootPath(ParentView.DhtID, ParentView.ProjectID) + "\\" + CurrentFolder.GetPath());
                 }
 
                 if (parts[1] == "revs")
@@ -1065,11 +1069,15 @@ namespace DeOps.Components.Storage
             {
                 if (parts[1] == "open")
                 {
-                    string finalpath = Storages.UnlockFile(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, historyFile);
+                    List<LockError> errors = new List<LockError>();
+
+                    string finalpath = Storages.UnlockFile(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, historyFile, errors);
 
                     if (finalpath != null && File.Exists(finalpath))
                         System.Diagnostics.Process.Start(finalpath);
 
+                    LockMessage.Alert(ParentView, errors);
+                    
                     CurrentFile.Update();
                     Refresh();
                 }

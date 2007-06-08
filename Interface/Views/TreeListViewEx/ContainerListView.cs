@@ -1737,9 +1737,12 @@ namespace DeOps.Interface.TLVex
                                 else
                                     colScaleStyle = ColumnScaleStyle.Slide;
 
-                                colScaleMode = true;
-                                colScaleWid = columnRects[i].Width;
-                                scaledCol = i;
+                                if (i < columnRects.Length)
+                                {
+                                    colScaleMode = true;
+                                    colScaleWid = columnRects[i].Width;
+                                    scaledCol = i;
+                                }
                             }
 						}
 						else if (MouseInRect(e, columnRects[i]) && !MouseInRect(e, columnSizeRects[i]))
@@ -2751,25 +2754,26 @@ namespace DeOps.Interface.TLVex
 				try
 				{
 					// render column headers and trailing column header					
-					for (i=0; i<columns.Count; i++)
-					{
-						colwid = (columns[i].ScaleStyle == ColumnScaleStyle.Spring ? springWid : columns[i].Width);
+                    for (i = 0; i < columns.Count; i++)
+                    {
+                        colwid = (columns[i].ScaleStyle == ColumnScaleStyle.Spring ? springWid : columns[i].Width);
+
                         if (headerStyle == ColumnHeaderStyle.Clickable && columns[i].Pressed)
                             HeaderPressed.DrawBackground(g,
                                                         new Rectangle(lp_scr + last, tp, colwid, headerBuffer),
-                                                        new Rectangle(lp, tp, r.Width - 6, headerBuffer));
+                                                        new Rectangle(lp, tp, r.Width , headerBuffer));
 
                         else if (headerStyle != ColumnHeaderStyle.None && columns[i].Hovered)
                             HeaderHot.DrawBackground(g,
                                                         new Rectangle(lp_scr + last, tp, colwid, headerBuffer),
-                                                        new Rectangle(lp, tp, r.Width - 6, headerBuffer));
+                                                        new Rectangle(lp, tp, r.Width , headerBuffer));
 
                         else
                             HeaderNormal.DrawBackground(g,
                                                         new Rectangle(lp_scr + last, tp, colwid, headerBuffer),
-                                                        new Rectangle(lp, tp, r.Width - 6, headerBuffer));
-						last += colwid;
-					}
+                                                        new Rectangle(lp, tp, r.Width , headerBuffer));
+                        last += colwid;
+                    }
 					// only render trailing column header if the end of the
 					// last column ends before the boundary of the listview 
 					if (!(r.Left+last+2-hscrollBar.Value > r.Left+r.Width))

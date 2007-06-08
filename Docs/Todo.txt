@@ -1,10 +1,13 @@
 
+
 how to work with desynchs
 how does add/replace work with unlocked files
 
 how to delete readonly files
 
 unlocking/locking 
+
+	test new unlock/lock code
 
 	maybe on startup everything is marked as locked, even if exists, forcing unlock to choke and user has to make decision
 	hash existing files to see if modified as well
