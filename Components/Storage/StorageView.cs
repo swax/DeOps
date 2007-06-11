@@ -2062,7 +2062,10 @@ namespace DeOps.Components.Storage
         internal FolderNode(StorageView view, StorageFolder folder, TreeListNode parent, bool temp)
         {
             Parent = parent; // needs to be set because some nodes (archived) aren't proper children of parents (not in Nodes list), still needed though so getPath works
-            
+
+            if (parent == null)
+                throw new Exception("Parent set to null");
+
             View = view;
 
             Details = folder;

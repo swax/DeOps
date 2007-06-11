@@ -1,74 +1,36 @@
 
+integration
 
-how to work with desynchs
-how does add/replace work with unlocked files
+	inheritance
+		set inheritance file to null
+		find 
+			go up tree from self until node found that integrates local file
+			or local file is part of  history with dates newer than local
+		set that node's file to inheritance file
+		repeat find, until exhaustion
+		
+		why
+			this method lets branches work on their own projects without highers of higher's changes overwrite local stufff
+			enforces  integration chain leading up to top
+			if middle higher offline, can still inherit files that middle higher never touched
+			always in sync with files that local doesnt work with, but higher changes
 
-how to delete readonly files
+	always remain totally integrated with the very top
+		don't inherit if upper node has not integrated from the highest level change
 
-unlocking/locking 
-
-	test new unlock/lock code
-
-	maybe on startup everything is marked as locked, even if exists, forcing unlock to choke and user has to make decision
-	hash existing files to see if modified as well
-		might not be good if old files put where new ones should be, user should be told of conflict
-
-	lock
-	
-		aggregate errors
-		lock as much as we can, override file.delelete / directory.delete to aggregate errors without throwing
-		dont delete whole folder, log temps
-		report error files in list box
-			1. temp file warnings, delete / ignore / cancel
-			2. unable to delete error, suggest user has files open
-				dont mark files as locked that were not deleted
-				
-	unlock
-		aggregate warnings of files that exist, display in listbox
-		also note files that dont exist in cache but should be unlocked
-		Overwrite / Use (mark to be hashed) / Cancel
-
-
-	check if file / dir has same name when renaming / creating in storage system	
-
-	after hash
-		if file modified, and hash is equal to unmodified, remove modified flag
-	
-
-
-double click open local temp files/*folders
-
-carry over notes when accepting changes, edit notes box needs to be larger, convert \n to <br>
-show failed diffs
-get working with how visual studio does saves, crazy rename / delete / create process
-support multiple select - right click download
-on app close - remove all storage folders, especially for users that are not us
-
-support visibility
-test creating temp files / dirs
-	
-use path class to check for invalid characters
-	
-explanation: in order for lowers to automatically inherit new versions, you must integrate their changes
-	
-diff
-
-	if hashes
-		clicking apply / integrate asks user to perform that action
+	explanation: in order for lowers to automatically inherit new versions, you must integrate their changes
 
 	integrating change from above, inherits their integration list, 
 	our lower integrations remain the same
 
-	test re-name file propagation
+	should integrate all levels up
+
+	need to sync from up and to the side copies
 
 	when storage control auto-integrates, add high level to integration list
 		so that changes to local file doesn't cause dysnch to show up with higher level
 		red triangle will be reserved for real conflicts
 
-	change archive to ghosts (pacman logo) - ghosts are files that were either deleted or moved, they serve as markers for others to use
-		when syncronizing their file system to yours
-		delete permanently if no history exists of file
-		ghost folders white folders with black outlines and eyes!
 	
 	storage control - higher level storage update - merge
 		revise working
@@ -76,25 +38,39 @@ diff
 		if working already moded, we have to wait for user to save changes, otherwise, autosave
 		check for dupes file names with diff uids when merging in new highers, mark as conflict
 		
-	visibility - who / levels down (these 2 settings replace higher / lower direct etc..)
-		on regional link change do visibility check of local files to see if they still conform, ghost them
-			restored / created - file visible with-in x sub-levels of <user>
-			file only visible with-in x sub-levels of <user>
+		
+		
+review file references system
+how does add/replace work with unlocked files - figure out when doing inheritance
+check if file / dir has same name when renaming / creating in storage system	
+after hash if file modified, and hash is equal to unmodified, remove modified flag
+double click open local temp files/*folders
+carry over notes when accepting changes, edit notes box needs to be larger, convert \n to <br>
+show failed diffs
+get working with how visual studio does saves, crazy rename / delete / create process
+support multiple select - right click download
+on app close - remove all storage folders, especially for users that are not us
+use path class to check for invalid characters
+drag move file to diff dir, carry history, leave ghost
 
 
-	Diff window
-		Show selected file
-		radio button
-			local file
-			changes combo
-			integrated combo
-			history combo
-			
-		Diff Tool show current as link
-			allow user to select different apps per file type
-			default open both
+test creating temp files / dirs
+test re-name file propagation	
 
-		ok / cancel button
+if hashes
+	clicking apply / integrate asks user to perform that action
+
+
+
+change archive to ghosts (pacman logo) - ghosts are files that were either deleted or moved, they serve as markers for others to use
+		when syncronizing their file system to yours
+		delete permanently if no history exists of file
+		ghost folders white folders with black outlines and eyes!
+	
+visibility - who / levels down (these 2 settings replace higher / lower direct etc..)
+	on regional link change do visibility check of local files to see if they still conform, ghost them
+		restored / created - file visible with-in x sub-levels of <user>
+		file only visible with-in x sub-levels of <user>
 
 drag / drop - in/out, across folders
 remote - download, unlock, open, re-lock
@@ -142,6 +118,11 @@ check natted are finding closest nodes to proxy off of
 
 use rudp when available to transmit link / loc data
 with rudp now being used, should analyze purely global network
+
+alpha release
+	xeno code
+	calling home w/ version num
+	expiration
 
 
 search revisions

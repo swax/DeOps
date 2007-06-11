@@ -157,8 +157,8 @@ namespace DeOps.Components.Storage
                     Text = "Unlock: Missing";
                     Note.Text = "Could not unlock the following files because they are not available on this machine";
                     button1.Visible = false;
-                    button2.Text = "Ignore";
-                    button3.Text = "Cancel";
+                    button2.Text = "Download";
+                    button3.Text = "Ignore";
                     break;
             }
 
@@ -236,7 +236,8 @@ namespace DeOps.Components.Storage
                         }
 
                         // unlock new file / retry
-                        Storages.UnlockFile(ParentView.DhtID, ParentView.ProjectID, error.Path.Replace(RootPath, ""), error.File, error.History, NewErrors);
+                        string path = Path.GetDirectoryName(error.Path);
+                        Storages.UnlockFile(ParentView.DhtID, ParentView.ProjectID, path.Replace(RootPath, ""), error.File, error.History, NewErrors);
                     }
                     break;
 
@@ -245,6 +246,7 @@ namespace DeOps.Components.Storage
             }
 
 
+            Close();
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -260,8 +262,6 @@ namespace DeOps.Components.Storage
                         else
                             Storages.DeleteFolder(error.Path, NewErrors, null);
 
-                    Close();
-
                     break;
 
                 case LockErrorType.Blocked:
@@ -273,8 +273,6 @@ namespace DeOps.Components.Storage
                         else
                             Storages.DeleteFolder(error.Path, NewErrors, null);
 
-                    Close();
-
                     break;
 
                 case LockErrorType.Unexpected:
@@ -283,17 +281,20 @@ namespace DeOps.Components.Storage
                     // try to unlock again
                     foreach (LockError error in Errors)
                         if (error.IsFile)
-                            Storages.UnlockFile(ParentView.DhtID, ParentView.ProjectID, error.Path.Replace(RootPath, ""), error.File, error.History, NewErrors);
+                        {
+                            string path = Path.GetDirectoryName(error.Path);
+                            Storages.UnlockFile(ParentView.DhtID, ParentView.ProjectID, path.Replace(RootPath, ""), error.File, error.History, NewErrors);
+                        }
                         // dont know to unlock subs or not
                         else
                             ParentView.UnlockFolder(ParentView.GetFolderNode(error.Path.Replace(RootPath, "")), error.Subs, NewErrors);
 
-                  break;
+                    break;
 
                 case LockErrorType.Existing:
                     //button2.Text = "Use";
 
-                    if(ParentView.Working != null)
+                    if (ParentView.Working != null)
                         foreach (LockError error in Errors)
                         {
                             string path = error.Path.Replace(RootPath, "");
@@ -306,18 +307,23 @@ namespace DeOps.Components.Storage
                             LocalFile file = folder.GetFile(error.File.Name);
 
                             file.Info.SetFlag(StorageFlags.Unlocked);
-                            Storages.MarkforHash(file, error.Path, ParentView.ProjectID);
+                            Storages.MarkforHash(file, error.Path, ParentView.ProjectID, folder.GetPath());
                         }
 
-                    Close();
                     break;
 
                 case LockErrorType.Missing:
-                    //button2.Text = "Ignore";
-                    Close();
+                    //button2.Text = "Download";
+
+                    foreach (LockError error in Errors)
+                        Storages.DownloadFile(ParentView.DhtID, error.File);
+
+                    ParentView.WatchTransfers = true;
+
                     break;
             }
 
+            Close();
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -326,30 +332,26 @@ namespace DeOps.Components.Storage
             {
                 case LockErrorType.Temp:
                     //button3.Text = "Ignore";
-                    Close();
                     break;
 
                 case LockErrorType.Blocked:
                     //button3.Text = "Ignore";
-                    Close();
                     break;
 
                 case LockErrorType.Unexpected:
                     //button3.Text = "Ignore";
-                    Close();
                     break;
 
                 case LockErrorType.Existing:
                     //button3.Text = "Cancel";
-                    Close();
                     break;
 
                 case LockErrorType.Missing:
-                    //button3.Text = "Cancel";
-                    Close();
+                    //button3.Text = "Ignore";
                     break;
             }
 
+            Close();
         }
     }
 

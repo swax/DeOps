@@ -121,7 +121,7 @@
     <Compile Include="Components\Board\BoardControl.cs" />
     <Compile Include="Components\Board\BoardPackets.cs" />
     <Compile Include="Components\Board\BoardView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Board\BoardView.Designer.cs">
       <DependentUpon>BoardView.cs</DependentUpon>
@@ -154,7 +154,7 @@
       <DependentUpon>EditPlanItem.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.Designer.cs">
       <DependentUpon>GoalPanel.cs</DependentUpon>
@@ -172,7 +172,7 @@
       <DependentUpon>ProgressText.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.Designer.cs">
       <DependentUpon>BlockRow.cs</DependentUpon>
@@ -240,6 +240,12 @@
     </Compile>
     <Compile Include="Components\Storage\DetailsForm.Designer.cs">
       <DependentUpon>DetailsForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Storage\DiffForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Storage\DiffForm.Designer.cs">
+      <DependentUpon>DiffForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Storage\InfoPanel.cs">
       <SubType>UserControl</SubType>
@@ -649,6 +655,10 @@
     <EmbeddedResource Include="Components\Storage\DetailsForm.resx">
       <SubType>Designer</SubType>
       <DependentUpon>DetailsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Storage\DiffForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>DiffForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Components\Storage\InfoPanel.resx">
       <SubType>Designer</SubType>

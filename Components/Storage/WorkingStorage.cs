@@ -156,7 +156,7 @@ namespace DeOps.Components.Storage
             {
                 if (FileWatcher == null)
                 {
-                    FileWatcher = new FileSystemWatcher(RootPath, "");
+                    FileWatcher = new FileSystemWatcher(RootPath, "*");
 
                     FileWatcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite;
 
@@ -166,15 +166,14 @@ namespace DeOps.Components.Storage
                     FileWatcher.Created += new FileSystemEventHandler(OnFileChanged);
                     FileWatcher.Deleted += new FileSystemEventHandler(OnFileChanged);
                     FileWatcher.Renamed += new RenamedEventHandler(OnFileRenamed);
+                    
+                    FileWatcher.EnableRaisingEvents = true;
 
                 }
 
-                FileWatcher.EnableRaisingEvents = true;
-
-
                 if (FolderWatcher == null)
                 {
-                    FolderWatcher = new FileSystemWatcher(RootPath, "");
+                    FolderWatcher = new FileSystemWatcher(RootPath, "*");
 
                     FolderWatcher.NotifyFilter = NotifyFilters.DirectoryName | NotifyFilters.LastWrite;
 
@@ -183,9 +182,9 @@ namespace DeOps.Components.Storage
                     FolderWatcher.Created += new FileSystemEventHandler(OnFolderChanged);
                     FolderWatcher.Deleted += new FileSystemEventHandler(OnFolderChanged);
                     FolderWatcher.Renamed += new RenamedEventHandler(OnFolderRenamed);
+                    
+                    FolderWatcher.EnableRaisingEvents = true;
                 }
-
-                FolderWatcher.EnableRaisingEvents = true;
             }
             catch { }
         }
@@ -219,7 +218,7 @@ namespace DeOps.Components.Storage
 
             folder.AddFile(file);
 
-            Storages.MarkforHash(file, RootPath + dir + "\\" + name, ProjectID);
+            Storages.MarkforHash(file, RootPath + dir + "\\" + name, ProjectID, dir);
             Modified = true;
             PeriodicSave = true;
 
@@ -257,16 +256,10 @@ namespace DeOps.Components.Storage
             LocalFolder folder = GetLocalFolder(dir);
             LocalFile file = folder.GetFile(name);
 
+            //crit if unlocked need to replace file on drive as well
+                
             // only create new entry for un-modified file
-            if(!file.Info.IsFlagged(StorageFlags.Modified))
-                file.Archived.AddFirst(replacement.Clone());
-
-            file.Info = (StorageFile) file.Archived.First.Value;
-            file.Info.Date = Core.TimeNow.ToUniversalTime();
-            file.Info.SetFlag(StorageFlags.Modified);
-
-            Modified = true;
-            PeriodicSave = true;
+            ReadyChange(file, replacement);
 
             Storages.CallFileUpdate(ProjectID, folder.GetPath(), file.Info.UID, WorkingChange.Updated);
         }
@@ -358,7 +351,7 @@ namespace DeOps.Components.Storage
                 if (e.ChangeType == WatcherChangeTypes.Changed)
                 {
                     if (file != null)
-                        Storages.MarkforHash(file, e.FullPath, ProjectID);
+                        Storages.MarkforHash(file, e.FullPath, ProjectID, directory);
                 }
 
                 if (e.ChangeType == WatcherChangeTypes.Deleted)
@@ -501,7 +494,15 @@ namespace DeOps.Components.Storage
             Modified = true;
             PeriodicSave = true;
 
-            file.Modify(Core.TimeNow);
+            file.Modify(Core.TimeNow, file.Info.Clone());
+        }
+
+        internal void ReadyChange(LocalFile file, StorageFile newInfo)
+        {
+            Modified = true;
+            PeriodicSave = true;
+
+            file.Modify(Core.TimeNow, newInfo);
         }
 
         internal void ReadyChange(LocalFolder folder)
@@ -997,33 +998,32 @@ namespace DeOps.Components.Storage
         internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>();
         internal Dictionary<ulong, StorageItem> Integrated = new Dictionary<ulong, StorageItem>();
 
-        internal ulong PrevID;
-
 
         internal LocalFile(StorageFile info)
         {
             Info = info;
         }
 
-        internal void Modify(DateTime time)
+        internal void Modify(DateTime time, StorageFile newInfo)
         {
             // Details is mirror of file in working folder, it can change multiple times before the user commits, archive the
             //   original info when the user starts messing with stuff, only once, dont want to archive stuff not accessible on the network
 
 
-            // 1 change tracked per commit
             if (Info.IsFlagged(StorageFlags.Modified))
             {
-                PrevID = Info.HashID;
-                return;
+                Info = newInfo;
+                Archived.RemoveFirst();
+                Archived.AddFirst(newInfo);
+            }
+            else
+            {
+                Archived.AddFirst(newInfo);
+                Info = newInfo;
             }
 
-            Archived.AddFirst(Info.Clone());
-            Info = (StorageFile) Archived.First.Value;
-
-            Info.Date = time.ToUniversalTime();
             Info.SetFlag(StorageFlags.Modified);
-            // size info will be reset if data changed in markforhash
+            Info.Date = time.ToUniversalTime();
         }
 
         public override string ToString()

@@ -28,8 +28,8 @@ namespace DeOps.Components.Storage
         bool Local;
         bool WatchTransfers;
 
-        Dictionary<ulong, StorageItem> CurrentChanges = new Dictionary<ulong, StorageItem>();
-        Dictionary<ulong, StorageItem> CurrentIntegrated = new Dictionary<ulong, StorageItem>();
+        internal Dictionary<ulong, StorageItem> CurrentChanges = new Dictionary<ulong, StorageItem>();
+        internal Dictionary<ulong, StorageItem> CurrentIntegrated = new Dictionary<ulong, StorageItem>();
 
         List<StorageItem> History  = new List<StorageItem>();
 
@@ -621,7 +621,7 @@ namespace DeOps.Components.Storage
             html.Replace("<?=next_changes_row?>", "");
         }
 
-        private List<ChangeRow> SortChanges(Dictionary<ulong, StorageItem> changes)
+        internal List<ChangeRow> SortChanges(Dictionary<ulong, StorageItem> changes)
         {
             List<ChangeRow> highers = new List<ChangeRow>();
             List<ChangeRow> lowers = new List<ChangeRow>();
@@ -872,7 +872,8 @@ namespace DeOps.Components.Storage
 
 
             StorageFile file = null;
-            bool historyFile = false;
+            bool history = false;
+            ulong UserID = ParentView.DhtID;
 
             if (parts[0] == "main")
             {
@@ -973,9 +974,9 @@ namespace DeOps.Components.Storage
 
             if (parts[0] == "change")
             {
-                ulong id = ulong.Parse(parts[2]);
+                UserID = ulong.Parse(parts[2]);
 
-                file = (StorageFile)CurrentChanges[id];
+                file = (StorageFile)CurrentChanges[UserID];
 
                 if(parts[1] == "add")
                 {
@@ -985,12 +986,16 @@ namespace DeOps.Components.Storage
                 if (parts[1] == "diff")
                 {
 
+                    DiffForm form = new DiffForm(this, UserID, "Changes", file, false);
+
+                    form.ShowDialog(this);
+
                 }
 
                 if (parts[1] == "accept")
                 {
 
-                    ParentView.Working.IntegrateFile(CurrentFolder.GetPath(), id, file); 
+                    ParentView.Working.IntegrateFile(CurrentFolder.GetPath(), UserID, file); 
 
                     // integrate triggers file update, triggering icon / page change
 
@@ -1015,18 +1020,20 @@ namespace DeOps.Components.Storage
 
             if (parts[0] == "integrate")
             {
-                ulong id = ulong.Parse(parts[2]);
+                UserID = ulong.Parse(parts[2]);
 
-                file = (StorageFile) CurrentIntegrated[id];
+                file = (StorageFile)CurrentIntegrated[UserID];
 
                 if (parts[1] == "diff")
                 {
+                    DiffForm form = new DiffForm(this, UserID, "Integrated Changes", file, false);
 
+                    form.ShowDialog(this);
                 }
 
                 if (parts[1] == "reject")
                 {
-                    ParentView.Working.UnintegrateFile(CurrentFolder.GetPath(), id, file);
+                    ParentView.Working.UnintegrateFile(CurrentFolder.GetPath(), UserID, file);
                 }
 
             }
@@ -1037,11 +1044,17 @@ namespace DeOps.Components.Storage
                 file = (StorageFile)History[index];
 
                 if (index != 0)
-                    historyFile = true;
+                    history = true;
 
                 if (parts[1] == "diff")
                 {
+                    string what = "Current";
+                    if (history)
+                        what = "History from " + file.Date.ToLocalTime().ToString();
 
+                    DiffForm form = new DiffForm(this, ParentView.DhtID, what, file, history);
+
+                    form.ShowDialog(this);
                 }
 
                 if (parts[1] == "edit")
@@ -1071,7 +1084,7 @@ namespace DeOps.Components.Storage
                 {
                     List<LockError> errors = new List<LockError>();
 
-                    string finalpath = Storages.UnlockFile(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, historyFile, errors);
+                    string finalpath = Storages.UnlockFile(UserID, ParentView.ProjectID, CurrentFolder.GetPath(), file, history, errors);
 
                     if (finalpath != null && File.Exists(finalpath))
                         System.Diagnostics.Process.Start(finalpath);
@@ -1084,7 +1097,7 @@ namespace DeOps.Components.Storage
 
                 if (parts[1] == "lock")
                 {
-                    Storages.LockFile(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, historyFile);
+                    Storages.LockFile(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, history);
 
                     CurrentFile.Update();
                     Refresh();
@@ -1104,7 +1117,7 @@ namespace DeOps.Components.Storage
 
                 if (parts[1] == "replace")
                 {
-                    ParentView.Working.ReplaceFile(CurrentFile.GetPath(), file);
+                    ParentView.Working.ReplaceFile(CurrentFile.GetPath(), file.Clone());
                 }
             }
 

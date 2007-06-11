@@ -980,15 +980,15 @@ namespace DeOps.Components.Storage
             }
         }
 
-        internal void MarkforHash(LocalFile file, string path, uint project)
+        internal void MarkforHash(LocalFile file, string path, uint project, string dir)
         {
-            HashPack pack = new HashPack(file, path, project);
+            HashPack pack = new HashPack(file, path, project, dir);
 
             lock (HashQueue)
                 if (!HashQueue.Contains(pack))
                 {
                     // will be reset if file data modified
-                    file.Info.Size = 0;
+                    /*file.Info.Size = 0;
                     file.Info.Hash = null;
                     file.Info.HashID = 0;
                     file.Info.FileKey = new RijndaelManaged();
@@ -996,7 +996,7 @@ namespace DeOps.Components.Storage
 
                     file.Info.InternalSize = 0;
                     file.Info.InternalHash = null;
-                    file.Info.InternalHashID = 0;
+                    file.Info.InternalHashID = 0;*/
 
                     HashQueue.Enqueue(pack);
                 }
@@ -1036,13 +1036,13 @@ namespace DeOps.Components.Storage
                 try
                 {
                     OpFile file = null;
-                    StorageFile info = pack.File.Info;
+                    StorageFile info = pack.File.Info.Clone();
 
                     // remove old references from local file
                     if (!derefed)
                     {
-                        if (FileMap.ContainsKey(pack.File.PrevID))
-                            FileMap[pack.File.PrevID].DeRef(); //crit test
+                        if (FileMap.ContainsKey(pack.File.Info.HashID))
+                            FileMap[pack.File.Info.HashID].DeRef(); //crit test
                      
                         derefed = true;
                     }
@@ -1070,6 +1070,9 @@ namespace DeOps.Components.Storage
 
                         info.Hash = file.Hash;
                         info.HashID = file.HashID;
+
+                        if (!Utilities.MemCompare(file.Hash, pack.File.Info.Hash))
+                            ReviseFile(pack, info);
 
                         HashQueue.Dequeue();
                         derefed = false;
@@ -1104,17 +1107,16 @@ namespace DeOps.Components.Storage
                     if(!File.Exists(path))
                         File.Move(tempPath, path);
 
-                    // insert into file map
+                    // insert into file map - create new because internal for hash above was not in map already
                     file = new OpFile(info);
-
                     file.References++;
                     FileMap[info.HashID] = file;
                     InternalFileMap[info.InternalHashID] = file;
 
                     // if hash is different than previous mark as modified
-                    if (!Utilities.MemCompare(file.Hash, pack.OldHash))
-                        if (Working.ContainsKey(pack.Project))
-                            Working[pack.Project].ReadyChange(pack.File);
+                    if (!Utilities.MemCompare(file.Hash, pack.File.Info.Hash))
+                        ReviseFile(pack, info);
+
 
                     HashQueue.Dequeue(); // try to hash until finished without exception (wait for access to file)
                     derefed = false; // make sure we only deref once per file
@@ -1125,6 +1127,14 @@ namespace DeOps.Components.Storage
                     continue; // file might not exist anymore, name changed, etc..
                 } 
             }
+        }
+
+        private void ReviseFile(HashPack pack, StorageFile info)
+        {
+            if (Working.ContainsKey(pack.Project))
+                Working[pack.Project].ReadyChange(pack.File, info);
+
+            CallFileUpdate(pack.Project, pack.Dir, info.UID, WorkingChange.Updated);
         }
 
         internal WorkingStorage LoadWorking(uint project)
@@ -1461,7 +1471,7 @@ namespace DeOps.Components.Storage
                 actions = actions | StorageActions.Restored;
 
             if (item.GetType() == typeof(StorageFile))
-                if (!Utilities.MemCompare(((StorageFile)item).Hash, ((StorageFile)original).Hash))
+                if (!Utilities.MemCompare(((StorageFile)item).InternalHash, ((StorageFile)original).InternalHash))
                     actions = actions | StorageActions.Modified;
 
 
@@ -1531,15 +1541,16 @@ namespace DeOps.Components.Storage
     {
         internal LocalFile File;
         internal string Path;
-        internal byte[] OldHash;
+        internal string Dir;
         internal uint Project;
+        
 
-        internal HashPack(LocalFile file, string path, uint project)
+        internal HashPack(LocalFile file, string path, uint project, string dir)
         {
             File = file;
             Path = path;
-            OldHash = file.Info.Hash;
             Project = project;
+            Dir = dir;
         }
 
         public override bool Equals(object obj)
