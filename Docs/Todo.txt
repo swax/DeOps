@@ -1,51 +1,72 @@
 
 integration
 
-	inheritance
-		set inheritance file to null
-		find 
-			go up tree from self until node found that integrates local file
-			or local file is part of  history with dates newer than local
-		set that node's file to inheritance file
-		repeat find, until exhaustion
-		
-		why
-			this method lets branches work on their own projects without highers of higher's changes overwrite local stufff
-			enforces  integration chain leading up to top
-			if middle higher offline, can still inherit files that middle higher never touched
-			always in sync with files that local doesnt work with, but higher changes
+	Auto-Integrate (id)
+		For each file/folder uid
+			If file/folder not flagged as modified
+				Set current file to our latest
+				from self to highest
+					if current is integrated (files only)
+						set current file to higher's latest
+						break
+					for each file/folder in higher's archive
+						if itemdiff is same and date is equal or newer than now
+							set current file to higher's latest
+							break
+						else
+							break
+							
+				if current file/folder is not our own (itemdiff)
+					Call update function which
+						replace our current with this new file
+						if unlocked, overwrites
+						replace should also use this function
+						merges integration list for nodes adjacent to ourselves
+						
+					only 'save' if file system in a saved state
+						still merge with unsaved file system, just won't be made permanent till save is clicked
+						
+	RefreshHigherChanges(id)
+		remove current cached entries
+		for each uid
+				cache archive archive files newer than current file
+				cache latest integrated file from node on path to ourselves
+				if uid does not exist
+					check all uids to see if dupe exists with diff uid (itemdiff)
+					if exists, replace our uid, with higher's uid
+					else if name conflict create locally, remame local .old.
+					else create locally
+					
+	on link update
+		remove all cache enties
+		load higher nodes
+	
+	cache header
+		forech project
+			if header is higher or equal to self
+				RefreshCacheEntries
+				if not startup
+					run auto-integrate
+			
+	on startup
+		run auto-integrate (really needs to be multi-threaded)
 
-	always remain totally integrated with the very top
-		don't inherit if upper node has not integrated from the highest level change
-
-	explanation: in order for lowers to automatically inherit new versions, you must integrate their changes
-
-	integrating change from above, inherits their integration list, 
-	our lower integrations remain the same
-
-	should integrate all levels up
-
-	need to sync from up and to the side copies
-
-	when storage control auto-integrates, add high level to integration list
-		so that changes to local file doesn't cause dysnch to show up with higher level
+	why
+		this method lets branches work on their own projects without highers of higher's changes overwrite local stufff
+		enforces  integration chain leading up to top
+		if middle higher offline, can still inherit files that middle higher never touched
+		always in sync with files that local doesnt work with, but higher changes
 		red triangle will be reserved for real conflicts
 
-	
-	storage control - higher level storage update - merge
-		revise working
-		step through each file folder by uid, update files that have been integrated or are in history
-		if working already moded, we have to wait for user to save changes, otherwise, autosave
-		check for dupes file names with diff uids when merging in new highers, mark as conflict
-		
-		
+
+
 		
 review file references system
 how does add/replace work with unlocked files - figure out when doing inheritance
 check if file / dir has same name when renaming / creating in storage system	
 after hash if file modified, and hash is equal to unmodified, remove modified flag
 double click open local temp files/*folders
-carry over notes when accepting changes, edit notes box needs to be larger, convert \n to <br>
+carry over notes whe`` accepting changes, edit notes box needs to be larger, convert \n to <br>
 show failed diffs
 get working with how visual studio does saves, crazy rename / delete / create process
 support multiple select - right click download

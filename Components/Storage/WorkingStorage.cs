@@ -875,6 +875,181 @@ namespace DeOps.Components.Storage
         }
 
 
+
+        internal void RefreshHigherChanges(ulong id)
+        {
+
+            RemoveHigherChanges(RootFolder, id);
+            
+            /*
+		        for each uid
+				    cache archive archive files newer than current file
+				    cache latest integrated file from node on path to ourselves
+				    if uid does not exist
+					    check all uids to see if dupe exists with diff uid (itemdiff)
+					    if exists, replace our uid, with higher's uid
+					    else if name conflict create locally, remame local .old.
+					    else create locally
+             */
+
+
+            if (!Storages.StorageMap.ContainsKey(id))
+                return;
+
+            StorageHeader headerx = Storages.StorageMap[id].Header;
+
+            string path = Storages.GetFilePath(headerx);
+
+            if (!File.Exists(path))
+                return;
+
+            try
+            {
+                FileStream filex = new FileStream(path, FileMode.Open);
+                CryptoStream crypto = new CryptoStream(filex, headerx.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+
+                ulong remoteUID = 0;
+                LocalFolder currentFolder = RootFolder;
+                bool readingProject = false;
+
+                G2Header header = null;
+
+                while (stream.ReadPacket(ref header))
+                {
+                    if (header.Name == StoragePacket.Root)
+                    {
+                        StorageRoot root = StorageRoot.Decode(Core.Protocol, header);
+
+                        readingProject = (root.ProjectID == ProjectID);
+                    }
+
+                    if (readingProject)
+                    {
+                        if (header.Name == StoragePacket.Folder)
+                        {
+                            StorageFolder folder = StorageFolder.Decode(Core.Protocol, header);
+
+                            /* if new UID 
+                            if (remoteUID == folder.UID)
+                                continue;
+
+                            remoteUID = folder.UID;
+
+                            bool added = false;
+
+                            while (!added)
+                            {
+                                if (currentFolder.Details.UID == folder.ParentUID)
+                                {
+                                    // if folder exists with UID
+                                    if (currentFolder.Folders.ContainsKey(remoteUID))
+                                        currentFolder = currentFolder.Folders[remoteUID];
+
+                                    // else add folder as temp, mark as changed
+                                    else
+                                        currentFolder = currentFolder.AddFolderInfo(folder, true);
+
+                                    // diff file properties, if different, add as change
+                                    if (currentFolder.Temp || Storages.ItemDiff(currentFolder.Details, folder) != StorageActions.None)
+                                    {
+                                        currentFolder.Changes[id] = folder;
+                                        currentFolder.UpdateOverlay();
+                                    }
+
+                                    added = true;
+                                }
+                                else if (currentFolder.Parent.GetType() == typeof(FolderNode))
+                                    currentFolder = (FolderNode)currentFolder.Parent;
+                                else
+                                    break;
+                            }*/
+                        }
+
+                        if (header.Name == StoragePacket.File)
+                        {
+                            StorageFile file = StorageFile.Decode(Core.Protocol, header);
+
+                            /* if new UID 
+                            if (remoteUID == file.UID)
+                                continue;
+
+                            remoteUID = file.UID;
+
+                            FileItem currentFile = null;
+
+                            // if file exists with UID
+                            if (currentFolder.Files.ContainsKey(remoteUID))
+                                currentFile = currentFolder.Files[remoteUID];
+
+                            // else add file as temp, mark as changed
+                            else
+                                currentFile = currentFolder.AddFileInfo(file, true);
+
+                            // if file is integrated, still add, so that reject functions
+
+                            // true if file doesnt exist in local file history
+                            // if it does exist and file is newer than latest, true
+
+                            bool found = false;
+
+
+                            foreach (StorageFile archive in currentFile.Archived)
+                                if (Storages.ItemDiff(archive, file) == StorageActions.None)
+                                    if (archive.Date == file.Date)
+                                    {
+                                        found = true;
+                                        break;
+                                    }
+
+                            if (!found)
+                                currentFile.Changes[id] = file;*/
+                        }
+                    }
+                }
+
+                stream.Close();
+            }
+            catch
+            {
+
+            }
+        }
+
+        internal void RemoveAllHigherChanges()
+        {
+            RemoveHigherChanges(RootFolder, 0);
+        }
+
+        private void RemoveHigherChanges(LocalFolder folder, ulong id)
+        {
+            foreach (LocalFile file in folder.Files.Values)
+            {
+                if (id == 0)
+                    file.HigherChanges.Clear();
+
+                else if (file.HigherChanges.ContainsKey(id))
+                    file.HigherChanges.Remove(id);
+            }
+
+            foreach(LocalFolder subfolder in folder.Folders.Values)
+            {
+                if (id == 0)
+                    subfolder.HigherChanges.Clear();
+
+                else if (subfolder.HigherChanges.ContainsKey(id))
+                    subfolder.HigherChanges.Remove(id);
+
+                RemoveHigherChanges(subfolder, id);
+            }
+        }
+
+        internal void AutoIntegrate()
+        {
+            throw new Exception("The method or operation is not implemented.");
+        }
+
+        
     }
 
     internal class LocalFolder
@@ -883,6 +1058,7 @@ namespace DeOps.Components.Storage
         internal StorageFolder Info;
         internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>();
         internal Dictionary<ulong, StorageItem> Integrated = new Dictionary<ulong, StorageItem>();
+        internal Dictionary<ulong, List<StorageItem>> HigherChanges = new Dictionary<ulong, List<StorageItem>>();
 
         internal LocalFolder Parent;
         
@@ -997,7 +1173,7 @@ namespace DeOps.Components.Storage
         internal StorageFile Info;
         internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>();
         internal Dictionary<ulong, StorageItem> Integrated = new Dictionary<ulong, StorageItem>();
-
+        internal Dictionary<ulong, List<StorageItem>> HigherChanges = new Dictionary<ulong, List<StorageItem>>();
 
         internal LocalFile(StorageFile info)
         {

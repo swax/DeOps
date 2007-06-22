@@ -200,9 +200,9 @@ namespace DeOps.Components.Storage
             FileListView.Items.Clear();
 
             // if local
-            if (IsLocal)
+            if (IsLocal && Storages.Working.ContainsKey(ProjectID))
             {
-                Working = Storages.LoadWorking(ProjectID);
+                Working = Storages.Working[ProjectID];
                 RootFolder = LoadWorking(FolderTreeView.virtualParent, Working.RootFolder);
             }
 

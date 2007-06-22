@@ -57,6 +57,8 @@ namespace DeOps.Components.Storage
         internal WorkingUpdateHandler WorkingFileUpdate;
         internal WorkingUpdateHandler WorkingFolderUpdate;
 
+    
+        Thread HashThreadHandle;
         internal bool RunHashThread;
         internal bool HashProcessing;
         internal Queue<HashPack> HashQueue = new Queue<HashPack>();
@@ -82,9 +84,7 @@ namespace DeOps.Components.Storage
             Network.Searches.SearchEvent[ComponentID.Storage] = new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
-                PruneSize = 25;
-
-            
+                PruneSize = 25;  
         }
         
         void Core_Load()
@@ -94,6 +94,7 @@ namespace DeOps.Components.Storage
             Core.Transfers.FileSearch[ComponentID.Storage] = new FileSearchHandler(Transfers_FileSearch);
             Core.Transfers.FileRequest[ComponentID.Storage] = new FileRequestHandler(Transfers_FileRequest);
 
+            Core.Links.LinkUpdate += new LinkUpdateHandler(Links_LinkUpdate);
 
             StoragePath = Core.User.RootPath + "\\" + ComponentID.Storage.ToString();
             Directory.CreateDirectory(StoragePath);
@@ -121,9 +122,18 @@ namespace DeOps.Components.Storage
                 LocalStorage = StorageMap[Core.LocalDhtID];
             }
 
+            // start hash thread
+            HashThreadHandle = new Thread(new ThreadStart(HashThread));
+            RunHashThread = true;
+            HashThreadHandle.Start();
+            
             // load working headers
             foreach (uint project in Links.LocalLink.Projects)
-                LoadHeaderFiles(GetWorkingPath(project), LocalStorage, false, true);
+            {
+                LoadHeaderFile(GetWorkingPath(project), LocalStorage, false, true);
+                Working[project] = new WorkingStorage(this, project);
+                Working[project].AutoIntegrate();
+            }
         }
 
         internal override void GuiClosing()
@@ -137,9 +147,11 @@ namespace DeOps.Components.Storage
             }
             Working.Clear();
 
+            // stop hash thread
             RunHashThread = false;
             lock (HashQueue)
                 Monitor.Pulse(HashQueue);
+            HashThreadHandle.Join(3000);
         }
 
         void Core_Timer()
@@ -197,7 +209,7 @@ namespace DeOps.Components.Storage
                         if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
                             furthest = id;
 
-                    UnloadHeaderFiles(GetFilePath(storage.Header), storage.Header.FileKey);
+                    UnloadHeaderFile(GetFilePath(storage.Header), storage.Header.FileKey);
 
                     if (storage.Header != null)
                         try { File.Delete(GetFilePath(storage.Header)); }
@@ -530,7 +542,7 @@ namespace DeOps.Components.Storage
                         return; // dont update with older version
 
                     string oldPath = GetFilePath(storage.Header);
-                    UnloadHeaderFiles(oldPath, storage.Header.FileKey);
+                    UnloadHeaderFile(oldPath, storage.Header.FileKey);
 
                     if (path != oldPath && File.Exists(oldPath))
                         try { File.Delete(oldPath); }
@@ -544,7 +556,18 @@ namespace DeOps.Components.Storage
 
                 RunSaveHeaders = true;
 
-                LoadHeaderFiles(path, storage, false, false);
+                LoadHeaderFile(path, storage, false, false);
+
+                //
+                foreach (uint project in Links.ProjectRoots.Keys)
+                    if (Core.LocalDhtID == storage.DhtID || Links.IsHigher(storage.DhtID, project))
+                        if (Working.ContainsKey(project))
+                        {
+                            Working[project].RefreshHigherChanges(storage.DhtID);
+
+                            if (!Core.Loading)
+                                Working[project].AutoIntegrate();
+                        }
 
                 // update subs
                 if (Network.Established)
@@ -564,6 +587,29 @@ namespace DeOps.Components.Storage
             {
                 Network.UpdateLog("Storage", "Error caching storage " + ex.Message);
             }
+        }
+
+        void Links_LinkUpdate(OpLink link)
+        {
+            // update working projects (add)
+            if (link.DhtID == Core.LocalDhtID)
+                foreach (uint project in Links.LocalLink.Projects)
+                    if (!Working.ContainsKey(project))
+                    {
+                        LoadHeaderFile(GetWorkingPath(project), LocalStorage, false, true);
+                        Working[project] = new WorkingStorage(this, project);
+                    }
+
+
+            // remove all higher changes, reload with new highers (cause link changed
+            foreach (WorkingStorage working in Working.Values )
+                if (Core.LocalDhtID == link.DhtID || Links.IsHigher(link.DhtID, working.ProjectID))
+                {
+                    working.RemoveAllHigherChanges();
+
+                    foreach (ulong uplink in Links.GetUplinkIDs(Core.LocalDhtID, working.ProjectID))
+                        working.RefreshHigherChanges(uplink);
+                }
         }
 
         bool Transfers_FileSearch(ulong key, FileDetails details)
@@ -767,7 +813,7 @@ namespace DeOps.Components.Storage
                         Store.PublishNetwork(storage.DhtID, ComponentID.Storage, storage.SignedHeader);
 
                     // trigger download of files now in cache range
-                    LoadHeaderFiles(GetFilePath(storage.Header), storage, true, false);
+                    LoadHeaderFile(GetFilePath(storage.Header), storage, true, false);
                 }
             }
 
@@ -838,7 +884,7 @@ namespace DeOps.Components.Storage
             return StoragePath + "\\1\\" + Utilities.CryptFilename(LocalFileKey, "working:" + project.ToString());
         }
 
-        private void LoadHeaderFiles(string path, OpStorage storage, bool reload, bool working)
+        private void LoadHeaderFile(string path, OpStorage storage, bool reload, bool working)
         {
             try
             {
@@ -943,7 +989,7 @@ namespace DeOps.Components.Storage
             // interface list box would be watching if file is transferring, will catch completed update
         }
 
-        private void UnloadHeaderFiles(string path, RijndaelManaged key)
+        private void UnloadHeaderFile(string path, RijndaelManaged key)
         {
             try
             {
@@ -1137,23 +1183,6 @@ namespace DeOps.Components.Storage
             CallFileUpdate(pack.Project, pack.Dir, info.UID, WorkingChange.Updated);
         }
 
-        internal WorkingStorage LoadWorking(uint project)
-        {
-            if (Working.Count == 0)
-            {
-                Thread hasher = new Thread(new ThreadStart(HashThread));
-                RunHashThread = true;
-                hasher.Start();
-            }
-
-            if (Working.ContainsKey(project))
-                return Working[project];
-
-            Working[project] = new WorkingStorage(this, project);
-
-            return Working[project];
-        }
-
         internal string GetRootPath(ulong user, uint project)
         {
             return Core.User.RootPath + "\\" + Links.ProjectNames[project] + " Storage\\" + Links.GetName(user);
@@ -1170,14 +1199,16 @@ namespace DeOps.Components.Storage
 
             // call unload on working
             string path = GetWorkingPath(project);
-            UnloadHeaderFiles(path, LocalFileKey);
+            UnloadHeaderFile(path, LocalFileKey);
 
             // delete working file
             try { File.Delete(path); }
             catch { };
                  
             //loadworking
-            return LoadWorking(project);
+            Working[project] = new WorkingStorage(this, project);
+
+            return Working[project];
         }
 
         internal bool FileExists(StorageFile file)
@@ -1490,6 +1521,12 @@ namespace DeOps.Components.Storage
 
             return highers;
         }
+
+        private void AutoIntegrate()
+        {
+            throw new Exception("The method or operation is not implemented.");
+        }
+
     }
 
     internal class OpStorage
