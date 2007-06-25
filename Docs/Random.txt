@@ -361,6 +361,7 @@ Dht
 	Simultaneous search nodes 3
 	
 
+email people subject /mode -o <name>
 
 Other known Dht apps
 	emule Dht

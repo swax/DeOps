@@ -878,24 +878,14 @@ namespace DeOps.Components.Storage
 
         internal void RefreshHigherChanges(ulong id)
         {
-
+            // first remove changes from this id
             RemoveHigherChanges(RootFolder, id);
             
-            /*
-		        for each uid
-				    cache archive archive files newer than current file
-				    cache latest integrated file from node on path to ourselves
-				    if uid does not exist
-					    check all uids to see if dupe exists with diff uid (itemdiff)
-					    if exists, replace our uid, with higher's uid
-					    else if name conflict create locally, remame local .old.
-					    else create locally
-             */
-
-
             if (!Storages.StorageMap.ContainsKey(id))
                 return;
 
+            // this is the first step in auto-integration
+            // go through this id's storage file, and add any changes or updates to our own system
             StorageHeader headerx = Storages.StorageMap[id].Header;
 
             string path = Storages.GetFilePath(headerx);
@@ -909,9 +899,10 @@ namespace DeOps.Components.Storage
                 CryptoStream crypto = new CryptoStream(filex, headerx.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 
-                ulong remoteUID = 0;
+                ulong currentUID = 0;
                 LocalFolder currentFolder = RootFolder;
-                bool readingProject = false;
+                LocalFile currentFile = null;
+                bool readingProject = false;   
 
                 G2Header header = null;
 
@@ -928,82 +919,115 @@ namespace DeOps.Components.Storage
                     {
                         if (header.Name == StoragePacket.Folder)
                         {
-                            StorageFolder folder = StorageFolder.Decode(Core.Protocol, header);
+                            StorageFolder readFolder = StorageFolder.Decode(Core.Protocol, header);
 
-                            /* if new UID 
-                            if (remoteUID == folder.UID)
-                                continue;
 
-                            remoteUID = folder.UID;
-
-                            bool added = false;
-
-                            while (!added)
+                            // if new uid
+                            if (currentUID != readFolder.UID)
                             {
-                                if (currentFolder.Details.UID == folder.ParentUID)
+                                // if only 1 entry in changes for previous file, remove it, its probably a dupe of local
+                                // and integration needs more than one file to happen
+                                if (currentFolder.HigherChanges.ContainsKey(id) && currentFolder.HigherChanges[id].Count == 1)
+                                    currentFolder.HigherChanges.Remove(id);
+
+                                // set new id
+                                currentUID = readFolder.UID;
+
+                                bool added = false;
+
+                                while (!added)
                                 {
-                                    // if folder exists with UID
-                                    if (currentFolder.Folders.ContainsKey(remoteUID))
-                                        currentFolder = currentFolder.Folders[remoteUID];
-
-                                    // else add folder as temp, mark as changed
-                                    else
-                                        currentFolder = currentFolder.AddFolderInfo(folder, true);
-
-                                    // diff file properties, if different, add as change
-                                    if (currentFolder.Temp || Storages.ItemDiff(currentFolder.Details, folder) != StorageActions.None)
+                                    if (currentFolder.Info.UID == readFolder.ParentUID)
                                     {
-                                        currentFolder.Changes[id] = folder;
-                                        currentFolder.UpdateOverlay();
-                                    }
+                                        // if matches with local uid, set current file to file
+                                        if (currentFolder.Folders.ContainsKey(currentUID))
+                                            currentFolder = currentFolder.Folders[currentUID];
 
-                                    added = true;
+                                        // if doesnt match
+                                        else
+                                        {
+                                            // check for conflicting name
+                                            foreach (LocalFolder subfolder in currentFolder.Folders.Values)
+                                                if (!subfolder.Info.IsFlagged(StorageFlags.Archived) && subfolder.Info.Name == readFolder.Name)
+                                                    subfolder.Info.Name = subfolder.Info.Name + ".fix";
+
+                                            // if not found, create folder
+                                            currentFolder = currentFolder.AddFolderInfo(readFolder);
+                                        }
+
+                                        added = true;
+                                    }
+                                    else if (currentFolder.Parent.GetType() == typeof(LocalFolder))
+                                        currentFolder = currentFolder.Parent;
+                                    else
+                                        break;
                                 }
-                                else if (currentFolder.Parent.GetType() == typeof(FolderNode))
-                                    currentFolder = (FolderNode)currentFolder.Parent;
-                                else
-                                    break;
-                            }*/
+                            }
+
+                            // if file does not equal null
+                            if (currentFolder != null)
+                            {
+                                // log change if file newer than ours
+                                // if if not in higher's history 
+                                // or if file integrated by higher by a node we would have inherited from
+
+                                // we look for our own file in higher changes, if there then we can auto integrate
+
+                                if (readFolder.Date >= currentFolder.Info.Date)
+                                    if (readFolder.IntegratedID == 0 ||
+                                        readFolder.IntegratedID == Core.LocalDhtID ||
+                                        Core.Links.IsHigher(Core.LocalDhtID, ProjectID))
+                                        currentFolder.AddHigherChange(id, readFolder);
+                            }
+
                         }
 
                         if (header.Name == StoragePacket.File)
                         {
-                            StorageFile file = StorageFile.Decode(Core.Protocol, header);
+                            StorageFile readFile = StorageFile.Decode(Core.Protocol, header);
 
-                            /* if new UID 
-                            if (remoteUID == file.UID)
-                                continue;
+                            // if new uid
+                            if (currentUID != readFile.UID)
+                            {
+                                // if only 1 entry in changes for previous file, remove it, its probably a dupe of local
+                                // and integration needs more than one file to happen
+                                if (currentFile != null && currentFile.HigherChanges.ContainsKey(id) && currentFile.HigherChanges[id].Count == 1)
+                                    currentFile.HigherChanges.Remove(id);
 
-                            remoteUID = file.UID;
+                                // set new id
+                                currentUID = readFile.UID;
 
-                            FileItem currentFile = null;
+                                currentFile = null;
 
-                            // if file exists with UID
-                            if (currentFolder.Files.ContainsKey(remoteUID))
-                                currentFile = currentFolder.Files[remoteUID];
+                                // if file exists with UID
+                                if (currentFolder.Files.ContainsKey(currentUID))
+                                    currentFile = currentFolder.Files[currentUID];
 
-                            // else add file as temp, mark as changed
-                            else
-                                currentFile = currentFolder.AddFileInfo(file, true);
+                                // else add file as temp, mark as changed
+                                else
+                                {
+                                    // check for conflicting name
+                                    foreach (LocalFile checkFile in currentFolder.Files.Values)
+                                        if (!checkFile.Info.IsFlagged(StorageFlags.Archived) && checkFile.Info.Name == readFile.Name)
+                                            checkFile.Info.Name = checkFile.Info.Name + ".fix";
 
-                            // if file is integrated, still add, so that reject functions
+                                    currentFile = currentFolder.AddFileInfo(readFile);
 
-                            // true if file doesnt exist in local file history
-                            // if it does exist and file is newer than latest, true
+                                    if(!Storages.FileExists(currentFile.Info))
+                                        Storages.DownloadFile(id, currentFile.Info );
+                                }
+                            }
 
-                            bool found = false;
-
-
-                            foreach (StorageFile archive in currentFile.Archived)
-                                if (Storages.ItemDiff(archive, file) == StorageActions.None)
-                                    if (archive.Date == file.Date)
-                                    {
-                                        found = true;
-                                        break;
-                                    }
-
-                            if (!found)
-                                currentFile.Changes[id] = file;*/
+                            // if file does not equal null
+                            if (currentFile != null)
+                            {
+                                if (readFile.Date >= currentFile.Info.Date)
+                                    if (readFile.IntegratedID == 0 ||
+                                        readFile.IntegratedID == Core.LocalDhtID ||
+                                        Core.Links.IsHigher(Core.LocalDhtID, ProjectID))
+                                        currentFile.AddHigherChange(id, readFile);
+                            }
+                          
                         }
                     }
                 }
@@ -1046,10 +1070,133 @@ namespace DeOps.Components.Storage
 
         internal void AutoIntegrate()
         {
-            throw new Exception("The method or operation is not implemented.");
+            // only 'save' if file system in a saved state
+			// still merge with unsaved file system, just won't be made permanent till save is clicked
+
+            if (AutoIntegrate(RootFolder))
+                if (!Modified)
+                    Storages.SaveLocal(ProjectID);
+                else
+                    PeriodicSave = true;
         }
 
-        
+        private bool AutoIntegrate(LocalFolder folder)
+        {
+            bool save = false;
+
+            if (!folder.Info.IsFlagged(StorageFlags.Modified))
+            {
+                StorageFolder integrated = folder.Info;
+
+                List<ulong> uplinkIDs = new List<ulong>();
+                uplinkIDs.Add(Core.LocalDhtID);
+                uplinkIDs.AddRange(Core.Links.GetUplinkIDs(Core.LocalDhtID, ProjectID));
+
+                // this will process will find higher has integrated my file
+                // and highest has integrated his file, and return latest
+
+                // from self to highest
+                foreach (ulong id in uplinkIDs)
+                    if (folder.HigherChanges.ContainsKey(id))
+                        // higherChanges consists of files that are newer than local
+                        foreach (StorageFolder changeFolder in folder.HigherChanges[id])
+                            if (changeFolder.Date >= integrated.Date && Storages.ItemDiff(integrated, changeFolder) == StorageActions.None)
+                            {
+                                integrated = (StorageFolder)folder.HigherChanges[id][0]; // first element is newest file
+                                break;
+                            }
+
+                // if current file/folder is not our own (itemdiff)
+                if (integrated != folder.Info)
+                {
+                    //crit
+                    /*if unlocked, overwrites
+                      replace should also use this function
+                    */
+                    folder.Info = integrated;
+                    folder.Archived.AddFirst(integrated);
+
+                    save = true;
+                }
+            }
+
+            foreach (LocalFile file in folder.Files.Values)
+                if(AutoIntegrate(file))
+                    save = true;
+
+            foreach (LocalFolder subfolder in folder.Folders.Values)
+                if( AutoIntegrate(subfolder))
+                    save = true;
+
+            return save;
+        }
+
+        private bool AutoIntegrate(LocalFile file)
+        {
+            // If file/folder not flagged as modified
+            if(file.Info.IsFlagged(StorageFlags.Modified))
+                return false;
+
+            StorageFile latestFile = file.Info;
+            List<StorageFile> inheritIntegrated = new List<StorageFile>();
+
+            List<ulong> uplinkIDs = new List<ulong>();
+            uplinkIDs.Add(Core.LocalDhtID);
+            uplinkIDs.AddRange(Core.Links.GetUplinkIDs(Core.LocalDhtID, ProjectID));
+
+            ulong directHigher = (uplinkIDs.Count >= 2) ? uplinkIDs[1] : 0;
+
+
+            // this process will find higher has integrated my file
+            // and highest has integrated his file, and return latest
+            
+            // from self to highest
+            foreach (ulong id in uplinkIDs)
+                if (file.HigherChanges.ContainsKey(id))
+                    // higherChanges consists of files that are newer than local
+                    foreach (StorageFile changeFile in file.HigherChanges[id])
+                    {
+                        if (changeFile.Date >= latestFile.Date && Storages.ItemDiff(latestFile, changeFile) == StorageActions.None)
+                        {
+                            latestFile = (StorageFile)file.HigherChanges[id][0]; // first element is newest file
+
+                            if (id != directHigher)
+                                break;
+                        }
+
+                        if (id == directHigher &&
+                            changeFile.IntegratedID != 0 &&
+                            Core.Links.IsAdjacent(changeFile.IntegratedID, ProjectID))
+                            inheritIntegrated.Add(changeFile);
+                    }
+
+            // if current file/folder is not our own (itemdiff)
+            bool save = false;
+
+            if (latestFile != file.Info)
+            {
+                //crit
+                //if unlocked, overwrites
+				//replace should also use this function
+						
+                file.Info = latestFile;
+                file.Archived.AddFirst(latestFile);
+
+                save = true;
+            }
+
+            // merges integration list for nodes adjacent to ourselves
+            // works even if higher integrates more files, but doesn't necessarily change the file's hash
+            foreach (StorageFile inherited in inheritIntegrated)
+                if (!file.Integrated.ContainsKey(inherited.IntegratedID) ||
+                    inherited.Date > file.Integrated[inherited.IntegratedID].Date)
+                {
+                    file.Integrated[inherited.IntegratedID] = inherited;
+                    save = true;
+                }
+
+            return save;
+        }
     }
 
     internal class LocalFolder
@@ -1134,8 +1281,11 @@ namespace DeOps.Components.Storage
 
             LocalFolder folder = Folders[info.UID];
 
-            if (info.Integrated != 0)
-                folder.Integrated[info.Integrated] = info;
+            // if this is integration info, add to integration map
+            if (info.IntegratedID != 0)
+                folder.Integrated[info.IntegratedID] = info;
+
+            // if history info, add to files history
             else
                 folder.Archived.AddLast(info);   
 
@@ -1151,20 +1301,32 @@ namespace DeOps.Components.Storage
             Files[uid] = file;
         }
 
-        internal void AddFileInfo(StorageFile info)
+        internal LocalFile AddFileInfo(StorageFile info)
         {
             if (!Files.ContainsKey(info.UID))
                 Files[info.UID] = new LocalFile(info);
 
-            if(info.Integrated != 0)
-                Files[info.UID].Integrated[info.Integrated] = info; 
+            LocalFile file =  Files[info.UID];
+
+            if(info.IntegratedID != 0)
+                file.Integrated[info.IntegratedID] = info; 
             else
-                Files[info.UID].Archived.AddLast(info);   
+                file.Archived.AddLast(info);
+
+            return file;
         }
 
         public override string ToString()
         {
             return Info.Name;
+        }
+
+        internal void AddHigherChange(ulong id, StorageFolder change)
+        {
+            if (!HigherChanges.ContainsKey(id))
+                HigherChanges[id] = new List<StorageItem>();
+
+            HigherChanges[id].Add(change);
         }
     }
 
@@ -1206,6 +1368,15 @@ namespace DeOps.Components.Storage
         {
             return Info.Name;
         }
+
+        internal void AddHigherChange(ulong id, StorageFile change)
+        {
+            if (!HigherChanges.ContainsKey(id))
+                HigherChanges[id] = new List<StorageItem>();
+
+            HigherChanges[id].Add(change);
+        }
+        
     }
 
 

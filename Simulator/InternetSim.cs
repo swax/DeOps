@@ -67,6 +67,7 @@ namespace DeOps.Simulator
         internal bool TestEncryption = false;
         internal bool FreshStart = false;
         internal bool TestTcpFullBuffer = false;
+        internal bool UseTimeFile = true;
         
         bool Flux        = false;
         int  FluxIn      = 1;
@@ -240,7 +241,7 @@ namespace DeOps.Simulator
 
         void Run()
         {
-                int pumps = 4;
+            int pumps = 4;
             List<SimPacket> tempList = new List<SimPacket>();
 
             while (true)

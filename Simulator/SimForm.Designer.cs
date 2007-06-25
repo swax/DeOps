@@ -54,6 +54,7 @@ namespace DeOps.Simulator
             this.ExitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ViewMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.ButtonStep = new System.Windows.Forms.Button();
+            this.TimeLabel = new System.Windows.Forms.Label();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -84,7 +85,7 @@ namespace DeOps.Simulator
             this.labelTime.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.labelTime.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.labelTime.Location = new System.Drawing.Point(255, 387);
+            this.labelTime.Location = new System.Drawing.Point(264, 379);
             this.labelTime.Name = "labelTime";
             this.labelTime.Size = new System.Drawing.Size(273, 18);
             this.labelTime.TabIndex = 2;
@@ -247,11 +248,23 @@ namespace DeOps.Simulator
             this.ButtonStep.UseVisualStyleBackColor = true;
             this.ButtonStep.Click += new System.EventHandler(this.ButtonStep_Click);
             // 
+            // TimeLabel
+            // 
+            this.TimeLabel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.TimeLabel.Location = new System.Drawing.Point(267, 397);
+            this.TimeLabel.Name = "TimeLabel";
+            this.TimeLabel.Size = new System.Drawing.Size(270, 13);
+            this.TimeLabel.TabIndex = 10;
+            this.TimeLabel.Text = "Date / Time";
+            this.TimeLabel.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
             // SimForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(549, 419);
+            this.Controls.Add(this.TimeLabel);
             this.Controls.Add(this.ButtonStep);
             this.Controls.Add(this.LinkUpdate);
             this.Controls.Add(this.LabelInstances);
@@ -299,5 +312,6 @@ namespace DeOps.Simulator
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem ExitMenuItem;
         private System.Windows.Forms.Button ButtonStep;
+        private System.Windows.Forms.Label TimeLabel;
     }
 }

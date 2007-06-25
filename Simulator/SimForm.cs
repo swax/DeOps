@@ -53,6 +53,8 @@ namespace DeOps.Simulator
 
         internal Dictionary<ulong, NetView> NetViews = new Dictionary<ulong, NetView>();
 
+        FileStream TimeFile;
+
 
         internal SimForm()
         {
@@ -63,6 +65,18 @@ namespace DeOps.Simulator
             //LoadNames();
 
             Sim = new InternetSim(this);
+
+            if (Sim.UseTimeFile)
+            {
+                TimeFile = new FileStream("time.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite);
+
+                if (TimeFile.Length >= 8)
+                {
+                    byte[] startTime = new byte[8];
+                    TimeFile.Read(startTime, 0, 8);
+                    Sim.TimeNow = DateTime.FromBinary(BitConverter.ToInt64(startTime, 0));
+                }
+            }
         }
 
         void LoadNames()
@@ -271,6 +285,14 @@ namespace DeOps.Simulator
             string label = total.ToString();
 
             labelTime.Text = SpantoString(total) + " / " + SpantoString(real);
+
+            TimeLabel.Text = Sim.TimeNow.ToString();
+
+            if (Sim.UseTimeFile)
+            {
+                TimeFile.Seek(0, SeekOrigin.Begin);
+                TimeFile.Write(BitConverter.GetBytes(Sim.TimeNow.ToBinary()), 0, 8);
+            }
         }
 
         string SpantoString(TimeSpan span)

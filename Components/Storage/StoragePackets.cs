@@ -159,7 +159,7 @@ namespace DeOps.Components.Storage
         internal string Name;
         internal DateTime Date;
 
-        internal ulong Integrated;
+        internal ulong IntegratedID;
         internal StorageFlags Flags;
         internal string Note;
 
@@ -213,7 +213,7 @@ namespace DeOps.Components.Storage
                     protocol.WritePacket(folder, Packet_Note, protocol.UTF.GetBytes(Note));
 
                 protocol.WritePacket(folder, Packet_Revs, BitConverter.GetBytes(Revs));
-                protocol.WritePacket(folder, Packet_Integrated, BitConverter.GetBytes(Integrated));
+                protocol.WritePacket(folder, Packet_Integrated, BitConverter.GetBytes(IntegratedID));
 
                 return protocol.WriteFinish();
             }
@@ -273,7 +273,7 @@ namespace DeOps.Components.Storage
                         break;
 
                     case Packet_Integrated:
-                        folder.Integrated = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        folder.IntegratedID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
                         break;
                 }
             }
@@ -326,7 +326,7 @@ namespace DeOps.Components.Storage
                 StorageFlags netFlags = Flags & ~(StorageFlags.Modified | StorageFlags.Unlocked);
                 protocol.WritePacket(file, Packet_Flags, BitConverter.GetBytes((ushort)netFlags));
                 protocol.WritePacket(file, Packet_Revs, BitConverter.GetBytes(Revs));
-                protocol.WritePacket(file, Packet_Integrated, BitConverter.GetBytes(Integrated));
+                protocol.WritePacket(file, Packet_Integrated, BitConverter.GetBytes(IntegratedID));
 
                 protocol.WritePacket(file, Packet_Size, BitConverter.GetBytes(Size));
                 protocol.WritePacket(file, Packet_Hash, Hash);
@@ -414,7 +414,7 @@ namespace DeOps.Components.Storage
                         break;
 
                     case Packet_Integrated:
-                        file.Integrated = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        file.IntegratedID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
                         break;
                 }
             }

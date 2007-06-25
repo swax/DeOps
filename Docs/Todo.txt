@@ -1,4 +1,7 @@
 
+add accept change to storageInfo interface for folders - so name / ghost status is transferred over easily
+only start hash threads when we need them, use timer
+
 integration
 
 	Auto-Integrate (id)

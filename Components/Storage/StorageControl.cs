@@ -35,6 +35,7 @@ namespace DeOps.Components.Storage
         internal RijndaelManaged LocalFileKey;
 
         bool RunSaveHeaders;
+        bool SavingLocal;
         internal StorageUpdateHandler StorageUpdate;
         internal event StorageGetFocusedHandler GetFocused;
 
@@ -132,6 +133,10 @@ namespace DeOps.Components.Storage
             {
                 LoadHeaderFile(GetWorkingPath(project), LocalStorage, false, true);
                 Working[project] = new WorkingStorage(this, project);
+
+                foreach (ulong higher in Links.GetUplinkIDs(Core.LocalDhtID, project))
+                    Working[project].RefreshHigherChanges(higher);
+
                 Working[project].AutoIntegrate();
             }
         }
@@ -440,7 +445,9 @@ namespace DeOps.Components.Storage
                 string finalPath = GetFilePath(header);
                 File.Move(tempPath, finalPath);
 
+                SavingLocal = true; // prevents auto-integrate from re-calling saveLocal
                 CacheStorage(new SignedData(Core.Protocol, Core.User.Settings.KeyPair, header), header);
+                SavingLocal = false;
 
                 SaveHeaders();
 
@@ -558,14 +565,15 @@ namespace DeOps.Components.Storage
 
                 LoadHeaderFile(path, storage, false, false);
 
-                //
+                // record changes of higher nodes for auto-integration purposes
                 foreach (uint project in Links.ProjectRoots.Keys)
                     if (Core.LocalDhtID == storage.DhtID || Links.IsHigher(storage.DhtID, project))
+                        // doesnt get called on startup because working not initialized before headers are loaded
                         if (Working.ContainsKey(project))
                         {
                             Working[project].RefreshHigherChanges(storage.DhtID);
 
-                            if (!Core.Loading)
+                            if (!Core.Loading && !SavingLocal)
                                 Working[project].AutoIntegrate();
                         }
 

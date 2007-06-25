@@ -1303,7 +1303,7 @@ namespace DeOps.Components.Link
 
             int traverse = 0;
 
-            OpLink uplink = link.Uplink.ContainsKey(project) ? link.Uplink[project] : null;
+            OpLink uplink = link.GetHigher(project);
 
             while (uplink != null)
             {
@@ -1311,7 +1311,7 @@ namespace DeOps.Components.Link
                 if (traverse == distance)
                     return uplink;
 
-                uplink = uplink.Uplink.ContainsKey(project) ? uplink.Uplink[project] : null;
+                uplink = uplink.GetHigher(project);
             }
 
             return null;
@@ -1360,14 +1360,14 @@ namespace DeOps.Components.Link
             if (!local.Loaded)
                 return false;
 
-            OpLink uplink = local.Uplink.ContainsKey(project) ? local.Uplink[project] : null;
+            OpLink uplink = local.GetHigher(project);
 
             while (uplink != null)
             {
                 if (uplink.DhtID == higherID)
                     return true;
 
-                uplink = uplink.Uplink.ContainsKey(project) ? uplink.Uplink[project] : null;
+                uplink = uplink.GetHigher(project);
             }
 
             return false;
@@ -1384,14 +1384,14 @@ namespace DeOps.Components.Link
             if (!lower.Loaded)
                 return false;
 
-            OpLink uplink = lower.Uplink.ContainsKey(project) ? lower.Uplink[project] : null;
+            OpLink uplink = lower.GetHigher(project);
 
             while (uplink != null)
             {
                 if (uplink.DhtID == localID)
                     return true;
 
-                uplink = uplink.Uplink.ContainsKey(project) ? uplink.Uplink[project] : null;
+                uplink = uplink.GetHigher(project);
             }
 
             return false;
@@ -1419,13 +1419,13 @@ namespace DeOps.Components.Link
             if (!link.Loaded)
                 return list;
 
-            OpLink uplink = link.Uplink.ContainsKey(project) ? link.Uplink[project] : null;
+            OpLink uplink = link.GetHigher(project);
 
             while (uplink != null)
             {
                 list.Add(uplink.DhtID);
 
-                uplink = uplink.Uplink.ContainsKey(project) ? uplink.Uplink[project] : null;
+                uplink = uplink.GetHigher(project);
             }
 
             return list;
@@ -1473,6 +1473,21 @@ namespace DeOps.Components.Link
             }
 
             return count > 0;
+        }
+
+        internal bool IsAdjacent(ulong id, uint project)
+        {
+            OpLink higher = LocalLink.GetHigher(project);
+
+            if (higher != null &&
+                higher.Confirmed.ContainsKey(project) &&
+                higher.Confirmed[project].Contains(id) &&
+                higher.Downlinks.ContainsKey(project))
+                foreach (OpLink downlink in higher.Downlinks[project])
+                    if (downlink.DhtID == id)
+                        return true;
+
+            return false;
         }
     }
 
@@ -1605,6 +1620,14 @@ namespace DeOps.Components.Link
                 foreach (UplinkRequest request in removeList)
                     Requests[id].Remove(request);
             }
+        }
+
+        internal OpLink GetHigher(uint project)
+        {
+            if(Uplink.ContainsKey(project))
+                return Uplink[project];
+
+            return null;
         }
     }
 }

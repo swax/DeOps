@@ -2148,8 +2148,8 @@ namespace DeOps.Components.Storage
 
             if (!remote)
             {
-                if (info.Integrated != 0)
-                    folder.Integrated[info.Integrated] = info;
+                if (info.IntegratedID != 0)
+                    folder.Integrated[info.IntegratedID] = info;
                 else
                     folder.Archived.AddLast(info);
             }
@@ -2166,8 +2166,8 @@ namespace DeOps.Components.Storage
 
             if (!remote)
             {
-                if (info.Integrated != 0)
-                    file.Integrated[info.Integrated] = info;
+                if (info.IntegratedID != 0)
+                    file.Integrated[info.IntegratedID] = info;
                 else
                     file.Archived.AddLast(info);
             }
