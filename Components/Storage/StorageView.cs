@@ -145,6 +145,9 @@ namespace DeOps.Components.Storage
 
         internal override bool Fin()
         {
+            Storages.StorageUpdate -= new StorageUpdateHandler(Storages_StorageUpdate);
+            Links.LinkUpdate -= new LinkUpdateHandler(Links_LinkUpdate);
+
             Storages.WorkingFileUpdate -= new WorkingUpdateHandler(Storages_WorkingFileUpdate);
             Storages.WorkingFolderUpdate -= new WorkingUpdateHandler(Storages_WorkingFolderUpdate);
 
@@ -460,10 +463,9 @@ namespace DeOps.Components.Storage
             {
                 RemoveDiff(storage.DhtID, RootFolder);
                 ApplyDiff(storage.DhtID);
-            }
 
-            UpdateListItems();
-            SelectedInfo.Refresh();
+                RefreshFileList();
+            }
         }
 
         private void GhostsButton_CheckedChanged(object sender, EventArgs e)

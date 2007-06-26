@@ -49,5 +49,16 @@ namespace DeOps.Interface
 
             return true;
         }
+
+        private void ExternalView_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (Shell.Fin())
+            {
+                Main.ExternalViews.Remove(this);
+                Shell.Dispose();
+            }
+            else
+                e.Cancel = true;
+        }
     }
 }

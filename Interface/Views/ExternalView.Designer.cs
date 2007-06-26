@@ -37,6 +37,7 @@ namespace DeOps.Interface
             this.ClientSize = new System.Drawing.Size(501, 594);
             this.Name = "ExternalView";
             this.Text = "PanelHost";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ExternalView_FormClosing);
             this.Load += new System.EventHandler(this.ExternalWin_Load);
             this.ResumeLayout(false);
 

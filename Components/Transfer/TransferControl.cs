@@ -494,6 +494,9 @@ namespace DeOps.Components.Transfer
                         
                         if(session.SendBuffLow())
                             return;
+
+                        upload.CheckDone();
+
                     }
                 }
 
@@ -737,12 +740,6 @@ namespace DeOps.Components.Transfer
             {
                 Done = true;
             }
-
-            if (FilePos == Details.Size)
-            {
-                Done = true;
-                ReadStream.Close();
-            }
         }
 
         internal void Rollback()
@@ -757,6 +754,15 @@ namespace DeOps.Components.Transfer
                 BuffSize = 0;
             }
             catch { }
+        }
+
+        internal void CheckDone()
+        {
+            if (FilePos == Details.Size)
+            {
+                Done = true;
+                ReadStream.Close();
+            }
         }
     }
 }

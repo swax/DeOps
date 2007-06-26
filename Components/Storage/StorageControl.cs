@@ -378,7 +378,7 @@ namespace DeOps.Components.Storage
 
                 if (oldFile != null)
                 {
-                    FileStream file = new FileStream(oldFile, FileMode.Open);
+                    FileStream file = new FileStream(oldFile, FileMode.Open, FileAccess.Read);
                     CryptoStream crypto = new CryptoStream(file, header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                     oldStream = new PacketStream(crypto, Protocol, FileAccess.Read);
                 }
