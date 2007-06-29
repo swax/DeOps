@@ -151,7 +151,7 @@ namespace DeOps.Implementation.Transport
         internal bool SendBuffLow()
         {
             // if outstanding bytes are more than 3/4 of the max buffer size, we are low
-            if(SendBuffLength  >  GetSendBuffSize() / 4 * 3)
+            if(SendBuffLength  >  GetSendBuffSize() * 3 / 4)
                 return true;
 
             return false;

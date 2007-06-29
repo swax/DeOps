@@ -62,7 +62,12 @@ namespace DeOps.Components.Storage
 
             splitContainer1.Height = Height - toolStrip1.Height;
 
-            IsLocal = (DhtID == Core.LocalDhtID);
+            if(DhtID == Core.LocalDhtID)
+                if (Storages.Working.ContainsKey(ProjectID))
+                {
+                    Working = Storages.Working[ProjectID];
+                    IsLocal = true;
+                }
         }
 
         internal override string GetTitle()
@@ -203,11 +208,8 @@ namespace DeOps.Components.Storage
             FileListView.Items.Clear();
 
             // if local
-            if (IsLocal && Storages.Working.ContainsKey(ProjectID))
-            {
-                Working = Storages.Working[ProjectID];
+            if (IsLocal)
                 RootFolder = LoadWorking(FolderTreeView.virtualParent, Working.RootFolder);
-            }
 
             // else load from file
             else
@@ -1582,7 +1584,7 @@ namespace DeOps.Components.Storage
 
             // rescan remote files against specific locals
             // happens when local file / folders are changed
-            if (NextRescan > 0 && !Storages.HashProcessing)
+            if (NextRescan > 0 && !Storages.HashingActive())
             {
                 NextRescan--;
 
@@ -1760,7 +1762,7 @@ namespace DeOps.Components.Storage
             if (!IsLocal)
                 return;
 
-            if (Storages.RunHashThread && Storages.HashProcessing)
+            if (Storages.HashingActive())
             {
                 if (!ChangesLabel.Visible || SaveLink.Visible)
                 {
@@ -1771,10 +1773,10 @@ namespace DeOps.Components.Storage
                     splitContainer1.Height = Height - 18 - toolStrip1.Height;
                 }
 
-                ChangesLabel.Text = "Processing " + (Storages.HashQueue.Count + 1).ToString() + " Changes...";
+                ChangesLabel.Text = "Processing " + (Storages.HashQueue.Count).ToString() + " Changes...";
             }
 
-            else if (Storages.RunHashThread && Working.Modified)
+            else if (Working.Modified)
             {
                 if (!SaveLink.Visible)
                 {

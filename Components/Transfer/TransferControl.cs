@@ -382,7 +382,9 @@ namespace DeOps.Components.Transfer
             download.RequestSent++;
 
             download.Status = DownloadStatus.Transferring;
-            download.Sessions.Add(session);
+
+            if(!download.Sessions.Contains(session))
+                download.Sessions.Add(session);
 
             TransferRequest request = new TransferRequest(download, Core.Protocol);
             session.SendData(ComponentID.Transfer, request, true);
@@ -486,17 +488,16 @@ namespace DeOps.Components.Transfer
                         upload.ReadNext();
                         TransferData data = new TransferData(upload);
 
-                        if (!session.SendData(ComponentID.Transfer, data, false))
+                        if (session.SendBuffLow())
                         {
                             upload.Rollback();
                             return;
                         }
-                        
-                        if(session.SendBuffLow())
-                            return;
 
                         upload.CheckDone();
 
+                        if (!session.SendData(ComponentID.Transfer, data, false))
+                            return; // no room in comm buffer for more sends
                     }
                 }
 
@@ -725,12 +726,6 @@ namespace DeOps.Components.Transfer
         {
             BuffSize = 0;
 
-            if (ReadStream == null)
-            {
-                Done = true;
-                return;
-            }
-
             try
             {
                 BuffSize = ReadStream.Read(Buff, 0, READ_SIZE);
@@ -762,6 +757,7 @@ namespace DeOps.Components.Transfer
             {
                 Done = true;
                 ReadStream.Close();
+                ReadStream = null;
             }
         }
     }

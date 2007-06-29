@@ -60,8 +60,6 @@ namespace DeOps.Components.Storage
 
     
         Thread HashThreadHandle;
-        internal bool RunHashThread;
-        internal bool HashProcessing;
         internal Queue<HashPack> HashQueue = new Queue<HashPack>();
 
 
@@ -122,11 +120,6 @@ namespace DeOps.Components.Storage
 
                 LocalStorage = StorageMap[Core.LocalDhtID];
             }
-
-            // start hash thread
-            HashThreadHandle = new Thread(new ThreadStart(HashThread));
-            RunHashThread = true;
-            HashThreadHandle.Start();
             
             // load working headers
             foreach (uint project in Links.LocalLink.Projects)
@@ -151,12 +144,6 @@ namespace DeOps.Components.Storage
                     working.SaveWorking();
             }
             Working.Clear();
-
-            // stop hash thread
-            RunHashThread = false;
-            lock (HashQueue)
-                Monitor.Pulse(HashQueue);
-            HashThreadHandle.Join(3000);
         }
 
         void Core_Timer()
@@ -164,6 +151,12 @@ namespace DeOps.Components.Storage
             if (RunSaveHeaders)
                 SaveHeaders();
 
+            // hashing
+            if (HashQueue.Count > 0 && (HashThreadHandle == null || !HashThreadHandle.IsAlive))
+            {
+                HashThreadHandle = new Thread(new ThreadStart(HashThread));
+                HashThreadHandle.Start();
+            }
 
             // clean download later map
             if (!Network.Established)
@@ -1059,29 +1052,18 @@ namespace DeOps.Components.Storage
                 Monitor.Pulse(HashQueue);
         }
 
+        const int HashBufferSize = 1024 * 16;
+        byte[] HashBuffer = new byte[HashBufferSize];
+        bool HashRetry = false;
+
         void HashThread()
         {
-            int buffSize = 1024 * 16;
-            byte[] buffer = new byte[buffSize];
-            bool derefed = false;
-
-            while (RunHashThread)
+            while (HashQueue.Count > 0)
             {
-                if (!RunHashThread)
-                    return;
-
-                if (HashQueue.Count == 0)
-                {
-                    HashProcessing = false;
-                    lock (HashQueue)
-                        Monitor.Wait(HashQueue);
-                    HashProcessing = true;
-                }
-
                 HashPack pack = null;
 
-                if (HashQueue.Count > 0)
-                    lock (HashQueue)
+                lock (HashQueue)
+                    if (HashQueue.Count > 0)
                         pack = HashQueue.Peek();
 
                 if (pack == null)
@@ -1092,19 +1074,16 @@ namespace DeOps.Components.Storage
                     OpFile file = null;
                     StorageFile info = pack.File.Info.Clone();
 
+
                     // remove old references from local file
-                    if (!derefed)
-                    {
+                    if (!HashRetry)
                         if (FileMap.ContainsKey(pack.File.Info.HashID))
                             FileMap[pack.File.Info.HashID].DeRef(); //crit test
-                     
-                        derefed = true;
-                    }
 
-                    if(!File.Exists(pack.Path))
+                    if (!File.Exists(pack.Path))
                     {
                         HashQueue.Dequeue();
-                        derefed = false;
+                        HashRetry = false;
 
                         continue;
                     }
@@ -1129,7 +1108,7 @@ namespace DeOps.Components.Storage
                             ReviseFile(pack, info);
 
                         HashQueue.Dequeue();
-                        derefed = false;
+                        HashRetry = false;
 
                         continue;
                     }
@@ -1141,11 +1120,11 @@ namespace DeOps.Components.Storage
 
                     FileStream localfile = new FileStream(pack.Path, FileMode.Open, FileAccess.Read);
 
-                    int read = buffSize;
-                    while (read == buffSize)
+                    int read = HashBufferSize;
+                    while (read == HashBufferSize)
                     {
-                        read = localfile.Read(buffer, 0, buffSize);
-                        stream.Write(buffer, 0, read);
+                        read = localfile.Read(HashBuffer, 0, HashBufferSize);
+                        stream.Write(HashBuffer, 0, read);
                     }
 
                     localfile.Close();
@@ -1158,7 +1137,7 @@ namespace DeOps.Components.Storage
 
                     // move to official path
                     string path = GetFilePath(info.HashID);
-                    if(!File.Exists(path))
+                    if (!File.Exists(path))
                         File.Move(tempPath, path);
 
                     // insert into file map - create new because internal for hash above was not in map already
@@ -1173,13 +1152,14 @@ namespace DeOps.Components.Storage
 
 
                     HashQueue.Dequeue(); // try to hash until finished without exception (wait for access to file)
-                    derefed = false; // make sure we only deref once per file
+                    HashRetry = false; // make sure we only deref once per file
                 }
                 catch (Exception ex)
                 {
+                    HashRetry = true;
                     Core.OperationNet.UpdateLog("Storage", "Hash thread: " + ex.Message);
                     continue; // file might not exist anymore, name changed, etc..
-                } 
+                }
             }
         }
 
@@ -1535,6 +1515,15 @@ namespace DeOps.Components.Storage
             throw new Exception("The method or operation is not implemented.");
         }
 
+
+        internal bool HashingActive()
+        {
+            if (HashQueue.Count > 0 || 
+                (HashThreadHandle != null && HashThreadHandle.IsAlive))
+                return true;
+
+            return false;
+        }
     }
 
     internal class OpStorage

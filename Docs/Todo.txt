@@ -1,7 +1,8 @@
 
 add accept change to storageInfo interface for folders - so name / ghost status is transferred over easily
-only start hash threads when we need them, use timer
-file name waaay too big in storage for some reason
+download status not updating, check changes to storageupdate in view, test with big file
+
+downloads getting stalled, onmoredata not being called on upload side, send_request not being sent on download side
 
 integration
 
