@@ -40,16 +40,16 @@ namespace DeOps.Implementation.Transport
 
         internal DateTime NegotiateTimeout;
 
-        const int BUFF_SIZE = 16 * 1024;
+        internal const int BUFF_SIZE = 16 * 1024;
 		
         // sending
         int SendBlockSize = 16;
         bool SendBufferFlushed = true;
 
-        byte[] SendBuffer;
-        int SendBuffSize = 0;
+        internal byte[] SendBuffer;
+        internal int SendBuffSize = 0;
 
-        byte[] EncryptBuffer;
+        internal byte[] EncryptBuffer;
         internal int EncryptBuffSize;
 
         ICryptoTransform SendEncryptor;
@@ -171,10 +171,13 @@ namespace DeOps.Implementation.Transport
                 {
                     int paddingNeeded = SendBlockSize - remainder;
 
-                    // packet empty is 2 bytes
+                    if (paddingNeeded == 3)
+                        paddingNeeded = 4;
+
+                    // packet empty is 2 bytes, 1 byte extra if there is size info, cant pad 3 bytes :(
                     EncryptionUpdate eu = new EncryptionUpdate(false);
-                    if(paddingNeeded > 2)
-                        eu.Padding = new byte[paddingNeeded - 2];
+                    if(paddingNeeded > 3)
+                        eu.Padding = new byte[paddingNeeded - 3];
                     byte[] final = eu.Encode(Core.Protocol);
 
                     final.CopyTo(SendBuffer, SendBuffSize);
@@ -209,6 +212,7 @@ namespace DeOps.Implementation.Transport
                     }
                 }
             }
+
             // return false if still data to be sent
             return EncryptBuffSize == 0;
         }
@@ -271,7 +275,8 @@ namespace DeOps.Implementation.Transport
 			
             if(Status == SessionStatus.Active)
 			{
-                FlushSend(true);
+                if (FlushSend(true))
+                    Core.Transfers.OnMoreData(this); // a hack for stalled transfers
 			}
 		}
 
@@ -630,9 +635,8 @@ namespace DeOps.Implementation.Transport
 		internal void OnSend()
 		{
             // try to flush remaining data
-            if( !FlushSend(false) )
+            if (!FlushSend(false))
                 return;
-
 
             Core.Transfers.OnMoreData(this);
 		}

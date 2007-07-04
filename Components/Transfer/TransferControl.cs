@@ -19,7 +19,7 @@ namespace DeOps.Components.Transfer
 
     internal class TransferControl : OpComponent
     {
-        OpCore Core;
+        internal OpCore Core;
 
         int ConcurrentDownloads = 5;
 
@@ -157,7 +157,10 @@ namespace DeOps.Components.Transfer
                         Connect(DownloadMap[id]);
                
                     // check if done
-                    if (!download.Searching && download.Attempted.Count == download.Sources.Count && download.NextAttempt == 0)
+                    if (!download.Searching && 
+                        download.Sessions.Count == 0 && // ensure that removed
+                        download.Attempted.Count == download.Sources.Count && 
+                        download.NextAttempt == 0)
                         download.Status = DownloadStatus.Failed;
                 }
             }
@@ -473,7 +476,7 @@ namespace DeOps.Components.Transfer
             // simulaneously we want them all going at the same speed
             int  start = Core.RndGen.Next(files.Count);
             bool sending = true;
-
+            
             while(sending)
             {
                 sending = false;
@@ -484,15 +487,12 @@ namespace DeOps.Components.Transfer
 
                     if (!upload.Done)
                     {
+                        if (session.SendBuffLow()) // sets blocking if true
+                            return;
+
                         sending = true;
                         upload.ReadNext();
                         TransferData data = new TransferData(upload);
-
-                        if (session.SendBuffLow())
-                        {
-                            upload.Rollback();
-                            return;
-                        }
 
                         upload.CheckDone();
 

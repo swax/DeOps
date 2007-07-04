@@ -25,6 +25,7 @@ using DeOps.Implementation;
 using DeOps.Implementation.Dht;
 using DeOps.Implementation.Transport;
 using DeOps.Implementation.Protocol.Net;
+using DeOps.Components.Transfer;
 
 using DeOps.Interface;
 using DeOps.Interface.Tools;
@@ -357,6 +358,7 @@ namespace DeOps.Simulator
 
                 menu.MenuItems.Add(new MenuItem("Main", new EventHandler(Click_Main)));
                 menu.MenuItems.Add(new MenuItem("Internal", new EventHandler(Click_Internal)));
+                menu.MenuItems.Add(new MenuItem("Transfers", new EventHandler(Click_Transfers)));
                 menu.MenuItems.Add(global);
                 menu.MenuItems.Add(operation);
                 menu.MenuItems.Add(new MenuItem("Console", new EventHandler(Click_Console)));
@@ -401,11 +403,23 @@ namespace DeOps.Simulator
             {
                 OpCore core = item.Instance.Core;
 
+                
                 if (core.GuiInternal == null)
                     core.GuiInternal = new InternalsForm(core);
 
                 core.GuiInternal.Show();
                 core.GuiInternal.Activate();
+            }
+        }
+
+        private void Click_Transfers(object sender, EventArgs e)
+        {
+            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            {
+                OpCore core = item.Instance.Core;
+
+                TransferView view = new TransferView(core.Transfers);
+                view.Show(this);
             }
         }
 

@@ -2330,6 +2330,16 @@ namespace DeOps.Interface.TLVex
             return List.Contains(item);
         }
 
+        public List<TreeListNode> GetList()
+        {
+            List<TreeListNode> list = new List<TreeListNode>();
+
+            foreach (TreeListNode node in this)
+                list.Add(node);
+
+            return list;
+        }
+
 #endregion
 
     }

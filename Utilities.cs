@@ -524,6 +524,21 @@ namespace DeOps
             prc.StartInfo.Arguments = path;
             prc.Start();
         }
+
+        internal static string CommaIze(string num)
+        {
+            string final = "";
+
+            while (num.Length > 3)
+            {
+                final = "," + num.Substring(num.Length - 3, 3) + final;
+                num = num.Substring(0, num.Length - 3);
+            }
+
+            final = num + final;
+
+            return final;
+        }
     }
 
 

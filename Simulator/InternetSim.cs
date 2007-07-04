@@ -73,8 +73,8 @@ namespace DeOps.Simulator
         int  FluxIn      = 1;
         int  FluxOut     = 0;
 
-        int PercentNAT = 15;
-        int PercentBlocked = 15;  
+        int PercentNAT = 0;
+        int PercentBlocked = 0;  
 
 
         internal InternetSim(SimForm form)
@@ -212,7 +212,7 @@ namespace DeOps.Simulator
 
         internal void Start()
         {
-            if (RunThread == null)
+            if (RunThread == null || !RunThread.IsAlive)
             {
                 RunThread = new Thread(new ThreadStart(Run));
                 RunThread.Start();

@@ -509,7 +509,10 @@ namespace DeOps.Components.Storage
             {
                 File.Move(path, GetFilePath(header));
             }
-            catch { return; }
+            catch 
+            { 
+                return;
+            }
 
             CacheStorage(signedHeader, header);
         }

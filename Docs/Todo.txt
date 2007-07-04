@@ -1,8 +1,5 @@
 
 add accept change to storageInfo interface for folders - so name / ghost status is transferred over easily
-download status not updating, check changes to storageupdate in view, test with big file
-
-downloads getting stalled, onmoredata not being called on upload side, send_request not being sent on download side
 
 integration
 

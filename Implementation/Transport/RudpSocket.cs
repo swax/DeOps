@@ -42,7 +42,7 @@ namespace DeOps.Implementation.Transport
 		MovingAvg AvgBytesSent = new MovingAvg(10);
 
 		const int MAX_WINDOW_SIZE  = 25;
-		const int SEND_BUFFER_SIZE = 64 * 1024;
+		internal const int SEND_BUFFER_SIZE = 64 * 1024;
 		const int CHUNK_SIZE       = 512;
 		const int MAX_CHUNK_SIZE   = 2048;
 		const int RECEIVE_BUFFER_SIZE = MAX_CHUNK_SIZE * MAX_WINDOW_SIZE;
@@ -54,10 +54,10 @@ namespace DeOps.Implementation.Transport
 		// sending
         Queue<TrackPacket> SendPacketMap = new Queue<TrackPacket>();
         int		  SendWindowSize = 5;
-		int		  SendBuffLength;
-		bool	  RudpSendBlock;
+        internal int SendBuffLength;
+		internal bool RudpSendBlock;
 		object    SendSection = new object();
-		byte[]    SendBuff = new byte[SEND_BUFFER_SIZE];
+        internal byte[] SendBuff = new byte[SEND_BUFFER_SIZE];
 		DateTime  LastSend;
 			
 		// receiving
@@ -151,8 +151,11 @@ namespace DeOps.Implementation.Transport
         internal bool SendBuffLow()
         {
             // if outstanding bytes are more than 3/4 of the max buffer size, we are low
-            if(SendBuffLength  >  GetSendBuffSize() * 3 / 4)
+            if (SendBuffLength > GetSendBuffSize() * 3 / 4)
+            {
+                RudpSendBlock = true;
                 return true;
+            }
 
             return false;
         }

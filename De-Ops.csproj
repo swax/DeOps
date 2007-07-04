@@ -160,7 +160,7 @@
       <DependentUpon>GoalPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.Designer.cs">
       <DependentUpon>GoalsView.cs</DependentUpon>
@@ -172,7 +172,7 @@
       <DependentUpon>ProgressText.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.Designer.cs">
       <DependentUpon>BlockRow.cs</DependentUpon>
@@ -195,7 +195,7 @@
       <DependentUpon>DateSlider.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\ScheduleView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\ScheduleView.Designer.cs">
       <DependentUpon>ScheduleView.cs</DependentUpon>
@@ -281,6 +281,12 @@
     <Compile Include="Components\Storage\WorkingStorage.cs" />
     <Compile Include="Components\Transfer\TransferControl.cs" />
     <Compile Include="Components\Transfer\TransferPackets.cs" />
+    <Compile Include="Components\Transfer\TransferView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Transfer\TransferView.Designer.cs">
+      <DependentUpon>TransferView.cs</DependentUpon>
+    </Compile>
     <Compile Include="Implementation\Dht\DhtBucket.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -355,7 +361,7 @@
       <DependentUpon>ComposeMail.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Mail\MailView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Mail\MailView.Designer.cs">
       <DependentUpon>MailView.cs</DependentUpon>
@@ -432,7 +438,7 @@
       <DependentUpon>InviteForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Interface\MainForm.cs">
-      <SubType>Component</SubType>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Interface\MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
@@ -478,7 +484,7 @@
       <DependentUpon>NetView.cs</DependentUpon>
     </Compile>
     <Compile Include="Simulator\SimForm.cs">
-      <SubType>Component</SubType>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Simulator\SimForm.Designer.cs">
       <DependentUpon>SimForm.cs</DependentUpon>
@@ -680,6 +686,10 @@
     <EmbeddedResource Include="Components\Storage\UnlockForm.resx">
       <SubType>Designer</SubType>
       <DependentUpon>UnlockForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Transfer\TransferView.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>TransferView.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\GetTextDialog.resx">
       <SubType>Designer</SubType>
