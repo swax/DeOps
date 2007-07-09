@@ -331,12 +331,30 @@ namespace DeOps.Components.Storage
                                     else
                                         currentFolder = currentFolder.AddFolderInfo(folder, true);
 
-                                    // diff file properties, if different, add as change
-                                    if (currentFolder.Temp || Storages.ItemDiff(currentFolder.Details, folder) != StorageActions.None)
+
+                                    bool found = false;
+
+
+                                    foreach (StorageFolder archive in currentFolder.Archived)
+                                        if (Storages.ItemDiff(archive, folder) == StorageActions.None)
+                                            if (archive.Date == folder.Date)
+                                            {
+                                                found = true;
+                                                break;
+                                            }
+
+                                    if (!found)
                                     {
                                         currentFolder.Changes[id] = folder;
                                         currentFolder.UpdateOverlay();
                                     }
+
+                                    // diff file properties, if different, add as change
+                                    /*if (currentFolder.Temp || Storages.ItemDiff(currentFolder.Details, folder) != StorageActions.None)
+                                    {
+                                        currentFolder.Changes[id] = folder;
+                                        currentFolder.UpdateOverlay();
+                                    }*/
 
                                     added = true;
                                 }

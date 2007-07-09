@@ -95,6 +95,8 @@ namespace DeOps.Components.Mail
             // select first item
             if (MessageList.Items.Count > 0)
                 MessageList.Items[0].Selected = true;
+
+            ShowSelected();
         }
 
         private void OutboxButton_Click(object sender, EventArgs e)
@@ -123,6 +125,8 @@ namespace DeOps.Components.Mail
             // select first item
             if (MessageList.Items.Count > 0)
                 MessageList.Items[0].Selected = true;
+
+            ShowSelected();
         }
 
         void OnMailUpdate(bool inbox, LocalMail message)
@@ -156,10 +160,10 @@ namespace DeOps.Components.Mail
                     Links.GetName(message.From),
                     Utilities.FormatTime(message.Header.Received));
             
-
-            if(!message.Header.Read)
-                foreach (ListViewItem.ListViewSubItem subItem in item.SubItems)
-                    subItem.Font = BoldFont;
+            //crit - no sub item fonts
+            /*if(!message.Header.Read)
+                foreach (ContainerSubListViewItem subItem in item.SubItems)
+                    subItem.Font = BoldFont;*/
             
             MessageList.Items.Add(item);
 
@@ -223,6 +227,11 @@ namespace DeOps.Components.Mail
         }
 
         private void MessageList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ShowSelected();
+        }
+
+        private void ShowSelected()
         {
             if (MessageList.SelectedItems.Count == 0)
                 return;
@@ -327,9 +336,10 @@ namespace DeOps.Components.Mail
 
                 MessageListItem item = FindMessage(message);
 
-                if (item != null)
-                    foreach (ListViewItem.ListViewSubItem subItem in item.SubItems)
-                        subItem.Font = RegularFont;
+                //crit - no sub item fonts
+                /*if (item != null)
+                    foreach (ContainerSubListViewItem subItem in item.SubItems)
+                        subItem.Font = RegularFont;*/
             }
         }
 

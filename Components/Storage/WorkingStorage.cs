@@ -876,13 +876,16 @@ namespace DeOps.Components.Storage
 
 
 
-        internal void RefreshHigherChanges(ulong id)
+        internal bool RefreshHigherChanges(ulong id)
         {
             // first remove changes from this id
             RemoveHigherChanges(RootFolder, id);
-            
+
+
+            bool save = false;
+
             if (!Storages.StorageMap.ContainsKey(id))
-                return;
+                return save;
 
             // this is the first step in auto-integration
             // go through this id's storage file, and add any changes or updates to our own system
@@ -891,7 +894,7 @@ namespace DeOps.Components.Storage
             string path = Storages.GetFilePath(headerx);
 
             if (!File.Exists(path))
-                return;
+                return save;
 
             try
             {
@@ -953,6 +956,7 @@ namespace DeOps.Components.Storage
 
                                             // if not found, create folder
                                             currentFolder = currentFolder.AddFolderInfo(readFolder);
+                                            save = true;
                                         }
 
                                         added = true;
@@ -1012,6 +1016,7 @@ namespace DeOps.Components.Storage
                                             checkFile.Info.Name = checkFile.Info.Name + ".fix";
 
                                     currentFile = currentFolder.AddFileInfo(readFile);
+                                    save = true;
 
                                     if(!Storages.FileExists(currentFile.Info))
                                         Storages.DownloadFile(id, currentFile.Info );
@@ -1038,6 +1043,8 @@ namespace DeOps.Components.Storage
             {
 
             }
+
+            return save;
         }
 
         internal void RemoveAllHigherChanges()
@@ -1068,16 +1075,16 @@ namespace DeOps.Components.Storage
             }
         }
 
-        internal void AutoIntegrate()
+        internal void AutoIntegrate(bool doSave)
         {
             // only 'save' if file system in a saved state
 			// still merge with unsaved file system, just won't be made permanent till save is clicked
 
-            if (AutoIntegrate(RootFolder))
+            if (AutoIntegrate(RootFolder) || doSave)
                 if (!Modified)
-                    Storages.SaveLocal(ProjectID);
+                    Storages.SaveLocal(ProjectID); // triggers permanent save of system for publish on the network
                 else
-                    PeriodicSave = true;
+                    PeriodicSave = true; // triggers save of working file system
         }
 
         private bool AutoIntegrate(LocalFolder folder)
@@ -1086,7 +1093,7 @@ namespace DeOps.Components.Storage
 
             if (!folder.Info.IsFlagged(StorageFlags.Modified))
             {
-                StorageFolder integrated = folder.Info;
+                StorageFolder latestFolder = folder.Info;
 
                 List<ulong> uplinkIDs = new List<ulong>();
                 uplinkIDs.Add(Core.LocalDhtID);
@@ -1100,21 +1107,21 @@ namespace DeOps.Components.Storage
                     if (folder.HigherChanges.ContainsKey(id))
                         // higherChanges consists of files that are newer than local
                         foreach (StorageFolder changeFolder in folder.HigherChanges[id])
-                            if (changeFolder.Date >= integrated.Date && Storages.ItemDiff(integrated, changeFolder) == StorageActions.None)
+                            if (changeFolder.Date >= latestFolder.Date && Storages.ItemDiff(latestFolder, changeFolder) == StorageActions.None)
                             {
-                                integrated = (StorageFolder)folder.HigherChanges[id][0]; // first element is newest file
+                                latestFolder = (StorageFolder)folder.HigherChanges[id][0]; // first element is newest file
                                 break;
                             }
 
                 // if current file/folder is not our own (itemdiff)
-                if (integrated != folder.Info)
+                if (Storages.ItemDiff(latestFolder, folder.Info) != StorageActions.None)
                 {
                     //crit
                     /*if unlocked, overwrites
                       replace should also use this function
                     */
-                    folder.Info = integrated;
-                    folder.Archived.AddFirst(integrated);
+                    folder.Info = latestFolder;
+                    folder.Archived.AddFirst(latestFolder);
 
                     save = true;
                 }
@@ -1173,7 +1180,7 @@ namespace DeOps.Components.Storage
             // if current file/folder is not our own (itemdiff)
             bool save = false;
 
-            if (latestFile != file.Info)
+            if (Storages.ItemDiff(latestFile, file.Info) != StorageActions.None)
             {
                 //crit
                 //if unlocked, overwrites

@@ -1041,7 +1041,9 @@ namespace DeOps.Components.Storage
             if (parts[0] == "history")
             {
                 int index = int.Parse(parts[2]) - 1;
-                file = (StorageFile)History[index];
+
+                if(IsFile)
+                    file = (StorageFile)History[index];
 
                 if (index != 0)
                     history = true;
@@ -1059,7 +1061,9 @@ namespace DeOps.Components.Storage
 
                 if (parts[1] == "edit")
                 {
-                    string defaultNote = file.Note == null ? "" : file.Note;
+                    StorageItem item = History[index];
+
+                    string defaultNote = item.Note == null ? "" : item.Note;
 
                     GetTextDialog dialog = new GetTextDialog("Edit Note", "Enter note for this item in history", defaultNote);
 
@@ -1067,7 +1071,7 @@ namespace DeOps.Components.Storage
                         if (string.Compare(dialog.ResultBox.Text, defaultNote) != 0)
                             try
                             {
-                                ParentView.Working.SetNote(CurrentPath, file, IsFile, dialog.ResultBox.Text);
+                                ParentView.Working.SetNote(CurrentPath, item, IsFile, dialog.ResultBox.Text);
                             }
                             catch (Exception ex)
                             {

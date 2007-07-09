@@ -1,5 +1,38 @@
 
+come up with list for beta requirements
+	desynch timer from packets, diff thread
+	re-test components
+		IM
+		chat
+		linking
+		mail - browse links for person add, not converting sent / rec times to local from universal
+			add selcect function, set item select property and add to selection list
+		board
+			white headers in some lists, mail as well
+			missing icons at times, extra line
+			always use icon for replies, high / low, switch to overlay system
+			no subject for replies, just grayed  out thread topic
+		plans
+		goals
+		profile
+		
+	use data folder for components
+	build 1x3x3 network sample
+	create sample data
+	remove remote cached for min # of files
+	
+	add homing / expiration code
+	xenocode
+	create installer
+
+
 add accept change to storageInfo interface for folders - so name / ghost status is transferred over easily
+
+delete folder, changes saying restored, but shouldn't be there because our timestamp is the newest
+
+
+de-ops urls boards storages chats anything, extendable
+	peoples emails, profiles, etc.. can include <links>
 
 integration
 
@@ -62,7 +95,7 @@ integration
 
 
 
-		
+at root node display log of all previous file system saves, snapshots, revisions, of file system file = file system header version		
 review file references system
 how does add/replace work with unlocked files - figure out when doing inheritance
 check if file / dir has same name when renaming / creating in storage system	

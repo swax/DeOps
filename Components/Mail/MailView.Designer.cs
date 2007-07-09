@@ -137,6 +137,7 @@ namespace DeOps.Components.Mail
             this.MessageList.TabIndex = 0;
             this.MessageList.Text = "containerListViewEx1";
             this.MessageList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.MessageList_MouseClick);
+            this.MessageList.SelectedIndexChanged += new System.EventHandler(MessageList_SelectedIndexChanged);
             // 
             // splitContainer2
             // 

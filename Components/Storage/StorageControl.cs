@@ -127,10 +127,12 @@ namespace DeOps.Components.Storage
                 LoadHeaderFile(GetWorkingPath(project), LocalStorage, false, true);
                 Working[project] = new WorkingStorage(this, project);
 
+                bool doSave = false;
                 foreach (ulong higher in Links.GetUplinkIDs(Core.LocalDhtID, project))
-                    Working[project].RefreshHigherChanges(higher);
+                    if(Working[project].RefreshHigherChanges(higher))
+                        doSave = true ;
 
-                Working[project].AutoIntegrate();
+                Working[project].AutoIntegrate(doSave);
             }
         }
 
@@ -567,10 +569,10 @@ namespace DeOps.Components.Storage
                         // doesnt get called on startup because working not initialized before headers are loaded
                         if (Working.ContainsKey(project))
                         {
-                            Working[project].RefreshHigherChanges(storage.DhtID);
+                            bool doSave = Working[project].RefreshHigherChanges(storage.DhtID);
 
                             if (!Core.Loading && !SavingLocal)
-                                Working[project].AutoIntegrate();
+                                Working[project].AutoIntegrate(doSave);
                         }
 
                 // update subs

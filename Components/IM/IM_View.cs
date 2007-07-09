@@ -37,6 +37,9 @@ namespace DeOps.Components.IM
             DhtID = key;
 
             UpdateName();
+            
+            // do here so window can be found and multiples not created for the same user
+            IM.IM_Update += new IM_UpdateHandler(OnMessageUpdate);
         }
 
         private void UpdateName()
@@ -54,8 +57,6 @@ namespace DeOps.Components.IM
             InputControl.InputBox.Focus();
 
             CheckBackColor();
-
-            IM.IM_Update += new IM_UpdateHandler(OnMessageUpdate);
 
             DisplayLog();
         }
