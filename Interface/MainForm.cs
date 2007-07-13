@@ -69,8 +69,6 @@ namespace DeOps.Interface
             Links.GetFocused += new LinkGetFocusedHandler(Links_GetFocused);
 
             SelectedLink = Core.LocalDhtID;
-
-            
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -168,6 +166,20 @@ namespace DeOps.Interface
             view.Init();
         }
 
+        private void PopoutButton_Click(object sender, EventArgs e)
+        {
+            ViewShell view = (ViewShell) InternalView.Controls[0];
+
+            InternalView.Controls.Clear();
+
+            OnShowExternal(view);
+
+            if (Links.LinkMap.ContainsKey(SelectedLink))
+                OnSelectChange(Links.LinkMap[SelectedLink]);
+            else
+                OnSelectChange(Links.LocalLink);
+        }
+
         private void SetupOperationTree()
         {
             CommandTree.BeginUpdate();
@@ -216,7 +228,9 @@ namespace DeOps.Interface
                         List<ulong> uplinks = Links.GetUplinkIDs(Core.LocalDhtID, ProjectID);
                         uplinks.Add(Core.LocalDhtID);
 
-                        ExpandPath(node, uplinks);  
+                        ExpandPath(node, uplinks);
+
+                        node.Expand(); // expand first level of roots regardless
                     }
 
             CommandTree.EndUpdate();
@@ -449,15 +463,35 @@ namespace DeOps.Interface
 
             TreeListNode parent = null;
 
-            if (!link.Uplink.ContainsKey(ProjectID))
+            OpLink uplink = link.GetHigher(ProjectID);
+
+            if (uplink == null)
                 parent = CommandTree.virtualParent;
 
-            else if (NodeMap.ContainsKey(link.Uplink[ProjectID].DhtID))
-                parent = NodeMap[link.Uplink[ProjectID].DhtID];
+            else if (NodeMap.ContainsKey(uplink.DhtID))
+                parent = NodeMap[uplink.DhtID];
 
-            else
-                parent = null; // branch this link is apart of is not visible in current display
+            // else branch this link is apart of is not visible in current display
+            
+            // self is changing ensure it's visible 
+            if (node.Link.DhtID == Core.LocalDhtID)
+            {
+                if (parent == null)
+                {
+                    List<ulong> uplinks = Links.GetUplinkIDs(Core.LocalDhtID, ProjectID);
+                    uplinks.Add(Core.LocalDhtID);
 
+                    ExpandPath(node, uplinks);
+
+                    // check nodeMap again now that highers added
+                    if (NodeMap.ContainsKey(uplink.DhtID))
+                        parent = NodeMap[uplink.DhtID];
+                }
+
+                if (parent != null)
+                    parent.Expand();
+            }
+           
 
             // remember settings
             bool selected = node.Selected;
@@ -823,14 +857,14 @@ namespace DeOps.Interface
             if (e.Button == MouseButtons.Right)
             {
                 // menu
-                ContextMenu treeMenu = new ContextMenu();
+                ContextMenuStrip treeMenu = new ContextMenuStrip();
 
                 // select
-                treeMenu.MenuItems.Add("Select");
+                treeMenu.Items.Add("Select", InterfaceRes.star, TreeMenu_Select);
 
                 // views
-                List<MenuItem> quickMenus = new List<MenuItem>();
-                List<MenuItem> extMenus = new List<MenuItem>();
+                List<ToolStripMenuItem> quickMenus = new List<ToolStripMenuItem>();
+                List<ToolStripMenuItem> extMenus = new List<ToolStripMenuItem>();
 
                 foreach (OpComponent component in Core.Components.Values)
                 {
@@ -842,61 +876,71 @@ namespace DeOps.Interface
 
                     if (menuList != null && menuList.Count > 0)
                         foreach (MenuItemInfo info in menuList)
-                            quickMenus.Add(new OpMenuItem(item.Link.DhtID, ProjectID, info.Path, info.ClickEvent));
+                            quickMenus.Add(new OpMenuItem(item.Link.DhtID, ProjectID, info.Path, info));
 
                     // external
                     menuList = component.GetMenuInfo(InterfaceMenuType.External, item.Link.DhtID, ProjectID);
 
                     if (menuList != null && menuList.Count > 0)
                         foreach (MenuItemInfo info in menuList)
-                            extMenus.Add(new OpMenuItem(item.Link.DhtID, ProjectID, info.Path, info.ClickEvent));
+                            extMenus.Add(new OpMenuItem(item.Link.DhtID, ProjectID, info.Path, info));
                 }
 
                 if (quickMenus.Count > 0 || extMenus.Count > 0)
                 {
-                    treeMenu.MenuItems.Add("-");
+                    treeMenu.Items.Add("-");
 
-                    foreach (MenuItem menu in quickMenus)
-                        treeMenu.MenuItems.Add(menu);
+                    foreach (ToolStripMenuItem menu in quickMenus)
+                        treeMenu.Items.Add(menu);
                 }
 
                 if (extMenus.Count > 0)
                 {
-                    MenuItem viewItem = new MenuItem("Views");
+                    ToolStripMenuItem viewItem = new ToolStripMenuItem("Views", InterfaceRes.views);
 
-                    foreach (MenuItem menu in extMenus)
-                        viewItem.MenuItems.Add(menu);
+                    foreach (ToolStripMenuItem menu in extMenus)
+                        viewItem.DropDownItems.Add(menu);
 
-                    treeMenu.MenuItems.Add(viewItem);
+                    treeMenu.Items.Add(viewItem);
                 }
 
                 // link
                 if (TreeMode == CommandTreeMode.Operation)
                 {
-                    List<MenuItem> linkMenus = new List<MenuItem>();
+                    List<ToolStripMenuItem> linkMenus = new List<ToolStripMenuItem>();
 
                     List<MenuItemInfo> menuList = Links.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, ProjectID);
 
                     if (menuList != null && menuList.Count > 0)
                         foreach (MenuItemInfo info in menuList)
-                            linkMenus.Add(new OpMenuItem(item.Link.DhtID, ProjectID, info.Path, info.ClickEvent));
+                            linkMenus.Add(new OpMenuItem(item.Link.DhtID, ProjectID, info.Path, info));
 
                     if (linkMenus.Count > 0)
                     {
-                        treeMenu.MenuItems.Add("-");
+                        treeMenu.Items.Add("-");
 
-                        foreach (MenuItem menu in linkMenus)
-                            treeMenu.MenuItems.Add(menu);
+                        foreach (ToolStripMenuItem menu in linkMenus)
+                            treeMenu.Items.Add(menu);
                     }
                 }
 
                 // show
-                if (treeMenu.MenuItems.Count > 0)
+                if (treeMenu.Items.Count > 0)
                     treeMenu.Show(CommandTree, e.Location);
             }
         }
 
+        void TreeMenu_Select(object sender, EventArgs e)
+        {
+            SelectCurrentItem();
+        }
+
         private void CommandTree_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            SelectCurrentItem();
+        }
+
+        void SelectCurrentItem()
         {
             LinkNode item = GetSelected();
 
@@ -963,7 +1007,7 @@ namespace DeOps.Interface
 
         void OnSelectChange(OpLink link)
         {
-            OpMenuItem item = new OpMenuItem(link.DhtID, 0, "", null);            
+            OpMenuItem item = new OpMenuItem(link.DhtID, 0, "", new MenuItemInfo("", null, null));            
 
             // unbold current
             if (NodeMap.ContainsKey(SelectedLink))
@@ -984,6 +1028,8 @@ namespace DeOps.Interface
 
 
             // setup toolbar with menu items for user
+            HomeButton.Visible = link.DhtID != Core.LocalDhtID;
+
             PlanButton.DropDownItems.Clear();
             CommButton.DropDownItems.Clear();
             DataButton.DropDownItems.Clear();
@@ -1001,15 +1047,15 @@ namespace DeOps.Interface
 
                     if (parts.Length < 2)
                         continue;
-
+                    
                     if (parts[0] == PlanButton.Text)
-                        PlanButton.DropDownItems.Add(new OpStripItem(link.DhtID, ProjectID, parts[1], info.ClickEvent));
+                        PlanButton.DropDownItems.Add(new OpStripItem(link.DhtID, ProjectID, parts[1], info));
 
                     else if (parts[0] == CommButton.Text)
-                        CommButton.DropDownItems.Add(new OpStripItem(link.DhtID, ProjectID, parts[1], info.ClickEvent));
+                        CommButton.DropDownItems.Add(new OpStripItem(link.DhtID, ProjectID, parts[1], info));
 
                     else if (parts[0] == DataButton.Text)
-                        DataButton.DropDownItems.Add(new OpStripItem(link.DhtID, ProjectID, parts[1], info.ClickEvent));
+                        DataButton.DropDownItems.Add(new OpStripItem(link.DhtID, ProjectID, parts[1], info));
                 }
             }
         }
@@ -1398,12 +1444,16 @@ namespace DeOps.Interface
     {
         internal ulong DhtID;
         internal uint ProjectID;
+        internal MenuItemInfo Info;
 
-        internal OpStripItem(ulong key, uint id, string text, EventHandler onClick)
-            : base(text, null, onClick)
+        internal OpStripItem(ulong key, uint id, string text, MenuItemInfo info)
+            : base(text, null, info.ClickEvent )
         {
             DhtID = key;
             ProjectID = id;
+            Info = info;
+
+            Image = Info.Symbol.ToBitmap();
         }
 
         public ulong GetKey()
@@ -1428,16 +1478,21 @@ namespace DeOps.Interface
         }
     }
 
-    class OpMenuItem : MenuItem, IContainsNode
+    class OpMenuItem : ToolStripMenuItem, IContainsNode
     {
         internal ulong DhtID;
         internal uint ProjectID;
+        internal MenuItemInfo Info;
 
-        internal OpMenuItem(ulong key, uint id, string text, EventHandler onClick)
-            : base(text, onClick)
+        internal OpMenuItem(ulong key, uint id, string text, MenuItemInfo info)
+            : base(text, null, info.ClickEvent)
         {
             DhtID = key;
             ProjectID = id;
+            Info = info;
+
+            if(info.Symbol != null)
+                Image = info.Symbol.ToBitmap();
         }
 
         public ulong GetKey()

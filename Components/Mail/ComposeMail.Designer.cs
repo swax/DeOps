@@ -43,6 +43,8 @@ namespace DeOps.Components.Mail
             this.ListFiles = new System.Windows.Forms.ComboBox();
             this.LinkAdd = new System.Windows.Forms.LinkLabel();
             this.LinkRemove = new System.Windows.Forms.LinkLabel();
+            this.BrowseTo = new System.Windows.Forms.LinkLabel();
+            this.BrowseCC = new System.Windows.Forms.LinkLabel();
             this.SuspendLayout();
             // 
             // label1
@@ -71,7 +73,7 @@ namespace DeOps.Components.Mail
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.ToTextBox.Location = new System.Drawing.Point(52, 6);
             this.ToTextBox.Name = "ToTextBox";
-            this.ToTextBox.Size = new System.Drawing.Size(254, 20);
+            this.ToTextBox.Size = new System.Drawing.Size(206, 20);
             this.ToTextBox.TabIndex = 2;
             // 
             // CCTextBox
@@ -80,7 +82,7 @@ namespace DeOps.Components.Mail
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.CCTextBox.Location = new System.Drawing.Point(52, 32);
             this.CCTextBox.Name = "CCTextBox";
-            this.CCTextBox.Size = new System.Drawing.Size(254, 20);
+            this.CCTextBox.Size = new System.Drawing.Size(206, 20);
             this.CCTextBox.TabIndex = 3;
             // 
             // label3
@@ -104,6 +106,7 @@ namespace DeOps.Components.Mail
             // 
             // MessageBody
             // 
+            this.MessageBody.AcceptTabs = true;
             this.MessageBody.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
@@ -125,11 +128,11 @@ namespace DeOps.Components.Mail
             this.SendButton.UseVisualStyleBackColor = true;
             this.SendButton.Click += new System.EventHandler(this.SendButton_Click);
             // 
-            // CancelButton
+            // ExitButton
             // 
             this.ExitButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ExitButton.Location = new System.Drawing.Point(231, 253);
-            this.ExitButton.Name = "CancelButton";
+            this.ExitButton.Name = "ExitButton";
             this.ExitButton.Size = new System.Drawing.Size(75, 23);
             this.ExitButton.TabIndex = 8;
             this.ExitButton.Text = "Cancel";
@@ -164,7 +167,7 @@ namespace DeOps.Components.Mail
             this.LinkAdd.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.LinkAdd.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
             this.LinkAdd.Location = new System.Drawing.Point(49, 87);
-            this.LinkAdd.Name = "LinDhtd";
+            this.LinkAdd.Name = "LinkAdd";
             this.LinkAdd.Size = new System.Drawing.Size(26, 13);
             this.LinkAdd.TabIndex = 14;
             this.LinkAdd.TabStop = true;
@@ -187,10 +190,44 @@ namespace DeOps.Components.Mail
             this.LinkRemove.VisitedLinkColor = System.Drawing.Color.Blue;
             this.LinkRemove.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.LinkRemove_LinkClicked);
             // 
+            // BrowseTo
+            // 
+            this.BrowseTo.ActiveLinkColor = System.Drawing.Color.Blue;
+            this.BrowseTo.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.BrowseTo.AutoSize = true;
+            this.BrowseTo.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.BrowseTo.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
+            this.BrowseTo.Location = new System.Drawing.Point(264, 9);
+            this.BrowseTo.Name = "BrowseTo";
+            this.BrowseTo.Size = new System.Drawing.Size(42, 13);
+            this.BrowseTo.TabIndex = 15;
+            this.BrowseTo.TabStop = true;
+            this.BrowseTo.Text = "Browse";
+            this.BrowseTo.VisitedLinkColor = System.Drawing.Color.Blue;
+            this.BrowseTo.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.BrowseTo_LinkClicked);
+            // 
+            // BrowseCC
+            // 
+            this.BrowseCC.ActiveLinkColor = System.Drawing.Color.Blue;
+            this.BrowseCC.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.BrowseCC.AutoSize = true;
+            this.BrowseCC.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.BrowseCC.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
+            this.BrowseCC.Location = new System.Drawing.Point(264, 35);
+            this.BrowseCC.Name = "BrowseCC";
+            this.BrowseCC.Size = new System.Drawing.Size(42, 13);
+            this.BrowseCC.TabIndex = 16;
+            this.BrowseCC.TabStop = true;
+            this.BrowseCC.Text = "Browse";
+            this.BrowseCC.VisitedLinkColor = System.Drawing.Color.Blue;
+            this.BrowseCC.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.BrowseCC_LinkClicked);
+            // 
             // ComposeMail
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.BrowseCC);
+            this.Controls.Add(this.BrowseTo);
             this.Controls.Add(this.LinkAdd);
             this.Controls.Add(this.LinkRemove);
             this.Controls.Add(this.ListFiles);
@@ -226,5 +263,7 @@ namespace DeOps.Components.Mail
         private System.Windows.Forms.ComboBox ListFiles;
         private System.Windows.Forms.LinkLabel LinkAdd;
         private System.Windows.Forms.LinkLabel LinkRemove;
+        private System.Windows.Forms.LinkLabel BrowseTo;
+        private System.Windows.Forms.LinkLabel BrowseCC;
     }
 }

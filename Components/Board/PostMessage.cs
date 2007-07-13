@@ -26,6 +26,8 @@ namespace DeOps.Components.Board
         OpPost ParentPost;
         uint ParentID;
 
+        bool MessagePosted;
+
 
         internal PostMessage(BoardControl board, ulong id, uint project)
         {
@@ -44,6 +46,9 @@ namespace DeOps.Components.Board
 
             ParentPost = parent;
             ParentID = parent.Header.PostID ;
+
+            SubjectTextBox.Text = parent.Info.Subject;
+            SubjectTextBox.Enabled = false;
 
             SetScopeInvisible();
 
@@ -69,7 +74,12 @@ namespace DeOps.Components.Board
                 ScopeLow.Checked = true;
 
             if (parentID != 0)
+            {
+                SubjectTextBox.Text = post.Info.Subject;
+                SubjectTextBox.Enabled = false;
+
                 SetScopeInvisible();
+            }
 
             PostButton.Text = "Edit";
         }
@@ -87,8 +97,17 @@ namespace DeOps.Components.Board
 
         }
 
+        internal override Icon GetIcon()
+        {
+            return BoardRes.Compose;
+        }
+
         internal override bool Fin()
         {
+            if (!MessagePosted && MessageBody.InputBox.Text.Length > 0)
+                if (MessageBox.Show(this, "Discard Post?", "New Post", MessageBoxButtons.YesNo) == DialogResult.No)
+                    return false;
+
             return true;
         }
 
@@ -203,14 +222,28 @@ namespace DeOps.Components.Board
                 foreach (AttachedFile file in ListFiles.Items)
                     files.Add(file);
 
+                // if reply - set subject to preview of message
+                string subject = SubjectTextBox.Text;
 
-                Board.PostMessage(DhtID, ProjectID, ParentID, scope, SubjectTextBox.Text, MessageBody.InputBox.Rtf, files, EditPost);
+                if (ParentID != 0)
+                {
+                    string msg = MessageBody.InputBox.Text;
+                    
+                    if (msg.Length > 50)
+                        msg = msg.Substring(0, 50) + "...";
+                 
+                    subject = msg;
+                }
+
+                Board.PostMessage(DhtID, ProjectID, ParentID, scope, subject, MessageBody.InputBox.Rtf, files, EditPost);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
                 return;
             }
+
+            MessagePosted = true;
 
             if (External != null)
                 External.Close();

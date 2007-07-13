@@ -28,6 +28,11 @@ namespace DeOps.Components.Mail
         Font RegularFont = new Font("Tahoma", 8.25F);
         Font BoldFont = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 
+        string defaultHtml =
+                @"<html>
+                <body bgcolor=whitesmoke>
+                </body>
+                </html>";
 
         internal MailView(MailControl mail)
         {
@@ -39,11 +44,11 @@ namespace DeOps.Components.Mail
             Core  = mail.Core;
             Links = Core.Links;
 
-            MessageHeader.DocumentText =
-                @"<html>
-                <body bgcolor=whitesmoke>
-                </body>
-                </html>";
+            MessageList.SmallImageList = new List<Image>();
+            MessageList.SmallImageList.Add(MailRes.Mail);
+            MessageList.SmallImageList.Add(MailRes.Attach);
+
+            MessageHeader.DocumentText = defaultHtml;
         }
 
         internal override string GetTitle()
@@ -54,6 +59,11 @@ namespace DeOps.Components.Mail
         internal override Size GetDefaultSize()
         {
             return new Size(600, 575);
+        }
+
+        internal override Icon GetIcon()
+        {
+            return MailRes.Icon;
         }
 
         internal override void Init()
@@ -94,7 +104,7 @@ namespace DeOps.Components.Mail
 
             // select first item
             if (MessageList.Items.Count > 0)
-                MessageList.Items[0].Selected = true;
+                MessageList.Select(MessageList.Items[0]);
 
             ShowSelected();
         }
@@ -124,7 +134,7 @@ namespace DeOps.Components.Mail
 
             // select first item
             if (MessageList.Items.Count > 0)
-                MessageList.Items[0].Selected = true;
+                MessageList.Select(MessageList.Items[0]);
 
             ShowSelected();
         }
@@ -158,7 +168,7 @@ namespace DeOps.Components.Mail
             MessageListItem item = new MessageListItem(message, 
                     message.Info.Subject,
                     Links.GetName(message.From),
-                    Utilities.FormatTime(message.Header.Received));
+                    Utilities.FormatTime(message.Header.Received.ToLocalTime()));
             
             //crit - no sub item fonts
             /*if(!message.Header.Read)
@@ -193,7 +203,7 @@ namespace DeOps.Components.Mail
             MessageList.Items.Add(new MessageListItem(message, 
                     message.Info.Subject,
                     to,
-                    Utilities.FormatTime(message.Info.Date),
+                    Utilities.FormatTime(message.Info.Date.ToLocalTime()),
                     status));
 
             MessageList.Invalidate();
@@ -234,7 +244,10 @@ namespace DeOps.Components.Mail
         private void ShowSelected()
         {
             if (MessageList.SelectedItems.Count == 0)
+            {
+                ShowMessage(null);
                 return;
+            }
 
             MessageListItem item = (MessageListItem)MessageList.SelectedItems[0];
 
@@ -243,6 +256,14 @@ namespace DeOps.Components.Mail
 
         private void ShowMessage(LocalMail message)
         {
+            if (message == null)
+            {
+                MessageHeader.DocumentText = defaultHtml;
+                MessageBody.Clear();
+                
+                return;
+            }
+
             // header
             string htmlHeader =
                 @"<html>
@@ -470,14 +491,14 @@ namespace DeOps.Components.Mail
             if (item == null)
                 return;
 
-            ContextMenu menu = new ContextMenu();
+            ContextMenuStrip menu = new ContextMenuStrip();
 
             if (InboxButton.Checked)
-                menu.MenuItems.Add(new MessageMenuItem(item.Message, "Reply", new EventHandler(Message_Reply)));
+                menu.Items.Add(new MessageMenuItem(item.Message, "Reply", null, new EventHandler(Message_Reply)));
 
-            menu.MenuItems.Add(new MessageMenuItem(item.Message, "Forward", new EventHandler(Message_Forward)));
-            menu.MenuItems.Add(new MenuItem("-"));
-            menu.MenuItems.Add(new MessageMenuItem(item.Message, "Delete", new EventHandler(Message_Delete)));
+            menu.Items.Add(new MessageMenuItem(item.Message, "Forward", null, new EventHandler(Message_Forward)));
+            menu.Items.Add("-");
+            menu.Items.Add(new MessageMenuItem(item.Message, "Delete", MailRes.delete, new EventHandler(Message_Delete)));
 
             menu.Show(MessageList, e.Location);
         }
@@ -503,12 +524,12 @@ namespace DeOps.Components.Mail
         }
     }
 
-    class MessageMenuItem : MenuItem
+    class MessageMenuItem : ToolStripMenuItem
     {
         internal LocalMail Message;
 
-        internal MessageMenuItem(LocalMail message, string text, EventHandler onClick)
-            : base(text, onClick)
+        internal MessageMenuItem(LocalMail message, string text, Image icon, EventHandler onClick)
+            : base(text, icon, onClick)
         {
             Message = message;
         }

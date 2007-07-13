@@ -28,6 +28,7 @@ namespace DeOps.Components.Plan
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(EditBlock));
             this.label1 = new System.Windows.Forms.Label();
             this.TitleBox = new System.Windows.Forms.TextBox();
             this.StartTime = new System.Windows.Forms.DateTimePicker();
@@ -137,6 +138,7 @@ namespace DeOps.Components.Plan
             // 
             // DescriptionInput
             // 
+            this.DescriptionInput.AcceptTabs = false;
             this.DescriptionInput.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
@@ -176,6 +178,7 @@ namespace DeOps.Components.Plan
             this.Controls.Add(this.StartTime);
             this.Controls.Add(this.TitleBox);
             this.Controls.Add(this.label1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "EditBlock";

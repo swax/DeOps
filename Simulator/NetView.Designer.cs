@@ -28,6 +28,7 @@ namespace DeOps.Simulator
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(NetView));
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.TrackMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.FileMenu = new System.Windows.Forms.ToolStripMenuItem();
@@ -37,9 +38,6 @@ namespace DeOps.Simulator
             // 
             // menuStrip1
             // 
-            this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.TrackMenu,
-            this.LegendMenu});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
@@ -76,6 +74,7 @@ namespace DeOps.Simulator
             this.ClientSize = new System.Drawing.Size(426, 408);
             this.Controls.Add(this.menuStrip1);
             this.DoubleBuffered = true;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "NetView";
             this.Text = "NetView";

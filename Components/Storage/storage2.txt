@@ -1,4 +1,66 @@
 
+integration
+
+	Auto-Integrate (id)
+		For each file/folder uid
+			If file/folder not flagged as modified
+				Set current file to our latest
+				from self to highest
+					if current is integrated (files only)
+						set current file to higher's latest
+						break
+					for each file/folder in higher's archive
+						if itemdiff is same and date is equal or newer than now
+							set current file to higher's latest
+							break
+						else
+							break
+							
+				if current file/folder is not our own (itemdiff)
+					Call update function which
+						replace our current with this new file
+						if unlocked, overwrites
+						replace should also use this function
+						merges integration list for nodes adjacent to ourselves
+						
+					only 'save' if file system in a saved state
+						still merge with unsaved file system, just won't be made permanent till save is clicked
+						
+	RefreshHigherChanges(id)
+		remove current cached entries
+		for each uid
+				cache archive archive files newer than current file
+				cache latest integrated file from node on path to ourselves
+				if uid does not exist
+					check all uids to see if dupe exists with diff uid (itemdiff)
+					if exists, replace our uid, with higher's uid
+					else if name conflict create locally, remame local .old.
+					else create locally
+					
+	on link update
+		remove all cache enties
+		load higher nodes
+	
+	cache header
+		forech project
+			if header is higher or equal to self
+				RefreshCacheEntries
+				if not startup
+					run auto-integrate
+			
+	on startup
+		run auto-integrate (really needs to be multi-threaded)
+
+	why
+		this method lets branches work on their own projects without highers of higher's changes overwrite local stufff
+		enforces  integration chain leading up to top
+		if middle higher offline, can still inherit files that middle higher never touched
+		always in sync with files that local doesnt work with, but higher changes
+		red triangle will be reserved for real conflicts
+
+
+
+
 notes		
 	gotta have file system locked when de-ops closes - this is because we cant track modifications to file system when de-ops is closed
 		if files are deleted / renamed / modified when de-ops is closed re-synching is messy, like we wouldnt know if renamed file

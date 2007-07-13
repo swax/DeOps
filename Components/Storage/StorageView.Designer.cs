@@ -71,7 +71,6 @@ namespace DeOps.Components.Storage
             this.GhostsButton});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
             this.toolStrip1.Size = new System.Drawing.Size(523, 25);
             this.toolStrip1.TabIndex = 1;
             this.toolStrip1.Text = "toolStrip1";
@@ -165,7 +164,6 @@ namespace DeOps.Components.Storage
             this.FolderTreeView.StateImageList = null;
             this.FolderTreeView.TabIndex = 0;
             this.FolderTreeView.Text = "FolderTeeView";
-            this.FolderTreeView.VisualStyles = false;
             this.FolderTreeView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.FolderTreeView_MouseClick);
             this.FolderTreeView.SelectedItemChanged += new System.EventHandler(this.FolderTreeView_SelectedItemChanged);
             // 
@@ -244,7 +242,6 @@ namespace DeOps.Components.Storage
             this.FileListView.StateImageList = null;
             this.FileListView.TabIndex = 0;
             this.FileListView.Text = "FileListView";
-            this.FileListView.VisualStyles = false;
             this.FileListView.QueryContinueDrag += new System.Windows.Forms.QueryContinueDragEventHandler(this.FileListView_QueryContinueDrag);
             this.FileListView.DragOver += new System.Windows.Forms.DragEventHandler(this.FileListView_DragOver);
             this.FileListView.MouseDown += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDown);

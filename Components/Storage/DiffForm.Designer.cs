@@ -28,6 +28,7 @@ namespace DeOps.Components.Storage
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DiffForm));
             this.ChangesCombo = new System.Windows.Forms.ComboBox();
             this.ChangesRadio = new System.Windows.Forms.RadioButton();
             this.IntegratedRadio = new System.Windows.Forms.RadioButton();
@@ -244,6 +245,7 @@ namespace DeOps.Components.Storage
             this.Controls.Add(this.UsingCombo);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.CompareLabel);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "DiffForm";
             this.Text = "Differences";
             this.Load += new System.EventHandler(this.DiffForm_Load);

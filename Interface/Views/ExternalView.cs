@@ -30,6 +30,7 @@ namespace DeOps.Interface
 
             Text = shell.GetTitle();
             Size = shell.GetDefaultSize();
+            Icon = shell.GetIcon();
         }
 
         private void ExternalWin_Load(object sender, EventArgs e)

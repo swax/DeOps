@@ -92,6 +92,11 @@ namespace DeOps.Components.Profile
             return new Size(500, 625);
         }
 
+        internal override Icon GetIcon()
+        {
+            return ProfileRes.Icon;
+        }
+
         void OnProfileUpdate(OpProfile profile)
         {
             // if in uplink chain, update profile

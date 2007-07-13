@@ -29,10 +29,10 @@ namespace DeOps.Components.Board
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader5 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader6 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader7 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader8 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader4 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(BoardView));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.PostView = new DeOps.Interface.TLVex.TreeListViewEx();
@@ -84,48 +84,48 @@ namespace DeOps.Components.Board
             // 
             this.PostView.BackColor = System.Drawing.SystemColors.Window;
             this.PostView.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            toggleColumnHeader5.Hovered = false;
-            toggleColumnHeader5.Image = null;
-            toggleColumnHeader5.Index = 0;
-            toggleColumnHeader5.Pressed = false;
-            toggleColumnHeader5.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader5.Selected = false;
-            toggleColumnHeader5.Text = "Subject";
-            toggleColumnHeader5.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader5.Visible = true;
-            toggleColumnHeader5.Width = 239;
-            toggleColumnHeader6.Hovered = false;
-            toggleColumnHeader6.Image = null;
-            toggleColumnHeader6.Index = 0;
-            toggleColumnHeader6.Pressed = false;
-            toggleColumnHeader6.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
-            toggleColumnHeader6.Selected = false;
-            toggleColumnHeader6.Text = "Author";
-            toggleColumnHeader6.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader6.Visible = true;
-            toggleColumnHeader7.Hovered = false;
-            toggleColumnHeader7.Image = null;
-            toggleColumnHeader7.Index = 0;
-            toggleColumnHeader7.Pressed = false;
-            toggleColumnHeader7.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
-            toggleColumnHeader7.Selected = false;
-            toggleColumnHeader7.Text = "Date";
-            toggleColumnHeader7.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader7.Visible = true;
-            toggleColumnHeader8.Hovered = false;
-            toggleColumnHeader8.Image = null;
-            toggleColumnHeader8.Index = 0;
-            toggleColumnHeader8.Pressed = false;
-            toggleColumnHeader8.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
-            toggleColumnHeader8.Selected = false;
-            toggleColumnHeader8.Text = "Replies";
-            toggleColumnHeader8.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader8.Visible = true;
+            toggleColumnHeader1.Hovered = false;
+            toggleColumnHeader1.Image = null;
+            toggleColumnHeader1.Index = 0;
+            toggleColumnHeader1.Pressed = false;
+            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.Selected = false;
+            toggleColumnHeader1.Text = "Subject";
+            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader1.Visible = true;
+            toggleColumnHeader1.Width = 239;
+            toggleColumnHeader2.Hovered = false;
+            toggleColumnHeader2.Image = null;
+            toggleColumnHeader2.Index = 0;
+            toggleColumnHeader2.Pressed = false;
+            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader2.Selected = false;
+            toggleColumnHeader2.Text = "Author";
+            toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader2.Visible = true;
+            toggleColumnHeader3.Hovered = false;
+            toggleColumnHeader3.Image = null;
+            toggleColumnHeader3.Index = 0;
+            toggleColumnHeader3.Pressed = false;
+            toggleColumnHeader3.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader3.Selected = false;
+            toggleColumnHeader3.Text = "Date";
+            toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader3.Visible = true;
+            toggleColumnHeader4.Hovered = false;
+            toggleColumnHeader4.Image = null;
+            toggleColumnHeader4.Index = 0;
+            toggleColumnHeader4.Pressed = false;
+            toggleColumnHeader4.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader4.Selected = false;
+            toggleColumnHeader4.Text = "Replies";
+            toggleColumnHeader4.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader4.Visible = true;
             this.PostView.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
-            toggleColumnHeader5,
-            toggleColumnHeader6,
-            toggleColumnHeader7,
-            toggleColumnHeader8});
+            toggleColumnHeader1,
+            toggleColumnHeader2,
+            toggleColumnHeader3,
+            toggleColumnHeader4});
             this.PostView.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.PostView.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.PostView.DisableHorizontalScroll = true;
@@ -144,7 +144,6 @@ namespace DeOps.Components.Board
             this.PostView.SmallImageList = null;
             this.PostView.StateImageList = null;
             this.PostView.TabIndex = 1;
-            this.PostView.VisualStyles = false;
             this.PostView.SelectedItemChanged += new System.EventHandler(this.PostView_SelectedItemChanged);
             // 
             // toolStrip1
@@ -161,7 +160,6 @@ namespace DeOps.Components.Board
             this.RefreshButton});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
             this.toolStrip1.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.toolStrip1.Size = new System.Drawing.Size(511, 25);
             this.toolStrip1.TabIndex = 0;
@@ -233,13 +231,13 @@ namespace DeOps.Components.Board
             // highToolStripMenuItem
             // 
             this.highToolStripMenuItem.Name = "highToolStripMenuItem";
-            this.highToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.highToolStripMenuItem.Size = new System.Drawing.Size(106, 22);
             this.highToolStripMenuItem.Text = "High";
             // 
             // lowToolStripMenuItem
             // 
             this.lowToolStripMenuItem.Name = "lowToolStripMenuItem";
-            this.lowToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.lowToolStripMenuItem.Size = new System.Drawing.Size(106, 22);
             this.lowToolStripMenuItem.Text = "Low";
             // 
             // toolStripLabel1

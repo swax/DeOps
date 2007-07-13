@@ -28,6 +28,7 @@ namespace DeOps.Interface.Tools
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SearchForm));
             this.RadioUser = new System.Windows.Forms.RadioButton();
             this.RadioOp = new System.Windows.Forms.RadioButton();
             this.TextSearch = new System.Windows.Forms.TextBox();
@@ -124,6 +125,7 @@ namespace DeOps.Interface.Tools
             this.Controls.Add(this.TextSearch);
             this.Controls.Add(this.RadioOp);
             this.Controls.Add(this.RadioUser);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "SearchForm";
             this.Text = "Search";
             this.ResumeLayout(false);

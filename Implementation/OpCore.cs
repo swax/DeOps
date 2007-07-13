@@ -171,7 +171,7 @@ namespace DeOps.Implementation
             if (Sim != null && Sim.Internet.FreshStart)
                 foreach (ushort id in Components.Keys)
                 {
-                    string dirpath = User.RootPath + "\\" + id.ToString();
+                    string dirpath = User.RootPath + "\\Data\\" + id.ToString();
                     if (Directory.Exists(dirpath))
                         Directory.Delete(dirpath, true);
                 }

@@ -28,6 +28,7 @@ namespace DeOps.Interface
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ExternalView));
             this.SuspendLayout();
             // 
             // ExternalView
@@ -35,6 +36,7 @@ namespace DeOps.Interface
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(501, 594);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "ExternalView";
             this.Text = "PanelHost";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ExternalView_FormClosing);

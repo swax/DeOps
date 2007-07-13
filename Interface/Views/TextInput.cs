@@ -46,6 +46,21 @@ namespace DeOps.Interface
             }
         }
 
+        // accept tabs
+        public bool AcceptTabs
+        {
+            get
+            {
+                return InputBox.AcceptsTab;
+            }
+            set
+            {
+                InputBox.AcceptsTab = value;
+            }
+        }
+
+
+
 
         internal delegate void SendMessageHandler(string message);
         internal SendMessageHandler SendMessage;
@@ -55,6 +70,92 @@ namespace DeOps.Interface
             InitializeComponent();
         }
 
+
+        private void SmallerButton_Click(object sender, EventArgs e)
+        {
+            Font current = InputBox.SelectionFont;
+
+            InputBox.SelectionFont = new Font(current.FontFamily, current.Size - 2, current.Style);
+        }
+
+        private void NormalButton_Click(object sender, EventArgs e)
+        {
+            Font current = InputBox.SelectionFont;
+
+            InputBox.SelectionFont = new Font(current.FontFamily, 10, current.Style);
+        }
+
+        private void LargerButton_Click(object sender, EventArgs e)
+        {
+            Font current = InputBox.SelectionFont;
+
+            InputBox.SelectionFont = new Font(current.FontFamily, current.Size + 2, current.Style); 
+        }
+
+        private void BoldButton_Click(object sender, EventArgs e)
+        {
+            ApplyStyle(FontStyle.Bold, BoldButton.Checked);
+        }
+
+        private void ItalicsButton_Click(object sender, EventArgs e)
+        {
+            ApplyStyle(FontStyle.Italic, ItalicsButton.Checked);
+        }
+
+        private void UnderlineButton_Click(object sender, EventArgs e)
+        {
+            ApplyStyle(FontStyle.Underline, UnderlineButton.Checked);
+        }
+
+        void ApplyStyle(FontStyle style, bool enabled)
+        {
+            FontStyle newStyle = InputBox.SelectionFont.Style;
+
+            if (enabled)
+                newStyle |= style;
+            else
+                newStyle &= ~style;
+
+            InputBox.SelectionFont = new Font(InputBox.SelectionFont, newStyle);
+        }
+
+        private void ColorsButton_Click(object sender, EventArgs e)
+        {
+            ColorDialog dialog = new ColorDialog();
+
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            InputBox.SelectionColor = dialog.Color;
+
+            InputBox.Focus();
+
+            /* RClick font selection
+             FontDialog dialog = new FontDialog();
+
+			dialog.Font = TextBox.SelectionFont;
+
+			if(dialog.ShowDialog(this) != DialogResult.OK)
+				return;
+
+			TextBox.SelectionFont = dialog.Font;
+
+			TextBox.Focus();
+             */
+        }
+
+
+        private void InputBox_SelectionChanged(object sender, EventArgs e)
+        {
+            if (InputBox.SelectionFont == null)
+                return;
+
+            BoldButton.Checked = InputBox.SelectionFont.Bold;
+            ItalicsButton.Checked = InputBox.SelectionFont.Italic;
+            UnderlineButton.Checked = InputBox.SelectionFont.Underline;
+        }
+
+        
         private void InputBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Return && _EnterClears && !e.Shift)
@@ -84,5 +185,11 @@ namespace DeOps.Interface
                 e.Handled = true;
             }
         }
+
+        private void InputBox_LinkClicked(object sender, LinkClickedEventArgs e)
+        {
+            System.Diagnostics.Process.Start(e.LinkText);
+        }
+
     }
 }

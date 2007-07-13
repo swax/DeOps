@@ -28,6 +28,7 @@ namespace DeOps.Components.Profile
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(EditProfile));
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.TemplateCombo = new System.Windows.Forms.ComboBox();
@@ -188,6 +189,7 @@ namespace DeOps.Components.Profile
             this.Controls.Add(this.TemplateCombo);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.MinimumSize = new System.Drawing.Size(200, 219);

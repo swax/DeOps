@@ -28,6 +28,7 @@ namespace DeOps.Components.Profile
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PreviewTemplate));
             this.Browser = new System.Windows.Forms.WebBrowser();
             this.SuspendLayout();
             // 
@@ -50,6 +51,7 @@ namespace DeOps.Components.Profile
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(427, 466);
             this.Controls.Add(this.Browser);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "PreviewTemplate";
             this.Text = "Preview Template";
             this.Load += new System.EventHandler(this.PreviewTemplate_Load);

@@ -94,11 +94,11 @@ namespace DeOps.Components.Board
             this.label4.TabIndex = 29;
             this.label4.Text = "Files";
             // 
-            // CancelButton
+            // ExitButton
             // 
             this.ExitButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ExitButton.Location = new System.Drawing.Point(315, 313);
-            this.ExitButton.Name = "CancelButton";
+            this.ExitButton.Name = "ExitButton";
             this.ExitButton.Size = new System.Drawing.Size(75, 23);
             this.ExitButton.TabIndex = 28;
             this.ExitButton.Text = "Cancel";
@@ -118,6 +118,7 @@ namespace DeOps.Components.Board
             // 
             // MessageBody
             // 
+            this.MessageBody.AcceptTabs = true;
             this.MessageBody.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));

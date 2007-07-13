@@ -1,97 +1,32 @@
 
 come up with list for beta requirements
-	desynch timer from packets, diff thread
-	re-test components
-		IM
+
+	test components
+		IM      - remove dupe system messages
 		chat
 		linking
-		mail - browse links for person add, not converting sent / rec times to local from universal
-			add selcect function, set item select property and add to selection list
-		board
-			white headers in some lists, mail as well
-			missing icons at times, extra line
-			always use icon for replies, high / low, switch to overlay system
-			no subject for replies, just grayed  out thread topic
-		plans
-		goals
-		profile
+		mail    - browse links for person add, only secure way for mailing without forgery, icons forward reply
+		board   - rclick support
+		plans   - check box view goal entries, display with some progress info, icons edit
+		goals   - show hours total on mouse over only, icons edit
+		profile - project specific motds
+		storage - diff projects not working, diff person should use link chooser, icons add restore
 		
-	use data folder for components
-	build 1x3x3 network sample
-	create sample data
+	
+	switch project - switch current view to project equivelent
+	
+	build 1x3x3 network sample - fill with network data comm files plans
 	remove remote cached for min # of files
 	
-	add homing / expiration code
+	make simulator user friendly, batch file specifying sim / autoload sample folder / progress bar during load
+	add homing / expiration code / build with <name> of person given
 	xenocode
-	create installer
+	create zip de-ops alpha1
 
 
 add accept change to storageInfo interface for folders - so name / ghost status is transferred over easily
 
 delete folder, changes saying restored, but shouldn't be there because our timestamp is the newest
-
-
-de-ops urls boards storages chats anything, extendable
-	peoples emails, profiles, etc.. can include <links>
-
-integration
-
-	Auto-Integrate (id)
-		For each file/folder uid
-			If file/folder not flagged as modified
-				Set current file to our latest
-				from self to highest
-					if current is integrated (files only)
-						set current file to higher's latest
-						break
-					for each file/folder in higher's archive
-						if itemdiff is same and date is equal or newer than now
-							set current file to higher's latest
-							break
-						else
-							break
-							
-				if current file/folder is not our own (itemdiff)
-					Call update function which
-						replace our current with this new file
-						if unlocked, overwrites
-						replace should also use this function
-						merges integration list for nodes adjacent to ourselves
-						
-					only 'save' if file system in a saved state
-						still merge with unsaved file system, just won't be made permanent till save is clicked
-						
-	RefreshHigherChanges(id)
-		remove current cached entries
-		for each uid
-				cache archive archive files newer than current file
-				cache latest integrated file from node on path to ourselves
-				if uid does not exist
-					check all uids to see if dupe exists with diff uid (itemdiff)
-					if exists, replace our uid, with higher's uid
-					else if name conflict create locally, remame local .old.
-					else create locally
-					
-	on link update
-		remove all cache enties
-		load higher nodes
-	
-	cache header
-		forech project
-			if header is higher or equal to self
-				RefreshCacheEntries
-				if not startup
-					run auto-integrate
-			
-	on startup
-		run auto-integrate (really needs to be multi-threaded)
-
-	why
-		this method lets branches work on their own projects without highers of higher's changes overwrite local stufff
-		enforces  integration chain leading up to top
-		if middle higher offline, can still inherit files that middle higher never touched
-		always in sync with files that local doesnt work with, but higher changes
-		red triangle will be reserved for real conflicts
 
 
 
@@ -109,9 +44,6 @@ on app close - remove all storage folders, especially for users that are not us
 use path class to check for invalid characters
 drag move file to diff dir, carry history, leave ghost
 
-
-test creating temp files / dirs
-test re-name file propagation	
 
 if hashes
 	clicking apply / integrate asks user to perform that action
@@ -164,8 +96,10 @@ plans
 	***move saving estimates to savelocal
 
 		
-let text input control acceptTabs for composeMain and postForm, remove smilies
 
+
+desynch timer from packets, diff thread
+	
 crits 
 look at replacing common code with delegates
 
@@ -174,11 +108,6 @@ check natted are finding closest nodes to proxy off of
 
 use rudp when available to transmit link / loc data
 with rudp now being used, should analyze purely global network
-
-alpha release
-	xeno code
-	calling home w/ version num
-	expiration
 
 
 search revisions
@@ -288,16 +217,6 @@ Interface
 	Groups on buddy list
 		Locals
 		Tabs, etc.. so permanent tabs can be kept on people, grey if offline
-		
-	Graphics
-		right click, drop down menus, component
-		  storage  - drive
-		  profile  - license
-		  mail     - mailbox
-		  board    - post it
-		  chat     - chat bubble
-		  goals    - dart
-		  schedule -
 
 	ticker
 		link update, board, mail, plan, online,
@@ -358,6 +277,9 @@ Future
     whiteboard
     load goal/board/mail archives serperately to speed load / reduce memory usage
     
+	de-ops urls boards storages chats anything, extendable
+		peoples emails, profiles, etc.. can include <links>
+
     security
 		able to change Op ID in client - for project forks or if project is majorly compramised
 			new Op ID can be secure mailed to entire org, or pointer can be put in link file (went to op id x)

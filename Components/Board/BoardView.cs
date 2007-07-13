@@ -66,21 +66,18 @@ namespace DeOps.Components.Board
             PostHeader.DocumentText = PostHeaderDefault;
 
             PostView.SmallImageList = new List<Image>();
-            PostView.SmallImageList.Add(PostImages.post);
-            PostView.SmallImageList.Add(PostImages.post_down);
-            PostView.SmallImageList.Add(PostImages.post_up);
-            PostView.SmallImageList.Add(PostImages.posthigh);
-            PostView.SmallImageList.Add(PostImages.posthigh_down);
-            PostView.SmallImageList.Add(PostImages.posthigh_up);
-            PostView.SmallImageList.Add(PostImages.postlow);
-            PostView.SmallImageList.Add(PostImages.postlow_down);
-            PostView.SmallImageList.Add(PostImages.postlow_up);
+            PostView.SmallImageList.Add(BoardRes.post);
+
+            PostView.OverlayImages.Add(BoardRes.higher);
+            PostView.OverlayImages.Add(BoardRes.lower);
+            PostView.OverlayImages.Add(BoardRes.high_scope);
+            PostView.OverlayImages.Add(BoardRes.low_scope);
         }
 
         private void BoardView_Load(object sender, EventArgs e)
         {
-            Board.PostUpdate += new PostUpdateHandler(OnPostUpdate);
-            Core.Links.GuiUpdate += new LinkGuiUpdateHandler(OnLinkUpdate);
+            Board.PostUpdate += new PostUpdateHandler(Board_PostUpdate);
+            Core.Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
 
             PostView.NodeExpanding += new EventHandler(OnNodeExpanding);
             PostView.NodeCollapsed += new EventHandler(OnNodeCollapsed);
@@ -92,7 +89,7 @@ namespace DeOps.Components.Board
 
         internal override bool Fin()
         {
-            Board.PostUpdate -= new PostUpdateHandler(OnPostUpdate);
+            Board.PostUpdate -= new PostUpdateHandler(Board_PostUpdate);
 
             Board.UnloadView(this, DhtID);
 
@@ -119,6 +116,11 @@ namespace DeOps.Components.Board
         internal override Size GetDefaultSize()
         {
             return new Size(500, 425);
+        }
+
+        internal override Icon GetIcon()
+        {
+            return BoardRes.Icon;
         }
 
         private void ProjectButton_DropDownOpening(object sender, EventArgs e)
@@ -199,7 +201,7 @@ namespace DeOps.Components.Board
             PostBody.Rtf = "";
         }
         
-        void OnPostUpdate(OpPost post)
+        void Board_PostUpdate(OpPost post)
         {
             if (post.Header.ProjectID != ProjectID)
                 return;
@@ -286,7 +288,7 @@ namespace DeOps.Components.Board
 
                 if (!ActiveThreads[parentIdent].ContainsKey(post.Ident))
                 {
-                    replyNode = new PostViewNode(Core, post);
+                    replyNode = new PostViewNode(Core, post, ScopeType.All, ScopeType.All);
 
                     ActiveThreads[parentIdent][post.Ident] = replyNode;
                     parentNode.Nodes.Add(replyNode);
@@ -330,7 +332,7 @@ namespace DeOps.Components.Board
             ActiveThreads.Remove(node.Post.Ident);
         }
 
-        void OnLinkUpdate(ulong key)
+        void Links_Update(ulong key)
         {
             // reset high and low scopes, if change detected to refresh
 
@@ -382,6 +384,10 @@ namespace DeOps.Components.Board
             if (parent == null)
                 parent = post;
 
+            string responseTo = "";
+            if (parent != post)
+                responseTo = "Response to ";
+
             // header
             string htmlHeader =
                 @"<html>
@@ -399,7 +405,7 @@ namespace DeOps.Components.Board
                 </head>
                 <body bgcolor=whitesmoke>
                     <p>
-                    <b><font size=2>" + post.Info.Subject + @"</font></b> posted by " +
+                    " + responseTo + "<b><font size=2>" + parent.Info.Subject + @"</font></b> posted by " +
                                       Links.GetName(post.Header.SourceID) + @" at " +
                                       Utilities.FormatTime(post.Header.Time) + @"<br>";
 
@@ -410,7 +416,7 @@ namespace DeOps.Components.Board
             htmlHeader += "<br>";
 
             // actions
-                htmlHeader += @" <b>Actions: </b><a href='reply:" + parent.Ident.ToString() + "'>Reply</a>";
+            htmlHeader += @" <b>Actions: </b><a href='reply:" + parent.Ident.ToString() + "'>Reply</a>";
 
             if(post.Header.SourceID == Core.LocalDhtID)
                     htmlHeader += @", <a href='edit:" + post.Ident.ToString() + "'>Edit</a>";
@@ -502,7 +508,6 @@ namespace DeOps.Components.Board
                 }
 
                 e.Cancel = true; 
-
             }     
         }
 
@@ -562,62 +567,22 @@ namespace DeOps.Components.Board
     class PostViewNode : TreeListNode
     {
         internal OpPost Post;
-
+        ScopeType Level;
+        ScopeType Scope;
 
         internal PostViewNode(OpCore core, OpPost post, ScopeType level, ScopeType scope)
         {
             Post = post;
+            Level = level;
+            Scope = scope;
 
             SubItems.Add(new ContainerSubListViewItem());
             SubItems.Add(new ContainerSubListViewItem());
             SubItems.Add(new ContainerSubListViewItem());
-
-            /*0, post.png
-            1, post_down.png
-            2, post_up.png
-            3, posthigh.png
-            4, posthigh_down.png
-            5, posthigh_up.png
-            6, postlow.png
-            7, postlow_down.png
-            8, postlow_up.png*/
-
-            if (level == ScopeType.All && scope == ScopeType.All)
-                ImageIndex = 0;
-            if (level == ScopeType.All && scope == ScopeType.Low)
-                ImageIndex = 1;
-            if (level == ScopeType.All && scope == ScopeType.High)
-                ImageIndex = 2;
-
-            if (level == ScopeType.High && scope == ScopeType.All)
-                ImageIndex = 3;
-            if (level == ScopeType.High && scope == ScopeType.Low)
-                ImageIndex = 4;
-            if (level == ScopeType.High && scope == ScopeType.High)
-                ImageIndex = 5;
-
-            if (level == ScopeType.Low && scope == ScopeType.All)
-                ImageIndex = 6;
-            if (level == ScopeType.Low && scope == ScopeType.Low)
-                ImageIndex = 7;
-            if (level == ScopeType.Low && scope == ScopeType.High)
-                ImageIndex = 8;
 
             Update(core, post);
         }
 
-        internal PostViewNode(OpCore core, OpPost post)
-        {
-            Post = post;
-
-            SubItems.Add(new ContainerSubListViewItem());
-            SubItems.Add(new ContainerSubListViewItem());
-            SubItems.Add(new ContainerSubListViewItem());
-            
-            ImageIndex = 0;
-            
-            Update(core, post);
-        }
 
         internal void Update(OpCore Core, OpPost post)
         {
@@ -627,10 +592,35 @@ namespace DeOps.Components.Board
             SubItems[0].Text = Core.Links.GetName(post.Header.SourceID);
             SubItems[1].Text = Utilities.FormatTime(post.Header.Time);
 
-            if(post.Header.ParentID == 0)
+            if (post.Header.ParentID == 0 && post.Replies > 0)
                 SubItems[2].Text = post.Replies.ToString();
             else
                 SubItems[2].Text = "";
+
+            /*
+            0 - PostView.OverlayImages.Add(PostImages.higher);
+            1 - PostView.OverlayImages.Add(PostImages.lower);
+            2 - PostView.OverlayImages.Add(PostImages.high_scope);
+            3 - PostView.OverlayImages.Add(PostImages.low_scope);*/
+
+
+            ImageIndex = 0;
+
+            if (Overlays == null)
+                Overlays = new List<int>();
+
+            if (Level == ScopeType.High)
+                Overlays.Add(0);
+
+            if (Level == ScopeType.Low)
+                Overlays.Add(1);
+
+            if (Scope == ScopeType.High)
+                Overlays.Add(2);
+
+            if (Scope == ScopeType.Low)
+                Overlays.Add(3);
+ 
         }
     }
 }

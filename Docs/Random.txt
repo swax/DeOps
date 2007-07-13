@@ -4,7 +4,7 @@ problems solving
     IT management of networks, firewalls, setups, VPNs
     massive scale coordination
     auto quality control / responsibility / accountibility
-	offer general internet services for the first time not only decentralized by also scalable
+	rapid / dynamic project growth, put de-ops link on dev site, let people immediately join project
 
 motivation
 	**location independence

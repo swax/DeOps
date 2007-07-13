@@ -321,16 +321,16 @@ namespace DeOps.Components.Plan
             if (clicked == null)
                 return;
 
-            ContextMenu menu = new ContextMenu();
+            ContextMenuStrip menu = new ContextMenuStrip();
 
             if (Selected.Person == Core.LocalDhtID)
             {
-                menu.MenuItems.Add(new PlanMenuItem("Edit", clicked.Item, Plan_Edit));
-                menu.MenuItems.Add(new MenuItem("-"));
-                menu.MenuItems.Add(new PlanMenuItem("Delete", clicked.Item, Plan_Delete));
+                menu.Items.Add(new PlanMenuItem("Edit", clicked.Item, null, Plan_Edit));
+                menu.Items.Add("-");
+                menu.Items.Add(new PlanMenuItem("Delete", clicked.Item, PlanRes.delete, Plan_Delete));
             }
             else
-                menu.MenuItems.Add(new PlanMenuItem("View", clicked.Item, Plan_View));
+                menu.Items.Add(new PlanMenuItem("Details", clicked.Item, PlanRes.details, Plan_View));
 
 
             menu.Show(PlanList, e.Location);
@@ -393,7 +393,7 @@ namespace DeOps.Components.Plan
 
             GoalNode parent = node.ParentNode() as GoalNode;
 
-            ContextMenu menu = new ContextMenu();
+            ContextMenuStrip menu = new ContextMenuStrip();
 
 
             bool owned = false;
@@ -410,18 +410,18 @@ namespace DeOps.Components.Plan
 
             if(owned)
             {
-                menu.MenuItems.Add(new GoalMenuItem("Edit", node.Goal, Goal_Edit));
-                menu.MenuItems.Add(new MenuItem("-"));
+                menu.Items.Add(new GoalMenuItem("Edit", node.Goal, null, Goal_Edit));
+                menu.Items.Add("-");
             }
 
             if(root)
-                menu.MenuItems.Add(new GoalMenuItem("Archive", node.Goal, Goal_Archive));
+                menu.Items.Add(new GoalMenuItem("Archive", node.Goal, PlanRes.archive, Goal_Archive));
 
             if(owned)
-                menu.MenuItems.Add(new GoalMenuItem("Delete", node.Goal, Goal_Delete));
+                menu.Items.Add(new GoalMenuItem("Delete", node.Goal, PlanRes.delete, Goal_Delete));
 
             if(!owned)
-                menu.MenuItems.Add(new GoalMenuItem("View", node.Goal, Goal_View));
+                menu.Items.Add(new GoalMenuItem("Details", node.Goal, PlanRes.details, Goal_View));
 
   
             menu.Show(GoalTree, e.Location);
@@ -937,23 +937,23 @@ namespace DeOps.Components.Plan
         }
     }
 
-    internal class GoalMenuItem : MenuItem
+    internal class GoalMenuItem : ToolStripMenuItem
     {
         internal PlanGoal Goal;
 
-        internal GoalMenuItem(string caption, PlanGoal goal, EventHandler onClick)
-            : base(caption, onClick)
+        internal GoalMenuItem(string caption, PlanGoal goal, Image icon, EventHandler onClick)
+            : base(caption, icon, onClick)
         {
             Goal = goal;
         }
     }
 
-    internal class PlanMenuItem : MenuItem
+    internal class PlanMenuItem : ToolStripMenuItem
     {
         internal PlanItem Item;
 
-        internal PlanMenuItem(string caption, PlanItem item, EventHandler onClick)
-            : base(caption, onClick)
+        internal PlanMenuItem(string caption, PlanItem item, Image icon, EventHandler onClick)
+            : base(caption, icon, onClick)
         {
             Item = item;
         }

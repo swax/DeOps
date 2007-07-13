@@ -282,6 +282,14 @@ namespace DeOps.Interface.TLVex
 	{
 		public event MouseEventHandler MouseDown;
 
+        private ContainerListViewEx Container;
+
+
+        public ContainerListViewItemCollection(ContainerListViewEx list)
+        {
+            Container = list;
+        }
+
 		private void OnMouseDown(object sender, MouseEventArgs e)
 		{
 			if (MouseDown != null)
@@ -351,6 +359,7 @@ namespace DeOps.Interface.TLVex
 				
 			}
 			List.Clear();
+            Container.SelectedItems.Clear();
 		}
 		public int IndexOf(ContainerListViewItem item)
 		{
@@ -1049,7 +1058,7 @@ namespace DeOps.Interface.TLVex
 			this.BackColor = SystemColors.Window;
 
 			columns = new ColumnHeaderCollection();
-			items = new ContainerListViewItemCollection();
+			items = new ContainerListViewItemCollection(this);
 			selectedIndices = new ArrayList();
 			// selectedItems = new ContainerListViewItemCollection();
 			selectedItems = new SelectedContainerListViewItemCollection();
@@ -2824,6 +2833,14 @@ namespace DeOps.Interface.TLVex
 		}
 
 		#endregion
+
+        public void Select(ContainerListViewItem item)
+        {
+            if(SelectedItems.IndexOf(item) == -1)
+                SelectedItems.Add(item);
+
+            item.Selected = true;
+        }
     }
 	#endregion
 

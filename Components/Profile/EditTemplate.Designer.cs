@@ -28,6 +28,7 @@ namespace DeOps.Components.Profile
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(EditTemplate));
             this.HtmlBox = new System.Windows.Forms.TextBox();
             this.ButtonOK = new System.Windows.Forms.Button();
             this.ButtonCancel = new System.Windows.Forms.Button();
@@ -96,6 +97,7 @@ namespace DeOps.Components.Profile
             this.Controls.Add(this.ButtonOK);
             this.Controls.Add(this.ButtonCancel);
             this.Controls.Add(this.HtmlBox);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.MinimumSize = new System.Drawing.Size(250, 150);

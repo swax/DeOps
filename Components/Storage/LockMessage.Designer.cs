@@ -29,6 +29,7 @@ namespace DeOps.Components.Storage
         private void InitializeComponent()
         {
             DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LockMessage));
             this.Note = new System.Windows.Forms.Label();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
@@ -127,6 +128,7 @@ namespace DeOps.Components.Storage
             this.Controls.Add(this.button1);
             this.Controls.Add(this.Note);
             this.Controls.Add(this.ErrorList);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "LockMessage";
             this.Text = "LockMessage";
             this.Load += new System.EventHandler(this.LockMessage_Load);

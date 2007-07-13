@@ -31,6 +31,7 @@ namespace DeOps.Components.Mail
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MailView));
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
+            this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.InboxButton = new System.Windows.Forms.ToolStripButton();
             this.OutboxButton = new System.Windows.Forms.ToolStripButton();
             this.ComposeButton = new System.Windows.Forms.ToolStripButton();
@@ -40,7 +41,6 @@ namespace DeOps.Components.Mail
             this.MessageHeader = new System.Windows.Forms.WebBrowser();
             this.MessageBody = new System.Windows.Forms.RichTextBox();
             this.ListImages = new System.Windows.Forms.ImageList(this.components);
-            this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.toolStrip1.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -60,10 +60,15 @@ namespace DeOps.Components.Mail
             this.ComposeButton});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
             this.toolStrip1.Size = new System.Drawing.Size(378, 25);
             this.toolStrip1.TabIndex = 0;
             this.toolStrip1.Text = "toolStrip1";
+            // 
+            // toolStripLabel1
+            // 
+            this.toolStripLabel1.Name = "toolStripLabel1";
+            this.toolStripLabel1.Size = new System.Drawing.Size(10, 22);
+            this.toolStripLabel1.Text = " ";
             // 
             // InboxButton
             // 
@@ -137,7 +142,7 @@ namespace DeOps.Components.Mail
             this.MessageList.TabIndex = 0;
             this.MessageList.Text = "containerListViewEx1";
             this.MessageList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.MessageList_MouseClick);
-            this.MessageList.SelectedIndexChanged += new System.EventHandler(MessageList_SelectedIndexChanged);
+            this.MessageList.SelectedIndexChanged += new System.EventHandler(this.MessageList_SelectedIndexChanged);
             // 
             // splitContainer2
             // 
@@ -191,12 +196,6 @@ namespace DeOps.Components.Mail
             this.ListImages.TransparentColor = System.Drawing.Color.Transparent;
             this.ListImages.Images.SetKeyName(0, "mail.png");
             this.ListImages.Images.SetKeyName(1, "mail_attach.png");
-            // 
-            // toolStripLabel1
-            // 
-            this.toolStripLabel1.Name = "toolStripLabel1";
-            this.toolStripLabel1.Size = new System.Drawing.Size(10, 22);
-            this.toolStripLabel1.Text = " ";
             // 
             // MailView
             // 

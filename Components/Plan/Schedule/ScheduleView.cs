@@ -143,6 +143,11 @@ namespace DeOps.Components.Plan
             return new Size(475, 325);
         }
 
+        internal override Icon GetIcon()
+        {
+            return PlanRes.Schedule;
+        }
+
         void PlanStructure_Resized(object sender, EventArgs args)
         {
 

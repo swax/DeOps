@@ -120,16 +120,16 @@
     </Compile>
     <Compile Include="Components\Board\BoardControl.cs" />
     <Compile Include="Components\Board\BoardPackets.cs" />
+    <Compile Include="Components\Board\Res\BoardRes.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>BoardRes.resx</DependentUpon>
+    </Compile>
     <Compile Include="Components\Board\BoardView.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Board\BoardView.Designer.cs">
       <DependentUpon>BoardView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Components\Board\PostImages.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>PostImages.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Board\PostMessage.cs">
       <SubType>UserControl</SubType>
@@ -139,8 +139,28 @@
     </Compile>
     <Compile Include="Components\Chat\ChatControl.cs" />
     <Compile Include="Components\Chat\ChatPackets.cs" />
+    <Compile Include="Components\Chat\Res\ChatRes.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ChatRes.resx</DependentUpon>
+    </Compile>
     <Compile Include="Components\IM\IMControl.cs" />
     <Compile Include="Components\IM\IMPackets.cs" />
+    <Compile Include="Components\IM\Res\IMRes.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>IMRes.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Link\Res\LinkRes.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>LinkRes.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Mail\Res\MailRes.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MailRes.resx</DependentUpon>
+    </Compile>
     <Compile Include="Components\Plan\Goals\EditGoal.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -160,7 +180,7 @@
       <DependentUpon>GoalPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.Designer.cs">
       <DependentUpon>GoalsView.cs</DependentUpon>
@@ -171,8 +191,13 @@
     <Compile Include="Components\Plan\Goals\ProgressText.Designer.cs">
       <DependentUpon>ProgressText.cs</DependentUpon>
     </Compile>
+    <Compile Include="Components\Plan\Res\PlanRes.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>PlanRes.resx</DependentUpon>
+    </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.Designer.cs">
       <DependentUpon>BlockRow.cs</DependentUpon>
@@ -202,11 +227,11 @@
     </Compile>
     <Compile Include="Components\Plan\PlanControl.cs" />
     <Compile Include="Components\Plan\PlanPackets.cs" />
-    <Compile Include="Components\Plan\Goals\AddPeople.cs">
+    <Compile Include="Components\Link\LinkChooser.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Components\Plan\Goals\AddPeople.Designer.cs">
-      <DependentUpon>AddPeople.cs</DependentUpon>
+    <Compile Include="Components\Link\LinkChooser.Designer.cs">
+      <DependentUpon>LinkChooser.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Profile\EditTemplate.cs">
       <SubType>Form</SubType>
@@ -235,6 +260,11 @@
     </Compile>
     <Compile Include="Components\Profile\ProfileControl.cs" />
     <Compile Include="Components\Profile\ProfilePackets.cs" />
+    <Compile Include="Components\Profile\ProfileRes.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ProfileRes.resx</DependentUpon>
+    </Compile>
     <Compile Include="Components\Storage\DetailsForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -267,7 +297,7 @@
     <Compile Include="Components\Storage\StorageView.Designer.cs">
       <DependentUpon>StorageView.cs</DependentUpon>
     </Compile>
-    <Compile Include="Components\Storage\StorageRes.Designer.cs">
+    <Compile Include="Components\Storage\Res\StorageRes.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>StorageRes.resx</DependentUpon>
@@ -384,6 +414,11 @@
     <Compile Include="Components\Profile\ProfileView.Designer.cs">
       <DependentUpon>ProfileView.cs</DependentUpon>
     </Compile>
+    <Compile Include="Interface\Res\InterfaceRes.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>InterfaceRes.resx</DependentUpon>
+    </Compile>
     <Compile Include="Interface\Views\TreeListViewEx\ContainerListView.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -438,7 +473,7 @@
       <DependentUpon>InviteForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Interface\MainForm.cs">
-      <SubType>Form</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Interface\MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
@@ -484,7 +519,7 @@
       <DependentUpon>NetView.cs</DependentUpon>
     </Compile>
     <Compile Include="Simulator\SimForm.cs">
-      <SubType>Component</SubType>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Simulator\SimForm.Designer.cs">
       <DependentUpon>SimForm.cs</DependentUpon>
@@ -505,11 +540,35 @@
     </Compile>
     <Compile Include="Win32.cs" />
     <Content Include="Components\Board\Board.txt" />
+    <None Include="Components\Chat\Res\chat.ico" />
+    <None Include="Components\Board\Res\lower.png" />
+    <None Include="Components\Board\Res\post.png" />
+    <None Include="Components\Board\Res\high_scope.png" />
+    <None Include="Components\Board\Res\higher.png" />
+    <None Include="Components\Board\Res\low_scope.png" />
+    <None Include="Components\Board\Res\compose.ico" />
     <Content Include="Components\Chat\Chat.txt" />
+    <None Include="Components\IM\Res\im.ico" />
+    <None Include="Components\Link\Res\confirmlink.ico" />
+    <None Include="Components\Link\Res\link.ico" />
     <Content Include="Components\Link\Link.txt" />
+    <None Include="Components\Link\Res\unlink.ico" />
     <Content Include="Components\Location\Location.txt" />
+    <None Include="Components\Plan\Res\goals.ico" />
+    <None Include="Components\Mail\Res\mail.ico" />
+    <None Include="Components\Mail\Res\mail.png" />
+    <None Include="Components\Mail\Res\mail_attach.png" />
+    <None Include="Components\Mail\Res\compose.ico" />
+    <None Include="Components\Mail\Res\delete.gif" />
     <Content Include="Components\Plan\Plan.txt" />
+    <None Include="Components\Plan\Res\schedule.ico" />
+    <None Include="Components\Profile\profile.ico" />
+    <None Include="Components\Plan\Res\archive.png" />
+    <None Include="Components\Plan\Res\reject.gif" />
+    <None Include="Components\Plan\Res\details.png" />
     <Content Include="Components\Profile\Profile.txt" />
+    <None Include="Components\Storage\Res\storage.ico" />
+    <None Include="Components\Storage\Res\details.png" />
     <Content Include="Components\Storage\storage.txt" />
     <Content Include="Components\Storage\storage2.txt" />
     <Content Include="Docs\Events.txt" />
@@ -525,15 +584,6 @@
     <None Include="Graphics\unlocked.png" />
     <None Include="Graphics\archive.png" />
     <None Include="Graphics\folder.png" />
-    <None Include="Graphics\posts\post.png" />
-    <None Include="Graphics\posts\post_down.png" />
-    <None Include="Graphics\posts\post_up.png" />
-    <None Include="Graphics\posts\posthigh.png" />
-    <None Include="Graphics\posts\posthigh_down.png" />
-    <None Include="Graphics\posts\posthigh_up.png" />
-    <None Include="Graphics\posts\postlow.png" />
-    <None Include="Graphics\posts\postlow_down.png" />
-    <None Include="Graphics\posts\postlow_up.png" />
     <None Include="Graphics\locked.gif" />
     <None Include="Graphics\unlocked.gif" />
     <None Include="Graphics\edit.gif" />
@@ -557,6 +607,8 @@
     <None Include="Graphics\storage\extend2.gif" />
     <None Include="Graphics\storage\accept.gif" />
     <Content Include="Implementation\Design.txt" />
+    <None Include="Interface\Res\views.png" />
+    <None Include="Interface\Res\star.png" />
     <Content Include="rank.ico" />
     <None Include="Graphics\leftarrow.png" />
     <None Include="Graphics\rightarrow.png" />
@@ -564,18 +616,25 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <EmbeddedResource Include="Components\Board\Res\BoardRes.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>BoardRes.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>DeOps.Components.Board</CustomToolNamespace>
+    </EmbeddedResource>
     <EmbeddedResource Include="Components\Board\BoardView.resx">
       <SubType>Designer</SubType>
       <DependentUpon>BoardView.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Components\Board\PostImages.resx">
-      <SubType>Designer</SubType>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>PostImages.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
     <EmbeddedResource Include="Components\Board\PostMessage.resx">
       <SubType>Designer</SubType>
       <DependentUpon>PostMessage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Chat\Res\ChatRes.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ChatRes.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>DeOps.Components.Chat</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Components\Chat\RoomView.resx">
       <SubType>Designer</SubType>
@@ -589,13 +648,31 @@
       <SubType>Designer</SubType>
       <DependentUpon>ChatView.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Components\IM\Res\IMRes.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>IMRes.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>DeOps.Components.IM</CustomToolNamespace>
+    </EmbeddedResource>
     <EmbeddedResource Include="Components\IM\IM_View.resx">
       <SubType>Designer</SubType>
       <DependentUpon>IM_View.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Components\Link\Res\LinkRes.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>LinkRes.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>DeOps.Components.Link</CustomToolNamespace>
+    </EmbeddedResource>
     <EmbeddedResource Include="Components\Mail\ComposeMail.resx">
       <SubType>Designer</SubType>
       <DependentUpon>ComposeMail.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Mail\Res\MailRes.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>MailRes.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>DeOps.Components.Mail</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Components\Mail\MailView.resx">
       <SubType>Designer</SubType>
@@ -621,6 +698,12 @@
       <SubType>Designer</SubType>
       <DependentUpon>ProgressText.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Components\Plan\Res\PlanRes.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>PlanRes.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>DeOps.Components.Plan</CustomToolNamespace>
+    </EmbeddedResource>
     <EmbeddedResource Include="Components\Plan\Schedule\BlockRow.resx">
       <SubType>Designer</SubType>
       <DependentUpon>BlockRow.cs</DependentUpon>
@@ -642,9 +725,9 @@
       <SubType>Designer</SubType>
       <DependentUpon>ScheduleView.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Components\Plan\Goals\AddPeople.resx">
+    <EmbeddedResource Include="Components\Link\LinkChooser.resx">
       <SubType>Designer</SubType>
-      <DependentUpon>AddPeople.cs</DependentUpon>
+      <DependentUpon>LinkChooser.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Components\Profile\EditProfile.resx">
       <SubType>Designer</SubType>
@@ -657,6 +740,11 @@
     <EmbeddedResource Include="Components\Profile\PreviewTemplate.resx">
       <SubType>Designer</SubType>
       <DependentUpon>PreviewTemplate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Profile\ProfileRes.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ProfileRes.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="Components\Storage\DetailsForm.resx">
       <SubType>Designer</SubType>
@@ -678,10 +766,11 @@
       <SubType>Designer</SubType>
       <DependentUpon>StorageView.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Components\Storage\StorageRes.resx">
+    <EmbeddedResource Include="Components\Storage\Res\StorageRes.resx">
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>StorageRes.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>DeOps.Components.Storage</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Components\Storage\UnlockForm.resx">
       <SubType>Designer</SubType>
@@ -702,6 +791,12 @@
     <EmbeddedResource Include="Components\Profile\ProfileView.resx">
       <SubType>Designer</SubType>
       <DependentUpon>ProfileView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Res\InterfaceRes.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>InterfaceRes.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>DeOps.Interface</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\Views\TreeListViewEx\ContainerListView.resx">
       <DependentUpon>ContainerListView.cs</DependentUpon>

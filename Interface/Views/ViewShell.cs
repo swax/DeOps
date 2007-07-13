@@ -28,5 +28,10 @@ namespace DeOps.Interface
         {
             return new Size(100, 100);
         }
+
+        internal virtual Icon GetIcon()
+        {
+            return null;
+        }
     }
 }

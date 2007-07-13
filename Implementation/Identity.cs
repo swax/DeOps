@@ -78,7 +78,7 @@ namespace DeOps
 			Password    = Utilities.PasswordtoRijndael(password);
 
             RootPath = Path.GetDirectoryName(filepath);
-            TempPath = RootPath + "\\0";
+            TempPath = RootPath + "\\Data\\0";
             Directory.CreateDirectory(TempPath);
 
 			// default settings

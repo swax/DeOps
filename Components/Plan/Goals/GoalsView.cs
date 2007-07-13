@@ -59,6 +59,11 @@ namespace DeOps.Components.Plan
             return new Size(475, 325);
         }
 
+        internal override Icon GetIcon()
+        {
+            return PlanRes.Goals;
+        }
+
         private void GoalsView_Load(object sender, EventArgs e)
         {
             Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);

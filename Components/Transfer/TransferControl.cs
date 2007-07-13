@@ -54,7 +54,7 @@ namespace DeOps.Components.Transfer
             // create and clear transfer dir
             try
             {
-                TransferPath = Core.User.RootPath + "\\" + ComponentID.Transfer.ToString();
+                TransferPath = Core.User.RootPath + "\\Data\\" + ComponentID.Transfer.ToString();
                 Directory.CreateDirectory(TransferPath);
 
                 string[] files = Directory.GetFiles(TransferPath);

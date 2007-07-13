@@ -765,7 +765,7 @@ namespace DeOps.Interface.TLVex
                 bNoMoreNodes = this.GetNextNode(ref nodeDraw);
             }
 
-            
+            g.ResetClip();
             
             
             /*
@@ -1034,6 +1034,8 @@ namespace DeOps.Interface.TLVex
 					{
 						if (smallImageList != null && node.ImageIndex >= 0 && node.ImageIndex < smallImageList.Count)
 						{
+                            int left = r.Left + lb + eb + 2 - hscrollBar.Value;
+                            int top = r.Top + hb + itemheight * totalRend + eb / 4 - 2;
                             g.DrawImage(smallImageList[node.ImageIndex], r.Left+lb+eb+2-hscrollBar.Value, r.Top+hb+itemheight*totalRend+eb/4-2, 16, 16);
 							ib = 18;
 						}
@@ -1187,6 +1189,7 @@ namespace DeOps.Interface.TLVex
                             g.DrawString(node.Text, font, new SolidBrush(node.ForeColor), (float)(r.Left + lb + ib + eb + 4 - hscrollBar.Value), (float)(r.Top + hb + itemheight * totalRend + eb / 4));
 					}
 
+
 					// render subitems
 					int j;
 					int last = 0;
@@ -1236,6 +1239,7 @@ namespace DeOps.Interface.TLVex
 										g.DrawString(sp, this.Font, (node.UseItemStyleForSubItems ? new SolidBrush(node.ForeColor) : SystemBrushes.WindowText), (float)(last+(iColPlus1Width /* BMS 2003-05-24 columns[j+1].Width *//2)-(StringTools.MeasureDisplayStringWidth(g, sp, this.Font)/2)-hscrollBar.Value), (float)(r.Top+(itemheight*totalRend)+headerBuffer+4));
 								}
 							}
+                            g.ResetClip();
 						}
 					}
 				}

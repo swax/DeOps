@@ -77,7 +77,7 @@ namespace DeOps.Components.Board
 
             LocalFileKey = Core.User.Settings.FileKey;
 
-            BoardPath = Core.User.RootPath + "\\" + ComponentID.Board.ToString();
+            BoardPath = Core.User.RootPath + "\\Data\\" + ComponentID.Board.ToString();
 
             if(!Directory.Exists(BoardPath))
                 Directory.CreateDirectory(BoardPath);
@@ -294,10 +294,10 @@ namespace DeOps.Components.Board
                 return null;
 
             if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Comm/Board", new EventHandler(InternalMenu_View)));
+                menus.Add(new MenuItemInfo("Comm/Board", BoardRes.Icon, new EventHandler(InternalMenu_View)));
 
             if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Board", new EventHandler(ExternalMenu_View)));
+                menus.Add(new MenuItemInfo("Board", BoardRes.Icon, new EventHandler(ExternalMenu_View)));
 
             return menus;
         }
@@ -1023,19 +1023,16 @@ namespace DeOps.Components.Board
                     {
                         targets.Add(parent.DhtID);
 
-                        if (parent.Downlinks.ContainsKey(project))
-                            foreach (OpLink child in parent.Downlinks[project])
-                                if (parent.Confirmed[project].Contains(child.DhtID) && child.DhtID != id)
-                                    targets.Add(child.DhtID);
+                        targets.AddRange(Links.GetDownlinkIDs(parent.DhtID, project, 1));
+
+                        targets.Remove(id); // remove self
                     }
                 }
 
             // get children of self
-            if (scope != ScopeType.High) 
-                if (link.Downlinks.ContainsKey(project))
-                    foreach (OpLink child in link.Downlinks[project])
-                        if(link.Confirmed[project].Contains(child.DhtID))
-                            targets.Add(child.DhtID);
+            if (scope != ScopeType.High)
+                targets.AddRange(Links.GetDownlinkIDs(id, project, 1));
+
 
             return targets;
         }

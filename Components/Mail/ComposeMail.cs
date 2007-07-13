@@ -17,22 +17,25 @@ namespace DeOps.Components.Mail
     internal partial class ComposeMail : ViewShell
     {
         MailControl Mail;
-        ulong DefaultID;
+        LinkControl Links;
 
+        ulong DefaultID;
+        bool MessageSent;
 
         internal ComposeMail(MailControl mail, ulong id)
         {
             InitializeComponent();
 
             Mail = mail;
+            Links = mail.Core.Links;
             DefaultID = id;
 
-            ToTextBox.Text = Mail.Core.Links.GetName(DefaultID);
+            ToTextBox.Text = Links.GetName(DefaultID);
         }
 
         internal override string GetTitle()
         {
-            string name = Mail.Core.Links.GetName(DefaultID);
+            string name = Links.GetName(DefaultID);
 
             if (name != "")
                 return "Mail " + name;
@@ -43,6 +46,20 @@ namespace DeOps.Components.Mail
         internal override Size GetDefaultSize()
         {
             return new Size(450, 525);
+        }
+
+        internal override Icon GetIcon()
+        {
+            return MailRes.Compose;
+        }
+
+        internal override bool Fin()
+        {
+            if (!MessageSent && MessageBody.InputBox.Text.Length > 0)
+                if (MessageBox.Show(this, "Discard Message?", "New Mail", MessageBoxButtons.YesNo) == DialogResult.No)
+                    return false;
+
+            return true;
         }
 
         private void LinkAdd_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -126,6 +143,8 @@ namespace DeOps.Components.Mail
                 return;
             }
 
+            MessageSent = true;
+
             if (External != null)
                 External.Close();
         }
@@ -137,8 +156,8 @@ namespace DeOps.Components.Mail
 
             ulong id = 0;
 
-            lock(Mail.Core.Links.LinkMap)
-                foreach(OpLink link in Mail.Core.Links.LinkMap.Values)
+            lock(Links.LinkMap)
+                foreach(OpLink link in Links.LinkMap.Values)
                     if(link.Name != null)
                         if (String.Compare(name, link.Name, true) == 0)
                         {
@@ -158,6 +177,27 @@ namespace DeOps.Components.Mail
         {
             if (External != null)
                 External.Close();
+        }
+
+        private void BrowseTo_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            LinkChooser add = new LinkChooser(Links, 0);
+
+            string prefix = ToTextBox.Text.Length > 0 ? ", " : "";
+
+            if (add.ShowDialog(this) == DialogResult.OK)
+            {
+                if(add.People.Count > 0)
+                    ToTextBox.Text += prefix;
+
+                //foreach(ulong id in add.People)
+                //    ToTextBox.Text += Links.GetName(id)
+            }
+        }
+
+        private void BrowseCC_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+
         }
     }
 }

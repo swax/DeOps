@@ -79,7 +79,7 @@ namespace DeOps.Components.Link
 
             ProjectNames[0] = Core.User.Settings.Operation;
 
-            LinkPath = Core.User.RootPath + "\\" + ComponentID.Link.ToString();    
+            LinkPath = Core.User.RootPath + "\\Data\\" + ComponentID.Link.ToString();    
             Directory.CreateDirectory(LinkPath);
 
             LocalFileKey = Core.User.Settings.FileKey;
@@ -119,7 +119,7 @@ namespace DeOps.Components.Link
             if (Core.LocalDhtID != key &&
                 (!LocalLink.Uplink.ContainsKey(proj) || LocalLink.Uplink[proj].DhtID != key) && 
                 !LocalLink.SearchBranch(proj, LinkMap[key]))
-                menus.Add( new MenuItemInfo("Linkup", new EventHandler(Menu_Linkup)));
+                menus.Add( new MenuItemInfo("Linkup", LinkRes.link, new EventHandler(Menu_Linkup)));
 
             // confirm
             if (LocalLink.Downlinks.ContainsKey(proj) && LocalLink.Downlinks[proj].Contains(LinkMap[key]))
@@ -127,13 +127,13 @@ namespace DeOps.Components.Link
                 unlink = true;
 
                 if (!LocalLink.Confirmed.ContainsKey(proj) || !LocalLink.Confirmed[proj].Contains(key))
-                    menus.Add(new MenuItemInfo("Confirm Link", new EventHandler(Menu_ConfirmLink)));
+                    menus.Add(new MenuItemInfo("Confirm Link", LinkRes.confirmlink, new EventHandler(Menu_ConfirmLink)));
             }
 
             // unlink
             if ((unlink && LocalLink.Confirmed.ContainsKey(proj) && LocalLink.Confirmed[proj].Contains(key)) || 
                 (LocalLink.Uplink.ContainsKey(proj) && LocalLink.Uplink[proj].DhtID == key))
-                menus.Add(new MenuItemInfo("Unlink", new EventHandler(Menu_Unlink)));
+                menus.Add(new MenuItemInfo("Unlink", LinkRes.unlink, new EventHandler(Menu_Unlink)));
 
 
             return menus;

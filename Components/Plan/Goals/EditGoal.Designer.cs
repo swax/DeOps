@@ -28,6 +28,7 @@ namespace DeOps.Components.Plan
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(EditGoal));
             this.PickLink = new System.Windows.Forms.LinkLabel();
             this.PersonLabel = new System.Windows.Forms.Label();
             this.ExitButton = new System.Windows.Forms.Button();
@@ -86,6 +87,7 @@ namespace DeOps.Components.Plan
             // 
             // NotesInput
             // 
+            this.NotesInput.AcceptTabs = false;
             this.NotesInput.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
@@ -164,6 +166,7 @@ namespace DeOps.Components.Plan
             this.Controls.Add(this.Deadline);
             this.Controls.Add(this.TitleBox);
             this.Controls.Add(this.label1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "EditGoal";

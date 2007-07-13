@@ -60,6 +60,11 @@ namespace DeOps.Components.Chat
             return new Size(600, 350);
         }
 
+        internal override Icon GetIcon()
+        {
+            return ChatRes.Icon;
+        }
+
         private void OnCreateRoom(ChatRoom room)
         {
             ChatSplit splitView = FindSplit(room);

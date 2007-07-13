@@ -7,6 +7,7 @@ using System.Text;
 using System.Windows.Forms;
 
 using DeOps.Implementation;
+using DeOps.Components.Link;
 
 namespace DeOps.Components.Plan
 {
@@ -72,7 +73,7 @@ namespace DeOps.Components.Plan
 
         private void PickLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            AddPeople add = new AddPeople(Core.Links, ProjectID);
+            LinkChooser add = new LinkChooser(Core.Links, ProjectID);
 
             if (add.ShowDialog(this) == DialogResult.OK)
                 if (add.People.Count > 0)

@@ -59,10 +59,10 @@ namespace DeOps.Components.Chat
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
 
             if(menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Comm/Chat", new EventHandler(InternalMenu_View)));
+                menus.Add(new MenuItemInfo("Comm/Chat", ChatRes.Icon, new EventHandler(InternalMenu_View)));
 
             if(menuType == InterfaceMenuType.External)
-                menus.Add( new MenuItemInfo("Chat", new EventHandler(ExternalMenu_View)));
+                menus.Add(new MenuItemInfo("Chat", ChatRes.Icon, new EventHandler(ExternalMenu_View)));
 
 
             return menus;

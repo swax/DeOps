@@ -32,6 +32,8 @@ namespace DeOps.Components.Storage
             DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DetailsForm));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.RemoveLink = new System.Windows.Forms.LinkLabel();
+            this.AddLink = new System.Windows.Forms.LinkLabel();
             this.containerListViewEx1 = new DeOps.Interface.TLVex.ContainerListViewEx();
             this.ExitButton = new System.Windows.Forms.Button();
             this.OkButton = new System.Windows.Forms.Button();
@@ -39,8 +41,6 @@ namespace DeOps.Components.Storage
             this.label6 = new System.Windows.Forms.Label();
             this.SizeLabel = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
-            this.AddLink = new System.Windows.Forms.LinkLabel();
-            this.RemoveLink = new System.Windows.Forms.LinkLabel();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -58,6 +58,28 @@ namespace DeOps.Components.Storage
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Visibility";
+            // 
+            // RemoveLink
+            // 
+            this.RemoveLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.RemoveLink.AutoSize = true;
+            this.RemoveLink.Location = new System.Drawing.Point(38, 124);
+            this.RemoveLink.Name = "RemoveLink";
+            this.RemoveLink.Size = new System.Drawing.Size(47, 13);
+            this.RemoveLink.TabIndex = 2;
+            this.RemoveLink.TabStop = true;
+            this.RemoveLink.Text = "Remove";
+            // 
+            // AddLink
+            // 
+            this.AddLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.AddLink.AutoSize = true;
+            this.AddLink.Location = new System.Drawing.Point(6, 124);
+            this.AddLink.Name = "AddLink";
+            this.AddLink.Size = new System.Drawing.Size(26, 13);
+            this.AddLink.TabIndex = 1;
+            this.AddLink.TabStop = true;
+            this.AddLink.Text = "Add";
             // 
             // containerListViewEx1
             // 
@@ -104,7 +126,6 @@ namespace DeOps.Components.Storage
             this.containerListViewEx1.StateImageList = null;
             this.containerListViewEx1.TabIndex = 0;
             this.containerListViewEx1.Text = "containerListViewEx1";
-            this.containerListViewEx1.VisualStyles = false;
             // 
             // ExitButton
             // 
@@ -164,28 +185,6 @@ namespace DeOps.Components.Storage
             this.label8.Size = new System.Drawing.Size(38, 13);
             this.label8.TabIndex = 7;
             this.label8.Text = "Name:";
-            // 
-            // AddLink
-            // 
-            this.AddLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.AddLink.AutoSize = true;
-            this.AddLink.Location = new System.Drawing.Point(6, 124);
-            this.AddLink.Name = "AddLink";
-            this.AddLink.Size = new System.Drawing.Size(26, 13);
-            this.AddLink.TabIndex = 1;
-            this.AddLink.TabStop = true;
-            this.AddLink.Text = "Add";
-            // 
-            // RemoveLink
-            // 
-            this.RemoveLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.RemoveLink.AutoSize = true;
-            this.RemoveLink.Location = new System.Drawing.Point(38, 124);
-            this.RemoveLink.Name = "RemoveLink";
-            this.RemoveLink.Size = new System.Drawing.Size(47, 13);
-            this.RemoveLink.TabIndex = 2;
-            this.RemoveLink.TabStop = true;
-            this.RemoveLink.Text = "Remove";
             // 
             // DetailsForm
             // 

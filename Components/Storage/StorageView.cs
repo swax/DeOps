@@ -92,6 +92,11 @@ namespace DeOps.Components.Storage
             return new Size(550, 425);
         }
 
+        internal override Icon GetIcon()
+        {
+            return StorageRes.Icon;
+        }
+
         private void StorageView_Load(object sender, EventArgs e)
         {
             FolderTreeView.SmallImageList = new List<Image>();
@@ -1095,34 +1100,34 @@ namespace DeOps.Components.Storage
             if (node == null)
                 return;
 
-            ContextMenu menu = new ContextMenu();
+            ContextMenuStrip menu = new ContextMenuStrip();
 
             if (!node.Temp)
             {
                 if (node.Details.IsFlagged(StorageFlags.Unlocked))
-                    menu.MenuItems.Add(new FolderMenuItem("Lock", node, Folder_Lock));
+                    menu.Items.Add(new FolderMenuItem("Lock", node, StorageRes.Locked, Folder_Lock));
                 else
-                    menu.MenuItems.Add(new FolderMenuItem("Unlock", node, Folder_Unlock));
+                    menu.Items.Add(new FolderMenuItem("Unlock", node, StorageRes.Unlocked, Folder_Unlock));
             }
             else
-                menu.MenuItems.Add(new FolderMenuItem("Add to Storage", node, Folder_Add)); // remove in web interface\
+                menu.Items.Add(new FolderMenuItem("Add to Storage", node, null, Folder_Add)); // remove in web interface\
 
 
             if (node != RootFolder && !node.Temp)
-                menu.MenuItems.Add(new FolderMenuItem("Details", node, Folder_Details));
+                menu.Items.Add(new FolderMenuItem("Details", node, StorageRes.details, Folder_Details));
 
             if (IsLocal && node != RootFolder && !node.Temp)
             {
-                menu.MenuItems.Add("-");
+                menu.Items.Add("-");
 
                 if (node.Details.IsFlagged(StorageFlags.Archived))
-                    menu.MenuItems.Add(new FolderMenuItem("Restore", node, Folder_Restore));
+                    menu.Items.Add(new FolderMenuItem("Restore", node, null, Folder_Restore));
 
-                menu.MenuItems.Add(new FolderMenuItem("Delete", node, Folder_Delete));
+                menu.Items.Add(new FolderMenuItem("Delete", node, StorageRes.Reject, Folder_Delete));
             }
 
 
-            if (menu.MenuItems.Count > 0)
+            if (menu.Items.Count > 0)
                 menu.Show(FolderTreeView, e.Location);
         }
 
@@ -1133,7 +1138,7 @@ namespace DeOps.Components.Storage
 
             FileItem clicked = FileListView.GetItemAt(e.Location) as FileItem;
 
-            ContextMenu menu = new ContextMenu();
+            ContextMenuStrip menu = new ContextMenuStrip();
 
             if (clicked == null)
             {
@@ -1141,7 +1146,7 @@ namespace DeOps.Components.Storage
 
                 if (Working != null)
                 {
-                    menu.MenuItems.Add(new MenuItem("Create Folder", new EventHandler(Folder_Create)));
+                    menu.Items.Add(new ToolStripMenuItem("Create Folder", StorageRes.Folder, new EventHandler(Folder_Create)));
                     menu.Show(FileListView, e.Location);
                 }
 
@@ -1153,55 +1158,55 @@ namespace DeOps.Components.Storage
 
             // add
             if (IsLocal && clicked.Temp)
-                menu.MenuItems.Add(new FileMenuItem("Add to Storage", clicked, File_Add)); // remove in web interface\
+                menu.Items.Add(new FileMenuItem("Add to Storage", clicked, null, File_Add)); // remove in web interface\
 
             // lock
             if (!clicked.Temp)
                 if (clicked.IsFolder)
                 {
                     if(clicked.Folder.Details.IsFlagged(StorageFlags.Unlocked))
-                        menu.MenuItems.Add(new FolderMenuItem("Lock", clicked.Folder, Folder_Lock));
+                        menu.Items.Add(new FolderMenuItem("Lock", clicked.Folder, StorageRes.Locked, Folder_Lock));
                     else
-                        menu.MenuItems.Add(new FolderMenuItem("Unlock", clicked.Folder, Folder_Unlock));       
+                        menu.Items.Add(new FolderMenuItem("Unlock", clicked.Folder, StorageRes.Unlocked, Folder_Unlock));       
                 }
                 else if (clicked.Details != null)
                 {
                     if(clicked.IsUnlocked())
-                        menu.MenuItems.Add(new FileMenuItem("Lock", clicked, File_Lock));
+                        menu.Items.Add(new FileMenuItem("Lock", clicked, StorageRes.Locked, File_Lock));
                     else
-                        menu.MenuItems.Add(new FileMenuItem("Unlock", clicked, File_Unlock));
+                        menu.Items.Add(new FileMenuItem("Unlock", clicked, StorageRes.Unlocked, File_Unlock));
                 }
 
             // details
             if (!clicked.Temp)
                 if (clicked.IsFolder)
-                    menu.MenuItems.Add(new FolderMenuItem("Details", clicked.Folder, Folder_Details));
+                    menu.Items.Add(new FolderMenuItem("Details", clicked.Folder, StorageRes.details, Folder_Details));
                 else
-                    menu.MenuItems.Add(new FileMenuItem("Details", clicked, File_Details));
+                    menu.Items.Add(new FileMenuItem("Details", clicked, StorageRes.details, File_Details));
 
             // delete / restore
             if (IsLocal && !clicked.Temp)
                 if (clicked.IsFolder)
                 {
-                    menu.MenuItems.Add("-");
+                    menu.Items.Add("-");
 
                     if(clicked.Folder.Details.IsFlagged(StorageFlags.Archived))
-                        menu.MenuItems.Add(new FolderMenuItem("Restore", clicked.Folder, Folder_Restore));
+                        menu.Items.Add(new FolderMenuItem("Restore", clicked.Folder, null, Folder_Restore));
 
-                    menu.MenuItems.Add(new FolderMenuItem("Delete", clicked.Folder, Folder_Delete));
+                    menu.Items.Add(new FolderMenuItem("Delete", clicked.Folder, StorageRes.Reject, Folder_Delete));
                 }
 
                 else if (clicked.Details != null)
                 {
-                    menu.MenuItems.Add("-");
+                    menu.Items.Add("-");
 
                     if (clicked.Details.IsFlagged(StorageFlags.Archived))
-                        menu.MenuItems.Add(new FileMenuItem("Restore", clicked, File_Restore));
+                        menu.Items.Add(new FileMenuItem("Restore", clicked, null, File_Restore));
 
-                    menu.MenuItems.Add(new FileMenuItem("Delete", clicked, File_Delete));
+                    menu.Items.Add(new FileMenuItem("Delete", clicked, StorageRes.Reject, File_Delete));
                 }
 
-            if (menu.MenuItems.Count > 0)
+            if (menu.Items.Count > 0)
                 menu.Show(FileListView, e.Location);
         }
 
@@ -2427,23 +2432,23 @@ namespace DeOps.Components.Storage
         }
     }
 
-    internal class FileMenuItem : MenuItem
+    internal class FileMenuItem : ToolStripMenuItem
     {
         internal FileItem File;
 
-        internal FileMenuItem(string caption, FileItem item, EventHandler onClick)
-            : base(caption, onClick)
+        internal FileMenuItem(string caption, FileItem item, Image icon, EventHandler onClick)
+            : base(caption, icon, onClick)
         {
             File = item;
         }
     }
 
-    internal class FolderMenuItem : MenuItem
+    internal class FolderMenuItem : ToolStripMenuItem
     {
         internal FolderNode Folder;
 
-        internal FolderMenuItem(string caption, FolderNode item, EventHandler onClick)
-            : base(caption, onClick)
+        internal FolderMenuItem(string caption, FolderNode item, Image icon, EventHandler onClick)
+            : base(caption, icon, onClick)
         {
             Folder = item;
         }

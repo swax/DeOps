@@ -110,7 +110,7 @@ namespace DeOps.Components.IM
                 if (!Core.Locations.LocationMap.ContainsKey(key))
                     return null;
 
-                menus.Add(new MenuItemInfo("Send IM", new EventHandler(QuickMenu_View)));
+                menus.Add(new MenuItemInfo("Send IM", IMRes.Icon, new EventHandler(QuickMenu_View)));
             }
 
             return menus;

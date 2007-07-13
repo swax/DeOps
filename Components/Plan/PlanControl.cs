@@ -77,14 +77,14 @@ namespace DeOps.Components.Plan
 
             if (menuType == InterfaceMenuType.Internal)
             {
-                menus.Add(new MenuItemInfo("Plans/Schedule", new EventHandler(InternalMenu_ScheduleView)));
-                menus.Add(new MenuItemInfo("Plans/Goals", new EventHandler(InternalMenu_GoalsView)));
+                menus.Add(new MenuItemInfo("Plans/Schedule", PlanRes.Schedule, new EventHandler(InternalMenu_ScheduleView)));
+                menus.Add(new MenuItemInfo("Plans/Goals", PlanRes.Goals, new EventHandler(InternalMenu_GoalsView)));
             }
 
             if (menuType == InterfaceMenuType.External)
             {
-                menus.Add(new MenuItemInfo("Schedule", new EventHandler(ExternalMenu_ScheduleView)));
-                menus.Add(new MenuItemInfo("Goals", new EventHandler(ExternalMenu_GoalsView)));
+                menus.Add(new MenuItemInfo("Schedule", PlanRes.Schedule, new EventHandler(ExternalMenu_ScheduleView)));
+                menus.Add(new MenuItemInfo("Goals", PlanRes.Goals, new EventHandler(ExternalMenu_GoalsView)));
             }
 
             return menus;
@@ -144,7 +144,7 @@ namespace DeOps.Components.Plan
             Core.Transfers.FileSearch[ComponentID.Plan] = new FileSearchHandler(Transfers_FileSearch);
             Core.Transfers.FileRequest[ComponentID.Plan] = new FileRequestHandler(Transfers_FileRequest);
 
-            PlanPath = Core.User.RootPath + "\\" + ComponentID.Plan.ToString();
+            PlanPath = Core.User.RootPath + "\\Data\\" + ComponentID.Plan.ToString();
             Directory.CreateDirectory(PlanPath);
 
             LocalFileKey = Core.User.Settings.FileKey;

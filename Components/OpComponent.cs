@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Text;
 using System.Security.Cryptography;
 using System.Net;
@@ -15,11 +16,13 @@ namespace DeOps.Components
     internal class MenuItemInfo
     {
         internal string Path;
+        internal Icon Symbol;
         internal EventHandler ClickEvent;
 
-        internal MenuItemInfo(string path, EventHandler onClick)
+        internal MenuItemInfo(string path, Icon symbol, EventHandler onClick)
         {
             Path = path;
+            Symbol = symbol;
             ClickEvent = onClick;
         }
     }

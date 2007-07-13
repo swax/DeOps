@@ -130,7 +130,7 @@ namespace DeOps.Components.Profile
             Core.Transfers.FileSearch[ComponentID.Profile]  = new FileSearchHandler(Transfers_FileSearch);
             Core.Transfers.FileRequest[ComponentID.Profile] = new FileRequestHandler(Transfers_FileRequest);
 
-            ProfilePath = Core.User.RootPath + "\\" + ComponentID.Profile.ToString();
+            ProfilePath = Core.User.RootPath + "\\Data\\" + ComponentID.Profile.ToString();
             Directory.CreateDirectory(ProfilePath);
 
             LocalFileKey = Core.User.Settings.FileKey;
@@ -241,10 +241,10 @@ namespace DeOps.Components.Profile
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
 
             if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Data/Profile", new EventHandler(InternalMenu_View)));
+                menus.Add(new MenuItemInfo("Data/Profile", ProfileRes.Icon, new EventHandler(InternalMenu_View)));
 
             if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Profile", new EventHandler(ExternalMenu_View)));
+                menus.Add(new MenuItemInfo("Profile", ProfileRes.Icon, new EventHandler(ExternalMenu_View)));
 
 
             return menus;

@@ -80,6 +80,11 @@ namespace DeOps.Components.IM
             return new Size(280, 350);
         }
 
+        internal override Icon GetIcon()
+        {
+            return IMRes.Icon;
+        }
+
         private void DisplayLog()
         {
             if(IM.MessageLog.ContainsKey(DhtID))

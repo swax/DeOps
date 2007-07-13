@@ -28,6 +28,7 @@ namespace DeOps.Components.Storage
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(UnlockForm));
             this.MainLabel = new System.Windows.Forms.Label();
             this.PathLink = new System.Windows.Forms.LinkLabel();
             this.OkButton = new System.Windows.Forms.Button();
@@ -89,6 +90,7 @@ namespace DeOps.Components.Storage
             this.Controls.Add(this.OkButton);
             this.Controls.Add(this.PathLink);
             this.Controls.Add(this.MainLabel);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "UnlockForm";
             this.Text = "Unlock";
             this.ResumeLayout(false);

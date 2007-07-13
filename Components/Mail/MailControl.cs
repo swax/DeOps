@@ -11,7 +11,6 @@ using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 using DeOps.Components.Transfer;
 
-
 /* files
  *      mail folder
  *          outbound file (mail headers)
@@ -119,7 +118,7 @@ namespace DeOps.Components.Mail
             MailIDKey.IV = LocalFileKey.IV;
             MailIDKey.Padding = PaddingMode.None;
 
-            MailPath = Core.User.RootPath + "\\" + ComponentID.Mail.ToString();
+            MailPath = Core.User.RootPath + "\\Data\\" + ComponentID.Mail.ToString();
             CachePath = MailPath + "\\1";
 
             Directory.CreateDirectory(MailPath);
@@ -556,7 +555,7 @@ namespace DeOps.Components.Mail
                 if (key == Core.LocalDhtID)
                     return null;
 
-                menus.Add(new MenuItemInfo("Send Mail", new EventHandler(QuickMenu_View)));
+                menus.Add(new MenuItemInfo("Send Mail", MailRes.SendMail, new EventHandler(QuickMenu_View)));
                 return menus;
             }
 
@@ -564,10 +563,10 @@ namespace DeOps.Components.Mail
                 return null;
 
             if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Comm/Mail", new EventHandler(InternalMenu_View)));
+                menus.Add(new MenuItemInfo("Comm/Mail", MailRes.Icon, new EventHandler(InternalMenu_View)));
 
             if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Mail", new EventHandler(ExternalMenu_View)));
+                menus.Add(new MenuItemInfo("Mail", MailRes.Icon, new EventHandler(ExternalMenu_View)));
 
 
             return menus;

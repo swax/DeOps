@@ -390,8 +390,8 @@ namespace DeOps.Components.Plan
             // if local create edit/delete menu
 
 
-            ContextMenu menu = new ContextMenu();
-            MenuItem details = new MenuItem("Details");
+            ContextMenuStrip menu = new ContextMenuStrip();
+            ToolStripMenuItem details = new ToolStripMenuItem("Details");
 
             string indent = "";
             int lastLevel = -1;
@@ -408,24 +408,24 @@ namespace DeOps.Components.Plan
                         indent += "    ";
                     }
 
-                    details.MenuItems.Add(new BlockMenuItem(indent + area.Block.Title, area.Block, new EventHandler(RClickView)));
+                    details.DropDownItems.Add(new BlockMenuItem(indent + area.Block.Title, area.Block, null, new EventHandler(RClickView)));
 
                     if (area.Local)
                     {
                         if (DhtID != View.Core.LocalDhtID)
-                            menu.MenuItems.Add(new BlockMenuItem("View", area.Block, new EventHandler(RClickView)));
+                            menu.Items.Add(new BlockMenuItem("Details", area.Block, PlanRes.details, new EventHandler(RClickView)));
                         else
                         {
-                            menu.MenuItems.Add(new BlockMenuItem("Edit", area.Block, new EventHandler(RClickEdit)));
-                            menu.MenuItems.Add(new BlockMenuItem("Delete", area.Block, new EventHandler(RClickDelete)));
+                            menu.Items.Add(new BlockMenuItem("Edit", area.Block, null, new EventHandler(RClickEdit)));
+                            menu.Items.Add(new BlockMenuItem("Delete", area.Block, PlanRes.delete, new EventHandler(RClickDelete)));
                         }
                     }
                 }
 
-            if (details.MenuItems.Count > 0)
-                menu.MenuItems.Add(details);
+            if (details.DropDownItems.Count > 0)
+                menu.Items.Add(details);
 
-            if(menu.MenuItems.Count > 0)
+            if (menu.Items.Count > 0)
                 menu.Show(this, e.Location);
         }
 
@@ -543,13 +543,13 @@ namespace DeOps.Components.Plan
         }
     }
 
-    internal class BlockMenuItem : MenuItem
+    internal class BlockMenuItem : ToolStripMenuItem
     {
         internal PlanBlock Block;
 
-        internal BlockMenuItem(string text, PlanBlock block, EventHandler onClick)
+        internal BlockMenuItem(string text, PlanBlock block, Image icon, EventHandler onClick)
             :
-            base(text, onClick)
+            base(text, icon, onClick)
         {
             Block = block;
         }

@@ -95,7 +95,7 @@ namespace DeOps.Components.Storage
 
             Core.Links.LinkUpdate += new LinkUpdateHandler(Links_LinkUpdate);
 
-            StoragePath = Core.User.RootPath + "\\" + ComponentID.Storage.ToString();
+            StoragePath = Core.User.RootPath + "\\Data\\" + ComponentID.Storage.ToString();
             Directory.CreateDirectory(StoragePath);
             Directory.CreateDirectory(StoragePath + "\\0");
             Directory.CreateDirectory(StoragePath + "\\1");
@@ -243,10 +243,10 @@ namespace DeOps.Components.Storage
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
 
             if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Data/Storage", new EventHandler(InternalMenu_View)));
+                menus.Add(new MenuItemInfo("Data/Storage", StorageRes.Icon, new EventHandler(InternalMenu_View)));
 
             if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Storage", new EventHandler(ExternalMenu_View)));
+                menus.Add(new MenuItemInfo("Storage", StorageRes.Icon, new EventHandler(ExternalMenu_View)));
 
 
             return menus;
