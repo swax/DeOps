@@ -33,8 +33,11 @@ namespace DeOps.Components.Mail
             ToTextBox.Text = Links.GetName(DefaultID);
         }
 
-        internal override string GetTitle()
+        internal override string GetTitle(bool small)
         {
+            if (small)
+                return "Compose";
+
             string name = Links.GetName(DefaultID);
 
             if (name != "")

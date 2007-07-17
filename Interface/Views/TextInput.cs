@@ -7,6 +7,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
+using DeOps.Interface.Views;
+
+
 namespace DeOps.Interface
 {
     public partial class TextInput : UserControl
@@ -59,15 +62,14 @@ namespace DeOps.Interface
             }
         }
 
-
-
-
         internal delegate void SendMessageHandler(string message);
         internal SendMessageHandler SendMessage;
 
         public TextInput()
         {
             InitializeComponent();
+
+            FontToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
         }
 
 

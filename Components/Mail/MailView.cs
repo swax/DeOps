@@ -13,7 +13,7 @@ using DeOps.Interface;
 using DeOps.Implementation;
 using DeOps.Components.Link;
 using DeOps.Interface.TLVex;
-
+using DeOps.Interface.Views;
 
 namespace DeOps.Components.Mail
 {
@@ -49,10 +49,15 @@ namespace DeOps.Components.Mail
             MessageList.SmallImageList.Add(MailRes.Attach);
 
             MessageHeader.DocumentText = defaultHtml;
+
+            toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
         }
 
-        internal override string GetTitle()
+        internal override string GetTitle(bool small)
         {
+            if (small)
+                return "Mail";
+
             return "My Mail";
         }
 

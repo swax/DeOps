@@ -70,8 +70,11 @@ namespace DeOps.Components.IM
             return true;
         }
 
-        internal override string GetTitle()
+        internal override string GetTitle(bool small)
         {
+            if (small)
+                return "IM";
+
             return "IM " + NodeName;
         }
 

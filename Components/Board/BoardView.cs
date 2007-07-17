@@ -12,6 +12,8 @@ using System.Windows.Forms;
 using DeOps.Implementation;
 using DeOps.Interface;
 using DeOps.Interface.TLVex;
+using DeOps.Interface.Views;
+
 using DeOps.Components.Link;
 
 namespace DeOps.Components.Board
@@ -63,6 +65,8 @@ namespace DeOps.Components.Board
                 ArchiveButton.Visible = false;
             }
 
+            toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+
             PostHeader.DocumentText = PostHeaderDefault;
 
             PostView.SmallImageList = new List<Image>();
@@ -74,7 +78,7 @@ namespace DeOps.Components.Board
             PostView.OverlayImages.Add(BoardRes.low_scope);
         }
 
-        private void BoardView_Load(object sender, EventArgs e)
+        internal override void Init()
         {
             Board.PostUpdate += new PostUpdateHandler(Board_PostUpdate);
             Core.Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
@@ -87,6 +91,11 @@ namespace DeOps.Components.Board
             SelectProject(ProjectID);
         }
 
+        private void BoardView_Load(object sender, EventArgs e)
+        {
+       
+        }
+
         internal override bool Fin()
         {
             Board.PostUpdate -= new PostUpdateHandler(Board_PostUpdate);
@@ -96,8 +105,11 @@ namespace DeOps.Components.Board
             return true;
         }
 
-        internal override string GetTitle()
+        internal override string GetTitle(bool small)
         {
+            if (small)
+                return "Board";
+
             string title = "";
 
             if (DhtID == Core.LocalDhtID)

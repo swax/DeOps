@@ -1,5 +1,5 @@
 
-come up with list for beta requirements
+alpha reqs
 
 	test components
 		IM      - remove dupe system messages
@@ -11,9 +11,12 @@ come up with list for beta requirements
 		goals   - show hours total on mouse over only, icons edit
 		profile - project specific motds
 		storage - diff projects not working, diff person should use link chooser, icons add restore
-		
+		links - edit title
 	
-	switch project - switch current view to project equivelent
+	last thing - put news updates in blue bar remainder area
+		white news icon next to popout, click news expand latest news items
+		select item, pop out window
+		paint stories in remainder area
 	
 	build 1x3x3 network sample - fill with network data comm files plans
 	remove remote cached for min # of files
@@ -28,6 +31,7 @@ add accept change to storageInfo interface for folders - so name / ghost status 
 
 delete folder, changes saying restored, but shouldn't be there because our timestamp is the newest
 
+eventually browsing using nav bar needs to trigger searches and let link control know of whats active
 
 
 at root node display log of all previous file system saves, snapshots, revisions, of file system file = file system header version		

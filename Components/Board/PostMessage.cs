@@ -111,8 +111,11 @@ namespace DeOps.Components.Board
             return true;
         }
 
-        internal override string GetTitle()
+        internal override string GetTitle(bool small)
         {
+            if (small)
+                return "Post";
+
             string title = "";
 
             // Edit Post: Hey Guys

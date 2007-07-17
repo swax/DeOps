@@ -22,7 +22,7 @@ namespace DeOps.Interface
 
         internal virtual bool Fin() { return true; }
 
-        internal virtual string GetTitle() { return ""; }
+        internal virtual string GetTitle(bool small) { return ""; }
 
         internal virtual Size GetDefaultSize()
         {

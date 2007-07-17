@@ -100,45 +100,56 @@ namespace DeOps.Components.Storage
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
                 G2Header header = null;
+                bool readingProject = false;
 
                 LocalFolder CurrentFolder = RootFolder;
                 string CurrentPath = RootPath;
 
                 while (stream.ReadPacket(ref header))
                 {
-                    if (header.Name == StoragePacket.Folder)
+                    if (header.Name == StoragePacket.Root)
                     {
-                        StorageFolder folder = StorageFolder.Decode(Core.Protocol, header);
+                        StorageRoot root = StorageRoot.Decode(Core.Protocol, header);
 
-                        bool added = false;
-
-                        while (!added)
-                        {
-                            if (CurrentFolder.Info.UID == folder.ParentUID)
-                            {
-                                // tracked, so need to add multiple folders (archives) with same UIDs
-                                CurrentFolder = CurrentFolder.AddFolderInfo(folder);
-
-                                added = true;
-                            }
-                            else if (CurrentFolder.Parent.GetType() == typeof(LocalFolder))
-                                CurrentFolder = CurrentFolder.Parent;
-                            else
-                                break;
-                        }
-
-                        if (!added)
-                        {
-                            Debug.Assert(false);
-                            throw new Exception("Error loading CFS");
-                        }
+                        readingProject = (root.ProjectID == ProjectID);
                     }
 
-                    if (header.Name == StoragePacket.File)
+                    if (readingProject)
                     {
-                        StorageFile file = StorageFile.Decode(Core.Protocol, header);
+                        if (header.Name == StoragePacket.Folder)
+                        {
+                            StorageFolder folder = StorageFolder.Decode(Core.Protocol, header);
 
-                        CurrentFolder.AddFileInfo(file);
+                            bool added = false;
+
+                            while (!added)
+                            {
+                                if (CurrentFolder.Info.UID == folder.ParentUID)
+                                {
+                                    // tracked, so need to add multiple folders (archives) with same UIDs
+                                    CurrentFolder = CurrentFolder.AddFolderInfo(folder);
+
+                                    added = true;
+                                }
+                                else if (CurrentFolder.Parent.GetType() == typeof(LocalFolder))
+                                    CurrentFolder = CurrentFolder.Parent;
+                                else
+                                    break;
+                            }
+
+                            if (!added)
+                            {
+                                Debug.Assert(false);
+                                throw new Exception("Error loading CFS");
+                            }
+                        }
+
+                        if (header.Name == StoragePacket.File)
+                        {
+                            StorageFile file = StorageFile.Decode(Core.Protocol, header);
+
+                            CurrentFolder.AddFileInfo(file);
+                        }
                     }
                 }
 

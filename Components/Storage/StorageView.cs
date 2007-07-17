@@ -11,6 +11,8 @@ using System.Windows.Forms;
 
 using DeOps.Interface;
 using DeOps.Interface.TLVex;
+using DeOps.Interface.Views;
+
 using DeOps.Implementation;
 using DeOps.Implementation.Protocol;
 using DeOps.Components.Link;
@@ -68,10 +70,15 @@ namespace DeOps.Components.Storage
                     Working = Storages.Working[ProjectID];
                     IsLocal = true;
                 }
+
+            toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
         }
 
-        internal override string GetTitle()
+        internal override string GetTitle(bool small)
         {
+            if (small)
+                return "Storage";
+
             string title = "";
 
             if (IsLocal)
@@ -97,7 +104,7 @@ namespace DeOps.Components.Storage
             return StorageRes.Icon;
         }
 
-        private void StorageView_Load(object sender, EventArgs e)
+        internal override void Init()
         {
             FolderTreeView.SmallImageList = new List<Image>();
             FolderTreeView.SmallImageList.Add(StorageRes.Folder);
@@ -107,7 +114,7 @@ namespace DeOps.Components.Storage
             FileIcons.Add(StorageRes.Ghost);
             FileIcons.Add(StorageRes.Folder);
             FileIcons.Add(StorageRes.GhostFolder);
-            
+
             FileListView.OverlayImages.Add(StorageRes.Higher);
             FileListView.OverlayImages.Add(StorageRes.Lower);
             FileListView.OverlayImages.Add(StorageRes.DownloadSmall);
@@ -120,7 +127,7 @@ namespace DeOps.Components.Storage
             FoldersButton.Checked = true;
 
             SelectedInfo.Init(this);
-            
+
 
             // hook up events
             Storages.StorageUpdate += new StorageUpdateHandler(Storages_StorageUpdate);
@@ -150,6 +157,10 @@ namespace DeOps.Components.Storage
             DiffCombo.Items.Add("Person...");
 
             DiffCombo.SelectedIndex = 0;
+        }
+        private void StorageView_Load(object sender, EventArgs e)
+        {
+      
         }
 
 

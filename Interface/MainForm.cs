@@ -7,6 +7,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;
@@ -17,7 +18,7 @@ using DeOps.Components.IM;
 using DeOps.Components.Location;
 
 using DeOps.Interface.TLVex;
-
+using DeOps.Interface.Views;
 
 namespace DeOps.Interface
 {
@@ -43,20 +44,23 @@ namespace DeOps.Interface
         Dictionary<ulong, LinkNode> NodeMap = new Dictionary<ulong, LinkNode>();
 
         internal ulong SelectedLink;
+        internal uint SelectedProject;
 
         CommandTreeMode TreeMode;
 
-        uint ProjectID;
+        uint CommandProject;
         ToolStripButton ProjectButton;
         uint ProjectButtonID;
 
+        internal ViewShell InternalView;
         internal List<ExternalView> ExternalViews = new List<ExternalView>();
 
+        Font BoldFont = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 
         internal MainForm(OpCore core)
         {
             InitializeComponent();
-
+            
             Core = core;
             Store = Core.OperationNet.Store;
             Links = Core.Links;
@@ -69,20 +73,24 @@ namespace DeOps.Interface
             Links.GetFocused += new LinkGetFocusedHandler(Links_GetFocused);
 
             SelectedLink = Core.LocalDhtID;
+
+            TopToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+            toolStrip1.Renderer = new ToolStripProfessionalRenderer(new NavColorTable());
+            SideToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
         }
 
         private void MainForm_Load(object sender, EventArgs e)
         {
             Text = Core.User.Settings.Operation + " - " + Core.User.Settings.ScreenName;
 
-            CurrentViewLabel.Text = "";
+            //crit bar CurrentViewLabel.Text = "";
 
             CommandTree.NodeExpanding += new EventHandler(CommandTree_NodeExpanding);
             CommandTree.NodeCollapsed += new EventHandler(CommandTree_NodeCollapsed);
 
             SetupOperationTree();
-            
-            OnSelectChange(Links.LocalLink);
+
+            OnSelectChange(Core.LocalDhtID, CommandProject);
             UpdateCommandPanel();
         }
 
@@ -128,20 +136,22 @@ namespace DeOps.Interface
                 Core.GuiMain = null;
         }
 
+
         private bool CleanInternal()
         {
-            foreach (Control item in InternalView.Controls)
-                if (item is ViewShell)
-                {
-                    if (!((ViewShell)item).Fin())
-                        return false;
+            if (InternalView != null)
+            {
+                if (!InternalView.Fin())
+                    return false;
 
-                    item.Dispose();
-                }
+                InternalView.Dispose();
+            }
 
-            InternalView.Controls.Clear();
+            InternalPanel.Controls.Clear();
+            
             return true;
         }
+
 
         void OnShowExternal(ViewShell view)
         {
@@ -159,25 +169,14 @@ namespace DeOps.Interface
 
             view.Dock = DockStyle.Fill;
 
-            InternalView.Controls.Add(view);
+            InternalPanel.Visible = false;
+            InternalPanel.Controls.Add(view);
+            InternalView = view;
 
-            CurrentViewLabel.Text = " " + view.GetTitle();
+            UpdateNavBar();
 
-            view.Init();
-        }
-
-        private void PopoutButton_Click(object sender, EventArgs e)
-        {
-            ViewShell view = (ViewShell) InternalView.Controls[0];
-
-            InternalView.Controls.Clear();
-
-            OnShowExternal(view);
-
-            if (Links.LinkMap.ContainsKey(SelectedLink))
-                OnSelectChange(Links.LinkMap[SelectedLink]);
-            else
-                OnSelectChange(Links.LocalLink);
+            InternalView.Init();
+            InternalPanel.Visible = true;
         }
 
         private void SetupOperationTree()
@@ -190,7 +189,7 @@ namespace DeOps.Interface
             // white space
             CommandTree.Nodes.Add( new LabelNode(""));
 
-            if (!Links.ProjectRoots.ContainsKey(ProjectID))
+            if (!Links.ProjectRoots.ContainsKey(CommandProject))
             {
                 OperationButton.Checked = true;
                 SideToolStrip.Items.Remove(ProjectButton);
@@ -201,8 +200,8 @@ namespace DeOps.Interface
             }
 
             string rootname = Core.User.Settings.Operation;
-            if (ProjectID != 0)
-                rootname = Links.ProjectNames[ProjectID];
+            if (CommandProject != 0)
+                rootname = Links.ProjectNames[CommandProject];
 
             // operation
             ProjectNode = new LabelNode(rootname);
@@ -218,14 +217,14 @@ namespace DeOps.Interface
             CommandTree.Nodes.Add(UnlinkedNode);
 
             // nodes
-            if (Links.ProjectRoots.ContainsKey(ProjectID))
-                lock (Links.ProjectRoots[ProjectID])
-                    foreach (OpLink root in Links.ProjectRoots[ProjectID])
+            if (Links.ProjectRoots.ContainsKey(CommandProject))
+                lock (Links.ProjectRoots[CommandProject])
+                    foreach (OpLink root in Links.ProjectRoots[CommandProject])
                     {
                         LinkNode node = CreateNode(root);
                         LoadRoot(node);
                         
-                        List<ulong> uplinks = Links.GetUplinkIDs(Core.LocalDhtID, ProjectID);
+                        List<ulong> uplinks = Links.GetUplinkIDs(Core.LocalDhtID, CommandProject);
                         uplinks.Add(Core.LocalDhtID);
 
                         ExpandPath(node, uplinks);
@@ -257,13 +256,13 @@ namespace DeOps.Interface
             node.AddSubs = true;
 
             // go through downlinks
-            if (node.Link.Downlinks.ContainsKey(ProjectID))
-                foreach (OpLink link in node.Link.Downlinks[ProjectID])
+            if (node.Link.Downlinks.ContainsKey(CommandProject))
+                foreach (OpLink link in node.Link.Downlinks[CommandProject])
                 {
                     // if doesnt exist search for it
                     if (!link.Loaded)
                     {
-                        Links.Research(link.DhtID, ProjectID, false);
+                        Links.Research(link.DhtID, CommandProject, false);
                         continue;
                     }
 
@@ -285,7 +284,7 @@ namespace DeOps.Interface
                 LinkNode compare = entry as LinkNode;
 
                 if (ready)
-                    if ((start == ProjectNode && compare != null && node.Link.Downlinks[ProjectID].Count > compare.Link.Downlinks[ProjectID].Count) ||
+                    if ((start == ProjectNode && compare != null && node.Link.Downlinks[CommandProject].Count > compare.Link.Downlinks[CommandProject].Count) ||
                         (start == UnlinkedNode && string.Compare(node.Text, entry.Text, true) < 0) ||
                         entry.GetType() == typeof(LabelNode)) // lower bounds
                     {
@@ -371,8 +370,8 @@ namespace DeOps.Interface
         {
             OnUpdateLink(link.DhtID);
 
-            if (link.Downlinks.ContainsKey(ProjectID))
-                foreach (OpLink downlink in link.Downlinks[ProjectID])
+            if (link.Downlinks.ContainsKey(CommandProject))
+                foreach (OpLink downlink in link.Downlinks[CommandProject])
                     RecurseUpdate(downlink);
         }
 
@@ -401,6 +400,8 @@ namespace DeOps.Interface
         void Links_Update(ulong key)
         {
             OnUpdateLink(key);
+
+            UpdateNavBar();
         }
 
         void Locations_Update(ulong key)
@@ -425,7 +426,7 @@ namespace DeOps.Interface
             if (!link.Loaded)
                 return;
 
-            if (!Links.ProjectRoots.ContainsKey(ProjectID))
+            if (!Links.ProjectRoots.ContainsKey(CommandProject))
             {
                 if (ProjectButton.Checked)
                     OperationButton.Checked = true;
@@ -434,7 +435,7 @@ namespace DeOps.Interface
                 ProjectButton = null;
             }
 
-            if (!link.Projects.Contains(ProjectID) && !link.Downlinks.ContainsKey(ProjectID))
+            if (!link.Projects.Contains(CommandProject) && !link.Downlinks.ContainsKey(CommandProject))
             {
                 if (NodeMap.ContainsKey(key))
                     RemoveNode(NodeMap[key]);
@@ -463,7 +464,7 @@ namespace DeOps.Interface
 
             TreeListNode parent = null;
 
-            OpLink uplink = link.GetHigher(ProjectID);
+            OpLink uplink = link.GetHigher(CommandProject);
 
             if (uplink == null)
                 parent = CommandTree.virtualParent;
@@ -478,7 +479,7 @@ namespace DeOps.Interface
             {
                 if (parent == null)
                 {
-                    List<ulong> uplinks = Links.GetUplinkIDs(Core.LocalDhtID, ProjectID);
+                    List<ulong> uplinks = Links.GetUplinkIDs(Core.LocalDhtID, CommandProject);
                     uplinks.Add(Core.LocalDhtID);
 
                     ExpandPath(node, uplinks);
@@ -575,7 +576,7 @@ namespace DeOps.Interface
 
                 foreach (ulong id in visible)
                 {
-                    List<ulong> uplinks = Links.GetUplinkIDs(id, ProjectID);
+                    List<ulong> uplinks = Links.GetUplinkIDs(id, CommandProject);
 
                     foreach(LinkNode root in roots)
                         VisiblePath(root, uplinks);
@@ -583,7 +584,7 @@ namespace DeOps.Interface
             }
 
             node.UpdateColor();
-            node.UpdateName(CommandTreeMode.Operation, ProjectID);
+            node.UpdateName(CommandTreeMode.Operation, CommandProject);
 
             if (selected)
             {
@@ -624,7 +625,7 @@ namespace DeOps.Interface
                     OnlineNode.Expand();
                 }
 
-                node.UpdateName(CommandTreeMode.Online, ProjectID);
+                node.UpdateName(CommandTreeMode.Online, CommandProject);
             }
         }
 
@@ -641,10 +642,10 @@ namespace DeOps.Interface
             TreeListNode newParent = null;
             bool expand = false;
 
-            if (item.Parent == ProjectNode && !item.Link.Downlinks.ContainsKey(ProjectID))
+            if (item.Parent == ProjectNode && !item.Link.Downlinks.ContainsKey(CommandProject))
                 newParent = UnlinkedNode;
 
-            if (item.Parent == UnlinkedNode && item.Link.Downlinks.ContainsKey(ProjectID))
+            if (item.Parent == UnlinkedNode && item.Link.Downlinks.ContainsKey(CommandProject))
             {
                 newParent = ProjectNode;
                 expand = true;
@@ -751,9 +752,9 @@ namespace DeOps.Interface
             string name = link.Name;
             
             string title = "None";
-            if (link.Title.ContainsKey(ProjectID))
-                if (link.Title[ProjectID] != "") 
-                    title = link.Title[ProjectID];
+            if (link.Title.ContainsKey(CommandProject))
+                if (link.Title[CommandProject] != "") 
+                    title = link.Title[CommandProject];
 
             string projects = "";
             foreach (uint id in link.Projects)
@@ -832,9 +833,9 @@ namespace DeOps.Interface
 
                 treeMenu.MenuItems.Add(new MenuItem("Properties", new EventHandler(OnProjectProperties)));
 
-                if (ProjectID != 0)
+                if (CommandProject != 0)
                 {
-                    if (Links.LocalLink.Projects.Contains(ProjectID))
+                    if (Links.LocalLink.Projects.Contains(CommandProject))
                         treeMenu.MenuItems.Add(new MenuItem("Leave", new EventHandler(OnProjectLeave)));
                     else
                         treeMenu.MenuItems.Add(new MenuItem("Join", new EventHandler(OnProjectJoin)));
@@ -872,18 +873,18 @@ namespace DeOps.Interface
                         continue;
 
                     // quick
-                    List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, ProjectID);
+                    List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, CommandProject);
 
                     if (menuList != null && menuList.Count > 0)
                         foreach (MenuItemInfo info in menuList)
-                            quickMenus.Add(new OpMenuItem(item.Link.DhtID, ProjectID, info.Path, info));
+                            quickMenus.Add(new OpMenuItem(item.Link.DhtID, CommandProject, info.Path, info));
 
                     // external
-                    menuList = component.GetMenuInfo(InterfaceMenuType.External, item.Link.DhtID, ProjectID);
+                    menuList = component.GetMenuInfo(InterfaceMenuType.External, item.Link.DhtID, CommandProject);
 
                     if (menuList != null && menuList.Count > 0)
                         foreach (MenuItemInfo info in menuList)
-                            extMenus.Add(new OpMenuItem(item.Link.DhtID, ProjectID, info.Path, info));
+                            extMenus.Add(new OpMenuItem(item.Link.DhtID, CommandProject, info.Path, info));
                 }
 
                 if (quickMenus.Count > 0 || extMenus.Count > 0)
@@ -909,11 +910,11 @@ namespace DeOps.Interface
                 {
                     List<ToolStripMenuItem> linkMenus = new List<ToolStripMenuItem>();
 
-                    List<MenuItemInfo> menuList = Links.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, ProjectID);
+                    List<MenuItemInfo> menuList = Links.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, CommandProject);
 
                     if (menuList != null && menuList.Count > 0)
                         foreach (MenuItemInfo info in menuList)
-                            linkMenus.Add(new OpMenuItem(item.Link.DhtID, ProjectID, info.Path, info));
+                            linkMenus.Add(new OpMenuItem(item.Link.DhtID, CommandProject, info.Path, info));
 
                     if (linkMenus.Count > 0)
                     {
@@ -948,9 +949,16 @@ namespace DeOps.Interface
                 return;
 
             if (SideMode)
-                ((IMControl)Core.Components[ComponentID.IM]).QuickMenu_View(new OpMenuItem(item.Link.DhtID, 0, "", null), null);
+            {
+                OpMenuItem info = new OpMenuItem(item.Link.DhtID, 0);
+
+                if (Core.Locations.LocationMap.ContainsKey(info.DhtID))
+                    ((IMControl)Core.Components[ComponentID.IM]).QuickMenu_View(info, null);
+                else
+                    Core.Mail.QuickMenu_View(info, null);
+            }
             else
-                OnSelectChange(item.Link);
+                OnSelectChange(item.Link.DhtID, CommandProject);
         }
 
         void CommandTree_NodeExpanding(object sender, EventArgs e)
@@ -1005,30 +1013,54 @@ namespace DeOps.Interface
             node.Collapse();
         }
 
-        void OnSelectChange(OpLink link)
+        [DllImport("user32.dll")]
+        public static extern IntPtr SendMessage(IntPtr hWnd,int wMsg, bool wParam, int lParam);
+
+
+        void SetRedraw(Control ctl, bool lfDraw)
         {
-            OpMenuItem item = new OpMenuItem(link.DhtID, 0, "", new MenuItemInfo("", null, null));            
+            int WM_SETREDRAW  = 0x000B;
+
+            SendMessage(ctl.Handle, WM_SETREDRAW, lfDraw, 0);
+            if (lfDraw)
+            {
+                ctl.Invalidate();
+                ctl.Refresh();
+            }
+        }
+
+        void OnSelectChange(ulong id, uint project)
+        {
+            SuspendLayout();
+
+            if (!Links.LinkMap.ContainsKey(id))
+                id = Core.LocalDhtID;
+
+            OpLink link = Links.LinkMap[id];
+
+            if (!link.Projects.Contains(project))
+                project = 0;
 
             // unbold current
             if (NodeMap.ContainsKey(SelectedLink))
                 NodeMap[SelectedLink].Font = new System.Drawing.Font("Tahoma", 8.25F);
 
             // bold new and set
-            SelectedLink = link.DhtID;
+            SelectedLink = id;
+            SelectedProject = project;
 
-            if (NodeMap.ContainsKey(link.DhtID))
+            if (NodeMap.ContainsKey(id))
             {
-                NodeMap[link.DhtID].Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-                NodeMap[link.DhtID].EnsureVisible();
+                NodeMap[id].Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+                NodeMap[id].EnsureVisible();
             }
 
             CommandTree.Invalidate();
 
-            Core.Profiles.InternalMenu_View(item, null);
-
 
             // setup toolbar with menu items for user
-            HomeButton.Visible = link.DhtID != Core.LocalDhtID;
+            HomeButton.Visible = id != Core.LocalDhtID;
+            HomeSparator.Visible = HomeButton.Visible;
 
             PlanButton.DropDownItems.Clear();
             CommButton.DropDownItems.Clear();
@@ -1036,7 +1068,7 @@ namespace DeOps.Interface
 
             foreach (OpComponent component in Core.Components.Values)
             {
-                List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Internal, link.DhtID, ProjectID);
+                List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Internal, id, project);
 
                 if (menuList == null || menuList.Count == 0)
                     continue;
@@ -1049,17 +1081,166 @@ namespace DeOps.Interface
                         continue;
                     
                     if (parts[0] == PlanButton.Text)
-                        PlanButton.DropDownItems.Add(new OpStripItem(link.DhtID, ProjectID, parts[1], info));
+                        PlanButton.DropDownItems.Add(new OpStripItem(id, project, parts[1], info));
 
                     else if (parts[0] == CommButton.Text)
-                        CommButton.DropDownItems.Add(new OpStripItem(link.DhtID, ProjectID, parts[1], info));
+                        CommButton.DropDownItems.Add(new OpStripItem(id, project, parts[1], info));
 
                     else if (parts[0] == DataButton.Text)
-                        DataButton.DropDownItems.Add(new OpStripItem(link.DhtID, ProjectID, parts[1], info));
+                        DataButton.DropDownItems.Add(new OpStripItem(id, project, parts[1], info));
                 }
             }
+
+            // setup nav bar - add components
+            UpdateNavBar();
+
+
+            // find previous component in drop down, activate click on it
+            string previous = InternalView != null? InternalView.GetTitle(true) : "Profile";
+
+            if (!SelectComponent(previous))
+                SelectComponent("Profile");
+
+            ResumeLayout();
         }
 
+        private bool SelectComponent(string component)
+        {
+            foreach (ToolStripMenuItem item in ComponentNavButton.DropDownItems)
+                if (item.Text == component)
+                {
+                    item.PerformClick();
+                    return true;
+                }
+
+            return false;
+        }
+
+        private void UpdateNavBar()
+        {
+            PersonNavButton.DropDownItems.Clear();
+            ProjectNavButton.DropDownItems.Clear();
+            ComponentNavButton.DropDownItems.Clear();
+
+            OpLink link = null;
+
+            if (Links.LinkMap.ContainsKey(SelectedLink))
+            {
+                link = Links.LinkMap[SelectedLink];
+
+                if (link.DhtID == Core.LocalDhtID)
+                    PersonNavButton.Text = "My";
+                else
+                    PersonNavButton.Text = link.Name + "'s";
+
+                PersonNavItem self = null;
+                
+                // add higher and subs of higher
+                OpLink higher = link.GetHigher(SelectedProject);
+                if (higher != null)
+                {
+                    PersonNavButton.DropDownItems.Add(new PersonNavItem(higher.Name, higher.DhtID, this, PersonNav_Clicked));
+
+                    List<ulong> adjacentIDs = Links.GetDownlinkIDs(higher.DhtID, SelectedProject, 1);
+                    foreach (ulong id in adjacentIDs)
+                    {
+                        PersonNavItem item = new PersonNavItem("   " + Links.GetName(id), id, this, PersonNav_Clicked);
+                        if (id == SelectedLink)
+                        {
+                            item.Font = BoldFont;
+                            self = item;
+                        }
+
+                        PersonNavButton.DropDownItems.Add(item);
+                    }
+                }
+
+                string childspacing = (self == null) ? "   " : "      ";
+
+                // if self not added yet, add
+                if (self == null)
+                {
+                    PersonNavItem item = new PersonNavItem(link.Name, link.DhtID, this, PersonNav_Clicked);
+                    item.Font = BoldFont;
+                    self = item;
+                    PersonNavButton.DropDownItems.Add(item);
+                }
+
+                // add downlinks of self
+                List<ulong> downlinkIDs = Links.GetDownlinkIDs(SelectedLink, SelectedProject, 1);
+                foreach (ulong id in downlinkIDs)
+                {
+                    PersonNavItem item = new PersonNavItem(childspacing + Links.GetName(id), id, this, PersonNav_Clicked);
+
+                    int index = PersonNavButton.DropDownItems.IndexOf(self);
+                    PersonNavButton.DropDownItems.Insert(index+1, item);
+                }
+            }
+            else
+            {
+                PersonNavButton.Text = "Unknown";
+            }
+
+            PersonNavButton.DropDownItems.Add("-");
+            PersonNavButton.DropDownItems.Add("Browse...");
+
+
+            // set person's projects
+            if (Links.ProjectNames.ContainsKey(SelectedProject))
+                ProjectNavButton.Text = Links.ProjectNames[SelectedProject];
+            else
+                ProjectNavButton.Text = "Unknown";
+
+            if (link != null)
+                foreach (uint project in link.Projects)
+                {
+                    string name = "Unknown";
+                    if (Links.ProjectNames.ContainsKey(project))
+                        name = Links.ProjectNames[project];
+
+                    string spacing = (project == 0) ? "" : "   ";
+
+                    ProjectNavButton.DropDownItems.Add(new ProjectNavItem(spacing + name, project, ProjectNav_Clicked));
+                }
+
+
+            // set person's components
+            if (InternalView != null)
+                ComponentNavButton.Text = InternalView.GetTitle(true);
+
+            foreach (OpComponent component in Core.Components.Values)
+            {
+                List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Internal, SelectedLink, SelectedProject);
+
+                if (menuList == null || menuList.Count == 0)
+                    continue;
+
+                foreach (MenuItemInfo info in menuList)
+                    ComponentNavButton.DropDownItems.Add(new ComponentNavItem(info, this, info.ClickEvent));
+            }
+            
+        }
+
+        private void PersonNav_Clicked(object sender, EventArgs e)
+        {
+            PersonNavItem item = sender as PersonNavItem;
+
+            if (item == null)
+                return;
+
+            OnSelectChange(item.DhtID, SelectedProject);
+        }
+
+        private void ProjectNav_Clicked(object sender, EventArgs e)
+        {
+            ProjectNavItem item = sender as ProjectNavItem;
+
+            if (item == null)
+                return;
+
+            OnSelectChange(SelectedLink, item.ProjectID);
+        }
+        
         private void OperationButton_CheckedChanged(object sender, EventArgs e)
         {
             // if checked, uncheck other and display
@@ -1073,7 +1254,7 @@ namespace DeOps.Interface
                 MainSplit.Panel1Collapsed = false;
 
                 TreeMode = CommandTreeMode.Operation;
-                ProjectID = 0;
+                CommandProject = 0;
                 SetupOperationTree();
             }
 
@@ -1123,7 +1304,7 @@ namespace DeOps.Interface
 
         private void HomeButton_Click(object sender, EventArgs e)
         {
-            OnSelectChange(Links.LocalLink);
+            OnSelectChange(Core.LocalDhtID, SelectedProject);
         }
 
         private void ProjectsButton_DropDownOpening(object sender, EventArgs e)
@@ -1193,7 +1374,7 @@ namespace DeOps.Interface
                 MainSplit.Panel1Collapsed = false;
 
                 TreeMode = CommandTreeMode.Operation;
-                ProjectID = ProjectButtonID;
+                CommandProject = ProjectButtonID;
                 SetupOperationTree();
             }
 
@@ -1228,7 +1409,7 @@ namespace DeOps.Interface
 
                 SideMode = true;
 
-                OnSelectChange(Links.LocalLink);
+                //OnSelectChange(Links.LocalLink);
             }
 
             else
@@ -1250,11 +1431,11 @@ namespace DeOps.Interface
 
         private void OnProjectLeave(object sender, EventArgs e)
         {
-            if (ProjectID != 0)
-                Links.LeaveProject(ProjectID);
+            if (CommandProject != 0)
+                Links.LeaveProject(CommandProject);
 
             // if no roots, remove button change projectid to 0
-            if (!Links.ProjectRoots.ContainsKey(ProjectID))
+            if (!Links.ProjectRoots.ContainsKey(CommandProject))
             {
                 SideToolStrip.Items.Remove(ProjectButton);
                 ProjectButton = null;
@@ -1264,8 +1445,8 @@ namespace DeOps.Interface
 
         private void OnProjectJoin(object sender, EventArgs e)
         {
-            if (ProjectID != 0)
-                Links.JoinProject(ProjectID);
+            if (CommandProject != 0)
+                Links.JoinProject(CommandProject);
         }
 
         private void StatusBrowser_Navigating(object sender, WebBrowserNavigatingEventArgs e)
@@ -1309,7 +1490,7 @@ namespace DeOps.Interface
 
         private void EditMenu_Click(object sender, EventArgs e)
         {
-            EditLink edit = new EditLink(Core, ProjectID);
+            EditLink edit = new EditLink(Core, CommandProject);
             edit.ShowDialog(this);
         }
 
@@ -1322,11 +1503,26 @@ namespace DeOps.Interface
             if (item == null)
                 return;
 
-            Links.Research(item.Link.DhtID, ProjectID, true);
+            Links.Research(item.Link.DhtID, CommandProject, true);
 
             Core.Locations.Research(item.Link.DhtID);
         }
 
+        private void toolStripButton1_Click(object sender, EventArgs e)
+        {
+            ViewShell view = InternalView;
+
+            InternalPanel.Controls.Clear();
+
+            OnShowExternal(view);
+
+            OnSelectChange(SelectedLink, SelectedProject);
+        }
+
+        private void MainForm_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
 
     }
 
@@ -1484,6 +1680,12 @@ namespace DeOps.Interface
         internal uint ProjectID;
         internal MenuItemInfo Info;
 
+        internal OpMenuItem(ulong key, uint id)
+        {
+            DhtID = key;
+            ProjectID = id;
+        }
+
         internal OpMenuItem(ulong key, uint id, string text, MenuItemInfo info)
             : base(text, null, info.ClickEvent)
         {
@@ -1492,6 +1694,70 @@ namespace DeOps.Interface
             Info = info;
 
             if(info.Symbol != null)
+                Image = info.Symbol.ToBitmap();
+        }
+
+        public ulong GetKey()
+        {
+            return DhtID;
+        }
+
+        public uint GetProject()
+        {
+            return ProjectID;
+        }
+    }
+
+
+    class PersonNavItem : ToolStripMenuItem
+    {
+        internal ulong DhtID;
+
+        internal PersonNavItem(string name, ulong dhtid, MainForm form, EventHandler onClick)
+            : base(name, null, onClick)
+        {
+            DhtID = dhtid;
+
+            Font = new System.Drawing.Font("Tahoma", 8.25F);
+
+            if (DhtID == form.Core.LocalDhtID)
+                Image = InterfaceRes.star;
+        }
+    }
+
+    class ProjectNavItem : ToolStripMenuItem
+    {
+        internal uint ProjectID;
+
+        internal ProjectNavItem(string name, uint project, EventHandler onClick)
+            : base(name, null, onClick)
+        {
+            ProjectID = project;
+
+            Font = new System.Drawing.Font("Tahoma", 8.25F);
+        }
+    }
+
+    class ComponentNavItem : ToolStripMenuItem, IContainsNode
+    {
+        ulong DhtID;
+        uint ProjectID;
+
+        internal ComponentNavItem(MenuItemInfo info, MainForm form, EventHandler onClick)
+            : base("", null, onClick)
+        {
+
+            DhtID = form.SelectedLink;
+            ProjectID = form.SelectedProject;
+
+            string[] parts = info.Path.Split(new char[] { '/' });
+
+            if (parts.Length == 2)
+                Text = parts[1];
+
+            Font = new System.Drawing.Font("Tahoma", 8.25F);
+
+            if (info.Symbol != null)
                 Image = info.Symbol.ToBitmap();
         }
 

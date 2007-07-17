@@ -79,8 +79,11 @@ namespace DeOps.Components.Profile
            }
         }
 
-        internal override string GetTitle()
+        internal override string GetTitle(bool small)
         {
+            if (small)
+                return "Profile";
+
             if (CurrentDhtID == Profiles.Core.LocalDhtID)
                 return "My Profile";
 

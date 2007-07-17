@@ -37,8 +37,11 @@ namespace DeOps.Components.Plan
             ProjectID = project;
         }
 
-        internal override string GetTitle()
+        internal override string GetTitle(bool small)
         {
+            if (small)
+                return "Goals";
+
             string title = "";
 
             if (DhtID == Core.LocalDhtID)
@@ -64,7 +67,7 @@ namespace DeOps.Components.Plan
             return PlanRes.Goals;
         }
 
-        private void GoalsView_Load(object sender, EventArgs e)
+        internal override void Init()
         {
             Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
             Plans.PlanUpdate += new PlanUpdateHandler(Plans_Update);
@@ -88,6 +91,10 @@ namespace DeOps.Components.Plan
 
             if (GoalTabs.TabPages.Count > 1)
                 GoalTabs.SelectedTab = GoalTabs.TabPages[1];
+        }
+        private void GoalsView_Load(object sender, EventArgs e)
+        {
+            
         }
 
         internal override bool Fin()

@@ -126,7 +126,7 @@
       <DependentUpon>BoardRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Board\BoardView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Board\BoardView.Designer.cs">
       <DependentUpon>BoardView.cs</DependentUpon>
@@ -180,7 +180,7 @@
       <DependentUpon>GoalPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.Designer.cs">
       <DependentUpon>GoalsView.cs</DependentUpon>
@@ -292,7 +292,7 @@
     <Compile Include="Components\Storage\StorageControl.cs" />
     <Compile Include="Components\Storage\StoragePackets.cs" />
     <Compile Include="Components\Storage\StorageView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Storage\StorageView.Designer.cs">
       <DependentUpon>StorageView.cs</DependentUpon>
@@ -419,6 +419,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>InterfaceRes.resx</DependentUpon>
     </Compile>
+    <Compile Include="Interface\Views\ColorTable.cs" />
     <Compile Include="Interface\Views\TreeListViewEx\ContainerListView.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -473,7 +474,7 @@
       <DependentUpon>InviteForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Interface\MainForm.cs">
-      <SubType>Component</SubType>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Interface\MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
@@ -519,7 +520,7 @@
       <DependentUpon>NetView.cs</DependentUpon>
     </Compile>
     <Compile Include="Simulator\SimForm.cs">
-      <SubType>Form</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Simulator\SimForm.Designer.cs">
       <DependentUpon>SimForm.cs</DependentUpon>
@@ -571,6 +572,7 @@
     <None Include="Components\Storage\Res\details.png" />
     <Content Include="Components\Storage\storage.txt" />
     <Content Include="Components\Storage\storage2.txt" />
+    <Content Include="Docs\better web.txt" />
     <Content Include="Docs\Events.txt" />
     <Content Include="Components\Mail\Mail.txt" />
     <Content Include="Docs\Patent.txt" />

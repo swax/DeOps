@@ -60,8 +60,11 @@ namespace DeOps.Components.Plan
             PlanStructure.NodeCollapsed += new EventHandler(PlanStructure_NodeCollapsed);
         }
 
-        internal override string GetTitle()
+        internal override string GetTitle(bool small)
         {
+            if (small)
+                return "Schedule";
+
             string title = "";
 
             if (DhtID == Core.LocalDhtID)
@@ -77,7 +80,7 @@ namespace DeOps.Components.Plan
             return title;
         }
 
-        private void ScheduleView_Load(object sender, EventArgs e)
+        internal override void Init()
         {
             if (DhtID != Core.LocalDhtID)
                 NewItem.Visible = false;
@@ -100,10 +103,14 @@ namespace DeOps.Components.Plan
             RefreshUplinks();
             RefreshStructure();
 
-                   
+
             // events
             Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
             Plans.PlanUpdate += new PlanUpdateHandler(Plans_Update);
+        }
+
+        private void ScheduleView_Load(object sender, EventArgs e)
+        {
         }
 
         private void GotoTime(DateTime time)

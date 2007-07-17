@@ -28,7 +28,7 @@ namespace DeOps.Interface
 
             Controls.Add(Shell);
 
-            Text = shell.GetTitle();
+            Text = shell.GetTitle(false);
             Size = shell.GetDefaultSize();
             Icon = shell.GetIcon();
         }
