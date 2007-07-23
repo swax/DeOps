@@ -15,6 +15,7 @@ namespace DeOps.Components.Link
 {
     internal partial class EditLink : Form
     {
+        OpCore Core;
         LinkControl Links;
 
         uint ProjectID;
@@ -24,6 +25,7 @@ namespace DeOps.Components.Link
         {
             InitializeComponent();
 
+            Core = core;
             Links = core.Links;
 
             ProjectID = id;
@@ -32,6 +34,7 @@ namespace DeOps.Components.Link
         private void EditLink_Load(object sender, EventArgs e)
         {
             NameBox.Text = Links.LocalLink.Name;
+            LocationBox.Text = Links.Core.User.Settings.Location;
 
             if (Links.LocalLink.Title.ContainsKey(ProjectID))
                 TitleBox.Text = Links.LocalLink.Title[ProjectID];
@@ -47,6 +50,15 @@ namespace DeOps.Components.Link
             Links.LocalLink.Name = NameBox.Text;
             Links.LocalLink.Title[ProjectID] = TitleBox.Text;
             Links.SaveLocal();
+
+            if (LocationBox.Text != Core.User.Settings.Location)
+            {
+                Core.User.Settings.Location = LocationBox.Text;
+                Links.Core.User.Save();
+
+                if (Core.OperationNet.Routing.Responsive())
+                    Core.Locations.UpdateLocation();
+            }
 
             Close();
         }

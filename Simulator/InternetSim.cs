@@ -61,7 +61,7 @@ namespace DeOps.Simulator
         internal bool   Shutdown;
         
         // settings
-        int SleepTime = 1000; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
+        int SleepTime = 500; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
 
         bool RandomCache = true;
         internal bool TestEncryption = false;
@@ -73,8 +73,8 @@ namespace DeOps.Simulator
         int  FluxIn      = 1;
         int  FluxOut     = 0;
 
-        int PercentNAT = 0;
-        int PercentBlocked = 0;  
+        int PercentNAT = 15;
+        int PercentBlocked = 10;  
 
 
         internal InternetSim(SimForm form)

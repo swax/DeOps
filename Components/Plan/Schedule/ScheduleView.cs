@@ -712,7 +712,7 @@ namespace DeOps.Components.Plan
         internal void UpdateName()
         {
             if (Link.Title.ContainsKey(View.ProjectID) && Link.Title[View.ProjectID] != "")
-                Text = Link.Title[View.ProjectID] + "\n" + Link.Name;
+                Text = Link.Name + "\n" + Link.Title[View.ProjectID];
             else
                 Text = Link.Name;
         }

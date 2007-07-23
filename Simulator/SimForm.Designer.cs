@@ -55,13 +55,21 @@ namespace DeOps.Simulator
             this.ViewMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.ButtonStep = new System.Windows.Forms.Button();
             this.TimeLabel = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.label5 = new System.Windows.Forms.Label();
+            this.label6 = new System.Windows.Forms.Label();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.LoadProgress = new System.Windows.Forms.ProgressBar();
             this.menuStrip1.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // buttonStart
             // 
-            this.buttonStart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.buttonStart.Location = new System.Drawing.Point(12, 382);
+            this.buttonStart.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonStart.Location = new System.Drawing.Point(15, 32);
             this.buttonStart.Name = "buttonStart";
             this.buttonStart.Size = new System.Drawing.Size(75, 23);
             this.buttonStart.TabIndex = 0;
@@ -71,8 +79,7 @@ namespace DeOps.Simulator
             // 
             // buttonPause
             // 
-            this.buttonPause.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.buttonPause.Location = new System.Drawing.Point(174, 382);
+            this.buttonPause.Location = new System.Drawing.Point(177, 32);
             this.buttonPause.Name = "buttonPause";
             this.buttonPause.Size = new System.Drawing.Size(75, 23);
             this.buttonPause.TabIndex = 1;
@@ -82,12 +89,11 @@ namespace DeOps.Simulator
             // 
             // labelTime
             // 
-            this.labelTime.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.labelTime.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.labelTime.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.labelTime.Location = new System.Drawing.Point(264, 379);
+            this.labelTime.Location = new System.Drawing.Point(389, 19);
             this.labelTime.Name = "labelTime";
-            this.labelTime.Size = new System.Drawing.Size(273, 18);
+            this.labelTime.Size = new System.Drawing.Size(130, 18);
             this.labelTime.TabIndex = 2;
             this.labelTime.Text = "00:00:00";
             this.labelTime.TextAlign = System.Drawing.ContentAlignment.TopRight;
@@ -108,9 +114,9 @@ namespace DeOps.Simulator
             this.columnHeader8,
             this.columnHeader9});
             this.listInstances.FullRowSelect = true;
-            this.listInstances.Location = new System.Drawing.Point(12, 55);
+            this.listInstances.Location = new System.Drawing.Point(12, 171);
             this.listInstances.Name = "listInstances";
-            this.listInstances.Size = new System.Drawing.Size(525, 321);
+            this.listInstances.Size = new System.Drawing.Size(525, 255);
             this.listInstances.TabIndex = 3;
             this.listInstances.UseCompatibleStateImageBehavior = false;
             this.listInstances.View = System.Windows.Forms.View.Details;
@@ -161,8 +167,9 @@ namespace DeOps.Simulator
             // 
             // LabelInstances
             // 
+            this.LabelInstances.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.LabelInstances.AutoSize = true;
-            this.LabelInstances.Location = new System.Drawing.Point(12, 35);
+            this.LabelInstances.Location = new System.Drawing.Point(12, 429);
             this.LabelInstances.Name = "LabelInstances";
             this.LabelInstances.Size = new System.Drawing.Size(62, 13);
             this.LabelInstances.TabIndex = 5;
@@ -170,9 +177,9 @@ namespace DeOps.Simulator
             // 
             // LinkUpdate
             // 
-            this.LinkUpdate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.LinkUpdate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.LinkUpdate.AutoSize = true;
-            this.LinkUpdate.Location = new System.Drawing.Point(495, 35);
+            this.LinkUpdate.Location = new System.Drawing.Point(495, 429);
             this.LinkUpdate.Name = "LinkUpdate";
             this.LinkUpdate.Size = new System.Drawing.Size(42, 13);
             this.LinkUpdate.TabIndex = 6;
@@ -239,8 +246,7 @@ namespace DeOps.Simulator
             // 
             // ButtonStep
             // 
-            this.ButtonStep.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.ButtonStep.Location = new System.Drawing.Point(93, 382);
+            this.ButtonStep.Location = new System.Drawing.Point(96, 32);
             this.ButtonStep.Name = "ButtonStep";
             this.ButtonStep.Size = new System.Drawing.Size(75, 23);
             this.ButtonStep.TabIndex = 9;
@@ -250,37 +256,119 @@ namespace DeOps.Simulator
             // 
             // TimeLabel
             // 
-            this.TimeLabel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.TimeLabel.Location = new System.Drawing.Point(267, 397);
+            this.TimeLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.TimeLabel.Location = new System.Drawing.Point(392, 37);
             this.TimeLabel.Name = "TimeLabel";
-            this.TimeLabel.Size = new System.Drawing.Size(270, 13);
+            this.TimeLabel.Size = new System.Drawing.Size(127, 13);
             this.TimeLabel.TabIndex = 10;
             this.TimeLabel.Text = "Date / Time";
             this.TimeLabel.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
+            // label1
+            // 
+            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(325, 19);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(61, 13);
+            this.label1.TabIndex = 11;
+            this.label1.Text = "Sim Speed:";
+            // 
+            // label2
+            // 
+            this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(333, 37);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(53, 13);
+            this.label2.TabIndex = 12;
+            this.label2.Text = "Sim Date:";
+            // 
+            // label3
+            // 
+            this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(12, 398);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(0, 13);
+            this.label3.TabIndex = 13;
+            // 
+            // label5
+            // 
+            this.label5.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label5.Location = new System.Drawing.Point(9, 35);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(528, 13);
+            this.label5.TabIndex = 15;
+            this.label5.Text = "This is a limited alpha not to be distributed without permission of John Marshall" +
+                " Group";
+            this.label5.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label6.Location = new System.Drawing.Point(12, 153);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(398, 13);
+            this.label6.TabIndex = 16;
+            this.label6.Text = "Click start then right-click on an instance and select Main to switch into its in" +
+                "terface";
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.buttonPause);
+            this.groupBox1.Controls.Add(this.buttonStart);
+            this.groupBox1.Controls.Add(this.ButtonStep);
+            this.groupBox1.Controls.Add(this.labelTime);
+            this.groupBox1.Controls.Add(this.label2);
+            this.groupBox1.Controls.Add(this.TimeLabel);
+            this.groupBox1.Controls.Add(this.label1);
+            this.groupBox1.Location = new System.Drawing.Point(12, 62);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(525, 70);
+            this.groupBox1.TabIndex = 17;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Controls";
+            // 
+            // LoadProgress
+            // 
+            this.LoadProgress.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.LoadProgress.Location = new System.Drawing.Point(100, 429);
+            this.LoadProgress.Name = "LoadProgress";
+            this.LoadProgress.Size = new System.Drawing.Size(363, 13);
+            this.LoadProgress.TabIndex = 18;
+            this.LoadProgress.Visible = false;
             // 
             // SimForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(549, 419);
-            this.Controls.Add(this.TimeLabel);
-            this.Controls.Add(this.ButtonStep);
+            this.ClientSize = new System.Drawing.Size(549, 451);
+            this.Controls.Add(this.LoadProgress);
+            this.Controls.Add(this.groupBox1);
+            this.Controls.Add(this.label6);
+            this.Controls.Add(this.label5);
+            this.Controls.Add(this.label3);
             this.Controls.Add(this.LinkUpdate);
             this.Controls.Add(this.LabelInstances);
             this.Controls.Add(this.listInstances);
-            this.Controls.Add(this.labelTime);
-            this.Controls.Add(this.buttonStart);
-            this.Controls.Add(this.buttonPause);
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "SimForm";
-            this.Text = "Internet Simulator";
+            this.Text = "De-Ops Internet Simulator";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ControlForm_FormClosing);
             this.Load += new System.EventHandler(this.ControlForm_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -313,5 +401,12 @@ namespace DeOps.Simulator
         private System.Windows.Forms.ToolStripMenuItem ExitMenuItem;
         private System.Windows.Forms.Button ButtonStep;
         private System.Windows.Forms.Label TimeLabel;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.ProgressBar LoadProgress;
     }
 }

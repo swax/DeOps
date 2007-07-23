@@ -935,7 +935,7 @@ namespace DeOps.Components.Storage
 
                 if (parts[1] == "openfolder")
                 {
-                    Utilities.OpenFolder(Storages.GetRootPath(ParentView.DhtID, ParentView.ProjectID) + "\\" + CurrentFolder.GetPath());
+                    Utilities.OpenFolder(Storages.GetRootPath(ParentView.DhtID, ParentView.ProjectID) + CurrentFolder.GetPath());
                 }
 
                 if (parts[1] == "revs")

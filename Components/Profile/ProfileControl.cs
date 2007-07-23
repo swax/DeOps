@@ -148,9 +148,8 @@ namespace DeOps.Components.Profile
 
                 //crit - delete
                 //Dictionary<string, string> test = new Dictionary<string, string>();
-                //test["Photo"] = @"C:\Main\Dev\De-Ops\Graphics\guy.jpg";
-                //UpdateLocal(DefaultTemplate, null, test);
-                //SaveHeaders();
+                //test["Photo"] = @"C:\Dev\De-Ops\Graphics\guy.jpg";
+                //SaveLocal(DefaultTemplate, null, test);
 
                 LocalProfile = ProfileMap[Core.LocalDhtID];
             }

@@ -1510,13 +1510,14 @@ namespace DeOps.Interface
 
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
-            ViewShell view = InternalView;
-
+            SuspendLayout();
             InternalPanel.Controls.Clear();
 
-            OnShowExternal(view);
+            OnShowExternal(InternalView);
+            InternalView = null;
 
             OnSelectChange(SelectedLink, SelectedProject);
+            ResumeLayout();
         }
 
         private void MainForm_Paint(object sender, PaintEventArgs e)

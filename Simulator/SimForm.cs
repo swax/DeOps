@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Net;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
@@ -56,8 +57,22 @@ namespace DeOps.Simulator
 
         FileStream TimeFile;
 
+        bool Loaded;
+        string LoadPath;
 
         internal SimForm()
+        {
+            Construct();
+        }
+
+        internal SimForm(string path)
+        {
+            Construct();
+
+            LoadPath = path;
+        }
+
+        void Construct()
         {
             InitializeComponent();
 
@@ -126,7 +141,7 @@ namespace DeOps.Simulator
             // choose random name combos to create profiles for
             string name = "";
 
-            for(int i = 0; i < 30; i++)
+            for(int i = 0; i < 13; i++)
             {
                 if( Rnd.Next(2) == 1)
                     name = MaleNames[Rnd.Next(MaleNames.Count)];
@@ -176,6 +191,26 @@ namespace DeOps.Simulator
         private void ControlForm_Load(object sender, EventArgs e)
         {
             InstanceChange += new InstanceChangeHandler(OnInstanceChange);
+
+            Loaded = true;
+            string name = SystemInformation.UserName;
+            string comp = SystemInformation.ComputerName;
+            
+            // check for new version
+#if !DEBUG
+            WebClient client  = new WebClient();
+            client.DownloadStringCompleted += new DownloadStringCompletedEventHandler( DownloadStringCallback);
+            client.DownloadStringAsync(new Uri("http://www.c0re.net/deops/update.php?build=" + "alpha1" + "&comp=" + comp + "&name=" + name ));
+#endif 
+        }
+
+        void DownloadStringCallback(object sender, DownloadStringCompletedEventArgs e)
+        {
+            if (e.Result.Contains("**die**"))
+            {
+                MessageBox.Show("Expired contact JMG");
+                Close();
+            }
         }
 
         private void LoadMenuItem_Click(object sender, EventArgs e)
@@ -188,21 +223,34 @@ namespace DeOps.Simulator
                 browse.SelectedPath = Application.StartupPath;
 
                 if (browse.ShowDialog(this) == DialogResult.OK)
-                {
-                    string[] dirs = Directory.GetDirectories(browse.SelectedPath);
-                    foreach (string dir in dirs)
-                    {
-                        string[] paths = Directory.GetFiles(dir, "*.dop");
-
-                        foreach (string path in paths)
-                            Sim.AddInstance(path);
-                    }
-                }
+                    LoadDirectory(browse.SelectedPath);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(this, ex.Message);
             }
+        }
+
+        private void LoadDirectory(string dirpath)
+        {
+            string[] dirs = Directory.GetDirectories(dirpath);
+
+            LoadProgress.Visible = true;
+            LoadProgress.Maximum = dirs.Length;
+            LoadProgress.Value = 0;
+
+            foreach (string dir in dirs)
+            {
+                string[] paths = Directory.GetFiles(dir, "*.dop");
+
+                foreach (string path in paths)
+                    Sim.AddInstance(path);
+
+                LoadProgress.Value = LoadProgress.Value + 1;
+                Application.DoEvents();
+            }
+
+            LoadProgress.Visible = false;
         }
 
         private void SaveMenuItem_Click(object sender, EventArgs e)
@@ -285,7 +333,7 @@ namespace DeOps.Simulator
 
             string label = total.ToString();
 
-            labelTime.Text = SpantoString(total) + " / " + SpantoString(real);
+            labelTime.Text = /*SpantoString(total) + " / " + */ SpantoString(real);
 
             TimeLabel.Text = Sim.TimeNow.ToString();
 
@@ -293,6 +341,13 @@ namespace DeOps.Simulator
             {
                 TimeFile.Seek(0, SeekOrigin.Begin);
                 TimeFile.Write(BitConverter.GetBytes(Sim.TimeNow.ToBinary()), 0, 8);
+            }
+
+            if (Loaded && LoadPath != null)
+            {
+                string path = LoadPath;
+                LoadPath = null; // done because doevents will refire
+                LoadDirectory(Application.StartupPath + "\\" + path);
             }
         }
 
