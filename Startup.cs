@@ -23,14 +23,14 @@ namespace DeOps
 
             try
             {
-                if (args.Length > 0 && args[0] == "/sim")
+                /*if (args.Length > 0 && args[0] == "/sim")
                 {
                     if (args.Length > 1)
                         Application.Run(new SimForm(args[1]));
                     else
                         Application.Run(new SimForm());
                 }
-                else
+                else*/
                     Application.Run(new LoaderForm(args));
             }
             catch

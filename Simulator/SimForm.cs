@@ -81,18 +81,6 @@ namespace DeOps.Simulator
             //LoadNames();
 
             Sim = new InternetSim(this);
-
-            if (Sim.UseTimeFile)
-            {
-                TimeFile = new FileStream("time.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite);
-
-                if (TimeFile.Length >= 8)
-                {
-                    byte[] startTime = new byte[8];
-                    TimeFile.Read(startTime, 0, 8);
-                    Sim.TimeNow = DateTime.FromBinary(BitConverter.ToInt64(startTime, 0));
-                }
-            }
         }
 
         void LoadNames()
@@ -233,6 +221,18 @@ namespace DeOps.Simulator
 
         private void LoadDirectory(string dirpath)
         {
+            if (Sim.UseTimeFile)
+            {
+                TimeFile = new FileStream(dirpath + "\\time.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite);
+
+                if (TimeFile.Length >= 8)
+                {
+                    byte[] startTime = new byte[8];
+                    TimeFile.Read(startTime, 0, 8);
+                    Sim.TimeNow = DateTime.FromBinary(BitConverter.ToInt64(startTime, 0));
+                }
+            }
+
             string[] dirs = Directory.GetDirectories(dirpath);
 
             LoadProgress.Visible = true;
@@ -337,7 +337,7 @@ namespace DeOps.Simulator
 
             TimeLabel.Text = Sim.TimeNow.ToString();
 
-            if (Sim.UseTimeFile)
+            if (Sim.UseTimeFile && TimeFile != null)
             {
                 TimeFile.Seek(0, SeekOrigin.Begin);
                 TimeFile.Write(BitConverter.GetBytes(Sim.TimeNow.ToBinary()), 0, 8);
@@ -369,6 +369,7 @@ namespace DeOps.Simulator
         private void ControlForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             Sim.Shutdown = true;
+            Application.Exit();
         }
 
         private void listInstances_MouseClick(object sender, MouseEventArgs e)

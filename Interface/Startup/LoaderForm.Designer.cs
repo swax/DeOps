@@ -40,6 +40,7 @@ namespace DeOps.Interface
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.LinkNew = new System.Windows.Forms.LinkLabel();
             this.LinkSearch = new System.Windows.Forms.LinkLabel();
+            this.EnterSimLink = new System.Windows.Forms.LinkLabel();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -152,12 +153,27 @@ namespace DeOps.Interface
             this.LinkSearch.Text = "Search";
             this.LinkSearch.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.LinkSearch_LinkClicked);
             // 
+            // EnterSimLink
+            // 
+            this.EnterSimLink.AutoSize = true;
+            this.EnterSimLink.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.EnterSimLink.LinkBehavior = System.Windows.Forms.LinkBehavior.AlwaysUnderline;
+            this.EnterSimLink.LinkColor = System.Drawing.Color.Red;
+            this.EnterSimLink.Location = new System.Drawing.Point(12, 291);
+            this.EnterSimLink.Name = "EnterSimLink";
+            this.EnterSimLink.Size = new System.Drawing.Size(87, 16);
+            this.EnterSimLink.TabIndex = 10;
+            this.EnterSimLink.TabStop = true;
+            this.EnterSimLink.Text = "Launch Sim";
+            this.EnterSimLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.EnterSimLink_LinkClicked);
+            // 
             // LoaderForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
             this.ClientSize = new System.Drawing.Size(277, 323);
+            this.Controls.Add(this.EnterSimLink);
             this.Controls.Add(this.LinkSearch);
             this.Controls.Add(this.LinkNew);
             this.Controls.Add(this.ButtonExit);
@@ -192,6 +208,7 @@ namespace DeOps.Interface
         private System.Windows.Forms.Timer TimerMain;
         private System.Windows.Forms.LinkLabel LinkNew;
         private System.Windows.Forms.LinkLabel LinkSearch;
+        private System.Windows.Forms.LinkLabel EnterSimLink;
 
     }
 }

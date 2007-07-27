@@ -152,6 +152,7 @@ namespace DeOps.Components.Plan
             // 
             // PersonalCheck
             // 
+            this.PersonalCheck.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.PersonalCheck.AutoSize = true;
             this.PersonalCheck.Location = new System.Drawing.Point(12, 349);
             this.PersonalCheck.Name = "PersonalCheck";

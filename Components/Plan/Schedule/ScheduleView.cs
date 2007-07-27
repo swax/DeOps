@@ -51,7 +51,7 @@ namespace DeOps.Components.Plan
             ProjectID = project;
 
             StartTime = Core.TimeNow;
-            EndTime   = Core.TimeNow.AddMonths(1);
+            EndTime   = Core.TimeNow.AddMonths(3);
 
             Links.GetFocused += new LinkGetFocusedHandler(LinkandPlans_GetFocused);
             Plans.GetFocused += new PlanGetFocusedHandler(LinkandPlans_GetFocused);
@@ -89,6 +89,7 @@ namespace DeOps.Components.Plan
 
             ScheduleSlider.Init(this);
 
+            DateRange.Value = 40;
             UpdateRange();
 
             GotoTime(Core.TimeNow);

@@ -10,6 +10,8 @@ using System.IO;
 using Microsoft.Win32;
 
 using DeOps.Implementation;
+using DeOps.Simulator;
+
 
 namespace DeOps.Interface
 {
@@ -174,6 +176,12 @@ namespace DeOps.Interface
         private void LinkSearch_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
 
+        }
+
+        private void EnterSimLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            Hide();
+            new SimForm().ShowDialog();
         }
     }
 }

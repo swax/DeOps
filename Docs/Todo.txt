@@ -1,4 +1,10 @@
 
+get non-profits hooked up
+	gonna need more to handle support
+
+set default calendar view to 3 months
+fill in storage systems
+
 alpha reqs
 
 	test components
@@ -11,26 +17,6 @@ alpha reqs
 		goals   - show hours total on mouse over only, icons edit
 		profile - project specific motds
 		storage - diff person should use link chooser, icons add restore
-
-
-	build 1x3x3 network sample - fill with network data comm files plans
-		remove remote cached for min # of files
-		Firesoft - manager
-			Dev (software, hardware, field guy)
-			Business ( Ops, Marketing, HR )
-			Support (website, help files, phones)
-			
-			what kind of software? fire detection control systems
-			Moving from version 1 to version 2 of their product
-				RFIDs on fire extinguishers so we know theyre low
-			People leaving
-			New ideas
-			Training
-			Conferences / Trips
-			
-			projects
-				conference prep
-				big contract
 	
 	build release, upload to c0re
 	xenocode
