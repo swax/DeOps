@@ -205,6 +205,9 @@ Core
 
 Interface
 
+	Lock instance in tray mode, required login to activate interface, but underneath still working, acting as server for files
+		deops lock icon, puts in tray / password protects / destroys and unloads gui object
+		
 	Internal 
 		expand a little more (names associated with sessions/transfers/searches/publish)
 
@@ -361,8 +364,7 @@ Pro
 	Signed.. something.. (email?) that is authenticated by others and adds value
 		PRO image in upper left of blue bar if user has signed auth key from meee
 	Private / Secret Projects
-	Flash drive with program and encrypted file system on it, truely portable personal computer
-	Lock instance in sentiant mode, required login to activate interface, but underneath still working, acting as server for files
+	Flash drive with program and encrypted file system on it, truely portable personal computer	
 	Single file storage
 	Auto language translation - use little drop down flags on left hand side project bar
 	componentized, pro version lets you set visibility(up/down) on files/messages, free version everything is transparent
