@@ -22,6 +22,10 @@ selling points
 	   everything encrypted and signed by default
 	   even real time communication is secure no matter if the employee is inside out outside
 	   
+	hard to sell whole package, focus on specifics
+		cross device syncronization / encryption
+		large scale communication windows mobile
+		
 	hackers no longer the problem, people are now the weakest link in security with-in organizations
 		http://www.theage.com.au/news/breaking/the-enemy-within-the-firewall/2006/03/13/1142098393208.html
 	   
@@ -168,6 +172,32 @@ Scenarios
 		nothing extra for 'VPN' everything is accessible from anywhere 
 		dont need a webmaster, dont need to be online to access files, most things cached locally
 	
+	coordination platform for 2008 presidential elections
+		keep program on down-low and market/advertise towards campaigns only
+		goal - build the largest campaign coordination platform
+			free for users, good because testing population will be mostly basic
+			computer users
+		what happens - huge test network, proves scalability, creates demand
+		increases value of company, when ready for investment/aquisition	
+			maximum price can be asked for
+	
+	help desk - database with outstanding computers to help
+		customer input / query interfaces
+
+		
+star trek - ever member has a 'console' black surface
+	many diff subcomponents custom cantrols can be added
+	anywhere on the surface
+	in star trek the crew is surrounded by irregular shaped black
+		surfaces like in startrek
+	this is how geory can bring up engineering consoles on the bridge
+		'work anywhere' deops
+	this is perfect for 'between' interface like a pda
+		black surface, universal custom surfaces
+	save console interfaces
+		can be marked public / private for remote users viewing a person's console
+		
+			
 Startup Tips
 	Copy your De-Ops profile to all your computers to stay sychronized no matter where you are
 	Put De-Ops on a USB thumbdrive, it will be the only 'computer' you need
@@ -189,6 +219,16 @@ Plugin system
 	Devices*, cam, voice chat, inventory, etc.. permissions attached
 		sentinal - watches for unauthorized nodes by Dht lookups, tracks
 	Remote computer access, files, shutdown, rdesktop, etc..
+
+	plugin component open-source demo - vote
+		combo of issues
+			options shown, with cast button
+			creates signed vote, published at local key in vote file
+			option to collect votes for particualar issue
+				finding results is either manual collect, 
+				or querying higher that is set to 'collector' for particualr issue
+				collect process tallies votes and published in vote file
+					other see results - collected by x, published at y time
 
 Packets
 	Transport
@@ -333,16 +373,16 @@ Features
 	next gen Dht buckets that reduce network hops
 	completely managed, no pinvokes, no unsafe code
 	
-Transfers
-	Encrypted / Compressed
-	Resume
-	
-Password
-	No max length
-	Can include unicode characters
-	Password sha1 hashed
-	Sha1 used as key and IV for AES 192 encryption of keypair file 
-	
+	Transfers
+		Encrypted / Compressed
+		Resume
+		
+	Password
+		No max length
+		Can include unicode characters
+		Password sha1 hashed
+		Sha1 used as key and IV for AES 192 encryption of keypair file 
+		
 Why P2P
 	Freen Open Source application without need for cost of servers because it is p2p
 	Controlled by users

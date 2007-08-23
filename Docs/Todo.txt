@@ -1,4 +1,7 @@
 
+override list class to make linkchooser class
+	events like mouse click can be overridden for main form features
+
 get non-profits hooked up
 	gonna need more to handle support
 
@@ -104,7 +107,9 @@ plans
 
 
 desynch timer from packets, diff thread
-	
+	timer asyncronously run so main interface thread not affected
+	also diff thread in simulator, so that cross thread problems are debugged
+	s
 crits 
 look at replacing common code with delegates
 
@@ -305,6 +310,11 @@ Future
 		Alert if packet cache has any entries at all
 		check in sim if node sending more than x packets per sec
 		
+	web based node
+		server like caching if enabled
+		web node is owned by an individual, like any other node	
+		web interface, at first just caching support
+	
 Compartmentalization
 	sign with level key, mark with level version of key signed
 	when link version updated

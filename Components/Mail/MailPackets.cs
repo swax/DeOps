@@ -20,6 +20,8 @@ namespace DeOps.Components.Mail
         internal const byte Pending = 0x60;
     }
 
+    // 20,000 emails stored locally, the header is ~10MB for 1024bit RSA, 2.5MB for 128bit ECC
+
     internal class MailHeader : G2Packet
     {
         const byte Packet_Source   = 0x10;
@@ -33,10 +35,10 @@ namespace DeOps.Components.Mail
         const byte Packet_MailID        = 0x90;
         const byte Packet_FileStart     = 0xA0;
         const byte Packet_Read          = 0xB0;
-        const byte Packet_Received      = 0xC0; 
+        const byte Packet_Received      = 0xC0;
 
         internal byte[] Source;
-        internal byte[] Target;
+        internal byte[] Target; 
         internal byte[] FileKey; // signed with targets public key
         internal byte[] FileHash;
         internal long  FileSize;
