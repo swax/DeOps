@@ -49,7 +49,7 @@ namespace DeOps.Components.Plan
                 TitleBox.ReadOnly = true;
                 Deadline.Enabled = false;
                 PickLink.Enabled = false;
-                NotesInput.InputBox.ReadOnly = true;
+                NotesInput.ReadOnly = true;
             }
 
             if (Mode == EditGoalMode.Edit)

@@ -47,7 +47,7 @@ namespace DeOps.Components.Plan
                 EndTime.Enabled = false;
                 CompletedHours.ReadOnly = true;
                 TotalHours.ReadOnly = true;
-                DescriptionInput.InputBox.ReadOnly = true;
+                DescriptionInput.ReadOnly = true;
             }
         }
 

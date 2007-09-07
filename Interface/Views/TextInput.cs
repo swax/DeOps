@@ -34,6 +34,22 @@ namespace DeOps.Interface
             }
         }
 
+        // read only
+        public bool ReadOnly
+        {
+            get
+            {
+                return InputBox.ReadOnly;
+            }
+            set
+            {
+                InputBox.ReadOnly = value;
+
+                if (value) // dont auto turn on when input is not read-only
+                    ShowFontStrip = false;
+            }
+        }
+
         // enter clears
         private bool _EnterClears = true;
 

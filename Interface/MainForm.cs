@@ -1409,7 +1409,7 @@ namespace DeOps.Interface
 
                 SideMode = true;
 
-                //OnSelectChange(Links.LocalLink);
+                OnSelectChange(Core.LocalDhtID, 0);
             }
 
             else

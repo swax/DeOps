@@ -2,29 +2,17 @@
 override list class to make linkchooser class
 	events like mouse click can be overridden for main form features
 
-get non-profits hooked up
-	gonna need more to handle support
-
-set default calendar view to 3 months
-fill in storage systems
-
 alpha reqs
-
 	test components
 		IM      - remove dupe system messages
-		chat
-		linking
 		mail    - browse links for person add, only secure way for mailing without forgery, icons forward reply, not duping across instances
 		board   - rclick support
 		plans   - check box view goal entries, display with some progress info, icons edit
 		goals   - show hours total on mouse over only, icons edit
 		profile - project specific motds
 		storage - diff person should use link chooser, icons add restore
-	
-	build release, upload to c0re
-	xenocode
-	create zip de-ops alpha1
 
+	
 
 put news updates in blue bar remainder area
 	white news icon next to popout, click news expand latest news items

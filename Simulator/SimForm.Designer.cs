@@ -120,6 +120,7 @@ namespace DeOps.Simulator
             this.listInstances.TabIndex = 3;
             this.listInstances.UseCompatibleStateImageBehavior = false;
             this.listInstances.View = System.Windows.Forms.View.Details;
+            this.listInstances.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.listInstances_MouseDoubleClick);
             this.listInstances.MouseClick += new System.Windows.Forms.MouseEventHandler(this.listInstances_MouseClick);
             this.listInstances.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listInstances_ColumnClick);
             // 

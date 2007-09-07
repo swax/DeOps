@@ -425,6 +425,11 @@ namespace DeOps.Simulator
             menu.Show(listInstances, e.Location);
         }
 
+        private void listInstances_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            Click_Main(null, null);
+        }
+
         private void Click_Main(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
@@ -673,6 +678,8 @@ namespace DeOps.Simulator
             view.Show();
             view.BringToFront();
         }
+
+
     }
 
     internal class ViewMenuItem : ToolStripMenuItem

@@ -51,7 +51,7 @@ namespace DeOps.Components.Plan
             TitleBox.ReadOnly = true;
             StartTime.Enabled = false;
             EndTime.Enabled = false;
-            DescriptionInput.InputBox.ReadOnly = true;
+            DescriptionInput.ReadOnly = true;
         }
 
         internal void BlockView_Load(object sender, EventArgs e)
