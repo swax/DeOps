@@ -126,7 +126,7 @@
       <DependentUpon>BoardRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Board\BoardView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Board\BoardView.Designer.cs">
       <DependentUpon>BoardView.cs</DependentUpon>
@@ -150,6 +150,9 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>IMRes.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Components\Link\LinkTree.cs">
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Link\Res\LinkRes.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -197,7 +200,7 @@
       <DependentUpon>PlanRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.Designer.cs">
       <DependentUpon>BlockRow.cs</DependentUpon>
@@ -220,7 +223,7 @@
       <DependentUpon>DateSlider.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\ScheduleView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\ScheduleView.Designer.cs">
       <DependentUpon>ScheduleView.cs</DependentUpon>

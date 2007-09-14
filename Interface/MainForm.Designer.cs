@@ -62,7 +62,7 @@ namespace DeOps.Interface
             this.ProjectsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.SideButton = new System.Windows.Forms.ToolStripButton();
             this.TreeImageList = new System.Windows.Forms.ImageList(this.components);
-            this.CommandTree = new DeOps.Interface.TLVex.TreeListViewEx();
+            this.CommandTree = new DeOps.Components.Link.LinkTree();
             this.MainSplit.Panel1.SuspendLayout();
             this.MainSplit.Panel2.SuspendLayout();
             this.MainSplit.SuspendLayout();
@@ -524,7 +524,7 @@ namespace DeOps.Interface
         private System.Windows.Forms.ToolStripDropDownButton DataButton;
         private System.Windows.Forms.ToolStripMenuItem commonToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem personalToolStripMenuItem2;
-        private DeOps.Interface.TLVex.TreeListViewEx CommandTree;
+        private DeOps.Components.Link.LinkTree CommandTree;
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.ToolStripDropDownButton PersonNavButton;
         private System.Windows.Forms.ToolStripDropDownButton ProjectNavButton;

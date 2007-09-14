@@ -1,16 +1,17 @@
+ 
 
-override list class to make linkchooser class
-	events like mouse click can be overridden for main form features
+link chooser
+	add / remove links, names put in text list
 
 alpha reqs
 	test components
 		IM      - remove dupe system messages
-		mail    - browse links for person add, only secure way for mailing without forgery, icons forward reply, not duping across instances
+		*mail    - browse links for person add, only secure way for mailing without forgery, icons forward reply, not duping across instances
 		board   - rclick support
 		plans   - check box view goal entries, display with some progress info, icons edit
 		goals   - show hours total on mouse over only, icons edit
 		profile - project specific motds
-		storage - diff person should use link chooser, icons add restore
+		*storage - diff person should use link chooser, icons add restore
 
 	
 
@@ -25,6 +26,9 @@ delete folder, changes saying restored, but shouldn't be there because our times
 
 eventually browsing using nav bar needs to trigger searches and let link control know of whats active
 
+
+huge part of project is allowing companies to sell licensense (applications) throughout network
+	subs auto inherit purchased apps, never be anywhere without apps, look at encryption techniques to make this work
 
 at root node display log of all previous file system saves, snapshots, revisions, of file system file = file system header version		
 review file references system
@@ -91,7 +95,7 @@ plans
 	shutdown in the middle of the causing load corruption?			
 	***move saving estimates to savelocal
 
-		
+	
 
 
 desynch timer from packets, diff thread
@@ -107,6 +111,7 @@ check natted are finding closest nodes to proxy off of
 use rudp when available to transmit link / loc data
 with rudp now being used, should analyze purely global network
 
+encapsulate common link functions in link control
 
 search revisions
 	give components priority?? link over location, etc..

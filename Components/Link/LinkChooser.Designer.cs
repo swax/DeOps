@@ -28,11 +28,10 @@ namespace DeOps.Components.Link
         /// </summary>
         private void InitializeComponent()
         {
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             this.label1 = new System.Windows.Forms.Label();
             this.TheCancelButton = new System.Windows.Forms.Button();
             this.AddButton = new System.Windows.Forms.Button();
-            this.LinkTree = new DeOps.Interface.TLVex.TreeListViewEx();
+            this.PersonTree = new DeOps.Components.Link.LinkTree();
             this.SuspendLayout();
             // 
             // label1
@@ -69,59 +68,41 @@ namespace DeOps.Components.Link
             this.AddButton.UseVisualStyleBackColor = true;
             this.AddButton.Click += new System.EventHandler(this.AddButton_Click);
             // 
-            // LinkTree
+            // PersonTree
             // 
-            this.LinkTree.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            this.PersonTree.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.LinkTree.BackColor = System.Drawing.SystemColors.Window;
-            this.LinkTree.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            toggleColumnHeader1.Hovered = false;
-            toggleColumnHeader1.Image = null;
-            toggleColumnHeader1.Index = 0;
-            toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader1.Selected = false;
-            toggleColumnHeader1.Text = "Links";
-            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 226;
-            this.LinkTree.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
-            toggleColumnHeader1});
-            this.LinkTree.ColumnSortColor = System.Drawing.Color.Gainsboro;
-            this.LinkTree.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.LinkTree.GridLineColor = System.Drawing.Color.WhiteSmoke;
-            this.LinkTree.HeaderMenu = null;
-            this.LinkTree.ItemHeight = 16;
-            this.LinkTree.ItemMenu = null;
-            this.LinkTree.LabelEdit = false;
-            this.LinkTree.Location = new System.Drawing.Point(15, 25);
-            this.LinkTree.MultiSelect = true;
-            this.LinkTree.Name = "LinkTree";
-            this.LinkTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
-            this.LinkTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.LinkTree.ShowLines = true;
-            this.LinkTree.Size = new System.Drawing.Size(228, 252);
-            this.LinkTree.SmallImageList = null;
-            this.LinkTree.StateImageList = null;
-            this.LinkTree.TabIndex = 4;
-            this.LinkTree.Text = "treeListViewEx1";
-            this.LinkTree.VisualStyles = false;
+            this.PersonTree.BackColor = System.Drawing.SystemColors.Window;
+            this.PersonTree.ColumnSortColor = System.Drawing.Color.Gainsboro;
+            this.PersonTree.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
+            this.PersonTree.GridLineColor = System.Drawing.Color.WhiteSmoke;
+            this.PersonTree.HeaderMenu = null;
+            this.PersonTree.ItemHeight = 20;
+            this.PersonTree.ItemMenu = null;
+            this.PersonTree.LabelEdit = false;
+            this.PersonTree.Location = new System.Drawing.Point(12, 25);
+            this.PersonTree.Name = "PersonTree";
+            this.PersonTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
+            this.PersonTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
+            this.PersonTree.Size = new System.Drawing.Size(231, 252);
+            this.PersonTree.SmallImageList = null;
+            this.PersonTree.StateImageList = null;
+            this.PersonTree.TabIndex = 4;
+            this.PersonTree.Text = "linkList1";
             // 
-            // AddPeople
+            // LinkChooser
             // 
-            this.AcceptButton = this.AddButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.CancelButton = this.TheCancelButton;
             this.ClientSize = new System.Drawing.Size(255, 318);
-            this.Controls.Add(this.LinkTree);
+            this.Controls.Add(this.PersonTree);
             this.Controls.Add(this.AddButton);
             this.Controls.Add(this.TheCancelButton);
             this.Controls.Add(this.label1);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Name = "AddPeople";
+            this.Name = "LinkChooser";
             this.ShowInTaskbar = false;
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.Text = "Add People";
@@ -136,6 +117,6 @@ namespace DeOps.Components.Link
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button TheCancelButton;
         private System.Windows.Forms.Button AddButton;
-        private DeOps.Interface.TLVex.TreeListViewEx LinkTree;
+        private LinkTree PersonTree;
     }
 }
