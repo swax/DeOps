@@ -1,18 +1,15 @@
  
 
-link chooser
-	add / remove links, names put in text list
-
 alpha reqs
 	test components
 		IM      - remove dupe system messages
-		*mail    - browse links for person add, only secure way for mailing without forgery, icons forward reply, not duping across instances
+		mail    - icons forward reply, sync local mail between users
 		board   - rclick support
 		plans   - check box view goal entries, display with some progress info, icons edit
 		goals   - show hours total on mouse over only, icons edit
 		profile - project specific motds
-		*storage - diff person should use link chooser, icons add restore
-
+		*storage - diff person should use link chooser, update without refreshing, icons add restore
+		plans   - personal should work
 	
 
 put news updates in blue bar remainder area

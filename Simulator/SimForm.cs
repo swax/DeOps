@@ -194,10 +194,16 @@ namespace DeOps.Simulator
 
         void DownloadStringCallback(object sender, DownloadStringCompletedEventArgs e)
         {
-            if (e.Result.Contains("**die**"))
+            try
             {
-                MessageBox.Show("Expired contact JMG");
-                Close();
+                if (e.Result.Contains("**die**"))
+                {
+                    MessageBox.Show("Expired, contact JMG");
+                    Close();
+                }
+            }
+            catch
+            {
             }
         }
 

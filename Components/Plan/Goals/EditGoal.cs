@@ -73,7 +73,7 @@ namespace DeOps.Components.Plan
 
         private void PickLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            LinkChooser add = new LinkChooser(Core.Links, ProjectID);
+            AddLinks add = new AddLinks(Core.Links, ProjectID);
 
             if (add.ShowDialog(this) == DialogResult.OK)
                 if (add.People.Count > 0)

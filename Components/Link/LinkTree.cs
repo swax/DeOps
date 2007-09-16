@@ -29,8 +29,18 @@ namespace DeOps.Components.Link
         internal CommandTreeMode TreeMode;
         internal uint Project;
 
+        internal bool FirstLineBlank = true;
+
+
+        internal LinkTree()
+        {
+            HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
+        }
+
         internal void Init(LinkControl links)
         {
+            FullRowSelect = false;
+
             Links = links;
             Core = links.Core;
 
@@ -43,8 +53,6 @@ namespace DeOps.Components.Link
             SelectedItemChanged += new EventHandler(LinkTree_SelectedItemChanged);
             NodeExpanding += new EventHandler(LinkTree_NodeExpanding);
             NodeCollapsed += new EventHandler(LinkTree_NodeCollapsed);
-
-            SetupOperationTree();
         }
 
         internal void Fin()
@@ -65,7 +73,8 @@ namespace DeOps.Components.Link
             Nodes.Clear();
 
             // white space
-            Nodes.Add(new LabelNode(""));
+            if(FirstLineBlank)
+                Nodes.Add(new LabelNode(""));
 
             if (!Links.ProjectRoots.ContainsKey(Project))
             {
@@ -221,7 +230,8 @@ namespace DeOps.Components.Link
             Nodes.Clear();
 
             // white space
-            Nodes.Add(new LabelNode(""));
+            if(FirstLineBlank)
+                Nodes.Add(new LabelNode(""));
 
             // operation
             OnlineNode = new LabelNode("People");
@@ -637,14 +647,26 @@ namespace DeOps.Components.Link
 
         void LinkTree_SelectedItemChanged(object sender, EventArgs e)
         {
-            LinkNode item = GetSelected();
+            foreach (TreeListNode node in SelectedNodes)
+                if (node.GetType() != typeof(LinkNode))
+                    node.Selected = false;
+                else
+                {
+                    LinkNode item = node as LinkNode;
+                    Links.Research(item.Link.DhtID, Project, true);
+                    Core.Locations.Research(item.Link.DhtID);
+                }
+        }
 
-            if (item == null)
-                return;
+        internal List<ulong> GetSelectedIDs()
+        {
+            List<ulong> selected = new List<ulong>();
 
-            Links.Research(item.Link.DhtID, Project, true);
+            foreach (TreeListNode node in SelectedNodes)
+                if (node.GetType() == typeof(LinkNode))
+                    selected.Add(((LinkNode)node).Link.DhtID);
 
-            Core.Locations.Research(item.Link.DhtID);
+            return selected;
         }
     }
 

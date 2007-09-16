@@ -31,7 +31,7 @@ namespace DeOps.Components.Link
 
         internal Dictionary<uint, List<OpLink>> ProjectRoots    = new Dictionary<uint, List<OpLink>>();
         internal Dictionary<ulong, OpLink>      LinkMap         = new Dictionary<ulong, OpLink>();
-        internal Dictionary<ulong, string>      ProjectNames    = new Dictionary<ulong, string>();
+        internal Dictionary<uint, string> ProjectNames = new Dictionary<uint, string>();
 
         Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
         Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();

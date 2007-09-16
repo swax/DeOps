@@ -31,9 +31,7 @@ namespace DeOps.Components.Mail
         private void InitializeComponent()
         {
             this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
             this.ToTextBox = new System.Windows.Forms.TextBox();
-            this.CCTextBox = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.SubjectTextBox = new System.Windows.Forms.TextBox();
             this.MessageBody = new DeOps.Interface.TextInput();
@@ -43,8 +41,8 @@ namespace DeOps.Components.Mail
             this.ListFiles = new System.Windows.Forms.ComboBox();
             this.LinkAdd = new System.Windows.Forms.LinkLabel();
             this.LinkRemove = new System.Windows.Forms.LinkLabel();
-            this.BrowseTo = new System.Windows.Forms.LinkLabel();
-            this.BrowseCC = new System.Windows.Forms.LinkLabel();
+            this.AddPersonLink = new System.Windows.Forms.LinkLabel();
+            this.RemovePersonLink = new System.Windows.Forms.LinkLabel();
             this.SuspendLayout();
             // 
             // label1
@@ -57,39 +55,21 @@ namespace DeOps.Components.Mail
             this.label1.TabIndex = 0;
             this.label1.Text = "To";
             // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(3, 35);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(21, 13);
-            this.label2.TabIndex = 1;
-            this.label2.Text = "CC";
-            // 
             // ToTextBox
             // 
             this.ToTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.ToTextBox.Location = new System.Drawing.Point(52, 6);
             this.ToTextBox.Name = "ToTextBox";
-            this.ToTextBox.Size = new System.Drawing.Size(206, 20);
+            this.ToTextBox.ReadOnly = true;
+            this.ToTextBox.Size = new System.Drawing.Size(173, 20);
             this.ToTextBox.TabIndex = 2;
-            // 
-            // CCTextBox
-            // 
-            this.CCTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.CCTextBox.Location = new System.Drawing.Point(52, 32);
-            this.CCTextBox.Name = "CCTextBox";
-            this.CCTextBox.Size = new System.Drawing.Size(206, 20);
-            this.CCTextBox.TabIndex = 3;
             // 
             // label3
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(3, 61);
+            this.label3.Location = new System.Drawing.Point(3, 35);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(50, 13);
             this.label3.TabIndex = 4;
@@ -99,7 +79,7 @@ namespace DeOps.Components.Mail
             // 
             this.SubjectTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.SubjectTextBox.Location = new System.Drawing.Point(52, 58);
+            this.SubjectTextBox.Location = new System.Drawing.Point(52, 32);
             this.SubjectTextBox.Name = "SubjectTextBox";
             this.SubjectTextBox.Size = new System.Drawing.Size(254, 20);
             this.SubjectTextBox.TabIndex = 5;
@@ -111,10 +91,11 @@ namespace DeOps.Components.Mail
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.MessageBody.EnterClears = false;
-            this.MessageBody.Location = new System.Drawing.Point(6, 111);
+            this.MessageBody.Location = new System.Drawing.Point(6, 85);
             this.MessageBody.Name = "MessageBody";
+            this.MessageBody.ReadOnly = false;
             this.MessageBody.ShowFontStrip = true;
-            this.MessageBody.Size = new System.Drawing.Size(300, 136);
+            this.MessageBody.Size = new System.Drawing.Size(300, 162);
             this.MessageBody.TabIndex = 6;
             // 
             // SendButton
@@ -143,7 +124,7 @@ namespace DeOps.Components.Mail
             // 
             this.label4.AutoSize = true;
             this.label4.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label4.Location = new System.Drawing.Point(6, 87);
+            this.label4.Location = new System.Drawing.Point(6, 61);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(32, 13);
             this.label4.TabIndex = 9;
@@ -155,7 +136,7 @@ namespace DeOps.Components.Mail
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.ListFiles.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.ListFiles.FormattingEnabled = true;
-            this.ListFiles.Location = new System.Drawing.Point(130, 84);
+            this.ListFiles.Location = new System.Drawing.Point(130, 58);
             this.ListFiles.Name = "ListFiles";
             this.ListFiles.Size = new System.Drawing.Size(176, 21);
             this.ListFiles.TabIndex = 10;
@@ -166,7 +147,7 @@ namespace DeOps.Components.Mail
             this.LinkAdd.AutoSize = true;
             this.LinkAdd.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.LinkAdd.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.LinkAdd.Location = new System.Drawing.Point(49, 87);
+            this.LinkAdd.Location = new System.Drawing.Point(49, 61);
             this.LinkAdd.Name = "LinkAdd";
             this.LinkAdd.Size = new System.Drawing.Size(26, 13);
             this.LinkAdd.TabIndex = 14;
@@ -181,7 +162,7 @@ namespace DeOps.Components.Mail
             this.LinkRemove.AutoSize = true;
             this.LinkRemove.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.LinkRemove.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.LinkRemove.Location = new System.Drawing.Point(77, 87);
+            this.LinkRemove.Location = new System.Drawing.Point(77, 61);
             this.LinkRemove.Name = "LinkRemove";
             this.LinkRemove.Size = new System.Drawing.Size(46, 13);
             this.LinkRemove.TabIndex = 13;
@@ -190,44 +171,41 @@ namespace DeOps.Components.Mail
             this.LinkRemove.VisitedLinkColor = System.Drawing.Color.Blue;
             this.LinkRemove.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.LinkRemove_LinkClicked);
             // 
-            // BrowseTo
+            // AddPersonLink
             // 
-            this.BrowseTo.ActiveLinkColor = System.Drawing.Color.Blue;
-            this.BrowseTo.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.BrowseTo.AutoSize = true;
-            this.BrowseTo.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.BrowseTo.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.BrowseTo.Location = new System.Drawing.Point(264, 9);
-            this.BrowseTo.Name = "BrowseTo";
-            this.BrowseTo.Size = new System.Drawing.Size(42, 13);
-            this.BrowseTo.TabIndex = 15;
-            this.BrowseTo.TabStop = true;
-            this.BrowseTo.Text = "Browse";
-            this.BrowseTo.VisitedLinkColor = System.Drawing.Color.Blue;
-            this.BrowseTo.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.BrowseTo_LinkClicked);
+            this.AddPersonLink.ActiveLinkColor = System.Drawing.Color.Blue;
+            this.AddPersonLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.AddPersonLink.AutoSize = true;
+            this.AddPersonLink.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.AddPersonLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
+            this.AddPersonLink.Location = new System.Drawing.Point(231, 9);
+            this.AddPersonLink.Name = "AddPersonLink";
+            this.AddPersonLink.Size = new System.Drawing.Size(26, 13);
+            this.AddPersonLink.TabIndex = 15;
+            this.AddPersonLink.TabStop = true;
+            this.AddPersonLink.Text = "Add";
+            this.AddPersonLink.VisitedLinkColor = System.Drawing.Color.Blue;
+            this.AddPersonLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.BrowseTo_LinkClicked);
             // 
-            // BrowseCC
+            // RemovePersonLink
             // 
-            this.BrowseCC.ActiveLinkColor = System.Drawing.Color.Blue;
-            this.BrowseCC.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.BrowseCC.AutoSize = true;
-            this.BrowseCC.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.BrowseCC.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.BrowseCC.Location = new System.Drawing.Point(264, 35);
-            this.BrowseCC.Name = "BrowseCC";
-            this.BrowseCC.Size = new System.Drawing.Size(42, 13);
-            this.BrowseCC.TabIndex = 16;
-            this.BrowseCC.TabStop = true;
-            this.BrowseCC.Text = "Browse";
-            this.BrowseCC.VisitedLinkColor = System.Drawing.Color.Blue;
-            this.BrowseCC.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.BrowseCC_LinkClicked);
+            this.RemovePersonLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.RemovePersonLink.AutoSize = true;
+            this.RemovePersonLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
+            this.RemovePersonLink.Location = new System.Drawing.Point(259, 9);
+            this.RemovePersonLink.Name = "RemovePersonLink";
+            this.RemovePersonLink.Size = new System.Drawing.Size(47, 13);
+            this.RemovePersonLink.TabIndex = 16;
+            this.RemovePersonLink.TabStop = true;
+            this.RemovePersonLink.Text = "Remove";
+            this.RemovePersonLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.RemovePersonLink_LinkClicked);
             // 
             // ComposeMail
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.BrowseCC);
-            this.Controls.Add(this.BrowseTo);
+            this.Controls.Add(this.RemovePersonLink);
+            this.Controls.Add(this.AddPersonLink);
             this.Controls.Add(this.LinkAdd);
             this.Controls.Add(this.LinkRemove);
             this.Controls.Add(this.ListFiles);
@@ -237,12 +215,11 @@ namespace DeOps.Components.Mail
             this.Controls.Add(this.MessageBody);
             this.Controls.Add(this.SubjectTextBox);
             this.Controls.Add(this.label3);
-            this.Controls.Add(this.CCTextBox);
             this.Controls.Add(this.ToTextBox);
-            this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Name = "ComposeMail";
             this.Size = new System.Drawing.Size(309, 279);
+            this.Load += new System.EventHandler(this.ComposeMail_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -251,9 +228,7 @@ namespace DeOps.Components.Mail
         #endregion
 
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox ToTextBox;
-        private System.Windows.Forms.TextBox CCTextBox;
         private System.Windows.Forms.Label label3;
         internal System.Windows.Forms.TextBox SubjectTextBox;
         internal TextInput MessageBody;
@@ -263,7 +238,7 @@ namespace DeOps.Components.Mail
         private System.Windows.Forms.ComboBox ListFiles;
         private System.Windows.Forms.LinkLabel LinkAdd;
         private System.Windows.Forms.LinkLabel LinkRemove;
-        private System.Windows.Forms.LinkLabel BrowseTo;
-        private System.Windows.Forms.LinkLabel BrowseCC;
+        private System.Windows.Forms.LinkLabel AddPersonLink;
+        private System.Windows.Forms.LinkLabel RemovePersonLink;
     }
 }

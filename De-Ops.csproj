@@ -154,6 +154,12 @@
     <Compile Include="Components\Link\LinkTree.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Components\Link\RemoveLinks.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Link\RemoveLinks.Designer.cs">
+      <DependentUpon>RemoveLinks.cs</DependentUpon>
+    </Compile>
     <Compile Include="Components\Link\Res\LinkRes.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -183,7 +189,7 @@
       <DependentUpon>GoalPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.Designer.cs">
       <DependentUpon>GoalsView.cs</DependentUpon>
@@ -223,18 +229,18 @@
       <DependentUpon>DateSlider.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\ScheduleView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\ScheduleView.Designer.cs">
       <DependentUpon>ScheduleView.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\PlanControl.cs" />
     <Compile Include="Components\Plan\PlanPackets.cs" />
-    <Compile Include="Components\Link\LinkChooser.cs">
+    <Compile Include="Components\Link\AddLinks.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Components\Link\LinkChooser.Designer.cs">
-      <DependentUpon>LinkChooser.cs</DependentUpon>
+    <Compile Include="Components\Link\AddLinks.Designer.cs">
+      <DependentUpon>AddLinks.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Profile\EditTemplate.cs">
       <SubType>Form</SubType>
@@ -394,7 +400,7 @@
       <DependentUpon>ComposeMail.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Mail\MailView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Mail\MailView.Designer.cs">
       <DependentUpon>MailView.cs</DependentUpon>
@@ -523,7 +529,7 @@
       <DependentUpon>NetView.cs</DependentUpon>
     </Compile>
     <Compile Include="Simulator\SimForm.cs">
-      <SubType>Component</SubType>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Simulator\SimForm.Designer.cs">
       <DependentUpon>SimForm.cs</DependentUpon>
@@ -663,6 +669,10 @@
       <SubType>Designer</SubType>
       <DependentUpon>IM_View.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Components\Link\RemoveLinks.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>RemoveLinks.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Components\Link\Res\LinkRes.resx">
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
@@ -730,9 +740,9 @@
       <SubType>Designer</SubType>
       <DependentUpon>ScheduleView.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Components\Link\LinkChooser.resx">
+    <EmbeddedResource Include="Components\Link\AddLinks.resx">
       <SubType>Designer</SubType>
-      <DependentUpon>LinkChooser.cs</DependentUpon>
+      <DependentUpon>AddLinks.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Components\Profile\EditProfile.resx">
       <SubType>Designer</SubType>

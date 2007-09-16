@@ -22,6 +22,9 @@ namespace DeOps.Components.Mail
         ulong DefaultID;
         bool MessageSent;
 
+        List<ulong> ToIDs = new List<ulong>();
+
+
         internal ComposeMail(MailControl mail, ulong id)
         {
             InitializeComponent();
@@ -120,9 +123,9 @@ namespace DeOps.Components.Mail
                     NametoID(name.Trim(), to);
 
                 // cc
-                names = CCTextBox.Text.Split(new char[] { ',' });
-                foreach (string name in names)
-                    NametoID(name.Trim(), cc);
+                //names = CCTextBox.Text.Split(new char[] { ',' });
+                //foreach (string name in names)
+                //    NametoID(name.Trim(), cc);
 
                 // files
                 List<AttachedFile> files = new List<AttachedFile>();
@@ -182,25 +185,57 @@ namespace DeOps.Components.Mail
                 External.Close();
         }
 
+
         private void BrowseTo_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            LinkChooser add = new LinkChooser(Links, 0);
+            AddLinks add = new AddLinks(Links, 0);
 
             string prefix = ToTextBox.Text.Length > 0 ? ", " : "";
 
             if (add.ShowDialog(this) == DialogResult.OK)
             {
-                if(add.People.Count > 0)
-                    ToTextBox.Text += prefix;
+                foreach (ulong id in add.People)
+                    if (!ToIDs.Contains(id))
+                        ToIDs.Add(id);
 
-                //foreach(ulong id in add.People)
-                //    ToTextBox.Text += Links.GetName(id)
+                UpdateToText();
             }
+        }
+
+        private void RemovePersonLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            RemoveLinks form = new RemoveLinks(Links, ToIDs);
+
+            if (form.ShowDialog(this) == DialogResult.OK)
+            {
+                foreach (ulong id in form.RemoveIDs)
+                    if (ToIDs.Contains(id))
+                        ToIDs.Remove(id) ;
+
+                UpdateToText();
+            }
+        }
+
+        void UpdateToText()
+        {
+            string text = "";
+
+            foreach (ulong id in ToIDs)
+                text += Links.GetName(id) + ", ";
+
+            ToTextBox.Text = text.TrimEnd(',', ' ');
         }
 
         private void BrowseCC_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
 
         }
+
+        private void ComposeMail_Load(object sender, EventArgs e)
+        {
+
+        }
+
+   
     }
 }

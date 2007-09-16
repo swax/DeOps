@@ -71,6 +71,7 @@ namespace DeOps.Interface
             //crit bar CurrentViewLabel.Text = "";
 
             CommandTree.Init(Links);
+            CommandTree.ShowProject(0);
 
             //crit
             OnSelectChange(Core.LocalDhtID, CommandTree.Project);

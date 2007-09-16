@@ -202,6 +202,9 @@ namespace DeOps.Components.Storage
             else if (DiffCombo.Text == "Person...")
             {
                 // select person dialog
+
+                // need some sort of status to show who's being diffed, who we tried but failed, pending
+                // maybe put that info on root info form
             }
 
             else

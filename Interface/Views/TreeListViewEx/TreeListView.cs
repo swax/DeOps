@@ -680,6 +680,7 @@ namespace DeOps.Interface.TLVex
                                     { } // OnItemActivate(new EventArgs());
                                 }
 
+                                OnSelectedItemChanged();
 								Invalidate();
 
 								return;
@@ -1070,6 +1071,13 @@ namespace DeOps.Interface.TLVex
 					}
 
 					g.Clip = new Region(sr);
+
+                    if (!fullRowSelect)
+                    {
+                        Font font = (node.Font != null) ? node.Font : Font;
+                        SizeF size = g.MeasureString(node.Text, font);
+                        sr.Width = (int)(size.Width);
+                    }
 
 					// render selection and focus
 					if (node.Selected && isFocused)
