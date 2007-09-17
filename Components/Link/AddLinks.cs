@@ -1,0 +1,98 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Text;
+using System.Windows.Forms;
+
+using DeOps.Interface.TLVex;
+using DeOps.Components.Link;
+
+
+namespace DeOps.Components.Link
+{
+    internal partial class AddLinks : Form
+    {
+        LinkControl Links;
+        uint ProjectID;
+
+        internal List<ulong> People = new List<ulong>();
+
+
+        internal AddLinks(LinkControl links, uint project)
+        {
+            InitializeComponent();
+
+            Links = links;
+            ProjectID = project;
+        }
+
+        private void LinkChooser_Load(object sender, EventArgs e)
+        {
+            // add projects to combo
+            foreach (uint id in Links.ProjectRoots.Keys)
+            {
+                string name = "";
+
+                if (Links.ProjectNames.ContainsKey(id))
+                    name = Links.ProjectNames[id];
+
+                if (id == 0)
+                    name = "Main";
+
+                if (name != "")
+                    ProjectCombo.Items.Add(new AddProjectItem(id, name));
+            }
+
+            PersonTree.FirstLineBlank = false;
+            PersonTree.Init(Links);
+
+            ProjectCombo.SelectedIndex = 0;
+
+            PersonTree.MultiSelect = true;
+        }
+
+        private void AddButton_Click(object sender, EventArgs e)
+        {
+            People = PersonTree.GetSelectedIDs();
+
+            DialogResult = DialogResult.OK;
+
+            Close();
+        }
+
+        private void TheCancelButton_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
+
+        private void ProjectCombo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            AddProjectItem item = ProjectCombo.SelectedItem as AddProjectItem;
+
+            if (item == null)
+                return;
+
+            PersonTree.ShowProject(item.ID);
+        }
+
+    }
+
+    internal class AddProjectItem
+    {
+        internal string Name;
+        internal uint ID;
+
+        internal AddProjectItem(uint id, string name)
+        {
+            Name = name;
+            ID = id;
+        }
+
+        public override string ToString()
+        {
+            return Name;
+        }
+    }
+}
