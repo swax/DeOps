@@ -161,7 +161,7 @@ namespace DeOps.Components.Mail
             this.splitContainer2.Panel2.BackColor = System.Drawing.Color.White;
             this.splitContainer2.Panel2.Controls.Add(this.MessageBody);
             this.splitContainer2.Size = new System.Drawing.Size(378, 186);
-            this.splitContainer2.SplitterDistance = 56;
+            this.splitContainer2.SplitterDistance = 68;
             this.splitContainer2.SplitterWidth = 1;
             this.splitContainer2.TabIndex = 0;
             // 
@@ -174,7 +174,7 @@ namespace DeOps.Components.Mail
             this.MessageHeader.MinimumSize = new System.Drawing.Size(20, 20);
             this.MessageHeader.Name = "MessageHeader";
             this.MessageHeader.ScrollBarsEnabled = false;
-            this.MessageHeader.Size = new System.Drawing.Size(378, 56);
+            this.MessageHeader.Size = new System.Drawing.Size(378, 68);
             this.MessageHeader.TabIndex = 0;
             this.MessageHeader.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.MessageHeader_Navigating);
             // 
@@ -186,7 +186,7 @@ namespace DeOps.Components.Mail
             this.MessageBody.Location = new System.Drawing.Point(0, 0);
             this.MessageBody.Name = "MessageBody";
             this.MessageBody.ReadOnly = true;
-            this.MessageBody.Size = new System.Drawing.Size(378, 129);
+            this.MessageBody.Size = new System.Drawing.Size(378, 117);
             this.MessageBody.TabIndex = 0;
             this.MessageBody.Text = "";
             // 

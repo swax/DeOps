@@ -326,6 +326,17 @@ namespace DeOps.Components.Board
             Core.InvokeInterface(Core.GuiMain.ShowExternal, view );
         }
 
+        internal void PostEdit(OpPost edit)
+        {
+            // used for archive/restore
+            PostHeader copy = edit.Header.Copy();
+
+            copy.Version++;
+            copy.EditTime = Core.TimeNow.ToUniversalTime();
+
+            FinishPost(copy);
+        }
+
         internal void PostMessage(ulong id, uint project, uint parent, ScopeType scope, string subject, string message, List<AttachedFile> files, OpPost edit)
         {
             // post header
@@ -411,14 +422,19 @@ namespace DeOps.Components.Board
             string finalPath = GetPostPath(header);
             File.Move(tempPath, finalPath);
 
+            FinishPost(header);
+        }
+
+        void FinishPost(PostHeader header)
+        {
             CachePost(new SignedData(Protocol, Core.User.Settings.KeyPair, header), header);
 
             // publish to network and local region of target
             Network.Store.PublishNetwork(header.TargetID, ComponentID.Board, GetPost(header).SignedHeader);
 
             List<LocationData> locations = new List<LocationData>();
-            Links.GetLocs(header.TargetID, project, 1, 1, locations);
-            Links.GetLocs(header.TargetID, project, 0, 1, locations);
+            Links.GetLocs(header.TargetID, header.ProjectID, 1, 1, locations);
+            Links.GetLocs(header.TargetID, header.ProjectID, 0, 1, locations);
 
             Store.PublishDirect(locations, header.TargetID, ComponentID.Board, GetPost(header).SignedHeader);
 
@@ -426,6 +442,7 @@ namespace DeOps.Components.Board
             // save right off, dont wait for timer, or sim to be on
             SaveHeader(header.TargetID);
         }
+
 
         internal string GetPostPath(PostHeader header)
         {
@@ -541,9 +558,8 @@ namespace DeOps.Components.Board
             post.Ident = header.TargetID.GetHashCode() ^ uid.GetHashCode();
             post.Unique = Core.Loading;
 
-            // remove previous version of file
-            
-            if (board.Posts.ContainsKey(uid))
+            // remove previous version of file, if its different
+            if (board.Posts.ContainsKey(uid) && GetPostPath(board.Posts[uid].Header) != GetPostPath(header)) 
                 try { File.Delete(GetPostPath(board.Posts[uid].Header)); }
                 catch { }
 

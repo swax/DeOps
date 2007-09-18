@@ -126,7 +126,7 @@ namespace DeOps.Components.Plan
             foreach (PlanNode upnode in upnodes)
             {
                 foreach (PlanBlock block in GetBlocks(upnode.Link.DhtID))
-                    if (BlockinRange(block, ref tempRect))
+                    if (!block.Personal && BlockinRange(block, ref tempRect))
                     {
                         buffer.FillRectangle(GetMask(upnode.Link.DhtID), tempRect);
                         BlockAreas.Add(new BlockArea(tempRect, block, level, false));
@@ -437,7 +437,7 @@ namespace DeOps.Components.Plan
                 return;
 
             EditBlock form = new EditBlock(BlockViewMode.Show, View, menu.Block);
-            form.Show(View);
+            form.ShowDialog(View);
         }
 
         private void RClickEdit(object sender, EventArgs e)
@@ -448,7 +448,9 @@ namespace DeOps.Components.Plan
                 return;
 
             EditBlock form = new EditBlock(BlockViewMode.Edit, View, menu.Block);
-            form.Show(View);
+            
+            if(form.ShowDialog(View) == DialogResult.OK)
+                View.RefreshRows();
         }
 
         private void RClickDelete(object sender, EventArgs e)
@@ -461,6 +463,8 @@ namespace DeOps.Components.Plan
             if (View.Plans.LocalPlan.Blocks.ContainsKey(View.ProjectID))
                 View.Plans.LocalPlan.Blocks[View.ProjectID].Remove(menu.Block);
 
+            View.RefreshRows();
+
             View.ChangesMade();
         }
 
@@ -472,7 +476,7 @@ namespace DeOps.Components.Plan
                     BlockViewMode mode = (DhtID == View.Core.LocalDhtID) ? BlockViewMode.Edit : BlockViewMode.Show;
 
                     EditBlock form = new EditBlock(mode, View, area.Block);
-                    form.Show(View);
+                    form.ShowDialog(View);
 
                     break;
                 }

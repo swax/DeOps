@@ -18,7 +18,8 @@ namespace DeOps.Components.Plan
         internal int Level;
         internal int Completed;
         internal int Total;
-         
+
+        bool ShowCompletion;
 
         internal ProgressText()
         {
@@ -46,12 +47,27 @@ namespace DeOps.Components.Plan
                 e.Graphics.FillRectangle(Overlay, ClientRectangle);
             }
 
-            string text = Completed.ToString() + " / " + Total.ToString() + " hours";
-            SizeF size = e.Graphics.MeasureString(text, TahomaBold);
+            if (ShowCompletion)
+            {
+                string text = Completed.ToString() + " / " + Total.ToString() + " hours";
+                SizeF size = e.Graphics.MeasureString(text, TahomaBold);
 
-            e.Graphics.DrawString(text, TahomaBold, BlackBrush,
-                                  indent + (width - size.Width) / 2,
-                                  (Height - size.Height) / 2);
+                e.Graphics.DrawString(text, TahomaBold, BlackBrush,
+                                      indent + (width - size.Width) / 2,
+                                      (Height - size.Height) / 2);
+            }
+        }
+
+        private void ProgressText_MouseEnter(object sender, EventArgs e)
+        {
+            ShowCompletion = true;
+            Invalidate();
+        }
+
+        private void ProgressText_MouseLeave(object sender, EventArgs e)
+        {
+            ShowCompletion = false;
+            Invalidate();
         }
     }
 }

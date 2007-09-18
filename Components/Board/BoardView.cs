@@ -37,8 +37,6 @@ namespace DeOps.Components.Board
         Dictionary<int, PostViewNode> ThreadMap = new Dictionary<int, PostViewNode>();
         Dictionary<int, Dictionary<int, PostViewNode>> ActiveThreads = new Dictionary<int,Dictionary<int, PostViewNode>>();
 
-        internal PostUpdateHandler PostUpdate;
-
         string PostHeaderDefault = @"<html>
                 <body bgcolor=whitesmoke>
                 </body>
@@ -169,33 +167,29 @@ namespace DeOps.Components.Board
             RefreshBoard();
         }
 
-        private void ViewButton_DropDownOpening(object sender, EventArgs e)
+        private void HighMenuItem_Click(object sender, EventArgs e)
         {
-            ViewButton.DropDownItems.Clear();
-
-            if (CurrentScope != ScopeType.High)
-                ViewButton.DropDownItems.Add(new ViewItem("High", ScopeType.High, new EventHandler(ViewMenu_Click)));
-
-            if (CurrentScope != ScopeType.Low)
-                ViewButton.DropDownItems.Add(new ViewItem("Low", ScopeType.Low, new EventHandler(ViewMenu_Click)));
-
-            if (CurrentScope != ScopeType.All)
-                ViewButton.DropDownItems.Add(new ViewItem("All", ScopeType.All, new EventHandler(ViewMenu_Click)));
-        }
-
-        private void ViewMenu_Click(object sender, EventArgs e)
-        {
-            ViewItem item = sender as ViewItem;
-
-            if (item == null)
-                return;
-
-            CurrentScope = item.Scope;
+            CurrentScope = ScopeType.High;
             ViewButton.Text = "View: " + CurrentScope.ToString();
 
             RefreshBoard();
         }
 
+        private void LowMenuItem_Click(object sender, EventArgs e)
+        {
+            CurrentScope = ScopeType.Low;
+            ViewButton.Text = "View: " + CurrentScope.ToString();
+
+            RefreshBoard();
+        }
+
+        private void AllMenuItem_Click(object sender, EventArgs e)
+        {
+            CurrentScope = ScopeType.All;
+            ViewButton.Text = "View: " + CurrentScope.ToString();
+
+            RefreshBoard();
+        }
 
         private void RefreshBoard()
         {
@@ -216,6 +210,9 @@ namespace DeOps.Components.Board
         void Board_PostUpdate(OpPost post)
         {
             if (post.Header.ProjectID != ProjectID)
+                return;
+
+            if (post.Header.Archived != ArchiveButton.Checked)
                 return;
 
             ScopeType level = ScopeType.All;
@@ -428,13 +425,28 @@ namespace DeOps.Components.Board
             htmlHeader += "<br>";
 
             // actions
-            htmlHeader += @" <b>Actions: </b><a href='reply:" + parent.Ident.ToString() + "'>Reply</a>";
+            string actions = "";
 
-            if(post.Header.SourceID == Core.LocalDhtID)
-                    htmlHeader += @", <a href='edit:" + post.Ident.ToString() + "'>Edit</a>";
+            if (!post.Header.Archived)
+                actions += @" <a href='reply:" + parent.Ident.ToString() + "'>Reply</a>";
+
+            if (post.Header.SourceID == Core.LocalDhtID)
+            {
+                if (!post.Header.Archived)
+                    actions += @", <a href='edit:" + post.Ident.ToString() + "'>Edit</a>";
+
+                if (post == parent)
+                    if (post.Header.Archived)
+                        actions += @", <a href='restore:" + post.Ident.ToString() + "'>Restore</a>";
+                    else
+                        actions += @", <a href='archive:" + post.Ident.ToString() + "'>Archive</a>";
+            }
+
+            htmlHeader += "<b>Actions: </b>" + actions.Trim(',', ' ');
 
             htmlHeader +=
-                    @"</body>
+                    @"</p>
+                </body>
                 </html>";
 
             PostHeader.DocumentText = htmlHeader;
@@ -486,41 +498,48 @@ namespace DeOps.Components.Board
             if (parts.Length < 2)
                 return;
 
-            if(parts[0] == "reply" || parts[0] == "edit")
+            if (parts[0] == "about")
+                return;
+
+            int hash = int.Parse(parts[1]);
+
+            OpPost post = null;
+
+            if (ThreadMap.ContainsKey(hash))
+                post = ThreadMap[hash].Post;
+            else
             {
-                int hash = int.Parse(parts[1]);
-
-                OpPost post = null;
-
-                if (ThreadMap.ContainsKey(hash))
-                    post = ThreadMap[hash].Post;
-                else
+                foreach (Dictionary<int, PostViewNode> thread in ActiveThreads.Values)
                 {
-                    foreach (Dictionary<int, PostViewNode> thread in ActiveThreads.Values)
-                    {
-                        foreach (PostViewNode reply in thread.Values)
-                            if (reply.Post.Ident == hash)
-                            {
-                                post = reply.Post;
-                                break;
-                            }
-
-                        if (post != null)
+                    foreach (PostViewNode reply in thread.Values)
+                        if (reply.Post.Ident == hash)
+                        {
+                            post = reply.Post;
                             break;
-                    }
+                        }
+
+                    if (post != null)
+                        break;
                 }
+            }
 
-                if (post != null)
-                {
-                    if (parts[0] == "reply")
-                        Reply(post);
+            if (post != null)
+            {
+                if (parts[0] == "reply")
+                    Post_Reply(new PostMenuItem(post), null);
 
-                    if (parts[0] == "edit")
-                        Edit(post);
-                }
+                if (parts[0] == "edit")
+                    Post_Edit(new PostMenuItem(post), null);
 
-                e.Cancel = true; 
-            }     
+                if (parts[0] == "archive")
+                    Post_Archive(new PostMenuItem(post), null);
+
+                if (parts[0] == "restore")
+                    Post_Restore(new PostMenuItem(post), null);
+            }
+
+            e.Cancel = true;
+
         }
 
         private void PostButton_Click(object sender, EventArgs e)
@@ -531,21 +550,6 @@ namespace DeOps.Components.Board
 
         }
 
-        private void Reply(OpPost parent)
-        {
-            PostMessage form = new PostMessage(Board, parent.Header.TargetID, parent.Header.ProjectID);
-            form.PostReply(parent);
-
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, form);
-        }
-
-        private void Edit(OpPost post)
-        {
-            PostMessage form = new PostMessage(Board, post.Header.TargetID, post.Header.ProjectID);
-            form.PostEdit(post, post.Header.ParentID, PostBody.Rtf);
-
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, form);
-        }
 
         private void RefreshButton_Click(object sender, EventArgs e)
         {
@@ -563,16 +567,120 @@ namespace DeOps.Components.Board
                     Board.ThreadSearch(post.Header.TargetID, post.Header.ProjectID, post.Header.PostID);
                 }
         }
+
+        private void PostView_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right)
+                return;
+
+            PostViewNode node = PostView.GetNodeAt(e.Location) as PostViewNode;
+
+            if (node == null)
+                return;
+
+            PostViewNode parent = node.ParentNode() as PostViewNode;
+
+            OpPost replyTo = node.Post;
+            if (parent != null)
+                replyTo = parent.Post;
+
+            ContextMenuStrip menu = new ContextMenuStrip();
+
+            if (!replyTo.Header.Archived)
+                menu.Items.Add(new PostMenuItem("Reply", replyTo, new EventHandler(Post_Reply)));
+
+            if (node.Post.Header.SourceID == Core.LocalDhtID)
+            {
+                if (!replyTo.Header.Archived)
+                {
+                    menu.Items.Add(new PostMenuItem("Edit", node.Post, new EventHandler(Post_Edit)));
+                    menu.Items.Add("-");
+                }
+
+                if(parent == null)
+                    if(node.Post.Header.Archived)
+                        menu.Items.Add(new PostMenuItem("Restore", node.Post, new EventHandler(Post_Restore)));
+                    else
+                        menu.Items.Add(new PostMenuItem("Archive", node.Post, new EventHandler(Post_Archive)));
+
+            }
+
+            menu.Show(PostView, e.Location);
+        }
+
+        void Post_Reply(object sender, EventArgs e)
+        {
+            PostMenuItem item = sender as PostMenuItem;
+
+            if (item == null)
+                return;
+
+            OpPost parent = item.Post;
+
+            PostMessage form = new PostMessage(Board, parent.Header.TargetID, parent.Header.ProjectID);
+            form.PostReply(parent);
+
+            Core.InvokeInterface(Core.GuiMain.ShowExternal, form);
+        }
+
+        void Post_Edit(object sender, EventArgs e)
+        {
+            PostMenuItem item = sender as PostMenuItem;
+
+            if (item == null)
+                return;
+
+            OpPost post = item.Post;
+
+            PostMessage form = new PostMessage(Board, post.Header.TargetID, post.Header.ProjectID);
+            form.PostEdit(post, post.Header.ParentID, PostBody.Rtf);
+
+            Core.InvokeInterface(Core.GuiMain.ShowExternal, form);
+        }
+
+        void Post_Archive(object sender, EventArgs e)
+        {
+            PostMenuItem item = sender as PostMenuItem;
+
+            if (item == null)
+                return;
+
+            item.Post.Header.Archived = true;
+            Board.PostEdit(item.Post);
+            RefreshBoard();
+        }
+
+        void Post_Restore(object sender, EventArgs e)
+        {
+            PostMenuItem item = sender as PostMenuItem;
+
+            if (item == null)
+                return;
+
+            item.Post.Header.Archived = false;
+            Board.PostEdit(item.Post);
+            RefreshBoard();
+        }
+
+        private void ArchiveButton_Click(object sender, EventArgs e)
+        {
+            RefreshBoard();
+        }
     }
 
-    class ViewItem : ToolStripMenuItem
+    internal class PostMenuItem : ToolStripMenuItem
     {
-        internal ScopeType Scope;
+        internal OpPost Post;
 
-        internal ViewItem(string text, ScopeType scope, EventHandler onClick)
+        internal PostMenuItem(OpPost post)
+        {
+            Post = post;
+        }
+
+        internal PostMenuItem(string text, OpPost post, EventHandler onClick)
             : base(text, null, onClick)
         {
-            Scope = scope;
+            Post = post;
         }
     }
 

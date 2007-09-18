@@ -20,7 +20,6 @@ namespace DeOps.Components.Board
         uint ProjectID;
 
         bool Reply;
-        uint EditID;
 
         OpPost EditPost;
         OpPost ParentPost;
@@ -58,7 +57,6 @@ namespace DeOps.Components.Board
         internal void PostEdit(OpPost post, uint parentID, string rtf)
         {
             EditPost = post;
-            EditID = post.Header.PostID;
 
             ParentID = parentID;
 

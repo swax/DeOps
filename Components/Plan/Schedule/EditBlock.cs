@@ -44,6 +44,7 @@ namespace DeOps.Components.Plan
             StartTime.Value = block.StartTime.ToLocalTime();
             EndTime.Value = block.EndTime.ToLocalTime();
             DescriptionInput.InputBox.Rtf = block.Description;
+            PersonalCheck.Checked = block.Personal;
 
             if (mode != BlockViewMode.Show)
                 return;
@@ -52,6 +53,7 @@ namespace DeOps.Components.Plan
             StartTime.Enabled = false;
             EndTime.Enabled = false;
             DescriptionInput.ReadOnly = true;
+            PersonalCheck.Enabled = false;
         }
 
         internal void BlockView_Load(object sender, EventArgs e)
@@ -105,6 +107,7 @@ namespace DeOps.Components.Plan
             block.StartTime     = StartTime.Value.ToUniversalTime();
             block.EndTime       = EndTime.Value.ToUniversalTime();
             block.Description   = DescriptionInput.InputBox.Rtf;
+            block.Personal      = PersonalCheck.Checked;
 
             if (Mode == BlockViewMode.New)
                 block.Unique = Core.RndGen.Next();

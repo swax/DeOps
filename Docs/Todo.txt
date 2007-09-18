@@ -1,16 +1,15 @@
- 
 
-alpha reqs
-	test components
-		IM      - remove dupe system messages
-		mail    - icons forward reply, sync local mail between users
-		board   - rclick support
-		plans   - check box view goal entries, display with some progress info, icons edit
-		goals   - show hours total on mouse over only, icons edit
-		profile - project specific motds
-		*storage - diff person should use link chooser, update without refreshing, icons add restore
-		plans   - personal should work
-	
+board   -  icons(high, low, all)
+goals   - deadlines on plans interface, icons edit
+IM      - remove dupe system messages
+plans   - check box view goal entries, display with some progress info, icons(edit)
+profile - project specific motds
+storage - diff status on root info, update without refreshing, icons(add restore)
+mail    - icons(forward reply), delete mail not refreshing view, sync local mail between users
+
+location info should probably contain latest versions for all components so 
+	for example two of the same account would sync their storage without having to specifically having to open storage
+if user is detected to have 2 locations, note that in chat/IM when user talks
 
 put news updates in blue bar remainder area
 	white news icon next to popout, click news expand latest news items
@@ -21,7 +20,7 @@ add accept change to storageInfo interface for folders - so name / ghost status 
 
 delete folder, changes saying restored, but shouldn't be there because our timestamp is the newest
 
-eventually browsing using nav bar needs to trigger searches and let link control know of whats active
+eventually browsing using nav bar needs to trigger searches and let link control know of whats focused
 
 
 huge part of project is allowing companies to sell licensense (applications) throughout network
@@ -92,7 +91,8 @@ plans
 	shutdown in the middle of the causing load corruption?			
 	***move saving estimates to savelocal
 
-	
+
+Many actions in gui isnt piped down into control to fire events back to the interface to signal updates for multiple interface instances
 
 
 desynch timer from packets, diff thread
@@ -307,6 +307,18 @@ Future
 		server like caching if enabled
 		web node is owned by an individual, like any other node	
 		web interface, at first just caching support
+	
+visual component
+	user can inherit or create new canvases
+	default background is transparent so overlays easy
+	zoom in/out infinite, images created on 'planes' z-axis coordinate
+		zooming out if other regions in view, their sub-regions are found
+		affiliate zoom with levels down so that people know on what level to draw
+	node inherits higher's images which overlay lower's drawings
+		ie higher can create bounds that lower fills in
+	node can define regions for lowers to draw in
+		lowers by default see this region when they open visuals not the whole canvas
+	interface - basic paint operations with copy/paste, show transparent zones (off by default)
 	
 Compartmentalization
 	sign with level key, mark with level version of key signed

@@ -73,8 +73,8 @@ namespace DeOps.Simulator
         int  FluxIn      = 1;
         int  FluxOut     = 0;
 
-        int PercentNAT = 15;
-        int PercentBlocked = 10;  
+        int PercentNAT = 0;
+        int PercentBlocked = 0;  
 
 
         internal InternetSim(SimForm form)

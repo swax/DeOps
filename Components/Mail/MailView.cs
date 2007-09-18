@@ -277,10 +277,10 @@ namespace DeOps.Components.Mail
                     <!--
                         p    { font-size: 8.25pt; font-family: Tahoma }
                         body { margin: 4; }
-                        A:link {text-decoration: none; color: black}
-                        A:visited {text-decoration: none; color: black}
-                        A:active {text-decoration: none; color: black}
-                        A:hover {text-decoration: underline; color: black}
+                        A:link {text-decoration: none; color: blue}
+                        A:visited {text-decoration: none; color: blue}
+                        A:active {text-decoration: none; color: blue}
+                        A:hover {text-decoration: underline; color: blue}
                     -->
                     </style>
                 </head>
@@ -303,7 +303,7 @@ namespace DeOps.Components.Mail
                     if (message.Attached[i].Name == "body")
                         continue;
 
-                    attachHtml += "<a href='attach:" + i.ToString() + "'>" + message.Attached[i].Name + " (" + Utilities.ByteSizetoString(message.Attached[i].Size) + ")</a>, ";
+                    attachHtml += "<a href='attach:" + i.ToString() + "'>" + message.Attached[i].Name + "</a> (" + Utilities.ByteSizetoString(message.Attached[i].Size) + "), ";
                 }
 
                 attachHtml = attachHtml.TrimEnd(new char[] { ' ', ',' });
@@ -311,8 +311,19 @@ namespace DeOps.Components.Mail
                 htmlHeader += "<b>Attachments: </b> " + attachHtml;
             }
 
-            htmlHeader += 
-                    @"</p>
+            htmlHeader += "<br>";
+
+            string actions = "";
+
+            if (InboxButton.Checked)
+                actions += @"<a href='reply:x" + "'>Reply</a>";
+
+            actions += @", <a href='forward:x'>Forward</a>";
+            actions += @", <a href='delete:x'>Delete</a>";
+
+            htmlHeader +=  "<b>Actions: </b>" + actions.Trim(',', ' ');
+
+            htmlHeader += @"</p>
                 </body>
                 </html>";
 
@@ -377,26 +388,50 @@ namespace DeOps.Components.Mail
             if (parts.Length < 2)
                 return;
 
+            if( MessageList.SelectedItems.Count == 0)
+                return;
+
+            if (parts[0] == "about")
+                return;
+
+            MessageListItem item = MessageList.SelectedItems[0] as MessageListItem;
+            
+            if(item == null)
+                return;
+
+            LocalMail message = item.Message;
+
             if (parts[0] == "attach")
             {
                 int index = int.Parse(parts[1]);
 
-                MessageListItem item = (MessageListItem) MessageList.SelectedItems[0];
+                
 
-                for(int i = 0; i < item.Message.Attached.Count; i++)
+                for(int i = 0; i < message.Attached.Count; i++)
                     if (i == index)
                     {
                         SaveFileDialog save = new SaveFileDialog();
-                        save.FileName = item.Message.Attached[i].Name;
-                        save.Title = "Save " + item.Message.Attached[i].Name;
+                        save.FileName = message.Attached[i].Name;
+                        save.Title = "Save " + message.Attached[i].Name;
 
                         if (save.ShowDialog() == DialogResult.OK)
-                            SaveFile(save.FileName, item.Message, item.Message.Attached[i]);
+                            SaveFile(save.FileName, message, message.Attached[i]);
     
                         e.Cancel = true;
                         break;
                     }
             }
+
+            if (parts[0] == "reply")
+                Message_Reply(new MessageMenuItem(message), null);
+
+            else if (parts[0] == "forward")
+                Message_Forward(new MessageMenuItem(message), null);
+
+            else if (parts[0] == "delete")
+                Message_Delete(new MessageMenuItem(message), null);
+
+            e.Cancel = true;
         }
 
         private void SaveFile(string path, LocalMail message, MailFile file)
@@ -477,6 +512,9 @@ namespace DeOps.Components.Mail
             if (item == null)
                 return;
 
+            if (MessageBox.Show(this, "Are you sure you want to delete this message?", "Delete", MessageBoxButtons.YesNo) == DialogResult.No)
+                return;
+
             Mail.DeleteLocal(item.Message, InboxButton.Checked);
 
             // remove from list box
@@ -532,6 +570,12 @@ namespace DeOps.Components.Mail
     class MessageMenuItem : ToolStripMenuItem
     {
         internal LocalMail Message;
+
+
+        internal MessageMenuItem(LocalMail message)
+        {
+            Message = message;
+        }
 
         internal MessageMenuItem(LocalMail message, string text, Image icon, EventHandler onClick)
             : base(text, icon, onClick)

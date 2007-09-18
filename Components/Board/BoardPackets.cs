@@ -29,7 +29,8 @@ namespace DeOps.Components.Board
         const byte Packet_FileSize  = 0xA0;
         const byte Packet_FileStart = 0xB0;
         const byte Packet_EditTime  = 0xC0;
-        const byte Packet_Version = 0xD0;
+        const byte Packet_Version   = 0xD0;
+        const byte Packet_Archived  = 0xE0;
 
         internal byte[] Source;
         internal byte[] Target;
@@ -39,6 +40,7 @@ namespace DeOps.Components.Board
         internal uint ParentID;
         internal DateTime Time;
         internal ScopeType Scope;
+        internal bool Archived;
 
         internal ushort Version;
         internal DateTime EditTime;
@@ -69,7 +71,8 @@ namespace DeOps.Components.Board
                 protocol.WritePacket(header, Packet_Scope, new byte[] { (byte)Scope });
 
                 protocol.WritePacket(header, Packet_Version, BitConverter.GetBytes(Version));
-                protocol.WritePacket(header, Packet_EditTime, BitConverter.GetBytes(EditTime.ToBinary())); 
+                protocol.WritePacket(header, Packet_EditTime, BitConverter.GetBytes(EditTime.ToBinary()));
+                protocol.WritePacket(header, Packet_Archived, BitConverter.GetBytes(Archived));
                 
                 protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
                 protocol.WritePacket(header, Packet_FileHash, FileHash);
@@ -122,6 +125,10 @@ namespace DeOps.Components.Board
                         header.EditTime = DateTime.FromBinary(BitConverter.ToInt64(child.Data, child.PayloadPos));
                         break;
 
+                    case Packet_Archived:
+                        header.Archived = BitConverter.ToBoolean(child.Data, child.PayloadPos);
+                        break;
+
                     case Packet_Version:
                         header.Version = BitConverter.ToUInt16(child.Data, child.PayloadPos);
                         break;
@@ -149,6 +156,34 @@ namespace DeOps.Components.Board
             }
 
             return header;
+        }
+
+        internal PostHeader Copy()
+        {
+            PostHeader copy = new PostHeader();
+
+            copy.Source = Source;
+            copy.Target = Target;
+
+            copy.ProjectID = ProjectID;
+            copy.PostID = PostID;
+            copy.ParentID = ParentID;
+            copy.Time = Time;
+            copy.Scope = Scope;
+            copy.Archived = Archived;
+
+            copy.Version = Version;
+            copy.EditTime = EditTime;
+
+            copy.FileKey = FileKey;
+            copy.FileHash = FileHash;
+            copy.FileSize = FileSize;
+            copy.FileStart = FileStart;
+
+            copy.SourceID = SourceID;
+            copy.TargetID = TargetID;
+
+            return copy;
         }
     }
 

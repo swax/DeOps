@@ -113,6 +113,7 @@ namespace DeOps.Components.Plan
         const byte Packet_EndTime = 0x40;
         const byte Packet_Description = 0x60;
         const byte Packet_Unique = 0x70;
+        const byte Packet_Personal = 0x80;
 
 
         internal uint ProjectID;
@@ -120,6 +121,7 @@ namespace DeOps.Components.Plan
         internal DateTime StartTime;
         internal DateTime EndTime;
         internal string Description = "";
+        internal bool Personal;
         internal int Unique;
 
 
@@ -134,6 +136,7 @@ namespace DeOps.Components.Plan
                 protocol.WritePacket(block, Packet_StartTime, BitConverter.GetBytes(StartTime.ToBinary()));
                 protocol.WritePacket(block, Packet_EndTime, BitConverter.GetBytes(EndTime.ToBinary()));
                 protocol.WritePacket(block, Packet_Description, protocol.UTF.GetBytes(Description));
+                protocol.WritePacket(block, Packet_Personal, BitConverter.GetBytes(Personal));
                 protocol.WritePacket(block, Packet_Unique, BitConverter.GetBytes(Unique));
 
                 return protocol.WriteFinish();
@@ -183,6 +186,10 @@ namespace DeOps.Components.Plan
 
                     case Packet_Description:
                         block.Description = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_Personal:
+                        block.Personal = BitConverter.ToBoolean(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Unique:

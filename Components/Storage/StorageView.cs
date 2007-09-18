@@ -154,7 +154,7 @@ namespace DeOps.Components.Storage
             DiffCombo.Items.Add("Local");
             DiffCombo.Items.Add("Higher");
             DiffCombo.Items.Add("Lower");
-            DiffCombo.Items.Add("Person...");
+            DiffCombo.Items.Add("Custom...");
 
             DiffCombo.SelectedIndex = 0;
         }
@@ -178,40 +178,41 @@ namespace DeOps.Components.Storage
 
         private void DiffCombo_SelectedIndexChanged(object sender, EventArgs e)
         {
-            CurrentDiffs.Clear();
-            FailedDiffs.Clear();
-            HigherIDs.Clear();
-
             HigherIDs = Storages.GetHigherIDs(DhtID, ProjectID);
-
 
             if (DiffCombo.Text == "Local")
             {
+                CurrentDiffs.Clear();
                 CurrentDiffs.AddRange(HigherIDs);
-
                 CurrentDiffs.AddRange(Links.GetDownlinkIDs(DhtID, ProjectID, 1));
             }
 
             else if (DiffCombo.Text == "Higher")
+            {
+                CurrentDiffs.Clear();
                 CurrentDiffs.AddRange(HigherIDs);
-
+            }
 
             else if (DiffCombo.Text == "Lower")
+            {
+                CurrentDiffs.Clear();
                 CurrentDiffs.AddRange(Links.GetDownlinkIDs(DhtID, ProjectID, 1));
-
-            else if (DiffCombo.Text == "Person...")
-            {
-                // select person dialog
-
-                // need some sort of status to show who's being diffed, who we tried but failed, pending
-                // maybe put that info on root info form
             }
 
-            else
+            else if (DiffCombo.Text == "Custom...")
             {
-                // person selected add their id
+                AddLinks form = new AddLinks(Links, ProjectID);
+
+                if (form.ShowDialog(this) == DialogResult.OK)
+                {
+                    CurrentDiffs.Clear();
+                    CurrentDiffs.AddRange(form.People);
+                }
+                else
+                    return;
             }
 
+            FailedDiffs.Clear();
 
             // clear out current diffs
             RefreshView();

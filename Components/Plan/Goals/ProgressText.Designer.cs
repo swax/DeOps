@@ -36,7 +36,9 @@ namespace DeOps.Components.Plan
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Name = "ProgressText";
             this.Size = new System.Drawing.Size(226, 16);
+            this.MouseEnter += new System.EventHandler(this.ProgressText_MouseEnter);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.ProgressText_Paint);
+            this.MouseLeave += new System.EventHandler(this.ProgressText_MouseLeave);
             this.ResumeLayout(false);
 
         }

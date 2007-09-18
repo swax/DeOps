@@ -44,8 +44,9 @@ namespace DeOps.Components.Board
             this.mainToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
             this.ViewButton = new System.Windows.Forms.ToolStripDropDownButton();
-            this.highToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.lowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.HighMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.LowMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.AllMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.RefreshButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
@@ -144,6 +145,7 @@ namespace DeOps.Components.Board
             this.PostView.SmallImageList = null;
             this.PostView.StateImageList = null;
             this.PostView.TabIndex = 1;
+            this.PostView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.PostView_MouseClick);
             this.PostView.SelectedItemChanged += new System.EventHandler(this.PostView_SelectedItemChanged);
             // 
             // toolStrip1
@@ -168,11 +170,13 @@ namespace DeOps.Components.Board
             // ArchiveButton
             // 
             this.ArchiveButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.ArchiveButton.CheckOnClick = true;
             this.ArchiveButton.Image = ((System.Drawing.Image)(resources.GetObject("ArchiveButton.Image")));
             this.ArchiveButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.ArchiveButton.Name = "ArchiveButton";
-            this.ArchiveButton.Size = new System.Drawing.Size(63, 22);
-            this.ArchiveButton.Text = "Archive";
+            this.ArchiveButton.Size = new System.Drawing.Size(69, 22);
+            this.ArchiveButton.Text = "Archived";
+            this.ArchiveButton.Click += new System.EventHandler(this.ArchiveButton_Click);
             // 
             // RightSplitter
             // 
@@ -219,26 +223,35 @@ namespace DeOps.Components.Board
             // 
             this.ViewButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.ViewButton.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.highToolStripMenuItem,
-            this.lowToolStripMenuItem});
+            this.HighMenuItem,
+            this.LowMenuItem,
+            this.AllMenuItem});
             this.ViewButton.Image = ((System.Drawing.Image)(resources.GetObject("ViewButton.Image")));
             this.ViewButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.ViewButton.Name = "ViewButton";
             this.ViewButton.Size = new System.Drawing.Size(60, 22);
             this.ViewButton.Text = "View: All";
-            this.ViewButton.DropDownOpening += new System.EventHandler(this.ViewButton_DropDownOpening);
             // 
-            // highToolStripMenuItem
+            // HighMenuItem
             // 
-            this.highToolStripMenuItem.Name = "highToolStripMenuItem";
-            this.highToolStripMenuItem.Size = new System.Drawing.Size(106, 22);
-            this.highToolStripMenuItem.Text = "High";
+            this.HighMenuItem.Name = "HighMenuItem";
+            this.HighMenuItem.Size = new System.Drawing.Size(106, 22);
+            this.HighMenuItem.Text = "High";
+            this.HighMenuItem.Click += new System.EventHandler(this.HighMenuItem_Click);
             // 
-            // lowToolStripMenuItem
+            // LowMenuItem
             // 
-            this.lowToolStripMenuItem.Name = "lowToolStripMenuItem";
-            this.lowToolStripMenuItem.Size = new System.Drawing.Size(106, 22);
-            this.lowToolStripMenuItem.Text = "Low";
+            this.LowMenuItem.Name = "LowMenuItem";
+            this.LowMenuItem.Size = new System.Drawing.Size(106, 22);
+            this.LowMenuItem.Text = "Low";
+            this.LowMenuItem.Click += new System.EventHandler(this.LowMenuItem_Click);
+            // 
+            // AllMenuItem
+            // 
+            this.AllMenuItem.Name = "AllMenuItem";
+            this.AllMenuItem.Size = new System.Drawing.Size(106, 22);
+            this.AllMenuItem.Text = "All";
+            this.AllMenuItem.Click += new System.EventHandler(this.AllMenuItem_Click);
             // 
             // toolStripLabel1
             // 
@@ -348,12 +361,13 @@ namespace DeOps.Components.Board
         private System.Windows.Forms.ToolStripDropDownButton ProjectButton;
         private System.Windows.Forms.ToolStripMenuItem mainToolStripMenuItem;
         private System.Windows.Forms.ToolStripDropDownButton ViewButton;
-        private System.Windows.Forms.ToolStripMenuItem highToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem lowToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem HighMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem LowMenuItem;
         private System.Windows.Forms.ToolStripSeparator RightSplitter;
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;
         private System.Windows.Forms.ToolStripLabel toolStripLabel2;
         private System.Windows.Forms.ToolStripButton RefreshButton;
         private System.Windows.Forms.ImageList PostImageList;
+        private System.Windows.Forms.ToolStripMenuItem AllMenuItem;
     }
 }
