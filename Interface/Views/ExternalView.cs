@@ -13,7 +13,7 @@ namespace DeOps.Interface
     internal partial class ExternalView : Form
     {
         MainForm  Main;
-        ViewShell Shell;
+        internal ViewShell Shell;
 
 
         internal ExternalView(MainForm main, ViewShell shell)

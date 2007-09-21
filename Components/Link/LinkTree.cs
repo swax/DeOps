@@ -25,6 +25,8 @@ namespace DeOps.Components.Link
         Dictionary<ulong, LinkNode> NodeMap = new Dictionary<ulong, LinkNode>();
 
         internal ulong SelectedLink;
+        internal ulong ForceRootID;
+        internal bool HideUnlinked;
 
         internal CommandTreeMode TreeMode;
         internal uint Project;
@@ -97,25 +99,43 @@ namespace DeOps.Components.Link
             // unlinked
             UnlinkedNode = new LabelNode("Unlinked");
             UnlinkedNode.Font = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold | FontStyle.Underline, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            Nodes.Add(UnlinkedNode);
+            
+            if (!HideUnlinked)
+                Nodes.Add(UnlinkedNode);
 
             // nodes
-            if (Links.ProjectRoots.ContainsKey(Project))
+            List<OpLink> roots = null;
+
+            if (ForceRootID != 0)
+            {
+                if (Links.LinkMap.ContainsKey(ForceRootID))
+                    SetupRoot(Links.LinkMap[ForceRootID]);
+            }
+            else if (Links.ProjectRoots.ContainsKey(Project))
                 lock (Links.ProjectRoots[Project])
                     foreach (OpLink root in Links.ProjectRoots[Project])
-                    {
-                        LinkNode node = CreateNode(root);
-                        LoadRoot(node);
+                        SetupRoot(root);
 
-                        List<ulong> uplinks = Links.GetUplinkIDs(Core.LocalDhtID, Project);
-                        uplinks.Add(Core.LocalDhtID);
-
-                        ExpandPath(node, uplinks);
-
-                        node.Expand(); // expand first level of roots regardless
-                    }
+            // show unlinked if there's something to show
+            if (Nodes.IndexOf(UnlinkedNode) + 1 == Nodes.Count)
+                UnlinkedNode.Text = "";
+            else
+                UnlinkedNode.Text = "Unlinked";
 
             EndUpdate();
+        }
+
+        private void SetupRoot(OpLink root)
+        {
+            LinkNode node = CreateNode(root);
+            LoadRoot(node);
+
+            List<ulong> uplinks = Links.GetUplinkIDs(Core.LocalDhtID, Project);
+            uplinks.Add(Core.LocalDhtID);
+
+            ExpandPath(node, uplinks);
+
+            node.Expand(); // expand first level of roots regardless
         }
 
         private void LoadRoot(LinkNode node)
@@ -155,6 +175,8 @@ namespace DeOps.Components.Link
 
         internal void InsertRootNode(LabelNode start, LinkNode node)
         {
+            // inserts item directly under start, not as a child node
+
             int index = 0;
 
 
@@ -314,6 +336,13 @@ namespace DeOps.Components.Link
                 return;
             }
 
+            if (ForceRootID != 0)
+            {
+                // root must be a parent of the updating node
+                if (link.DhtID != ForceRootID || !Links.IsHigher(link.DhtID, ForceRootID, Project))
+                    return;
+            }
+
             LinkNode node = null;
 
             if (NodeMap.ContainsKey(key))
@@ -452,6 +481,12 @@ namespace DeOps.Components.Link
                     foreach (LinkNode root in roots)
                         VisiblePath(root, uplinks);
                 }
+
+                // show unlinked if there's something to show
+                if (Nodes.IndexOf(UnlinkedNode) + 1 == Nodes.Count)
+                    UnlinkedNode.Text = "";
+                else
+                    UnlinkedNode.Text = "Unlinked";
             }
 
             node.UpdateColor();

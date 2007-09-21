@@ -265,7 +265,7 @@ namespace DeOps.Components.Profile
                 StartSearch(key, searchVersion);
 
             // gui creates viewshell, component just passes view object
-            ProfileView view = new ProfileView(this, key);
+            ProfileView view = new ProfileView(this, key, node.GetProject());
 
             Core.InvokeInterface(Core.GuiMain.ShowInternal, view);
         }
@@ -285,7 +285,7 @@ namespace DeOps.Components.Profile
             if (Network.Routing.Responsive())
                 StartSearch(key, searchVersion);
 
-            ProfileView view = new ProfileView(this, key);
+            ProfileView view = new ProfileView(this, key, node.GetProject());
 
             Core.InvokeInterface(Core.GuiMain.ShowExternal, view);
         }

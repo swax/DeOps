@@ -152,9 +152,12 @@ namespace DeOps.Components.Chat
                 seperator = " (" + message.TimeStamp.ToString("T") + ")" + seperator;
             }*/
 
+            string location = "";
+            if (Chat.Core.Locations.ClientCount(message.Source) > 1)
+                location = " @" + Chat.Core.Locations.GetLocationName(message.Source, message.ClientID);
 
             if (!message.System)
-                prefix += ": ";
+                prefix += location + ": ";
             else
                 prefix += "> ";
 

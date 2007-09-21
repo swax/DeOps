@@ -74,6 +74,9 @@ namespace DeOps.Components.Plan
         private void PickLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             AddLinks add = new AddLinks(Core.Links, ProjectID);
+            add.PersonTree.ForceRootID = Core.LocalDhtID;
+            add.PersonTree.HideUnlinked = true;
+            add.ProjectCombo.Visible = false;
 
             if (add.ShowDialog(this) == DialogResult.OK)
                 if (add.People.Count > 0)

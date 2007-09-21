@@ -1,15 +1,18 @@
 
-board   -  icons(high, low, all)
-goals   - deadlines on plans interface, icons edit
+changing person focus perserves view
+changing project focus perserves view
+perserve view going from collapse to restore
+
+goals   - icons edit, save branch path when transfering goal <-> schedule
 IM      - remove dupe system messages
-plans   - check box view goal entries, display with some progress info, icons(edit)
-profile - project specific motds
 storage - diff status on root info, update without refreshing, icons(add restore)
 mail    - icons(forward reply), delete mail not refreshing view, sync local mail between users
+board   - icons(high, low, all)
+plans   - icons(edit)
 
 location info should probably contain latest versions for all components so 
 	for example two of the same account would sync their storage without having to specifically having to open storage
-if user is detected to have 2 locations, note that in chat/IM when user talks
+	dynamic works for all components in list
 
 put news updates in blue bar remainder area
 	white news icon next to popout, click news expand latest news items
@@ -83,14 +86,9 @@ storage tasks
 	open folder icon in folder tree
 	folders have red / blue dots in center if subfolders contains changes
 	
-	
-	
-	
 plans
 	old plans not being deleted? seems like extra files in dir, try loading solo and updating local plan file
 	shutdown in the middle of the causing load corruption?			
-	***move saving estimates to savelocal
-
 
 Many actions in gui isnt piped down into control to fire events back to the interface to signal updates for multiple interface instances
 
@@ -152,8 +150,6 @@ test
 	link/plan research timer
 
 Core
-    moe de-ops source
-    
     old projects not cleared from components during savelocal, save / ditch / option?
      
 	Rudp
@@ -186,7 +182,7 @@ Core
 		use labels for organization - for example a project label could be tagged on, so we could filter regarding project x
 		
 	Board Control
-		Archiving, attaching files
+		 attaching files
 	
 	Profile
 		Search / Transfer process painfully slow in real time mode, analyze
@@ -319,6 +315,7 @@ visual component
 	node can define regions for lowers to draw in
 		lowers by default see this region when they open visuals not the whole canvas
 	interface - basic paint operations with copy/paste, show transparent zones (off by default)
+	layers for putting down map img/ people img and being able to edit it easily
 	
 Compartmentalization
 	sign with level key, mark with level version of key signed

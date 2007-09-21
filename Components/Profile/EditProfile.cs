@@ -25,6 +25,7 @@ namespace DeOps.Components.Profile
         internal Dictionary<string, string> TextFields = new Dictionary<string, string>();
         internal Dictionary<string, string> FileFields = new Dictionary<string, string>();
 
+
         internal EditProfile(ProfileControl control, ProfileView view)
         {
             InitializeComponent();
@@ -286,8 +287,21 @@ namespace DeOps.Components.Profile
 
             tags.Sort();
 
+            bool motdAdded = false; // add just 1 to change
             foreach (TemplateTag tag in tags)
+            {
+                // if motd for this project, allow
+                if (tag.Name.StartsWith("MOTD"))
+                    if (!motdAdded)
+                    {
+                        tag.Name = "MOTD";
+                        motdAdded = true;
+                    }
+                    else
+                        continue;
+
                 FieldsCombo.Items.Add(tag);
+            }
 
             if (FieldsCombo.Items.Count > 0)
             {
@@ -315,12 +329,21 @@ namespace DeOps.Components.Profile
             }
 
             // set value text
-            if (tag.FieldType == ProfileFieldType.Text && TextFields.ContainsKey(tag.Name))
-                ValueTextBox.Text = TextFields[tag.Name];
-            
+            if (tag.FieldType == ProfileFieldType.Text)
+            {
+                string fieldName = tag.Name;
+
+                if (fieldName == "MOTD")
+                    fieldName = "MOTD-" + MainView.ProjectID.ToString();
+
+                if (TextFields.ContainsKey(fieldName))
+                    ValueTextBox.Text = TextFields[fieldName];
+                else
+                    ValueTextBox.Text = "";
+            }
+
             else if (tag.FieldType == ProfileFieldType.File && FileFields.ContainsKey(tag.Name))
                 ValueTextBox.Text = FileFields[tag.Name];
-           
             else
                 ValueTextBox.Text = "";
 
@@ -335,7 +358,14 @@ namespace DeOps.Components.Profile
             TemplateTag tag = (TemplateTag) FieldsCombo.SelectedItem;
 
             if (tag.FieldType == ProfileFieldType.Text)
-                TextFields[tag.Name] = ValueTextBox.Text;
+            {
+                string fieldName = tag.Name;
+
+                if (fieldName == "MOTD")
+                    fieldName = "MOTD-" + MainView.ProjectID.ToString();
+
+                TextFields[fieldName] = ValueTextBox.Text;
+            }
 
             if (tag.FieldType == ProfileFieldType.File)
                 FileFields[tag.Name] = ValueTextBox.Text;
@@ -379,7 +409,7 @@ namespace DeOps.Components.Profile
             List<string> removeKeys = new List<string>();
 
             foreach (string key in TextFields.Keys)
-                if (!template.Html.Contains("<?text:" + key))
+                if (!key.StartsWith("MOTD") && !template.Html.Contains("<?text:" + key))
                     removeKeys.Add(key);
 
             foreach (string key in removeKeys)

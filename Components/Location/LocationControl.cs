@@ -477,8 +477,8 @@ namespace DeOps.Components.Location
         {
             LocationData data = Core.Locations.FindLocation(key, id);
 
-            if (data == null || data.Location == null)
-                return "";
+            if (data == null || data.Location == null || data.Location == "")
+                return "Unknown";
 
             return data.Location;
         }
@@ -496,6 +496,14 @@ namespace DeOps.Components.Location
             StartSearch(key, 0, false);
 
             NextResearch[key] = Core.TimeNow.AddSeconds(30);
+        }
+
+        internal int ClientCount(ulong id)
+        {
+            if (LocationMap.ContainsKey(id))
+                return LocationMap[id].Count;
+
+            return 0;
         }
     }
 

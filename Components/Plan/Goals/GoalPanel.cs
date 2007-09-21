@@ -8,6 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 
 using DeOps.Implementation;
+using DeOps.Interface;
 using DeOps.Interface.TLVex;
 using DeOps.Components.Link;
 
@@ -411,6 +412,7 @@ namespace DeOps.Components.Plan
             if(owned)
             {
                 menu.Items.Add(new GoalMenuItem("Edit", node.Goal, null, Goal_Edit));
+                menu.Items.Add(new GoalMenuItem("View Schedule", node.Goal, PlanRes.Schedule.ToBitmap(), Goal_Schedule));
                 menu.Items.Add("-");
             }
 
@@ -438,6 +440,32 @@ namespace DeOps.Components.Plan
 
             if (form.ShowDialog(this) == DialogResult.OK)
                 View.ChangesMade();
+        }
+
+        void Goal_Schedule(object sender, EventArgs e)
+        {
+            GoalMenuItem item = sender as GoalMenuItem;
+
+            if (item == null)
+                return;
+
+            if (View.External != null)
+                foreach (ExternalView ext in View.Core.GuiMain.ExternalViews)
+                    if (ext.Shell.GetType() == typeof(ScheduleView))
+                        if (((ScheduleView)ext.Shell).DhtID == View.DhtID && ((ScheduleView)ext.Shell).ProjectID == View.ProjectID)
+                        {
+                            ext.BringToFront();
+                            return;
+                        }
+
+            ScheduleView view = new ScheduleView(Plans, View.DhtID, View.ProjectID);
+            view.LoadGoal = item.Goal.Ident;
+            view.LoadGoalBranch = item.Goal.BranchUp;
+
+            if (View.External != null)
+                Core.InvokeInterface(Core.GuiMain.ShowExternal, view);
+            else
+                Core.InvokeInterface(Core.GuiMain.ShowInternal, view);
         }
 
 

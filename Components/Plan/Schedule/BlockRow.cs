@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using DeOps.Implementation;
 using DeOps.Components.Link;
 using DeOps.Components.Plan;
+using DeOps.Interface;
 using DeOps.Interface.TLVex;
 
 
@@ -26,14 +27,23 @@ namespace DeOps.Components.Plan
         bool Redraw;
 
         List<BlockArea> BlockAreas = new List<BlockArea>();
+        List<BlockArea> GoalAreas = new List<BlockArea>();
 
         Pen RefPen = new Pen(Color.PowderBlue);
         Pen BigPen = new Pen(Color.FromArgb(224,224,224));
         Pen SmallPen = new Pen(Color.FromArgb(248, 248, 248));
         Pen SelectPen = new Pen(Color.Black, 2);
         SolidBrush Highlight = new SolidBrush(SystemColors.Highlight);
-        Pen DashPen = new Pen(Color.Black);
+        Pen BlackPen = new Pen(Color.Black);
         Font Tahoma = new Font("Tahoma", 8);
+
+        SolidBrush BlackBrush = new SolidBrush(Color.Black);
+        SolidBrush RedBrush = new SolidBrush(Color.Red);
+        SolidBrush BlueBrush = new SolidBrush(Color.Blue);
+
+        SolidBrush WhiteBrush = new SolidBrush(Color.White);
+        SolidBrush GreenBrush = new SolidBrush(Color.LawnGreen);
+
 
         SolidBrush HighMask = new SolidBrush(Color.FromArgb(25, Color.Red));
         SolidBrush LowMask = new SolidBrush(Color.FromArgb(25, Color.Blue));
@@ -49,7 +59,7 @@ namespace DeOps.Components.Plan
         internal BlockRow()
         {
             InitializeComponent();
-            DashPen.DashStyle = DashStyle.Dot;
+            BlackPen.DashStyle = DashStyle.Dot;
         }
 
         internal BlockRow(PlanNode node)
@@ -63,7 +73,7 @@ namespace DeOps.Components.Plan
             SetStyle(ControlStyles.UserPaint, true);
             SetStyle(ControlStyles.AllPaintingInWmPaint, true);
 
-            DashPen.DashStyle = DashStyle.Dot;
+            BlackPen.DashStyle = DashStyle.Dot;
         }
 
         Font debugFont = new Font("Tahoma", 8);
@@ -109,6 +119,7 @@ namespace DeOps.Components.Plan
 
             // draw higher plans    
             BlockAreas.Clear();
+            GoalAreas.Clear();
             
             List<PlanNode> upnodes = new List<PlanNode>();
             PlanNode nextNode = Node;
@@ -128,7 +139,7 @@ namespace DeOps.Components.Plan
                 foreach (PlanBlock block in GetBlocks(upnode.Link.DhtID))
                     if (!block.Personal && BlockinRange(block, ref tempRect))
                     {
-                        buffer.FillRectangle(GetMask(upnode.Link.DhtID), tempRect);
+                        buffer.FillRectangle(GetMask(upnode.Link.DhtID, true), tempRect);
                         BlockAreas.Add(new BlockArea(tempRect, block, level, false));
                     }
 
@@ -142,6 +153,8 @@ namespace DeOps.Components.Plan
             foreach (PlanBlock block in GetBlocks(DhtID))
                 if(BlockinRange(block, ref tempRect))
                     AddDrawBlock(new DrawBlock(block, tempRect), layers);
+
+            List<KeyValuePair<string, PointF>> StringList = new List<KeyValuePair<string, PointF>>();
 
             // draw blocks
             if (layers.Count > 0)
@@ -168,7 +181,7 @@ namespace DeOps.Components.Plan
 
                             Rectangle fill = item.Rect;
                             fill.Height = Height - y;
-                            buffer.FillRectangle(GetMask(DhtID), fill);
+                            buffer.FillRectangle(GetMask(DhtID, true), fill);
 
                             if (item.Block == View.SelectedBlock)
                                 buffer.DrawRectangle(SelectPen, item.Rect);
@@ -176,16 +189,60 @@ namespace DeOps.Components.Plan
                             SizeF size = buffer.MeasureString(item.Block.Title, Tahoma);
 
                             if (size.Width < item.Rect.Width - 2 && size.Height < item.Rect.Height - 2)
-                                buffer.DrawString(item.Block.Title, Tahoma, blackBrush,
-                                    item.Rect.X + (item.Rect.Width - size.Width) / 2,
-                                    item.Rect.Y + (item.Rect.Height - size.Height) / 2);
-
+                                StringList.Add(new KeyValuePair<string, PointF>(item.Block.Title, 
+                                    new PointF(item.Rect.X + (item.Rect.Width - size.Width) / 2, item.Rect.Y + (item.Rect.Height - size.Height) / 2)));
                         }
 
                     y += yStep;
                 }
             }
 
+            // scan higher's goal lists for assigned goals to this id
+            if (View.SelectedGoalID != 0)
+            {
+                // cache what to draw, look at how goals control get progress status
+                // color goal bars solid red / blue / gray
+                // cache strings, draw after goals
+
+                upnodes.Add(Node); // add self to scan
+
+                foreach (PlanNode upnode in upnodes)
+                    if (View.Plans.PlanMap.ContainsKey(upnode.Link.DhtID))
+                        if (View.Plans.PlanMap[upnode.Link.DhtID].GoalMap.ContainsKey(View.SelectedGoalID))
+                            foreach (PlanGoal goal in View.Plans.PlanMap[upnode.Link.DhtID].GoalMap[View.SelectedGoalID])
+                                if (goal.Project == View.ProjectID && goal.Person == DhtID)
+                                    if (StartTime < goal.End && goal.End < EndTime)
+                                    {
+                                        int x = (int)((goal.End.Ticks - StartTime.Ticks) / TicksperPixel);
+
+                                        int completed = 0, total = 0;
+                                        View.Plans.GetEstimate(goal, ref completed, ref total);
+
+                                        // draw divider line with little right triangles in top / bottom
+                                        buffer.FillRectangle(WhiteBrush, new Rectangle(x - 4, 2, 2, Height - 4));
+                                     
+                                        if (total > 0)
+                                        {
+                                            int progress = completed * (Height - 4) / total;
+                                            buffer.FillRectangle(GreenBrush, new Rectangle(x - 4, 2 + (Height - 4) - progress, 2, progress));
+                                        }
+
+                                        buffer.FillPolygon(GetMask(DhtID, false), new Point[] {
+                                            new Point(x-6,2), 
+                                            new Point(x,2),
+                                            new Point(x,Height-2),
+                                            new Point(x-6,Height-2),
+                                            new Point(x-2,Height-2-5),
+                                            new Point(x-2,2+5)
+                                        });
+
+                                        GoalAreas.Add(new BlockArea(new Rectangle(x - 6, 2, 6, Height - 4), goal));
+                                    }
+            }
+
+            // draw strings
+            foreach (KeyValuePair<string, PointF> pair in StringList)
+                buffer.DrawString(pair.Key, Tahoma, blackBrush, pair.Value);
 
             // draw selection
             if (Node.Selected)
@@ -198,8 +255,8 @@ namespace DeOps.Components.Plan
 
                 else
                 {
-                    buffer.DrawLine(DashPen, 1, 0, Width-1, 0);
-                    buffer.DrawLine(DashPen, 0, Height-1, Width, Height-1);
+                    buffer.DrawLine(BlackPen, 1, 0, Width - 1, 0);
+                    buffer.DrawLine(BlackPen, 0, Height - 1, Width, Height - 1);
                 }
             }
 
@@ -208,19 +265,19 @@ namespace DeOps.Components.Plan
 
         }
 
-        private SolidBrush GetMask(ulong key)
+        private SolidBrush GetMask(ulong key, bool mask)
         {
 
             // if key above target - red
             if (View.Uplinks.Contains(key))
-                return HighMask;
+                return mask ? HighMask : RedBrush;
 
             // if target is equal to or above key - blue
             if(key == View.DhtID || Uplinks.Contains(View.DhtID))
-                return LowMask;
+                return mask ? LowMask : BlueBrush;
 
             // else black
-            return NeutralMask;
+            return mask ? NeutralMask : BlackBrush;
         }
 
         private List<PlanBlock> GetBlocks(ulong key)
@@ -425,6 +482,13 @@ namespace DeOps.Components.Plan
             if (details.DropDownItems.Count > 0)
                 menu.Items.Add(details);
 
+            foreach (BlockArea area in GoalAreas)
+                if (area.Rect.Contains(e.Location))
+                {
+                    menu.Items.Add(new BlockMenuItem("View Goal", area.Goal, PlanRes.Goals.ToBitmap(), new EventHandler(RClickGoal)));
+                    break;
+                }
+
             if (menu.Items.Count > 0)
                 menu.Show(this, e.Location);
         }
@@ -468,6 +532,33 @@ namespace DeOps.Components.Plan
             View.ChangesMade();
         }
 
+        private void RClickGoal(object sender, EventArgs e)
+        {
+            BlockMenuItem menu = sender as BlockMenuItem;
+
+            if (menu == null)
+                return;
+
+            if (View.External != null)
+                foreach(ExternalView ext in View.Core.GuiMain.ExternalViews)
+                    if(ext.Shell.GetType() == typeof(GoalsView))
+                        if (((GoalsView)ext.Shell).DhtID == View.DhtID && ((GoalsView)ext.Shell).ProjectID == View.ProjectID)
+                        {
+                            ext.BringToFront();
+                            return;
+                        }
+
+            // switch to goal view
+            GoalsView view = new GoalsView(View.Plans, View.DhtID, View.ProjectID);
+            view.LoadIdent = menu.Goal.Ident;
+            view.LoadBranch = menu.Goal.BranchUp;
+
+            if (View.External != null)
+                View.Core.InvokeInterface(View.Core.GuiMain.ShowExternal, view);
+            else
+                View.Core.InvokeInterface(View.Core.GuiMain.ShowInternal, view);
+        }
+
         private void BlockRow_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             foreach (BlockArea area in BlockAreas)
@@ -495,11 +586,11 @@ namespace DeOps.Components.Plan
             StringBuilder text = new StringBuilder(100);
 
             text.Append(Node.Link.Name);
-            text.Append(" - ");
+            //text.Append(" - ");
 
-            DateTime start = View.StartTime;
-            DateTime time = new DateTime(start.Ticks + View.ScheduleSlider.TicksperPixel * pos.X);
-            text.Append(time.ToString("D"));
+            //DateTime start = View.StartTime;
+            //DateTime time = new DateTime(start.Ticks + View.ScheduleSlider.TicksperPixel * pos.X);
+            //text.Append(time.ToString("D"));
 
             text.Append("\n\n");
 
@@ -541,7 +632,14 @@ namespace DeOps.Components.Plan
                     text.Append("\n");
                 }
 
-            
+            foreach (BlockArea area in GoalAreas)
+                if (area.Rect.X <= pos.X && pos.X <= area.Rect.X + area.Rect.Width)
+                {
+                    good = true;
+
+                    text.Append("\nGoal Deadline for\n");
+                    text.Append("   " + area.Goal.Title + "\n");
+                }
 
             return good ? text.ToString() : "";
         }
@@ -550,6 +648,14 @@ namespace DeOps.Components.Plan
     internal class BlockMenuItem : ToolStripMenuItem
     {
         internal PlanBlock Block;
+        internal PlanGoal Goal;
+
+        internal BlockMenuItem(string text, PlanGoal goal, Image icon, EventHandler onClick)
+            :
+            base(text, icon, onClick)
+        {
+            Goal = goal;
+        }
 
         internal BlockMenuItem(string text, PlanBlock block, Image icon, EventHandler onClick)
             :
@@ -601,9 +707,15 @@ namespace DeOps.Components.Plan
     {
         internal Rectangle Rect;
         internal PlanBlock Block;
+        internal PlanGoal Goal;
         internal int       Level;
         internal bool      Local;
 
+        internal BlockArea(Rectangle rect, PlanGoal goal)
+        {
+            Rect = rect;
+            Goal = goal;
+        }
 
         internal BlockArea(Rectangle rect, PlanBlock block, int level, bool local)
         {

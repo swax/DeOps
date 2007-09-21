@@ -1409,6 +1409,8 @@ namespace DeOps.Components.Link
 
         internal List<ulong> GetUplinkIDs(ulong id, uint project)
         {
+            // get uplinks from id, not including id, starting with directly above and ending with root
+
             List<ulong> list = new List<ulong>();
             
             if (!LinkMap.ContainsKey(id))

@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using DeOps.Implementation;
 using DeOps.Interface;
 using DeOps.Components.Link;
+using DeOps.Components.Location;
 
 
 namespace DeOps.Components.IM
@@ -16,10 +17,11 @@ namespace DeOps.Components.IM
 
     internal partial class IM_View : ViewShell
     {        
-        IMControl      IM;
-        LinkControl    Links;
-        internal ulong DhtID;
-        string         NodeName = "";
+        IMControl       IM;
+        LinkControl     Links;
+        LocationControl Locations;
+        internal ulong  DhtID;
+        string          NodeName = "";
 
         //bool ShowTimestamps;
 
@@ -34,12 +36,13 @@ namespace DeOps.Components.IM
 
             IM    = im;
             Links = IM.Core.Links;
+            Locations = IM.Core.Locations;
             DhtID = key;
 
             UpdateName();
             
             // do here so window can be found and multiples not created for the same user
-            IM.IM_Update += new IM_UpdateHandler(OnMessageUpdate);
+            IM.IM_Update += new IM_UpdateHandler(OnMessageUpdate);           
         }
 
         private void UpdateName()
@@ -59,6 +62,8 @@ namespace DeOps.Components.IM
             CheckBackColor();
 
             DisplayLog();
+
+            Links.LinkUpdate += new LinkUpdateHandler(Links_LinkUpdate);
         }
 
         internal override bool Fin()
@@ -66,6 +71,8 @@ namespace DeOps.Components.IM
             InputControl.SendMessage -= new TextInput.SendMessageHandler(OnSendMessage);
 
             IM.IM_Update -= new IM_UpdateHandler(OnMessageUpdate);
+
+            Links.LinkUpdate -= new LinkUpdateHandler(Links_LinkUpdate);
 
             return true;
         }
@@ -86,6 +93,11 @@ namespace DeOps.Components.IM
         internal override Icon GetIcon()
         {
             return IMRes.Icon;
+        }
+
+        void Links_LinkUpdate(OpLink link)
+        {
+            UpdateName();
         }
 
         private void DisplayLog()
@@ -178,8 +190,12 @@ namespace DeOps.Components.IM
                 seperator = " (" + message.TimeStamp.ToString("T") + ")" + seperator;
             }*/
 
+            string location = "";
+            if(Locations.ClientCount(DhtID) > 1)
+                location  = " @" + Locations.GetLocationName(DhtID, message.ClientID);
+
             if (!message.System)
-                prefix += ": ";
+                prefix += location + ": ";
             else 
                 prefix += "> ";
 
@@ -194,7 +210,7 @@ namespace DeOps.Components.IM
             else
             {
                 MessageTextBox.SelectionFont = BoldFont;
-                MessageTextBox.AppendText(message.Text);
+                MessageTextBox.AppendText(message.Text + location);
             }
 
             MessageTextBox.SelectionStart = oldStart;

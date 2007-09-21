@@ -134,8 +134,8 @@ namespace DeOps.Components.Link
 
         private System.Windows.Forms.Button TheCancelButton;
         private System.Windows.Forms.Button AddButton;
-        private LinkTree PersonTree;
+        internal LinkTree PersonTree;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.ComboBox ProjectCombo;
+        internal System.Windows.Forms.ComboBox ProjectCombo;
     }
 }

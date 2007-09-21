@@ -278,9 +278,10 @@ namespace DeOps.Components.Chat
             if (Core.Links.LinkMap.ContainsKey(key) && Core.Links.LinkMap[key].Name != null)
                 name = Core.Links.LinkMap[key].Name + " ";
 
-            string location = Core.Locations.GetLocationName(key, session.ClientID);
-            if (location != "")
-                location = ", " + location;
+            string location = "";
+            if (Core.Locations.ClientCount(session.DhtID ) > 1)
+                location = " @" + Core.Locations.GetLocationName(session.DhtID, session.ClientID);
+
 
             string message = null;
 
@@ -361,7 +362,7 @@ namespace DeOps.Components.Chat
                         if (room == null)
                             return;
                         
-                        ProcessMessage(room, new ChatMessage(Core, session.DhtID, Core.Locations.GetLocationName(session.DhtID, session.ClientID), packet.Text));
+                        ProcessMessage(room, new ChatMessage(Core, session, packet.Text));
         
                         break;
                 }
@@ -417,7 +418,7 @@ namespace DeOps.Components.Chat
     {
         internal bool       System;
         internal ulong      Source;
-        internal string     SourceLocation;
+        internal ushort     ClientID;
         internal DateTime   TimeStamp;
         internal string     Text;
 
@@ -425,16 +426,16 @@ namespace DeOps.Components.Chat
         internal ChatMessage(OpCore core, string text, bool system)
         {
             Source = core.LocalDhtID;
-            SourceLocation = core.User.Settings.Location;
+            ClientID = core.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;
             System = system;
         }
 
-        internal ChatMessage(OpCore core, ulong id, string location, string text)
+        internal ChatMessage(OpCore core, RudpSession session, string text)
         {
-            Source = id;
-            SourceLocation = location;
+            Source = session.DhtID;
+            ClientID = session.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;
         }

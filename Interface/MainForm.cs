@@ -308,6 +308,7 @@ namespace DeOps.Interface
                             locations += "Unknown, ";
                         else
                             locations += info.Location.Location + ", ";
+
                 locations = locations.TrimEnd(new char[] { ' ', ',' });
             }
 
@@ -527,7 +528,6 @@ namespace DeOps.Interface
                 project = 0;
 
             // bold new and set
-            CommandTree.SelectedLink = id;
             SelectedProject = project;
 
             CommandTree.SelectLink(id);

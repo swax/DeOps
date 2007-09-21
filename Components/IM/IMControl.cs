@@ -294,7 +294,7 @@ namespace DeOps.Components.IM
     internal class InstantMessage
     {
         internal ulong    Source;
-        internal string   SourceLocation;
+        internal ushort   ClientID;
         internal DateTime TimeStamp;
         internal string   Text;
         internal bool     System;
@@ -303,7 +303,7 @@ namespace DeOps.Components.IM
         internal InstantMessage(OpCore core, string text, bool system)
         {
             Source = core.LocalDhtID;
-            SourceLocation = core.User.Settings.Location;
+            ClientID = core.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;
             System = system;
@@ -312,12 +312,9 @@ namespace DeOps.Components.IM
         internal InstantMessage(OpCore core, RudpSession session, MessageData message)
         {
             Source = session.DhtID;
+            ClientID = session.ClientID;
             TimeStamp = core.TimeNow;
             Text = message.Text;
-
-            LocationData location = core.Locations.FindLocation(session.DhtID, session.ClientID);
-            if (location != null)
-                SourceLocation = location.Location;
         }
     }
 

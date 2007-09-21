@@ -29,8 +29,8 @@ namespace DeOps.Components.Plan
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader4 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             this.PlanStructure = new DeOps.Interface.TLVex.TreeListViewEx();
             this.NewItem = new System.Windows.Forms.LinkLabel();
             this.NowLink = new System.Windows.Forms.LinkLabel();
@@ -44,6 +44,8 @@ namespace DeOps.Components.Plan
             this.SaveLink = new System.Windows.Forms.LinkLabel();
             this.DiscardLink = new System.Windows.Forms.LinkLabel();
             this.ChangesLabel = new System.Windows.Forms.Label();
+            this.GoalsCombo = new System.Windows.Forms.ComboBox();
+            this.label1 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.DateRange)).BeginInit();
             this.SuspendLayout();
             // 
@@ -54,29 +56,29 @@ namespace DeOps.Components.Plan
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.PlanStructure.BackColor = System.Drawing.SystemColors.Window;
             this.PlanStructure.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            toggleColumnHeader3.Hovered = false;
-            toggleColumnHeader3.Image = null;
-            toggleColumnHeader3.Index = 0;
-            toggleColumnHeader3.Pressed = false;
-            toggleColumnHeader3.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
-            toggleColumnHeader3.Selected = false;
-            toggleColumnHeader3.Text = "Structure";
-            toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader3.Visible = true;
-            toggleColumnHeader3.Width = 200;
-            toggleColumnHeader4.Hovered = false;
-            toggleColumnHeader4.Image = null;
-            toggleColumnHeader4.Index = 0;
-            toggleColumnHeader4.Pressed = false;
-            toggleColumnHeader4.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader4.Selected = false;
-            toggleColumnHeader4.Text = "Items";
-            toggleColumnHeader4.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader4.Visible = true;
-            toggleColumnHeader4.Width = 261;
+            toggleColumnHeader1.Hovered = false;
+            toggleColumnHeader1.Image = null;
+            toggleColumnHeader1.Index = 0;
+            toggleColumnHeader1.Pressed = false;
+            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader1.Selected = false;
+            toggleColumnHeader1.Text = "Structure";
+            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader1.Visible = true;
+            toggleColumnHeader1.Width = 200;
+            toggleColumnHeader2.Hovered = false;
+            toggleColumnHeader2.Image = null;
+            toggleColumnHeader2.Index = 0;
+            toggleColumnHeader2.Pressed = false;
+            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader2.Selected = false;
+            toggleColumnHeader2.Text = "Items";
+            toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader2.Visible = true;
+            toggleColumnHeader2.Width = 274;
             this.PlanStructure.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
-            toggleColumnHeader3,
-            toggleColumnHeader4});
+            toggleColumnHeader1,
+            toggleColumnHeader2});
             this.PlanStructure.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.PlanStructure.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.PlanStructure.DisableHorizontalScroll = true;
@@ -90,11 +92,10 @@ namespace DeOps.Components.Plan
             this.PlanStructure.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.PlanStructure.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.PlanStructure.ShowLines = true;
-            this.PlanStructure.Size = new System.Drawing.Size(463, 245);
+            this.PlanStructure.Size = new System.Drawing.Size(476, 238);
             this.PlanStructure.SmallImageList = null;
             this.PlanStructure.StateImageList = null;
             this.PlanStructure.TabIndex = 1;
-            this.PlanStructure.VisualStyles = false;
             this.PlanStructure.SelectedItemChanged += new System.EventHandler(this.PlanStructure_SelectedItemChanged);
             this.PlanStructure.LostFocus += new System.EventHandler(this.PlanStructure_Leave);
             this.PlanStructure.GotFocus += new System.EventHandler(this.PlanStructure_Enter);
@@ -103,7 +104,7 @@ namespace DeOps.Components.Plan
             // 
             this.NewItem.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.NewItem.AutoSize = true;
-            this.NewItem.Location = new System.Drawing.Point(3, 294);
+            this.NewItem.Location = new System.Drawing.Point(3, 293);
             this.NewItem.Name = "NewItem";
             this.NewItem.Size = new System.Drawing.Size(59, 13);
             this.NewItem.TabIndex = 4;
@@ -115,7 +116,7 @@ namespace DeOps.Components.Plan
             // 
             this.NowLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.NowLink.AutoSize = true;
-            this.NowLink.Location = new System.Drawing.Point(68, 294);
+            this.NowLink.Location = new System.Drawing.Point(68, 293);
             this.NowLink.Name = "NowLink";
             this.NowLink.Size = new System.Drawing.Size(58, 13);
             this.NowLink.TabIndex = 5;
@@ -153,7 +154,7 @@ namespace DeOps.Components.Plan
             this.ExtendedLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.ExtendedLabel.Location = new System.Drawing.Point(218, 3);
             this.ExtendedLabel.Name = "ExtendedLabel";
-            this.ExtendedLabel.Size = new System.Drawing.Size(245, 13);
+            this.ExtendedLabel.Size = new System.Drawing.Size(258, 13);
             this.ExtendedLabel.TabIndex = 11;
             this.ExtendedLabel.Text = "Extended Label";
             this.ExtendedLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -164,7 +165,7 @@ namespace DeOps.Components.Plan
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.ScheduleSlider.Location = new System.Drawing.Point(218, 19);
             this.ScheduleSlider.Name = "ScheduleSlider";
-            this.ScheduleSlider.Size = new System.Drawing.Size(245, 25);
+            this.ScheduleSlider.Size = new System.Drawing.Size(258, 25);
             this.ScheduleSlider.TabIndex = 12;
             // 
             // HoverTimer
@@ -176,14 +177,16 @@ namespace DeOps.Components.Plan
             // LabelPlus
             // 
             this.LabelPlus.AutoSize = true;
+            this.LabelPlus.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.LabelPlus.Location = new System.Drawing.Point(145, 28);
             this.LabelPlus.Name = "LabelPlus";
-            this.LabelPlus.Size = new System.Drawing.Size(13, 13);
+            this.LabelPlus.Size = new System.Drawing.Size(14, 13);
             this.LabelPlus.TabIndex = 13;
             this.LabelPlus.Text = "+";
             // 
             // LabelMinus
             // 
+            this.LabelMinus.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.LabelMinus.Location = new System.Drawing.Point(47, 28);
             this.LabelMinus.Name = "LabelMinus";
             this.LabelMinus.Size = new System.Drawing.Size(13, 13);
@@ -198,7 +201,7 @@ namespace DeOps.Components.Plan
             this.SaveLink.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
             this.SaveLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
             this.SaveLink.LinkColor = System.Drawing.Color.White;
-            this.SaveLink.Location = new System.Drawing.Point(379, 294);
+            this.SaveLink.Location = new System.Drawing.Point(392, 293);
             this.SaveLink.Name = "SaveLink";
             this.SaveLink.Size = new System.Drawing.Size(32, 13);
             this.SaveLink.TabIndex = 15;
@@ -215,7 +218,7 @@ namespace DeOps.Components.Plan
             this.DiscardLink.BackColor = System.Drawing.Color.Red;
             this.DiscardLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
             this.DiscardLink.LinkColor = System.Drawing.Color.White;
-            this.DiscardLink.Location = new System.Drawing.Point(417, 294);
+            this.DiscardLink.Location = new System.Drawing.Point(430, 293);
             this.DiscardLink.Name = "DiscardLink";
             this.DiscardLink.Size = new System.Drawing.Size(43, 13);
             this.DiscardLink.TabIndex = 16;
@@ -229,17 +232,42 @@ namespace DeOps.Components.Plan
             this.ChangesLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ChangesLabel.AutoSize = true;
             this.ChangesLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ChangesLabel.Location = new System.Drawing.Point(317, 294);
+            this.ChangesLabel.Location = new System.Drawing.Point(330, 293);
             this.ChangesLabel.Name = "ChangesLabel";
             this.ChangesLabel.Size = new System.Drawing.Size(56, 13);
             this.ChangesLabel.TabIndex = 20;
             this.ChangesLabel.Text = "Changes";
             this.ChangesLabel.Visible = false;
             // 
+            // GoalsCombo
+            // 
+            this.GoalsCombo.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.GoalsCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.GoalsCombo.FormattingEnabled = true;
+            this.GoalsCombo.Location = new System.Drawing.Point(206, 290);
+            this.GoalsCombo.Name = "GoalsCombo";
+            this.GoalsCombo.Size = new System.Drawing.Size(118, 21);
+            this.GoalsCombo.TabIndex = 21;
+            this.GoalsCombo.SelectedIndexChanged += new System.EventHandler(this.GoalsCombo_SelectedIndexChanged);
+            // 
+            // label1
+            // 
+            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.label1.AutoSize = true;
+            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.Location = new System.Drawing.Point(132, 293);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(68, 13);
+            this.label1.TabIndex = 22;
+            this.label1.Text = "Show Goal";
+            // 
             // ScheduleView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.GoalsCombo);
             this.Controls.Add(this.ChangesLabel);
             this.Controls.Add(this.DiscardLink);
             this.Controls.Add(this.SaveLink);
@@ -254,7 +282,7 @@ namespace DeOps.Components.Plan
             this.Controls.Add(this.PlanStructure);
             this.DoubleBuffered = true;
             this.Name = "ScheduleView";
-            this.Size = new System.Drawing.Size(463, 316);
+            this.Size = new System.Drawing.Size(476, 315);
             this.Load += new System.EventHandler(this.ScheduleView_Load);
             ((System.ComponentModel.ISupportInitialize)(this.DateRange)).EndInit();
             this.ResumeLayout(false);
@@ -277,5 +305,7 @@ namespace DeOps.Components.Plan
         private System.Windows.Forms.LinkLabel SaveLink;
         private System.Windows.Forms.LinkLabel DiscardLink;
         private System.Windows.Forms.Label ChangesLabel;
+        private System.Windows.Forms.ComboBox GoalsCombo;
+        private System.Windows.Forms.Label label1;
     }
 }

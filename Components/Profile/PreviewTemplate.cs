@@ -28,7 +28,7 @@ namespace DeOps.Components.Profile
 
         private void PreviewTemplate_Load(object sender, EventArgs e)
         {
-            Browser.DocumentText = ProfileView.FleshTemplate(Core, Core.LocalDhtID, Html, EditForm.TextFields, EditForm.FileFields);
+            Browser.DocumentText = ProfileView.FleshTemplate(Core, Core.LocalDhtID, 0, Html, EditForm.TextFields, EditForm.FileFields);
         }
     }
 }

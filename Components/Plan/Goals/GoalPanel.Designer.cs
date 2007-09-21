@@ -66,14 +66,14 @@ namespace DeOps.Components.Plan
             this.splitContainer1.Panel2.Controls.Add(this.AddItemLink);
             this.splitContainer1.Panel2.Controls.Add(this.PlanList);
             this.splitContainer1.Size = new System.Drawing.Size(469, 343);
-            this.splitContainer1.SplitterDistance = 169;
+            this.splitContainer1.SplitterDistance = 212;
             this.splitContainer1.TabIndex = 0;
             // 
             // MineOnly
             // 
             this.MineOnly.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.MineOnly.AutoSize = true;
-            this.MineOnly.Location = new System.Drawing.Point(359, 154);
+            this.MineOnly.Location = new System.Drawing.Point(359, 197);
             this.MineOnly.Name = "MineOnly";
             this.MineOnly.Size = new System.Drawing.Size(112, 17);
             this.MineOnly.TabIndex = 2;
@@ -85,7 +85,7 @@ namespace DeOps.Components.Plan
             // 
             this.DelegateLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.DelegateLink.AutoSize = true;
-            this.DelegateLink.Location = new System.Drawing.Point(3, 155);
+            this.DelegateLink.Location = new System.Drawing.Point(3, 198);
             this.DelegateLink.Name = "DelegateLink";
             this.DelegateLink.Size = new System.Drawing.Size(117, 13);
             this.DelegateLink.TabIndex = 1;
@@ -157,11 +157,10 @@ namespace DeOps.Components.Plan
             this.GoalTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.GoalTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.GoalTree.ShowLines = true;
-            this.GoalTree.Size = new System.Drawing.Size(471, 154);
+            this.GoalTree.Size = new System.Drawing.Size(471, 197);
             this.GoalTree.SmallImageList = null;
             this.GoalTree.StateImageList = null;
             this.GoalTree.TabIndex = 0;
-            this.GoalTree.VisualStyles = false;
             this.GoalTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.GoalTree_MouseClick);
             this.GoalTree.SelectedItemChanged += new System.EventHandler(this.GoalTree_SelectedItemChanged);
             // 
@@ -169,7 +168,7 @@ namespace DeOps.Components.Plan
             // 
             this.AddItemLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.AddItemLink.AutoSize = true;
-            this.AddItemLink.Location = new System.Drawing.Point(3, 157);
+            this.AddItemLink.Location = new System.Drawing.Point(3, 114);
             this.AddItemLink.Name = "AddItemLink";
             this.AddItemLink.Size = new System.Drawing.Size(102, 13);
             this.AddItemLink.TabIndex = 5;
@@ -229,11 +228,10 @@ namespace DeOps.Components.Plan
             this.PlanList.Name = "PlanList";
             this.PlanList.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.PlanList.RowTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.PlanList.Size = new System.Drawing.Size(469, 156);
+            this.PlanList.Size = new System.Drawing.Size(469, 113);
             this.PlanList.SmallImageList = null;
             this.PlanList.StateImageList = null;
             this.PlanList.TabIndex = 4;
-            this.PlanList.VisualStyles = false;
             this.PlanList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.PlanList_MouseClick);
             // 
             // GoalPanel

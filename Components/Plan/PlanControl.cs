@@ -673,7 +673,10 @@ namespace DeOps.Components.Plan
 
                     foreach (List<PlanGoal> list in PlanMap[Core.LocalDhtID].GoalMap.Values)
                         foreach (PlanGoal goal in list)
+                        {
+                            GetEstimate(goal, ref goal.EstCompleted, ref goal.EstTotal);
                             Protocol.WriteToFile(goal, stream);
+                        }
 
                     foreach (List<PlanItem> list in PlanMap[Core.LocalDhtID].ItemMap.Values)
                         foreach (PlanItem item in list)

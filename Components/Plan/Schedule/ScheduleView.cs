@@ -31,12 +31,17 @@ namespace DeOps.Components.Plan
         internal List<ulong> Uplinks = new List<ulong>();
 
         internal PlanBlock SelectedBlock;
+        internal int SelectedGoalID;
 
         BlockTip HoverTip = new BlockTip();
         Point    HoverPos = new Point();
         BlockRow HoverBlock;
         int      HoverTicks;
         string   HoverText;
+
+        internal int LoadGoal;
+        internal int LoadGoalBranch;
+
 
 
         internal ScheduleView(PlanControl plans, ulong id, uint project)
@@ -112,6 +117,14 @@ namespace DeOps.Components.Plan
 
         private void ScheduleView_Load(object sender, EventArgs e)
         {
+            RefreshGoalCombo();
+
+            foreach(GoalComboItem item in GoalsCombo.Items)
+                if (item.ID == LoadGoal)
+                {
+                    GoalsCombo.SelectedItem = item;
+                    break;
+                }
         }
 
         private void GotoTime(DateTime time)
@@ -509,6 +522,8 @@ namespace DeOps.Components.Plan
 
                 done = PlanStructure.GetNextNode(ref node);
             }
+
+            RefreshGoalCombo();
         }
 
         internal void RefreshRows()
@@ -686,6 +701,104 @@ namespace DeOps.Components.Plan
             ChangesLabel.Visible = true;
             SaveLink.Visible = true;
             DiscardLink.Visible = true;
+        }
+
+
+        private void RefreshGoalCombo()
+        {
+            GoalComboItem prevItem = GoalsCombo.SelectedItem as GoalComboItem;
+
+            int prevSelectedID = 0;
+            if (prevItem != null)
+                prevSelectedID = prevItem.ID;
+
+            GoalsCombo.Items.Clear();
+
+            GoalsCombo.Items.Add(new GoalComboItem("None", 0));
+
+            // go up the chain looking for goals which have been assigned to this person
+            // at root goal is the title of the goal
+
+
+            List<PlanGoal> rootList = new List<PlanGoal>();
+            List<int> assigned = new List<int>();
+
+            // foreach self & higher
+            List<ulong> ids = Links.GetUplinkIDs(DhtID, ProjectID);
+            ids.Add(DhtID);
+
+            foreach (ulong id in ids)
+            {
+                OpPlan plan = Plans.GetPlan(id);
+
+                if (plan == null)
+                    continue;
+
+                // goals we have been assigned to
+                foreach (List<PlanGoal> list in plan.GoalMap.Values)
+                    foreach (PlanGoal goal in list)
+                    {
+                        if (goal.Project != ProjectID)
+                            break;
+
+                        if (goal.Person == DhtID && !assigned.Contains(goal.Ident))
+                            assigned.Add(goal.Ident);
+
+                        if (goal.BranchDown == 0)
+                            if (!goal.Archived)
+                                rootList.Add(goal);
+                    }
+            }
+
+            // update combo
+            GoalComboItem prevSelected = null;
+
+            foreach (PlanGoal goal in rootList)
+                if (assigned.Contains(goal.Ident))
+                {
+                    GoalComboItem item = new GoalComboItem(goal.Title, goal.Ident);
+
+                    if (goal.Ident == prevSelectedID)
+                        prevSelected = item;
+
+                    GoalsCombo.Items.Add(item);
+                }
+
+            if (prevSelected != null)
+                GoalsCombo.SelectedItem = prevSelected;
+            else
+                GoalsCombo.SelectedIndex = 0;
+        }
+
+        private void GoalsCombo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            GoalComboItem item = GoalsCombo.SelectedItem as GoalComboItem;
+
+            if (item == null)
+                return;
+
+            SelectedGoalID = item.ID;
+
+            RefreshRows();
+        }
+
+    }
+
+
+    internal class GoalComboItem
+    {
+        internal string Name;
+        internal int ID;
+
+        internal GoalComboItem(string name, int id)
+        {
+            Name = name;
+            ID = id;
+        }
+
+        public override string ToString()
+        {
+            return Name;
         }
     }
 

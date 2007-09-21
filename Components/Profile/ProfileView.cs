@@ -21,19 +21,21 @@ namespace DeOps.Components.Profile
         OpCore Core;
         ProfileControl Profiles;
         ulong CurrentDhtID;
+        internal uint ProjectID;
 
         internal Dictionary<string, string> TextFields = new Dictionary<string, string>();
         internal Dictionary<string, string> FileFields = new Dictionary<string, string>();
 
 
 
-        internal ProfileView(ProfileControl profile, ulong id)
+        internal ProfileView(ProfileControl profile, ulong id, uint project)
         {
             InitializeComponent();
 
             Profiles = profile;
             Core = profile.Core;
             CurrentDhtID = id;
+            ProjectID = project;
         }
 
         internal override void Init()
@@ -102,36 +104,14 @@ namespace DeOps.Components.Profile
 
         void OnProfileUpdate(OpProfile profile)
         {
-            // if in uplink chain, update profile
-            bool update = false;
+            // if self or in uplink chain, update profile
+            List<ulong> uplinks = new List<ulong>();
+            uplinks.Add(CurrentDhtID);
+            uplinks.AddRange(Core.Links.GetUplinkIDs(CurrentDhtID, ProjectID));
 
-            if (profile.DhtID == CurrentDhtID)
-                update = true;
-
-            if (Core.Links.LinkMap.ContainsKey(CurrentDhtID) && Core.Links.LinkMap[CurrentDhtID].Loaded)
-            {
-                OpLink currentLink = Core.Links.LinkMap[CurrentDhtID];
-
-                if (currentLink.Uplink.ContainsKey(0))
-                {
-                    OpLink parent = currentLink.Uplink[0];
-
-                    while (parent != null)
-                    {
-                        if (parent.DhtID == profile.DhtID)
-                        {
-                            update = true;
-                            profile = Core.Profiles.ProfileMap[CurrentDhtID];
-                            break;
-                        }
-
-                        parent = parent.Uplink.ContainsKey(0) ? parent.Uplink[0] : null;
-                    }
-                }
-            }
-
-            if(!update)
+            if (!uplinks.Contains(profile.DhtID))
                 return;
+
 
             // get fields from profile
 
@@ -177,7 +157,7 @@ namespace DeOps.Components.Profile
                         </html>";
             }
 
-            string html = FleshTemplate(Core, profile.DhtID, template, TextFields, FileFields);
+            string html = FleshTemplate(Core, profile.DhtID, ProjectID, template, TextFields, FileFields);
 
             // prevents clicking sound when browser navigates
             if (!Browser.DocumentText.Equals(html))
@@ -306,7 +286,7 @@ namespace DeOps.Components.Profile
             return template;
         }
 
-        internal static string FleshTemplate(OpCore core, ulong id, string template, Dictionary<string, string> textFields, Dictionary<string, string> fileFields)
+        internal static string FleshTemplate(OpCore core, ulong id, uint project, string template, Dictionary<string, string> textFields, Dictionary<string, string> fileFields)
         {
             string final = template;
 
@@ -372,7 +352,7 @@ namespace DeOps.Components.Profile
                     {
                         if(parts[1] == "start") 
                         {
-                            string motd = FleshMotd(core, template, link);
+                            string motd = FleshMotd(core, template, link.DhtID, project);
 
                             int startMotd = final.IndexOf("<?motd:start?>");
                             int endMotd = final.IndexOf("<?motd:end?>");
@@ -399,7 +379,7 @@ namespace DeOps.Components.Profile
             return final;
         }
 
-        private static string FleshMotd(OpCore core, string template, OpLink link)
+        private static string FleshMotd(OpCore core, string template, ulong id, uint project)
         {
             // extract motd template
             string startTag = "<?motd:start?>";
@@ -414,37 +394,29 @@ namespace DeOps.Components.Profile
             string motdTemplate = template.Substring(start, end - start);
 
             // get links in chain up
-            List<OpLink> linkChain = new List<OpLink>();
-
-            linkChain.Add(link);
-
-            if (link.Uplink.ContainsKey(0))
-            {
-                OpLink parent = link.Uplink[0];
-
-                while (parent != null)
-                {
-                    linkChain.Add(parent);
-                    parent = parent.Uplink.ContainsKey(0) ? parent.Uplink[0] : null;
-                }
-            }
-            linkChain.Reverse();
+            List<ulong> uplinks = new List<ulong>();
+            uplinks.Add(id);
+            uplinks.AddRange( core.Links.GetUplinkIDs(id, project));     
+            uplinks.Reverse();
 
             // build cascading motds
             string finalMotd = "";
 
-            foreach (OpLink oplink in linkChain)
-                if (oplink.Loaded && core.Profiles.ProfileMap.ContainsKey(oplink.DhtID))
+            foreach (ulong uplink in uplinks)
+                if (core.Profiles.ProfileMap.ContainsKey(uplink))
                 {
                     Dictionary<string, string> textFields = new Dictionary<string, string>();
 
-                    LoadProfile(core, core.Profiles.ProfileMap[oplink.DhtID], null, textFields, null);
+                    LoadProfile(core, core.Profiles.ProfileMap[uplink], null, textFields, null);
 
-                    if(!textFields.ContainsKey("MOTD"))
-                        textFields["MOTD"] = "No announcements";
+                    string motdTag = "MOTD-" + project.ToString();
+                    if(!textFields.ContainsKey(motdTag))
+                        textFields[motdTag] = "No announcements";
+
+                    textFields["MOTD"] = textFields[motdTag];
 
                     string currentMotd = motdTemplate;
-                    currentMotd = FleshTemplate(core, oplink.DhtID, currentMotd, textFields, null);
+                    currentMotd = FleshTemplate(core, uplink, project, currentMotd, textFields, null);
 
                     if (finalMotd == "")
                         finalMotd = currentMotd;

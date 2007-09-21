@@ -24,6 +24,9 @@ namespace DeOps.Components.Plan
 
         List<int> SpecialList = new List<int>();
 
+        internal int LoadIdent;
+        internal int LoadBranch;
+
 
         internal GoalsView(PlanControl plans, ulong id, uint project)
         {
@@ -94,7 +97,16 @@ namespace DeOps.Components.Plan
         }
         private void GoalsView_Load(object sender, EventArgs e)
         {
-            
+             foreach (TabPage tab in GoalTabs.TabPages)
+                if (tab.GetType() == typeof(GoalPage))
+                    if (((GoalPage)tab).Goal.Ident == LoadIdent)
+                    {
+                        GoalTabs.SelectedTab = tab;
+                        //crit go to specific branch ((GoalPage)tab).SelectBranch(LoadBranch);
+                        // schedule needs to pass a list of the branches from the root to this node
+                        // so appropriate path can be expanded
+                        break;
+                    }
         }
 
         internal override bool Fin()
