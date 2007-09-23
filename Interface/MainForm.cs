@@ -44,6 +44,11 @@ namespace DeOps.Interface
 
         Font BoldFont = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 
+        int NewsSequence;
+        Queue<string> NewsPending = new Queue<string>();
+        Queue<string> NewsRecent = new Queue<string>();
+        SolidBrush NewsBrush = new SolidBrush(Color.FromArgb(0, Color.White));
+
 
         internal MainForm(OpCore core)
         {
@@ -55,12 +60,13 @@ namespace DeOps.Interface
             ShowExternal += new ShowExternalHandler(OnShowExternal);
             ShowInternal += new ShowInternalHandler(OnShowInternal);
 
+            Core.NewsUpdate += new NewsUpdateHandler(Core_NewsUpdate);
             Links.GuiUpdate  += new LinkGuiUpdateHandler(Links_Update);
 
             CommandTree.SelectedLink = Core.LocalDhtID;
 
             TopToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
-            toolStrip1.Renderer = new ToolStripProfessionalRenderer(new NavColorTable());
+            NavStrip.Renderer = new ToolStripProfessionalRenderer(new NavColorTable());
             SideToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
         }
 
@@ -76,6 +82,8 @@ namespace DeOps.Interface
             //crit
             OnSelectChange(Core.LocalDhtID, CommandTree.Project);
             UpdateCommandPanel();
+
+            Core.TestNewsUpdate();
         }
 
         private void InviteMenuItem_Click(object sender, EventArgs e)
@@ -106,17 +114,35 @@ namespace DeOps.Interface
             ShowExternal -= new ShowExternalHandler(OnShowExternal);
             ShowInternal -= new ShowInternalHandler(OnShowInternal);
 
+            Core.NewsUpdate -= new NewsUpdateHandler(Core_NewsUpdate);
             Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
 
             foreach (OpComponent component in Core.Components.Values)
                 component.GuiClosing();
 
+            Core.GuiMain = null;
+
+            if(LockForm)
+            {
+                LockForm = false;
+                return;
+            }
+
             if (Core.Sim == null)
                 Application.Exit();
-            else
-                Core.GuiMain = null;
         }
 
+        bool LockForm;
+        
+
+        private void LockButton_Click(object sender, EventArgs e)
+        {
+            LockForm = true;
+
+            Close();
+
+            Core.GuiTray = new TrayLock(Core);
+        }
 
         private bool CleanInternal()
         {
@@ -395,7 +421,7 @@ namespace DeOps.Interface
             if (e.Button == MouseButtons.Right)
             {
                 // menu
-                ContextMenuStrip treeMenu = new ContextMenuStrip();
+                ContextMenuStripEx treeMenu = new ContextMenuStripEx();
 
                 // select
                 treeMenu.Items.Add("Select", InterfaceRes.star, TreeMenu_Select);
@@ -972,7 +998,7 @@ namespace DeOps.Interface
             UpdateCommandPanel();
         }
 
-        private void toolStripButton1_Click(object sender, EventArgs e)
+        private void PopoutButton_Click(object sender, EventArgs e)
         {
             SuspendLayout();
             InternalPanel.Controls.Clear();
@@ -984,11 +1010,99 @@ namespace DeOps.Interface
             ResumeLayout();
         }
 
-        private void MainForm_Paint(object sender, PaintEventArgs e)
+        private void NewsTimer_Tick(object sender, EventArgs e)
         {
+            if (NewsPending.Count == 0)
+                return;
 
+            // sequence = 1/10s
+            int alpha = NewsBrush.Color.A;
+
+            // 1/4s fade in
+            if (NewsSequence < 3)
+                alpha += 255 / 4;
+
+            // 2s show
+            else if (NewsSequence < 23)
+                alpha = 255;
+
+            // 1/4s fad out
+            else if (NewsSequence < 26)
+                alpha -= 255 / 4;
+
+            // 1/2s hide
+            else if (NewsSequence < 31)
+            {
+                alpha = 0;
+            }
+            else
+            {
+                NewsSequence = 0;
+                NewsRecent.Enqueue(NewsPending.Dequeue());
+
+                while (NewsRecent.Count > 15)
+                    NewsRecent.Dequeue();
+            }
+
+            if (NewsBrush.Color.A != alpha)
+                NewsBrush = new SolidBrush(Color.FromArgb(alpha, Color.White));
+
+            NewsSequence++;
+            NavStrip.Invalidate();
         }
 
+        private void NavStrip_Paint(object sender, PaintEventArgs e)
+        {
+            if (NewsPending.Count == 0)
+                return;
+
+            // get bounds where we can put news text
+            int x = ComponentNavButton.Bounds.X + ComponentNavButton.Bounds.Width + 4;
+            int width = NewsButton.Bounds.X - 4 - x;
+
+            if (width < 0)
+            {
+                NewsButton.Image = InterfaceRes.news_hot;
+                return;
+            }
+
+            // determine size of text
+            int reqWidth = (int) e.Graphics.MeasureString(NewsPending.Peek(), BoldFont).Width;
+
+            if (width < reqWidth)
+            {
+                NewsButton.Image = InterfaceRes.news_hot;
+                return;
+            }
+
+            // draw text
+            e.Graphics.DrawString(NewsPending.Peek(), BoldFont, NewsBrush, x + width / 2 - reqWidth / 2, 4);
+               
+        }
+
+        void Core_NewsUpdate(string message, int component, int project)
+        {
+            NewsPending.Enqueue(message);
+
+            while (NewsPending.Count > 15)
+                NewsPending.Dequeue();
+        }
+
+        private void NewsButton_DropDownOpening(object sender, EventArgs e)
+        {
+            NewsButton.DropDown.Items.Clear();
+
+            foreach (string message in NewsPending)
+                NewsButton.DropDown.Items.Add(message);
+
+            if (NewsPending.Count > 0 && NewsRecent.Count > 0)
+                NewsButton.DropDown.Items.Add("-");
+
+            foreach (string message in NewsRecent)
+                NewsButton.DropDown.Items.Add(message);
+
+            NewsButton.Image = InterfaceRes.news;
+        }
     }
 
     class OpStripItem : ToolStripMenuItem, IContainsNode

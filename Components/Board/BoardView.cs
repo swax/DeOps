@@ -584,7 +584,7 @@ namespace DeOps.Components.Board
             if (parent != null)
                 replyTo = parent.Post;
 
-            ContextMenuStrip menu = new ContextMenuStrip();
+            ContextMenuStripEx menu = new ContextMenuStripEx();
 
             if (!replyTo.Header.Archived)
                 menu.Items.Add(new PostMenuItem("Reply", replyTo, new EventHandler(Post_Reply)));

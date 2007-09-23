@@ -59,6 +59,7 @@ namespace DeOps.Components.Link
 
         internal void Fin()
         {
+            SelectedItemChanged -= new EventHandler(LinkTree_SelectedItemChanged);
             NodeExpanding -= new EventHandler(LinkTree_NodeExpanding);
             NodeCollapsed -= new EventHandler(LinkTree_NodeCollapsed);
 

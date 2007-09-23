@@ -333,6 +333,27 @@ namespace DeOps.Components.Profile
                             tagfilled = true;
                         }
                     }
+                   
+                    // load default photo if none in file
+                    else if (parts[0] == "file" && fileFields != null && parts[1] == "Photo")
+                    {
+                        string path = core.Profiles.ProfilePath + "\\0";
+
+                        // create if needed, clear of pre-existing data
+                        if (!Directory.Exists(path))
+                            Directory.CreateDirectory(path);
+
+                        path += "\\DefaultPhoto.jpg";
+                        ProfileRes.DefaultPhoto.Save(path);
+
+                        if (File.Exists(path))
+                        {
+                            path = "file:///" + path;
+                            path = path.Replace('\\', '/');
+                            final = final.Replace(fulltag, path);
+                            tagfilled = true;
+                        }
+                    }
 
                     else if (parts[0] == "link" && link != null)
                     {
@@ -348,9 +369,9 @@ namespace DeOps.Components.Profile
                             tagfilled = false;
                     }
 
-                    else if (parts[0] == "motd" )
+                    else if (parts[0] == "motd")
                     {
-                        if(parts[1] == "start") 
+                        if (parts[1] == "start")
                         {
                             string motd = FleshMotd(core, template, link.DhtID, project);
 

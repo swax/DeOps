@@ -41,6 +41,7 @@ using DeOps.Implementation.Transport;
 
 using DeOps.Interface;
 using DeOps.Interface.Tools;
+using DeOps.Interface.Views;
 
 using DeOps.Simulator;
 
@@ -53,6 +54,7 @@ namespace DeOps.Implementation
 
     internal delegate void LoadHandler();
     internal delegate void TimerHandler();
+    internal delegate void NewsUpdateHandler(string message, int component, int project);
 
 
 	internal class OpCore
@@ -97,6 +99,7 @@ namespace DeOps.Implementation
 
         internal event LoadHandler  LoadEvent;
         internal event TimerHandler TimerEvent;
+        internal event NewsUpdateHandler NewsUpdate;
 
 		[DllImport("USER32.DLL", SetLastError=true)]
 		private static extern bool GetLastInputInfo(ref LastInputInfo ii);
@@ -105,6 +108,7 @@ namespace DeOps.Implementation
 
         // interfaces
         internal MainForm      GuiMain;
+        internal TrayLock      GuiTray;
         internal ConsoleForm   GuiConsole;
         internal InternalsForm GuiInternal;
 
@@ -482,6 +486,12 @@ namespace DeOps.Implementation
             return path;
         }
 
-        
+
+
+        internal void TestNewsUpdate()
+        {
+            for(int x = 1; x <= 10; x++)
+                InvokeInterface(NewsUpdate, x.ToString(), 0, 0);
+        }
     }
 }

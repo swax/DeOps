@@ -88,6 +88,10 @@ namespace DeOps.Interface
                     }
 
                     LinkIdentity.Text = OpenProfile.FileName;
+
+                    TextPassword.Enabled = true;
+                    ButtonLoad.Enabled = true;
+
                     TextPassword.Focus();
                 }
             }

@@ -9,6 +9,7 @@ using System.Windows.Forms;
 
 using DeOps.Implementation;
 using DeOps.Interface;
+using DeOps.Interface.Views;
 using DeOps.Interface.TLVex;
 using DeOps.Components.Link;
 
@@ -322,7 +323,7 @@ namespace DeOps.Components.Plan
             if (clicked == null)
                 return;
 
-            ContextMenuStrip menu = new ContextMenuStrip();
+            ContextMenuStripEx menu = new ContextMenuStripEx();
 
             if (Selected.Person == Core.LocalDhtID)
             {
@@ -394,7 +395,7 @@ namespace DeOps.Components.Plan
 
             GoalNode parent = node.ParentNode() as GoalNode;
 
-            ContextMenuStrip menu = new ContextMenuStrip();
+            ContextMenuStripEx menu = new ContextMenuStripEx();
 
 
             bool owned = false;

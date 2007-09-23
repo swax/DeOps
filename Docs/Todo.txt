@@ -1,23 +1,45 @@
 
+put news updates in blue bar remainder area
+	*white news icon next to popout, 
+	*	click news expand latest news items
+		last option is to hide
+		if hidden or cant fit text, turn news icon red
+	select item, pop out window to component
+		mouse over hand?
+	*paint stories in remainder area of blue bar
+	*queue of stories
+	*	stories shows to 2 secs then fades, 1 sec pause till next
+		queue balances stories from diff component ids so one component cant flood queue
+		invisible if not needed
+	filter self updates
+	updates - if someone in local region or linked up through root
+		links - tell new uplink if diff from before
+		tell component updated - storage, schedule, goals, profile, new mail, new post on board, chat msg (if chat not visible)
+			alert main interface with (string msg, and coponent ID)
+		
 changing person focus perserves view
 changing project focus perserves view
 perserve view going from collapse to restore
 
-goals   - icons edit, save branch path when transfering goal <-> schedule
+goals   - save branch path when transfering goal <-> schedule
 IM      - remove dupe system messages
-storage - diff status on root info, update without refreshing, icons(add restore)
-mail    - icons(forward reply), delete mail not refreshing view, sync local mail between users
-board   - icons(high, low, all)
-plans   - icons(edit)
+storage - diff status on root info, update without refreshing
+mail    - delete mail not refreshing view, sync local mail between users
 
+graphics
+	storage - add, restore
+	mail	- forward, reply
+	board   - high, low, all
+	plans	- edit
+	goals	- edit
+	tray	- restore, exit
+	
 location info should probably contain latest versions for all components so 
 	for example two of the same account would sync their storage without having to specifically having to open storage
 	dynamic works for all components in list
 
-put news updates in blue bar remainder area
-	white news icon next to popout, click news expand latest news items
-	select item, pop out window
-	paint stories in remainder area
+
+		
 	
 add accept change to storageInfo interface for folders - so name / ghost status is transferred over easily
 
@@ -96,7 +118,7 @@ Many actions in gui isnt piped down into control to fire events back to the inte
 desynch timer from packets, diff thread
 	timer asyncronously run so main interface thread not affected
 	also diff thread in simulator, so that cross thread problems are debugged
-	s
+	main interface thread 1, socket packets thread 2, timer thread 3, run all fast ensure locking etc.. 
 crits 
 look at replacing common code with delegates
 
@@ -190,10 +212,6 @@ Core
 
 
 Interface
-
-	Lock instance in tray mode, required login to activate interface, but underneath still working, acting as server for files
-		deops lock icon, puts in tray / password protects / destroys and unloads gui object
-		
 	Internal 
 		expand a little more (names associated with sessions/transfers/searches/publish)
 
@@ -261,7 +279,7 @@ Future
     variable internal / private key schemes and sizes, ECC
     linear contact merging / split system?
     5 connections in same op but all blocked able to form active op network by proxying throgh global
-    customizable logo/icons
+    customizable logo/icons/password reqs (length, numerics, case)
     good leadership/management guide
     web based problem simulation, people assigned roles, sim starts, try to solve, katrina sim ;)
     database to storage system (for use with bug trackers, inventories, etc..)

@@ -35,11 +35,12 @@ namespace DeOps.Interface
             this.StatusBrowser = new System.Windows.Forms.WebBrowser();
             this.RightClickMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.EditMenu = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStrip1 = new System.Windows.Forms.ToolStrip();
+            this.NavStrip = new System.Windows.Forms.ToolStrip();
             this.PersonNavButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.ProjectNavButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.ComponentNavButton = new System.Windows.Forms.ToolStripDropDownButton();
-            this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
+            this.PopoutButton = new System.Windows.Forms.ToolStripButton();
+            this.NewsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.InternalPanel = new System.Windows.Forms.Panel();
             this.TopToolStrip = new System.Windows.Forms.ToolStrip();
             this.HomeButton = new System.Windows.Forms.ToolStripButton();
@@ -61,8 +62,10 @@ namespace DeOps.Interface
             this.OnlineButton = new System.Windows.Forms.ToolStripButton();
             this.ProjectsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.SideButton = new System.Windows.Forms.ToolStripButton();
+            this.LockButton = new System.Windows.Forms.ToolStripButton();
             this.TreeImageList = new System.Windows.Forms.ImageList(this.components);
-            this.CommandTree = new DeOps.Components.Link.LinkTree();
+            this.NewsTimer = new System.Windows.Forms.Timer(this.components);
+            CommandTree = new DeOps.Components.Link.LinkTree();
             this.MainSplit.Panel1.SuspendLayout();
             this.MainSplit.Panel2.SuspendLayout();
             this.MainSplit.SuspendLayout();
@@ -70,7 +73,7 @@ namespace DeOps.Interface
             this.CommandSplit.Panel2.SuspendLayout();
             this.CommandSplit.SuspendLayout();
             this.RightClickMenu.SuspendLayout();
-            this.toolStrip1.SuspendLayout();
+            this.NavStrip.SuspendLayout();
             this.TopToolStrip.SuspendLayout();
             this.SideToolStrip.SuspendLayout();
             this.SuspendLayout();
@@ -90,7 +93,7 @@ namespace DeOps.Interface
             // MainSplit.Panel2
             // 
             this.MainSplit.Panel2.BackColor = System.Drawing.SystemColors.Control;
-            this.MainSplit.Panel2.Controls.Add(this.toolStrip1);
+            this.MainSplit.Panel2.Controls.Add(this.NavStrip);
             this.MainSplit.Panel2.Controls.Add(this.InternalPanel);
             this.MainSplit.Panel2.Controls.Add(this.TopToolStrip);
             this.MainSplit.Size = new System.Drawing.Size(674, 445);
@@ -119,6 +122,34 @@ namespace DeOps.Interface
             this.CommandSplit.Size = new System.Drawing.Size(171, 445);
             this.CommandSplit.SplitterDistance = 277;
             this.CommandSplit.TabIndex = 4;
+            // 
+            // CommandTree
+            // 
+            this.CommandTree.BackColor = System.Drawing.SystemColors.Window;
+            this.CommandTree.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.CommandTree.ColumnSortColor = System.Drawing.Color.Gainsboro;
+            this.CommandTree.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
+            this.CommandTree.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.CommandTree.GridLineColor = System.Drawing.Color.WhiteSmoke;
+            this.CommandTree.HeaderMenu = null;
+            this.CommandTree.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
+            this.CommandTree.ItemHeight = 20;
+            this.CommandTree.ItemMenu = null;
+            this.CommandTree.LabelEdit = false;
+            this.CommandTree.Location = new System.Drawing.Point(0, 0);
+            this.CommandTree.MouseActivte = true;
+            this.CommandTree.Name = "CommandTree";
+            this.CommandTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
+            this.CommandTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
+            this.CommandTree.ShowLines = true;
+            this.CommandTree.Size = new System.Drawing.Size(171, 277);
+            this.CommandTree.SmallImageList = null;
+            this.CommandTree.StateImageList = null;
+            this.CommandTree.TabIndex = 0;
+            this.CommandTree.Text = "treeListViewEx1";
+            this.CommandTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseDoubleClick);
+            this.CommandTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseClick);
+            this.CommandTree.SelectedItemChanged += new System.EventHandler(this.CommandTree_SelectedItemChanged);
             // 
             // StatusBrowser
             // 
@@ -151,22 +182,23 @@ namespace DeOps.Interface
             this.EditMenu.Text = "Edit...";
             this.EditMenu.Click += new System.EventHandler(this.EditMenu_Click);
             // 
-            // toolStrip1
+            // NavStrip
             // 
-            this.toolStrip1.BackColor = System.Drawing.Color.CornflowerBlue;
-            this.toolStrip1.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
-            this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.NavStrip.BackColor = System.Drawing.Color.CornflowerBlue;
+            this.NavStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
+            this.NavStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.PersonNavButton,
             this.ProjectNavButton,
             this.ComponentNavButton,
-            this.toolStripButton1});
-            this.toolStrip1.Location = new System.Drawing.Point(0, 31);
-            this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.toolStrip1.ShowItemToolTips = false;
-            this.toolStrip1.Size = new System.Drawing.Size(499, 25);
-            this.toolStrip1.TabIndex = 3;
-            this.toolStrip1.Text = "toolStrip1";
+            this.PopoutButton,
+            this.NewsButton});
+            this.NavStrip.Location = new System.Drawing.Point(0, 31);
+            this.NavStrip.Name = "NavStrip";
+            this.NavStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
+            this.NavStrip.ShowItemToolTips = false;
+            this.NavStrip.Size = new System.Drawing.Size(499, 25);
+            this.NavStrip.TabIndex = 3;
+            this.NavStrip.Paint += new System.Windows.Forms.PaintEventHandler(this.NavStrip_Paint);
             // 
             // PersonNavButton
             // 
@@ -201,16 +233,27 @@ namespace DeOps.Interface
             this.ComponentNavButton.Size = new System.Drawing.Size(46, 22);
             this.ComponentNavButton.Text = "View";
             // 
-            // toolStripButton1
+            // PopoutButton
             // 
-            this.toolStripButton1.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.toolStripButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton1.Image")));
-            this.toolStripButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButton1.Name = "toolStripButton1";
-            this.toolStripButton1.Size = new System.Drawing.Size(23, 22);
-            this.toolStripButton1.Text = "PopoutButton";
-            this.toolStripButton1.Click += new System.EventHandler(this.toolStripButton1_Click);
+            this.PopoutButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.PopoutButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.PopoutButton.Image = ((System.Drawing.Image)(resources.GetObject("PopoutButton.Image")));
+            this.PopoutButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.PopoutButton.Name = "PopoutButton";
+            this.PopoutButton.Size = new System.Drawing.Size(23, 22);
+            this.PopoutButton.Text = "Popout Window";
+            this.PopoutButton.Click += new System.EventHandler(this.PopoutButton_Click);
+            // 
+            // NewsButton
+            // 
+            this.NewsButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.NewsButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.NewsButton.Image = ((System.Drawing.Image)(resources.GetObject("NewsButton.Image")));
+            this.NewsButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.NewsButton.Name = "NewsButton";
+            this.NewsButton.Size = new System.Drawing.Size(29, 22);
+            this.NewsButton.Text = "Recent News";
+            this.NewsButton.DropDownOpening += new System.EventHandler(this.NewsButton_DropDownOpening);
             // 
             // InternalPanel
             // 
@@ -357,7 +400,8 @@ namespace DeOps.Interface
             this.OperationButton,
             this.OnlineButton,
             this.ProjectsButton,
-            this.SideButton});
+            this.SideButton,
+            this.LockButton});
             this.SideToolStrip.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.VerticalStackWithOverflow;
             this.SideToolStrip.Location = new System.Drawing.Point(0, 0);
             this.SideToolStrip.Name = "SideToolStrip";
@@ -426,6 +470,17 @@ namespace DeOps.Interface
             this.SideButton.Text = "Toggle Sidebar";
             this.SideButton.CheckedChanged += new System.EventHandler(this.SideButton_CheckedChanged);
             // 
+            // LockButton
+            // 
+            this.LockButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.LockButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.LockButton.Image = ((System.Drawing.Image)(resources.GetObject("LockButton.Image")));
+            this.LockButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.LockButton.Name = "LockButton";
+            this.LockButton.Size = new System.Drawing.Size(18, 20);
+            this.LockButton.Text = "Lockdown to Tray";
+            this.LockButton.Click += new System.EventHandler(this.LockButton_Click);
+            // 
             // TreeImageList
             // 
             this.TreeImageList.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("TreeImageList.ImageStream")));
@@ -434,33 +489,10 @@ namespace DeOps.Interface
             this.TreeImageList.Images.SetKeyName(1, "link_denied.ico");
             this.TreeImageList.Images.SetKeyName(2, "link_pending.ico");
             // 
-            // CommandTree
+            // NewsTimer
             // 
-            this.CommandTree.BackColor = System.Drawing.SystemColors.Window;
-            this.CommandTree.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.CommandTree.ColumnSortColor = System.Drawing.Color.Gainsboro;
-            this.CommandTree.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.CommandTree.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.CommandTree.GridLineColor = System.Drawing.Color.WhiteSmoke;
-            this.CommandTree.HeaderMenu = null;
-            this.CommandTree.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
-            this.CommandTree.ItemHeight = 20;
-            this.CommandTree.ItemMenu = null;
-            this.CommandTree.LabelEdit = false;
-            this.CommandTree.Location = new System.Drawing.Point(0, 0);
-            this.CommandTree.MouseActivte = true;
-            this.CommandTree.Name = "CommandTree";
-            this.CommandTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
-            this.CommandTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.CommandTree.ShowLines = true;
-            this.CommandTree.Size = new System.Drawing.Size(171, 277);
-            this.CommandTree.SmallImageList = null;
-            this.CommandTree.StateImageList = null;
-            this.CommandTree.TabIndex = 0;
-            this.CommandTree.Text = "treeListViewEx1";
-            this.CommandTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseDoubleClick);
-            this.CommandTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseClick);
-            this.CommandTree.SelectedItemChanged += new System.EventHandler(this.CommandTree_SelectedItemChanged);
+            this.NewsTimer.Enabled = true;
+            this.NewsTimer.Tick += new System.EventHandler(this.NewsTimer_Tick);
             // 
             // MainForm
             // 
@@ -473,7 +505,6 @@ namespace DeOps.Interface
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MainForm";
             this.Text = "De-Ops";
-            this.Paint += new System.Windows.Forms.PaintEventHandler(this.MainForm_Paint);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.MainSplit.Panel1.ResumeLayout(false);
@@ -484,8 +515,8 @@ namespace DeOps.Interface
             this.CommandSplit.Panel2.ResumeLayout(false);
             this.CommandSplit.ResumeLayout(false);
             this.RightClickMenu.ResumeLayout(false);
-            this.toolStrip1.ResumeLayout(false);
-            this.toolStrip1.PerformLayout();
+            this.NavStrip.ResumeLayout(false);
+            this.NavStrip.PerformLayout();
             this.TopToolStrip.ResumeLayout(false);
             this.TopToolStrip.PerformLayout();
             this.SideToolStrip.ResumeLayout(false);
@@ -525,10 +556,13 @@ namespace DeOps.Interface
         private System.Windows.Forms.ToolStripMenuItem commonToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem personalToolStripMenuItem2;
         private DeOps.Components.Link.LinkTree CommandTree;
-        private System.Windows.Forms.ToolStrip toolStrip1;
+        private System.Windows.Forms.ToolStrip NavStrip;
         private System.Windows.Forms.ToolStripDropDownButton PersonNavButton;
         private System.Windows.Forms.ToolStripDropDownButton ProjectNavButton;
         private System.Windows.Forms.ToolStripDropDownButton ComponentNavButton;
-        private System.Windows.Forms.ToolStripButton toolStripButton1;
+        private System.Windows.Forms.ToolStripButton PopoutButton;
+        private System.Windows.Forms.ToolStripButton LockButton;
+        private System.Windows.Forms.Timer NewsTimer;
+        private System.Windows.Forms.ToolStripDropDownButton NewsButton;
     }
 }

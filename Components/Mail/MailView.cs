@@ -534,7 +534,7 @@ namespace DeOps.Components.Mail
             if (item == null)
                 return;
 
-            ContextMenuStrip menu = new ContextMenuStrip();
+            ContextMenuStripEx menu = new ContextMenuStripEx();
 
             if (InboxButton.Checked)
                 menu.Items.Add(new MessageMenuItem(item.Message, "Reply", null, new EventHandler(Message_Reply)));

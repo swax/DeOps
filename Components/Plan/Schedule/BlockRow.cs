@@ -11,6 +11,7 @@ using DeOps.Implementation;
 using DeOps.Components.Link;
 using DeOps.Components.Plan;
 using DeOps.Interface;
+using DeOps.Interface.Views;
 using DeOps.Interface.TLVex;
 
 
@@ -447,7 +448,7 @@ namespace DeOps.Components.Plan
             // if local create edit/delete menu
 
 
-            ContextMenuStrip menu = new ContextMenuStrip();
+            ContextMenuStripEx menu = new ContextMenuStripEx();
             ToolStripMenuItem details = new ToolStripMenuItem("Details");
 
             string indent = "";

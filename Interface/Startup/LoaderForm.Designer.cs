@@ -81,6 +81,7 @@ namespace DeOps.Interface
             // 
             // TextPassword
             // 
+            this.TextPassword.Enabled = false;
             this.TextPassword.Location = new System.Drawing.Point(15, 258);
             this.TextPassword.Name = "TextPassword";
             this.TextPassword.PasswordChar = '•';
@@ -90,6 +91,7 @@ namespace DeOps.Interface
             // ButtonLoad
             // 
             this.ButtonLoad.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.ButtonLoad.Enabled = false;
             this.ButtonLoad.Location = new System.Drawing.Point(109, 288);
             this.ButtonLoad.Name = "ButtonLoad";
             this.ButtonLoad.Size = new System.Drawing.Size(75, 23);
@@ -169,9 +171,11 @@ namespace DeOps.Interface
             // 
             // LoaderForm
             // 
+            this.AcceptButton = this.ButtonLoad;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.Control;
+            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.CancelButton = this.ButtonExit;
             this.ClientSize = new System.Drawing.Size(277, 323);
             this.Controls.Add(this.EnterSimLink);
             this.Controls.Add(this.LinkSearch);

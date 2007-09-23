@@ -1115,7 +1115,7 @@ namespace DeOps.Components.Storage
             if (node == null)
                 return;
 
-            ContextMenuStrip menu = new ContextMenuStrip();
+            ContextMenuStripEx menu = new ContextMenuStripEx();
 
             if (!node.Temp)
             {
@@ -1153,7 +1153,7 @@ namespace DeOps.Components.Storage
 
             FileItem clicked = FileListView.GetItemAt(e.Location) as FileItem;
 
-            ContextMenuStrip menu = new ContextMenuStrip();
+            ContextMenuStripEx menu = new ContextMenuStripEx();
 
             if (clicked == null)
             {
