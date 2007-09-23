@@ -3,7 +3,7 @@ put news updates in blue bar remainder area
 	*white news icon next to popout, 
 	*	click news expand latest news items
 		last option is to hide
-		if hidden or cant fit text, turn news icon red
+	*	if hidden or cant fit text, turn news icon red
 	select item, pop out window to component
 		mouse over hand?
 	*paint stories in remainder area of blue bar
