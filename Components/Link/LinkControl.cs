@@ -141,11 +141,11 @@ namespace DeOps.Components.Link
 
         private void Menu_Linkup(object sender, EventArgs e)
         {
-            if (!(sender is IContainsNode) || Core.GuiMain == null)
+            if (!(sender is IViewParams) || Core.GuiMain == null)
                 return;
 
-            ulong key  = ((IContainsNode)sender).GetKey();
-            uint  proj = ((IContainsNode)sender).GetProject();
+            ulong key = ((IViewParams)sender).GetKey();
+            uint proj = ((IViewParams)sender).GetProject();
 
 
             // get user confirmation if nullifying previous uplink
@@ -210,11 +210,11 @@ namespace DeOps.Components.Link
 
         private void Menu_ConfirmLink(object sender, EventArgs e)
         {
-            if (!(sender is IContainsNode) || Core.GuiMain == null)
+            if (!(sender is IViewParams) || Core.GuiMain == null)
                 return;
 
-            ulong key = ((IContainsNode)sender).GetKey();
-            uint proj = ((IContainsNode)sender).GetProject();
+            ulong key = ((IViewParams)sender).GetKey();
+            uint proj = ((IViewParams)sender).GetProject();
 
             try
             {
@@ -240,11 +240,11 @@ namespace DeOps.Components.Link
 
         private void Menu_Unlink(object sender, EventArgs e)
         {
-            if (!(sender is IContainsNode) || Core.GuiMain == null)
+            if (!(sender is IViewParams) || Core.GuiMain == null)
                 return;
 
-            ulong key = ((IContainsNode)sender).GetKey();
-            uint proj = ((IContainsNode)sender).GetProject();
+            ulong key = ((IViewParams)sender).GetKey();
+            uint proj = ((IViewParams)sender).GetProject();
 
             try
             {
@@ -1096,6 +1096,9 @@ namespace DeOps.Components.Link
                 if(LinkUpdate != null)
                     LinkUpdate.Invoke(link);
 
+                if (Core.NewsWorthy(link.DhtID, 0, false))
+                    Core.MakeNews("Link updated by " + GetName(link.DhtID), link.DhtID, 0, true, LinkRes.link, null);
+            
 
                 // update subs
                 if (Network.Established)
@@ -1490,6 +1493,36 @@ namespace DeOps.Components.Link
                         return true;
 
             return false;
+        }
+
+        internal bool IsLowerDirect(ulong id, uint project)
+        {
+            if (LocalLink.Confirmed.ContainsKey(project) &&
+                LocalLink.Confirmed[project].Contains(id) &&
+                LocalLink.Downlinks.ContainsKey(project))
+                foreach (OpLink downlink in LocalLink.Downlinks[project])
+                    if (downlink.DhtID == id)
+                        return true;
+
+            return false;
+        }
+
+        internal bool IsHigherDirect(ulong id, uint project)
+        {
+            if (!LinkMap.ContainsKey(id))
+                return false;
+
+            OpLink link = LinkMap[id];
+
+            if (!link.Loaded)
+                return false;
+
+            OpLink uplink = link.GetHigher(project);
+
+            if (uplink == null)
+                return false;
+
+            return uplink.DhtID == id;
         }
     }
 

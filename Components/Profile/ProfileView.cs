@@ -131,8 +131,14 @@ namespace DeOps.Components.Profile
             if (!Directory.Exists(tempPath))
                 Directory.CreateDirectory(tempPath);
 
+            // get the profile for this display
+            profile = Profiles.GetProfile(CurrentDhtID);
+
+            if (profile == null)
+                return;
+
             // not secure
-            else 
+            else
             {
                 string[] files = Directory.GetFiles(tempPath);
 

@@ -240,18 +240,18 @@ namespace DeOps.Components.Profile
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
 
             if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Data/Profile", ProfileRes.Icon, new EventHandler(InternalMenu_View)));
+                menus.Add(new MenuItemInfo("Data/Profile", ProfileRes.Icon, new EventHandler(Menu_View)));
 
             if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Profile", ProfileRes.Icon, new EventHandler(ExternalMenu_View)));
+                menus.Add(new MenuItemInfo("Profile", ProfileRes.Icon, new EventHandler(Menu_View)));
 
 
             return menus;
         }
 
-        internal void InternalMenu_View(object sender, EventArgs args)
+        internal void Menu_View(object sender, EventArgs args)
         {
-            IContainsNode node = sender as IContainsNode;
+            IViewParams node = sender as IViewParams;
 
             if (node == null)
                 return;
@@ -267,27 +267,7 @@ namespace DeOps.Components.Profile
             // gui creates viewshell, component just passes view object
             ProfileView view = new ProfileView(this, key, node.GetProject());
 
-            Core.InvokeInterface(Core.GuiMain.ShowInternal, view);
-        }
-
-        void ExternalMenu_View(object sender, EventArgs args)
-        {
-            IContainsNode node = sender as IContainsNode;
-
-            if (node == null)
-                return;
-
-            ulong key = node.GetKey();
-            uint searchVersion = 0;
-            if (ProfileMap.ContainsKey(key))
-                searchVersion = ProfileMap[key].Header.Version + 1;
-
-            if (Network.Routing.Responsive())
-                StartSearch(key, searchVersion);
-
-            ProfileView view = new ProfileView(this, key, node.GetProject());
-
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, view);
+            Core.InvokeView(node.IsExternal(), view);
         }
 
         private void StartSearch(ulong key, uint version)
@@ -763,6 +743,10 @@ namespace DeOps.Components.Profile
 
                 if (ProfileUpdate != null)
                     Core.InvokeInterface(ProfileUpdate, profile );
+
+                if (Core.NewsWorthy(profile.DhtID, 0, false))
+                    Core.MakeNews("Profile updated by " + Links.GetName(profile.DhtID), profile.DhtID, 0, true, ProfileRes.Icon, Menu_View);
+         
             }
             catch (Exception ex)
             {

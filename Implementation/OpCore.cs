@@ -54,7 +54,7 @@ namespace DeOps.Implementation
 
     internal delegate void LoadHandler();
     internal delegate void TimerHandler();
-    internal delegate void NewsUpdateHandler(string message, int component, int project);
+    internal delegate void NewsUpdateHandler(NewsItemInfo info);
 
 
 	internal class OpCore
@@ -468,6 +468,14 @@ namespace DeOps.Implementation
             GuiMain.BeginInvoke(method, args);
         }
 
+        internal void InvokeView(bool external, ViewShell view)
+        {
+            if(external)
+                InvokeInterface(GuiMain.ShowExternal, view);
+            else
+                InvokeInterface(GuiMain.ShowInternal, view);
+        }
+
         internal string GetTempPath()
         {
             string path = "";
@@ -487,11 +495,40 @@ namespace DeOps.Implementation
         }
 
 
-
-        internal void TestNewsUpdate()
+        internal bool NewsWorthy(ulong id, uint project, bool localRegionOnly)
         {
-            for(int x = 1; x <= 10; x++)
-                InvokeInterface(NewsUpdate, x.ToString(), 0, 0);
+            if (GuiMain == null)
+                return false;
+
+            //crit - if in buddy list, if non-local self
+            //should really be done per compontnt (board only cares about local, mail doesnt care at all, neither does chat)
+    
+            // if not self, higher, adjacent or lower direct then true
+            if (id == LocalDhtID)
+                return false;
+
+            if(!localRegionOnly && Links.IsHigher(id, project))
+                return true;
+            
+            if(localRegionOnly && Links.IsHigherDirect(id, project))
+                return true;
+
+            if(Links.IsAdjacent(id, project))
+                return true;
+
+            if (Links.IsLowerDirect(id, project))
+                return true;
+
+            return false;
+
         }
+
+        internal void MakeNews(string message, ulong id, uint project, bool showRemote, System.Drawing.Icon symbol, EventHandler onClick)
+        {
+            // use self id because point of news is alerting user to changes in their *own* interfaces
+            InvokeInterface(NewsUpdate, new NewsItemInfo(message, id, project, showRemote, symbol, onClick));
+        }
+
+
     }
 }

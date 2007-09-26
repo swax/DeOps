@@ -563,10 +563,10 @@ namespace DeOps.Components.Mail
                 return null;
 
             if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Comm/Mail", MailRes.Icon, new EventHandler(InternalMenu_View)));
+                menus.Add(new MenuItemInfo("Comm/Mail", MailRes.Icon, new EventHandler(Menu_View)));
 
             if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Mail", MailRes.Icon, new EventHandler(ExternalMenu_View)));
+                menus.Add(new MenuItemInfo("Mail", MailRes.Icon, new EventHandler(Menu_View)));
 
 
             return menus;
@@ -574,7 +574,7 @@ namespace DeOps.Components.Mail
 
         internal void QuickMenu_View(object sender, EventArgs args)
         {
-            IContainsNode node = sender as IContainsNode;
+            IViewParams node = sender as IViewParams;
 
             ulong key = 0;
 
@@ -584,12 +584,12 @@ namespace DeOps.Components.Mail
             // if window already exists to node, show it
             ComposeMail compose = new ComposeMail(this, key);
 
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, compose);
+            Core.InvokeView(true, compose);
         }
 
-        void InternalMenu_View(object sender, EventArgs args)
+        void Menu_View(object sender, EventArgs args)
         {
-            IContainsNode node = sender as IContainsNode;
+            IViewParams node = sender as IViewParams;
 
             if (node == null)
                 return;
@@ -599,22 +599,7 @@ namespace DeOps.Components.Mail
 
             MailView view = new MailView(this);
 
-            Core.InvokeInterface(Core.GuiMain.ShowInternal, view);
-        }
-
-        void ExternalMenu_View(object sender, EventArgs args)
-        {
-            IContainsNode node = sender as IContainsNode;
-
-            if (node == null)
-                return;
-
-            if (node.GetKey() != Core.LocalDhtID)
-                return;
-
-            MailView view = new MailView(this);
-
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, view);
+            Core.InvokeView(node.IsExternal(), view);
         }
 
         internal void SendMail(List<ulong> to, List<ulong> cc, List<AttachedFile> files, string subject, string body)
@@ -1284,6 +1269,9 @@ namespace DeOps.Components.Mail
             Core.OperationNet.Store.PublishNetwork(header.SourceID, ComponentID.Mail, signedAck);
             Store_Local(new DataReq(null, header.SourceID, ComponentID.Mail, signedAck)); // cant direct process_header, because header var is being modified
             RunSaveHeaders = true;
+
+            Core.MakeNews("Mail Received from " + Core.Links.GetName(message.From), message.From, 0, false, MailRes.Icon, Menu_View);
+         
         }
 
         private bool IsMailPending(CachedPending pending, byte[] mailID)

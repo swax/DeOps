@@ -174,7 +174,14 @@ namespace DeOps.Interface
             NewOpForm form = new NewOpForm();
 
             if (form.ShowDialog(this) == DialogResult.OK)
+            {
                 LinkIdentity.Text = form.IdentityPath;
+
+                TextPassword.Enabled = true;
+                ButtonLoad.Enabled = true;
+
+                TextPassword.Focus();
+            }
         }
 
         private void LinkSearch_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)

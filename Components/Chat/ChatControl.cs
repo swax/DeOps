@@ -59,32 +59,18 @@ namespace DeOps.Components.Chat
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
 
             if(menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Comm/Chat", ChatRes.Icon, new EventHandler(InternalMenu_View)));
+                menus.Add(new MenuItemInfo("Comm/Chat", ChatRes.Icon, new EventHandler(Menu_View)));
 
             if(menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Chat", ChatRes.Icon, new EventHandler(ExternalMenu_View)));
+                menus.Add(new MenuItemInfo("Chat", ChatRes.Icon, new EventHandler(Menu_View)));
 
 
             return menus;
         }
 
-        void InternalMenu_View(object sender, EventArgs args)
+        void Menu_View(object sender, EventArgs args)
         {
-            IContainsNode node = sender as IContainsNode;
-
-            if (node == null)
-                return;
-
-            
-            // gui creates viewshell, component just passes view object
-            ChatView view = new ChatView(this);
-
-            Core.InvokeInterface(Core.GuiMain.ShowInternal, view );
-        }
-
-        void ExternalMenu_View(object sender, EventArgs args)
-        {
-            IContainsNode node = sender as IContainsNode;
+            IViewParams node = sender as IViewParams;
 
             if (node == null)
                 return;
@@ -92,9 +78,10 @@ namespace DeOps.Components.Chat
             if (node.GetKey() != Core.LocalDhtID)
                 return;
 
+            // gui creates viewshell, component just passes view object
             ChatView view = new ChatView(this);
 
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, view);
+            Core.InvokeView(node.IsExternal(), view);
         }
 
         internal void Link_Update(OpLink link)

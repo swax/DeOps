@@ -243,37 +243,25 @@ namespace DeOps.Components.Storage
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
 
             if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Data/Storage", StorageRes.Icon, new EventHandler(InternalMenu_View)));
+                menus.Add(new MenuItemInfo("Data/Storage", StorageRes.Icon, new EventHandler(Menu_View)));
 
             if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Storage", StorageRes.Icon, new EventHandler(ExternalMenu_View)));
+                menus.Add(new MenuItemInfo("Storage", StorageRes.Icon, new EventHandler(Menu_View)));
 
 
             return menus;
         }
 
-        internal void InternalMenu_View(object sender, EventArgs args)
+        internal void Menu_View(object sender, EventArgs args)
         {
-            IContainsNode node = sender as IContainsNode;
+            IViewParams node = sender as IViewParams;
 
             if (node == null)
                 return;
 
             StorageView view = new StorageView(this, node.GetKey(), node.GetProject());
 
-            Core.InvokeInterface(Core.GuiMain.ShowInternal, view);
-        }
-
-        void ExternalMenu_View(object sender, EventArgs args)
-        {
-            IContainsNode node = sender as IContainsNode;
-
-            if (node == null)
-                return;
-
-            StorageView view = new StorageView(this, node.GetKey(), node.GetProject());
-
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, view);
+            Core.InvokeView(node.IsExternal(), view);
         }
 
         internal void CallFolderUpdate(uint project, string dir, ulong uid, WorkingChange action)
@@ -588,6 +576,10 @@ namespace DeOps.Components.Storage
 
                 if (StorageUpdate != null)
                     Core.InvokeInterface(StorageUpdate, storage);
+
+                if (Core.NewsWorthy(storage.DhtID, 0, false))
+                    Core.MakeNews("Storage updated by " + Links.GetName(storage.DhtID), storage.DhtID, 0, false, StorageRes.Icon, Menu_View);
+         
             }
             catch (Exception ex)
             {

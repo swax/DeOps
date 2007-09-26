@@ -45,10 +45,11 @@ namespace DeOps.Interface
         Font BoldFont = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 
         int NewsSequence;
-        Queue<string> NewsPending = new Queue<string>();
-        Queue<string> NewsRecent = new Queue<string>();
+        Queue<NewsItem> NewsPending = new Queue<NewsItem>();
+        Queue<NewsItem> NewsRecent = new Queue<NewsItem>();
         SolidBrush NewsBrush = new SolidBrush(Color.FromArgb(0, Color.White));
-
+        Rectangle NewsArea;
+        bool NewsHideUpdates;
 
         internal MainForm(OpCore core)
         {
@@ -70,6 +71,16 @@ namespace DeOps.Interface
             SideToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
         }
 
+        internal void InitSideMode()
+        {
+            MainSplit.Panel1Collapsed = false;
+            MainSplit.Panel2Collapsed = true;
+
+            Width = 200;
+
+            SideMode = true;
+        }
+
         private void MainForm_Load(object sender, EventArgs e)
         {
             Text = Core.User.Settings.Operation + " - " + Core.User.Settings.ScreenName;
@@ -83,8 +94,11 @@ namespace DeOps.Interface
             OnSelectChange(Core.LocalDhtID, CommandTree.Project);
             UpdateCommandPanel();
 
-            Core.TestNewsUpdate();
+            if(SideMode)
+                Left = Screen.PrimaryScreen.WorkingArea.Width - Width;
+
         }
+
 
         private void InviteMenuItem_Click(object sender, EventArgs e)
         {
@@ -141,7 +155,7 @@ namespace DeOps.Interface
 
             Close();
 
-            Core.GuiTray = new TrayLock(Core);
+            Core.GuiTray = new TrayLock(Core, SideMode);
         }
 
         private bool CleanInternal()
@@ -1016,6 +1030,7 @@ namespace DeOps.Interface
                 return;
 
             // sequence = 1/10s
+            Color color = NewsPending.Peek().DisplayColor;
             int alpha = NewsBrush.Color.A;
 
             // 1/4s fade in
@@ -1044,8 +1059,9 @@ namespace DeOps.Interface
                     NewsRecent.Dequeue();
             }
 
-            if (NewsBrush.Color.A != alpha)
-                NewsBrush = new SolidBrush(Color.FromArgb(alpha, Color.White));
+            
+            if (NewsBrush.Color.A != alpha || NewsBrush.Color != color)
+                NewsBrush = new SolidBrush(Color.FromArgb(alpha, color));
 
             NewsSequence++;
             NavStrip.Invalidate();
@@ -1053,6 +1069,8 @@ namespace DeOps.Interface
 
         private void NavStrip_Paint(object sender, PaintEventArgs e)
         {
+            NewsArea = new Rectangle();
+
             if (NewsPending.Count == 0)
                 return;
 
@@ -1067,7 +1085,7 @@ namespace DeOps.Interface
             }
 
             // determine size of text
-            int reqWidth = (int) e.Graphics.MeasureString(NewsPending.Peek(), BoldFont).Width;
+            int reqWidth = (int) e.Graphics.MeasureString(NewsPending.Peek().Info.Message, BoldFont).Width;
 
             if (width < reqWidth)
             {
@@ -1076,36 +1094,118 @@ namespace DeOps.Interface
             }
 
             // draw text
-            e.Graphics.DrawString(NewsPending.Peek(), BoldFont, NewsBrush, x + width / 2 - reqWidth / 2, 4);
-               
+            x = x + width / 2 - reqWidth / 2;
+            e.Graphics.DrawString(NewsPending.Peek().Info.Message, BoldFont, NewsBrush, x, 5);
+
+            NewsArea = new Rectangle(x, 5, reqWidth, 9);
         }
 
-        void Core_NewsUpdate(string message, int component, int project)
+        void Core_NewsUpdate(NewsItemInfo info)
         {
-            NewsPending.Enqueue(message);
+            NewsItem item = new NewsItem(info, SideMode, Core.LocalDhtID); // pop out external view if in messenger mode
+            item.Text = Core.TimeNow.ToString("h:mm ") + info.Message;
 
-            while (NewsPending.Count > 15)
-                NewsPending.Dequeue();
+            // set color
+            if (Links.IsLowerDirect(info.DhtID, info.ProjectID))
+                item.DisplayColor = Color.LightBlue;
+            else if (Links.IsHigher(info.DhtID, info.ProjectID))
+                item.DisplayColor = Color.Coral;
+            else
+                item.DisplayColor = Color.White;
+
+
+            Queue<NewsItem> queue = NewsHideUpdates ? NewsRecent : NewsPending;
+
+            queue.Enqueue(item);//Links.IsHigher(info.DhtID, info.ProjectID)));
+
+            while (queue.Count > 15)
+                queue.Dequeue();
+
+            if(NewsHideUpdates)
+                NewsButton.Image = InterfaceRes.news_hot;
         }
 
         private void NewsButton_DropDownOpening(object sender, EventArgs e)
         {
             NewsButton.DropDown.Items.Clear();
 
-            foreach (string message in NewsPending)
-                NewsButton.DropDown.Items.Add(message);
+            foreach (NewsItem item in NewsPending)
+                NewsButton.DropDown.Items.Add(item);
 
             if (NewsPending.Count > 0 && NewsRecent.Count > 0)
                 NewsButton.DropDown.Items.Add("-");
 
-            foreach (string message in NewsRecent)
-                NewsButton.DropDown.Items.Add(message);
+            foreach (NewsItem item in NewsRecent)
+                NewsButton.DropDown.Items.Add(item);
+
+            if (NewsRecent.Count > 0)
+                NewsButton.DropDown.Items.Add("-");
+
+            ToolStripMenuItem hide = new ToolStripMenuItem("Hide News Updates", null, new EventHandler(NewsButton_HideUpdates));
+            hide.Checked = NewsHideUpdates;
+            NewsButton.DropDown.Items.Add(hide);
 
             NewsButton.Image = InterfaceRes.news;
         }
+
+        private void NavStrip_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (NewsArea.Contains(e.Location) && NewsPending.Count > 0 && NewsPending.Peek().Info.ClickEvent != null)
+                Cursor.Current = Cursors.Hand;
+            else
+                Cursor.Current = Cursors.Arrow;
+        }
+
+        private void NavStrip_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (NewsArea.Contains(e.Location) && NewsPending.Peek() != null)
+                NewsPending.Peek().Info.ClickEvent.Invoke(NewsPending.Peek(), null);
+        }
+
+        private void NewsButton_HideUpdates(object sender, EventArgs e)
+        {
+            NewsHideUpdates = !NewsHideUpdates;
+
+            if (NewsHideUpdates && NewsPending.Count > 0)
+                while (NewsPending.Count != 0)
+                    NewsRecent.Enqueue(NewsPending.Dequeue());
+
+            NavStrip.Invalidate();
+        }
     }
 
-    class OpStripItem : ToolStripMenuItem, IContainsNode
+    class NewsItem : ToolStripMenuItem, IViewParams
+    {
+        internal NewsItemInfo Info;
+        internal Color DisplayColor;
+        internal bool External;
+        ulong LocalID;
+
+        internal NewsItem(NewsItemInfo info, bool external, ulong localid)
+            : base(info.Message, info.Symbol != null ? info.Symbol.ToBitmap() : null, info.ClickEvent)
+        {
+            Info = info;
+            External = external;
+            LocalID = localid;
+        }
+
+        public ulong GetKey()
+        {
+            return Info.ShowRemote ? Info.DhtID : LocalID;
+        }
+
+        public uint GetProject()
+        {
+            return Info.ProjectID;
+        }
+
+        public bool IsExternal()
+        {
+            return External;
+        }
+    }
+
+    class OpStripItem : ToolStripMenuItem, IViewParams
     {
         internal ulong DhtID;
         internal uint ProjectID;
@@ -1130,6 +1230,11 @@ namespace DeOps.Interface
         {
             return ProjectID;
         }
+
+        public bool IsExternal()
+        {
+            return false;
+        }
     }
 
     class ProjectItem : ToolStripMenuItem
@@ -1143,7 +1248,7 @@ namespace DeOps.Interface
         }
     }
 
-    class OpMenuItem : ToolStripMenuItem, IContainsNode
+    class OpMenuItem : ToolStripMenuItem, IViewParams
     {
         internal ulong DhtID;
         internal uint ProjectID;
@@ -1174,6 +1279,11 @@ namespace DeOps.Interface
         public uint GetProject()
         {
             return ProjectID;
+        }
+
+        public bool IsExternal()
+        {
+            return true;
         }
     }
 
@@ -1207,7 +1317,7 @@ namespace DeOps.Interface
         }
     }
 
-    class ComponentNavItem : ToolStripMenuItem, IContainsNode
+    class ComponentNavItem : ToolStripMenuItem, IViewParams
     {
         ulong DhtID;
         uint ProjectID;
@@ -1238,6 +1348,11 @@ namespace DeOps.Interface
         public uint GetProject()
         {
             return ProjectID;
+        }
+
+        public bool IsExternal()
+        {
+            return false;
         }
     }
 }

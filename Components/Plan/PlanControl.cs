@@ -77,66 +77,43 @@ namespace DeOps.Components.Plan
 
             if (menuType == InterfaceMenuType.Internal)
             {
-                menus.Add(new MenuItemInfo("Plans/Schedule", PlanRes.Schedule, new EventHandler(InternalMenu_ScheduleView)));
-                menus.Add(new MenuItemInfo("Plans/Goals", PlanRes.Goals, new EventHandler(InternalMenu_GoalsView)));
+                menus.Add(new MenuItemInfo("Plans/Schedule", PlanRes.Schedule, new EventHandler(Menu_ScheduleView)));
+                menus.Add(new MenuItemInfo("Plans/Goals", PlanRes.Goals, new EventHandler(Menu_GoalsView)));
             }
 
             if (menuType == InterfaceMenuType.External)
             {
-                menus.Add(new MenuItemInfo("Schedule", PlanRes.Schedule, new EventHandler(ExternalMenu_ScheduleView)));
-                menus.Add(new MenuItemInfo("Goals", PlanRes.Goals, new EventHandler(ExternalMenu_GoalsView)));
+                menus.Add(new MenuItemInfo("Schedule", PlanRes.Schedule, new EventHandler(Menu_ScheduleView)));
+                menus.Add(new MenuItemInfo("Goals", PlanRes.Goals, new EventHandler(Menu_GoalsView)));
             }
 
             return menus;
         }
 
-        void InternalMenu_ScheduleView(object sender, EventArgs args)
+        void Menu_ScheduleView(object sender, EventArgs args)
         {
-            IContainsNode node = sender as IContainsNode;
+            IViewParams node = sender as IViewParams;
 
             if (node == null)
                 return;
 
             ScheduleView view = new ScheduleView(this, node.GetKey(), node.GetProject());
 
-            Core.InvokeInterface(Core.GuiMain.ShowInternal, view);
+            Core.InvokeView(node.IsExternal(), view);
         }
 
-        void ExternalMenu_ScheduleView(object sender, EventArgs args)
+        void Menu_GoalsView(object sender, EventArgs args)
         {
-            IContainsNode node = sender as IContainsNode;
-
-            if (node == null)
-                return;
-
-            ScheduleView view = new ScheduleView(this, node.GetKey(), node.GetProject());
-
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, view);
-        }
-
-        void InternalMenu_GoalsView(object sender, EventArgs args)
-        {
-            IContainsNode node = sender as IContainsNode;
+            IViewParams node = sender as IViewParams;
 
             if (node == null)
                 return;
 
             GoalsView view = new GoalsView(this, node.GetKey(), node.GetProject());
 
-            Core.InvokeInterface(Core.GuiMain.ShowInternal, view);
+            Core.InvokeView(node.IsExternal(), view);
         }
 
-        void ExternalMenu_GoalsView(object sender, EventArgs args)
-        {
-            IContainsNode node = sender as IContainsNode;
-
-            if (node == null)
-                return;
-
-            GoalsView view = new GoalsView(this, node.GetKey(), node.GetProject());
-
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, view);
-        }
 
         void Core_Load()
         {
@@ -449,10 +426,13 @@ namespace DeOps.Components.Plan
                                     }
                             }
 
-                
+
 
                 if (PlanUpdate != null)
                     Core.InvokeInterface(PlanUpdate, plan);
+
+                if (Core.NewsWorthy(plan.DhtID, 0, false))
+                    Core.MakeNews("Plan updated by " + Links.GetName(plan.DhtID), plan.DhtID, 0, false, PlanRes.Schedule, Menu_ScheduleView);
             }
             catch (Exception ex)
             {

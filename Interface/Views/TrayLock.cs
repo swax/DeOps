@@ -14,10 +14,13 @@ namespace DeOps.Interface.Views
     {
         OpCore Core;
         NotifyIcon Tray = new NotifyIcon();
+        bool PreserveSideMode;
 
-        internal TrayLock(OpCore core)
+        internal TrayLock(OpCore core, bool sideMode)
         {
             Core = core;
+
+            PreserveSideMode = sideMode;
 
             Tray.Icon = InterfaceRes.rank;
             Tray.Text = Core.User.Settings.Operation + " - " + Core.User.Settings.ScreenName;
@@ -55,6 +58,10 @@ namespace DeOps.Interface.Views
                 Utilities.MemCompare(password.IV, Core.User.Password.IV))
             {
                 Core.GuiMain = new MainForm(Core);
+
+                if(PreserveSideMode)
+                    Core.GuiMain.InitSideMode();
+                
                 Core.GuiMain.Show();
                
                 Tray.Visible = false;

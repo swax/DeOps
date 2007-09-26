@@ -1,27 +1,21 @@
 
-put news updates in blue bar remainder area
-	*white news icon next to popout, 
-	*	click news expand latest news items
-		last option is to hide
-	*	if hidden or cant fit text, turn news icon red
-	select item, pop out window to component
-		mouse over hand?
-	*paint stories in remainder area of blue bar
-	*queue of stories
-	*	stories shows to 2 secs then fades, 1 sec pause till next
-		queue balances stories from diff component ids so one component cant flood queue
-		invisible if not needed
-	filter self updates
-	updates - if someone in local region or linked up through root
-		links - tell new uplink if diff from before
-		tell component updated - storage, schedule, goals, profile, new mail, new post on board, chat msg (if chat not visible)
-			alert main interface with (string msg, and coponent ID)
-		
+news
+	chat msg (if chat not visible or visited in last minute, or alerted in last minute)
+
+	more refined, if care about user, do detailed diff between new and old file
+		show self only if local didn't make the change, if non-local self change show as white
+		detect diff between changed schedule / changed goals or both
+	
+carry top blue bar into messenger mode to show updates in, drop down icon on left to open components for respective project
+create function to search through externals for type/id/project, when popping external look for existing window
+
 changing person focus perserves view
 changing project focus perserves view
 perserve view going from collapse to restore
 
-goals   - save branch path when transfering goal <-> schedule
+goals   -   star self, blue triangle lower, red triangle higher
+			details visible 
+			save branch path when transfering goal <-> schedule
 IM      - remove dupe system messages
 storage - diff status on root info, update without refreshing
 mail    - delete mail not refreshing view, sync local mail between users
@@ -334,7 +328,17 @@ visual component
 		lowers by default see this region when they open visuals not the whole canvas
 	interface - basic paint operations with copy/paste, show transparent zones (off by default)
 	layers for putting down map img/ people img and being able to edit it easily
+	3d component uses imported models from any souce, sketch up ? 
+	lower corner box shows zoomed out view
 	
+stats component
+	how many people in org, follow link tree
+	% active in last x, crawl persistant locs
+	balance of tree at diff levels, also could do graphical reresentation
+		like sequoia view showing where most people are and who follows them
+
+
+
 Compartmentalization
 	sign with level key, mark with level version of key signed
 	when link version updated

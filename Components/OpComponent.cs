@@ -27,11 +27,31 @@ namespace DeOps.Components
         }
     }
 
+    internal class NewsItemInfo
+    {
+        internal string Message;
+        internal ulong DhtID;
+        internal uint ProjectID;
+        internal bool ShowRemote;
+        internal Icon Symbol;
+        internal EventHandler ClickEvent;
 
-    internal interface IContainsNode
+        internal NewsItemInfo(string message, ulong id, uint project, bool showRemote, Icon symbol, EventHandler onClick)
+        {
+            Message = message;
+            DhtID = id;
+            ProjectID = project;
+            Symbol = symbol;
+            ShowRemote = showRemote;
+            ClickEvent = onClick;
+        }
+    }
+
+    internal interface IViewParams
     {
         ulong GetKey();
         uint  GetProject();
+        bool  IsExternal();
     }
 
 

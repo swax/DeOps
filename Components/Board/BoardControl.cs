@@ -294,36 +294,24 @@ namespace DeOps.Components.Board
                 return null;
 
             if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Comm/Board", BoardRes.Icon, new EventHandler(InternalMenu_View)));
+                menus.Add(new MenuItemInfo("Comm/Board", BoardRes.Icon, new EventHandler(Menu_View)));
 
             if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Board", BoardRes.Icon, new EventHandler(ExternalMenu_View)));
+                menus.Add(new MenuItemInfo("Board", BoardRes.Icon, new EventHandler(Menu_View)));
 
             return menus;
         }
 
-        void InternalMenu_View(object sender, EventArgs args)
+        void Menu_View(object sender, EventArgs args)
         {
-            IContainsNode node = sender as IContainsNode;
+            IViewParams node = sender as IViewParams;
 
             if (node == null)
                 return;
 
             BoardView view = new BoardView(this, node.GetKey(), node.GetProject());
 
-            Core.InvokeInterface(Core.GuiMain.ShowInternal, view);
-        }
-
-        void ExternalMenu_View(object sender, EventArgs args)
-        {
-            IContainsNode node = sender as IContainsNode;
-
-            if (node == null)
-                return;
-
-            BoardView view = new BoardView(this, node.GetKey(), node.GetProject());
-
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, view );
+            Core.InvokeView(node.IsExternal(), view);
         }
 
         internal void PostEdit(OpPost edit)
@@ -590,7 +578,12 @@ namespace DeOps.Components.Board
                     SavedReplyCount.Remove(post.Ident);
                 }
 
-            Core.InvokeInterface(PostUpdate, post);
+            if(PostUpdate != null)
+                Core.InvokeInterface(PostUpdate, post);
+
+            if (Core.NewsWorthy(header.TargetID, header.ProjectID, true))
+                Core.MakeNews("Board updated by " + Links.GetName(header.SourceID), header.SourceID, 0, false, BoardRes.Icon, Menu_View);
+         
         }
 
         void DownloadPost(SignedData signed, PostHeader header)

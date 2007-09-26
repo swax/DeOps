@@ -118,7 +118,7 @@ namespace DeOps.Components.IM
 
         internal void QuickMenu_View(object sender, EventArgs args)
         {
-            IContainsNode node = sender as IContainsNode;
+            IViewParams node = sender as IViewParams;
 
             if (node == null)
                 return;
@@ -170,7 +170,7 @@ namespace DeOps.Components.IM
 
             IM_View view = new IM_View(this, key);
 
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, view);
+            Core.InvokeView(true, view);
 
             return view;
         }

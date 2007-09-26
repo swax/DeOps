@@ -199,6 +199,8 @@ namespace DeOps.Interface
             this.NavStrip.Size = new System.Drawing.Size(499, 25);
             this.NavStrip.TabIndex = 3;
             this.NavStrip.Paint += new System.Windows.Forms.PaintEventHandler(this.NavStrip_Paint);
+            this.NavStrip.MouseClick += new System.Windows.Forms.MouseEventHandler(this.NavStrip_MouseClick);
+            this.NavStrip.MouseMove += new System.Windows.Forms.MouseEventHandler(this.NavStrip_MouseMove);
             // 
             // PersonNavButton
             // 
