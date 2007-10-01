@@ -89,7 +89,7 @@ namespace DeOps.Components.Storage
             this.FoldersButton.Name = "FoldersButton";
             this.FoldersButton.Size = new System.Drawing.Size(62, 22);
             this.FoldersButton.Text = "Folders";
-            this.FoldersButton.Click += new System.EventHandler(this.FoldersButton_Click);
+            this.FoldersButton.CheckedChanged += new System.EventHandler(this.FoldersButton_CheckedChanged);
             // 
             // divLabel
             // 
@@ -148,6 +148,7 @@ namespace DeOps.Components.Storage
             this.FolderTreeView.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.FolderTreeView.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.FolderTreeView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.FolderTreeView.FullRowSelect = false;
             this.FolderTreeView.GridLineColor = System.Drawing.Color.WhiteSmoke;
             this.FolderTreeView.HeaderMenu = null;
             this.FolderTreeView.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
@@ -229,11 +230,13 @@ namespace DeOps.Components.Storage
             this.FileListView.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.FileListView.DisableHorizontalScroll = true;
             this.FileListView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.FileListView.FullRowSelect = false;
             this.FileListView.GridLineColor = System.Drawing.Color.WhiteSmoke;
             this.FileListView.HeaderMenu = null;
             this.FileListView.ItemMenu = null;
             this.FileListView.LabelEdit = false;
             this.FileListView.Location = new System.Drawing.Point(0, 0);
+            this.FileListView.MultiSelect = true;
             this.FileListView.Name = "FileListView";
             this.FileListView.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.FileListView.RowTrackColor = System.Drawing.Color.WhiteSmoke;
@@ -268,11 +271,12 @@ namespace DeOps.Components.Storage
             this.ChangesLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ChangesLabel.AutoSize = true;
             this.ChangesLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ChangesLabel.Location = new System.Drawing.Point(376, 416);
+            this.ChangesLabel.Location = new System.Drawing.Point(380, 416);
             this.ChangesLabel.Name = "ChangesLabel";
             this.ChangesLabel.Size = new System.Drawing.Size(56, 13);
             this.ChangesLabel.TabIndex = 25;
             this.ChangesLabel.Text = "Changes";
+            this.ChangesLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.ChangesLabel.Visible = false;
             // 
             // DiscardLink

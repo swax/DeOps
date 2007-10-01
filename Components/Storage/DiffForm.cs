@@ -231,7 +231,7 @@ namespace DeOps.Components.Storage
 
 
                 Info.CurrentFile.Update();
-                Info.Refresh();
+                Info.RefreshItem();
             }
 
             if (UsingCombo.Text == "Another Tool...")

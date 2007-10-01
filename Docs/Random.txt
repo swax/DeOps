@@ -85,6 +85,9 @@ selling points
 	They also still majorly need a cohesive environment in which to quickly and effectively coordinate
 		http://lists.freedesktop.org/archives/compiz/2007-February/001413.html
 		
+	The difference between rich and poor countries boil down to the sophistication of the coordiation and trust structures
+		http://www.slate.com/id/2174706/fr/flyout
+	
 	Andy Tanenbaum: The problem is co-ordinating things. Projects like GNU, MINIX, or LINUX only hold together if one person is in charge. 
 	Linus Torvalds: Yes, coordination is a big problem, and I don't think linux will move away from me as "head surgeon" for some time..
 	
@@ -123,6 +126,15 @@ selling points
 		to solve.
 		
 	Bring the power of cvs to the common man by making it intuitive
+
+	either machines become sentient, or we become 'more' sentient with machines
+		associate machines and components of systems with people directly
+		a business isn't run by machines and the people who manage them; it is run by *people* augmented by machines
+
+	conciousness / a single life are direct intertwined connections
+		my neurons are connected directly to one another, influencing each other directly
+		'myself' is my collection of neurons interfacing with other collections, not directly
+		the seperation from direct interaction is what also seperates concious entities
 
 Main Jobs 
 	Components - board, calendar, common storage
@@ -229,6 +241,27 @@ Plugin system
 				or querying higher that is set to 'collector' for particualr issue
 				collect process tallies votes and published in vote file
 					other see results - collected by x, published at y time
+
+website
+	wiki based
+	hire international people, in charge of translation / international sites
+		give commission of revenue for sales
+	go international ASAP, domestic market is a bear, international is more receptive of new tech like this
+	
+Pro
+	Commercial use
+	Security improvements
+	Mobile version
+	Voice/video chat, try to make it as polished as possible like full screen meeting  interface
+	Server Mode
+	Signed.. something.. (email?) that is authenticated by others and adds value
+		PRO image in upper left of blue bar if user has signed auth key from meee
+	Private / Secret Projects
+	Flash drive with program and encrypted file system on it, truely portable personal computer	
+	Single file storage
+	Auto language translation - use little drop down flags on left hand side project bar
+	componentized, pro version lets you set visibility(up/down) on files/messages, free version everything is transparent
+	
 
 Packets
 	Transport

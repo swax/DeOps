@@ -8,16 +8,20 @@ using System.IO;
 using System.Resources;
 using System.Text;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 using DeOps.Interface;
 
 
 namespace DeOps.Components.Storage
 {
-    internal partial class InfoPanel : UserControl
+    [ComVisible(true)]
+    public partial class InfoPanel : UserControl
     {
         internal StorageView ParentView;
         internal StorageControl Storages;
+
+        internal bool DisplayActivated;
 
         internal FolderNode CurrentFolder;
         internal FileItem CurrentFile;
@@ -28,10 +32,14 @@ namespace DeOps.Components.Storage
         bool Local;
         bool WatchTransfers;
 
+        internal bool DiffsView;
+
         internal Dictionary<ulong, StorageItem> CurrentChanges = new Dictionary<ulong, StorageItem>();
         internal Dictionary<ulong, StorageItem> CurrentIntegrated = new Dictionary<ulong, StorageItem>();
 
         List<StorageItem> History  = new List<StorageItem>();
+
+        List<StorageFile> StatusList = new List<StorageFile>();
 
         List<string> Reset = new List<string>();
 
@@ -39,7 +47,7 @@ namespace DeOps.Components.Storage
                                     <head>
                                     <style>
                                         body { font-family:tahoma; font-size:12px;margin-top:3px;}
-                                        td { font-size:10px;vertical-align: top; }
+                                        td { font-size:10px;vertical-align: middle; }
                                     </style>
                                     </head>
 
@@ -104,11 +112,6 @@ namespace DeOps.Components.Storage
 	                                    return false;
                                     }
 
-                                    document.onclick = function(event)
-                                    {
-	                                    Reset();
-                                    }
-
                                     function Reset()
                                     {	
                                         var extend1 = '<?=imgExtend1?>';
@@ -116,6 +119,16 @@ namespace DeOps.Components.Storage
 	                                    <?=reset?>
                                     }
 
+                                    function UpdateStatus(id, text)
+                                    {
+                                        document.getElementById(id).innerHTML = text;
+                                    }
+
+                                    // keep at bottom of script, otherwise errors
+                                    document.onclick = function(event)
+                                    {
+	                                    Reset();
+                                    }
                                 </script>
                                 </head>
 
@@ -146,6 +159,48 @@ namespace DeOps.Components.Storage
                                 </html>";
 
 
+        const string DifferencePage = @"<html>
+                                    <head>
+                                    <style>
+                                        body { font-family:tahoma; font-size:12px;margin-top:3px;}
+                                        td { font-size:10px;vertical-align: middle; }
+                                    </style>
+                                    <script>
+                                         function UpdateStatus(id, text)
+                                        {
+                                            document.getElementById(id).innerHTML = text;
+                                        }
+                                        
+                                    </script>
+                                    </head>
+
+                                    <body bgcolor=#f5f5f5>
+
+                                        <?=table?>
+
+                                        <br>
+                                         Drag files in to add them to your secure storage. Once changes are saved they are inherited by those below you.
+                                         Changes are manually reviewed and integrated before moving to those above you.
+                                    </body>
+                                    </html>";
+
+        const string DifferenceTable = @"<br>
+                                        <table cellspacing=0 cellpadding=2>
+                                            <tr>
+	                                            <td colspan=2><span style='font-size:12px;font-weight:bold;'>Showing Last Revisions by</span></td>
+	                                        </tr>
+
+                                            <?=next_difference_row?>
+
+                                        </table>";
+
+        const string DifferenceRowTemplate = @"<tr>
+	                                            <td <?=bgcolor?> ><font color='<?=namecolor?>' ><?=name?></font></td>
+                                                <td <?=bgcolor?> id='<?=statusID?>'> <?=status?> </td>
+                                            </tr>
+                                                    
+                                            <?=next_difference_row?>";
+
         const string ChangesTemplate = @"<table cellspacing=0 cellpadding=2>
                                         <tr>
 	                                        <td colspan=5 bgcolor=#ffcc66><span style='font-size:12px;font-weight:bold;'>Changes</span></td>
@@ -158,7 +213,7 @@ namespace DeOps.Components.Storage
 
         const string ChangesRowTemplate = @"<tr>
 	                                            <td <?=bgcolor?>><?=menu?></td>
-                                                <td <?=bgcolor?> ><?=who?></td>
+                                                <td <?=bgcolor?> ><font color='<?=namecolor?>' ><?=who?></font></td>
 	                                            <td <?=bgcolor?> ><?=action?></td>
 	                                            <td <?=bgcolor?> ><?=date?></td>
 	                                            <td <?=bgcolor?> ><?=note?></td>
@@ -168,7 +223,7 @@ namespace DeOps.Components.Storage
 
         const string ChangesDownloadRow = @"<tr>
 	                                            <td <?=bgcolor?>></td>
-                                                <td <?=bgcolor?> colspan=4><i><?=status?></i></td>
+                                                <td <?=bgcolor?> colspan=4><i id='<?=statusID?>'> <?=status?> </i></td>
                                             </tr>
                                                     
                                             <?=next_changes_row?>";
@@ -185,7 +240,7 @@ namespace DeOps.Components.Storage
 
         const string IntegratedRowTemplate = @"<tr>
 	                                            <td <?=bgcolor?>><?=menu?></td>
-                                                <td <?=bgcolor?> ><?=who?></td>
+                                                <td <?=bgcolor?> ><font color='<?=namecolor?>' ><?=who?></font></td>
 	                                            <td <?=bgcolor?> ><?=action?></td>
 	                                            <td <?=bgcolor?> ><?=date?></td>
 	                                            <td <?=bgcolor?> ><?=note?></td>
@@ -195,7 +250,7 @@ namespace DeOps.Components.Storage
 
         const string IntegratedDownloadRow = @"<tr>
 	                                            <td <?=bgcolor?>></td>
-                                                <td <?=bgcolor?> colspan=4><i><?=status?></i></td>
+                                                <td <?=bgcolor?> colspan=4><i id='<?=statusID?>'> <?=status?> </i></td>
                                             </tr>
                                                     
                                             <?=next_integrated_row?>";
@@ -224,7 +279,7 @@ namespace DeOps.Components.Storage
 
         const string HistoryDownloadRow = @"<tr>
 	                                            <td <?=bgcolor?>></td>
-                                                <td <?=bgcolor?> colspan=4><i><?=status?></i></td>
+                                                <td <?=bgcolor?> colspan=4><i id='<?=statusID?>'> <?=status?> </i></td>
                                             </tr>
                                             
                                     <?=next_history_row?>";
@@ -266,6 +321,10 @@ namespace DeOps.Components.Storage
         internal InfoPanel()
         {
             InitializeComponent();
+
+            InfoDisplay.ObjectForScripting = this;
+
+       
         }
 
         internal void Init(StorageView parent)
@@ -311,10 +370,13 @@ namespace DeOps.Components.Storage
         {
             Debug.Assert(!html.Contains("<?"));
 
+            if (!DisplayActivated)
+                return;
+
             // watch transfers runs per second, dont update unless we need to 
             if (html.CompareTo(InfoDisplay.DocumentText) == 0)
                 return;
-
+            
             // prevents clicking sound when browser navigates
             InfoDisplay.Hide();
             InfoDisplay.DocumentText = html;
@@ -328,6 +390,9 @@ namespace DeOps.Components.Storage
             CurrentItem = null;
             CurrentPath = "..";
 
+            WatchTransfers = false;
+            DiffsView = false;
+
             Html.Length = 0;
             Html.Append(DefaultPage);
 
@@ -336,16 +401,26 @@ namespace DeOps.Components.Storage
             SetDisplay(Html.ToString());
         }
 
-        internal void ShowDefault()
+        internal void ShowDiffs()
         {
             CurrentFolder = null;
             CurrentFile = null;
             CurrentItem = null;
+            CurrentPath = "";
+
+            WatchTransfers = false;
+            DiffsView = true;
 
             Html.Length = 0;
-            Html.Append(DefaultPage);
+            Html.Append(DifferencePage);
 
-            Html.Replace("<?=note?>", "");
+            if (ParentView.CurrentDiffs.Count > 0)
+            {
+                Html.Replace("<?=table?>", DifferenceTable);
+                GetDifferenceRows(Html);
+            }
+            else
+                Html.Replace("<?=table?>", "");
 
             SetDisplay(Html.ToString());
 
@@ -356,6 +431,7 @@ namespace DeOps.Components.Storage
             //      temp files, deletion
             //      archived files
             // explain text colors - grey, black, bold, red
+
         }
 
         internal void ShowItem(FolderNode folder, FileItem file)
@@ -389,6 +465,9 @@ namespace DeOps.Components.Storage
             }
 
             Reset.Clear();
+            StatusList.Clear();
+            WatchTransfers = false;
+            DiffsView = false;
 
             bool unlocked = CurrentItem.IsFlagged(StorageFlags.Unlocked) ||
                             (IsFile && Storages.IsHistoryUnlocked(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), CurrentFile.Archived));
@@ -409,6 +488,7 @@ namespace DeOps.Components.Storage
             <?=history?>
             */
 
+            
             if (!temp)
             {
                 if(unlocked)
@@ -496,8 +576,12 @@ namespace DeOps.Components.Storage
             FinishWriting(Html);
 
             SetDisplay(Html.ToString());
+
+            if (WatchTransfers)
+                UpdateItemView();
         }
 
+   
         private void FinishWriting(StringBuilder html)
         {
             // reset
@@ -549,13 +633,12 @@ namespace DeOps.Components.Storage
             {
                 html.Replace("<?=next_changes_row?>", ChangesRowTemplate);
 
-                string color = null;
-                if(row.Higher)
-                    color =  (i % 2 == 0) ? "bgcolor=#ffd7d7" : "bgcolor=#ffe1e1";
-                else
-                    color =  (i % 2 == 0) ? "bgcolor=#ffd7d7" : "bgcolor=#e1e1ff";
-
+                string color = (i % 2 == 0) ? "bgcolor=#ebebeb" : "";
                 html.Replace("<?=bgcolor?>", color);
+
+                color = row.Higher ? "bgcolor=#ff0000" : "0000ff";
+                html.Replace("<?=namecolor?>", color);
+
 
                 // if file exists
                 if (IsFile)
@@ -598,7 +681,9 @@ namespace DeOps.Components.Storage
 
                             html.Replace("<?=next_changes_row?>", ChangesDownloadRow);
                             html.Replace("<?=bgcolor?>", color);
+                            html.Replace("<?=statusID?>", "status" + StatusList.Count.ToString());
                             html.Replace("<?=status?>", status);
+                            StatusList.Add(file);
 
                             WatchTransfers = true;
                         }
@@ -644,6 +729,31 @@ namespace DeOps.Components.Storage
             return highers;
         }
 
+        private void GetDifferenceRows(StringBuilder html)
+        {
+            int i = 1;
+
+            // current diffs already sorted higher/lower
+            foreach (ulong id in ParentView.CurrentDiffs)
+            {
+                html.Replace("<?=next_difference_row?>", DifferenceRowTemplate);
+
+                string color = (i % 2 == 0) ? "bgcolor=#ebebeb" : "";
+                html.Replace("<?=bgcolor?>", color);
+
+                color = ParentView.HigherIDs.Contains(id) ? "bgcolor=#ff0000" : "0000ff";
+                html.Replace("<?=namecolor?>", color);
+
+                html.Replace("<?=name?>", ParentView.Core.Links.GetName(id));
+                html.Replace("<?=statusID?>", "status" + id.ToString());
+                html.Replace("<?=status?>", GetDiffStatus(id));
+
+                i++;
+            }
+
+            html.Replace("<?=next_difference_row?>", "");
+        }
+
 
         private void GetIntegratedRows(StringBuilder html)
         {
@@ -660,13 +770,11 @@ namespace DeOps.Components.Storage
             {
                 html.Replace("<?=next_integrated_row?>", IntegratedRowTemplate);
 
-                string color = null;
-                if(row.Higher)
-                    color =  (i % 2 == 0) ? "bgcolor=#ffd7d7" : "bgcolor=#ffe1e1";
-                else
-                    color =  (i % 2 == 0) ? "bgcolor=#ffd7d7" : "bgcolor=#e1e1ff";
-
+                string color = (i % 2 == 0) ? "bgcolor=#ebebeb" : "";
                 html.Replace("<?=bgcolor?>", color);
+
+                color = row.Higher ? "bgcolor=#ff0000" : "0000ff";
+                html.Replace("<?=namecolor?>", color);
 
                 // if file exists
                 if (IsFile)
@@ -704,7 +812,10 @@ namespace DeOps.Components.Storage
 
                             html.Replace("<?=next_integrated_row?>", IntegratedDownloadRow);
                             html.Replace("<?=bgcolor?>", color);
+                            html.Replace("<?=statusID?>", "status" + StatusList.Count.ToString());
                             html.Replace("<?=status?>", status);
+
+                            StatusList.Add(file);
 
                             WatchTransfers = true;
                         }
@@ -740,7 +851,7 @@ namespace DeOps.Components.Storage
             <?=note?> 
             <?=edit?> 
              <?=next_history_row?>*/
-           
+
             /*
               menu
               menu_img_id
@@ -811,7 +922,9 @@ namespace DeOps.Components.Storage
 
                             html.Replace("<?=next_history_row?>", HistoryDownloadRow);
                             html.Replace("<?=bgcolor?>", color);
+                            html.Replace("<?=statusID?>", "status" + StatusList.Count.ToString());
                             html.Replace("<?=status?>", status);
+                            StatusList.Add(file);
 
                             WatchTransfers = true;
                         }
@@ -901,7 +1014,7 @@ namespace DeOps.Components.Storage
                         LockMessage.Alert(ParentView, errors);
 
                         ParentView.RefreshFileList();
-                        Refresh();
+                        RefreshItem();
                     }
                 }
 
@@ -912,7 +1025,7 @@ namespace DeOps.Components.Storage
                         ParentView.UnlockFile(CurrentFile);
 
                         CurrentFile.Update();
-                        Refresh();
+                        RefreshItem();
                     }
                     else
                     {
@@ -929,7 +1042,7 @@ namespace DeOps.Components.Storage
                         LockMessage.Alert(ParentView, errors);
                         
                         ParentView.RefreshFileList();
-                        Refresh();
+                        RefreshItem();
                     }
                 }
 
@@ -1096,7 +1209,7 @@ namespace DeOps.Components.Storage
                     LockMessage.Alert(ParentView, errors);
                     
                     CurrentFile.Update();
-                    Refresh();
+                    RefreshItem();
                 }
 
                 if (parts[1] == "lock")
@@ -1104,7 +1217,7 @@ namespace DeOps.Components.Storage
                     Storages.LockFile(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, history);
 
                     CurrentFile.Update();
-                    Refresh();
+                    RefreshItem();
                 }
 
                 if (parts[1] == "download")
@@ -1130,7 +1243,7 @@ namespace DeOps.Components.Storage
             if (transferChange)
             {
                 WatchTransfers = true;
-                Refresh();
+                RefreshItem();
 
                 ParentView.WatchTransfers = true;
                 ParentView.UpdateListItems();
@@ -1139,15 +1252,66 @@ namespace DeOps.Components.Storage
 
         internal void SecondTimer()
         {
+            UpdateItemView();
+        }
+
+
+        private void UpdateItemView()
+        {
             if (!WatchTransfers)
                 return;
 
-            WatchTransfers = false; // will be reset if transfers still active
+            WatchTransfers = false;
 
-            Refresh();
+            for (int i = 0; i < StatusList.Count; i++)
+            {
+                string status = Storages.FileStatus(StatusList[i]);
+
+                if (status == null)
+                {
+                    RefreshItem();
+                    return;
+                }
+                else
+                {
+                    WatchTransfers = true;
+
+                    string tag = "status" + i.ToString();
+
+                    if (InfoDisplay.DocumentText.Contains(tag))
+                        InfoDisplay.Document.InvokeScript("UpdateStatus", new String[] { tag, status });
+                }
+            }
         }
 
-        internal void Refresh()
+        internal void UpdateDiffView(ulong id)
+        {
+            if (!DisplayActivated || !DiffsView)
+                return;
+
+            string tag = "status" + id.ToString();
+
+            if (InfoDisplay.DocumentText.Contains(tag))
+                InfoDisplay.Document.InvokeScript("UpdateStatus", new String[] { tag, GetDiffStatus(id) });
+        }
+
+        private string GetDiffStatus(ulong id)
+        {
+            string status = "Not Found";
+
+            if (Storages.StorageMap.ContainsKey(id))
+            {
+                if (ParentView.FailedDiffs.Contains(id))
+                    status = "Failed to Compare";
+
+                else
+                    status = " at " + Storages.StorageMap[id].Header.Date.ToString();
+            }
+
+            return status;
+        }
+
+        internal void RefreshItem()
         {
             ShowItem(CurrentFolder, CurrentFile);
         }

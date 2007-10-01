@@ -1022,38 +1022,10 @@ namespace DeOps.Interface.TLVex
 					// set level buffer
 					lb = indent*level;
 
-					// set icon buffer
-					if ((node.Selected || node.Focused) && stateImageList != null)
-					{
-						if (node.ImageIndex >= 0 && node.ImageIndex < stateImageList.Count)
-						{
-                            g.DrawImage(stateImageList[node.ImageIndex], r.Left+lb+eb+2-hscrollBar.Value, r.Top+hb+itemheight*totalRend+eb/4-2, 16, 16);
-							ib = 18;
-						}
-					}
-					else
-					{
-						if (smallImageList != null && node.ImageIndex >= 0 && node.ImageIndex < smallImageList.Count)
-						{
-                            int left = r.Left + lb + eb + 2 - hscrollBar.Value;
-                            int top = r.Top + hb + itemheight * totalRend + eb / 4 - 2;
-                            g.DrawImage(smallImageList[node.ImageIndex], r.Left+lb+eb+2-hscrollBar.Value, r.Top+hb+itemheight*totalRend+eb/4-2, 16, 16);
-							ib = 18;
-						}
-					}
 
-                    if (smallImageList != null && node.ImageIndex >= 0 && node.ImageIndex < smallImageList.Count)
-                    {
-                        if (node.Overlays != null)
-                            foreach (int overlay in node.Overlays)
-                                if (overlay >= 0 && overlay < OverlayImages.Count)
-                                    g.DrawImage(OverlayImages[overlay], r.Left + lb + eb + 2 - hscrollBar.Value, r.Top + hb + itemheight * totalRend + eb / 4 - 2, 16, 16);
-							
-                        ib = 18;
-                    }
 
 					// add a rectangle to the node row rectangles
-					Rectangle sr = new Rectangle(r.Left+lb+ib+eb+4-hscrollBar.Value, r.Top+hb+itemheight*totalRend+2, allColsWidth-(lb+ib+eb+4), itemheight);
+					Rectangle sr = new Rectangle(r.Left+lb+eb+2-hscrollBar.Value, r.Top+hb+itemheight*totalRend+2, allColsWidth-(lb+eb+2), itemheight);
 					nodeRowRects.Add(sr, node);
 
                     int iColWidth = this.Width;
@@ -1070,13 +1042,57 @@ namespace DeOps.Interface.TLVex
 							g.FillRectangle(new SolidBrush(node.BackColor), r.Left+lb+ib+eb+4-hscrollBar.Value, r.Top+hb+itemheight*totalRend+2, iColWidth /* BMS 2003-05-24 columns[0].Width */ -(lb+ib+eb+4), itemheight);
 					}
 
+                    // set icon buffer
+                    Image smallIcon = null;
+                    List<Image> smallIcons = null;
+                    Point iconPoint = new Point();
+
+                    if ((node.Selected || node.Focused) && stateImageList != null)
+                    {
+                        if (node.ImageIndex >= 0 && node.ImageIndex < stateImageList.Count)
+                        {
+                            smallIcon = stateImageList[node.ImageIndex];
+                            iconPoint = new Point( r.Left + lb + eb + 2 - hscrollBar.Value, r.Top + hb + itemheight * totalRend + eb / 4 - 2);
+                            ib = 18;
+                        }
+                    }
+                    else
+                    {
+                        if (smallImageList != null && node.ImageIndex >= 0 && node.ImageIndex < smallImageList.Count)
+                        {
+                            smallIcon = smallImageList[node.ImageIndex];
+
+                            int left = r.Left + lb + eb + 2 - hscrollBar.Value;
+                            int top = r.Top + hb + itemheight * totalRend + eb / 4 - 2;
+                            iconPoint = new Point( r.Left + lb + eb + 2 - hscrollBar.Value, r.Top + hb + itemheight * totalRend + eb / 4 - 2);
+                            
+                            ib = 18;
+                        }
+                    }
+
+                    if (smallImageList != null && node.ImageIndex >= 0 && node.ImageIndex < smallImageList.Count)
+                    {
+                        if (node.Overlays != null)
+                        {
+                            smallIcons = new List<Image>();
+                            iconPoint = new Point(r.Left + lb + eb + 2 - hscrollBar.Value, r.Top + hb + itemheight * totalRend + eb / 4 - 2);
+
+                            foreach (int overlay in node.Overlays)
+                                if (overlay >= 0 && overlay < OverlayImages.Count)
+                                    smallIcons.Add(OverlayImages[overlay]);
+
+                            ib = 18;
+                        }
+                    }
+
 					g.Clip = new Region(sr);
 
                     if (!fullRowSelect)
                     {
                         Font font = (node.Font != null) ? node.Font : Font;
                         SizeF size = g.MeasureString(node.Text, font);
-                        sr.Width = (int)(size.Width);
+                        int newWidth = ib + (int)(size.Width) + 6;
+                        sr.Width = newWidth < sr.Width ? newWidth : sr.Width;
                     }
 
 					// render selection and focus
@@ -1097,7 +1113,15 @@ namespace DeOps.Interface.TLVex
 					{
 						ControlPaint.DrawFocusRectangle(g, sr);
 					}
-			
+
+                    // draw icons
+                    if (smallIcon != null)
+                        g.DrawImage(smallIcon, iconPoint.X, iconPoint.Y, 16, 16);
+                    else if(smallIcons != null)
+                        foreach (Image small in smallIcons)
+                            g.DrawImage(small, iconPoint.X, iconPoint.Y, 16,16);
+                   
+
 					g.Clip = new Region(new Rectangle(r.Left+2-hscrollBar.Value, r.Top+hb+2, iColWidth /* BMS 2003-05-23 columns[0].Width */, r.Height-hb-4));
 
 					// render root lines if visible
@@ -1225,7 +1249,7 @@ namespace DeOps.Interface.TLVex
 								string sp = "";
 								if (columns[j+1].TextAlign == HorizontalAlignment.Left)
 								{
-									if (node.Selected && isFocused)
+                                    if (fullRowSelect && node.Selected && isFocused)
 										g.DrawString(TruncatedString(node.SubItems[j].Text, iColPlus1Width /* BMS 2003-05-24 columns[j+1].Width */, 9, g), this.Font, SystemBrushes.HighlightText, (float)(last+6-hscrollBar.Value), (float)(r.Top+(itemheight*totalRend)+headerBuffer+4));
 									else
 										g.DrawString(TruncatedString(node.SubItems[j].Text, iColPlus1Width /* BMS 2003-05-24 columns[j+1].Width */, 9, g), this.Font, (node.UseItemStyleForSubItems ? new SolidBrush(node.ForeColor) : SystemBrushes.WindowText), (float)(last+6-hscrollBar.Value), (float)(r.Top+(itemheight*totalRend)+headerBuffer+4));
@@ -1233,7 +1257,7 @@ namespace DeOps.Interface.TLVex
 								else if (columns[j+1].TextAlign == HorizontalAlignment.Right)
 								{
 									sp = TruncatedString(node.SubItems[j].Text, iColPlus1Width /* BMS 2003-05-24 columns[j+1].Width */, 9, g);
-									if (node.Selected && isFocused)
+                                    if (fullRowSelect && node.Selected && isFocused)
 										g.DrawString(sp, this.Font, SystemBrushes.HighlightText, (float)(last+iColPlus1Width /* BMS 2003-05-24 columns[j+1].Width */-StringTools.MeasureDisplayStringWidth(g, sp, this.Font)-4-hscrollBar.Value), (float)(r.Top+(itemheight*totalRend)+headerBuffer+4));
 									else
 										g.DrawString(sp, this.Font, (node.UseItemStyleForSubItems ? new SolidBrush(node.ForeColor) : SystemBrushes.WindowText), (float)(last+iColPlus1Width /* BMS 2003-05-24 columns[j+1].Width */-StringTools.MeasureDisplayStringWidth(g, sp, this.Font)-4-hscrollBar.Value), (float)(r.Top+(itemheight*totalRend)+headerBuffer+4));
@@ -1241,7 +1265,7 @@ namespace DeOps.Interface.TLVex
 								else
 								{
 									sp = TruncatedString(node.SubItems[j].Text, iColPlus1Width /* BMS 2003-05-24 columns[j+1].Width */, 9, g);
-									if (node.Selected && isFocused)
+                                    if (fullRowSelect && node.Selected && isFocused)
 										g.DrawString(sp, this.Font, SystemBrushes.HighlightText, (float)(last+(iColPlus1Width /* BMS 2003-05-24 columns[j+1].Width *//2)-(StringTools.MeasureDisplayStringWidth(g, sp, this.Font)/2)-hscrollBar.Value), (float)(r.Top+(itemheight*totalRend)+headerBuffer+4));
 									else
 										g.DrawString(sp, this.Font, (node.UseItemStyleForSubItems ? new SolidBrush(node.ForeColor) : SystemBrushes.WindowText), (float)(last+(iColPlus1Width /* BMS 2003-05-24 columns[j+1].Width *//2)-(StringTools.MeasureDisplayStringWidth(g, sp, this.Font)/2)-hscrollBar.Value), (float)(r.Top+(itemheight*totalRend)+headerBuffer+4));

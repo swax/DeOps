@@ -58,10 +58,7 @@ namespace DeOps.Interface.Views
                 Utilities.MemCompare(password.IV, Core.User.Password.IV))
             {
                 Core.GuiMain = new MainForm(Core);
-
-                if(PreserveSideMode)
-                    Core.GuiMain.InitSideMode();
-                
+                Core.GuiMain.SideMode = PreserveSideMode;
                 Core.GuiMain.Show();
                
                 Tray.Visible = false;

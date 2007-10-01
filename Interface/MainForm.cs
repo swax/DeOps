@@ -69,34 +69,28 @@ namespace DeOps.Interface
             TopToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
             NavStrip.Renderer = new ToolStripProfessionalRenderer(new NavColorTable());
             SideToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
-        }
+            SideModeStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
 
-        internal void InitSideMode()
-        {
-            MainSplit.Panel1Collapsed = false;
-            MainSplit.Panel2Collapsed = true;
-
-            Width = 200;
-
-            SideMode = true;
+            SideModeStrip.Visible = false;
+            CommandTree.Top = 0;
+            CommandTree.Height = CommandSplit.Panel1.Height;
         }
 
         private void MainForm_Load(object sender, EventArgs e)
         {
             Text = Core.User.Settings.Operation + " - " + Core.User.Settings.ScreenName;
 
-            //crit bar CurrentViewLabel.Text = "";
-
             CommandTree.Init(Links);
             CommandTree.ShowProject(0);
 
-            //crit
             OnSelectChange(Core.LocalDhtID, CommandTree.Project);
             UpdateCommandPanel();
 
-            if(SideMode)
+            if (SideMode)
+            {
+                SideButton.Checked = true;
                 Left = Screen.PrimaryScreen.WorkingArea.Width - Width;
-
+            }
         }
 
 
@@ -180,6 +174,7 @@ namespace DeOps.Interface
 
             ExternalViews.Add(external);
 
+            view.Init();
             external.Show();
         }
 
@@ -438,7 +433,8 @@ namespace DeOps.Interface
                 ContextMenuStripEx treeMenu = new ContextMenuStripEx();
 
                 // select
-                treeMenu.Items.Add("Select", InterfaceRes.star, TreeMenu_Select);
+                if(!SideMode)
+                    treeMenu.Items.Add("Select", InterfaceRes.star, TreeMenu_Select);
 
                 // views
                 List<ToolStripMenuItem> quickMenus = new List<ToolStripMenuItem>();
@@ -596,13 +592,13 @@ namespace DeOps.Interface
                         continue;
                     
                     if (parts[0] == PlanButton.Text)
-                        PlanButton.DropDownItems.Add(new OpStripItem(id, project, parts[1], info));
+                        PlanButton.DropDownItems.Add(new OpStripItem(id, project, false, parts[1], info));
 
                     else if (parts[0] == CommButton.Text)
-                        CommButton.DropDownItems.Add(new OpStripItem(id, project, parts[1], info));
+                        CommButton.DropDownItems.Add(new OpStripItem(id, project, false, parts[1], info));
 
                     else if (parts[0] == DataButton.Text)
-                        DataButton.DropDownItems.Add(new OpStripItem(id, project, parts[1], info));
+                        DataButton.DropDownItems.Add(new OpStripItem(id, project, false, parts[1], info));
                 }
             }
 
@@ -910,7 +906,7 @@ namespace DeOps.Interface
         }
 
 
-        bool SideMode;
+        internal bool SideMode;
         int Panel2Width;
 
         private void SideButton_CheckedChanged(object sender, EventArgs e)
@@ -925,6 +921,10 @@ namespace DeOps.Interface
                 Width -= Panel2Width;
                 Left += Panel2Width;
 
+                SideModeStrip.Visible = true;
+                CommandTree.Top = 23;
+                CommandTree.Height = CommandSplit.Panel1.Height - 23;
+
                 SideMode = true;
 
                 OnSelectChange(Core.LocalDhtID, 0);
@@ -937,6 +937,12 @@ namespace DeOps.Interface
                 Width += Panel2Width;
 
                 MainSplit.Panel2Collapsed = false;
+
+                SideModeStrip.Visible = false;
+
+                CommandTree.Top = 0;
+                CommandTree.Height = CommandSplit.Panel1.Height;
+
 
                 SideMode = false;
             }
@@ -1064,45 +1070,16 @@ namespace DeOps.Interface
                 NewsBrush = new SolidBrush(Color.FromArgb(alpha, color));
 
             NewsSequence++;
-            NavStrip.Invalidate();
-        }
 
-        private void NavStrip_Paint(object sender, PaintEventArgs e)
-        {
-            NewsArea = new Rectangle();
-
-            if (NewsPending.Count == 0)
-                return;
-
-            // get bounds where we can put news text
-            int x = ComponentNavButton.Bounds.X + ComponentNavButton.Bounds.Width + 4;
-            int width = NewsButton.Bounds.X - 4 - x;
-
-            if (width < 0)
-            {
-                NewsButton.Image = InterfaceRes.news_hot;
-                return;
-            }
-
-            // determine size of text
-            int reqWidth = (int) e.Graphics.MeasureString(NewsPending.Peek().Info.Message, BoldFont).Width;
-
-            if (width < reqWidth)
-            {
-                NewsButton.Image = InterfaceRes.news_hot;
-                return;
-            }
-
-            // draw text
-            x = x + width / 2 - reqWidth / 2;
-            e.Graphics.DrawString(NewsPending.Peek().Info.Message, BoldFont, NewsBrush, x, 5);
-
-            NewsArea = new Rectangle(x, 5, reqWidth, 9);
+            if (SideMode)
+                SideModeStrip.Invalidate();
+            else
+                NavStrip.Invalidate();
         }
 
         void Core_NewsUpdate(NewsItemInfo info)
         {
-            NewsItem item = new NewsItem(info, SideMode, Core.LocalDhtID); // pop out external view if in messenger mode
+            NewsItem item = new NewsItem(info, Core.LocalDhtID); // pop out external view if in messenger mode
             item.Text = Core.TimeNow.ToString("h:mm ") + info.Message;
 
             // set color
@@ -1116,50 +1093,57 @@ namespace DeOps.Interface
 
             Queue<NewsItem> queue = NewsHideUpdates ? NewsRecent : NewsPending;
 
-            queue.Enqueue(item);//Links.IsHigher(info.DhtID, info.ProjectID)));
+            queue.Enqueue(item);
 
             while (queue.Count > 15)
                 queue.Dequeue();
 
-            if(NewsHideUpdates)
-                NewsButton.Image = InterfaceRes.news_hot;
+            if (NewsHideUpdates)
+                ActiveNewsButton().Image = InterfaceRes.news_hot;
+        }
+
+        private ToolStripDropDownButton ActiveNewsButton()
+        {
+            return SideMode ? SideNewsButton : NewsButton;
         }
 
         private void NewsButton_DropDownOpening(object sender, EventArgs e)
         {
-            NewsButton.DropDown.Items.Clear();
+            LoadNewsButton(NewsButton, false);
+        }
+
+        private void SideNewsButton_DropDownOpening(object sender, EventArgs e)
+        {
+            LoadNewsButton(SideNewsButton, true);
+        }
+
+        private void LoadNewsButton(ToolStripDropDownButton button, bool external)
+        {
+            button.DropDown.Items.Clear();
 
             foreach (NewsItem item in NewsPending)
-                NewsButton.DropDown.Items.Add(item);
+            {
+                item.External = external;
+                button.DropDown.Items.Add(item);
+            }
 
             if (NewsPending.Count > 0 && NewsRecent.Count > 0)
-                NewsButton.DropDown.Items.Add("-");
+                button.DropDown.Items.Add("-");
 
             foreach (NewsItem item in NewsRecent)
-                NewsButton.DropDown.Items.Add(item);
+            {
+                item.External = external;
+                button.DropDown.Items.Add(item);
+            }
 
             if (NewsRecent.Count > 0)
-                NewsButton.DropDown.Items.Add("-");
+                button.DropDown.Items.Add("-");
 
             ToolStripMenuItem hide = new ToolStripMenuItem("Hide News Updates", null, new EventHandler(NewsButton_HideUpdates));
             hide.Checked = NewsHideUpdates;
-            NewsButton.DropDown.Items.Add(hide);
+            button.DropDown.Items.Add(hide);
 
-            NewsButton.Image = InterfaceRes.news;
-        }
-
-        private void NavStrip_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (NewsArea.Contains(e.Location) && NewsPending.Count > 0 && NewsPending.Peek().Info.ClickEvent != null)
-                Cursor.Current = Cursors.Hand;
-            else
-                Cursor.Current = Cursors.Arrow;
-        }
-
-        private void NavStrip_MouseClick(object sender, MouseEventArgs e)
-        {
-            if (NewsArea.Contains(e.Location) && NewsPending.Peek() != null)
-                NewsPending.Peek().Info.ClickEvent.Invoke(NewsPending.Peek(), null);
+            button.Image = InterfaceRes.news;
         }
 
         private void NewsButton_HideUpdates(object sender, EventArgs e)
@@ -1170,8 +1154,153 @@ namespace DeOps.Interface
                 while (NewsPending.Count != 0)
                     NewsRecent.Enqueue(NewsPending.Dequeue());
 
-            NavStrip.Invalidate();
+            if (SideMode)
+                SideModeStrip.Invalidate();
+            else
+                NavStrip.Invalidate();
         }
+
+        private void NavStrip_Paint(object sender, PaintEventArgs e)
+        {
+            PaintNewsStrip(e, ComponentNavButton, NewsButton);   
+        }
+
+        private void SideModeStrip_Paint(object sender, PaintEventArgs e)
+        {
+            PaintNewsStrip(e, SideViewsButton, SideNewsButton);   
+        }
+
+        void PaintNewsStrip(PaintEventArgs e, ToolStripItem leftButton, ToolStripItem rightButton)
+        {
+            NewsArea = new Rectangle();
+
+            if (NewsPending.Count == 0)
+                return;
+
+            // get bounds where we can put news text
+            int x = leftButton.Bounds.X + leftButton.Bounds.Width + 4;
+            int width = rightButton.Bounds.X - 4 - x;
+
+            if (width < 0)
+            {
+                ActiveNewsButton().Image = InterfaceRes.news_hot;
+                return;
+            }
+
+            // determine size of text
+            int reqWidth = (int)e.Graphics.MeasureString(NewsPending.Peek().Info.Message, BoldFont).Width;
+
+            if (width < reqWidth)
+            {
+                ActiveNewsButton().Image = InterfaceRes.news_hot;
+                return;
+            }
+
+            // draw text
+            x = x + width / 2 - reqWidth / 2;
+            e.Graphics.DrawString(NewsPending.Peek().Info.Message, BoldFont, NewsBrush, x, 5);
+
+            NewsArea = new Rectangle(x, 5, reqWidth, 9);
+        }
+      
+        private void NavStrip_MouseMove(object sender, MouseEventArgs e)
+        {
+            NewsMouseMove(e);
+
+        }
+
+        private void SideModeStrip_MouseMove(object sender, MouseEventArgs e)
+        {
+            NewsMouseMove(e);
+        }
+
+        private void NewsMouseMove(MouseEventArgs e)
+        {
+            if (NewsArea.Contains(e.Location) && NewsPending.Count > 0 && NewsPending.Peek().Info.ClickEvent != null)
+                Cursor.Current = Cursors.Hand;
+            else
+                Cursor.Current = Cursors.Arrow;
+        }
+
+        private void NavStrip_MouseClick(object sender, MouseEventArgs e)
+        {
+            NewsMouseClick(e, false);
+           
+        }
+
+        private void SideModeStrip_MouseClick(object sender, MouseEventArgs e)
+        {
+            NewsMouseClick(e, true);
+        }
+
+        private void NewsMouseClick(MouseEventArgs e, bool external)
+        {
+            if (NewsArea.Contains(e.Location) && NewsPending.Peek() != null)
+            {
+                NewsPending.Peek().External = external; // in window
+                NewsPending.Peek().Info.ClickEvent.Invoke(NewsPending.Peek(), null);
+            }
+        }
+
+        private void SideViewsButton_DropDownOpening(object sender, EventArgs e)
+        {
+            SideViewsButton.DropDownItems.Clear();
+
+
+            // add command views
+            AddSideViewMenus(SideViewsButton.DropDownItems, 0);
+
+            // add project views
+            if(Links.LocalLink.Projects.Count > 1)
+                SideViewsButton.DropDownItems.Add("-");
+
+            foreach(uint id in Links.LocalLink.Projects)
+                if(id != 0 && Links.ProjectNames.ContainsKey(id))
+                {
+                    ToolStripMenuItem projectItem = new ToolStripMenuItem(Links.ProjectNames[id]);
+                    AddSideViewMenus(projectItem.DropDownItems, id);
+                    SideViewsButton.DropDownItems.Add(projectItem);
+                }
+        }
+
+        private void AddSideViewMenus(ToolStripItemCollection collection, uint project)
+        {
+            ToolStripMenuItem plansItem = new ToolStripMenuItem("Plans", InterfaceRes.plans);
+            ToolStripMenuItem commItem = new ToolStripMenuItem("Comm", InterfaceRes.comm);
+            ToolStripMenuItem dataItem = new ToolStripMenuItem("Data", InterfaceRes.data);
+
+
+            foreach (OpComponent component in Core.Components.Values)
+            {
+                List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Internal, Core.LocalDhtID, project);
+
+                if (menuList == null || menuList.Count == 0)
+                    continue;
+
+                foreach (MenuItemInfo info in menuList)
+                {
+                    string[] parts = info.Path.Split(new char[] { '/' });
+
+                    if (parts.Length < 2)
+                        continue;
+
+                    if (parts[0] == PlanButton.Text)
+                        plansItem.DropDownItems.Add(new OpStripItem(Core.LocalDhtID, project, true, parts[1], info));
+
+                    else if (parts[0] == CommButton.Text)
+                        commItem.DropDownItems.Add(new OpStripItem(Core.LocalDhtID, project, true, parts[1], info));
+
+                    else if (parts[0] == DataButton.Text)
+                        dataItem.DropDownItems.Add(new OpStripItem(Core.LocalDhtID, project, true, parts[1], info));
+                }
+            }
+
+
+            collection.Add(plansItem);
+            collection.Add(commItem);
+            collection.Add(dataItem);
+        }
+
     }
 
     class NewsItem : ToolStripMenuItem, IViewParams
@@ -1181,11 +1310,10 @@ namespace DeOps.Interface
         internal bool External;
         ulong LocalID;
 
-        internal NewsItem(NewsItemInfo info, bool external, ulong localid)
+        internal NewsItem(NewsItemInfo info, ulong localid)
             : base(info.Message, info.Symbol != null ? info.Symbol.ToBitmap() : null, info.ClickEvent)
         {
             Info = info;
-            External = external;
             LocalID = localid;
         }
 
@@ -1210,13 +1338,15 @@ namespace DeOps.Interface
         internal ulong DhtID;
         internal uint ProjectID;
         internal MenuItemInfo Info;
+        bool External;
 
-        internal OpStripItem(ulong key, uint id, string text, MenuItemInfo info)
+        internal OpStripItem(ulong key, uint id, bool external, string text, MenuItemInfo info)
             : base(text, null, info.ClickEvent )
         {
             DhtID = key;
             ProjectID = id;
             Info = info;
+            External = external;
 
             Image = Info.Symbol.ToBitmap();
         }
@@ -1233,7 +1363,7 @@ namespace DeOps.Interface
 
         public bool IsExternal()
         {
-            return false;
+            return External;
         }
     }
 

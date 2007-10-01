@@ -55,6 +55,6 @@ namespace DeOps.Components.Storage
 
         #endregion
 
-        private System.Windows.Forms.WebBrowser InfoDisplay;
+        internal System.Windows.Forms.WebBrowser InfoDisplay;
     }
 }

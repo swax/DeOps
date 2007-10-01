@@ -1,223 +1,35 @@
 
-news
-	chat msg (if chat not visible or visited in last minute, or alerted in last minute)
-
-	more refined, if care about user, do detailed diff between new and old file
-		show self only if local didn't make the change, if non-local self change show as white
-		detect diff between changed schedule / changed goals or both
-	
-carry top blue bar into messenger mode to show updates in, drop down icon on left to open components for respective project
-create function to search through externals for type/id/project, when popping external look for existing window
-
-changing person focus perserves view
-changing project focus perserves view
-perserve view going from collapse to restore
-
-goals   -   star self, blue triangle lower, red triangle higher
-			details visible 
-			save branch path when transfering goal <-> schedule
-IM      - remove dupe system messages
-storage - diff status on root info, update without refreshing
-mail    - delete mail not refreshing view, sync local mail between users
-
-graphics
-	storage - add, restore
-	mail	- forward, reply
-	board   - high, low, all
-	plans	- edit
-	goals	- edit
-	tray	- restore, exit
-	
-location info should probably contain latest versions for all components so 
-	for example two of the same account would sync their storage without having to specifically having to open storage
-	dynamic works for all components in list
-
-
-		
-	
-add accept change to storageInfo interface for folders - so name / ghost status is transferred over easily
-
-delete folder, changes saying restored, but shouldn't be there because our timestamp is the newest
-
-eventually browsing using nav bar needs to trigger searches and let link control know of whats focused
-
-
-huge part of project is allowing companies to sell licensense (applications) throughout network
-	subs auto inherit purchased apps, never be anywhere without apps, look at encryption techniques to make this work
-
-at root node display log of all previous file system saves, snapshots, revisions, of file system file = file system header version		
-review file references system
-how does add/replace work with unlocked files - figure out when doing inheritance
-check if file / dir has same name when renaming / creating in storage system	
-after hash if file modified, and hash is equal to unmodified, remove modified flag
-double click open local temp files/*folders
-carry over notes whe`` accepting changes, edit notes box needs to be larger, convert \n to <br>
-show failed diffs
-get working with how visual studio does saves, crazy rename / delete / create process
-support multiple select - right click download
-on app close - remove all storage folders, especially for users that are not us
-use path class to check for invalid characters
-drag move file to diff dir, carry history, leave ghost
-
-
-if hashes
-	clicking apply / integrate asks user to perform that action
-
-
-
-change archive to ghosts (pacman logo) - ghosts are files that were either deleted or moved, they serve as markers for others to use
-		when syncronizing their file system to yours
-		delete permanently if no history exists of file
-		ghost folders white folders with black outlines and eyes!
-	
-visibility - who / levels down (these 2 settings replace higher / lower direct etc..)
-	on regional link change do visibility check of local files to see if they still conform, ghost them
-		restored / created - file visible with-in x sub-levels of <user>
-		file only visible with-in x sub-levels of <user>
-
-drag / drop - in/out, across folders
-remote - download, unlock, open, re-lock
-save/discard persist over open / close?
-
-
-storage tasks
-	find transparent folder icon - pull from a dll somewhere, both normal and open
-	delete folder that is selected - clear file view
-	drag/drop moving between folders, more testing
-	changes / save labels not even, zoom in and align
-	click on icon should select as well
-	default page in web interface (total files size/count) / unlocked count
-	show folders pane if there are sub folders from root
-	test multi-project file system
-	if system empty, nothing selected display 'drag file in to add to system' - root folder shows default instructions
-
-	make note on interface if local file (hash) not present in storage system, like encryption error of some sort causes it to not be placed
-		blue if pending processing, if failed, turn back to grey
-	test locking / unlocking big files, determine if progress bar or notification of some sort needed, maybe queue them like hashing
-	trigger to lock all unlocked on guiclose
-	test periodic saves of working / and verify load from working file works
-	on close, hang if still hash processing
-	support multi-file/folder operations
-	sorting of listview
-	open folder icon in folder tree
-	folders have red / blue dots in center if subfolders contains changes
-	
-plans
-	old plans not being deleted? seems like extra files in dir, try loading solo and updating local plan file
-	shutdown in the middle of the causing load corruption?			
-
-Many actions in gui isnt piped down into control to fire events back to the interface to signal updates for multiple interface instances
-
-
-desynch timer from packets, diff thread
-	timer asyncronously run so main interface thread not affected
-	also diff thread in simulator, so that cross thread problems are debugged
-	main interface thread 1, socket packets thread 2, timer thread 3, run all fast ensure locking etc.. 
-crits 
-look at replacing common code with delegates
-
-nat/block keep list of recent search ids/kadids so duplicate results arent sent out
-check natted are finding closest nodes to proxy off of
-
-use rudp when available to transmit link / loc data
-with rudp now being used, should analyze purely global network
-
-encapsulate common link functions in link control
-
-search revisions
-	give components priority?? link over location, etc..
-	make sure search result locations get to file download
-	make sure store locations get to file download direct search -> store response works through firewalls
-	both have the ability to be proxied
-
-	record source kaddi with value
-	on download try source, id isnt in location list, search for it, need that ID key to connect
-
-	by the time key gets checked for download, profile / link headers should have right key if source is the same, if not gotta search
-
-	search/download priority high (view) normal (network) low (research)
-	forward searches to proxies
-	if blocked send acks tcp to be forwarded
-	analyze contact info sent in acks
-	ensure correct contact info gets to transfer control, if blocked/natted/open ensure all work
-	make sure download isnt started without sources
-
-	search results need to transfer location info over to downloader
-	what does search result from firewalled host look like?
-	search results seem to only go out udp
-	
-	**location info should include array of latest versions of each component
-		so local area can update for everyone on login to the network
-		storage, plans, profile - need latest fetched data of local area
-		location data needs to be stored when user is offline for this to work
-
 now
-	re-publishing mail
-	permanent locations, no ttl except for global
-	locking of resources, lay out flow
+	cut down storage todo
+	43 crits
 
-
-test
+Testing
 	more accurate replication - link/location/profile/mail
 	check that data is cachced 8 closest to ID, record cached link files in sim interface
 	links timing out when traversing strucuture
 	maxes / focus purging for all components - links/locs/profiles/mail
 	link.getlocs / getlocsbelow
 	link/plan research timer
-
-Core
-    old projects not cleared from components during savelocal, save / ditch / option?
-     
-	Rudp
-		location updates
-		route data over session if desination the same	
-		
-	Location Control
-		global replication
-		make persistant so status panel can display last seen, also loaded can go straight to the cache
-		might be problem with different client ids
-
-	IM Control
-		Saved/Loaded my main IM interface
-		Internal interface
-		Log Interface - in chat log
-		If link is unknown, then name is unkown, make sure to search for name and update interface
-		4 node network, running, send IM caused collection modified error in im_view:displaylog
-		
-	Chat Control
-		Custom rooms
-		dont mention disconnect unless connection was made, also in IM
-		log does chat/im - setup like yahoo chat log
-		
-	Mail Control
-	    debug send/recv mail
-		tagging messages, filter by tags
-		add user link that pops up encapsulated link chooser control (LinkPanel), 
-			does queries, receives updates, etc.. (put in add task win also)
-		double clicking on name loacates them in link tree in panel
-		use labels for organization - for example a project label could be tagged on, so we could filter regarding project x
-		
-	Board Control
-		 attaching files
 	
-	Profile
-		Search / Transfer process painfully slow in real time mode, analyze
-		project specific motds use divs/javascript to show / hide?
-
 
 Interface
+	General
+		Sorting of listviews
+		
 	Internal 
 		expand a little more (names associated with sessions/transfers/searches/publish)
+		browsing using nav bar needs to trigger searches and let link control know of whats focused
+		create function to search through externals for type/id/project, when popping external look for existing window?
 
 	Link
+		Change text from 'Link' to 'Trust'? More understandable
 		sometimes on link changes, cannot select confirm link even though node is pending
+		encapsulate common link functions in link control, prevent other controls from directly using linkmap
 
-	Profile
-		time out loading
-		seperate interface for MOTD editing, grey out in normal profile editor
-			MOTD packets seperate, flagged with ProjectID
-
-	operation list toolbar: select, link(dropdown), IM, Mail (quick stuff)
+		only bold tree item for selected dhtid AND project
+		changing person focus perserves view
+		changing project focus perserves view
+		perserve view going from collapse to restore
 
 	Invite 
 		password protected invite file
@@ -229,45 +41,210 @@ Interface
 		Locals
 		Tabs, etc.. so permanent tabs can be kept on people, grey if offline
 
-	ticker
-		link update, board, mail, plan, online,
-		scroller higher level broadcast
-		on open scroll - welcome to de-ops 1.023, and pending assignments mails, status of systems
-			after that only scroll when stuff happens
-		click - display list (log) of all recent messages
-		black with red/blue/grey text depending on level of message
+	News
+		crazy refreshes when news not visible and button clicked
+		show connected / disconnected
+		chat msg (if chat not visible or visited in last minute, or alerted in last minute)
+		new people online 
 		
+		more refined, if care about user, do detailed diff between new and old file
+			show self only if local didn't make the change, if non-local self change show as white
+			detect diff between changed schedule / changed goals or both
 
+	graphics
+		storage - add, restore
+		mail	- forward, reply
+		board   - high, low, all
+		plans	- edit
+		goals	- edit
+		tray	- restore, exit
+	
+	
+Components
+	General
+		Refactor Components with delegates or something, refactor while building visual component
+		break control into interface comm / control comm so that multiple guis (mobile/mono/wpf) can be implemented easily
+		Many actions in gui isnt piped down into control to fire events back to the interface to signal updates for multiple interface instances
+		component plug-ins / view plugins for private components
+		
+	Location 
+		global replication
+		make persistant so status panel can display last seen, also loaded can go straight to the cache
+		permanent locations, no ttl except for global
+		might be problem with different client ids
+		
+		location info should probably contain latest versions for all components so 
+			for example two of the same account would sync their storage without having to specifically having to open storage
+			dynamic works for all components in list
+	
+	IM 
+		Saved/Loaded my main IM interface
+		Internal interface
+		Log Interface - in chat log
+		If link is unknown, then name is unkown, make sure to search for name and update interface
+		4 node network, running, send IM caused collection modified error in im_view:displaylog
+		remove dupe system messages
+		IM/Chat right click font view, right click timestamp view
+		
+	Chat 
+		Custom rooms - priave requires signed key, public key kept in chat file, can be queried for and found over network 
+		dont mention disconnect unless connection was made, also in IM
+		log does chat/im - setup like yahoo chat log
+		
+	Mail 
+	    debug send/recv mail
+		tagging messages, filter by tags
+		add user link that pops up encapsulated link chooser control (LinkPanel), 
+			does queries, receives updates, etc.. (put in add task win also)
+		double clicking on name loacates them in link tree in panel
+		use labels for organization - for example a project label could be tagged on, so we could filter regarding project x
+		delete mail not refreshing view
+		sync local mail between users
+		test/do re-publishing mail
+
+	Board 
+		 attaching files
+	
+	Profile
+		time out loading
+		Search / Transfer process painfully slow in real time mode, analyze
+
+	Plans
+		old plans not being deleted? seems like extra files in dir, try loading solo and updating local plan file
+		shutdown in the middle of the causing load corruption?			
+
+		Goals 
+			star self, blue triangle lower, red triangle higher
+			details visible 
+			save branch path when transfering goal <-> schedule
+
+	Storage
+
+		small test app for dragging
+		drag/drop moving between folders, more testing
+		drag move file to diff dir, carry history, leave ghost, make sure dragging back removes
+		
+		make note on interface if local file (hash) not present in storage system, like encryption error of some sort causes it to not be placed
+			blue if pending processing, if failed, turn back to grey
+		test locking / unlocking big files, determine if progress bar or notification of some sort needed, maybe queue them like hashing
+		trigger to lock all unlocked on guiclose
+		test periodic saves of working / and verify load from working file works
+		on close, hang if still hash processing
+		
+		folders have red / blue dots in center if subfolders contains changes
+			recurse mark folders up with a reference count, at 0 remove mark ;)
+		
+		review file references system
+		how does add/replace work with unlocked files - figure out when doing inheritance
+		check if file / dir has same name when renaming / creating in storage system	
+		after hash if file modified, and hash is equal to unmodified, remove modified flag
+		double click open local temp files/*folders
+		carry over notes whe`` accepting changes, edit notes box needs to be larger, convert \n to <br>
+		get working with how visual studio does saves, crazy rename / delete / create process
+		support multiple select - right click download
+		on app close - remove all storage folders, especially for users that are not us
+		use path class to check for invalid characters
+		
+		add accept change to storageInfo interface for folders - so name / ghost status is transferred over easily
+		delete folder, changes saying restored, but shouldn't be there because our timestamp is the newest
+
+		remote - download, unlock, open, re-lock
+	 	save/discard persist over open / close?
+		if hashes - clicking apply / integrate asks user to perform that action
+
+		visibility - who / levels down (these 2 settings replace higher / lower direct etc..)
+			on regional link change do visibility check of local files to see if they still conform, ghost them
+				restored / created - file visible with-in x sub-levels of <user>
+				file only visible with-in x sub-levels of <user>
+						
+		$ save storage snapshots (past header file versions) - display at root node	
+		$ signal on comparison page if all files are replicated (can go offline and files still exist)
+		
+	Search
+		index components in local area of dht network
+		search - sends query to that area of network target is in	
+
+Core
+    old projects not cleared from components during savelocal, save / ditch / option?
+    multisource downloading
+     
+	Rudp
+		location updates
+		route data over session if desination the same	
+		nat/block keep list of recent search ids/kadids so duplicate results arent sent out
+		check natted are finding closest nodes to proxy off of
+		use rudp when available to transmit link / loc data
+		with rudp now being used, should analyze purely global network
+
+
+	Search 
+		give components priority?? link over location, etc..
+		make sure search result locations get to file download
+		make sure store locations get to file download direct search -> store response works through firewalls
+		both have the ability to be proxied
+
+		record source kaddi with value
+		on download try source, id isnt in location list, search for it, need that ID key to connect
+
+		by the time key gets checked for download, profile / link headers should have right key if source is the same, if not gotta search
+
+		search/download priority high (view) normal (network) low (research)
+		forward searches to proxies
+		if blocked send acks tcp to be forwarded
+		analyze contact info sent in acks
+		ensure correct contact info gets to transfer control, if blocked/natted/open ensure all work
+		make sure download isnt started without sources
+
+		search results need to transfer location info over to downloader
+		what does search result from firewalled host look like?
+		search results seem to only go out udp
+		
+		**location info should include array of latest versions of each component
+			so local area can update for everyone on login to the network
+			storage, plans, profile - need latest fetched data of local area
+			location data needs to be stored when user is offline for this to work
+
+	store caching 
+		used when high load
+		how to keep cache entries up to date?
+		cache entries only last for like 5 mins
+		requester do theh caching, or should requested auto-cache if load too high
+			auto-caching might not hit the nodes that requesting nodes would be likely to hit
+
+	udp packet throttle **** especially for patches
+		backlog for packets, for patches, etc.. not for rudp
+		packet cache for more than 4k sent in second
+		cache should go for 60 seconds make, 240k, bleed cache out, first in first out
+		Alert if packet cache has any entries at all
+		check in sim if node sending more than x packets per sec
+		
+		
 Simulator
 	add collection test to simulator by randomly accessing de-op collections in seperate sim thread
 	record max udp burst sizes, or do packet size distribution histogram
 
+	desynch timer from packets, diff thread
+		timer asyncronously run so main interface thread not affected
+		also diff thread in simulator, so that cross thread problems are debugged
+		main interface thread 1, socket packets thread 2, timer thread 3, run all fast ensure locking etc.. 
 
-search
-	index components in local area of dht network
-	search - sends query to that area of network target is in
+	locking of resources, lay out flow
 	
-
+	
 quick
 	test with null global, even have option for secret at this point?
 	ensure callers know what to do when tcpcontrol.sendpacket is overloaded
 	bandwidth chart
 	subclass collections, create auto locked collections
 	use localfilekey for all file names so name diff per computer
-	IM/Chat right click font view, right click timestamp view
 	finish self search and then start bucket replication so startup doesnt spit out massive patches
 	component dir also encoded with local key / trimmed to 8 chars
-	interface 
-		treeview ex not using themed +/- / scrollbars
-		listbox header resize doesn't stop when col 0 is width 0
-		listbox/tree not full size when no border is active
-	Selecting people for task/mail should be drop down combo add/remove (add pops up link panel dialog so exact choice can be made) [prevent name forging]
 	cache files missing from component header - do in load header
 			dont delete old path in Cache<component> function, until new header saved: move - save headers - delete old files
 	run save headers every 10 secs - every sec is too often, and slows simmy
 			
+			
 Future
-	notification area of changes in all components, click brings user to change, or can discard
 	Nodes that say they proxy for node x have signed auth from x
 	Ping includes auth test for id
     variable internal / private key schemes and sizes, ECC
@@ -285,7 +262,6 @@ Future
     implementing help button on all dialogs
     lock read/write individually, let multiple reads go at same time
     voice chat in rooms / IM using skype API - can get to land lines
-    whiteboard
     load goal/board/mail archives serperately to speed load / reduce memory usage
     
 	de-ops urls boards storages chats anything, extendable
@@ -296,68 +272,64 @@ Future
 			new Op ID can be secure mailed to entire org, or pointer can be put in link file (went to op id x)
 			
 		signed invitation files - so that if bad people get in, we know who signed them in
-    
-    store caching 
-		used when high load
-		how to keep cache entries up to date?
-		cache entries only last for like 5 mins
-		requester do theh caching, or should requested auto-cache if load too high
-			auto-caching might not hit the nodes that requesting nodes would be likely to hit
-
-	udp packet throttle **** especially for patches
-		backlog for packets, for patches, etc.. not for rudp
-		packet cache for more than 4k sent in second
-		cache should go for 60 seconds make, 240k, bleed cache out, first in first out
-		Alert if packet cache has any entries at all
-		check in sim if node sending more than x packets per sec
 		
 	web based node
 		server like caching if enabled
 		web node is owned by an individual, like any other node	
 		web interface, at first just caching support
-	
-visual component
-	user can inherit or create new canvases
-	default background is transparent so overlays easy
-	zoom in/out infinite, images created on 'planes' z-axis coordinate
-		zooming out if other regions in view, their sub-regions are found
-		affiliate zoom with levels down so that people know on what level to draw
-	node inherits higher's images which overlay lower's drawings
-		ie higher can create bounds that lower fills in
-	node can define regions for lowers to draw in
-		lowers by default see this region when they open visuals not the whole canvas
-	interface - basic paint operations with copy/paste, show transparent zones (off by default)
-	layers for putting down map img/ people img and being able to edit it easily
-	3d component uses imported models from any souce, sketch up ? 
-	lower corner box shows zoomed out view
-	
-stats component
-	how many people in org, follow link tree
-	% active in last x, crawl persistant locs
-	balance of tree at diff levels, also could do graphical reresentation
-		like sequoia view showing where most people are and who follows them
-
-
-
-Compartmentalization
-	sign with level key, mark with level version of key signed
-	when link version updated
-		if subordinates removed
-			create new level key
-			level version set to current link file version
-		encrypt and sign level key with each of the sub ordinates key
-	compartmentalized data is encrypted with level key
-	only sub-ordinates at the time of specific objects compartmentalization have access to level
-	board - post contains reply key to simplify many needed level keys
-	level key for high / low
-	
-	branch compart
-		branch key encoded with level key
-		lower links encode higher branch keys with their level key to lowers
-		branch version same as level?
 		
-	'set permissions dialog' that all components can implement, user can click 'permissions..' button to set
-	
+	huge part of project is allowing companies to sell licensense (applications) throughout network
+		subs auto inherit purchased apps, never be anywhere without apps, look at encryption techniques to make this work
+
+
+	visual component
+		user can inherit or create new canvases
+		default background is transparent so overlays easy
+		zoom in/out infinite, images created on 'planes' z-axis coordinate
+			zooming out if other regions in view, their sub-regions are found
+			affiliate zoom with levels down so that people know on what level to draw
+		node inherits higher's images which overlay lower's drawings
+			ie higher can create bounds that lower fills in
+		node can define regions for lowers to draw in
+			lowers by default see this region when they open visuals not the whole canvas
+		interface - basic paint operations with copy/paste, show transparent zones (off by default)
+		layers for putting down map img/ people img and being able to edit it easily
+		3d component uses imported models from any souce, sketch up ? 
+		lower corner box shows zoomed out view
+		
+	stats component
+		how many people in org, follow link tree
+		% active in last x, crawl persistant locs
+		balance of tree at diff levels, also could do graphical reresentation
+			like sequoia view showing where most people are and who follows them
+
+	portal component
+		links 2 organizatinos between a single point of trust
+		portal manaages information flow
+		how would something like a credit card work?
+			i trust credit company
+			business trusts credit company
+			portal process credit transaction?
+
+	Compartmentalization
+		sign with level key, mark with level version of key signed
+		when link version updated
+			if subordinates removed
+				create new level key
+				level version set to current link file version
+			encrypt and sign level key with each of the sub ordinates key
+		compartmentalized data is encrypted with level key
+		only sub-ordinates at the time of specific objects compartmentalization have access to level
+		board - post contains reply key to simplify many needed level keys
+		level key for high / low
+		
+		branch compart
+			branch key encoded with level key
+			lower links encode higher branch keys with their level key to lowers
+			branch version same as level?
+			
+		'set permissions dialog' that all components can implement, user can click 'permissions..' button to set
+		
 Release security
     throwing load exception in obfuscated code?
 	Ensure unnessesary strings arent exposed
@@ -370,41 +342,3 @@ Release security
 	send out random garbage and random times to random hosts, sometimes with char stings like 'hola como estas' just to mess
 	    sniffers up a lil more 
 
-website
-	wiki based
-	hire international people, in charge of translation / international sites
-		give commission of revenue for sales
-	go international ASAP, domestic market is a bear, international is more receptive of new tech like this
-	
-Pro
-	Commercial use
-	Security improvements
-	Mobile version
-	Voice/video chat, try to make it as polished as possible like full screen meeting  interface
-	Server Mode
-	Signed.. something.. (email?) that is authenticated by others and adds value
-		PRO image in upper left of blue bar if user has signed auth key from meee
-	Private / Secret Projects
-	Flash drive with program and encrypted file system on it, truely portable personal computer	
-	Single file storage
-	Auto language translation - use little drop down flags on left hand side project bar
-	componentized, pro version lets you set visibility(up/down) on files/messages, free version everything is transparent
-	
-
-link navigation
-	path - /project/name/component - smart filling in along the way
-
-	home would go to /fusion/Myself/Profile
-	project ex - /fusion/project/myself/links
-
-	fusion://main -> links
-	fusion://project -> links
-	fusion://project/name -> available component list
-	fusion://project/name/component -> component
-	
-	or
-		top buttons only for self
-		double click doesnt change focused user
-		can only view other node's views by right clicking on them
-		switching projects, switches main view to that project
-		no project selection in individual component interface

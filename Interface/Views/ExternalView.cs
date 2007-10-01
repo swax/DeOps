@@ -35,7 +35,7 @@ namespace DeOps.Interface
 
         private void ExternalWin_Load(object sender, EventArgs e)
         {
-            Shell.Init();
+            
         }
 
         internal bool SafeClose()

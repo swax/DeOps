@@ -83,6 +83,9 @@ notes
 		only overlapping files need to be hashed, not creates or even renames
 		do changes to working in control
 		
+	ghosts are files that were either deleted or moved, they serve as markers for others
+		when syncronizing their file system to yours
+		delete permanently if no history exists of file
 
 
 application 

@@ -32,6 +32,9 @@ namespace DeOps.Interface
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.MainSplit = new System.Windows.Forms.SplitContainer();
             this.CommandSplit = new System.Windows.Forms.SplitContainer();
+            this.SideModeStrip = new System.Windows.Forms.ToolStrip();
+            this.SideViewsButton = new System.Windows.Forms.ToolStripDropDownButton();
+            this.SideNewsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.StatusBrowser = new System.Windows.Forms.WebBrowser();
             this.RightClickMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.EditMenu = new System.Windows.Forms.ToolStripMenuItem();
@@ -72,6 +75,7 @@ namespace DeOps.Interface
             this.CommandSplit.Panel1.SuspendLayout();
             this.CommandSplit.Panel2.SuspendLayout();
             this.CommandSplit.SuspendLayout();
+            this.SideModeStrip.SuspendLayout();
             this.RightClickMenu.SuspendLayout();
             this.NavStrip.SuspendLayout();
             this.TopToolStrip.SuspendLayout();
@@ -112,6 +116,7 @@ namespace DeOps.Interface
             // 
             // CommandSplit.Panel1
             // 
+            this.CommandSplit.Panel1.Controls.Add(this.SideModeStrip);
             this.CommandSplit.Panel1.Controls.Add(this.CommandTree);
             // 
             // CommandSplit.Panel2
@@ -123,26 +128,64 @@ namespace DeOps.Interface
             this.CommandSplit.SplitterDistance = 277;
             this.CommandSplit.TabIndex = 4;
             // 
+            // SideModeStrip
+            // 
+            this.SideModeStrip.BackColor = System.Drawing.Color.CornflowerBlue;
+            this.SideModeStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
+            this.SideModeStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.SideViewsButton,
+            this.SideNewsButton});
+            this.SideModeStrip.Location = new System.Drawing.Point(0, 0);
+            this.SideModeStrip.Name = "SideModeStrip";
+            this.SideModeStrip.Size = new System.Drawing.Size(171, 25);
+            this.SideModeStrip.TabIndex = 1;
+            this.SideModeStrip.Paint += new System.Windows.Forms.PaintEventHandler(this.SideModeStrip_Paint);
+            this.SideModeStrip.MouseClick += new System.Windows.Forms.MouseEventHandler(this.SideModeStrip_MouseClick);
+            this.SideModeStrip.MouseMove += new System.Windows.Forms.MouseEventHandler(this.SideModeStrip_MouseMove);
+            // 
+            // SideViewsButton
+            // 
+            this.SideViewsButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.SideViewsButton.Image = ((System.Drawing.Image)(resources.GetObject("SideViewsButton.Image")));
+            this.SideViewsButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.SideViewsButton.Name = "SideViewsButton";
+            this.SideViewsButton.Size = new System.Drawing.Size(29, 22);
+            this.SideViewsButton.Text = "Views";
+            this.SideViewsButton.DropDownOpening += new System.EventHandler(this.SideViewsButton_DropDownOpening);
+            // 
+            // SideNewsButton
+            // 
+            this.SideNewsButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.SideNewsButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.SideNewsButton.Image = ((System.Drawing.Image)(resources.GetObject("SideNewsButton.Image")));
+            this.SideNewsButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.SideNewsButton.Name = "SideNewsButton";
+            this.SideNewsButton.Size = new System.Drawing.Size(29, 22);
+            this.SideNewsButton.Text = "News";
+            this.SideNewsButton.DropDownOpening += new System.EventHandler(this.SideNewsButton_DropDownOpening);
+            // 
             // CommandTree
             // 
+            this.CommandTree.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+                        | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
             this.CommandTree.BackColor = System.Drawing.SystemColors.Window;
             this.CommandTree.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.CommandTree.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.CommandTree.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.CommandTree.Dock = System.Windows.Forms.DockStyle.Fill;
             this.CommandTree.GridLineColor = System.Drawing.Color.WhiteSmoke;
             this.CommandTree.HeaderMenu = null;
             this.CommandTree.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
             this.CommandTree.ItemHeight = 20;
             this.CommandTree.ItemMenu = null;
             this.CommandTree.LabelEdit = false;
-            this.CommandTree.Location = new System.Drawing.Point(0, 0);
+            this.CommandTree.Location = new System.Drawing.Point(0, 25);
             this.CommandTree.MouseActivte = true;
             this.CommandTree.Name = "CommandTree";
             this.CommandTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.CommandTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandTree.ShowLines = true;
-            this.CommandTree.Size = new System.Drawing.Size(171, 277);
+            this.CommandTree.Size = new System.Drawing.Size(171, 249);
             this.CommandTree.SmallImageList = null;
             this.CommandTree.StateImageList = null;
             this.CommandTree.TabIndex = 0;
@@ -514,8 +557,11 @@ namespace DeOps.Interface
             this.MainSplit.Panel2.PerformLayout();
             this.MainSplit.ResumeLayout(false);
             this.CommandSplit.Panel1.ResumeLayout(false);
+            this.CommandSplit.Panel1.PerformLayout();
             this.CommandSplit.Panel2.ResumeLayout(false);
             this.CommandSplit.ResumeLayout(false);
+            this.SideModeStrip.ResumeLayout(false);
+            this.SideModeStrip.PerformLayout();
             this.RightClickMenu.ResumeLayout(false);
             this.NavStrip.ResumeLayout(false);
             this.NavStrip.PerformLayout();
@@ -566,5 +612,8 @@ namespace DeOps.Interface
         private System.Windows.Forms.ToolStripButton LockButton;
         private System.Windows.Forms.Timer NewsTimer;
         private System.Windows.Forms.ToolStripDropDownButton NewsButton;
+        private System.Windows.Forms.ToolStrip SideModeStrip;
+        private System.Windows.Forms.ToolStripDropDownButton SideViewsButton;
+        private System.Windows.Forms.ToolStripDropDownButton SideNewsButton;
     }
 }

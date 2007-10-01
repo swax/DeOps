@@ -24,10 +24,12 @@ namespace DeOps.Components.Storage
         const byte Packet_FileHash = 0x30;
         const byte Packet_FileSize = 0x40;
         const byte Packet_FileKey = 0x50;
+        const byte Packet_Date = 0x60;
 
 
         internal byte[] Key;
         internal uint Version;
+        internal DateTime Date;
         internal byte[] FileHash;
         internal long FileSize;
         internal RijndaelManaged FileKey = new RijndaelManaged();
@@ -43,6 +45,7 @@ namespace DeOps.Components.Storage
 
                 protocol.WritePacket(header, Packet_Key, Key);
                 protocol.WritePacket(header, Packet_Version, BitConverter.GetBytes(Version));
+                protocol.WritePacket(header, Packet_Date, BitConverter.GetBytes(Date.ToBinary()));
                 protocol.WritePacket(header, Packet_FileHash, FileHash);
                 protocol.WritePacket(header, Packet_FileSize, BitConverter.GetBytes(FileSize));
                 protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
@@ -83,6 +86,10 @@ namespace DeOps.Components.Storage
 
                     case Packet_Version:
                         header.Version = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Date:
+                        header.Date = DateTime.FromBinary(BitConverter.ToInt64(child.Data, child.PayloadPos));
                         break;
 
                     case Packet_FileHash:

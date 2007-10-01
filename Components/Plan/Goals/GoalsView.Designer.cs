@@ -204,7 +204,6 @@ namespace DeOps.Components.Plan
             this.ArchivedList.StateImageList = null;
             this.ArchivedList.TabIndex = 0;
             this.ArchivedList.Text = "containerListViewEx1";
-            this.ArchivedList.VisualStyles = false;
             this.ArchivedList.SelectedIndexChanged += new System.EventHandler(this.ArchivedList_SelectedIndexChanged);
             // 
             // DiscardLink
@@ -248,11 +247,12 @@ namespace DeOps.Components.Plan
             this.ChangesLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ChangesLabel.AutoSize = true;
             this.ChangesLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ChangesLabel.Location = new System.Drawing.Point(203, 254);
+            this.ChangesLabel.Location = new System.Drawing.Point(207, 254);
             this.ChangesLabel.Name = "ChangesLabel";
             this.ChangesLabel.Size = new System.Drawing.Size(56, 13);
             this.ChangesLabel.TabIndex = 19;
             this.ChangesLabel.Text = "Changes";
+            this.ChangesLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.ChangesLabel.Visible = false;
             // 
             // GoalsView

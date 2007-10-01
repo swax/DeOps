@@ -129,6 +129,7 @@ namespace DeOps.Interface.TLVex
 		private bool styleall;
 		private bool hovered;
         public List<int> Overlays;
+        public int RowSelWidth;
 		#endregion
 
 		#region Constructors
@@ -1029,6 +1030,7 @@ namespace DeOps.Interface.TLVex
 		protected VScrollBar vscrollBar;
 
 		protected bool ensureVisible = true;
+        protected bool alwaysSelect = false;
 
         protected bool DisableHScroll;
         public int ControlPadding = 0;
@@ -1109,6 +1111,18 @@ namespace DeOps.Interface.TLVex
 			get { return ensureVisible; }
 			set { ensureVisible = value; }
 		}
+
+        [
+        Category("Always Select"),
+        Description("Specifies wether the selected item is always visible"),
+        DefaultValue(false)
+        ]
+        public bool AlwaysSelect
+        {
+            get { return alwaysSelect; }
+            set { alwaysSelect = value; }
+        }
+
 
 		[
 		Category("Behavior"),
@@ -1773,8 +1787,6 @@ namespace DeOps.Interface.TLVex
 			{
 				if (MouseInRect(e, rowsRect) && items.Count>0)
 				{
-					#region Rows
-
 					GenerateRowRects();
 
 					for (int i=0; i<items.Count; i++)
@@ -1782,6 +1794,10 @@ namespace DeOps.Interface.TLVex
 
 						if (MouseInRect(e, rowRects[i]))
 						{
+                            // if selected dont take action until mouse up, so context menu can come up for multiple items
+                            if (e.Button == MouseButtons.Right && items[i].Selected)
+                                return;
+
 							// Found the rect in wich the user clicked so we have the item to select
 							switch(this.multiSelectMode)
 							{
@@ -1795,12 +1811,15 @@ namespace DeOps.Interface.TLVex
 									SelectiveSelection(i);
 									break;
 							}
+
+                            return;
 						}
 					}
-
-				
-					#endregion
-				}		
+                    
+                    // dont deselect all items on click if shift or ctrl is down
+                    if (!alwaysSelect && multiSelectMode == MultiSelectMode.Single)
+                        MoveToIndex(-1);
+				}
 			}
 		}
 
@@ -1860,6 +1879,7 @@ namespace DeOps.Interface.TLVex
 			{
 				if (MouseInRect(e, headerRect))
 					OnHeaderMenuEvent(e);
+
 				else if (MouseInRect(e, rowsRect))
 				{
 					for (i=0; i<items.Count; i++)
@@ -2119,7 +2139,8 @@ namespace DeOps.Interface.TLVex
 			allRowsHeight = items.Count*rowHeight;
 			for (int i=0; i<items.Count; i++)
 			{
-				rowRects[i] = new Rectangle(lftpos, lheight, ClientRectangle.Width-4, rowHeight-1);
+                int rowSelWidth = (!fullRowSelect && items[i].RowSelWidth != 0) ? items[i].RowSelWidth : ClientRectangle.Width-4;
+				rowRects[i] = new Rectangle(lftpos, lheight, rowSelWidth, rowHeight-1);
 				lheight += rowHeight;				
 			}
 		}
@@ -2340,16 +2361,19 @@ namespace DeOps.Interface.TLVex
 
 			focusedIndex = iIndex;
 
-			if ((this.multiSelectMode == MultiSelectMode.Single) | (firstSelected == -1))
+            if (this.multiSelectMode == MultiSelectMode.Single && focusedIndex != -1) 
 			{
 				firstSelected = focusedIndex;
 				items[focusedIndex].Focused = true;
 				focusedItem = items[focusedIndex];
 			}
 
-			ShowSelectedItems();
+            if (iIndex != -1)
+            {
+                ShowSelectedItems();
+                MakeSelectedVisible();
+            }
 
-			MakeSelectedVisible();
 			OnSelectedIndexChanged(new EventArgs());
 
 			Invalidate(this.ClientRectangle);
@@ -2580,7 +2604,7 @@ namespace DeOps.Interface.TLVex
 				// render listview item rows
 				int last;
 				int j, i;
-
+                Rectangle testRect = new Rectangle();
 				// set up some commonly used values
 				// to cut down on cpu cycles and boost
 				// the lists performance
@@ -2600,11 +2624,26 @@ namespace DeOps.Interface.TLVex
 					if ((tp_scr+(rowHeight*i)+2 > r.Top+2) 
 						&& (tp_scr+(rowHeight*i)+2 < r.Top+r.Height-2-hsize))
 					{
+                        testRect = new Rectangle(r.Left + 2, r.Top + headerBuffer + 2, r.Width - vsize - 5, r.Height - hsize - 5);
+
 						g.Clip = new Region(new Rectangle(r.Left+2, r.Top+headerBuffer+2, r.Width-vsize-5, r.Height-hsize-5));
                        
+                        int ib = 0;
+                        if (smallImageList != null && (items[i].ImageIndex >= 0 && items[i].ImageIndex < smallImageList.Count))
+                            ib = 18;
+
 						int rowSelWidth = (allColsWidth < (r.Width-5) || hscrollBar.Visible ? allColsWidth : r.Width-5);
-						if (!fullRowSelect)
-							rowSelWidth = iColWidth /* BMS 2003-05-24 */ -2;
+                       
+                        if (!fullRowSelect)
+                        {
+                            Font font = (items[i].Font != null) ? items[i].Font : Font;
+                            SizeF size = g.MeasureString(items[i].Text, font);
+       
+                            int newWidth = ib + (int)size.Width + 6;
+                            rowSelWidth = newWidth < iColWidth ? newWidth : iColWidth;
+
+                            items[i].RowSelWidth = rowSelWidth;
+                        }
 
 						// render selected item highlights
 						if (items[i].Selected && isFocused)
@@ -2667,6 +2706,8 @@ namespace DeOps.Interface.TLVex
 								&& (tp_scr+(rowHeight*i)+2 >= tp) /* BMS 2003-05-25 */
 								&& (tp_scr+(rowHeight*i)+2 < r.Top+r.Height-2-hsize))
 							{
+                                 testRect =new Rectangle(lp_scr+last+4, tp, (last+iColWidthPlus1 /* BMS 2003-05-24 */ > r.Width-6 ? r.Width-6 : iColWidthPlus1-6), r.Height-hsize-5); 
+							
 								g.Clip = new Region(new Rectangle(lp_scr+last+4, tp, (last+iColWidthPlus1 /* BMS 2003-05-24 */ > r.Width-6 ? r.Width-6 : iColWidthPlus1-6), r.Height-hsize-5)); 
 								Control c = items[i].SubItems[j].ItemControl;
 								if (c != null)
@@ -2681,17 +2722,19 @@ namespace DeOps.Interface.TLVex
 									string sp = "";
 									if (columns[j+1].TextAlign == HorizontalAlignment.Left)
 									{
-                                        g.DrawString(TruncatedString(items[i].SubItems[j].Text, iColWidthPlus1 /* BMS 2003-05-24 */, 12, g), this.Font, (items[i].Selected && isFocused ? SystemBrushes.HighlightText : new SolidBrush(items[i].ForeColor)), (float)(lp_scr + last + 4), (float)(tp_scr + (rowHeight * i) + 2));
+                                        g.DrawString(TruncatedString(items[i].SubItems[j].Text, iColWidthPlus1 /* BMS 2003-05-24 */, 12, g), this.Font, (fullRowSelect && items[i].Selected && isFocused ? SystemBrushes.HighlightText : new SolidBrush(items[i].ForeColor)), (float)(lp_scr + last + 4), (float)(tp_scr + (rowHeight * i) + 2));
 									}
 									else if (columns[j+1].TextAlign == HorizontalAlignment.Right)
 									{
+                                        testRect = new Rectangle(lp_scr + last + iColWidthPlus1 /* BMS 2003-05-24 */- StringTools.MeasureDisplayStringWidth(g, sp, this.Font) - 16, tp_scr + (rowHeight * i) + 2, 0, 0);
+							
 										sp = TruncatedString(items[i].SubItems[j].Text, iColWidthPlus1 /* BMS 2003-05-24 */, 12, g);
-                                        g.DrawString(sp, this.Font, (items[i].Selected && isFocused ? SystemBrushes.HighlightText : new SolidBrush(items[i].ForeColor)), (float)(lp_scr + last + iColWidthPlus1 /* BMS 2003-05-24 */- StringTools.MeasureDisplayStringWidth(g, sp, this.Font) - 16), (float)(tp_scr + (rowHeight * i) + 2));
+                                        g.DrawString(sp, this.Font, (fullRowSelect && items[i].Selected && isFocused ? SystemBrushes.HighlightText : new SolidBrush(items[i].ForeColor)), (float)(lp_scr + last + iColWidthPlus1 /* BMS 2003-05-24 */- StringTools.MeasureDisplayStringWidth(g, sp, this.Font) - 16), (float)(tp_scr + (rowHeight * i) + 2));
 									}
 									else
 									{
 										sp = TruncatedString(items[i].SubItems[j].Text, iColWidthPlus1 /* BMS 2003-05-24 */ , 12, g);
-                                        g.DrawString(sp, this.Font, (items[i].Selected && isFocused ? SystemBrushes.HighlightText : new SolidBrush(items[i].ForeColor)), (float)(lp_scr + last + (iColWidthPlus1 /* BMS 2003-05-24 */ / 2) - (StringTools.MeasureDisplayStringWidth(g, sp, this.Font) / 2)), (float)(tp_scr + (rowHeight * i) + 2));
+                                        g.DrawString(sp, this.Font, (fullRowSelect && items[i].Selected && isFocused ? SystemBrushes.HighlightText : new SolidBrush(items[i].ForeColor)), (float)(lp_scr + last + (iColWidthPlus1 /* BMS 2003-05-24 */ / 2) - (StringTools.MeasureDisplayStringWidth(g, sp, this.Font) / 2)), (float)(tp_scr + (rowHeight * i) + 2));
 									}
 								}
 							}

@@ -207,6 +207,7 @@ namespace DeOps.Components.Plan
             this.SaveLink.TabIndex = 15;
             this.SaveLink.TabStop = true;
             this.SaveLink.Text = "Save";
+            this.SaveLink.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.SaveLink.Visible = false;
             this.SaveLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.SaveLink_LinkClicked);
             // 
@@ -224,6 +225,7 @@ namespace DeOps.Components.Plan
             this.DiscardLink.TabIndex = 16;
             this.DiscardLink.TabStop = true;
             this.DiscardLink.Text = "Discard";
+            this.DiscardLink.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.DiscardLink.Visible = false;
             this.DiscardLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.DiscardLink_LinkClicked);
             // 
@@ -232,11 +234,12 @@ namespace DeOps.Components.Plan
             this.ChangesLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ChangesLabel.AutoSize = true;
             this.ChangesLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ChangesLabel.Location = new System.Drawing.Point(330, 293);
+            this.ChangesLabel.Location = new System.Drawing.Point(334, 293);
             this.ChangesLabel.Name = "ChangesLabel";
             this.ChangesLabel.Size = new System.Drawing.Size(56, 13);
             this.ChangesLabel.TabIndex = 20;
             this.ChangesLabel.Text = "Changes";
+            this.ChangesLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.ChangesLabel.Visible = false;
             // 
             // GoalsCombo

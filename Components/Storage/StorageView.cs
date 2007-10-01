@@ -40,8 +40,8 @@ namespace DeOps.Components.Storage
         internal Font BoldFont = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 
         internal List<ulong> HigherIDs = new List<ulong>();
-        List<ulong> CurrentDiffs = new List<ulong>();
-        List<ulong> FailedDiffs = new List<ulong>();
+        internal List<ulong> CurrentDiffs = new List<ulong>();
+        internal List<ulong> FailedDiffs = new List<ulong>();
 
         Dictionary<ulong, RescanFolder> RescanFolderMap = new Dictionary<ulong, RescanFolder>();
         int NextRescan;
@@ -49,6 +49,15 @@ namespace DeOps.Components.Storage
         internal bool WatchTransfers;
 
         internal bool IsLocal;
+
+        ToolStripMenuItem MenuAdd;
+        ToolStripMenuItem MenuLock;
+        ToolStripMenuItem MenuUnlock;
+        ToolStripMenuItem MenuRestore;
+        ToolStripMenuItem MenuDelete;
+        ToolStripMenuItem MenuDetails;
+
+        ContainerListViewEx LastSelectedView;
 
 
         internal StorageView(StorageControl storages, ulong id, uint project)
@@ -64,12 +73,20 @@ namespace DeOps.Components.Storage
 
             splitContainer1.Height = Height - toolStrip1.Height;
 
-            if(DhtID == Core.LocalDhtID)
+            if (DhtID == Core.LocalDhtID)
                 if (Storages.Working.ContainsKey(ProjectID))
                 {
                     Working = Storages.Working[ProjectID];
                     IsLocal = true;
                 }
+
+            MenuAdd = new ToolStripMenuItem("Add to Storage", null, FileView_Add);
+            MenuLock = new ToolStripMenuItem("Lock", StorageRes.Locked, FileView_Lock);
+            MenuUnlock = new ToolStripMenuItem("Unlock", StorageRes.Unlocked, FileView_Unlock);
+            MenuRestore = new ToolStripMenuItem("Restore", null, FileView_Restore);
+            MenuDelete = new ToolStripMenuItem("Delete", StorageRes.Reject, FileView_Delete);
+            MenuDetails = new ToolStripMenuItem("Details", StorageRes.details, FileView_Details);
+
 
             toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
         }
@@ -124,8 +141,6 @@ namespace DeOps.Components.Storage
             FolderTreeView.OverlayImages.Add(StorageRes.Lower);
             FolderTreeView.OverlayImages.Add(StorageRes.Temp);
 
-            FoldersButton.Checked = true;
-
             SelectedInfo.Init(this);
 
 
@@ -157,10 +172,28 @@ namespace DeOps.Components.Storage
             DiffCombo.Items.Add("Custom...");
 
             DiffCombo.SelectedIndex = 0;
+
+            // dont show folder panel unless there are folders
+            bool showFolders = false;
+
+            if (RootFolder != null)
+                foreach (FolderNode folder in RootFolder.Folders.Values)
+                    if (!folder.Details.IsFlagged(StorageFlags.Archived))
+                    {
+                        showFolders = true;
+                        break;
+                    }
+
+            FoldersButton.Checked = showFolders;
+            FoldersButton_CheckedChanged(null, null); // event doesnt fire when setting false = false
         }
+
         private void StorageView_Load(object sender, EventArgs e)
         {
-      
+            // if SelectedInfo.InfoDisplay.DocumentText updated multiple times before load, it will show nothing
+
+            SelectedInfo.DisplayActivated = true;
+            SelectedInfo.ShowDiffs();
         }
 
 
@@ -180,22 +213,21 @@ namespace DeOps.Components.Storage
         {
             HigherIDs = Storages.GetHigherIDs(DhtID, ProjectID);
 
+            CurrentDiffs.Clear();
+
             if (DiffCombo.Text == "Local")
             {
-                CurrentDiffs.Clear();
                 CurrentDiffs.AddRange(HigherIDs);
                 CurrentDiffs.AddRange(Links.GetDownlinkIDs(DhtID, ProjectID, 1));
             }
 
             else if (DiffCombo.Text == "Higher")
             {
-                CurrentDiffs.Clear();
                 CurrentDiffs.AddRange(HigherIDs);
             }
 
             else if (DiffCombo.Text == "Lower")
             {
-                CurrentDiffs.Clear();
                 CurrentDiffs.AddRange(Links.GetDownlinkIDs(DhtID, ProjectID, 1));
             }
 
@@ -204,12 +236,9 @@ namespace DeOps.Components.Storage
                 AddLinks form = new AddLinks(Links, ProjectID);
 
                 if (form.ShowDialog(this) == DialogResult.OK)
-                {
-                    CurrentDiffs.Clear();
                     CurrentDiffs.AddRange(form.People);
-                }
-                else
-                    return;
+
+                // if cancel then no diffs are made, isnt too bad, there are situations you'd watch no diffs
             }
 
             FailedDiffs.Clear();
@@ -256,6 +285,9 @@ namespace DeOps.Components.Storage
             if (RootFolder != null)
                 RootFolder.Expand();
             
+
+            bool showDiffs = SelectedInfo.DiffsView; // save diffs view mode here because selectFolder resets it
+
             // if prev == selected, this means selected wasnt updated in refresh
             if (SelectedFolder == null || prevSelected == SelectedFolder)
                 SelectFolder(RootFolder);
@@ -265,7 +297,8 @@ namespace DeOps.Components.Storage
                 RefreshFileList();
             }
 
-            
+            if (showDiffs)
+                SelectedInfo.ShowDiffs();
         }
 
         private void ApplyDiff(ulong id)
@@ -490,7 +523,47 @@ namespace DeOps.Components.Storage
 
         private void Links_LinkUpdate(OpLink link)
         {
-            //crit - get new diff area, modify current, accordingly
+            // check if command structure has changed
+            List<ulong> check = new List<ulong>();
+            List<ulong> highers = Storages.GetHigherIDs(DhtID, ProjectID);
+
+            if (DiffCombo.Text == "Local")
+            {
+                check.AddRange(HigherIDs);
+                check.AddRange(Links.GetDownlinkIDs(DhtID, ProjectID, 1));
+            }
+
+            else if (DiffCombo.Text == "Higher")
+                check.AddRange(HigherIDs);
+
+            else if (DiffCombo.Text == "Lower")
+                check.AddRange(Links.GetDownlinkIDs(DhtID, ProjectID, 1));
+
+            else // custom
+                return;
+
+            if (ListsMatch(highers, HigherIDs) && ListsMatch(check, CurrentDiffs))
+                return;
+
+
+            HigherIDs = highers;
+            CurrentDiffs = check;
+            FailedDiffs.Clear();
+
+            RefreshView();
+        }
+
+        private bool ListsMatch(List<ulong> first, List<ulong> second)
+        {
+            foreach (ulong id in first)
+                if (!second.Contains(id))
+                    return false;
+
+            foreach (ulong id in second)
+                if (!first.Contains(id))
+                    return false;
+
+            return true;
         }
 
         private void Storages_StorageUpdate(OpStorage storage)
@@ -503,6 +576,8 @@ namespace DeOps.Components.Storage
             {
                 RemoveDiff(storage.DhtID, RootFolder);
                 ApplyDiff(storage.DhtID);
+
+                SelectedInfo.UpdateDiffView(storage.DhtID);
 
                 RefreshFileList();
             }
@@ -634,7 +709,10 @@ namespace DeOps.Components.Storage
         private void FolderTreeView_SelectedItemChanged(object sender, EventArgs e)
         {
             if (FolderTreeView.SelectedNodes.Count == 0)
+            {
+                SelectedInfo.ShowDiffs();
                 return;
+            }
 
             FolderNode node = FolderTreeView.SelectedNodes[0] as FolderNode;
 
@@ -647,6 +725,9 @@ namespace DeOps.Components.Storage
 
         private void SelectFolder(FolderNode folder)
         {
+            if (folder == null)
+                return;
+
             /*
              *             
              * if (!SelectedInfo.IsFile && SelectedInfo.CurrentFolder != null)
@@ -788,8 +869,8 @@ namespace DeOps.Components.Storage
 
             UpdateListItems();
 
-            if(!infoSet)
-                SelectedInfo.ShowItem(folder, null);
+            if (!infoSet)
+                SelectedInfo.ShowDiffs();
         }
 
 
@@ -1120,30 +1201,33 @@ namespace DeOps.Components.Storage
             if (!node.Temp)
             {
                 if (node.Details.IsFlagged(StorageFlags.Unlocked))
-                    menu.Items.Add(new FolderMenuItem("Lock", node, StorageRes.Locked, Folder_Lock));
+                    menu.Items.Add(MenuLock);
                 else
-                    menu.Items.Add(new FolderMenuItem("Unlock", node, StorageRes.Unlocked, Folder_Unlock));
+                    menu.Items.Add(MenuUnlock);
             }
             else
-                menu.Items.Add(new FolderMenuItem("Add to Storage", node, null, Folder_Add)); // remove in web interface\
+                menu.Items.Add(MenuAdd); // remove in web interface\
 
 
             if (node != RootFolder && !node.Temp)
-                menu.Items.Add(new FolderMenuItem("Details", node, StorageRes.details, Folder_Details));
+                menu.Items.Add(MenuDetails);
 
             if (IsLocal && node != RootFolder && !node.Temp)
             {
                 menu.Items.Add("-");
 
                 if (node.Details.IsFlagged(StorageFlags.Archived))
-                    menu.Items.Add(new FolderMenuItem("Restore", node, null, Folder_Restore));
+                    menu.Items.Add(MenuRestore);
 
-                menu.Items.Add(new FolderMenuItem("Delete", node, StorageRes.Reject, Folder_Delete));
+                menu.Items.Add(MenuDelete);
             }
 
 
             if (menu.Items.Count > 0)
+            {
+                LastSelectedView = FolderTreeView;
                 menu.Show(FolderTreeView, e.Location);
+            }
         }
 
         private void FileListView_MouseClick(object sender, MouseEventArgs e)
@@ -1157,7 +1241,7 @@ namespace DeOps.Components.Storage
 
             if (clicked == null)
             {
-                SelectedInfo.ShowDefault();
+                SelectedInfo.ShowDiffs();
 
                 if (Working != null)
                 {
@@ -1168,88 +1252,202 @@ namespace DeOps.Components.Storage
                 return;
             }
 
-            if (clicked.Text.CompareTo("..") == 0)
-                return;
 
-            // add
-            if (IsLocal && clicked.Temp)
-                menu.Items.Add(new FileMenuItem("Add to Storage", clicked, null, File_Add)); // remove in web interface\
+            // add to storage, lock, unlock, restore, delete
+            bool firstLoop = true;
+            List<ToolStripMenuItem> potentialMenus = new List<ToolStripMenuItem>();
 
-            // lock
-            if (!clicked.Temp)
-                if (clicked.IsFolder)
-                {
-                    if(clicked.Folder.Details.IsFlagged(StorageFlags.Unlocked))
-                        menu.Items.Add(new FolderMenuItem("Lock", clicked.Folder, StorageRes.Locked, Folder_Lock));
-                    else
-                        menu.Items.Add(new FolderMenuItem("Unlock", clicked.Folder, StorageRes.Unlocked, Folder_Unlock));       
-                }
-                else if (clicked.Details != null)
-                {
-                    if(clicked.IsUnlocked())
-                        menu.Items.Add(new FileMenuItem("Lock", clicked, StorageRes.Locked, File_Lock));
-                    else
-                        menu.Items.Add(new FileMenuItem("Unlock", clicked, StorageRes.Unlocked, File_Unlock));
-                }
-
-            // details
-            if (!clicked.Temp)
-                if (clicked.IsFolder)
-                    menu.Items.Add(new FolderMenuItem("Details", clicked.Folder, StorageRes.details, Folder_Details));
-                else
-                    menu.Items.Add(new FileMenuItem("Details", clicked, StorageRes.details, File_Details));
-
-            // delete / restore
-            if (IsLocal && !clicked.Temp)
-                if (clicked.IsFolder)
-                {
-                    menu.Items.Add("-");
-
-                    if(clicked.Folder.Details.IsFlagged(StorageFlags.Archived))
-                        menu.Items.Add(new FolderMenuItem("Restore", clicked.Folder, null, Folder_Restore));
-
-                    menu.Items.Add(new FolderMenuItem("Delete", clicked.Folder, StorageRes.Reject, Folder_Delete));
-                }
-
-                else if (clicked.Details != null)
-                {
-                    menu.Items.Add("-");
-
-                    if (clicked.Details.IsFlagged(StorageFlags.Archived))
-                        menu.Items.Add(new FileMenuItem("Restore", clicked, null, File_Restore));
-
-                    menu.Items.Add(new FileMenuItem("Delete", clicked, StorageRes.Reject, File_Delete));
-                }
-
-            if (menu.Items.Count > 0)
-                menu.Show(FileListView, e.Location);
-        }
-
-        void File_Add(object sender, EventArgs e)
-        {
-            FileMenuItem item = sender as FileMenuItem;
-
-            if (item == null)
-                return;
-
-            if (item.File.IsFolder)
+            foreach (FileItem item in FileListView.SelectedItems)
             {
-                AddNewFolder(item.File.Folder);
-                return;
+                if (item.Text.CompareTo("..") == 0)
+                    continue;
+
+                // create list of items to add, intersect with current list, first run is free
+                potentialMenus.Clear();
+
+                // add
+                if (IsLocal && item.Temp)
+                    potentialMenus.Add(MenuAdd);
+
+                // lock / unlock
+                if (!item.Temp)
+                    if (item.IsFolder)
+                    {
+                        if (item.Folder.Details.IsFlagged(StorageFlags.Unlocked))
+                            potentialMenus.Add(MenuLock);
+                        else
+                            potentialMenus.Add(MenuUnlock);
+                    }
+                    else if (item.Details != null)
+                    {
+                        if (item.IsUnlocked())
+                            potentialMenus.Add(MenuLock);
+                        else
+                            potentialMenus.Add(MenuUnlock);
+                    }
+
+                // details
+                if (!item.Temp && FileListView.SelectedItems.Count == 1)
+                    potentialMenus.Add(MenuDetails);
+
+                // delete / restore
+                if (IsLocal && !item.Temp)
+                    if (item.IsFolder)
+                    {
+                        if (item.Folder.Details.IsFlagged(StorageFlags.Archived))
+                            potentialMenus.Add(MenuRestore);
+
+                        potentialMenus.Add(MenuDelete);
+                    }
+
+                    else if (item.Details != null)
+                    {
+                        if (item.Details.IsFlagged(StorageFlags.Archived))
+                            potentialMenus.Add(MenuRestore);
+
+                        potentialMenus.Add(MenuDelete);
+                    }
+
+                // initial list
+                if (firstLoop)
+                {
+                    foreach (ToolStripMenuItem potential in potentialMenus)
+                        menu.Items.Add(potential);
+
+                    firstLoop = false;
+                    continue;
+                }
+
+                // intersect both ways
+                foreach (ToolStripMenuItem potential in potentialMenus)
+                    if (!menu.Items.Contains(potential))
+                        menu.Items.Remove(potential);
+
+                List<ToolStripMenuItem> selfRemove = new List<ToolStripMenuItem>();
+                foreach (ToolStripMenuItem current in menu.Items)
+                    if (!potentialMenus.Contains(current))
+                        selfRemove.Add(current);
+
+                 foreach (ToolStripMenuItem current in selfRemove)
+                     menu.Items.Remove(current);
             }
 
-            // if no changes then temp local, add path
-            if(item.File.Changes.Count == 0)
-                Working.TrackFile(item.File.GetPath()); // add through working path
 
-            // if 1 change, then file is remote, add item
-            else if (item.File.Changes.Count == 1)
-                Working.TrackFile(item.File.Folder.GetPath(), (StorageFile) GetFirstItem(item.File.Changes));
+            // place '-' before restore or delete
+            int i = 0;
+            bool separator = false;
+            foreach (ToolStripMenuItem item in menu.Items)
+            {
+                if (item.Text == "Restore" || item.Text == "Delete")
+                {
+                    separator = true;
+                    break;
+                }
 
-            // if more than 1 change, them multiple remotes
-            else if (item.File.Changes.Count > 1)
-                MessageBox.Show("Select specific file from changes below to add");
+                i++;
+            }
+
+            if (separator && i > 0)
+                menu.Items.Insert(i, new ToolStripSeparator());
+
             
+            /* // add
+                if (IsLocal && clicked.Temp)
+                    menu.Items.Add(new FileMenuItem("Add to Storage", clicked, null, File_Add)); // remove in web interface\
+
+                // lock
+                if (!clicked.Temp)
+                    if (clicked.IsFolder)
+                    {
+                        if (clicked.Folder.Details.IsFlagged(StorageFlags.Unlocked))
+                            menu.Items.Add(new FolderMenuItem("Lock", clicked.Folder, StorageRes.Locked, Folder_Lock));
+                        else
+                            menu.Items.Add(new FolderMenuItem("Unlock", clicked.Folder, StorageRes.Unlocked, Folder_Unlock));
+                    }
+                    else if (clicked.Details != null)
+                    {
+                        if (clicked.IsUnlocked())
+                            menu.Items.Add(new FileMenuItem("Lock", clicked, StorageRes.Locked, File_Lock));
+                        else
+                            menu.Items.Add(new FileMenuItem("Unlock", clicked, StorageRes.Unlocked, File_Unlock));
+                    }
+
+                // details
+                if (!clicked.Temp)
+                    if (clicked.IsFolder)
+                        menu.Items.Add(new FolderMenuItem("Details", clicked.Folder, StorageRes.details, Folder_Details));
+                    else
+                        menu.Items.Add(new FileMenuItem("Details", clicked, StorageRes.details, File_Details));
+
+                // delete / restore
+                if (IsLocal && !clicked.Temp)
+                    if (clicked.IsFolder)
+                    {
+                        menu.Items.Add("-");
+
+                        if (clicked.Folder.Details.IsFlagged(StorageFlags.Archived))
+                            menu.Items.Add(new FolderMenuItem("Restore", clicked.Folder, null, Folder_Restore));
+
+                        menu.Items.Add(new FolderMenuItem("Delete", clicked.Folder, StorageRes.Reject, Folder_Delete));
+                    }
+
+                    else if (clicked.Details != null)
+                    {
+                        menu.Items.Add("-");
+
+                        if (clicked.Details.IsFlagged(StorageFlags.Archived))
+                            menu.Items.Add(new FileMenuItem("Restore", clicked, null, File_Restore));
+
+                        menu.Items.Add(new FileMenuItem("Delete", clicked, StorageRes.Reject, File_Delete));
+                    }
+                */
+
+
+
+            if (menu.Items.Count > 0)
+            {
+                LastSelectedView = FileListView;
+                menu.Show(FileListView, e.Location);
+            }
+        }
+
+        void FileView_Add(object sender, EventArgs e)
+        { 
+            
+            // folder view
+            if (LastSelectedView == FolderTreeView)
+            {
+
+                if(FolderTreeView.SelectedNodes.Count > 0)
+                    AddNewFolder((FolderNode)FolderTreeView.SelectedNodes[0]);
+                
+            }
+
+            // file view
+            else
+            {
+                foreach (FileItem item in FileListView.SelectedItems)
+                {
+                    if (item.IsFolder)
+                    {
+                        AddNewFolder(item.Folder);
+                        continue;
+                    }
+
+                    // if no changes then temp local, add path
+                    if (item.Changes.Count == 0)
+                        Working.TrackFile(item.GetPath()); // add through working path
+
+                    // if 1 change, then file is remote, add item
+                    else if (item.Changes.Count == 1)
+                        Working.TrackFile(item.Folder.GetPath(), (StorageFile)GetFirstItem(item.Changes));
+
+                    // if more than 1 change, them multiple remotes
+                    else if (item.Changes.Count > 1)
+                        MessageBox.Show("Select specific file from changes below to add", item.Details.Name);
+                }
+            }
+           
         }
 
         private StorageItem GetFirstItem(Dictionary<ulong, StorageItem> dictionary)
@@ -1260,16 +1458,6 @@ namespace DeOps.Components.Storage
                 return enumer.Current.Value;
 
             return null;
-        }
-
-        internal void Folder_Add(object sender, EventArgs e)
-        {
-            FolderMenuItem item = sender as FolderMenuItem;
-
-            if (item == null)
-                return;
-
-            AddNewFolder(item.Folder);   
         }
 
         void AddNewFolder(FolderNode folder)
@@ -1287,55 +1475,143 @@ namespace DeOps.Components.Storage
                 MessageBox.Show("Select specific folder from changes below to add");
         }
 
-        void File_Restore(object sender, EventArgs e)
+        void FileView_Restore(object sender, EventArgs e)
         {
-            FileMenuItem item = sender as FileMenuItem;
+            // folder view
+            if (LastSelectedView == FolderTreeView)
+            {
 
-            if (item == null)
-                return;
+                if (FolderTreeView.SelectedNodes.Count > 0)
+                {
+                    FolderNode folder = (FolderNode)FolderTreeView.SelectedNodes[0];
+                    Working.RestoreFolder(folder.GetPath());
+                }
 
-            FileItem file = item.File;
+            }
 
-            Working.RestoreFile(file.Folder.GetPath(), file.Details.Name);
+            // file view
+            else
+            {
+                foreach (FileItem item in FileListView.SelectedItems)
+                {
+                    if (item.IsFolder)
+                    {
+                        Working.RestoreFolder(item.Folder.GetPath());
+                        continue;
+                    }
+
+                    Working.RestoreFile(item.Folder.GetPath(), item.Details.Name);
+                }
+            }
+
         }
 
-        void File_Delete(object sender, EventArgs e)
+        void FileView_Delete(object sender, EventArgs e)
         {
-            FileMenuItem item = sender as FileMenuItem;
+            List<string> tempFolders = new List<string>();
+            List<string> tempFiles = new List<string>();
 
-            if (item == null)
-                return;
+            List<FolderNode> folders = new List<FolderNode>();
+            List<FileItem> files = new List<FileItem>();
 
-            FileItem file = item.File;
 
-            string path = Working.RootPath + file.GetPath();
+            // folder view
+            if (LastSelectedView == FolderTreeView)
+            {
+
+                if (FolderTreeView.SelectedNodes.Count > 0)
+                {
+                    FolderNode folder = (FolderNode)FolderTreeView.SelectedNodes[0];
+
+                    if (folder.Temp)
+                        tempFolders.Add(Working.RootPath + folder.GetPath());
+                    else
+                        folders.Add(folder);
+                }
+
+            }
+
+            // file view
+            else
+            {
+                foreach (FileItem item in FileListView.SelectedItems)
+                {
+                    if (item.IsFolder)
+                    {
+                        if (item.Folder.Temp)
+                            tempFolders.Add(Working.RootPath + item.Folder.GetPath());
+                        else
+                            folders.Add(item.Folder);
+
+                        continue;
+                    }
+
+                    if (item.Temp)
+                        tempFiles.Add(Working.RootPath + item.GetPath());
+                    else
+                        files.Add(item);
+                }
+            }
 
             try
             {
-                // if temp - delete
-                if (file.Temp && File.Exists(path))
-                    if (DialogResult.OK == MessageBox.Show(this, "Are you sure you want to delete '" + file.Details.Name + "'?", "Delete", MessageBoxButtons.OKCancel))
-                    {
-                        File.Delete(path);
+                // handle temps
+                if (tempFiles.Count > 0 || tempFolders.Count > 0)
+                {
+                    string message = "";
+
+                    foreach (string name in tempFiles)
+                        message += name + "\n";
+                    foreach (string name in tempFolders)
+                        message += name + "\n";
+
+                    DialogResult result = MessageBox.Show(this, "Are you sure you want to delete?\n '" + message, "Delete", MessageBoxButtons.YesNoCancel);
+
+                    if (result == DialogResult.Cancel)
                         return;
+
+                    if (result == DialogResult.Yes)
+                    {
+                        foreach (string path in tempFiles)
+                            File.Delete(path);
+                        foreach (string path in tempFolders)
+                            Directory.Delete(path, true);
+                    }
+                }
+
+                // handle rest
+                if (files.Count > 0 || folders.Count > 0)
+                {
+                    string message = "";
+
+                    foreach (FileItem file in files)
+                        message += file.Details.Name + "\n";
+                    foreach (FolderNode node in folders)
+                        message += node.Details.Name + "\n";
+
+                    DialogResult result = MessageBox.Show(this, "Would you like to keep these files archived?\n" + message, "Delete", MessageBoxButtons.YesNoCancel);
+
+                    if (result == DialogResult.Cancel)
+                        return;
+
+                    // archive
+                    if (result == DialogResult.Yes)
+                    {
+                        foreach (FileItem file in files)
+                            Working.ArchiveFile(file.Folder.GetPath(), file.Details.Name);
+                        foreach (FolderNode folder in folders)
+                            Working.ArchiveFolder(folder.GetPath());
                     }
 
-                // ask if user would like to archive file - yes no cancel
-                DialogResult result = MessageBox.Show(this, "Would you like to keep '" + file.Details.Name + "' archived?", "Delete", MessageBoxButtons.YesNoCancel);
-
-                if (result == DialogResult.Cancel)
-                    return;
-
-                if(File.Exists(path))
-                    File.Delete(path);
-
-                // archive
-                if (result == DialogResult.Yes)
-                    Working.ArchiveFile(file.Folder.GetPath(), file.Details.Name);
-
-                // delete 
-                if (result == DialogResult.No)
-                    Working.DeleteFile(file.Folder.GetPath(), file.Details.Name);
+                    // delete
+                    if (result == DialogResult.No)
+                    {
+                        foreach (FileItem file in files)
+                            Working.DeleteFile(file.Folder.GetPath(), file.Details.Name);
+                        foreach (FolderNode folder in folders)
+                            Working.DeleteFolder(folder.GetPath());
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -1343,24 +1619,108 @@ namespace DeOps.Components.Storage
             }
         }
 
-        void File_Lock(object sender, EventArgs e)
+
+        void FileView_Lock(object sender, EventArgs e)
         {
-            FileMenuItem item = sender as FileMenuItem;
+            List<LockError> errors = new List<LockError>();
+            List<FolderNode> folders = new List<FolderNode>();
 
-            if (item == null)
-                return;
+            // folder view
+            if (LastSelectedView == FolderTreeView)
+            {
 
-            LockFile(item.File);
+                if (FolderTreeView.SelectedNodes.Count > 0)
+                    folders.Add( (FolderNode)FolderTreeView.SelectedNodes[0]);
+
+            }
+
+            // file view
+            else
+            {
+                foreach (FileItem item in FileListView.SelectedItems)
+                {
+                    if (item.IsFolder)
+                    {
+                        folders.Add(item.Folder);
+                        continue;
+                    }
+
+                    Storages.LockFileCompletely(DhtID, ProjectID, item.Folder.GetPath(), item.Archived, errors);
+                }
+            }
+
+            // lock folders
+            bool lockSubs = false;
+
+            foreach(FolderNode folder in folders)
+                if (folder.Nodes.Count > 0)
+                {
+                    if (MessageBox.Show("Lock sub-folders as well?", "Lock", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                        lockSubs = true;
+
+                    break;
+                }
+
+            foreach (FolderNode folder in folders)
+                LockFolder(folder, lockSubs, errors);
+
+            RefreshFileList();
+            
+            LockMessage.Alert(this, errors);      
         }
 
-        void File_Unlock(object sender, EventArgs e)
+
+        void FileView_Unlock(object sender, EventArgs e)
         {
-            FileMenuItem item = sender as FileMenuItem;
+            List<LockError> errors = new List<LockError>();
+            List<FolderNode> folders = new List<FolderNode>();
 
-            if (item == null)
-                return;
+            // folder view
+            if (LastSelectedView == FolderTreeView)
+            {
 
-            UnlockFile(item.File);
+                if (FolderTreeView.SelectedNodes.Count > 0)
+                    folders.Add((FolderNode)FolderTreeView.SelectedNodes[0]);
+
+            }
+
+            // file view
+            else
+            {
+                foreach (FileItem item in FileListView.SelectedItems)
+                {
+                    if (item.IsFolder)
+                    {
+                        folders.Add(item.Folder);
+                        continue;
+                    }
+
+                    Storages.UnlockFile(DhtID, ProjectID, item.Folder.GetPath(), (StorageFile)item.Details, false, errors);
+                }
+            }
+
+            // unlock folders
+            bool unlockSubs = false;
+
+            foreach (FolderNode folder in folders)
+                if (folder.Nodes.Count > 0)
+                {
+                    if (MessageBox.Show("Unlock sub-folders as well?", "Unlock", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                        unlockSubs = true;
+
+                    break;
+                }
+
+            foreach (FolderNode folder in folders)
+                UnlockFolder(folder, unlockSubs, errors);
+
+            RefreshFileList();
+            
+            // set watch unlocked directories for changes
+            if (Working != null)
+                Working.StartWatchers();
+            
+            LockMessage.Alert(this, errors);
         }
 
         internal string UnlockFile(FileItem file)
@@ -1372,7 +1732,7 @@ namespace DeOps.Components.Storage
             LockMessage.Alert(this, errors);
 
             file.Update();
-            SelectedInfo.Refresh();
+            SelectedInfo.RefreshItem();
 
             return path;
         }
@@ -1386,39 +1746,44 @@ namespace DeOps.Components.Storage
             LockMessage.Alert(this, errors);
 
             file.Update();
-            SelectedInfo.Refresh();
+            SelectedInfo.RefreshItem();
         }
 
-        void File_Details(object sender, EventArgs e)
+        void FileView_Details(object sender, EventArgs e)
         {
-            FileMenuItem item = sender as FileMenuItem;
-
-            if (item == null)
-                return;
-
-
             DetailsForm details = null;
-            
-            if(item.File.IsFolder)
-                details = new DetailsForm(this, item.File.Folder);
-            else
-                details = new DetailsForm(this, SelectedFolder, item.File);
 
-            details.ShowDialog(this);
-        }
-
-        void Folder_Details(object sender, EventArgs e)
-        {
-            FolderMenuItem item = sender as FolderMenuItem;
-
-            if (item == null)
-                return;
-
-            DetailsForm details = new DetailsForm(this, item.Folder);
-
-            if (details.ShowDialog(this) == DialogResult.OK)
+            // folder view
+            if (LastSelectedView == FolderTreeView)
             {
 
+                if (FolderTreeView.SelectedNodes.Count > 0)
+                {
+                    details = new DetailsForm(this, (FolderNode)FolderTreeView.SelectedNodes[0]);
+                    details.ShowDialog(this);
+                    return;
+                }
+
+            }
+
+            // file view
+            else
+            {
+                foreach (FileItem item in FileListView.SelectedItems)
+                {
+                    if (item.IsFolder)
+                    {
+                        details = new DetailsForm(this, item.Folder);
+                        details.ShowDialog(this);
+                        return;
+
+                        continue;
+                    }
+
+                    details = new DetailsForm(this, SelectedFolder, item);
+                    details.ShowDialog(this);
+                    return;
+                }
             }
         }
 
@@ -1447,110 +1812,6 @@ namespace DeOps.Components.Storage
                     MessageBox.Show(ex.Message);
                 }
             }
-        }
-
-        void Folder_Restore(object sender, EventArgs e)
-        {
-            FolderMenuItem item = sender as FolderMenuItem;
-
-            if (item == null)
-                return;
-
-            FolderNode folder = item.Folder;
-
-            Working.RestoreFolder(folder.GetPath());
-        }
-
-        void Folder_Delete(object sender, EventArgs e)
-        {
-            FolderMenuItem item = sender as FolderMenuItem;
-
-            if (item == null)
-                return;
-
-            FolderNode folder = item.Folder;
-
-            string path = Working.RootPath + folder.GetPath();
-
-            try
-            {
-                // if temp - delete
-                if (folder.Temp && Directory.Exists(path))
-                    if (DialogResult.OK == MessageBox.Show(this, "Are you sure you want to delete '" + folder.Details.Name + "'?", "Delete", MessageBoxButtons.OKCancel))
-                    {
-                        Directory.Delete(path, true);
-                        return;
-                    }
-
-                // ask if user would like to archive file - yes no cancel
-                DialogResult result = MessageBox.Show(this, "Would you like to keep '" + folder.Details.Name + "' archived?", "Delete", MessageBoxButtons.YesNoCancel);
-
-                if (result == DialogResult.Cancel)
-                    return;
-
-                if (Directory.Exists(path))
-                    Directory.Delete(path, true);
-
-                // archive
-                if (result == DialogResult.Yes)
-                    Working.ArchiveFolder(folder.GetPath());
-
-                // delete 
-                if (result == DialogResult.No)
-                    Working.DeleteFolder(folder.GetPath());
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-        }
-
-        internal void Folder_Lock(object sender, EventArgs e)
-        {
-            FolderMenuItem item = sender as FolderMenuItem;
-
-            if (item == null)
-                return;
-
-            bool subs = false;
-
-            if (item.Folder.Nodes.Count > 0)
-                if (MessageBox.Show("Lock sub-folders as well?", "Lock", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                    subs = true;
-
-            List<LockError> errors = new List<LockError>();
-
-            LockFolder(item.Folder, subs, errors);
-
-            LockMessage.Alert(this, errors);
-
-            RefreshFileList();
-        }
-
-        internal void Folder_Unlock(object sender, EventArgs e)
-        {
-            FolderMenuItem item = sender as FolderMenuItem;
-
-            if (item == null)
-                return;
-            
-            bool subs = false;
-
-            if (item.Folder.Nodes.Count > 0)
-                if (MessageBox.Show("Unlock sub-folders as well?", "Unlock", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                    subs = true;
-
-            List<LockError> errors = new List<LockError>();
-
-            UnlockFolder(item.Folder, subs, errors);
-
-            LockMessage.Alert(this, errors);
-
-            RefreshFileList();
-
-            // set watch unlocked directories for changes
-            if (Working != null)
-                Working.StartWatchers();
         }
 
         internal void LockFolder(FolderNode folder, bool subs, List<LockError> errors)
@@ -1645,7 +1906,7 @@ namespace DeOps.Components.Storage
                             item.Update();
 
                     if (SelectedInfo.CurrentFolder != null && RescanFolderMap.ContainsKey(SelectedInfo.CurrentFolder.Details.UID))
-                        SelectedInfo.Refresh();
+                        SelectedInfo.RefreshItem();
 
 
                     // clear maps
@@ -1660,11 +1921,11 @@ namespace DeOps.Components.Storage
         {
             /*
              * see if uid exists in rescan map
-			if file 
-				add to changes
-			if folder
-				add temp if uid doesnt exist
-				set inTarget[uid], add further uids if recurse set
+            if file 
+                add to changes
+            if folder
+                add temp if uid doesnt exist
+                set inTarget[uid], add further uids if recurse set
              */
 
 
@@ -1839,19 +2100,20 @@ namespace DeOps.Components.Storage
             }
         }
 
-        private void FoldersButton_Click(object sender, EventArgs e)
+        private void FoldersButton_CheckedChanged(object sender, EventArgs e)
         {
             splitContainer1.Panel1Collapsed = !FoldersButton.Checked;
 
             RefreshFileList(); // puts .. dir if needed
         }
 
-
-
         private void FileListView_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (FileListView.SelectedItems.Count == 0)
+            {
+                SelectedInfo.ShowDiffs();
                 return;
+            }
 
             FileItem file = (FileItem)FileListView.SelectedItems[0];
 
@@ -1875,11 +2137,10 @@ namespace DeOps.Components.Storage
                 if (file.Temp)
                     return;
 
-                if (file.Text == "..")
-                    SelectFolder((FolderNode)file.Folder.Parent);
-                else
-              
-                    SelectFolder(file.Folder);
+                FolderNode node = file.Text == ".." ? (FolderNode)file.Folder.Parent : file.Folder;
+
+                SelectedInfo.ShowItem(node, null);
+                SelectFolder(node);
 
                 return;
             }
@@ -2084,6 +2345,8 @@ namespace DeOps.Components.Storage
         {
             SelectFolder(SelectedFolder);
         }
+
+
     }
 
     internal class FolderNode : TreeListNode 
@@ -2444,28 +2707,6 @@ namespace DeOps.Components.Storage
         public override string ToString()
         {
             return Details.Name.ToString();
-        }
-    }
-
-    internal class FileMenuItem : ToolStripMenuItem
-    {
-        internal FileItem File;
-
-        internal FileMenuItem(string caption, FileItem item, Image icon, EventHandler onClick)
-            : base(caption, icon, onClick)
-        {
-            File = item;
-        }
-    }
-
-    internal class FolderMenuItem : ToolStripMenuItem
-    {
-        internal FolderNode Folder;
-
-        internal FolderMenuItem(string caption, FolderNode item, Image icon, EventHandler onClick)
-            : base(caption, icon, onClick)
-        {
-            Folder = item;
         }
     }
 

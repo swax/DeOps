@@ -101,8 +101,7 @@ namespace DeOps.Components.Link
             UnlinkedNode = new LabelNode("Unlinked");
             UnlinkedNode.Font = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold | FontStyle.Underline, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             
-            if (!HideUnlinked)
-                Nodes.Add(UnlinkedNode);
+            Nodes.Add(UnlinkedNode);
 
             // nodes
             List<OpLink> roots = null;
@@ -122,6 +121,7 @@ namespace DeOps.Components.Link
                 UnlinkedNode.Text = "";
             else
                 UnlinkedNode.Text = "Unlinked";
+
 
             EndUpdate();
         }
@@ -145,7 +145,10 @@ namespace DeOps.Components.Link
             LoadNode(node);
 
             if (node.Nodes.Count == 0)
-                InsertRootNode(UnlinkedNode, node);
+            {
+                if (!HideUnlinked)
+                    InsertRootNode(UnlinkedNode, node);
+            }
             else
                 InsertRootNode(ProjectNode, node);
         }

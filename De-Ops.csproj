@@ -126,7 +126,7 @@
       <DependentUpon>BoardRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Board\BoardView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Board\BoardView.Designer.cs">
       <DependentUpon>BoardView.cs</DependentUpon>
@@ -183,13 +183,13 @@
       <DependentUpon>EditPlanItem.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.Designer.cs">
       <DependentUpon>GoalPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.Designer.cs">
       <DependentUpon>GoalsView.cs</DependentUpon>
@@ -206,7 +206,7 @@
       <DependentUpon>PlanRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.Designer.cs">
       <DependentUpon>BlockRow.cs</DependentUpon>
@@ -301,7 +301,7 @@
     <Compile Include="Components\Storage\StorageControl.cs" />
     <Compile Include="Components\Storage\StoragePackets.cs" />
     <Compile Include="Components\Storage\StorageView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Storage\StorageView.Designer.cs">
       <DependentUpon>StorageView.cs</DependentUpon>
@@ -628,6 +628,9 @@
     <None Include="Interface\Res\keyhole.png" />
     <None Include="Interface\Res\news.png" />
     <None Include="Interface\Res\news_hot.png" />
+    <None Include="Interface\Res\data.png" />
+    <None Include="Interface\Res\comm.png" />
+    <None Include="Interface\Res\plans.png" />
     <Content Include="rank.ico" />
     <None Include="Graphics\leftarrow.png" />
     <None Include="Graphics\rightarrow.png" />

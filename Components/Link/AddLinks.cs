@@ -48,7 +48,9 @@ namespace DeOps.Components.Link
             PersonTree.FirstLineBlank = false;
             PersonTree.Init(Links);
 
-            ProjectCombo.SelectedIndex = 0;
+            foreach (AddProjectItem item in ProjectCombo.Items)
+                if( item.ID == ProjectID)
+                    ProjectCombo.SelectedItem = item;
 
             PersonTree.MultiSelect = true;
         }
