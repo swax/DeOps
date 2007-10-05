@@ -489,7 +489,7 @@ namespace DeOps.Components.Storage
             */
 
             
-            if (!temp)
+            if (!temp || CurrentChanges.Count > 0)
             {
                 if(unlocked)
                     Html.Replace("<?=image?>", "<a href='http://main.lock_complete'><img border= 0 src='" + ImgUnlocked + "'></a>");
@@ -1024,7 +1024,7 @@ namespace DeOps.Components.Storage
                     {
                         ParentView.UnlockFile(CurrentFile);
 
-                        CurrentFile.Update();
+                        CurrentFile.UpdateInterface();
                         RefreshItem();
                     }
                     else
@@ -1208,7 +1208,7 @@ namespace DeOps.Components.Storage
 
                     LockMessage.Alert(ParentView, errors);
                     
-                    CurrentFile.Update();
+                    CurrentFile.UpdateInterface();
                     RefreshItem();
                 }
 
@@ -1216,7 +1216,7 @@ namespace DeOps.Components.Storage
                 {
                     Storages.LockFile(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, history);
 
-                    CurrentFile.Update();
+                    CurrentFile.UpdateInterface();
                     RefreshItem();
                 }
 

@@ -539,6 +539,27 @@ namespace DeOps
 
             return final;
         }
+
+        public static void CopyDirectory(string sourcePath, string destPath)
+        {
+            if (destPath[destPath.Length - 1] != Path.DirectorySeparatorChar)
+                destPath += Path.DirectorySeparatorChar;
+
+            if (!Directory.Exists(destPath))
+                Directory.CreateDirectory(destPath);
+
+            String[] files = Directory.GetFileSystemEntries(sourcePath);
+
+            foreach (string path in files)
+            {
+                // if path is sub dir
+                if (Directory.Exists(path))
+                    CopyDirectory(path, destPath + Path.GetDirectoryName(path));
+
+                else
+                    File.Copy(path, destPath + Path.GetFileName(path), true);
+            }
+        }
     }
 
 
@@ -576,8 +597,6 @@ namespace DeOps
                 return 0;
         }
     }
-
-
 }
 
 namespace DeOps.Implementation

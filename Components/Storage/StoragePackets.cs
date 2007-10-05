@@ -287,6 +287,20 @@ namespace DeOps.Components.Storage
 
             return folder;
         }
+
+        internal StorageFolder Clone()
+        {
+            StorageFolder clone = new StorageFolder();
+
+            clone.ParentUID = ParentUID;
+            clone.UID = UID;
+            clone.Name = Name;
+            clone.Date = Date;
+            clone.Flags = Flags;
+            clone.Revs = Revs;
+
+            return clone;
+        }
     }
 
     internal class StorageFile : StorageItem

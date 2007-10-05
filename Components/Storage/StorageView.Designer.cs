@@ -256,7 +256,6 @@ namespace DeOps.Components.Storage
             this.FileListView.MouseUp += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseUp);
             this.FileListView.GiveFeedback += new System.Windows.Forms.GiveFeedbackEventHandler(this.FileListView_GiveFeedback);
             this.FileListView.SelectedIndexChanged += new System.EventHandler(this.FileListView_SelectedIndexChanged);
-            this.FileListView.DragLeave += new System.EventHandler(this.FileListView_DragLeave);
             // 
             // SelectedInfo
             // 

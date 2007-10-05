@@ -962,6 +962,23 @@ namespace DeOps.Components.Storage
                             else
                             {
                                 treeFolder.Details = workingFolder.Info;
+                                treeFolder.Archived = workingFolder.Archived;
+
+                                // loop through working, if folder doesnt exist in tree, create it
+                                foreach (ulong id in workingFolder.Folders.Keys)
+                                    if (!treeFolder.Folders.ContainsKey(id))
+                                        LoadWorking(treeFolder, workingFolder);
+
+                                // loop through tree, if folder doesnt exist in working, delete it
+                                List<FolderNode> unload = new List<FolderNode>();
+
+                                foreach (ulong id in treeFolder.Folders.Keys)
+                                    if (!workingFolder.Folders.ContainsKey(id))
+                                        unload.Add(treeFolder.Folders[id]);
+
+                                foreach (FolderNode remove in unload)
+                                    UnloadWorking(treeFolder, remove);
+
                                 treeFolder.Update();
 
                                 if (!SelectedInfo.IsFile && treeFolder == SelectedInfo.CurrentFolder)
@@ -1052,6 +1069,37 @@ namespace DeOps.Components.Storage
             }
         }
 
+        private void UnloadWorking(FolderNode parent, FolderNode folder)
+        {
+            // need to leave ghosts of removed working files because we dont know what diffs applied
+            // had the same hash has the file being unloaded (exists but never added to change log)
+            // to be safe, we remove most everything and set everything as temp
+
+            folder.Details = folder.Details.Clone();
+            folder.Details.RemoveFlag(StorageFlags.Modified);
+            folder.Archived.Clear();
+            folder.Temp = true;
+
+            if (parent.Nodes.Contains(folder))
+                if (folder.Details.IsFlagged(StorageFlags.Archived) && !GhostsButton.Checked)
+                    parent.Nodes.Remove(folder);
+                else
+                    folder.Update();
+
+
+            foreach (FolderNode sub in folder.Folders.Values)
+                UnloadWorking(folder, sub);
+
+
+            foreach (FileItem file in folder.Files.Values)
+            {
+                file.Details = ((StorageFile)file.Details).Clone();
+                file.Details.RemoveFlag(StorageFlags.Modified);
+                file.Archived.Clear();
+                file.Temp = true;
+            }           
+        }
+
         private void MarkRescanFolder(ulong uid, string path, FolderNode node, bool recurse)
         {
             RescanFolderMap[uid] = new RescanFolder(path, node, recurse);
@@ -1102,7 +1150,9 @@ namespace DeOps.Components.Storage
                          if (treeFile != null)
                          {
                              treeFile.Details = workingFile.Info;
-                             treeFile.Update();
+                             treeFile.Archived = workingFile.Archived;
+
+                             treeFile.UpdateInterface();
                              UpdateListItems();
 
                              if (treeFile == SelectedInfo.CurrentFile)
@@ -1130,7 +1180,6 @@ namespace DeOps.Components.Storage
 
                  if (treeFolder == SelectedFolder)
                      SelectFolder(treeFolder);  // doesnt 
-
 
                  CheckWorkingStatus();
              }
@@ -1731,7 +1780,7 @@ namespace DeOps.Components.Storage
 
             LockMessage.Alert(this, errors);
 
-            file.Update();
+            file.UpdateInterface();
             SelectedInfo.RefreshItem();
 
             return path;
@@ -1745,7 +1794,7 @@ namespace DeOps.Components.Storage
 
             LockMessage.Alert(this, errors);
 
-            file.Update();
+            file.UpdateInterface();
             SelectedInfo.RefreshItem();
         }
 
@@ -1903,7 +1952,7 @@ namespace DeOps.Components.Storage
 
                     foreach (FileItem item in FileListView.Items)
                         if (item.IsFolder && RescanFolderMap.ContainsKey(item.Details.UID))
-                            item.Update();
+                            item.UpdateInterface();
 
                     if (SelectedInfo.CurrentFolder != null && RescanFolderMap.ContainsKey(SelectedInfo.CurrentFolder.Details.UID))
                         SelectedInfo.RefreshItem();
@@ -2168,7 +2217,7 @@ namespace DeOps.Components.Storage
 
             foreach (FileItem item in FileListView.Items)
             {
-                item.Update();
+                item.UpdateInterface();
 
                 // should only be called when images are displayed            
                 item.ImageIndex = GetImageIndex(item);
@@ -2182,7 +2231,9 @@ namespace DeOps.Components.Storage
                 }
             }
 
-            FileListView.Invalidate();
+            // during large  operatiosn with lots of messages from worker, paint gets flooded out
+            // user needs to see visual progress of move operation for instance
+            FileListView.Refresh(); 
         }
 
         internal void OpenFile(FileItem file)
@@ -2213,88 +2264,243 @@ namespace DeOps.Components.Storage
             if (path != null && File.Exists(path))
                 Process.Start(path);
 
-            file.Update();
+            file.UpdateInterface();
             FileListView.Invalidate();
         }
 
         private void FileListView_DragEnter(object sender, DragEventArgs e)
         {
-            if(Working != null)
+            /*if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+                return;
+
+            if (Working != null && !Dragging)
                 e.Effect = DragDropEffects.All;
+            else
+                e.Effect = DragDropEffects.None;*/
+        }
+
+        private void FileListView_DragOver(object sender, DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+                return;
+
+            // cant drag into someone else's folder
+            if (Working == null)
+            {
+                e.Effect = DragDropEffects.None;
+                return;
+            }
+
+            // not dragging means, dragging in file from outside de-ops, allow
+            if (!Dragging)
+            {
+                e.Effect = DragDropEffects.All;
+                return;
+            }
+
+     
+            // else inside de-ops only allow file to be dropped on folder
+            FileItem item = FileListView.GetItemAt(FileListView.PointToClient(new Point(e.X, e.Y))) as FileItem;
+
+            if (item == null)
+            {
+                e.Effect = DragDropEffects.None;
+                return;
+            }
+
+            if (item.IsFolder && !item.Temp)
+                e.Effect = DragDropEffects.All;
+            else
+                e.Effect = DragDropEffects.None;
         }
 
         private void FileListView_DragDrop(object sender, DragEventArgs e)
         {
+            Dragging = false;
+
             if (SelectedFolder == null)
                 return;
 
-            if (DragSelect != null)
-            {
-                Dragging = false;
-                DragSelect = null;
-                return;
-            }
-
             if (Working == null) // can only drop files into local repo
                 return;
+            
+            // Handle only FileDrop data.
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+                return;
 
-            // Handle FileDrop data.
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            
+            // get destination path
+            string destPath = SelectedFolder.GetPath();
+
+            FileItem item = FileListView.GetItemAt(FileListView.PointToClient(new Point(e.X, e.Y))) as FileItem;
+            if (item != null && item.IsFolder)
+                if (item.Text != "..")
+                    destPath += Path.DirectorySeparatorChar + item.Folder.Details.Name;
+                else
+                    destPath = Utilities.StripOneLevel(destPath);
+
+
+            // Assign the file names to a string array, in 
+            // case the user has selected multiple files.
+            string[] paths = (string[])e.Data.GetData(DataFormats.FileDrop);
+
+            List<string> errors = new List<string>();
+
+
+            foreach (string sourcePath in paths)
             {
-                // Assign the file names to a string array, in 
-                // case the user has selected multiple files.
-                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
                 try
                 {
-                    foreach(string sourcePath in files)
+                    // move secure folder or file
+                    if (sourcePath.StartsWith(Working.RootPath))
                     {
+                        string securePath = sourcePath.Replace(Working.RootPath, "");
 
-                        string name = Path.GetFileName(sourcePath);
-                        string destPath = SelectedFolder.GetPath();
+                        LocalFolder folder = Working.GetLocalFolder(securePath);
 
-                        // copy
+                        // secure folder
+                        if (folder != null)
+                        {
+                            if (folder.Info.IsFlagged(StorageFlags.Archived))
+                                continue;
+
+                            Working.MoveFolder(folder, destPath, errors);
+                        }
+
+                        // secure file
+                        LocalFile file = Working.GetLocalFile(securePath);
+
+                        if (file != null)
+                        {
+                            if (file.Info.IsFlagged(StorageFlags.Archived))
+                                continue;
+
+                            Working.MoveFile(securePath, destPath, errors);
+                        }
+                    }
+
+
+
+                    // if source path local 
+                        // if destination different
+                            // if exists in storage system
+                                // move secure storage file, bring along history
+                             // if exists unlocked or temp
+                                // create folder
+                                // move file on disk
+                    // else not local
+                        // copy to destination
+                        // add to secure storage
+
+
+
+
+                    // move local folder or file
+                    string finalPath = destPath + Path.DirectorySeparatorChar + Path.GetFileName(sourcePath);
+
+                    if (Directory.Exists(sourcePath))
+                    {
+                        //crit allow overwrite if files exist in spot
+                        // if on file sys erased
+                        // new entries made in file item's history
+
+                        string fullDestination = Working.RootPath + destPath;
+
+                        if (!fullDestination.Contains(sourcePath)) // dont let folder move into itself
+                            CopyDiskDirectory(sourcePath, finalPath, errors);
+                    }
+                    else if (File.Exists(sourcePath))
+                    {
                         Directory.CreateDirectory(Working.RootPath + destPath);
-                        File.Copy(sourcePath, Working.RootPath + destPath + "\\" + name);
 
-                        // track
-                        Working.TrackFile(destPath + "\\" + name);
+                        CopyDiskFile(sourcePath, finalPath, errors);
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message);
-                    return;
+                    errors.Add("Exception " + ex.Message + " " + sourcePath);
                 }
+            }
+            
+
+            if (errors.Count > 0)
+            {
+                string message = "";
+                foreach (string error in errors)
+                    message += "\n" + error;
+
+                MessageBox.Show(this, "Errors:\n" + message);
             }
         }
 
-        FileItem DragSelect;
+        public void CopyDiskDirectory(string sourcePath, string destPath, List<string> errors)
+        {
+            // create folder to copy to
+            if (!Directory.Exists(Working.RootPath + destPath))
+                Directory.CreateDirectory(Working.RootPath + destPath);
+
+            Working.TrackFolder(destPath); // if already there simply returns
+
+            // add folders and files
+            String[] sourceFiles = Directory.GetFileSystemEntries(sourcePath);
+
+            foreach (string diskFile in sourceFiles)
+            {
+                string finalPath = destPath + Path.DirectorySeparatorChar + Path.GetFileName(diskFile);
+
+                if (Directory.Exists(diskFile))
+                    CopyDiskDirectory(diskFile, finalPath, errors);
+
+                else if ( File.Exists(diskFile) )
+                    CopyDiskFile(diskFile, finalPath, errors);
+            }
+        }
+
+        public void CopyDiskFile(string sourcePath, string destPath, List<string> errors)
+        {
+            if (Working.FileExists(destPath))
+            {
+                errors.Add("File " + destPath + " already exists in storage");
+                return;
+            }
+
+            File.Copy(sourcePath, Working.RootPath + destPath, false);
+            Working.TrackFile(destPath);
+        }
+
+
         bool Dragging;
-        Point DragStart;
+        Point DragStart = Point.Empty;
 
         private void FileListView_MouseDown(object sender, MouseEventArgs e)
         {
-            FileItem file = FileListView.GetItemAt(e.Location) as FileItem;
+            Dragging = false;
+            DragStart = Point.Empty;
 
-
-            if (file == null || file.IsFolder)
-                return;
-
-            DragSelect = file;
-            DragStart = e.Location;
+            if (DragStart == Point.Empty && FileListView.GetItemAt(e.Location) != null)
+            {
+                DragStart = e.Location;
+            }
         }
         
         private void FileListView_MouseMove(object sender, MouseEventArgs e)
         {
-            if (DragSelect != null && !Dragging && GetDistance(DragStart, e.Location) > 4)
+            if (DragStart != Point.Empty && !Dragging && GetDistance(DragStart, e.Location) > 4)
             {
-                string path = Storages.GetRootPath(DhtID, ProjectID) + DragSelect.GetPath();
-                string[] paths = new string[] { path };
+                string[] paths = new string[FileListView.SelectedItems.Count];
+
+                int i = 0;
+                foreach (FileItem item in FileListView.SelectedItems)
+                    if(item.Text != "..")
+                    {
+                        paths[i] = Storages.GetRootPath(DhtID, ProjectID) + item.GetPath();
+                        i++;
+                    }
+
+                Dragging = true;
 
                 DataObject data = new DataObject(DataFormats.FileDrop, paths);
-
                 FileListView.DoDragDrop(data, DragDropEffects.Copy);
-                Dragging = true;
             }
         }
 
@@ -2308,19 +2514,11 @@ namespace DeOps.Components.Storage
 
         private void FileListView_MouseUp(object sender, MouseEventArgs e)
         {
-            DragSelect = null;
             Dragging = false;
+            DragStart = Point.Empty; 
         }
 
-        private void FileListView_DragLeave(object sender, EventArgs e)
-        {
 
-        }
-
-        private void FileListView_DragOver(object sender, DragEventArgs e)
-        {
-
-        }
 
         private void FileListView_GiveFeedback(object sender, GiveFeedbackEventArgs e)
         {
@@ -2329,22 +2527,29 @@ namespace DeOps.Components.Storage
 
         private void FileListView_QueryContinueDrag(object sender, QueryContinueDragEventArgs e)
         {
-            if(e.Action == DragAction.Cancel || e.Action == DragAction.Drop)
-            {
-                StorageFile file = (StorageFile) DragSelect.Details;
+            //if (e.Action == DragAction.Drop || e.Action == DragAction.Cancel)
+            //   Dragging = false;
 
-                if (e.Action == DragAction.Drop && Storages.FileExists(file))
-                    UnlockFile(DragSelect);
+            /*if(e.Action == DragAction.Cancel || e.Action == DragAction.Drop)
+            {
+                //StorageFile file = (StorageFile) DragSelect.Details;
+
+                if (e.Action == DragAction.Drop )//&& Storages.FileExists(file))
+                    foreach (FileItem item in FileListView.SelectedItems)
+                        if(!item.IsFolder)
+                            UnlockFile(item);
                 
-                DragSelect = null;
+
                 Dragging = false;
-            }
+            }*/
         }
 
         internal void RefreshFileList()
         {
             SelectFolder(SelectedFolder);
         }
+
+
 
 
     }
@@ -2424,6 +2629,7 @@ namespace DeOps.Components.Storage
 
         internal string GetPath()
         {
+            
             string path = "";
 
             FolderNode up = this;
@@ -2571,7 +2777,7 @@ namespace DeOps.Components.Storage
             Details = file;
             Temp = temp;
 
-            Update();
+            UpdateInterface();
         }
 
         internal FileItem(StorageView view, FolderNode folder)
@@ -2589,10 +2795,10 @@ namespace DeOps.Components.Storage
             Changes = folder.Changes;
             Temp = folder.Temp;
 
-            Update();
+            UpdateInterface();
         }
 
-        internal void Update()
+        internal void UpdateInterface()
         {
             Text = Details.Name;
 

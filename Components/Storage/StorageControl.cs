@@ -938,7 +938,13 @@ namespace DeOps.Components.Storage
                         
                         if (!working) // if one ref is public, then whole file is marked public
                             file.Working = false;
-                        
+
+                        if (packet.HashID == 0 || packet.InternalHash == null)
+                        {
+                            Debug.Assert(false);
+                            continue;
+                        }
+
                         file.Downloaded = File.Exists(GetFilePath(packet.HashID));
 
                         if (!file.Downloaded)
@@ -1245,7 +1251,12 @@ namespace DeOps.Components.Storage
             if (pos == -1)
                 pos = name.Length;
 
-            name = name.Insert(pos, "-" + Utilities.BytestoHex(file.InternalHash, 0, 3, false));
+
+            string tag = "unhashed";
+            if(file.InternalHash != null)
+                tag = Utilities.BytestoHex(file.InternalHash, 0, 3, false);
+
+            name = name.Insert(pos, "-" + tag);
 
             return name;
         }
@@ -1358,6 +1369,9 @@ namespace DeOps.Components.Storage
 
         internal void LockFileCompletely(ulong dht, uint project, string path, LinkedList<StorageItem> archived, List<LockError> errors)
         {
+            if (archived.Count == 0)
+                return;
+
             StorageFile main = (StorageFile) archived.First.Value;
             
             string dirpath = GetRootPath(dht, project) + path;

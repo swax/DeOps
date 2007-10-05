@@ -212,7 +212,25 @@ namespace DeOps.Components.Storage
 
         }
 
-        internal void TrackFile(string path)
+        internal bool FileExists(string path)
+        {
+            string name = Path.GetFileName(path);
+            string dir = Utilities.StripOneLevel(path);
+
+            LocalFolder folder = GetLocalFolder(dir);
+
+            if (folder == null)
+                return false;
+
+            LocalFile file = folder.GetFile(name);
+
+            if (file == null)
+                return false;
+
+            return true;
+        }
+
+        internal bool TrackFile(string path)
         {
             string name = Path.GetFileName(path);
             string dir = Utilities.StripOneLevel(path);
@@ -221,7 +239,7 @@ namespace DeOps.Components.Storage
             LocalFile file = folder.GetFile(name);
 
             if (file != null)
-                return;
+                return false;
 
             file = CreateNewFile(name);
             file.Info.SetFlag(StorageFlags.Modified);
@@ -234,6 +252,8 @@ namespace DeOps.Components.Storage
             PeriodicSave = true;
 
             Storages.CallFileUpdate(ProjectID, folder.GetPath(), file.Info.UID, WorkingChange.Created);
+
+            return true;
         }
 
         internal void TrackFile(string path, StorageFile track)
@@ -277,6 +297,8 @@ namespace DeOps.Components.Storage
 
         internal void TrackFolder(string path)
         {
+            Debug.Assert(path[path.Length - 1] != Path.DirectorySeparatorChar);
+
             string name = Path.GetFileName(path);
 
             string parentPath = Utilities.StripOneLevel(path);
@@ -500,6 +522,21 @@ namespace DeOps.Components.Storage
             return current;
         }
 
+
+        internal LocalFile GetLocalFile(string path)
+        {
+            string name = Path.GetFileName(path);
+
+            path = Utilities.StripOneLevel(path);
+
+            LocalFolder folder = GetLocalFolder(path);
+
+            if (folder == null)
+                return null;
+
+            return folder.GetFile(name);
+        }
+
         internal void ReadyChange(LocalFile file)
         {
             Modified = true;
@@ -710,7 +747,7 @@ namespace DeOps.Components.Storage
         {
             LocalFolder folder = GetLocalFolder(path);
             LocalFile file = folder.GetFile(name);
-
+ 
             // remove unlocked flag
             file.Info.RemoveFlag(StorageFlags.Unlocked);
 
@@ -1215,6 +1252,180 @@ namespace DeOps.Components.Storage
 
             return save;
         }
+
+
+        internal void MoveFile(string sourcePath, string destPath, List<string> errors)
+        {
+            // get source folder
+            string name = Path.GetFileName(sourcePath);
+
+            sourcePath = Utilities.StripOneLevel(sourcePath);
+
+            LocalFolder sourceFolder = GetLocalFolder(sourcePath);
+            LocalFolder destFolder = GetLocalFolder(destPath);
+
+            if (sourceFolder == null || destFolder == null || sourceFolder == destFolder)
+                return;
+
+            // get source file
+            LocalFile sourceFile = sourceFolder.GetFile(name);
+
+            if (sourceFile == null)
+                return;
+
+            // if name exists with diff uid, return error
+            foreach (LocalFile check in destFolder.Files.Values)
+                if (check.Info.UID != sourceFile.Info.UID && 
+                    String.Compare(check.Info.Name, sourceFile.Info.Name, true) == 0)
+                {
+                    errors.Add("File with same name exists at " + destPath);
+                    return;
+                }
+
+            // if uid exists in destination, merge histories with diff hashes
+            WorkingChange destChange = WorkingChange.Created;
+
+            if (destFolder.Files.ContainsKey(sourceFile.Info.UID))
+            {
+                sourceFile.MergeFile( destFolder.Files[sourceFile.Info.UID] );
+                destFolder.Files[sourceFile.Info.UID] = sourceFile;
+                destChange = WorkingChange.Updated;
+            }
+            else
+                destFolder.AddFile(sourceFile);
+
+            // make note file was moved at source in destination
+            ReadyChange(sourceFile);
+            sourceFile.Info.Note = "Moved from " + (sourcePath == "" ? Path.DirectorySeparatorChar.ToString() : sourcePath);
+
+            sourceFolder.Files.Remove(sourceFile.Info.UID);
+            
+            LocalFile ghost = new LocalFile(sourceFile.Info.Clone());
+            ghost.Archived.AddFirst(ghost.Info);
+            sourceFolder.AddFile(ghost);
+            ReadyChange(ghost);
+            ghost.Info.Note = "Moved to " + (destPath == "" ? Path.DirectorySeparatorChar.ToString() : destPath);
+            ghost.Info.SetFlag(StorageFlags.Archived);
+
+            // move actual file if unlocked on disk, create new folder if need be
+            if (File.Exists(RootPath + sourcePath + Path.DirectorySeparatorChar + name))
+            {
+                Directory.CreateDirectory(RootPath + destPath);
+
+                // exceptions handled by caller
+                File.Move(  RootPath + sourcePath + Path.DirectorySeparatorChar + name,
+                            RootPath + destPath + Path.DirectorySeparatorChar + name);
+            }
+
+            // file created at destination, updated at source
+            Storages.CallFileUpdate(ProjectID, destPath, sourceFile.Info.UID,  destChange);
+            Storages.CallFileUpdate(ProjectID, sourcePath, sourceFile.Info.UID, WorkingChange.Updated);
+        }
+
+
+        internal void MoveFolder(LocalFolder sourceFolder, string destPath, List<string> errors)
+        {
+            // cant move root folder ;)
+            if (sourceFolder.Parent == null)
+                return;
+
+            LocalFolder parentFolder = sourceFolder.Parent;
+
+            LocalFolder destFolder = GetLocalFolder(destPath);
+
+            if (destFolder == null)
+                return;
+
+            // prevent folder from being moved inside of itself
+            LocalFolder oneUp = destFolder;
+            while (oneUp != null)
+            {
+                if (oneUp == sourceFolder)
+                    return;
+
+                oneUp = oneUp.Parent;
+            }
+
+
+            // if name exists with diff uid, return error
+            foreach (LocalFolder check in destFolder.Folders.Values)
+                if (check.Info.UID != sourceFolder.Info.UID &&
+                    String.Compare(check.Info.Name, sourceFolder.Info.Name, true) == 0)
+                {
+                    errors.Add("Folder with same name exists at " + destPath);
+                    return;
+                }
+
+
+            // if uid exists in destination, merge histories with diff hashes
+            WorkingChange destChange = WorkingChange.Created;
+
+            if (destFolder.Folders.ContainsKey(sourceFolder.Info.UID))
+            {
+                destFolder.Folders[sourceFolder.Info.UID] = sourceFolder;
+                destChange = WorkingChange.Updated;
+            }
+            else
+                destFolder.AddFolder(sourceFolder);
+
+
+            // make note file was moved at source in destination
+            ReadyChange(sourceFolder);
+            sourceFolder.Parent = destFolder;
+            string parentPath = parentFolder.GetPath();
+            sourceFolder.Info.Note = "Moved from " + (parentPath == "" ? Path.DirectorySeparatorChar.ToString() : parentPath);
+
+            parentFolder.Folders.Remove(sourceFolder.Info.UID);
+            LocalFolder ghost = new LocalFolder(parentFolder, sourceFolder.Info.Clone());
+            ghost.Archived.AddFirst(ghost.Info);
+            parentFolder.AddFolder(ghost);
+            ReadyChange(ghost);
+            ghost.Info.Note = "Moved to " + (destPath == "" ? Path.DirectorySeparatorChar.ToString() : destPath);
+            ghost.Info.SetFlag(StorageFlags.Archived);
+
+            // move actual file if unlocked on disk, create new folder if need be
+            string name = sourceFolder.Info.Name;
+            if (File.Exists(RootPath + parentFolder.GetPath() + Path.DirectorySeparatorChar + name))
+            {
+                Directory.CreateDirectory(RootPath + destPath);
+
+                // exceptions handled by caller
+                File.Move(RootPath + parentFolder.GetPath() + Path.DirectorySeparatorChar + name,
+                            RootPath + destPath + Path.DirectorySeparatorChar + name);
+            }
+
+            // file created at destination, updated at source
+            Storages.CallFolderUpdate(ProjectID, destPath, sourceFolder.Info.UID, destChange);
+            Storages.CallFolderUpdate(ProjectID, parentFolder.GetPath(), sourceFolder.Info.UID, WorkingChange.Updated);
+        }
+
+
+        internal void CreateDirectory(string path)
+        {
+            string[] destDirs = path.Split(Path.DirectorySeparatorChar);
+
+            LocalFolder destFolder = RootFolder;
+
+            foreach (string dir in destDirs)
+            {
+                bool notFound = true;
+
+                foreach (LocalFolder folder in destFolder.Folders.Values)
+                    if (folder.Info.Name == dir)
+                    {
+                        destFolder = folder;
+                        notFound = false;
+                        break;
+                    }
+
+                if (notFound)
+                {
+                    LocalFolder newFolder = CreateNewFolder(destFolder, dir);
+                    destFolder.AddFolder(newFolder);
+                    destFolder = newFolder;
+                }
+            }
+        }
     }
 
     internal class LocalFolder
@@ -1244,15 +1455,10 @@ namespace DeOps.Components.Storage
             if (Info.IsFlagged(StorageFlags.Modified))
                 return;
 
+            StorageFolder changed = Info.Clone();
 
-            StorageFolder changed = new StorageFolder();
-            changed.ParentUID = Info.ParentUID;
-            changed.UID = Info.UID;
-            changed.Name = Info.Name;
-            changed.Date = time.ToUniversalTime();
-            changed.Flags = Info.Flags;
             changed.SetFlag(StorageFlags.Modified);
-            changed.Revs = Info.Revs;
+            changed.Date = time.ToUniversalTime();
 
             Archived.AddFirst(changed);
 
@@ -1394,7 +1600,49 @@ namespace DeOps.Components.Storage
 
             HigherChanges[id].Add(change);
         }
-        
+
+
+        internal void MergeFile(LocalFile file)
+        {
+            // if there are any unique files in the merge that don't exist locally, add them
+
+
+            foreach (StorageFile merge in file.Archived)
+            {
+                // check if exists
+                bool fileExists = false;
+
+                foreach (StorageFile item in Archived)
+                    if (Utilities.MemCompare(item.InternalHash, merge.InternalHash))
+                    {
+                        fileExists = true;
+                        break;
+                    }
+
+                // add file if doesnt exist
+                if (!fileExists)
+                {
+                    bool added = false;
+
+                    for (LinkedListNode<StorageItem> item = Archived.First; item != null; item = item.Next)
+                        if (item.Value.Date > merge.Date) // loop until item is no longer the lowest (oldest)
+                        {
+                            if(item.Value == Info)
+                                Archived.AddAfter(item, merge); // even if newest, the file being moved is the one at top
+                            else
+                                Archived.AddBefore(item, merge); // put file in right spot
+
+                            added = true;
+
+                            break;
+                        }
+
+                    if (!added)
+                        Archived.AddLast(merge); // oldest, at end
+
+                }
+            }
+        }
     }
 
 

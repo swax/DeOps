@@ -230,7 +230,7 @@ namespace DeOps.Components.Storage
                     System.Diagnostics.Process.Start(fileB);
 
 
-                Info.CurrentFile.Update();
+                Info.CurrentFile.UpdateInterface();
                 Info.RefreshItem();
             }
 

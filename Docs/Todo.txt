@@ -119,17 +119,29 @@ Components
 			save branch path when transfering goal <-> schedule
 
 	Storage
-
-		small test app for dragging
-		drag/drop moving between folders, more testing
-		drag move file to diff dir, carry history, leave ghost, make sure dragging back removes
 		
+		drag files
+			view:folder update - if tree needs sub-folders added / removed 
+			drag to tree view - dont let drag over source folder in tree
+			folder over highlights
+			secure copy / paste can use same folder commands as drag/drop
+			drag into secure storage gives user option to replace what is already there
+			temp folder in tree view need half opacity
+		test
+			file merging function
+			folders with sub-folders moved into folder
+			moves unlocked as well as locked
+			
+			
+		rename file renames on disk as well if unlocked
+		unlock integrated / changest to .temp directory, along with history etc.. test locking /unlocking individual history items
 		make note on interface if local file (hash) not present in storage system, like encryption error of some sort causes it to not be placed
 			blue if pending processing, if failed, turn back to grey
 		test locking / unlocking big files, determine if progress bar or notification of some sort needed, maybe queue them like hashing
 		trigger to lock all unlocked on guiclose
 		test periodic saves of working / and verify load from working file works
 		on close, hang if still hash processing
+		replace \\ with path.seperator
 		
 		folders have red / blue dots in center if subfolders contains changes
 			recurse mark folders up with a reference count, at 0 remove mark ;)
@@ -141,14 +153,13 @@ Components
 		double click open local temp files/*folders
 		carry over notes whe`` accepting changes, edit notes box needs to be larger, convert \n to <br>
 		get working with how visual studio does saves, crazy rename / delete / create process
-		support multiple select - right click download
 		on app close - remove all storage folders, especially for users that are not us
 		use path class to check for invalid characters
 		
 		add accept change to storageInfo interface for folders - so name / ghost status is transferred over easily
 		delete folder, changes saying restored, but shouldn't be there because our timestamp is the newest
 
-		remote - download, unlock, open, re-lock
+		remote id view - download, unlock, open, re-lock
 	 	save/discard persist over open / close?
 		if hashes - clicking apply / integrate asks user to perform that action
 
@@ -158,7 +169,7 @@ Components
 				file only visible with-in x sub-levels of <user>
 						
 		$ save storage snapshots (past header file versions) - display at root node	
-		$ signal on comparison page if all files are replicated (can go offline and files still exist)
+		$ signal on comparison page if all files are replicated on network (can go offline and files still exist)
 		
 	Search
 		index components in local area of dht network

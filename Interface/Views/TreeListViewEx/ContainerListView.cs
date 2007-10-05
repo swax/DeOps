@@ -1801,8 +1801,13 @@ namespace DeOps.Interface.TLVex
 							// Found the rect in wich the user clicked so we have the item to select
 							switch(this.multiSelectMode)
 							{
+                                    
 								case MultiSelectMode.Single:
-									this.MoveToIndex(i);
+
+                                    // if item is selected, don't deselect until mouseup
+                                    if(!items[i].Selected)
+									    this.MoveToIndex(i);
+
 									break;
 								case MultiSelectMode.Range:
 									this.MoveToIndex(i);
@@ -1837,66 +1842,77 @@ namespace DeOps.Interface.TLVex
             return null;
         }
 
-		protected override void OnMouseUp(MouseEventArgs e)
-		{
-			int i;
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            int i;
 
-			base.OnMouseUp(e);
+            base.OnMouseUp(e);
 
-			lastClickedPoint = Point.Empty;			
+            lastClickedPoint = Point.Empty;
 
-			if (colScaleMode)
-			{
-				//columns[scaledCol].Width += colScalePos;
-				colScaleMode = false;
-				colScalePos = 0;
-				scaledCol = -1;
-				colScaleWid = 0;
+            if (colScaleMode)
+            {
+                //columns[scaledCol].Width += colScalePos;
+                colScaleMode = false;
+                colScalePos = 0;
+                scaledCol = -1;
+                colScaleWid = 0;
 
-				AdjustScrollbars();
-			}
+                AdjustScrollbars();
+            }
 
-			if (lastColPressed >= 0)
-			{				
-				columns[lastColPressed].Pressed = false;
-				if (MouseInRect(e, columnRects[lastColPressed]) && !MouseInRect(e, columnSizeRects[lastColPressed]) && e.Button == MouseButtons.Left)
-				{
-					// invoke column click event
-					OnColumnClick(new ColumnClickEventArgs(lastColPressed));
+            if (lastColPressed >= 0)
+            {
+                columns[lastColPressed].Pressed = false;
+                if (MouseInRect(e, columnRects[lastColPressed]) && !MouseInRect(e, columnSizeRects[lastColPressed]) && e.Button == MouseButtons.Left)
+                {
+                    // invoke column click event
+                    OnColumnClick(new ColumnClickEventArgs(lastColPressed));
 
-					// change currently selected column
-					if (lastColSelected >= 0)
-						columns[lastColSelected].Selected = false;
+                    // change currently selected column
+                    if (lastColSelected >= 0)
+                        columns[lastColSelected].Selected = false;
 
-					columns[lastColPressed].Selected = true;					
-					lastColSelected = lastColPressed;
-				}
-			}			
-			lastColPressed = -1;
+                    columns[lastColPressed].Selected = true;
+                    lastColSelected = lastColPressed;
+                }
+            }
+            lastColPressed = -1;
 
-			// Check for context click
-			if (e.Button == MouseButtons.Right)
-			{
-				if (MouseInRect(e, headerRect))
-					OnHeaderMenuEvent(e);
+            // Check for context click
+            if (e.Button == MouseButtons.Right && MouseInRect(e, headerRect))
+                OnHeaderMenuEvent(e);
 
-				else if (MouseInRect(e, rowsRect))
-				{
-					for (i=0; i<items.Count; i++)
-					{
-						if (MouseInRect(e, rowRects[i]))
-						{
-							OnItemMenuEvent(e);
-							break;
-						}
-					}
-					if (i>=items.Count)
-						OnContextMenuEvent(e);
-				}
-				else
-					OnContextMenuEvent(e);
-			}
-		}
+            if (MouseInRect(e, rowsRect))
+            {
+                GenerateRowRects();
+
+                for (i = 0; i < items.Count; i++)
+                {
+                    if (MouseInRect(e, rowRects[i]))
+                    {
+                        if (e.Button == MouseButtons.Right)
+                        {
+                            OnItemMenuEvent(e);
+                            break;
+                        }
+
+                        // allow user to single click on a collection of selctions without 
+                        // deselecting the collection until the mouse comes up
+                        if (e.Button == MouseButtons.Left)
+                            if (multiSelectMode == MultiSelectMode.Single && items[i].Selected)
+                                this.MoveToIndex(i);
+                    }
+                }
+
+                if (e.Button == MouseButtons.Right)
+                    if (i >= items.Count)
+                        OnContextMenuEvent(e);
+            }
+            else
+                OnContextMenuEvent(e);
+
+        }
 
 		protected override void OnMouseWheel(MouseEventArgs e)
 		{
