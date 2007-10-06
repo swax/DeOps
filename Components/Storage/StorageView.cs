@@ -8,6 +8,7 @@ using System.Data;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
+using System.Collections.Specialized;
 
 using DeOps.Interface;
 using DeOps.Interface.TLVex;
@@ -63,7 +64,7 @@ namespace DeOps.Components.Storage
         internal StorageView(StorageControl storages, ulong id, uint project)
         {
             InitializeComponent();
-
+            
             Storages = storages;
             Core = Storages.Core;
             Links = Core.Links;
@@ -1193,7 +1194,7 @@ namespace DeOps.Components.Storage
         {
             // path: \a\b\c
 
-            string[] folders = path.Split('\\');
+            string[] folders = path.Split(Path.DirectorySeparatorChar);
 
             FolderNode current = RootFolder;
 
@@ -1850,10 +1851,10 @@ namespace DeOps.Components.Storage
                     if (SelectedFolder.GetFolder(dialog.ResultBox.Text) != null)
                         throw new Exception("Folder with same name already exists");
 
-                    if (dialog.ResultBox.Text.IndexOf('\\') != -1)
+                    if (dialog.ResultBox.Text.IndexOf(Path.DirectorySeparatorChar) != -1)
                         throw new Exception("Folder name contains invalid characters");
 
-                    Working.TrackFolder(SelectedFolder.GetPath() + "\\" + dialog.ResultBox.Text);
+                    Working.TrackFolder(SelectedFolder.GetPath() + Path.DirectorySeparatorChar + dialog.ResultBox.Text);
 
                 }
                 catch (Exception ex)
@@ -1876,7 +1877,7 @@ namespace DeOps.Components.Storage
                 {
                     Storages.LockFileCompletely(DhtID, ProjectID, path, file.Archived, errors);
 
-                    string filepath = wholepath + "\\" + file.Details.Name;
+                    string filepath = wholepath + Path.DirectorySeparatorChar + file.Details.Name;
                     if (File.Exists(filepath))
                         stillLocked.Add(filepath);
                 }
@@ -2268,15 +2269,38 @@ namespace DeOps.Components.Storage
             FileListView.Invalidate();
         }
 
-        private void FileListView_DragEnter(object sender, DragEventArgs e)
+        private void FolderTreeView_DragOver(object sender, DragEventArgs e)
         {
-            /*if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
                 return;
 
-            if (Working != null && !Dragging)
+            // cant drag into someone else's folder
+            if (Working == null)
+            {
+                e.Effect = DragDropEffects.None;
+                return;
+            }
+
+            // not dragging means, dragging in file from outside de-ops, allow
+            if (!Dragging)
+            {
+                e.Effect = DragDropEffects.All;
+                return;
+            }
+
+            // else inside de-ops only allow file to be dropped on folder
+            FolderNode node = FolderTreeView.GetNodeAt(FolderTreeView.PointToClient(new Point(e.X, e.Y))) as FolderNode;
+
+            if (node == null)
+            {
+                e.Effect = DragDropEffects.None;
+                return;
+            }
+
+            if (node != SelectedFolder)
                 e.Effect = DragDropEffects.All;
             else
-                e.Effect = DragDropEffects.None;*/
+                e.Effect = DragDropEffects.None;
         }
 
         private void FileListView_DragOver(object sender, DragEventArgs e)
@@ -2314,7 +2338,17 @@ namespace DeOps.Components.Storage
                 e.Effect = DragDropEffects.None;
         }
 
+        private void FolderTreeView_DragDrop(object sender, DragEventArgs e)
+        {
+            FinishDrop(true, e);
+        }
+
         private void FileListView_DragDrop(object sender, DragEventArgs e)
+        {
+            FinishDrop(false, e);
+        }
+
+        private void FinishDrop(bool folderView, DragEventArgs e)
         {
             Dragging = false;
 
@@ -2323,21 +2357,35 @@ namespace DeOps.Components.Storage
 
             if (Working == null) // can only drop files into local repo
                 return;
-            
+
             // Handle only FileDrop data.
             if (!e.Data.GetDataPresent(DataFormats.FileDrop))
                 return;
 
-            
-            // get destination path
-            string destPath = SelectedFolder.GetPath();
+            // get destination of drop
+            string destPath = null;
 
-            FileItem item = FileListView.GetItemAt(FileListView.PointToClient(new Point(e.X, e.Y))) as FileItem;
-            if (item != null && item.IsFolder)
-                if (item.Text != "..")
-                    destPath += Path.DirectorySeparatorChar + item.Folder.Details.Name;
-                else
-                    destPath = Utilities.StripOneLevel(destPath);
+            if (folderView) // dropped in folder view
+            {
+                FolderNode node = FolderTreeView.GetNodeAt(FolderTreeView.PointToClient(new Point(e.X, e.Y))) as FolderNode;
+
+                if (node == null)
+                    return;
+                    
+                destPath = node.GetPath();
+            }
+
+            else // dropped in file view
+            {
+                destPath = SelectedFolder.GetPath();
+
+                FileItem item = FileListView.GetItemAt(FileListView.PointToClient(new Point(e.X, e.Y))) as FileItem;
+                if (item != null && item.IsFolder)
+                    if (item.Text != "..")
+                        destPath += Path.DirectorySeparatorChar + item.Folder.Details.Name;
+                    else
+                        destPath = Utilities.StripOneLevel(destPath);
+            }
 
 
             // Assign the file names to a string array, in 
@@ -2379,22 +2427,6 @@ namespace DeOps.Components.Storage
                         }
                     }
 
-
-
-                    // if source path local 
-                        // if destination different
-                            // if exists in storage system
-                                // move secure storage file, bring along history
-                             // if exists unlocked or temp
-                                // create folder
-                                // move file on disk
-                    // else not local
-                        // copy to destination
-                        // add to secure storage
-
-
-
-
                     // move local folder or file
                     string finalPath = destPath + Path.DirectorySeparatorChar + Path.GetFileName(sourcePath);
 
@@ -2421,7 +2453,7 @@ namespace DeOps.Components.Storage
                     errors.Add("Exception " + ex.Message + " " + sourcePath);
                 }
             }
-            
+
 
             if (errors.Count > 0)
             {
@@ -2487,20 +2519,64 @@ namespace DeOps.Components.Storage
         {
             if (DragStart != Point.Empty && !Dragging && GetDistance(DragStart, e.Location) > 4)
             {
-                string[] paths = new string[FileListView.SelectedItems.Count];
+                Dragging = true;
+
+                DataObject data = new DataObject(DataFormats.FileDrop, GetSelectedPaths(false));
+                FileListView.DoDragDrop(data, DragDropEffects.Copy);
+            }
+        }
+
+        string[] GetSelectedPaths(bool folderView)
+        {
+            string[] paths = null;
+
+            if (folderView)
+            {
+                paths = new string[FolderTreeView.SelectedNodes.Count];
+
+                int i = 0;
+                foreach (FolderNode node in FolderTreeView.SelectedNodes)
+                {
+                    paths[i] = Storages.GetRootPath(DhtID, ProjectID) + node.GetPath();
+                    i++;
+                }
+            }
+            else
+            {
+                paths = new string[FileListView.SelectedItems.Count];
 
                 int i = 0;
                 foreach (FileItem item in FileListView.SelectedItems)
-                    if(item.Text != "..")
+                    if (item.Text != "..")
                     {
                         paths[i] = Storages.GetRootPath(DhtID, ProjectID) + item.GetPath();
                         i++;
                     }
+            }
 
+            return paths;
+        }
+
+        private void FolderTreeView_MouseDown(object sender, MouseEventArgs e)
+        {
+            Dragging = false;
+            DragStart = Point.Empty;
+
+            if (DragStart == Point.Empty && FolderTreeView.GetNodeAt(e.Location) != null)
+            {
+                DragStart = e.Location;
+            }
+        }
+
+        private void FolderTreeView_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (DragStart != Point.Empty && !Dragging && GetDistance(DragStart, e.Location) > 4)
+            {
+               
                 Dragging = true;
 
-                DataObject data = new DataObject(DataFormats.FileDrop, paths);
-                FileListView.DoDragDrop(data, DragDropEffects.Copy);
+                DataObject data = new DataObject(DataFormats.FileDrop, GetSelectedPaths(true));
+                FolderTreeView.DoDragDrop(data, DragDropEffects.Copy);
             }
         }
 
@@ -2518,40 +2594,77 @@ namespace DeOps.Components.Storage
             DragStart = Point.Empty; 
         }
 
-
-
-        private void FileListView_GiveFeedback(object sender, GiveFeedbackEventArgs e)
-        {
-
-        }
-
-        private void FileListView_QueryContinueDrag(object sender, QueryContinueDragEventArgs e)
-        {
-            //if (e.Action == DragAction.Drop || e.Action == DragAction.Cancel)
-            //   Dragging = false;
-
-            /*if(e.Action == DragAction.Cancel || e.Action == DragAction.Drop)
-            {
-                //StorageFile file = (StorageFile) DragSelect.Details;
-
-                if (e.Action == DragAction.Drop )//&& Storages.FileExists(file))
-                    foreach (FileItem item in FileListView.SelectedItems)
-                        if(!item.IsFolder)
-                            UnlockFile(item);
-                
-
-                Dragging = false;
-            }*/
-        }
-
         internal void RefreshFileList()
         {
             SelectFolder(SelectedFolder);
         }
 
+        Keys LastControlKey;
 
+        private void FileListView_KeyDown(object sender, KeyEventArgs e)
+        {  
+            if (e.KeyCode == Keys.Delete)
+            {
+                LastSelectedView = FileListView;
+                FileView_Delete(null, null);
+            }
 
+            if (e.Control  )
+            {
+                if (e.KeyCode == LastControlKey)
+                    return;
 
+                LastControlKey = e.KeyCode;
+
+                if (e.KeyCode == Keys.C)
+                {
+                    //StringCollection paths = new StringCollection();
+                    //paths.AddRange(GetSelectedPaths(false));
+                    //Clipboard.SetFileDropList(paths);
+                }
+            }
+        }
+
+        private void FolderTreeView_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                LastSelectedView = FolderTreeView;
+                FileView_Delete(null, null);
+            }
+
+            if (e.Control)
+            {
+                if (e.KeyCode == LastControlKey)
+                    return;
+
+                LastControlKey = e.KeyCode;
+
+                if (e.KeyCode == Keys.C)
+                {
+                    //StringCollection paths = new StringCollection();
+                    //paths.AddRange(GetSelectedPaths(true));
+                    //Clipboard.SetFileDropList(paths);
+                }
+
+                if (e.KeyCode == Keys.V)
+                {
+
+                    
+                }
+            }
+            
+        }
+
+        private void FileListView_KeyUp(object sender, KeyEventArgs e)
+        {
+            LastControlKey = Keys.None;
+        }
+
+        private void FolderTreeView_KeyUp(object sender, KeyEventArgs e)
+        {
+            LastControlKey = Keys.None;
+        }
     }
 
     internal class FolderNode : TreeListNode 
@@ -2636,7 +2749,7 @@ namespace DeOps.Components.Storage
 
             while (up.Parent.GetType() == typeof(FolderNode))
             {
-                path = "\\" + up.Details.Name + path;
+                path = Path.DirectorySeparatorChar + up.Details.Name + path;
                 up = up.Parent as FolderNode;
             }
 
@@ -2832,7 +2945,7 @@ namespace DeOps.Components.Storage
             if (IsFolder)
                 return Folder.GetPath();
 
-            return Folder.GetPath() + "\\" + Details.Name;
+            return Folder.GetPath() + Path.DirectorySeparatorChar + Details.Name;
         }
 
         internal void UpdateOverlay()

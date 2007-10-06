@@ -461,13 +461,12 @@ namespace DeOps.Interface
                 }
 
                 if (quickMenus.Count > 0 || extMenus.Count > 0)
-                {
-                    treeMenu.Items.Add("-");
+                    if (treeMenu.Items.Count > 0)
+                        treeMenu.Items.Add("-");
 
-                    foreach (ToolStripMenuItem menu in quickMenus)
-                        treeMenu.Items.Add(menu);
-                }
-
+                foreach (ToolStripMenuItem menu in quickMenus)
+                    treeMenu.Items.Add(menu);
+            
                 if (extMenus.Count > 0)
                 {
                     ToolStripMenuItem viewItem = new ToolStripMenuItem("Views", InterfaceRes.views);
@@ -491,7 +490,8 @@ namespace DeOps.Interface
 
                     if (linkMenus.Count > 0)
                     {
-                        treeMenu.Items.Add("-");
+                        if (treeMenu.Items.Count > 0)
+                            treeMenu.Items.Add("-");
 
                         foreach (ToolStripMenuItem menu in linkMenus)
                             treeMenu.Items.Add(menu);

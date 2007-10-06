@@ -54,7 +54,7 @@ namespace DeOps.Components.Transfer
             // create and clear transfer dir
             try
             {
-                TransferPath = Core.User.RootPath + "\\Data\\" + ComponentID.Transfer.ToString();
+                TransferPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Transfer.ToString();
                 Directory.CreateDirectory(TransferPath);
 
                 string[] files = Directory.GetFiles(TransferPath);
@@ -211,7 +211,7 @@ namespace DeOps.Components.Transfer
                     try
                     {
                         DownloadMap[id].CloseStream();
-                        File.Delete(DownloadMap[id].Path);
+                        File.Delete(DownloadMap[id].Destination);
                     }
                     catch { }
 
@@ -530,7 +530,7 @@ namespace DeOps.Components.Transfer
                 if (download.WriteStream == null)
                 {
                     download.Log("Stream created");
-                    download.WriteStream = new FileStream(download.Path, FileMode.Create, FileAccess.Write);
+                    download.WriteStream = new FileStream(download.Destination, FileMode.Create, FileAccess.Write);
                 }
             }
             catch
@@ -589,14 +589,14 @@ namespace DeOps.Components.Transfer
                     download.Log("Completed, stream closed");
                     download.CloseStream();
 
-                    FileStream file = new FileStream(download.Path, FileMode.Open);
+                    FileStream file = new FileStream(download.Destination, FileMode.Open);
 
                     SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
 
                     if (file.Length != download.Details.Size ||
                         !Utilities.MemCompare(download.Details.Hash, sha.ComputeHash(file)))
                     {
-                        File.Delete(download.Path);
+                        File.Delete(download.Destination);
                         file.Close();
                         throw new Exception("File itegrity check failed");
                     }
@@ -614,7 +614,7 @@ namespace DeOps.Components.Transfer
 
                 // call finish event
                 download.Log("Status done");
-                download.EndEvent.Invoke(download.Path, download.Args);
+                download.EndEvent.Invoke(download.Destination, download.Args);
 
                 download.Status = DownloadStatus.Done;
             }
@@ -638,7 +638,7 @@ namespace DeOps.Components.Transfer
         internal object[] Args;
         internal EndDownloadHandler EndEvent;
         
-        internal string Path;
+        internal string Destination;
         internal FileStream WriteStream;
         internal long FilePos;
 
@@ -656,8 +656,8 @@ namespace DeOps.Components.Transfer
             Args = args;
             EndEvent = endEvent;
 
-            Path = core.Transfers.TransferPath;
-            Path += "\\" + Utilities.CryptFilename(core.User.Settings.FileKey, (ulong) Details.Size, Details.Hash);
+            Destination = core.Transfers.TransferPath;
+            Destination += Path.DirectorySeparatorChar + Utilities.CryptFilename(core.User.Settings.FileKey, (ulong)Details.Size, Details.Hash);
         }
 
         internal void AddSource(LocationData location)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
@@ -23,7 +24,7 @@ namespace DeOps.Interface
 
         private void InviteForm_Load(object sender, EventArgs e)
         {
-            LinkLocation.Text = Application.StartupPath + "\\" + Core.User.Settings.Operation + "-invite.dop";
+            LinkLocation.Text = Application.StartupPath + Path.DirectorySeparatorChar + Core.User.Settings.Operation + "-invite.dop";
         }
 
         private void LinkLocation_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -36,7 +37,7 @@ namespace DeOps.Interface
                 browse.SelectedPath = LinkLocation.Text;
 
                 if (browse.ShowDialog(this) == DialogResult.OK)
-                    LinkLocation.Text = browse.SelectedPath + "\\" + Core.User.Settings.Operation + "-invite.dop";
+                    LinkLocation.Text = browse.SelectedPath + Path.DirectorySeparatorChar + Core.User.Settings.Operation + "-invite.dop";
             }
             catch (Exception ex)
             {

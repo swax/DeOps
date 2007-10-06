@@ -126,8 +126,8 @@ namespace DeOps.Interface
 
             // check if file exists
             string filename = TextOperation.Text + "-" + TextName.Text;
-            string path = LinkLocation.Text + "\\" + filename + "\\" + filename + ".dop";
-            Directory.CreateDirectory(LinkLocation.Text + "\\" + filename);
+            string path = LinkLocation.Text + Path.DirectorySeparatorChar + filename + Path.DirectorySeparatorChar + filename + ".dop";
+            Directory.CreateDirectory(LinkLocation.Text + Path.DirectorySeparatorChar + filename);
 
             if (File.Exists(path))
             {

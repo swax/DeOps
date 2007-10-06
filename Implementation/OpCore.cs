@@ -175,7 +175,7 @@ namespace DeOps.Implementation
             if (Sim != null && Sim.Internet.FreshStart)
                 foreach (ushort id in Components.Keys)
                 {
-                    string dirpath = User.RootPath + "\\Data\\" + id.ToString();
+                    string dirpath = User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + id.ToString();
                     if (Directory.Exists(dirpath))
                         Directory.Delete(dirpath, true);
                 }
@@ -485,7 +485,7 @@ namespace DeOps.Implementation
                 byte[] rnd = new byte[16];
                 RndGen.NextBytes(rnd);
 
-                path = User.TempPath + "\\" + Utilities.BytestoHex(rnd);
+                path = User.TempPath + Path.DirectorySeparatorChar + Utilities.BytestoHex(rnd);
 
                 if ( !File.Exists(path) )
                     break;

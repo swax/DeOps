@@ -120,28 +120,17 @@ Components
 
 	Storage
 		
-		drag files
-			view:folder update - if tree needs sub-folders added / removed 
-			drag to tree view - dont let drag over source folder in tree
-			folder over highlights
-			secure copy / paste can use same folder commands as drag/drop
-			drag into secure storage gives user option to replace what is already there
-			temp folder in tree view need half opacity
-		test
-			file merging function
-			folders with sub-folders moved into folder
-			moves unlocked as well as locked
-			
-			
-		rename file renames on disk as well if unlocked
-		unlock integrated / changest to .temp directory, along with history etc.. test locking /unlocking individual history items
+		drag files folder over highlights
+		secure copy / paste can use same folder commands as drag/drop
+		drag into secure storage gives user option to replace what is already there
+		
+		test locking /unlocking individual history and remote changes/integrated items
 		make note on interface if local file (hash) not present in storage system, like encryption error of some sort causes it to not be placed
 			blue if pending processing, if failed, turn back to grey
 		test locking / unlocking big files, determine if progress bar or notification of some sort needed, maybe queue them like hashing
 		trigger to lock all unlocked on guiclose
 		test periodic saves of working / and verify load from working file works
 		on close, hang if still hash processing
-		replace \\ with path.seperator
 		
 		folders have red / blue dots in center if subfolders contains changes
 			recurse mark folders up with a reference count, at 0 remove mark ;)

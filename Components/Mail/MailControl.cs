@@ -118,8 +118,8 @@ namespace DeOps.Components.Mail
             MailIDKey.IV = LocalFileKey.IV;
             MailIDKey.Padding = PaddingMode.None;
 
-            MailPath = Core.User.RootPath + "\\Data\\" + ComponentID.Mail.ToString();
-            CachePath = MailPath + "\\1";
+            MailPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Mail.ToString();
+            CachePath = MailPath + Path.DirectorySeparatorChar + "1";
 
             Directory.CreateDirectory(MailPath);
             Directory.CreateDirectory(CachePath);
@@ -361,7 +361,7 @@ namespace DeOps.Components.Mail
                 stream.Close();
 
 
-                string finalPath = CachePath + "\\" + Utilities.CryptFilename(LocalFileKey, "headers");
+                string finalPath = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -375,7 +375,7 @@ namespace DeOps.Components.Mail
         {
             try
             {
-                string path = CachePath + "\\" + Utilities.CryptFilename(LocalFileKey, "headers");
+                string path = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
 
                 if (!File.Exists(path))
                     return;
@@ -433,7 +433,7 @@ namespace DeOps.Components.Mail
                 stream.Close();
 
 
-                string finalPath = MailPath + "\\" + Utilities.CryptFilename(LocalFileKey, name);
+                string finalPath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, name);
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -450,7 +450,7 @@ namespace DeOps.Components.Mail
             
             try
             {
-                string path = MailPath + "\\" + Utilities.CryptFilename(LocalFileKey, name);
+                string path = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, name);
 
                 if (!File.Exists(path))
                     return;
@@ -668,7 +668,7 @@ namespace DeOps.Components.Mail
 
 
             // move file, overwrite if need be, local id used so filename is the same for all targets
-            string finalPath = MailPath + "\\" + Utilities.CryptFilename(LocalFileKey, Core.LocalDhtID, header.FileHash);
+            string finalPath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, Core.LocalDhtID, header.FileHash);
             File.Move(tempPath, finalPath);
 
             // write header to outbound file
@@ -1580,7 +1580,7 @@ namespace DeOps.Components.Mail
 
                     List<ulong> targets = new List<ulong>();
 
-                    string localpath = MailPath + "\\" + Utilities.CryptFilename(LocalFileKey, "acktargets");
+                    string localpath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "acktargets");
 
                     if (File.Exists(localpath))
                     {
@@ -1891,7 +1891,7 @@ namespace DeOps.Components.Mail
 
 
                 // save pending ack targets in local file
-                string localpath = MailPath + "\\" + Utilities.CryptFilename(LocalFileKey, "acktargets");
+                string localpath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "acktargets");
 
                 if (PendingAcks.Count > 0)
                 {
@@ -1922,17 +1922,17 @@ namespace DeOps.Components.Mail
         
         internal string GetFilePath(PendingHeader header)
         {
-            return CachePath + "\\" + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
+            return CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
         }
 
         internal string GetCachePath(MailHeader header)
         {
-            return CachePath + "\\" + Utilities.CryptFilename(LocalFileKey, header.SourceID, header.FileHash);
+            return CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.SourceID, header.FileHash);
         }
 
         internal string GetLocalPath(MailHeader header)
         {
-            return MailPath + "\\" + Utilities.CryptFilename(LocalFileKey, header.SourceID, header.FileHash);
+            return MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.SourceID, header.FileHash);
         }
 
         internal void Reply(LocalMail message, string body)

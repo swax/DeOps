@@ -780,7 +780,7 @@ namespace DeOps.Interface.Tools
 						xStr(download.Details.Size),		
 						Utilities.BytestoHex(download.Details.Hash),
 						xStr(download.FilePos),	
-                        xStr(download.Path),
+                        xStr(download.Destination),
                         xStr(download.Searching),	
 						xStr(download.Sources.Count),		
 						xStr(download.Attempted.Count),

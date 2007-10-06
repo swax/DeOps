@@ -247,7 +247,7 @@ namespace DeOps.Components.Storage
 
             folder.AddFile(file);
 
-            Storages.MarkforHash(file, RootPath + dir + "\\" + name, ProjectID, dir);
+            Storages.MarkforHash(file, RootPath + dir + Path.DirectorySeparatorChar + name, ProjectID, dir);
             Modified = true;
             PeriodicSave = true;
 
@@ -318,7 +318,7 @@ namespace DeOps.Components.Storage
 
             parent.AddFolder(folder);
 
-            if (Directory.Exists(RootPath + parentPath + "\\" + name))
+            if (Directory.Exists(RootPath + parentPath + Path.DirectorySeparatorChar + name))
                 folder.Info.SetFlag(StorageFlags.Unlocked);
 
             Modified = true;
@@ -347,7 +347,7 @@ namespace DeOps.Components.Storage
 
             parent.AddFolder(folder);
 
-            if (Directory.Exists(RootPath + parentPath + "\\" + folder.Info.Name))
+            if (Directory.Exists(RootPath + parentPath + Path.DirectorySeparatorChar + folder.Info.Name))
                 folder.Info.SetFlag(StorageFlags.Unlocked);
 
             Modified = true;
@@ -498,7 +498,7 @@ namespace DeOps.Components.Storage
 
             // path: \a\b\c
 
-            string[] folders = path.Split('\\');
+            string[] folders = path.Split(Path.DirectorySeparatorChar);
 
             LocalFolder current = RootFolder;
 
@@ -677,7 +677,7 @@ namespace DeOps.Components.Storage
 
             if (subs)
                 foreach (LocalFolder subfolder in folder.Folders.Values)
-                    LockFolder(dirpath + "\\" + subfolder.Info.Name, subfolder, subs);
+                    LockFolder(dirpath + Path.DirectorySeparatorChar + subfolder.Info.Name, subfolder, subs);
 
             try
             {
@@ -707,7 +707,7 @@ namespace DeOps.Components.Storage
 
             // if unlocked try to rename
             if (renamed && file.Info.IsFlagged(StorageFlags.Unlocked))
-                File.Move(RootPath + "\\" + path + "\\" + oldName, RootPath + "\\" + path + "\\" + newName);
+                File.Move(RootPath + Path.DirectorySeparatorChar + path + Path.DirectorySeparatorChar + oldName, RootPath + Path.DirectorySeparatorChar + path + Path.DirectorySeparatorChar + newName);
 
             // apply changes
             if (renamed)
@@ -731,7 +731,7 @@ namespace DeOps.Components.Storage
 
             // if unlocked try to rename
             if (renamed && folder.Info.IsFlagged(StorageFlags.Unlocked))
-                Directory.Move(RootPath + "\\" + parentPath + "\\" + oldName, RootPath + "\\" + parentPath + "\\" + newName);
+                Directory.Move(RootPath + Path.DirectorySeparatorChar + parentPath + Path.DirectorySeparatorChar + oldName, RootPath + Path.DirectorySeparatorChar + parentPath + Path.DirectorySeparatorChar + newName);
 
             // apply changes
             if (renamed)
@@ -1284,6 +1284,7 @@ namespace DeOps.Components.Storage
 
             // if uid exists in destination, merge histories with diff hashes
             WorkingChange destChange = WorkingChange.Created;
+            WorkingChange sourceChange = WorkingChange.Updated;
 
             if (destFolder.Files.ContainsKey(sourceFile.Info.UID))
             {
@@ -1300,12 +1301,18 @@ namespace DeOps.Components.Storage
 
             sourceFolder.Files.Remove(sourceFile.Info.UID);
             
-            LocalFile ghost = new LocalFile(sourceFile.Info.Clone());
-            ghost.Archived.AddFirst(ghost.Info);
-            sourceFolder.AddFile(ghost);
-            ReadyChange(ghost);
-            ghost.Info.Note = "Moved to " + (destPath == "" ? Path.DirectorySeparatorChar.ToString() : destPath);
-            ghost.Info.SetFlag(StorageFlags.Archived);
+            // only leave a ghost if this file has a committed history
+            if (sourceFile.Archived.Count > 1 || !sourceFile.Info.IsFlagged(StorageFlags.Modified))
+            {
+                LocalFile ghost = new LocalFile(sourceFile.Info.Clone());
+                ghost.Archived.AddFirst(ghost.Info);
+                sourceFolder.AddFile(ghost);
+                ReadyChange(ghost);
+                ghost.Info.Note = "Moved to " + (destPath == "" ? Path.DirectorySeparatorChar.ToString() : destPath);
+                ghost.Info.SetFlag(StorageFlags.Archived);
+            }
+            else
+                sourceChange = WorkingChange.Removed;
 
             // move actual file if unlocked on disk, create new folder if need be
             if (File.Exists(RootPath + sourcePath + Path.DirectorySeparatorChar + name))
@@ -1319,7 +1326,7 @@ namespace DeOps.Components.Storage
 
             // file created at destination, updated at source
             Storages.CallFileUpdate(ProjectID, destPath, sourceFile.Info.UID,  destChange);
-            Storages.CallFileUpdate(ProjectID, sourcePath, sourceFile.Info.UID, WorkingChange.Updated);
+            Storages.CallFileUpdate(ProjectID, sourcePath, sourceFile.Info.UID, sourceChange);
         }
 
 
@@ -1333,7 +1340,7 @@ namespace DeOps.Components.Storage
 
             LocalFolder destFolder = GetLocalFolder(destPath);
 
-            if (destFolder == null)
+            if (destFolder == null || destFolder == parentFolder)
                 return;
 
             // prevent folder from being moved inside of itself
@@ -1359,6 +1366,7 @@ namespace DeOps.Components.Storage
 
             // if uid exists in destination, merge histories with diff hashes
             WorkingChange destChange = WorkingChange.Created;
+            WorkingChange sourceChange = WorkingChange.Updated;
 
             if (destFolder.Folders.ContainsKey(sourceFolder.Info.UID))
             {
@@ -1376,12 +1384,19 @@ namespace DeOps.Components.Storage
             sourceFolder.Info.Note = "Moved from " + (parentPath == "" ? Path.DirectorySeparatorChar.ToString() : parentPath);
 
             parentFolder.Folders.Remove(sourceFolder.Info.UID);
-            LocalFolder ghost = new LocalFolder(parentFolder, sourceFolder.Info.Clone());
-            ghost.Archived.AddFirst(ghost.Info);
-            parentFolder.AddFolder(ghost);
-            ReadyChange(ghost);
-            ghost.Info.Note = "Moved to " + (destPath == "" ? Path.DirectorySeparatorChar.ToString() : destPath);
-            ghost.Info.SetFlag(StorageFlags.Archived);
+
+            // only leave a ghost if this file has a committed history
+            if (sourceFolder.Archived.Count > 1 || !sourceFolder.Info.IsFlagged(StorageFlags.Modified))
+            {
+                LocalFolder ghost = new LocalFolder(parentFolder, sourceFolder.Info.Clone());
+                ghost.Archived.AddFirst(ghost.Info);
+                parentFolder.AddFolder(ghost);
+                ReadyChange(ghost);
+                ghost.Info.Note = "Moved to " + (destPath == "" ? Path.DirectorySeparatorChar.ToString() : destPath);
+                ghost.Info.SetFlag(StorageFlags.Archived);
+            }
+            else
+                sourceChange = WorkingChange.Removed;
 
             // move actual file if unlocked on disk, create new folder if need be
             string name = sourceFolder.Info.Name;
@@ -1396,7 +1411,7 @@ namespace DeOps.Components.Storage
 
             // file created at destination, updated at source
             Storages.CallFolderUpdate(ProjectID, destPath, sourceFolder.Info.UID, destChange);
-            Storages.CallFolderUpdate(ProjectID, parentFolder.GetPath(), sourceFolder.Info.UID, WorkingChange.Updated);
+            Storages.CallFolderUpdate(ProjectID, parentFolder.GetPath(), sourceFolder.Info.UID, sourceChange);
         }
 
 
@@ -1473,7 +1488,7 @@ namespace DeOps.Components.Storage
 
             while (up.Parent != null)
             {
-                path = "\\" + up.Info.Name + path;
+                path = Path.DirectorySeparatorChar + up.Info.Name + path;
                 up = up.Parent;
             }
 

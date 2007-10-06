@@ -95,13 +95,13 @@ namespace DeOps.Components.Storage
 
             Core.Links.LinkUpdate += new LinkUpdateHandler(Links_LinkUpdate);
 
-            StoragePath = Core.User.RootPath + "\\Data\\" + ComponentID.Storage.ToString();
+            StoragePath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Storage.ToString();
             Directory.CreateDirectory(StoragePath);
-            Directory.CreateDirectory(StoragePath + "\\0");
-            Directory.CreateDirectory(StoragePath + "\\1");
+            Directory.CreateDirectory(StoragePath + Path.DirectorySeparatorChar + "0");
+            Directory.CreateDirectory(StoragePath + Path.DirectorySeparatorChar + "1");
 
             // clear resource files so that updates of these files work
-            string resPath = StoragePath + "\\2";
+            string resPath = StoragePath + Path.DirectorySeparatorChar + "2";
             if (Directory.Exists(resPath))
                 Directory.Delete(resPath, true);
 
@@ -280,7 +280,7 @@ namespace DeOps.Components.Storage
         {
             try
             {
-                string path = StoragePath + "\\" + Utilities.CryptFilename(LocalFileKey, "headers");
+                string path = StoragePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
 
                 if (!File.Exists(path))
                     return;
@@ -332,7 +332,7 @@ namespace DeOps.Components.Storage
                 stream.Close();
 
 
-                string finalPath = StoragePath + "\\" + Utilities.CryptFilename(LocalFileKey, "headers");
+                string finalPath = StoragePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -826,7 +826,7 @@ namespace DeOps.Components.Storage
 
 
             // delete loose files not in map - do here because now files in cache range are marked as reffed
-            foreach (string filepath in Directory.GetFiles(StoragePath + "\\0"))
+            foreach (string filepath in Directory.GetFiles(StoragePath + Path.DirectorySeparatorChar + "0"))
             {
                 byte[] hash = Utilities.HextoBytes(Path.GetFileName(filepath));
 
@@ -866,7 +866,7 @@ namespace DeOps.Components.Storage
 
         internal string GetFilePath(StorageHeader header)
         {
-            return StoragePath + "\\" + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
+            return StoragePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
         }
 
         internal string GetFilePath(ulong hashID)
@@ -875,12 +875,12 @@ namespace DeOps.Components.Storage
 
             byte[] hash = BitConverter.GetBytes(hashID);
 
-            return StoragePath + "\\0\\" + Utilities.BytestoHex(transform.TransformFinalBlock(hash, 0, hash.Length));
+            return StoragePath + Path.DirectorySeparatorChar + "0" + Path.DirectorySeparatorChar + Utilities.BytestoHex(transform.TransformFinalBlock(hash, 0, hash.Length));
         }
 
         internal string GetWorkingPath(uint project)
         {
-            return StoragePath + "\\1\\" + Utilities.CryptFilename(LocalFileKey, "working:" + project.ToString());
+            return StoragePath + Path.DirectorySeparatorChar + "1" + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "working:" + project.ToString());
         }
 
         private void LoadHeaderFile(string path, OpStorage storage, bool reload, bool working)
@@ -1177,7 +1177,7 @@ namespace DeOps.Components.Storage
 
         internal string GetRootPath(ulong user, uint project)
         {
-            return Core.User.RootPath + "\\" + Links.ProjectNames[project] + " Storage\\" + Links.GetName(user);
+            return Core.User.RootPath + Path.DirectorySeparatorChar + Links.ProjectNames[project] + " Storage" + Path.DirectorySeparatorChar + Links.GetName(user);
         }
 
         internal WorkingStorage Discard(uint project)
@@ -1224,16 +1224,16 @@ namespace DeOps.Components.Storage
             string finalpath = GetRootPath(dht, project) + path;
 
             if (history)
-                finalpath += "\\.history\\" + GetHistoryName(file);
+                finalpath += Path.DirectorySeparatorChar + ".history" + Path.DirectorySeparatorChar + GetHistoryName(file);
             else
-                finalpath += "\\" + file.Name;
+                finalpath += Path.DirectorySeparatorChar + file.Name;
 
             return File.Exists(finalpath);
         }
 
         internal bool IsHistoryUnlocked(ulong dht, uint project, string path, LinkedList<StorageItem> archived)
         {
-            string finalpath = GetRootPath(dht, project) + path + "\\.history\\";
+            string finalpath = GetRootPath(dht, project) + path + Path.DirectorySeparatorChar + ".history" + Path.DirectorySeparatorChar;
 
             if(Directory.Exists(finalpath))
                 foreach (StorageFile file in archived)
@@ -1268,7 +1268,7 @@ namespace DeOps.Components.Storage
 
             string finalpath = GetRootPath(dht, project) + path;
 
-            finalpath += history ? "\\.history\\" : "\\";
+            finalpath += history ? Path.DirectorySeparatorChar + ".history" + Path.DirectorySeparatorChar : Path.DirectorySeparatorChar.ToString();
 
             if (!CreateFolder(finalpath, errors, false))
                 return null;
@@ -1377,14 +1377,14 @@ namespace DeOps.Components.Storage
             string dirpath = GetRootPath(dht, project) + path;
 
             // delete main file
-            string finalpath = dirpath + "\\" + main.Name;
+            string finalpath = dirpath + Path.DirectorySeparatorChar + main.Name;
 
             if (File.Exists(finalpath))
                 if (DeleteFile(finalpath, errors, false))
                     main.RemoveFlag(StorageFlags.Unlocked);
 
             // delete archived file
-            finalpath = dirpath + "\\.history\\";
+            finalpath = dirpath + Path.DirectorySeparatorChar + ".history" + Path.DirectorySeparatorChar;
 
             if (Directory.Exists(finalpath))
             {
@@ -1474,9 +1474,9 @@ namespace DeOps.Components.Storage
             string finalpath = GetRootPath(dht, project) + path;
 
             if (history)
-                finalpath += "\\.history\\" + GetHistoryName(file);
+                finalpath += Path.DirectorySeparatorChar + ".history" + Path.DirectorySeparatorChar + GetHistoryName(file);
             else
-                finalpath += "\\" + file.Name;
+                finalpath += Path.DirectorySeparatorChar + file.Name;
 
             if (File.Exists(finalpath))
                 File.Delete(finalpath);

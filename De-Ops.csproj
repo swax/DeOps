@@ -183,7 +183,7 @@
       <DependentUpon>EditPlanItem.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.Designer.cs">
       <DependentUpon>GoalPanel.cs</DependentUpon>

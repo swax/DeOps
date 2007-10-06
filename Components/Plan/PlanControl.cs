@@ -121,7 +121,7 @@ namespace DeOps.Components.Plan
             Core.Transfers.FileSearch[ComponentID.Plan] = new FileSearchHandler(Transfers_FileSearch);
             Core.Transfers.FileRequest[ComponentID.Plan] = new FileRequestHandler(Transfers_FileRequest);
 
-            PlanPath = Core.User.RootPath + "\\Data\\" + ComponentID.Plan.ToString();
+            PlanPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Plan.ToString();
             Directory.CreateDirectory(PlanPath);
 
             LocalFileKey = Core.User.Settings.FileKey;
@@ -247,7 +247,7 @@ namespace DeOps.Components.Plan
         {
             try
             {
-                string path = PlanPath + "\\" + Utilities.CryptFilename(LocalFileKey, "PlanHeaders");
+                string path = PlanPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "PlanHeaders");
 
                 if (!File.Exists(path))
                     return;
@@ -298,7 +298,7 @@ namespace DeOps.Components.Plan
                 stream.Close();
 
 
-                string finalPath = PlanPath + "\\" + Utilities.CryptFilename(LocalFileKey, "PlanHeaders");
+                string finalPath = PlanPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "PlanHeaders");
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -463,7 +463,7 @@ namespace DeOps.Components.Plan
 
         private string GetFilePath(PlanHeader header)
         {
-            return PlanPath + "\\" + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
+            return PlanPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
         }
 
         bool Transfers_FileSearch(ulong key, FileDetails details)

@@ -1117,7 +1117,8 @@ namespace DeOps.Interface.TLVex
                     // draw icons
                     if (smallIcon != null)
                         g.DrawImage(smallIcon, iconPoint.X, iconPoint.Y, 16, 16);
-                    else if(smallIcons != null)
+                    
+                    if(smallIcons != null)
                         foreach (Image small in smallIcons)
                             g.DrawImage(small, iconPoint.X, iconPoint.Y, 16,16);
                    

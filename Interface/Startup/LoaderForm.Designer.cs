@@ -114,6 +114,8 @@ namespace DeOps.Interface
             // 
             // TimerMain
             // 
+            this.TimerMain.Enabled = true;
+            this.TimerMain.Interval = 1000;
             this.TimerMain.Tick += new System.EventHandler(this.TimerMain_Tick);
             // 
             // pictureBox1

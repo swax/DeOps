@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
@@ -28,7 +29,7 @@ namespace DeOps.Components.Storage
             MainLabel.Text = text;
 
             // link
-            text = View.Core.User.RootPath + "\\" + View.Links.ProjectNames[View.ProjectID] + " Storage";
+            text = View.Core.User.RootPath + Path.DirectorySeparatorChar + View.Links.ProjectNames[View.ProjectID] + " Storage";
 
             PathLink.Text = text;
         }

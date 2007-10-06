@@ -123,7 +123,7 @@ namespace DeOps.Simulator
             ReadNames("..\\..\\names_male.txt", MaleNames);
             ReadNames("..\\..\\names_female.txt", FemaleNames);
 
-            string rootpath = Application.StartupPath + "\\Firesoft\\";
+            string rootpath = Application.StartupPath + Path.DirectorySeparatorChar + "Firesoft" + Path.DirectorySeparatorChar;
             Directory.CreateDirectory(rootpath);
 
             // choose random name combos to create profiles for
@@ -142,7 +142,7 @@ namespace DeOps.Simulator
                 int index = Rnd.Next(19);
 
                 string filename = OpNames[0] + " - " + name;
-                string path = rootpath + filename + "\\" + filename + ".dop";
+                string path = rootpath + filename + Path.DirectorySeparatorChar + filename + ".dop";
                 Directory.CreateDirectory(rootpath + filename);
 
                 Identity ident = new Identity(path, name, Protocol);
@@ -229,7 +229,7 @@ namespace DeOps.Simulator
         {
             if (Sim.UseTimeFile)
             {
-                TimeFile = new FileStream(dirpath + "\\time.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite);
+                TimeFile = new FileStream(dirpath + Path.DirectorySeparatorChar + "time.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
                 if (TimeFile.Length >= 8)
                 {
@@ -353,7 +353,7 @@ namespace DeOps.Simulator
             {
                 string path = LoadPath;
                 LoadPath = null; // done because doevents will refire
-                LoadDirectory(Application.StartupPath + "\\" + path);
+                LoadDirectory(Application.StartupPath + Path.DirectorySeparatorChar + path);
             }
         }
 

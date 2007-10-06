@@ -130,7 +130,7 @@ namespace DeOps.Components.Profile
             Core.Transfers.FileSearch[ComponentID.Profile]  = new FileSearchHandler(Transfers_FileSearch);
             Core.Transfers.FileRequest[ComponentID.Profile] = new FileRequestHandler(Transfers_FileRequest);
 
-            ProfilePath = Core.User.RootPath + "\\Data\\" + ComponentID.Profile.ToString();
+            ProfilePath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Profile.ToString();
             Directory.CreateDirectory(ProfilePath);
 
             LocalFileKey = Core.User.Settings.FileKey;
@@ -583,7 +583,7 @@ namespace DeOps.Components.Profile
                 stream.Close();
 
 
-                string finalPath = ProfilePath + "\\" + Utilities.CryptFilename(LocalFileKey, "headers");
+                string finalPath = ProfilePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -597,7 +597,7 @@ namespace DeOps.Components.Profile
         {
             try
             {
-                string path = ProfilePath + "\\" + Utilities.CryptFilename(LocalFileKey, "headers");
+                string path = ProfilePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
 
                 if (!File.Exists(path) )
                     return;
@@ -800,7 +800,7 @@ namespace DeOps.Components.Profile
 
         internal string GetFilePath(ProfileHeader header)
         {
-            return ProfilePath + "\\" + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
+            return ProfilePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
         }
 
         internal void CheckVersion(ulong key, uint version)

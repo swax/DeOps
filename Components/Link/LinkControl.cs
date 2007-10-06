@@ -79,7 +79,7 @@ namespace DeOps.Components.Link
 
             ProjectNames[0] = Core.User.Settings.Operation;
 
-            LinkPath = Core.User.RootPath + "\\Data\\" + ComponentID.Link.ToString();    
+            LinkPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Link.ToString();    
             Directory.CreateDirectory(LinkPath);
 
             LocalFileKey = Core.User.Settings.FileKey;
@@ -816,7 +816,7 @@ namespace DeOps.Components.Link
                 stream.Close();
 
 
-                string finalPath = LinkPath + "\\" + Utilities.CryptFilename(LocalFileKey, "headers");
+                string finalPath = LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -830,7 +830,7 @@ namespace DeOps.Components.Link
         {
             try
             {
-                string path = LinkPath + "\\" + Utilities.CryptFilename(LocalFileKey, "headers");
+                string path = LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
 
                 if (!File.Exists(path))
                     return;
@@ -1136,7 +1136,7 @@ namespace DeOps.Components.Link
 
         internal string GetFilePath(LinkHeader header)
         {
-            return LinkPath + "\\" + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
+            return LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
         }
         
         private void Process_ProjectData(OpLink link, SignedData signed, ProjectData project)

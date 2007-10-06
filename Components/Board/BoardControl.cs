@@ -77,7 +77,7 @@ namespace DeOps.Components.Board
 
             LocalFileKey = Core.User.Settings.FileKey;
 
-            BoardPath = Core.User.RootPath + "\\Data\\" + ComponentID.Board.ToString();
+            BoardPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Board.ToString();
 
             if(!Directory.Exists(BoardPath))
                 Directory.CreateDirectory(BoardPath);
@@ -162,7 +162,7 @@ namespace DeOps.Components.Board
 
                     try 
                     {
-                        string dir = BoardPath + "\\" + Utilities.CryptFilename(LocalFileKey, board.DhtID.ToString());
+                        string dir = BoardPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, board.DhtID.ToString());
                         string[] files = Directory.GetFiles(dir);
 
                         foreach(string path in files)
@@ -228,7 +228,7 @@ namespace DeOps.Components.Board
         {
             try
             {
-                string path = GetTargetDir(id) + "\\" + Utilities.CryptFilename(LocalFileKey, "headers" + id.ToString());
+                string path = GetTargetDir(id) + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers" + id.ToString());
 
                 if (!File.Exists(path))
                     return;
@@ -276,7 +276,7 @@ namespace DeOps.Components.Board
                 stream.Close();
 
 
-                string finalPath = GetTargetDir(id) + "\\" + Utilities.CryptFilename(LocalFileKey, "headers" + id.ToString());
+                string finalPath = GetTargetDir(id) + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers" + id.ToString());
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -443,12 +443,12 @@ namespace DeOps.Components.Board
             new PostUID(header).ToBytes().CopyTo(ident, 0);
             header.FileHash.CopyTo(ident, PostUID.SIZE);
 
-            return targetDir + "\\" + Utilities.CryptFilename(LocalFileKey, header.TargetID, ident);
+            return targetDir + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.TargetID, ident);
         }
 
         internal string GetTargetDir(ulong id)
         {
-            return BoardPath + "\\" + Utilities.BytestoHex(BitConverter.GetBytes(id));
+            return BoardPath + Path.DirectorySeparatorChar + Utilities.BytestoHex(BitConverter.GetBytes(id));
         }
 
         void Store_Local(DataReq store)

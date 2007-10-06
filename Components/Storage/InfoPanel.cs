@@ -332,7 +332,7 @@ namespace DeOps.Components.Storage
             ParentView = parent;
             Storages = parent.Storages;
 
-            ResPath = Storages.StoragePath + "\\2";
+            ResPath = Storages.StoragePath + Path.DirectorySeparatorChar + "2";
             Directory.CreateDirectory(ResPath);
 
             ImgLocked   = ExtractImage("Locked");
@@ -353,17 +353,17 @@ namespace DeOps.Components.Storage
 
         private string ExtractImage(string filename)
         {
-            if (!File.Exists(ResPath + "\\" + filename + ".gif"))
+            if (!File.Exists(ResPath + Path.DirectorySeparatorChar + filename + ".gif"))
             {
                 Bitmap image = (Bitmap)StorageRes.ResourceManager.GetObject(filename);
-                FileStream stream = new FileStream(ResPath + "\\" + filename + ".gif", FileMode.CreateNew, FileAccess.Write);
+                FileStream stream = new FileStream(ResPath + Path.DirectorySeparatorChar + filename + ".gif", FileMode.CreateNew, FileAccess.Write);
                 image.Save(stream, System.Drawing.Imaging.ImageFormat.Gif);
                 stream.Close();
             }
 
             string path = "file:///" + ResPath + "/" + filename + ".gif";
-            
-            return path.Replace('\\', '/');
+
+            return path.Replace(Path.DirectorySeparatorChar, '/');
         }
         
         void SetDisplay(string html)

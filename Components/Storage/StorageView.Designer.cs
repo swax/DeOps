@@ -30,9 +30,9 @@ namespace DeOps.Components.Storage
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(StorageView));
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader4 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader5 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader6 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.FoldersButton = new System.Windows.Forms.ToolStripButton();
@@ -143,6 +143,7 @@ namespace DeOps.Components.Storage
             // 
             // FolderTreeView
             // 
+            this.FolderTreeView.AllowDrop = true;
             this.FolderTreeView.BackColor = System.Drawing.SystemColors.Window;
             this.FolderTreeView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.FolderTreeView.ColumnSortColor = System.Drawing.Color.Gainsboro;
@@ -165,8 +166,14 @@ namespace DeOps.Components.Storage
             this.FolderTreeView.StateImageList = null;
             this.FolderTreeView.TabIndex = 0;
             this.FolderTreeView.Text = "FolderTeeView";
+            this.FolderTreeView.DragDrop += new System.Windows.Forms.DragEventHandler(this.FolderTreeView_DragDrop);
             this.FolderTreeView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.FolderTreeView_MouseClick);
+            this.FolderTreeView.DragOver += new System.Windows.Forms.DragEventHandler(this.FolderTreeView_DragOver);
             this.FolderTreeView.SelectedItemChanged += new System.EventHandler(this.FolderTreeView_SelectedItemChanged);
+            this.FolderTreeView.MouseMove += new System.Windows.Forms.MouseEventHandler(this.FolderTreeView_MouseMove);
+            this.FolderTreeView.KeyUp += new System.Windows.Forms.KeyEventHandler(this.FolderTreeView_KeyUp);
+            this.FolderTreeView.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FolderTreeView_KeyDown);
+            this.FolderTreeView.MouseDown += new System.Windows.Forms.MouseEventHandler(this.FolderTreeView_MouseDown);
             // 
             // splitContainer2
             // 
@@ -192,40 +199,40 @@ namespace DeOps.Components.Storage
             this.FileListView.AllowDrop = true;
             this.FileListView.BackColor = System.Drawing.SystemColors.Window;
             this.FileListView.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            toggleColumnHeader1.Hovered = false;
-            toggleColumnHeader1.Image = null;
-            toggleColumnHeader1.Index = 0;
-            toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader1.Selected = false;
-            toggleColumnHeader1.Text = "Name";
-            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 168;
-            toggleColumnHeader2.Hovered = false;
-            toggleColumnHeader2.Image = null;
-            toggleColumnHeader2.Index = 0;
-            toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
-            toggleColumnHeader2.Selected = false;
-            toggleColumnHeader2.Text = "Size";
-            toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            toggleColumnHeader2.Visible = true;
-            toggleColumnHeader2.Width = 70;
-            toggleColumnHeader3.Hovered = false;
-            toggleColumnHeader3.Image = null;
-            toggleColumnHeader3.Index = 0;
-            toggleColumnHeader3.Pressed = false;
-            toggleColumnHeader3.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
-            toggleColumnHeader3.Selected = false;
-            toggleColumnHeader3.Text = "Date Modified";
-            toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader3.Visible = true;
-            toggleColumnHeader3.Width = 120;
+            toggleColumnHeader4.Hovered = false;
+            toggleColumnHeader4.Image = null;
+            toggleColumnHeader4.Index = 0;
+            toggleColumnHeader4.Pressed = false;
+            toggleColumnHeader4.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader4.Selected = false;
+            toggleColumnHeader4.Text = "Name";
+            toggleColumnHeader4.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader4.Visible = true;
+            toggleColumnHeader4.Width = 168;
+            toggleColumnHeader5.Hovered = false;
+            toggleColumnHeader5.Image = null;
+            toggleColumnHeader5.Index = 0;
+            toggleColumnHeader5.Pressed = false;
+            toggleColumnHeader5.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader5.Selected = false;
+            toggleColumnHeader5.Text = "Size";
+            toggleColumnHeader5.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            toggleColumnHeader5.Visible = true;
+            toggleColumnHeader5.Width = 70;
+            toggleColumnHeader6.Hovered = false;
+            toggleColumnHeader6.Image = null;
+            toggleColumnHeader6.Index = 0;
+            toggleColumnHeader6.Pressed = false;
+            toggleColumnHeader6.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader6.Selected = false;
+            toggleColumnHeader6.Text = "Date Modified";
+            toggleColumnHeader6.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader6.Visible = true;
+            toggleColumnHeader6.Width = 120;
             this.FileListView.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
-            toggleColumnHeader1,
-            toggleColumnHeader2,
-            toggleColumnHeader3});
+            toggleColumnHeader4,
+            toggleColumnHeader5,
+            toggleColumnHeader6});
             this.FileListView.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.FileListView.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.FileListView.DisableHorizontalScroll = true;
@@ -245,17 +252,16 @@ namespace DeOps.Components.Storage
             this.FileListView.StateImageList = null;
             this.FileListView.TabIndex = 0;
             this.FileListView.Text = "FileListView";
-            this.FileListView.QueryContinueDrag += new System.Windows.Forms.QueryContinueDragEventHandler(this.FileListView_QueryContinueDrag);
             this.FileListView.DragOver += new System.Windows.Forms.DragEventHandler(this.FileListView_DragOver);
             this.FileListView.MouseDown += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDown);
             this.FileListView.MouseMove += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseMove);
             this.FileListView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseClick);
             this.FileListView.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDoubleClick);
             this.FileListView.DragDrop += new System.Windows.Forms.DragEventHandler(this.FileListView_DragDrop);
-            this.FileListView.DragEnter += new System.Windows.Forms.DragEventHandler(this.FileListView_DragEnter);
+            this.FileListView.KeyUp += new System.Windows.Forms.KeyEventHandler(this.FileListView_KeyUp);
             this.FileListView.MouseUp += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseUp);
-            this.FileListView.GiveFeedback += new System.Windows.Forms.GiveFeedbackEventHandler(this.FileListView_GiveFeedback);
             this.FileListView.SelectedIndexChanged += new System.EventHandler(this.FileListView_SelectedIndexChanged);
+            this.FileListView.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FileListView_KeyDown);
             // 
             // SelectedInfo
             // 

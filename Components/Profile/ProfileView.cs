@@ -124,7 +124,7 @@ namespace DeOps.Components.Profile
 
             // display
 
-            string tempPath = Profiles.ProfilePath + "\\0";
+            string tempPath = Profiles.ProfilePath + Path.DirectorySeparatorChar + "0";
 
 
             // create if needed, clear of pre-existing data
@@ -260,7 +260,7 @@ namespace DeOps.Components.Profile
                                     break;
                                 }
 
-                            fileFields[fileKey] = tempPath + "\\" + name;
+                            fileFields[fileKey] = tempPath + Path.DirectorySeparatorChar + name;
                             FileStream extract = new FileStream(fileFields[fileKey], FileMode.CreateNew, FileAccess.Write);
 
                             long remaining = file.Size;
@@ -334,7 +334,7 @@ namespace DeOps.Components.Profile
                         if (File.Exists(path))
                         {
                             path = "file:///" + path;
-                            path = path.Replace('\\', '/');
+                            path = path.Replace(Path.DirectorySeparatorChar, '/');
                             final = final.Replace(fulltag, path);
                             tagfilled = true;
                         }
@@ -343,19 +343,19 @@ namespace DeOps.Components.Profile
                     // load default photo if none in file
                     else if (parts[0] == "file" && fileFields != null && parts[1] == "Photo")
                     {
-                        string path = core.Profiles.ProfilePath + "\\0";
+                        string path = core.Profiles.ProfilePath + Path.DirectorySeparatorChar + "0";
 
                         // create if needed, clear of pre-existing data
                         if (!Directory.Exists(path))
                             Directory.CreateDirectory(path);
 
-                        path += "\\DefaultPhoto.jpg";
+                        path += Path.DirectorySeparatorChar + "DefaultPhoto.jpg";
                         ProfileRes.DefaultPhoto.Save(path);
 
                         if (File.Exists(path))
                         {
                             path = "file:///" + path;
-                            path = path.Replace('\\', '/');
+                            path = path.Replace(Path.DirectorySeparatorChar, '/');
                             final = final.Replace(fulltag, path);
                             tagfilled = true;
                         }
