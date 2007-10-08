@@ -191,12 +191,13 @@ namespace DeOps.Components.IM
             }*/
 
             string location = "";
-            if(Locations.ClientCount(DhtID) > 1)
-                location  = " @" + Locations.GetLocationName(DhtID, message.ClientID);
+            if (!message.System && Locations.ClientCount(DhtID) > 1)
+                location = " @" + Locations.GetLocationName(DhtID, message.ClientID);
+
 
             if (!message.System)
                 prefix += location + ": ";
-            else 
+            else
                 prefix += "> ";
 
             MessageTextBox.AppendText(prefix);

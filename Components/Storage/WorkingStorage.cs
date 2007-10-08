@@ -295,6 +295,18 @@ namespace DeOps.Components.Storage
             Storages.CallFileUpdate(ProjectID, folder.GetPath(), file.Info.UID, WorkingChange.Updated);
         }
 
+        internal void ReplaceFolder(string path, StorageFolder replacement)
+        {
+            LocalFolder folder = GetLocalFolder(path);
+
+            //crit if unlocked need to replace file on drive as well
+
+            // only create new entry for un-modified file
+            ReadyChange(folder, replacement);
+
+            Storages.CallFolderUpdate(ProjectID, folder.Parent.GetPath(), folder.Info.UID, WorkingChange.Updated);
+        }
+
         internal void TrackFolder(string path)
         {
             Debug.Assert(path[path.Length - 1] != Path.DirectorySeparatorChar);
@@ -420,7 +432,7 @@ namespace DeOps.Components.Storage
                 {
                     ReadyChange(file);
                     file.Info.Name = newName;
-                    file.Info.Note = "Previously named " + oldName;
+                    file.Info.Note = "from " + oldName + " to " + newName;
                 }
 
                 Storages.CallFileUpdate(ProjectID, folder.GetPath(), file != null ? file.Info.UID : 0, WorkingChange.Updated);
@@ -480,7 +492,7 @@ namespace DeOps.Components.Storage
                 {
                     ReadyChange(folder);
                     folder.Info.Name = newName;
-                    folder.Info.Note = "Previously named " + oldName;
+                    folder.Info.Note = "from " + oldName + " to " + newName;
                 }
 
                 Storages.CallFolderUpdate(ProjectID, parent, folder.Info.UID, WorkingChange.Updated);
@@ -558,7 +570,15 @@ namespace DeOps.Components.Storage
             Modified = true;
             PeriodicSave = true;
 
-            folder.Modify(Core.TimeNow);
+            folder.Modify(Core.TimeNow, folder.Info.Clone());
+        }
+
+        internal void ReadyChange(LocalFolder folder, StorageFolder newInfo)
+        {
+            Modified = true;
+            PeriodicSave = true;
+
+            folder.Modify(Core.TimeNow, newInfo);
         }
 
         private LocalFolder CreateNewFolder(LocalFolder parent, string dirname )
@@ -713,6 +733,7 @@ namespace DeOps.Components.Storage
             if (renamed)
             {
                 ReadyChange(file);
+                file.Info.Note = "from " + file.Info.Name + " to " + newName;
                 file.Info.Name = newName;
 
                 Storages.CallFileUpdate(ProjectID, path, file.Info.UID, WorkingChange.Updated);
@@ -737,6 +758,7 @@ namespace DeOps.Components.Storage
             if (renamed)
             {
                 ReadyChange(folder);
+                folder.Info.Note = "from " + folder.Info.Name + " to " + newName;
                 folder.Info.Name = newName;
 
                 Storages.CallFolderUpdate(ProjectID, parentPath, folder.Info.UID, WorkingChange.Updated);
@@ -799,6 +821,9 @@ namespace DeOps.Components.Storage
 
             folder.Files.Remove(file.Info.UID);
 
+            Modified = true;
+            PeriodicSave = true;
+
             Storages.CallFileUpdate(ProjectID, path, file.Info.UID, WorkingChange.Removed);
         }
 
@@ -820,6 +845,9 @@ namespace DeOps.Components.Storage
             LocalFolder folder = GetLocalFolder(path);
 
             folder.Parent.Folders.Remove(folder.Info.UID);
+
+            Modified = true;
+            PeriodicSave = true;
 
             Storages.CallFolderUpdate(ProjectID, Utilities.StripOneLevel(path), folder.Info.UID, WorkingChange.Removed);
         }
@@ -1009,8 +1037,13 @@ namespace DeOps.Components.Storage
 
                                         added = true;
                                     }
+
+                                    else if (currentFolder.Parent == null)
+                                        break; // error, couldn't find parent of folder that was read
+
                                     else if (currentFolder.Parent.GetType() == typeof(LocalFolder))
                                         currentFolder = currentFolder.Parent;
+
                                     else
                                         break;
                                 }
@@ -1296,6 +1329,7 @@ namespace DeOps.Components.Storage
                 destFolder.AddFile(sourceFile);
 
             // make note file was moved at source in destination
+            LocalFile ghost = new LocalFile(sourceFile.Info.Clone()); // do before modified/new date set
             ReadyChange(sourceFile);
             sourceFile.Info.Note = "Moved from " + (sourcePath == "" ? Path.DirectorySeparatorChar.ToString() : sourcePath);
 
@@ -1304,7 +1338,6 @@ namespace DeOps.Components.Storage
             // only leave a ghost if this file has a committed history
             if (sourceFile.Archived.Count > 1 || !sourceFile.Info.IsFlagged(StorageFlags.Modified))
             {
-                LocalFile ghost = new LocalFile(sourceFile.Info.Clone());
                 ghost.Archived.AddFirst(ghost.Info);
                 sourceFolder.AddFile(ghost);
                 ReadyChange(ghost);
@@ -1378,20 +1411,22 @@ namespace DeOps.Components.Storage
 
 
             // make note file was moved at source in destination
+            LocalFolder ghost = new LocalFolder(parentFolder, sourceFolder.Info.Clone());
+
             ReadyChange(sourceFolder);
             sourceFolder.Parent = destFolder;
             string parentPath = parentFolder.GetPath();
             sourceFolder.Info.Note = "Moved from " + (parentPath == "" ? Path.DirectorySeparatorChar.ToString() : parentPath);
+            sourceFolder.Info.ParentUID = destFolder.Info.UID;
 
             parentFolder.Folders.Remove(sourceFolder.Info.UID);
 
             // only leave a ghost if this file has a committed history
             if (sourceFolder.Archived.Count > 1 || !sourceFolder.Info.IsFlagged(StorageFlags.Modified))
             {
-                LocalFolder ghost = new LocalFolder(parentFolder, sourceFolder.Info.Clone());
                 ghost.Archived.AddFirst(ghost.Info);
                 parentFolder.AddFolder(ghost);
-                ReadyChange(ghost);
+                ReadyChange(ghost); // created ghost needs to have 2 entries because applydiff() looks for date of previous file to apply change
                 ghost.Info.Note = "Moved to " + (destPath == "" ? Path.DirectorySeparatorChar.ToString() : destPath);
                 ghost.Info.SetFlag(StorageFlags.Archived);
             }
@@ -1464,20 +1499,22 @@ namespace DeOps.Components.Storage
             Info = info;
         }
 
-        internal void Modify(DateTime time)
+        internal void Modify(DateTime time, StorageFolder newInfo)
         {
-            // 1 change tracked per commit
             if (Info.IsFlagged(StorageFlags.Modified))
-                return;
+            {
+                Info = newInfo;
+                Archived.RemoveFirst();
+                Archived.AddFirst(newInfo);
+            }
+            else
+            {
+                Archived.AddFirst(newInfo);
+                Info = newInfo;
+            }
 
-            StorageFolder changed = Info.Clone();
-
-            changed.SetFlag(StorageFlags.Modified);
-            changed.Date = time.ToUniversalTime();
-
-            Archived.AddFirst(changed);
-
-            Info = changed;
+            Info.SetFlag(StorageFlags.Modified);
+            Info.Date = time.ToUniversalTime();
         }
 
         internal string GetPath()

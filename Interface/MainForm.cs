@@ -506,34 +506,29 @@ namespace DeOps.Interface
 
         void TreeMenu_Select(object sender, EventArgs e)
         {
-            SelectCurrentItem();
+
+            LinkNode item = GetSelected();
+
+            if (item == null)
+                return;
+
+            OnSelectChange(item.Link.DhtID, CommandTree.Project);
         }
 
         private void CommandTree_MouseDoubleClick(object sender, MouseEventArgs e)
-        {
-            SelectCurrentItem();
-        }
-
-        void SelectCurrentItem()
         {
             LinkNode item = GetSelected();
 
             if (item == null)
                 return;
 
-            if (SideMode)
-            {
-                OpMenuItem info = new OpMenuItem(item.Link.DhtID, 0);
+            OpMenuItem info = new OpMenuItem(item.Link.DhtID, 0);
 
-                if (Core.Locations.LocationMap.ContainsKey(info.DhtID))
-                    ((IMControl)Core.Components[ComponentID.IM]).QuickMenu_View(info, null);
-                else
-                    Core.Mail.QuickMenu_View(info, null);
-            }
+            if (Core.Locations.LocationMap.ContainsKey(info.DhtID))
+                ((IMControl)Core.Components[ComponentID.IM]).QuickMenu_View(info, null);
             else
-                OnSelectChange(item.Link.DhtID, CommandTree.Project);
+                Core.Mail.QuickMenu_View(info, null);
         }
-
 
         [DllImport("user32.dll")]
         public static extern IntPtr SendMessage(IntPtr hWnd,int wMsg, bool wParam, int lParam);
@@ -1084,9 +1079,15 @@ namespace DeOps.Interface
 
             // set color
             if (Links.IsLowerDirect(info.DhtID, info.ProjectID))
+            {
                 item.DisplayColor = Color.LightBlue;
+                item.ForeColor = Color.Blue;
+            }
             else if (Links.IsHigher(info.DhtID, info.ProjectID))
-                item.DisplayColor = Color.Coral;
+            {
+                item.DisplayColor = Color.FromArgb(255, 198, 198);
+                item.ForeColor = Color.Red;
+            }
             else
                 item.DisplayColor = Color.White;
 

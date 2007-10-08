@@ -81,7 +81,7 @@ namespace DeOps.Components.Storage
                     IsLocal = true;
                 }
 
-            MenuAdd = new ToolStripMenuItem("Add to Storage", null, FileView_Add);
+            MenuAdd = new ToolStripMenuItem("Add to Storage", StorageRes.Add, FileView_Add);
             MenuLock = new ToolStripMenuItem("Lock", StorageRes.Locked, FileView_Lock);
             MenuUnlock = new ToolStripMenuItem("Unlock", StorageRes.Unlocked, FileView_Unlock);
             MenuRestore = new ToolStripMenuItem("Restore", null, FileView_Restore);
@@ -147,7 +147,7 @@ namespace DeOps.Components.Storage
 
             // hook up events
             Storages.StorageUpdate += new StorageUpdateHandler(Storages_StorageUpdate);
-            Links.LinkUpdate += new LinkUpdateHandler(Links_LinkUpdate);
+            Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
 
             if (IsLocal)
             {
@@ -201,7 +201,7 @@ namespace DeOps.Components.Storage
         internal override bool Fin()
         {
             Storages.StorageUpdate -= new StorageUpdateHandler(Storages_StorageUpdate);
-            Links.LinkUpdate -= new LinkUpdateHandler(Links_LinkUpdate);
+            Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
 
             Storages.WorkingFileUpdate -= new WorkingUpdateHandler(Storages_WorkingFileUpdate);
             Storages.WorkingFolderUpdate -= new WorkingUpdateHandler(Storages_WorkingFolderUpdate);
@@ -522,8 +522,15 @@ namespace DeOps.Components.Storage
                 RemoveDiff(id, sub);
         }
 
-        private void Links_LinkUpdate(OpLink link)
+        private void Links_Update(ulong key)
         {
+            // check if removed
+            if (!Links.LinkMap.ContainsKey(key))
+                return;
+
+            // update
+            OpLink link = Links.LinkMap[key];
+
             // check if command structure has changed
             List<ulong> check = new List<ulong>();
             List<ulong> highers = Storages.GetHigherIDs(DhtID, ProjectID);
@@ -869,6 +876,9 @@ namespace DeOps.Components.Storage
                 catch { }
 
             UpdateListItems();
+
+            if (SelectedFolder.GetPath() == infoPath)
+                infoSet = true;
 
             if (!infoSet)
                 SelectedInfo.ShowDiffs();
@@ -1400,59 +1410,6 @@ namespace DeOps.Components.Storage
             if (separator && i > 0)
                 menu.Items.Insert(i, new ToolStripSeparator());
 
-            
-            /* // add
-                if (IsLocal && clicked.Temp)
-                    menu.Items.Add(new FileMenuItem("Add to Storage", clicked, null, File_Add)); // remove in web interface\
-
-                // lock
-                if (!clicked.Temp)
-                    if (clicked.IsFolder)
-                    {
-                        if (clicked.Folder.Details.IsFlagged(StorageFlags.Unlocked))
-                            menu.Items.Add(new FolderMenuItem("Lock", clicked.Folder, StorageRes.Locked, Folder_Lock));
-                        else
-                            menu.Items.Add(new FolderMenuItem("Unlock", clicked.Folder, StorageRes.Unlocked, Folder_Unlock));
-                    }
-                    else if (clicked.Details != null)
-                    {
-                        if (clicked.IsUnlocked())
-                            menu.Items.Add(new FileMenuItem("Lock", clicked, StorageRes.Locked, File_Lock));
-                        else
-                            menu.Items.Add(new FileMenuItem("Unlock", clicked, StorageRes.Unlocked, File_Unlock));
-                    }
-
-                // details
-                if (!clicked.Temp)
-                    if (clicked.IsFolder)
-                        menu.Items.Add(new FolderMenuItem("Details", clicked.Folder, StorageRes.details, Folder_Details));
-                    else
-                        menu.Items.Add(new FileMenuItem("Details", clicked, StorageRes.details, File_Details));
-
-                // delete / restore
-                if (IsLocal && !clicked.Temp)
-                    if (clicked.IsFolder)
-                    {
-                        menu.Items.Add("-");
-
-                        if (clicked.Folder.Details.IsFlagged(StorageFlags.Archived))
-                            menu.Items.Add(new FolderMenuItem("Restore", clicked.Folder, null, Folder_Restore));
-
-                        menu.Items.Add(new FolderMenuItem("Delete", clicked.Folder, StorageRes.Reject, Folder_Delete));
-                    }
-
-                    else if (clicked.Details != null)
-                    {
-                        menu.Items.Add("-");
-
-                        if (clicked.Details.IsFlagged(StorageFlags.Archived))
-                            menu.Items.Add(new FileMenuItem("Restore", clicked, null, File_Restore));
-
-                        menu.Items.Add(new FileMenuItem("Delete", clicked, StorageRes.Reject, File_Delete));
-                    }
-                */
-
-
 
             if (menu.Items.Count > 0)
             {
@@ -1639,7 +1596,7 @@ namespace DeOps.Components.Storage
                     foreach (FolderNode node in folders)
                         message += node.Details.Name + "\n";
 
-                    DialogResult result = MessageBox.Show(this, "Would you like to keep these files archived?\n" + message, "Delete", MessageBoxButtons.YesNoCancel);
+                    DialogResult result = MessageBox.Show(this, "Would you like to keep record of these files being deleted?\n" + message, "Delete", MessageBoxButtons.YesNoCancel);
 
                     if (result == DialogResult.Cancel)
                         return;
@@ -2185,7 +2142,10 @@ namespace DeOps.Components.Storage
             if (file.IsFolder)
             {
                 if (file.Temp)
+                {
+                    Utilities.OpenFolder(Storages.GetRootPath(DhtID, ProjectID) + file.Folder.GetPath());
                     return;
+                }
 
                 FolderNode node = file.Text == ".." ? (FolderNode)file.Folder.Parent : file.Folder;
 

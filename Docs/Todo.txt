@@ -52,7 +52,7 @@ Interface
 			detect diff between changed schedule / changed goals or both
 
 	graphics
-		storage - add, restore
+		storage - restore
 		mail	- forward, reply
 		board   - high, low, all
 		plans	- edit
@@ -119,16 +119,24 @@ Components
 			save branch path when transfering goal <-> schedule
 
 	Storage
-		
-		drag files folder over highlights
+
+		drag files folder over highlights target
 		secure copy / paste can use same folder commands as drag/drop
 		drag into secure storage gives user option to replace what is already there
 		
-		test locking /unlocking individual history and remote changes/integrated items
+		dealing with files on disk		
+			delete / restore folder still marked as change from below
+			how does add/replace work with unlocked files - figure out when doing inheritance	
+			get working with how visual studio does saves, crazy rename / delete / create process
+			trigger to lock all unlocked on guiclose
+			on app close - remove all storage folders, especially for users that are not us
+			test locking /unlocking individual history and remote changes/integrated items
+			remote id view - download, unlock, open, re-lock
+			
 		make note on interface if local file (hash) not present in storage system, like encryption error of some sort causes it to not be placed
 			blue if pending processing, if failed, turn back to grey
 		test locking / unlocking big files, determine if progress bar or notification of some sort needed, maybe queue them like hashing
-		trigger to lock all unlocked on guiclose
+		
 		test periodic saves of working / and verify load from working file works
 		on close, hang if still hash processing
 		
@@ -136,20 +144,12 @@ Components
 			recurse mark folders up with a reference count, at 0 remove mark ;)
 		
 		review file references system
-		how does add/replace work with unlocked files - figure out when doing inheritance
-		check if file / dir has same name when renaming / creating in storage system	
 		after hash if file modified, and hash is equal to unmodified, remove modified flag
-		double click open local temp files/*folders
-		carry over notes whe`` accepting changes, edit notes box needs to be larger, convert \n to <br>
-		get working with how visual studio does saves, crazy rename / delete / create process
-		on app close - remove all storage folders, especially for users that are not us
+		carry over notes when accepting changes, edit notes box needs to be larger, convert \n to <br
 		use path class to check for invalid characters
-		
 		add accept change to storageInfo interface for folders - so name / ghost status is transferred over easily
 		delete folder, changes saying restored, but shouldn't be there because our timestamp is the newest
 
-		remote id view - download, unlock, open, re-lock
-	 	save/discard persist over open / close?
 		if hashes - clicking apply / integrate asks user to perform that action
 
 		visibility - who / levels down (these 2 settings replace higher / lower direct etc..)
@@ -296,6 +296,15 @@ Future
 		layers for putting down map img/ people img and being able to edit it easily
 		3d component uses imported models from any souce, sketch up ? 
 		lower corner box shows zoomed out view
+	
+	audio component
+		headphones/speakers, left side is lowers, right side is higher/adjacents	
+			on mono prefix high/low beep before audio clip to signal what level talker is from
+			save last x voice messages received for playback
+		push to talk attached to each ear (or on pda), for talking to higher/lower side
+		fastest human to human comunication possilbe, questions go as far up and then down as they need to go instantaneously
+		if people are off line, or voice is off, voice network auto-configurse to fill in missing links
+			everyone on the network is connected through high/low to someone else by voice
 		
 	stats component
 		how many people in org, follow link tree

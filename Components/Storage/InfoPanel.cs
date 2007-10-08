@@ -170,17 +170,31 @@ namespace DeOps.Components.Storage
                                         {
                                             document.getElementById(id).innerHTML = text;
                                         }
-                                        
+
+                                        function togglehelp()
+                                        {
+                                            obj = document.getElementById('helpDiv');
+                                    
+                                            if (obj.style.display == 'none')
+                                                obj.style.display = '';
+                                            else 
+                                                obj.style.display = 'none';
+                                        }
+                                                                                                                        
                                     </script>
                                     </head>
 
                                     <body bgcolor=#f5f5f5>
 
                                         <?=table?>
-
                                         <br>
-                                         Drag files in to add them to your secure storage. Once changes are saved they are inherited by those below you.
-                                         Changes are manually reviewed and integrated before moving to those above you.
+                                        <a href='#' onclick='togglehelp()'>Help</a>
+                                        <div id='helpDiv' style='display:none;'>
+                                            
+                                            Drag files in to add them to your secure storage. Once changes are saved they are inherited by those below you.
+                                            Changes are manually reviewed and integrated before moving to those above you.
+                                        </div>
+                                        
                                     </body>
                                     </html>";
 
@@ -195,7 +209,7 @@ namespace DeOps.Components.Storage
                                         </table>";
 
         const string DifferenceRowTemplate = @"<tr>
-	                                            <td <?=bgcolor?> ><font color='<?=namecolor?>' ><?=name?></font></td>
+	                                            <td <?=bgcolor?> ><font color='#<?=namecolor?>' ><?=name?></font></td>
                                                 <td <?=bgcolor?> id='<?=statusID?>'> <?=status?> </td>
                                             </tr>
                                                     
@@ -213,7 +227,7 @@ namespace DeOps.Components.Storage
 
         const string ChangesRowTemplate = @"<tr>
 	                                            <td <?=bgcolor?>><?=menu?></td>
-                                                <td <?=bgcolor?> ><font color='<?=namecolor?>' ><?=who?></font></td>
+                                                <td <?=bgcolor?> ><font color='#<?=namecolor?>' ><?=who?></font></td>
 	                                            <td <?=bgcolor?> ><?=action?></td>
 	                                            <td <?=bgcolor?> ><?=date?></td>
 	                                            <td <?=bgcolor?> ><?=note?></td>
@@ -240,7 +254,7 @@ namespace DeOps.Components.Storage
 
         const string IntegratedRowTemplate = @"<tr>
 	                                            <td <?=bgcolor?>><?=menu?></td>
-                                                <td <?=bgcolor?> ><font color='<?=namecolor?>' ><?=who?></font></td>
+                                                <td <?=bgcolor?> ><font color='#<?=namecolor?>' ><?=who?></font></td>
 	                                            <td <?=bgcolor?> ><?=action?></td>
 	                                            <td <?=bgcolor?> ><?=date?></td>
 	                                            <td <?=bgcolor?> ><?=note?></td>
@@ -313,6 +327,7 @@ namespace DeOps.Components.Storage
         string ImgExtend2;
         string ImgReject;
         string ImgReplace;
+        string ImgAdd;
 
         StringBuilder Html = new StringBuilder(4096 * 4);
         StringBuilder ResetLine = new StringBuilder(20 * 2 * 60); // 10 history , 10 changes
@@ -349,6 +364,7 @@ namespace DeOps.Components.Storage
             ImgExtend2  = ExtractImage("Extend2");
             ImgReject   = ExtractImage("Reject");
             ImgReplace  = ExtractImage("Replace");
+            ImgAdd      = ExtractImage("Add");
         }
 
         private string ExtractImage(string filename)
@@ -636,9 +652,11 @@ namespace DeOps.Components.Storage
                 string color = (i % 2 == 0) ? "bgcolor=#ebebeb" : "";
                 html.Replace("<?=bgcolor?>", color);
 
-                color = row.Higher ? "bgcolor=#ff0000" : "0000ff";
+                color = row.Higher ? "ff0000" : "0000ff";
                 html.Replace("<?=namecolor?>", color);
 
+                string id = "c" + i.ToString();
+                AddReset(id);
 
                 // if file exists
                 if (IsFile)
@@ -646,15 +664,13 @@ namespace DeOps.Components.Storage
                     StorageFile file = (StorageFile)row.Item;
 
                     string unlocked = "";
-                    if(Storages.IsFileUnlocked(row.ID, ParentView.ProjectID, CurrentFolder.GetPath(), file, false))
+                    if (Storages.IsFileUnlocked(row.ID, ParentView.ProjectID, CurrentFolder.GetPath(), file, false))
                         unlocked = "<a href='http://change.lock." + row.ID.ToString() + "'><img border= 0 src='" + ImgUnlocked + "'></a>";
 
-                    string id = "c" + i.ToString();
+
                     html.Replace("<?=menu?>", MenuTemplate + unlocked);
                     html.Replace("<?=menu_id?>", id);
                     html.Replace("<?=menu_img_id?>", id + "img");
-
-                    AddReset(id);
 
                     if (Storages.FileExists(file))
                     {
@@ -663,11 +679,19 @@ namespace DeOps.Components.Storage
 
                         if (!CurrentFile.Temp && ParentView.IsLocal)
                         {
-                            html.Replace("<?=next_menu_row?>", GetMenuRow("change.replace." + row.ID.ToString(), "Replace", ImgReplace));
-                            html.Replace("<?=next_menu_row?>", GetMenuRow("change.accept." + row.ID.ToString(), "Integrated", ImgAccept));
+                            // if hash the same then this is a rename/restore operation, accepting change replaces entry
+                            if (Utilities.MemCompare(file.InternalHash, ((StorageFile)CurrentFile.Details).InternalHash))
+                                html.Replace("<?=next_menu_row?>", GetMenuRow("change.replace." + row.ID.ToString(), "Accept", ImgAccept));
+
+                            // otherwise we need to determine if this file's data is now integrated into something else
+                            else
+                            {
+                                html.Replace("<?=next_menu_row?>", GetMenuRow("change.replace." + row.ID.ToString(), "Replace", ImgReplace));
+                                html.Replace("<?=next_menu_row?>", GetMenuRow("change.accept." + row.ID.ToString(), "Integrated", ImgAccept));
+                            }
                         }
                         else
-                            html.Replace("<?=next_menu_row?>", GetMenuRow("change.add." + row.ID.ToString(), "Add", ImgReplace));
+                            html.Replace("<?=next_menu_row?>", GetMenuRow("change.add." + row.ID.ToString(), "Add", ImgAdd));
                     }
                     else
                     {
@@ -691,9 +715,23 @@ namespace DeOps.Components.Storage
 
                     html.Replace("<?=next_menu_row?>", "");
                 }
-                else
-                    html.Replace("<?=menu?>", "");
 
+                // folder
+                else
+                {
+                    html.Replace("<?=menu?>", MenuTemplate);
+                    html.Replace("<?=menu_id?>", id);
+                    html.Replace("<?=menu_img_id?>", id + "img");
+
+                    //html.Replace("<?=menu?>", "");
+
+                    if (!CurrentFolder.Temp && ParentView.IsLocal)
+                        html.Replace("<?=next_menu_row?>", GetMenuRow("change.replace." + row.ID.ToString(), "Accept", ImgAccept));
+                    else
+                        html.Replace("<?=next_menu_row?>", GetMenuRow("change.add." + row.ID.ToString(), "Add", ImgAdd));
+
+                    html.Replace("<?=next_menu_row?>", "");
+                }
 
                 html.Replace("<?=who?>", row.Name);
                 html.Replace("<?=action?>", Storages.ItemDiff(row.Item, original).ToString());
@@ -741,7 +779,7 @@ namespace DeOps.Components.Storage
                 string color = (i % 2 == 0) ? "bgcolor=#ebebeb" : "";
                 html.Replace("<?=bgcolor?>", color);
 
-                color = ParentView.HigherIDs.Contains(id) ? "bgcolor=#ff0000" : "0000ff";
+                color = ParentView.HigherIDs.Contains(id) ? "ff0000" : "0000ff";
                 html.Replace("<?=namecolor?>", color);
 
                 html.Replace("<?=name?>", ParentView.Core.Links.GetName(id));
@@ -773,7 +811,7 @@ namespace DeOps.Components.Storage
                 string color = (i % 2 == 0) ? "bgcolor=#ebebeb" : "";
                 html.Replace("<?=bgcolor?>", color);
 
-                color = row.Higher ? "bgcolor=#ff0000" : "0000ff";
+                color = row.Higher ? "ff0000" : "0000ff";
                 html.Replace("<?=namecolor?>", color);
 
                 // if file exists
@@ -782,7 +820,7 @@ namespace DeOps.Components.Storage
                     StorageFile file = (StorageFile)row.Item;
 
                     string unlocked = "";
-                    if (Storages.IsFileUnlocked(row.ID, ParentView.ProjectID, CurrentFolder.GetPath(), file, false))
+                    if (Storages.IsFileUnlocked(row.ID, ParentView.ProjectID, CurrentFolder.GetPath(), file, true)) // integrated always a history file, avoid conflict with change file from same host
                         unlocked = "<a href='http://integrate.lock." + row.ID.ToString() + "'><img border= 0 src='" + ImgUnlocked + "'></a>";
 
                     string id = "i" + i.ToString();
@@ -975,7 +1013,7 @@ namespace DeOps.Components.Storage
 
             string url = e.Url.OriginalString;
 
-            if (url == "about:blank")
+            if (url.StartsWith("about:blank"))
                 return;
 
             url = url.Replace("http://", "");
@@ -985,13 +1023,14 @@ namespace DeOps.Components.Storage
 
 
             StorageFile file = null;
+            StorageFolder folder = null;
             bool history = false;
             ulong UserID = ParentView.DhtID;
 
             if (parts[0] == "main")
             {
-                if(IsFile)
-                    file = (StorageFile) CurrentFile.Details;
+                if (IsFile)
+                    file = (StorageFile)CurrentFile.Details;
 
                 if (parts[1] == "lock_complete")
                 {
@@ -1040,7 +1079,7 @@ namespace DeOps.Components.Storage
                         ParentView.UnlockFolder(CurrentFolder, subs, errors);
 
                         LockMessage.Alert(ParentView, errors);
-                        
+
                         ParentView.RefreshFileList();
                         RefreshItem();
                     }
@@ -1089,11 +1128,17 @@ namespace DeOps.Components.Storage
             {
                 UserID = ulong.Parse(parts[2]);
 
-                file = (StorageFile)CurrentChanges[UserID];
+                if (IsFile)
+                    file = (StorageFile)CurrentChanges[UserID];
+                else
+                    folder = (StorageFolder)CurrentChanges[UserID];
 
-                if(parts[1] == "add")
+                if (parts[1] == "add")
                 {
-                    ParentView.Working.TrackFile(CurrentFolder.GetPath(), file);
+                    if (IsFile)
+                        ParentView.Working.TrackFile(CurrentFolder.GetPath(), file);
+                    else
+                        ParentView.Working.TrackFolder(CurrentFolder.GetPath(), folder);
                 }
 
                 if (parts[1] == "diff")
@@ -1108,23 +1153,24 @@ namespace DeOps.Components.Storage
                 if (parts[1] == "accept")
                 {
 
-                    ParentView.Working.IntegrateFile(CurrentFolder.GetPath(), UserID, file); 
+                    if (IsFile)
+                        ParentView.Working.IntegrateFile(CurrentFolder.GetPath(), UserID, file);
 
                     // integrate triggers file update, triggering icon / page change
 
 
                     // display changes
-                        // if change does not equal local
-                        // if change not present in integrated
-                            // display
+                    // if change does not equal local
+                    // if change not present in integrated
+                    // display
 
                     // display integrated
-                        // if integrated does not equal local
-                        // if integrated file is equal to latest file from id
-                            // display
-                    
+                    // if integrated does not equal local
+                    // if integrated file is equal to latest file from id
+                    // display
+
                     // reject
-                        // remove from integrated list and refresh
+                    // remove from integrated list and refresh
 
 
                     // when looking for changes go through each integration value and see if diff != none
@@ -1136,6 +1182,10 @@ namespace DeOps.Components.Storage
                 UserID = ulong.Parse(parts[2]);
 
                 file = (StorageFile)CurrentIntegrated[UserID];
+
+                // integrated should open in remotes history folder, because if changes/integrated both visible they need 
+                // to open in different places and changes is always top of the stack no matter what
+                history = true;
 
                 if (parts[1] == "diff")
                 {
@@ -1155,7 +1205,7 @@ namespace DeOps.Components.Storage
             {
                 int index = int.Parse(parts[2]) - 1;
 
-                if(IsFile)
+                if (IsFile)
                     file = (StorageFile)History[index];
 
                 if (index != 0)
@@ -1195,48 +1245,59 @@ namespace DeOps.Components.Storage
 
             // generic - history / change
 
-            if (file != null)
+            if (parts[1] == "open")
             {
-                if (parts[1] == "open")
+                List<LockError> errors = new List<LockError>();
+
+                string finalpath = Storages.UnlockFile(UserID, ParentView.ProjectID, CurrentFolder.GetPath(), file, history, errors);
+
+                if (finalpath != null && File.Exists(finalpath))
+                    System.Diagnostics.Process.Start(finalpath);
+
+                LockMessage.Alert(ParentView, errors);
+
+                CurrentFile.UpdateInterface();
+                RefreshItem();
+            }
+
+            if (parts[1] == "lock")
+            {
+                Storages.LockFile(UserID, ParentView.ProjectID, CurrentFolder.GetPath(), file, history);
+
+                CurrentFile.UpdateInterface();
+                RefreshItem();
+            }
+
+            if (parts[1] == "download")
+            {
+                Storages.DownloadFile(UserID, file);
+                transferChange = true;
+            }
+
+            if (parts[1] == "dlcancel")
+            {
+                ParentView.Core.Transfers.CancelDownload(ComponentID.Storage, file.Hash, file.Size);
+                transferChange = true;
+            }
+
+            if (parts[1] == "replace")
+            {
+                if (IsFile)
                 {
-                    List<LockError> errors = new List<LockError>();
+                    StorageFile replacement = file.Clone();
+                    replacement.Note = file.Note;
 
-                    string finalpath = Storages.UnlockFile(UserID, ParentView.ProjectID, CurrentFolder.GetPath(), file, history, errors);
-
-                    if (finalpath != null && File.Exists(finalpath))
-                        System.Diagnostics.Process.Start(finalpath);
-
-                    LockMessage.Alert(ParentView, errors);
-                    
-                    CurrentFile.UpdateInterface();
-                    RefreshItem();
+                    ParentView.Working.ReplaceFile(CurrentFile.GetPath(), replacement);
                 }
-
-                if (parts[1] == "lock")
+                else
                 {
-                    Storages.LockFile(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, history);
+                    StorageFolder replacement = folder.Clone();
+                    replacement.Note = folder.Note;
 
-                    CurrentFile.UpdateInterface();
-                    RefreshItem();
-                }
-
-                if (parts[1] == "download")
-                {
-                    Storages.DownloadFile(ParentView.DhtID, file);
-                    transferChange = true;
-                }
-
-                if (parts[1] == "dlcancel")
-                {
-                    ParentView.Core.Transfers.CancelDownload(ComponentID.Storage, file.Hash, file.Size);
-                    transferChange = true;
-                }
-
-                if (parts[1] == "replace")
-                {
-                    ParentView.Working.ReplaceFile(CurrentFile.GetPath(), file.Clone());
+                    ParentView.Working.ReplaceFolder(CurrentFolder.GetPath(), replacement);
                 }
             }
+
 
             e.Cancel = true;
 

@@ -290,6 +290,9 @@ namespace DeOps.Components.Storage
 
         internal StorageFolder Clone()
         {
+            // clones everything except notes
+
+
             StorageFolder clone = new StorageFolder();
 
             clone.ParentUID = ParentUID;
@@ -445,6 +448,8 @@ namespace DeOps.Components.Storage
 
         internal StorageFile Clone()
         {
+            // clones everything except notes
+
             StorageFile clone = new StorageFile();
 
             clone.UID = UID;
