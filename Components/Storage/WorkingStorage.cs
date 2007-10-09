@@ -131,6 +131,8 @@ namespace DeOps.Components.Storage
 
                                     added = true;
                                 }
+                                else if (CurrentFolder.Parent == null) // error
+                                    break;
                                 else if (CurrentFolder.Parent.GetType() == typeof(LocalFolder))
                                     CurrentFolder = CurrentFolder.Parent;
                                 else
@@ -391,16 +393,21 @@ namespace DeOps.Components.Storage
 
                 if (e.ChangeType == WatcherChangeTypes.Created)
                 {
+                    //Debug.WriteLine("File Created " + e.Name);
                 }
 
                 if (e.ChangeType == WatcherChangeTypes.Changed)
                 {
+                    //Debug.WriteLine("File Changed " + e.Name);
+
                     if (file != null)
                         Storages.MarkforHash(file, e.FullPath, ProjectID, directory);
                 }
 
                 if (e.ChangeType == WatcherChangeTypes.Deleted)
                 {
+                    //Debug.WriteLine("File Deleted " + e.Name);
+
                     if (file != null)
                         file.Info.RemoveFlag(StorageFlags.Unlocked);
                 }
@@ -415,6 +422,9 @@ namespace DeOps.Components.Storage
 
         private void OnFileRenamed(object source, RenamedEventArgs e)
         {
+            //Debug.WriteLine("File Renamed " + e.OldName + " to " + e.Name);
+
+
             try
             {
                 string oldName = Path.GetFileName(e.OldFullPath);
@@ -433,6 +443,20 @@ namespace DeOps.Components.Storage
                     ReadyChange(file);
                     file.Info.Name = newName;
                     file.Info.Note = "from " + oldName + " to " + newName;
+                }
+
+                // when visual studio saves a file, it creates a temp, writes to it, deletes the original file and renames the temp to the original
+                // as opposed to files being created with the same name while their couterparts remain locked; renaming triggers the file to be
+                // unlocked and rehashed
+                else
+                {
+                    file = folder.GetFile(newName);
+
+                    if (file != null)
+                    {
+                        file.Info.SetFlag(StorageFlags.Unlocked);
+                        Storages.MarkforHash(file, e.FullPath, ProjectID, folder.GetPath());
+                    }
                 }
 
                 Storages.CallFileUpdate(ProjectID, folder.GetPath(), file != null ? file.Info.UID : 0, WorkingChange.Updated);

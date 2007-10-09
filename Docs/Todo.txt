@@ -22,7 +22,7 @@ Interface
 		create function to search through externals for type/id/project, when popping external look for existing window?
 
 	Link
-		Change text from 'Link' to 'Trust'? More understandable
+		Change text from 'Link' to 'Trust'? More understandable, untrusted instead of unlinked makes way more sense
 		sometimes on link changes, cannot select confirm link even though node is pending
 		encapsulate common link functions in link control, prevent other controls from directly using linkmap
 
@@ -127,7 +127,6 @@ Components
 		dealing with files on disk		
 			delete / restore folder still marked as change from below
 			how does add/replace work with unlocked files - figure out when doing inheritance	
-			get working with how visual studio does saves, crazy rename / delete / create process
 			trigger to lock all unlocked on guiclose
 			on app close - remove all storage folders, especially for users that are not us
 			test locking /unlocking individual history and remote changes/integrated items
