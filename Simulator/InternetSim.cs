@@ -197,6 +197,7 @@ namespace DeOps.Simulator
 
             SimMap.Remove(instance.RealIP);
 
+            instance.Core.Exit();
             instance.Core = null;
             
             Interface.BeginInvoke(Interface.InstanceChange, instance, InstanceChangeType.Update);
@@ -459,6 +460,16 @@ namespace DeOps.Simulator
                 return 0;
 
             return packet.Length;
+        }
+
+        internal void Exit()
+        {
+            Shutdown = true;
+
+            while(Online.Count > 0)
+            {
+                BringOffline(Online[0]);
+            }
         }
     }
 

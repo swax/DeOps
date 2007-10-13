@@ -32,6 +32,7 @@ namespace DeOps.Components.IM
             Core = core;
 
             Core.LoadEvent  += new LoadHandler(Core_Load);
+            Core.ExitEvent += new ExitHandler(Core_Exit);
             Core.TimerEvent += new TimerHandler(Core_Timer);
             
             Core.RudpControl.SessionUpdate    += new SessionUpdateHandler(Session_Update);
@@ -92,7 +93,7 @@ namespace DeOps.Components.IM
             return views;
         }
 
-        internal override void GuiClosing()
+        void Core_Exit()
         {
             if (IM_Update != null)
                 throw new Exception("IM Events not fin'd");

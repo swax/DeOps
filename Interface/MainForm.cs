@@ -125,9 +125,6 @@ namespace DeOps.Interface
             Core.NewsUpdate -= new NewsUpdateHandler(Core_NewsUpdate);
             Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
 
-            foreach (OpComponent component in Core.Components.Values)
-                component.GuiClosing();
-
             Core.GuiMain = null;
 
             if(LockForm)
@@ -137,7 +134,10 @@ namespace DeOps.Interface
             }
 
             if (Core.Sim == null)
+            {
+                Core.Exit();
                 Application.Exit();
+            }
         }
 
         bool LockForm;
@@ -174,7 +174,9 @@ namespace DeOps.Interface
 
             ExternalViews.Add(external);
 
-            view.Init();
+            if(!InternalView.BlockReinit)
+                view.Init();
+
             external.Show();
         }
 
@@ -1018,6 +1020,7 @@ namespace DeOps.Interface
             SuspendLayout();
             InternalPanel.Controls.Clear();
 
+            InternalView.BlockReinit = true;
             OnShowExternal(InternalView);
             InternalView = null;
 

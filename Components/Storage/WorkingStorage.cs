@@ -489,7 +489,10 @@ namespace DeOps.Components.Storage
                     folder = GetLocalFolder(e.FullPath);
 
                     if (folder != null)
-                        LockFolder(folder.GetPath(), folder, true);
+                    {
+                        List<LockError> errors = new List<LockError>();
+                        LockFolder(folder.GetPath(), folder, true, errors);
+                    }
                 }
 
                 Storages.CallFolderUpdate(ProjectID, parent, folder != null ? folder.Info.UID : 0, WorkingChange.Updated);
@@ -651,6 +654,9 @@ namespace DeOps.Components.Storage
                 int count = 0;
                 foreach (StorageFile archive in file.Archived)
                 {
+                    if (file.Info.HashID == 0 || file.Info.InternalHash == null)
+                        continue; // happens if file is still being hashed and auto-save is called
+
                     if (commit)
                     {
                         archive.RemoveFlag(StorageFlags.Modified);
@@ -664,12 +670,15 @@ namespace DeOps.Components.Storage
                 }
 
                 // integrated
-                foreach (StorageFile change in file.Integrated.Values)
+                foreach (ulong who in file.Integrated.Keys)
                 {
-                    if (commit)
-                        change.RemoveFlag(StorageFlags.Modified);
+                    StorageFile integrated = (StorageFile) file.Integrated[who];
 
-                    Protocol.WriteToFile(change, stream);
+                    if (commit)
+                        integrated.RemoveFlag(StorageFlags.Modified);
+
+                    integrated.IntegratedID = who;
+                    Protocol.WriteToFile(integrated, stream);
                 }
             }
 
@@ -705,15 +714,15 @@ namespace DeOps.Components.Storage
             }
         }
 
-        internal void LockAll()
+        internal void LockAll(List<LockError> errors )
         {
-            LockFolder("", RootFolder, true);
+            // make sure files/folder we care about are deleted
+
+            LockFolder("", RootFolder, true, errors);
         }
 
-        internal void LockFolder(string dirpath, LocalFolder folder, bool subs)
+        internal void LockFolder(string dirpath, LocalFolder folder, bool subs, List<LockError> errors )
         {
-            List<LockError> errors = new List<LockError>();
-
             foreach (LocalFile file in folder.Files.Values)
                 Storages.LockFileCompletely(Core.LocalDhtID, ProjectID, dirpath, file.Archived, errors);
 
@@ -721,7 +730,7 @@ namespace DeOps.Components.Storage
 
             if (subs)
                 foreach (LocalFolder subfolder in folder.Folders.Values)
-                    LockFolder(dirpath + Path.DirectorySeparatorChar + subfolder.Info.Name, subfolder, subs);
+                    LockFolder(dirpath + Path.DirectorySeparatorChar + subfolder.Info.Name, subfolder, subs, errors);
 
             try
             {
@@ -740,6 +749,9 @@ namespace DeOps.Components.Storage
 
         internal void SetFileDetails(string path, string newName)
         {
+            if(newName.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
+                return;
+
             string oldName = Path.GetFileName(path);
             path = Utilities.StripOneLevel(path);
 
@@ -766,6 +778,9 @@ namespace DeOps.Components.Storage
 
         internal void SetFolderDetails(string path, string newName)
         {
+            if (newName.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
+                return;
+
             string oldName = Path.GetFileName(path);
             string parentPath = Utilities.StripOneLevel(path);
        
@@ -807,12 +822,11 @@ namespace DeOps.Components.Storage
         {
             // put file in local's integration map for this user id
 
-
             LocalFolder folder = GetLocalFolder(path);
             LocalFile file = folder.Files[change.UID];
 
-            file.Integrated[who] = change.Clone();
-            change.SetFlag(StorageFlags.Modified);
+            file.Integrated[who] = change.Clone(); 
+            // dont set file.info modified, because hash hasn't changed
 
             Modified = true;
             PeriodicSave = true;
@@ -829,7 +843,6 @@ namespace DeOps.Components.Storage
             LocalFile file = folder.Files[change.UID];
 
             file.Integrated.Remove(who);
-            file.Info.SetFlag(StorageFlags.Modified);
 
             Modified = true;
             PeriodicSave = true;

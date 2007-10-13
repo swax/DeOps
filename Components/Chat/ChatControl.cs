@@ -33,6 +33,7 @@ namespace DeOps.Components.Chat
             Core.RudpControl.SessionData[ComponentID.Chat] = new SessionDataHandler(Session_Data);
 
             Core.LoadEvent += new LoadHandler(Core_Load);
+            Core.ExitEvent += new ExitHandler(Core_Exit);
         }
 
         void Core_Load()
@@ -45,7 +46,7 @@ namespace DeOps.Components.Chat
                     Link_Update(link);
         }
 
-        internal override void GuiClosing()
+        void Core_Exit()
         {
             if (CreateRoomEvent != null || RemoveRoomEvent != null)
                 throw new Exception("Chat Events not fin'd");

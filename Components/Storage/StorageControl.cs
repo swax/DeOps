@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Windows.Forms;
 
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;
@@ -72,6 +73,7 @@ namespace DeOps.Components.Storage
             Store = Network.Store;
 
             Core.LoadEvent += new LoadHandler(Core_Load);
+            Core.ExitEvent += new ExitHandler(Core_Exit);
             Core.TimerEvent += new TimerHandler(Core_Timer);
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
@@ -136,16 +138,59 @@ namespace DeOps.Components.Storage
             }
         }
 
-        internal override void GuiClosing()
+        void Core_Exit()
         {
+      
+            if(HashingActive())
+            {
+                HashStatus status = new HashStatus(this);
+                status.ShowDialog();
+            }
+
+            // lock down working
+            List<LockError> errors = new List<LockError>();
+
             foreach (WorkingStorage working in Working.Values)
             {
-                working.LockAll();
+                working.LockAll(errors);
 
                 if(working.Modified)
                     working.SaveWorking();
             }
             Working.Clear();
+
+            // delete completely folders made for other user's storages
+            foreach (uint project in Links.ProjectRoots.Keys)
+            {
+                string path = Core.User.RootPath + Path.DirectorySeparatorChar + Links.ProjectNames[project] + " Storage";
+                string local = Links.GetName(Core.LocalDhtID);
+
+                if(Directory.Exists(path))
+                    foreach (string dir in Directory.GetDirectories(path))
+                        if (Path.GetFileName(dir) != local)
+                        {
+                            try
+                            {
+                                Directory.Delete(dir, true);
+                            }
+                            catch (Exception ex)
+                            {
+                                errors.Add(new LockError(dir, "", false, LockErrorType.Blocked));
+                            }
+                        }
+            }
+
+            // security warning: could not secure these files
+            if (errors.Count > 0)
+            {
+                string message = "Security Warning: Not able to delete these files, please do it manually\n";
+
+                foreach (LockError error in errors)
+                    if (error.Type == LockErrorType.Blocked)
+                        message += error.Path;
+
+                MessageBox.Show(message, "De-Ops");
+            }
         }
 
         void Core_Timer()

@@ -103,8 +103,6 @@ namespace DeOps.Components
 
     internal abstract class OpComponent
     {
-        internal virtual void GuiClosing() {}
-
         internal virtual List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
         {
             return null;

@@ -119,7 +119,7 @@ namespace DeOps.Components.Link
             if (Core.LocalDhtID != key &&
                 (!LocalLink.Uplink.ContainsKey(proj) || LocalLink.Uplink[proj].DhtID != key) && 
                 !LocalLink.SearchBranch(proj, LinkMap[key]))
-                menus.Add( new MenuItemInfo("Linkup", LinkRes.link, new EventHandler(Menu_Linkup)));
+                menus.Add( new MenuItemInfo("Trust", LinkRes.link, new EventHandler(Menu_Linkup)));
 
             // confirm
             if (LocalLink.Downlinks.ContainsKey(proj) && LocalLink.Downlinks[proj].Contains(LinkMap[key]))
@@ -127,13 +127,13 @@ namespace DeOps.Components.Link
                 unlink = true;
 
                 if (!LocalLink.Confirmed.ContainsKey(proj) || !LocalLink.Confirmed[proj].Contains(key))
-                    menus.Add(new MenuItemInfo("Confirm Link", LinkRes.confirmlink, new EventHandler(Menu_ConfirmLink)));
+                    menus.Add(new MenuItemInfo("Accept Trust", LinkRes.confirmlink, new EventHandler(Menu_ConfirmLink)));
             }
 
             // unlink
             if ((unlink && LocalLink.Confirmed.ContainsKey(proj) && LocalLink.Confirmed[proj].Contains(key)) || 
                 (LocalLink.Uplink.ContainsKey(proj) && LocalLink.Uplink[proj].DhtID == key))
-                menus.Add(new MenuItemInfo("Unlink", LinkRes.unlink, new EventHandler(Menu_Unlink)));
+                menus.Add(new MenuItemInfo("Revoke Trust", LinkRes.unlink, new EventHandler(Menu_Unlink)));
 
 
             return menus;
@@ -153,9 +153,9 @@ namespace DeOps.Components.Link
                 if (LocalLink.Uplink[proj].Name != null)
                 {
                     string who = LocalLink.Uplink[proj].Name;
-                    string message = "Unlink from " + who + "? To linkup to " + LinkMap[key].Name;
+                    string message = "Transfer trust from " + who + " to " + LinkMap[key].Name + "?";
 
-                    if (MessageBox.Show(Core.GuiMain, message, "Confirm Uplink", MessageBoxButtons.YesNo) == DialogResult.No)
+                    if (MessageBox.Show(Core.GuiMain, message, "Confirm Trust", MessageBoxButtons.YesNo) == DialogResult.No)
                         return;
                 }
 
@@ -1097,7 +1097,7 @@ namespace DeOps.Components.Link
                     LinkUpdate.Invoke(link);
 
                 if (Core.NewsWorthy(link.DhtID, 0, false))
-                    Core.MakeNews("Link updated by " + GetName(link.DhtID), link.DhtID, 0, true, LinkRes.link, null);
+                    Core.MakeNews("Trust updated by " + GetName(link.DhtID), link.DhtID, 0, true, LinkRes.link, null);
             
 
                 // update subs

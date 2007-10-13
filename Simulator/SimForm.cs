@@ -374,7 +374,8 @@ namespace DeOps.Simulator
 
         private void ControlForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            Sim.Shutdown = true;
+            Sim.Exit();
+
             Application.Exit();
         }
 
@@ -403,7 +404,7 @@ namespace DeOps.Simulator
             ContextMenu menu = new ContextMenu();
 
             if(item.Instance.Core == null)
-                menu.MenuItems.Add(new MenuItem("Connect", new EventHandler(Click_Connect)));
+                menu.MenuItems.Add(new MenuItem("Start", new EventHandler(Click_Connect)));
             else
             {
                 MenuItem global = new MenuItem("Global");
@@ -425,7 +426,7 @@ namespace DeOps.Simulator
                 menu.MenuItems.Add(operation);
                 menu.MenuItems.Add(new MenuItem("Console", new EventHandler(Click_Console)));
                 menu.MenuItems.Add(new MenuItem("-"));
-                menu.MenuItems.Add(new MenuItem("Disconnect", new EventHandler(Click_Disconnect)));
+                menu.MenuItems.Add(new MenuItem("Exit", new EventHandler(Click_Disconnect)));
             }
 
             menu.Show(listInstances, e.Location);

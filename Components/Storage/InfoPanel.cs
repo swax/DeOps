@@ -1228,18 +1228,24 @@ namespace DeOps.Components.Storage
 
                     string defaultNote = item.Note == null ? "" : item.Note;
 
-                    GetTextDialog dialog = new GetTextDialog("Edit Note", "Enter note for this item in history", defaultNote);
+                    EditNotes form = new EditNotes();
+                    defaultNote = defaultNote.Replace("<br>", "\r\n");
+                    form.NotesBox.Text = defaultNote;
 
-                    if (dialog.ShowDialog(this) == DialogResult.OK)
-                        if (string.Compare(dialog.ResultBox.Text, defaultNote) != 0)
+                    if (form.ShowDialog(this) == DialogResult.OK)
+                    {
+                        string newNote = form.NotesBox.Text.Replace("\r\n", "<br>");
+
+                        if (string.Compare(newNote, defaultNote) != 0)
                             try
                             {
-                                ParentView.Working.SetNote(CurrentPath, item, IsFile, dialog.ResultBox.Text);
+                                ParentView.Working.SetNote(CurrentPath, item, IsFile, newNote);
                             }
                             catch (Exception ex)
                             {
                                 MessageBox.Show(ex.Message);
                             }
+                    }
                 }
             }
 

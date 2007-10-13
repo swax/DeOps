@@ -98,7 +98,7 @@ namespace DeOps.Components.Link
             Nodes.Add(new LabelNode(""));
 
             // unlinked
-            UnlinkedNode = new LabelNode("Unlinked");
+            UnlinkedNode = new LabelNode("Untrusted");
             UnlinkedNode.Font = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold | FontStyle.Underline, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             
             Nodes.Add(UnlinkedNode);
@@ -120,7 +120,7 @@ namespace DeOps.Components.Link
             if (Nodes.IndexOf(UnlinkedNode) + 1 == Nodes.Count)
                 UnlinkedNode.Text = "";
             else
-                UnlinkedNode.Text = "Unlinked";
+                UnlinkedNode.Text = "Untrusted";
 
 
             EndUpdate();
@@ -490,7 +490,7 @@ namespace DeOps.Components.Link
                 if (Nodes.IndexOf(UnlinkedNode) + 1 == Nodes.Count)
                     UnlinkedNode.Text = "";
                 else
-                    UnlinkedNode.Text = "Unlinked";
+                    UnlinkedNode.Text = "Untrusted";
             }
 
             node.UpdateColor();

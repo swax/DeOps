@@ -11,7 +11,8 @@ namespace DeOps.Interface
     public partial class ViewShell : UserControl
     {
         internal ExternalView External;
-        //todo hi
+
+        internal bool BlockReinit;
 
         public ViewShell()
         {

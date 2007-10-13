@@ -53,6 +53,7 @@ namespace DeOps.Implementation
 
 
     internal delegate void LoadHandler();
+    internal delegate void ExitHandler();
     internal delegate void TimerHandler();
     internal delegate void NewsUpdateHandler(NewsItemInfo info);
 
@@ -98,6 +99,7 @@ namespace DeOps.Implementation
         internal Dictionary<ushort, RudpSocket> CommMap = new Dictionary<ushort, RudpSocket>();
 
         internal event LoadHandler  LoadEvent;
+        internal event ExitHandler  ExitEvent;
         internal event TimerHandler TimerEvent;
         internal event NewsUpdateHandler NewsUpdate;
 
@@ -529,6 +531,9 @@ namespace DeOps.Implementation
             InvokeInterface(NewsUpdate, new NewsItemInfo(message, id, project, showRemote, symbol, onClick));
         }
 
-
+        internal void Exit()
+        {
+            ExitEvent.Invoke();
+        }
     }
 }
