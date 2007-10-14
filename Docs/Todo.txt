@@ -2,7 +2,7 @@
 now
 	cut down storage todo
 	43 crits
-	netork demo, privacy untrusted, customization, component refactor, performance
+	lock resources properly, network demo, privacy from untrusted, customization, component refactor, performance
 
 Testing
 	more accurate replication - link/location/profile/mail
@@ -63,6 +63,7 @@ Interface
 Components
 	General
 		Refactor Components with delegates or something, refactor while building visual component
+			invokeInterface control->gui, gui->interface control functions handle locking of objects (NO locking from gui code)
 		break control into interface comm / control comm so that multiple guis (mobile/mono/wpf) can be implemented easily
 		Many actions in gui isnt piped down into control to fire events back to the interface to signal updates for multiple interface instances
 		component plug-ins / view plugins for private components
@@ -126,8 +127,13 @@ Components
 		
 		how does add/replace work with unlocked files - figure out when doing inheritance	
 
-		on close, hang if still hash processing
-		test locking / unlocking big files, determine if progress bar or notification of some sort needed, maybe queue them like hashing
+		unlock
+			adds file to unlock queue
+			if unlock thread active then status message shows 'Unlocking test.mpg 70%, 2 files left to unlock'
+				also show mouse cursor as hour glass/arrow hybrid if unlocking active
+				on close, hang if still hash processing
+			test locking / unlocking big files, determine if progress bar or notification of some sort needed, maybe queue them like hashing
+		
 		after hash if file modified, and hash is equal to unmodified, remove modified flag
 		
 		folders have red / blue dots in center if subfolders contains changes
