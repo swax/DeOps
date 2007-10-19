@@ -179,9 +179,11 @@ namespace DeOps.Components.Storage
             // unlock files
             List<LockError> errors = new List<LockError>();
 
+            Cursor = Cursors.WaitCursor;
             string fileA = Info.Storages.UnlockFile(TargetID, Info.ParentView.ProjectID, Info.CurrentFolder.GetPath(), Target, TargetHistory, errors);
 
             string fileB = Info.Storages.UnlockFile(selectedID, Info.ParentView.ProjectID, Info.CurrentFolder.GetPath(), selected, selectedHistory, errors);
+            Cursor = Cursors.Default;
 
             if (errors.Count > 0)
             {

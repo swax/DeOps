@@ -1524,6 +1524,34 @@ namespace DeOps.Components.Link
 
             return uplink.DhtID == id;
         }
+
+        internal bool IsInScope(Dictionary<ulong, short> scope, ulong testID, uint project)
+        {
+            List<ulong> uplinks = GetUplinkIDs(testID, project);
+
+            
+            // loop through all the scope permissions
+            foreach (ulong id in scope.Keys)
+            {
+                if (id == testID)
+                    return true;
+
+                if (uplinks.Contains(id))
+                {
+                    if (scope[id] == -1) // everyone below
+                        return true;
+
+                    // i+1 is the levels above test, scope[id] is the # of sub-levels the scope includes
+                    // so if node is 2 levels above (i=2) had a scope[id] >= 2, test would be allowed, otherwise not
+                    int i = uplinks.IndexOf(id) + 1;
+
+                    if (i - scope[id] <= 0)
+                        return true;
+                }
+            }
+
+            return false;
+        }
     }
 
 

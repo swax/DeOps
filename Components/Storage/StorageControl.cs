@@ -885,7 +885,7 @@ namespace DeOps.Components.Storage
                 byte[] id = transform.TransformFinalBlock(hash, 0, hash.Length);
 
                 if (!FileMap.ContainsKey(BitConverter.ToUInt64(id, 0)))
-                    File.Delete(filepath); //crit test
+                    File.Delete(filepath);
             }
         }
 
@@ -1018,6 +1018,10 @@ namespace DeOps.Components.Storage
 
         internal void DownloadFile(ulong id, StorageFile file)
         {
+            // if file still processing return
+            if (file.Hash == null)
+                return;
+
             FileDetails details = new FileDetails(ComponentID.Storage, file.Hash, file.Size, BitConverter.GetBytes(StoragePacket.File));
 
             Core.Transfers.StartDownload(id, details, new object[] { file }, new EndDownloadHandler(EndDownloadFile));
@@ -1082,7 +1086,10 @@ namespace DeOps.Components.Storage
 
             lock (HashQueue)
                 if (!HashQueue.Contains(pack))
+                 
                 {
+                    file.Info.Size = new FileInfo(path).Length; // set so we can get hash status
+
                     // will be reset if file data modified
                     /*file.Info.Size = 0;
                     file.Info.Hash = null;
@@ -1118,6 +1125,7 @@ namespace DeOps.Components.Storage
                 if (pack == null)
                     continue;
 
+                // three steps, hash file, encrypt file, hash encrypted file
                 try
                 {
                     OpFile file = null;
@@ -1131,7 +1139,7 @@ namespace DeOps.Components.Storage
 
                     if (!File.Exists(pack.Path))
                     {
-                        HashQueue.Dequeue();
+                        lock(HashQueue) HashQueue.Dequeue();
                         HashRetry = false;
 
                         continue;
@@ -1156,7 +1164,7 @@ namespace DeOps.Components.Storage
                         if (!Utilities.MemCompare(file.Hash, pack.File.Info.Hash))
                             ReviseFile(pack, info);
 
-                        HashQueue.Dequeue();
+                        lock (HashQueue) HashQueue.Dequeue();
                         HashRetry = false;
 
                         continue;
@@ -1200,12 +1208,18 @@ namespace DeOps.Components.Storage
                         ReviseFile(pack, info);
 
 
-                    HashQueue.Dequeue(); // try to hash until finished without exception (wait for access to file)
+                    lock (HashQueue) HashQueue.Dequeue(); // try to hash until finished without exception (wait for access to file)
                     HashRetry = false; // make sure we only deref once per file
                 }
                 catch (Exception ex)
                 {
                     HashRetry = true;
+
+                    // rotate file to back of queue
+                    lock (HashQueue)
+                        if (HashQueue.Count > 1)
+                            HashQueue.Enqueue(HashQueue.Dequeue());
+
                     Core.OperationNet.UpdateLog("Storage", "Hash thread: " + ex.Message);
                     continue; // file might not exist anymore, name changed, etc..
                 }
@@ -1540,6 +1554,9 @@ namespace DeOps.Components.Storage
             if (item.Name != original.Name)
                 actions = actions | StorageActions.Renamed;
 
+            if (ScopeChanged(item.Scope, original.Scope))
+                actions = actions | StorageActions.Scoped;
+
             if (item.IsFlagged(StorageFlags.Archived) && !original.IsFlagged(StorageFlags.Archived))
                 actions = actions | StorageActions.Deleted;
 
@@ -1554,6 +1571,24 @@ namespace DeOps.Components.Storage
             return actions;
         }
 
+        internal bool ScopeChanged(Dictionary<ulong, short> a, Dictionary<ulong, short> b)
+        {
+            if (a.Count != b.Count)
+                return true;
+
+            foreach (ulong id in a.Keys)
+            {
+                if (!b.ContainsKey(id))
+                    return true;
+
+                if (a[id] != b[id])
+                    return true;
+            }
+
+            return false;
+        }
+
+
         internal List<ulong> GetHigherIDs(ulong id, uint project)
         {
             List<ulong> highers = Links.GetUplinkIDs(id, project);
@@ -1566,12 +1601,6 @@ namespace DeOps.Components.Storage
 
             return highers;
         }
-
-        private void AutoIntegrate()
-        {
-            throw new Exception("The method or operation is not implemented.");
-        }
-
 
         internal bool HashingActive()
         {

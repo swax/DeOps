@@ -1,8 +1,7 @@
 
 now
-	cut down storage todo
-	43 crits
-	lock resources properly, network demo, privacy from untrusted, customization, component refactor, performance
+	43 crits, 13 warnings
+	lock resources properly (timer stuff, network demo, , customization, component refactor, performance
 
 Testing
 	more accurate replication - link/location/profile/mail
@@ -115,39 +114,23 @@ Components
 		shutdown in the middle of the causing load corruption?			
 
 		Goals 
-			star self, blue triangle lower, red triangle higher
-			details visible 
+			***star self, blue triangle lower, red triangle higher
+			***details visible 
 			save branch path when transfering goal <-> schedule
 
 	Storage
-
-		drag files folder over highlights target
-		secure copy / paste can use same folder commands as drag/drop
-		drag into secure storage gives user option to replace what is already there
-		
-		how does add/replace work with unlocked files - figure out when doing inheritance	
-
-		unlock
-			adds file to unlock queue
-			if unlock thread active then status message shows 'Unlocking test.mpg 70%, 2 files left to unlock'
-				also show mouse cursor as hour glass/arrow hybrid if unlocking active
-				on close, hang if still hash processing
-			test locking / unlocking big files, determine if progress bar or notification of some sort needed, maybe queue them like hashing
-		
-		after hash if file modified, and hash is equal to unmodified, remove modified flag
-		
-		folders have red / blue dots in center if subfolders contains changes
-			recurse mark folders up with a reference count, at 0 remove mark ;)
+	
+		drag into secure storage gives user option to replace what is already there, either on disk or locked
+		***auto-inheriting/accepting/replacing should overwrite unlocked on disk, will be saved in history anyways
 		
 		review file references system
-		make note on interface if local file (hash) not present in storage system, like encryption error of some sort causes it to not be placed
-			blue if pending processing, if failed, turn back to grey
-		
-		visibility - who / levels down (these 2 settings replace higher / lower direct etc..)
-			on regional link change do visibility check of local files to see if they still conform, ghost them
-				restored / created - file visible with-in x sub-levels of <user>
-				file only visible with-in x sub-levels of <user>
-						
+		drag files folder over highlights target
+		secure copy / paste can use same folder commands as drag/drop
+
+		visibility
+			***schedule scope (levels down) default inf, use link
+			***board scope (levels down) default 1, use link, needs to queries highers now as well
+
 		$ save storage snapshots (past header file versions) - display at root node	
 		$ signal on comparison page if all files are replicated on network (can go offline and files still exist)
 		
@@ -209,6 +192,17 @@ Core
 		Alert if packet cache has any entries at all
 		check in sim if node sending more than x packets per sec
 		
+	ensure small nets / starting nets can be proxied through global net
+		tcp proxies for non-local ops should be bandwidth throttled
+		connect status should specify proxied through global
+		5 connections in same op but all blocked able to form active op network by proxying throgh global
+		
+	privacy from untrusted
+		mail grey if from untrusted source
+		no posts allowed from untrusted
+		IM settings allow host to not allow messages from untrusted
+		refuse replication of network pieces to blacklisted, inherit blacklist from higher
+			dont not replicate to untrusted because then each id needs to be trust verified continually
 		
 Simulator
 	add collection test to simulator by randomly accessing de-op collections in seperate sim thread
@@ -240,7 +234,6 @@ Future
 	Ping includes auth test for id
     variable internal / private key schemes and sizes, ECC
     linear contact merging / split system?
-    5 connections in same op but all blocked able to form active op network by proxying throgh global
     customizable logo/icons/password reqs (length, numerics, case)
     good leadership/management guide
     web based problem simulation, people assigned roles, sim starts, try to solve, katrina sim ;)

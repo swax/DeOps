@@ -158,7 +158,7 @@ namespace DeOps.Components.Storage
     enum StorageFlags : ushort { None = 0, Archived = 1, Unlocked = 2, Modified = 4 }
 
     [Flags]
-    enum StorageActions { None = 0, Created = 1, Modified = 2, Renamed = 4, Deleted = 8, Restored = 16}
+    enum StorageActions { None = 0, Created = 1, Modified = 2, Renamed = 4, Deleted = 8, Restored = 16, Scoped = 32}
 
     internal class StorageItem : G2Packet
     {
@@ -171,6 +171,9 @@ namespace DeOps.Components.Storage
         internal string Note;
 
         internal byte Revs;
+
+        internal Dictionary<ulong, short> Scope = new Dictionary<ulong, short>();
+
 
         internal bool IsFlagged(StorageFlags test)
         {
@@ -198,6 +201,7 @@ namespace DeOps.Components.Storage
         const byte Packet_Note = 0x70;
         const byte Packet_Revs = 0x90;
         const byte Packet_Integrated = 0xA0;
+        const byte Packet_Scope = 0xB0;
 
         internal ulong ParentUID;
 
@@ -222,9 +226,19 @@ namespace DeOps.Components.Storage
                 protocol.WritePacket(folder, Packet_Revs, BitConverter.GetBytes(Revs));
                 protocol.WritePacket(folder, Packet_Integrated, BitConverter.GetBytes(IntegratedID));
 
+                byte[] scopefield = new byte[10];
+                foreach (ulong id in Scope.Keys)
+                {
+                    BitConverter.GetBytes(id).CopyTo(scopefield, 0);
+                    BitConverter.GetBytes(Scope[id]).CopyTo(scopefield, 8);
+
+                    protocol.WritePacket(folder, Packet_Scope, scopefield);
+                }
+
                 return protocol.WriteFinish();
             }
         }
+
 
         internal static StorageFolder Decode(G2Protocol protocol, byte[] data)
         {
@@ -282,6 +296,10 @@ namespace DeOps.Components.Storage
                     case Packet_Integrated:
                         folder.IntegratedID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
                         break;
+
+                    case Packet_Scope:
+                        folder.Scope[BitConverter.ToUInt64(child.Data, child.PayloadPos)] = BitConverter.ToInt16(child.Data, child.PayloadPos + 8);
+                        break;
                 }
             }
 
@@ -320,6 +338,7 @@ namespace DeOps.Components.Storage
         const byte Packet_InternalHash = 0xB0;
         const byte Packet_Revs = 0xD0;
         const byte Packet_Integrated = 0xE0;
+        const byte Packet_Scope = 0xF0;
 
         internal long Size;
         internal byte[] Hash;
@@ -347,7 +366,7 @@ namespace DeOps.Components.Storage
                 protocol.WritePacket(file, Packet_Name, protocol.UTF.GetBytes(Name));
                 protocol.WritePacket(file, Packet_Date, BitConverter.GetBytes(Date.ToBinary()));
 
-                StorageFlags netFlags = Flags & ~(StorageFlags.Modified | StorageFlags.Unlocked);
+                StorageFlags netFlags = Flags & ~(StorageFlags.Unlocked); // allow modified for working
                 protocol.WritePacket(file, Packet_Flags, BitConverter.GetBytes((ushort)netFlags));
                 protocol.WritePacket(file, Packet_Revs, BitConverter.GetBytes(Revs));
                 protocol.WritePacket(file, Packet_Integrated, BitConverter.GetBytes(IntegratedID));
@@ -357,6 +376,15 @@ namespace DeOps.Components.Storage
                 protocol.WritePacket(file, Packet_FileKey, FileKey.Key);
                 protocol.WritePacket(file, Packet_InternalSize, BitConverter.GetBytes(InternalSize));
                 protocol.WritePacket(file, Packet_InternalHash, InternalHash);
+
+                byte[] scopefield = new byte[10];
+                foreach (ulong id in Scope.Keys)
+                {
+                    BitConverter.GetBytes(id).CopyTo(scopefield, 0);
+                    BitConverter.GetBytes(Scope[id]).CopyTo(scopefield, 8);
+
+                    protocol.WritePacket(file, Packet_Scope, scopefield);
+                }
 
                 if (Note != null)
                     protocol.WritePacket(file, Packet_Note, protocol.UTF.GetBytes(Note));
@@ -439,6 +467,10 @@ namespace DeOps.Components.Storage
 
                     case Packet_Integrated:
                         file.IntegratedID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Scope:
+                        file.Scope[BitConverter.ToUInt64(child.Data, child.PayloadPos)] = BitConverter.ToInt16(child.Data, child.PayloadPos + 8);
                         break;
                 }
             }

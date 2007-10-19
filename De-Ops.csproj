@@ -183,13 +183,13 @@
       <DependentUpon>EditPlanItem.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.Designer.cs">
       <DependentUpon>GoalPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.Designer.cs">
       <DependentUpon>GoalsView.cs</DependentUpon>
@@ -636,6 +636,8 @@
     <None Include="Graphics\storage\close.gif" />
     <None Include="Graphics\storage\extend2.gif" />
     <None Include="Graphics\storage\accept.gif" />
+    <None Include="Graphics\storage\InHigher.png" />
+    <None Include="Graphics\storage\InLower.png" />
     <Content Include="Implementation\Design.txt" />
     <None Include="Interface\Res\views.png" />
     <None Include="Interface\Res\star.png" />

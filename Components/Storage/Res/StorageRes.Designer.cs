@@ -172,6 +172,20 @@ namespace DeOps.Components.Storage {
             }
         }
         
+        internal static System.Drawing.Bitmap InHigher {
+            get {
+                object obj = ResourceManager.GetObject("InHigher", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap InLower {
+            get {
+                object obj = ResourceManager.GetObject("InLower", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Bitmap Locked {
             get {
                 object obj = ResourceManager.GetObject("Locked", resourceCulture);

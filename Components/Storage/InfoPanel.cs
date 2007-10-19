@@ -188,7 +188,7 @@ namespace DeOps.Components.Storage
 
                                         <?=table?>
                                         <br>
-                                        <a href='#' onclick='togglehelp()'>Help</a>
+                                        <a href='http://cancel' onclick='togglehelp()'>Help</a>
                                         <div id='helpDiv' style='display:none;'>
                                             
                                             Drag files in to add them to your secure storage. Once changes are saved they are inherited by those below you.
@@ -1027,6 +1027,12 @@ namespace DeOps.Components.Storage
             bool history = false;
             ulong UserID = ParentView.DhtID;
 
+            if (parts[0] == "cancel")
+            {
+                e.Cancel = true;
+                return;
+            }
+
             if (parts[0] == "main")
             {
                 if (IsFile)
@@ -1059,6 +1065,7 @@ namespace DeOps.Components.Storage
 
                 if (parts[1] == "unlock")
                 {
+                    Cursor = Cursors.WaitCursor;
                     if (IsFile)
                     {
                         ParentView.UnlockFile(CurrentFile);
@@ -1083,6 +1090,7 @@ namespace DeOps.Components.Storage
                         ParentView.RefreshFileList();
                         RefreshItem();
                     }
+                    Cursor = Cursors.Default;
                 }
 
                 if (parts[1] == "openfolder")
@@ -1255,7 +1263,9 @@ namespace DeOps.Components.Storage
             {
                 List<LockError> errors = new List<LockError>();
 
+                Cursor = Cursors.WaitCursor;
                 string finalpath = Storages.UnlockFile(UserID, ParentView.ProjectID, CurrentFolder.GetPath(), file, history, errors);
+                Cursor = Cursors.Default;
 
                 if (finalpath != null && File.Exists(finalpath))
                     System.Diagnostics.Process.Start(finalpath);
@@ -1372,7 +1382,19 @@ namespace DeOps.Components.Storage
                     status = "Failed to Compare";
 
                 else
+                {
                     status = " at " + Storages.StorageMap[id].Header.Date.ToString();
+
+                    if (ParentView.ChangeCount.ContainsKey(id) && ParentView.ChangeCount[id] > 0)
+                    {
+                        int changes = ParentView.ChangeCount[id];
+
+                        status += ", " + changes.ToString() + " Change";
+
+                        if (changes > 1)
+                            status += "s";
+                    }
+                }
             }
 
             return status;

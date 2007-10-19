@@ -32,9 +32,10 @@ namespace DeOps.Components.Storage
             DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DetailsForm));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.EditLink = new System.Windows.Forms.LinkLabel();
             this.RemoveLink = new System.Windows.Forms.LinkLabel();
             this.AddLink = new System.Windows.Forms.LinkLabel();
-            this.containerListViewEx1 = new DeOps.Interface.TLVex.ContainerListViewEx();
+            this.VisList = new DeOps.Interface.TLVex.ContainerListViewEx();
             this.ExitButton = new System.Windows.Forms.Button();
             this.OkButton = new System.Windows.Forms.Button();
             this.NameBox = new System.Windows.Forms.TextBox();
@@ -49,45 +50,60 @@ namespace DeOps.Components.Storage
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.EditLink);
             this.groupBox1.Controls.Add(this.RemoveLink);
             this.groupBox1.Controls.Add(this.AddLink);
-            this.groupBox1.Controls.Add(this.containerListViewEx1);
-            this.groupBox1.Location = new System.Drawing.Point(12, 69);
+            this.groupBox1.Controls.Add(this.VisList);
+            this.groupBox1.Location = new System.Drawing.Point(12, 71);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(229, 140);
+            this.groupBox1.Size = new System.Drawing.Size(237, 180);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Visibility";
+            this.groupBox1.Text = "Restrict Scope";
+            // 
+            // EditLink
+            // 
+            this.EditLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.EditLink.AutoSize = true;
+            this.EditLink.Location = new System.Drawing.Point(97, 161);
+            this.EditLink.Name = "EditLink";
+            this.EditLink.Size = new System.Drawing.Size(25, 13);
+            this.EditLink.TabIndex = 8;
+            this.EditLink.TabStop = true;
+            this.EditLink.Text = "Edit";
+            this.EditLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.EditLink_LinkClicked);
             // 
             // RemoveLink
             // 
             this.RemoveLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.RemoveLink.AutoSize = true;
-            this.RemoveLink.Location = new System.Drawing.Point(38, 124);
+            this.RemoveLink.Location = new System.Drawing.Point(44, 161);
             this.RemoveLink.Name = "RemoveLink";
             this.RemoveLink.Size = new System.Drawing.Size(47, 13);
             this.RemoveLink.TabIndex = 2;
             this.RemoveLink.TabStop = true;
             this.RemoveLink.Text = "Remove";
+            this.RemoveLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.RemoveLink_LinkClicked);
             // 
             // AddLink
             // 
             this.AddLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.AddLink.AutoSize = true;
-            this.AddLink.Location = new System.Drawing.Point(6, 124);
+            this.AddLink.Location = new System.Drawing.Point(12, 161);
             this.AddLink.Name = "AddLink";
             this.AddLink.Size = new System.Drawing.Size(26, 13);
             this.AddLink.TabIndex = 1;
             this.AddLink.TabStop = true;
             this.AddLink.Text = "Add";
+            this.AddLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.AddLink_LinkClicked);
             // 
-            // containerListViewEx1
+            // VisList
             // 
-            this.containerListViewEx1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            this.VisList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.containerListViewEx1.BackColor = System.Drawing.SystemColors.Window;
-            this.containerListViewEx1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.VisList.BackColor = System.Drawing.SystemColors.Window;
+            this.VisList.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             toggleColumnHeader1.Hovered = false;
             toggleColumnHeader1.Image = null;
             toggleColumnHeader1.Index = 0;
@@ -97,7 +113,7 @@ namespace DeOps.Components.Storage
             toggleColumnHeader1.Text = "Person";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 125;
+            toggleColumnHeader1.Width = 133;
             toggleColumnHeader2.Hovered = false;
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
@@ -107,31 +123,31 @@ namespace DeOps.Components.Storage
             toggleColumnHeader2.Text = "Sub-Levels";
             toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader2.Visible = true;
-            this.containerListViewEx1.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
+            this.VisList.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader1,
             toggleColumnHeader2});
-            this.containerListViewEx1.ColumnSortColor = System.Drawing.Color.Gainsboro;
-            this.containerListViewEx1.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.containerListViewEx1.DisableHorizontalScroll = true;
-            this.containerListViewEx1.GridLineColor = System.Drawing.Color.WhiteSmoke;
-            this.containerListViewEx1.HeaderMenu = null;
-            this.containerListViewEx1.ItemMenu = null;
-            this.containerListViewEx1.LabelEdit = false;
-            this.containerListViewEx1.Location = new System.Drawing.Point(6, 19);
-            this.containerListViewEx1.Name = "containerListViewEx1";
-            this.containerListViewEx1.RowSelectColor = System.Drawing.SystemColors.Highlight;
-            this.containerListViewEx1.RowTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.containerListViewEx1.Size = new System.Drawing.Size(217, 102);
-            this.containerListViewEx1.SmallImageList = null;
-            this.containerListViewEx1.StateImageList = null;
-            this.containerListViewEx1.TabIndex = 0;
-            this.containerListViewEx1.Text = "containerListViewEx1";
+            this.VisList.ColumnSortColor = System.Drawing.Color.Gainsboro;
+            this.VisList.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
+            this.VisList.DisableHorizontalScroll = true;
+            this.VisList.GridLineColor = System.Drawing.Color.WhiteSmoke;
+            this.VisList.HeaderMenu = null;
+            this.VisList.ItemMenu = null;
+            this.VisList.LabelEdit = false;
+            this.VisList.Location = new System.Drawing.Point(6, 19);
+            this.VisList.Name = "VisList";
+            this.VisList.RowSelectColor = System.Drawing.SystemColors.Highlight;
+            this.VisList.RowTrackColor = System.Drawing.Color.WhiteSmoke;
+            this.VisList.Size = new System.Drawing.Size(225, 139);
+            this.VisList.SmallImageList = null;
+            this.VisList.StateImageList = null;
+            this.VisList.TabIndex = 0;
+            this.VisList.Text = "VisList";
             // 
             // ExitButton
             // 
             this.ExitButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ExitButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.ExitButton.Location = new System.Drawing.Point(166, 219);
+            this.ExitButton.Location = new System.Drawing.Point(174, 266);
             this.ExitButton.Name = "ExitButton";
             this.ExitButton.Size = new System.Drawing.Size(75, 23);
             this.ExitButton.TabIndex = 2;
@@ -142,7 +158,7 @@ namespace DeOps.Components.Storage
             // OkButton
             // 
             this.OkButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.OkButton.Location = new System.Drawing.Point(85, 219);
+            this.OkButton.Location = new System.Drawing.Point(93, 266);
             this.OkButton.Name = "OkButton";
             this.OkButton.Size = new System.Drawing.Size(75, 23);
             this.OkButton.TabIndex = 3;
@@ -156,7 +172,7 @@ namespace DeOps.Components.Storage
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.NameBox.Location = new System.Drawing.Point(51, 12);
             this.NameBox.Name = "NameBox";
-            this.NameBox.Size = new System.Drawing.Size(190, 20);
+            this.NameBox.Size = new System.Drawing.Size(198, 20);
             this.NameBox.TabIndex = 4;
             // 
             // label6
@@ -188,9 +204,11 @@ namespace DeOps.Components.Storage
             // 
             // DetailsForm
             // 
+            this.AcceptButton = this.OkButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(253, 254);
+            this.CancelButton = this.ExitButton;
+            this.ClientSize = new System.Drawing.Size(261, 301);
             this.Controls.Add(this.label8);
             this.Controls.Add(this.SizeLabel);
             this.Controls.Add(this.label6);
@@ -217,8 +235,9 @@ namespace DeOps.Components.Storage
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label SizeLabel;
         private System.Windows.Forms.Label label8;
-        private DeOps.Interface.TLVex.ContainerListViewEx containerListViewEx1;
+        private DeOps.Interface.TLVex.ContainerListViewEx VisList;
         private System.Windows.Forms.LinkLabel RemoveLink;
         private System.Windows.Forms.LinkLabel AddLink;
+        private System.Windows.Forms.LinkLabel EditLink;
     }
 }

@@ -654,7 +654,7 @@ namespace DeOps.Components.Storage
                 int count = 0;
                 foreach (StorageFile archive in file.Archived)
                 {
-                    if (file.Info.HashID == 0 || file.Info.InternalHash == null)
+                    if (file.Info.HashID == 0 || file.Info.Hash == null)
                         continue; // happens if file is still being hashed and auto-save is called
 
                     if (commit)
@@ -747,10 +747,15 @@ namespace DeOps.Components.Storage
         }
 
 
-        internal void SetFileDetails(string path, string newName)
+        internal void SetFileDetails(string path, string newName, Dictionary<ulong, short> scope)
         {
-            if(newName.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
-                return;
+            if (newName.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
+                throw new Exception("Name Contains Invalid Characters");
+
+            // check that scope includes self
+            if (!Core.Links.IsInScope(scope, Core.LocalDhtID, ProjectID))
+                throw new Exception("Visibility Must Include Yourself");
+                
 
             string oldName = Path.GetFileName(path);
             path = Utilities.StripOneLevel(path);
@@ -760,26 +765,40 @@ namespace DeOps.Components.Storage
             LocalFile file = folder.GetFile(oldName);
 
             bool renamed = file.Info.Name.CompareTo(newName) != 0;
+            bool scopeChanged = Storages.ScopeChanged(scope, file.Info.Scope);
 
             // if unlocked try to rename
             if (renamed && file.Info.IsFlagged(StorageFlags.Unlocked))
                 File.Move(RootPath + Path.DirectorySeparatorChar + path + Path.DirectorySeparatorChar + oldName, RootPath + Path.DirectorySeparatorChar + path + Path.DirectorySeparatorChar + newName);
 
+            
+            if (!renamed && !scopeChanged)
+                return;
+
             // apply changes
+            ReadyChange(file);
+
             if (renamed)
             {
-                ReadyChange(file);
                 file.Info.Note = "from " + file.Info.Name + " to " + newName;
                 file.Info.Name = newName;
-
-                Storages.CallFileUpdate(ProjectID, path, file.Info.UID, WorkingChange.Updated);
             }
+
+            if (scopeChanged)
+                file.Info.Scope = scope;
+
+            Storages.CallFileUpdate(ProjectID, path, file.Info.UID, WorkingChange.Updated);
         }
 
-        internal void SetFolderDetails(string path, string newName)
+
+        internal void SetFolderDetails(string path, string newName, Dictionary<ulong, short> scope)
         {
             if (newName.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
-                return;
+                throw new Exception("Name Contains Invalid Characters");
+
+            // check that scope includes self
+            if (!Core.Links.IsInScope(scope, Core.LocalDhtID, ProjectID))
+                throw new Exception("Visibility Must Include Yourself");
 
             string oldName = Path.GetFileName(path);
             string parentPath = Utilities.StripOneLevel(path);
@@ -788,20 +807,28 @@ namespace DeOps.Components.Storage
             LocalFolder folder = GetLocalFolder(path);
 
             bool renamed = folder.Info.Name.CompareTo(newName) != 0;
+            bool scopeChanged = Storages.ScopeChanged(scope, folder.Info.Scope);
 
             // if unlocked try to rename
             if (renamed && folder.Info.IsFlagged(StorageFlags.Unlocked))
                 Directory.Move(RootPath + Path.DirectorySeparatorChar + parentPath + Path.DirectorySeparatorChar + oldName, RootPath + Path.DirectorySeparatorChar + parentPath + Path.DirectorySeparatorChar + newName);
 
+            if (!renamed && !scopeChanged)
+                return;
+
             // apply changes
+            ReadyChange(folder);
+           
             if (renamed)
             {
-                ReadyChange(folder);
                 folder.Info.Note = "from " + folder.Info.Name + " to " + newName;
                 folder.Info.Name = newName;
-
-                Storages.CallFolderUpdate(ProjectID, parentPath, folder.Info.UID, WorkingChange.Updated);
             }
+
+            if (scopeChanged)
+                folder.Info.Scope = scope;
+
+            Storages.CallFolderUpdate(ProjectID, parentPath, folder.Info.UID, WorkingChange.Updated);
         }
 
         internal void ArchiveFile(string path, string name)
@@ -1018,6 +1045,7 @@ namespace DeOps.Components.Storage
                 ulong currentUID = 0;
                 LocalFolder currentFolder = RootFolder;
                 LocalFile currentFile = null;
+                bool ignoreCurrent = false;
                 bool readingProject = false;   
 
                 G2Header header = null;
@@ -1049,6 +1077,12 @@ namespace DeOps.Components.Storage
                                 // set new id
                                 currentUID = readFolder.UID;
 
+                                // check scope
+                                ignoreCurrent = false;
+                                if (readFolder.Scope.Count > 0 && !Core.Links.IsInScope(readFolder.Scope, Core.LocalDhtID, ProjectID))
+                                    ignoreCurrent = true;
+
+
                                 bool added = false;
 
                                 while (!added)
@@ -1062,6 +1096,13 @@ namespace DeOps.Components.Storage
                                         // if doesnt match
                                         else
                                         {
+                                            // if ignoring, add folder so we can traverse id's file, but dont save changes to local storage mapping
+                                            if (ignoreCurrent)
+                                            {
+                                                currentFolder = new LocalFolder(currentFolder, readFolder);
+                                                break;
+                                            }
+
                                             // check for conflicting name
                                             foreach (LocalFolder subfolder in currentFolder.Folders.Values)
                                                 if (!subfolder.Info.IsFlagged(StorageFlags.Archived) && subfolder.Info.Name == readFolder.Name)
@@ -1087,7 +1128,7 @@ namespace DeOps.Components.Storage
                             }
 
                             // if file does not equal null
-                            if (currentFolder != null)
+                            if (currentFolder != null && !ignoreCurrent)
                             {
                                 // log change if file newer than ours
                                 // if if not in higher's history 
@@ -1098,7 +1139,7 @@ namespace DeOps.Components.Storage
                                 if (readFolder.Date >= currentFolder.Info.Date)
                                     if (readFolder.IntegratedID == 0 ||
                                         readFolder.IntegratedID == Core.LocalDhtID ||
-                                        Core.Links.IsHigher(Core.LocalDhtID, ProjectID))
+                                        Core.Links.IsAdjacent(readFolder.IntegratedID, ProjectID))
                                         currentFolder.AddHigherChange(id, readFolder);
                             }
 
@@ -1121,6 +1162,14 @@ namespace DeOps.Components.Storage
 
                                 currentFile = null;
 
+                                // check scope
+                                ignoreCurrent = false;
+                                if (readFile.Scope.Count > 0 && !Core.Links.IsInScope(readFile.Scope, Core.LocalDhtID, ProjectID))
+                                {
+                                    ignoreCurrent = true;
+                                    continue;
+                                }
+
                                 // if file exists with UID
                                 if (currentFolder.Files.ContainsKey(currentUID))
                                     currentFile = currentFolder.Files[currentUID];
@@ -1142,12 +1191,12 @@ namespace DeOps.Components.Storage
                             }
 
                             // if file does not equal null
-                            if (currentFile != null)
+                            if (currentFile != null && !ignoreCurrent)
                             {
                                 if (readFile.Date >= currentFile.Info.Date)
                                     if (readFile.IntegratedID == 0 ||
                                         readFile.IntegratedID == Core.LocalDhtID ||
-                                        Core.Links.IsHigher(Core.LocalDhtID, ProjectID))
+                                        Core.Links.IsAdjacent(readFile.IntegratedID, ProjectID))
                                         currentFile.AddHigherChange(id, readFile);
                             }
                           

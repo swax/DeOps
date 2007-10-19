@@ -222,6 +222,7 @@ namespace DeOps.Components.Storage
                 case LockErrorType.Existing:
                     //button1.Text = "Overwrite";
 
+                    Cursor = Cursors.WaitCursor;
                     foreach (LockError error in Errors)
                     {
                         // delete existing file
@@ -239,6 +240,8 @@ namespace DeOps.Components.Storage
                         string path = Path.GetDirectoryName(error.Path);
                         Storages.UnlockFile(ParentView.DhtID, ParentView.ProjectID, path.Replace(RootPath, ""), error.File, error.History, NewErrors);
                     }
+                    Cursor = Cursors.Default;
+
                     break;
 
                 case LockErrorType.Missing:
@@ -279,6 +282,8 @@ namespace DeOps.Components.Storage
                     //button2.Text = "Retry";
 
                     // try to unlock again
+                    Cursor = Cursors.WaitCursor;
+
                     foreach (LockError error in Errors)
                         if (error.IsFile)
                         {
@@ -288,6 +293,8 @@ namespace DeOps.Components.Storage
                         // dont know to unlock subs or not
                         else
                             ParentView.UnlockFolder(ParentView.GetFolderNode(error.Path.Replace(RootPath, "")), error.Subs, NewErrors);
+
+                    Cursor = Cursors.Default;
 
                     break;
 

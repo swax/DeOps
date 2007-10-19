@@ -44,6 +44,8 @@ namespace DeOps.Components.Storage
         internal List<ulong> CurrentDiffs = new List<ulong>();
         internal List<ulong> FailedDiffs = new List<ulong>();
 
+        internal Dictionary<ulong, int> ChangeCount = new Dictionary<ulong, int>();
+
         Dictionary<ulong, RescanFolder> RescanFolderMap = new Dictionary<ulong, RescanFolder>();
         int NextRescan;
 
@@ -128,6 +130,13 @@ namespace DeOps.Components.Storage
             FolderTreeView.SmallImageList.Add(StorageRes.Folder);
             FolderTreeView.SmallImageList.Add(StorageRes.GhostFolder);
 
+            FolderTreeView.OverlayImages.Add(StorageRes.Higher);
+            FolderTreeView.OverlayImages.Add(StorageRes.Lower);
+            FolderTreeView.OverlayImages.Add(StorageRes.Temp);
+            FolderTreeView.OverlayImages.Add(StorageRes.InHigher);
+            FolderTreeView.OverlayImages.Add(StorageRes.InLower);
+
+
             FileIcons.Add(new Bitmap(16, 16));
             FileIcons.Add(StorageRes.Ghost);
             FileIcons.Add(StorageRes.Folder);
@@ -137,10 +146,9 @@ namespace DeOps.Components.Storage
             FileListView.OverlayImages.Add(StorageRes.Lower);
             FileListView.OverlayImages.Add(StorageRes.DownloadSmall);
             FileListView.OverlayImages.Add(StorageRes.Temp);
+            FileListView.OverlayImages.Add(StorageRes.InHigher);
+            FileListView.OverlayImages.Add(StorageRes.InLower);
 
-            FolderTreeView.OverlayImages.Add(StorageRes.Higher);
-            FolderTreeView.OverlayImages.Add(StorageRes.Lower);
-            FolderTreeView.OverlayImages.Add(StorageRes.Temp);
 
             SelectedInfo.Init(this);
 
@@ -284,8 +292,12 @@ namespace DeOps.Components.Storage
 
 
             if (RootFolder != null)
+            {
                 RootFolder.Expand();
-            
+                
+                bool high = false, low = false;
+                AnalyzeChanges(RootFolder, true, ref high, ref low);
+            }
 
             bool showDiffs = SelectedInfo.DiffsView; // save diffs view mode here because selectFolder resets it
 
@@ -320,7 +332,7 @@ namespace DeOps.Components.Storage
 
                 // if remote doesnt have any record of local file, ignore
 
-
+            ChangeCount[id] = 0;
 
             if (!Storages.StorageMap.ContainsKey(id))
             {
@@ -371,6 +383,11 @@ namespace DeOps.Components.Storage
 
                             remoteUID = folder.UID;
 
+                            // check scope
+                            bool ignore = false;
+                            if (folder.Scope.Count > 0 && !Links.IsInScope(folder.Scope, DhtID, ProjectID))
+                                ignore = true;
+
                             bool added = false;
 
                             while (!added)
@@ -383,8 +400,15 @@ namespace DeOps.Components.Storage
 
                                     // else add folder as temp, mark as changed
                                     else
-                                        currentFolder = currentFolder.AddFolderInfo(folder, true);
-
+                                    {
+                                        if (ignore) // temp so traverse works, but not saved in structure
+                                        {
+                                            currentFolder = new FolderNode(this, folder, currentFolder, false);
+                                            break;
+                                        }
+                                        else
+                                            currentFolder = currentFolder.AddFolderInfo(folder, true);
+                                    }
 
                                     bool found = false;
 
@@ -428,6 +452,10 @@ namespace DeOps.Components.Storage
                                 continue;
 
                             remoteUID = file.UID;
+
+                            // check scope
+                            if (file.Scope.Count > 0 && !Links.IsInScope(file.Scope, DhtID, ProjectID))
+                                continue;
 
                             FileItem currentFile = null;
 
@@ -522,6 +550,55 @@ namespace DeOps.Components.Storage
                 RemoveDiff(id, sub);
         }
 
+        private void AnalyzeChanges(FolderNode folder, bool expand, ref bool showHigher, ref bool showLower)
+        {
+            // look at files for changes
+            foreach (FileItem file in folder.Files.Values)
+                foreach (ulong id in file.GetRealChanges().Keys)
+                {
+                    ChangeCount[id]++;
+
+                    if (HigherIDs.Contains(id))
+                        showHigher = true;
+                    else
+                        showLower = true;
+                }
+            // look at folders for changes
+            foreach (FolderNode sub in folder.Folders.Values)
+            {
+                foreach (ulong id in sub.GetRealChanges().Keys)
+                {
+                    ChangeCount[id]++;
+
+                    if (HigherIDs.Contains(id))
+                        showHigher = true;
+                    else
+                        showLower = true;
+                }
+
+                // recurse
+                bool subChangesHigh = false, subChangesLow = false;
+
+                AnalyzeChanges(sub, expand, ref subChangesHigh, ref subChangesLow);
+
+                if(subChangesHigh)
+                    showHigher = true;
+                if(subChangesLow)
+                    showLower = true;
+            }
+
+            folder.ContainsHigherChanges = showHigher;
+            folder.ContainsLowerChanges = showLower;
+
+            if (showHigher || showLower)
+            {
+                folder.UpdateOverlay();
+
+                if (expand)
+                    folder.EnsureVisible();
+            }
+        }
+
         private void Links_Update(ulong key)
         {
             // check if removed
@@ -563,12 +640,11 @@ namespace DeOps.Components.Storage
 
         private bool ListsMatch(List<ulong> first, List<ulong> second)
         {
+            if (first.Count != second.Count)
+                return false;
+
             foreach (ulong id in first)
                 if (!second.Contains(id))
-                    return false;
-
-            foreach (ulong id in second)
-                if (!first.Contains(id))
                     return false;
 
             return true;
@@ -584,6 +660,9 @@ namespace DeOps.Components.Storage
             {
                 RemoveDiff(storage.DhtID, RootFolder);
                 ApplyDiff(storage.DhtID);
+
+                bool high = false, low = false;
+                AnalyzeChanges(RootFolder, false, ref high, ref low);
 
                 SelectedInfo.UpdateDiffView(storage.DhtID);
 
@@ -1682,6 +1761,8 @@ namespace DeOps.Components.Storage
             List<LockError> errors = new List<LockError>();
             List<FolderNode> folders = new List<FolderNode>();
 
+            Cursor = Cursors.WaitCursor;
+
             // folder view
             if (LastSelectedView == FolderTreeView)
             {
@@ -1720,6 +1801,8 @@ namespace DeOps.Components.Storage
 
             foreach (FolderNode folder in folders)
                 UnlockFolder(folder, unlockSubs, errors);
+
+            Cursor = Cursors.Default;
 
             RefreshFileList();
             
@@ -1783,8 +1866,6 @@ namespace DeOps.Components.Storage
                         details = new DetailsForm(this, item.Folder);
                         details.ShowDialog(this);
                         return;
-
-                        continue;
                     }
 
                     details = new DetailsForm(this, SelectedFolder, item);
@@ -2640,6 +2721,9 @@ namespace DeOps.Components.Storage
         internal Dictionary<ulong, FolderNode> Folders = new Dictionary<ulong, FolderNode>();
         internal Dictionary<ulong, FileItem> Files = new Dictionary<ulong, FileItem>();
 
+        internal bool ContainsHigherChanges;
+        internal bool ContainsLowerChanges;
+
         //Nodes - contains sub-folders
 
         internal FolderNode(StorageView view, StorageFolder folder, TreeListNode parent, bool temp)
@@ -2782,6 +2866,12 @@ namespace DeOps.Components.Storage
 
             if (showLower)
                 this.Overlays.Add(1);
+
+            if(ContainsHigherChanges)
+                this.Overlays.Add(3);
+
+            if (ContainsLowerChanges)
+                this.Overlays.Add(4);
         }
 
         internal Dictionary<ulong, StorageItem> GetRealChanges()
@@ -2863,7 +2953,7 @@ namespace DeOps.Components.Storage
 
             IsFolder = true;
             ImageIndex = folder.Details.IsFlagged(StorageFlags.Archived) ? 3 : 2;
-            
+
             Details = folder.Details;
             Changes = folder.Changes;
             Temp = folder.Temp;
@@ -2888,7 +2978,14 @@ namespace DeOps.Components.Storage
                 this.Font = View.RegularFont;
 
             if (Details.GetType() == typeof(StorageFile))
-                SubItems[0].Text = Utilities.ByteSizetoString(((StorageFile)Details).InternalSize);
+            {
+                StorageFile file = (StorageFile)Details;
+
+                if (file.Hash == null)
+                    ForeColor = Color.Red; // hash processing, timer will update
+
+                SubItems[0].Text = Utilities.ByteSizetoString(file.InternalSize);
+            }
 
             if (!Temp)
                 SubItems[1].Text = Details.Date.ToString();
@@ -2931,6 +3028,15 @@ namespace DeOps.Components.Storage
 
             if (showLower)
                 Overlays.Add(1);
+
+            if (IsFolder)
+            {
+                if (Folder.ContainsHigherChanges)
+                    this.Overlays.Add(4);
+
+                if (Folder.ContainsLowerChanges)
+                    this.Overlays.Add(5);
+            }
         }
 
         internal Dictionary<ulong, StorageItem> GetRealChanges()
