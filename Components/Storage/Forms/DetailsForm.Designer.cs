@@ -71,6 +71,7 @@ namespace DeOps.Components.Storage
             this.EditLink.TabIndex = 8;
             this.EditLink.TabStop = true;
             this.EditLink.Text = "Edit";
+            this.EditLink.Visible = false;
             this.EditLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.EditLink_LinkClicked);
             // 
             // RemoveLink
@@ -83,6 +84,7 @@ namespace DeOps.Components.Storage
             this.RemoveLink.TabIndex = 2;
             this.RemoveLink.TabStop = true;
             this.RemoveLink.Text = "Remove";
+            this.RemoveLink.Visible = false;
             this.RemoveLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.RemoveLink_LinkClicked);
             // 
             // AddLink
@@ -134,6 +136,7 @@ namespace DeOps.Components.Storage
             this.VisList.ItemMenu = null;
             this.VisList.LabelEdit = false;
             this.VisList.Location = new System.Drawing.Point(6, 19);
+            this.VisList.MultiSelect = true;
             this.VisList.Name = "VisList";
             this.VisList.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.VisList.RowTrackColor = System.Drawing.Color.WhiteSmoke;
@@ -142,6 +145,8 @@ namespace DeOps.Components.Storage
             this.VisList.StateImageList = null;
             this.VisList.TabIndex = 0;
             this.VisList.Text = "VisList";
+            this.VisList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.VisList_MouseDoubleClick);
+            this.VisList.SelectedIndexChanged += new System.EventHandler(this.VisList_SelectedIndexChanged);
             // 
             // ExitButton
             // 

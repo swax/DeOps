@@ -126,7 +126,7 @@
       <DependentUpon>BoardRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Board\BoardView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Board\BoardView.Designer.cs">
       <DependentUpon>BoardView.cs</DependentUpon>
@@ -189,7 +189,7 @@
       <DependentUpon>GoalPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.Designer.cs">
       <DependentUpon>GoalsView.cs</DependentUpon>
@@ -412,7 +412,7 @@
       <DependentUpon>ComposeMail.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Mail\MailView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Mail\MailView.Designer.cs">
       <DependentUpon>MailView.cs</DependentUpon>

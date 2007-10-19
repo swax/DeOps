@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
+using DeOps.Interface;
 using DeOps.Implementation;
 
 
@@ -22,6 +23,8 @@ namespace DeOps.Components.Plan
         ScheduleView View;
 
         PlanBlock Block;
+
+        short CurrentScope = -1; // everyone default
 
 
         internal EditBlock(BlockViewMode mode, ScheduleView view, PlanBlock block)
@@ -44,7 +47,7 @@ namespace DeOps.Components.Plan
             StartTime.Value = block.StartTime.ToLocalTime();
             EndTime.Value = block.EndTime.ToLocalTime();
             DescriptionInput.InputBox.Rtf = block.Description;
-            PersonalCheck.Checked = block.Personal;
+            SetScopeLink(block.Scope);
 
             if (mode != BlockViewMode.Show)
                 return;
@@ -53,7 +56,7 @@ namespace DeOps.Components.Plan
             StartTime.Enabled = false;
             EndTime.Enabled = false;
             DescriptionInput.ReadOnly = true;
-            PersonalCheck.Enabled = false;
+            ScopeLink.Enabled = false;
         }
 
         internal void BlockView_Load(object sender, EventArgs e)
@@ -107,7 +110,7 @@ namespace DeOps.Components.Plan
             block.StartTime     = StartTime.Value.ToUniversalTime();
             block.EndTime       = EndTime.Value.ToUniversalTime();
             block.Description   = DescriptionInput.InputBox.Rtf;
-            block.Personal      = PersonalCheck.Checked;
+            block.Scope         = CurrentScope;
 
             if (Mode == BlockViewMode.New)
                 block.Unique = Core.RndGen.Next();
@@ -117,6 +120,33 @@ namespace DeOps.Components.Plan
             
             DialogResult = DialogResult.OK;
             Close();
+        }
+
+        private void ScopeLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            GetTextDialog getText = new GetTextDialog("Sub-Levels", "How many levels down is this item visible? 0 for Personal, -1 for Everyone", CurrentScope.ToString());
+
+            if (getText.ShowDialog() == DialogResult.OK)
+            {
+                short levels;
+                short.TryParse(getText.ResultBox.Text, out levels);
+
+                SetScopeLink(levels);
+            }
+        }
+
+        private void SetScopeLink(short scope)
+        {
+            if (scope == -1)
+                ScopeLink.Text = "Everyone";
+
+            else if (scope == 0)
+                ScopeLink.Text = "Personal";
+
+            else
+                ScopeLink.Text = scope.ToString() + " Sub-Levels";
+
+            CurrentScope = scope;
         }
     }
 }

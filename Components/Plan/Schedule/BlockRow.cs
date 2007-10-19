@@ -138,7 +138,9 @@ namespace DeOps.Components.Plan
             foreach (PlanNode upnode in upnodes)
             {
                 foreach (PlanBlock block in GetBlocks(upnode.Link.DhtID))
-                    if (!block.Personal && BlockinRange(block, ref tempRect))
+                    // scope -1 everyone or current level 0 highest + scope is >= than current node
+                    if ((block.Scope == -1 || (level + block.Scope >= upnodes.Count))
+                        && BlockinRange(block, ref tempRect))
                     {
                         buffer.FillRectangle(GetMask(upnode.Link.DhtID, true), tempRect);
                         BlockAreas.Add(new BlockArea(tempRect, block, level, false));

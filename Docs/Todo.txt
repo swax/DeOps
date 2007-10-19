@@ -128,8 +128,8 @@ Components
 		secure copy / paste can use same folder commands as drag/drop
 
 		visibility
-			***schedule scope (levels down) default inf, use link
 			***board scope (levels down) default 1, use link, needs to queries highers now as well
+			search highers for source == target board posts of higher boards
 
 		$ save storage snapshots (past header file versions) - display at root node	
 		$ signal on comparison page if all files are replicated on network (can go offline and files still exist)

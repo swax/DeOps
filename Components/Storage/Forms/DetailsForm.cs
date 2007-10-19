@@ -107,6 +107,18 @@ namespace DeOps.Components.Storage
             }
         }
 
+        private void VisList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            UpdateLinkVis(VisList.SelectedItems.Count > 0);
+        }
+
+        private void UpdateLinkVis(bool visible)
+        {
+            RemoveLink.Visible = visible;
+            EditLink.Visible = visible;
+        }
+
+
         private void RemoveLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             List<VisItem> removeList = new List<VisItem>();
@@ -118,9 +130,21 @@ namespace DeOps.Components.Storage
                 VisList.Items.Remove(item);
 
             VisList.Refresh();
+
+            UpdateLinkVis(VisList.Items.Count > 0); // remove item doesn't update selected immediately
         }
 
         private void EditLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            EditSelected();
+        }
+
+        private void VisList_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            EditSelected();
+        }
+
+        private void EditSelected()
         {
             if (VisList.SelectedItems.Count == 0)
                 return;
@@ -131,11 +155,14 @@ namespace DeOps.Components.Storage
 
             if (getText.ShowDialog() == DialogResult.OK)
             {
-                short.TryParse(getText.ResultBox.Text, out selected.Levels);
+                short levels;
+                short.TryParse(getText.ResultBox.Text, out levels);
+
+                if (levels >= -1)
+                    selected.Levels = levels;
 
                 selected.Update();
             }
-
         }
 
         private void OkButton_Click(object sender, EventArgs e)
@@ -180,6 +207,9 @@ namespace DeOps.Components.Storage
         {
             Close();
         }
+
+
+
     }
 
 

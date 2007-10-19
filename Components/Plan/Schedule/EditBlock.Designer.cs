@@ -39,7 +39,7 @@ namespace DeOps.Components.Plan
             this.OkButton = new System.Windows.Forms.Button();
             this.ExitButton = new System.Windows.Forms.Button();
             this.DescriptionInput = new DeOps.Interface.TextInput();
-            this.PersonalCheck = new System.Windows.Forms.CheckBox();
+            this.ScopeLink = new System.Windows.Forms.LinkLabel();
             this.SuspendLayout();
             // 
             // label1
@@ -146,20 +146,21 @@ namespace DeOps.Components.Plan
             this.DescriptionInput.EnterClears = false;
             this.DescriptionInput.Location = new System.Drawing.Point(12, 120);
             this.DescriptionInput.Name = "DescriptionInput";
+            this.DescriptionInput.ReadOnly = false;
             this.DescriptionInput.ShowFontStrip = true;
             this.DescriptionInput.Size = new System.Drawing.Size(271, 219);
             this.DescriptionInput.TabIndex = 9;
             // 
-            // PersonalCheck
+            // ScopeLink
             // 
-            this.PersonalCheck.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.PersonalCheck.AutoSize = true;
-            this.PersonalCheck.Location = new System.Drawing.Point(12, 349);
-            this.PersonalCheck.Name = "PersonalCheck";
-            this.PersonalCheck.Size = new System.Drawing.Size(67, 17);
-            this.PersonalCheck.TabIndex = 12;
-            this.PersonalCheck.Text = "Personal";
-            this.PersonalCheck.UseVisualStyleBackColor = true;
+            this.ScopeLink.AutoSize = true;
+            this.ScopeLink.Location = new System.Drawing.Point(12, 350);
+            this.ScopeLink.Name = "ScopeLink";
+            this.ScopeLink.Size = new System.Drawing.Size(52, 13);
+            this.ScopeLink.TabIndex = 12;
+            this.ScopeLink.TabStop = true;
+            this.ScopeLink.Text = "Everyone";
+            this.ScopeLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.ScopeLink_LinkClicked);
             // 
             // EditBlock
             // 
@@ -168,7 +169,7 @@ namespace DeOps.Components.Plan
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.ExitButton;
             this.ClientSize = new System.Drawing.Size(295, 377);
-            this.Controls.Add(this.PersonalCheck);
+            this.Controls.Add(this.ScopeLink);
             this.Controls.Add(this.ExitButton);
             this.Controls.Add(this.OkButton);
             this.Controls.Add(this.DescriptionInput);
@@ -203,6 +204,6 @@ namespace DeOps.Components.Plan
         private DeOps.Interface.TextInput DescriptionInput;
         private System.Windows.Forms.Button OkButton;
         private System.Windows.Forms.Button ExitButton;
-        private System.Windows.Forms.CheckBox PersonalCheck;
+        private System.Windows.Forms.LinkLabel ScopeLink;
     }
 }
