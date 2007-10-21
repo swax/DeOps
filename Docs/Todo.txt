@@ -1,7 +1,10 @@
 
 now
 	43 crits, 13 warnings
-	lock resources properly (timer stuff, network demo, , customization, component refactor, performance
+	test packets/gui/timer in diff threads let run fast with lots of updates, check resources are locked properly
+	refactor components, get ready for visual/database plus think about 3rd party components
+	
+	network demo, customization, performance tuning
 
 Testing
 	more accurate replication - link/location/profile/mail
@@ -24,7 +27,10 @@ Interface
 	Link
 		sometimes on link changes, cannot select confirm link even though node is pending
 		encapsulate common link functions in link control, prevent other controls from directly using linkmap
-
+	
+		***
+		change selected in nav bar, bolds in command tree for right project
+		dont bold name in project/command when focus is on diff project
 		only bold tree item for selected dhtid AND project
 		changing person focus perserves view
 		changing project focus perserves view
@@ -103,6 +109,7 @@ Components
 		test/do re-publishing mail
 
 	Board 
+		 board scope sub-levels down, auto search highers for posts that have source==target, and show if in scope
 		 attaching files
 	
 	Profile
@@ -112,12 +119,9 @@ Components
 	Plans
 		old plans not being deleted? seems like extra files in dir, try loading solo and updating local plan file
 		shutdown in the middle of the causing load corruption?			
-
-		Goals 
-			***star self, blue triangle lower, red triangle higher
-			***details visible 
-			save branch path when transfering goal <-> schedule
-
+		transfer branch path when goal <-> schedule
+		hyperlink at bottom to view details for currently selected plan/goal item
+			
 	Storage
 	
 		drag into secure storage gives user option to replace what is already there, either on disk or locked
@@ -126,10 +130,6 @@ Components
 		review file references system
 		drag files folder over highlights target
 		secure copy / paste can use same folder commands as drag/drop
-
-		visibility
-			***board scope (levels down) default 1, use link, needs to queries highers now as well
-			search highers for source == target board posts of higher boards
 
 		$ save storage snapshots (past header file versions) - display at root node	
 		$ signal on comparison page if all files are replicated on network (can go offline and files still exist)

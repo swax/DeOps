@@ -88,10 +88,31 @@ namespace DeOps.Components.Plan {
             }
         }
         
+        internal static System.Drawing.Bitmap high_goal {
+            get {
+                object obj = ResourceManager.GetObject("high_goal", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap low_goal {
+            get {
+                object obj = ResourceManager.GetObject("low_goal", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Icon Schedule {
             get {
                 object obj = ResourceManager.GetObject("Schedule", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap star {
+            get {
+                object obj = ResourceManager.GetObject("star", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
             }
         }
     }

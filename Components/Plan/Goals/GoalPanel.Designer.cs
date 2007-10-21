@@ -161,6 +161,7 @@ namespace DeOps.Components.Plan
             this.GoalTree.SmallImageList = null;
             this.GoalTree.StateImageList = null;
             this.GoalTree.TabIndex = 0;
+            this.GoalTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.GoalTree_MouseDoubleClick);
             this.GoalTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.GoalTree_MouseClick);
             this.GoalTree.SelectedItemChanged += new System.EventHandler(this.GoalTree_SelectedItemChanged);
             // 
@@ -233,6 +234,7 @@ namespace DeOps.Components.Plan
             this.PlanList.StateImageList = null;
             this.PlanList.TabIndex = 4;
             this.PlanList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.PlanList_MouseClick);
+            this.PlanList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.PlanList_MouseDoubleClick);
             // 
             // GoalPanel
             // 

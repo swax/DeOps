@@ -18,7 +18,7 @@ namespace DeOps.Components.Plan
 {
     internal partial class GoalPanel : UserControl
     {
-        GoalsView View;
+        internal GoalsView View;
         internal OpCore Core;
         internal PlanControl Plans;
         internal LinkControl Links;
@@ -44,6 +44,12 @@ namespace DeOps.Components.Plan
 
             GoalTree.ControlPadding = 3;
             //splitContainer2.Panel1Collapsed = true;
+
+            GoalTree.SmallImageList = new List<Image>();
+            GoalTree.SmallImageList.Add(new Bitmap(16, 16));
+            GoalTree.SmallImageList.Add(PlanRes.star);
+            GoalTree.SmallImageList.Add(PlanRes.high_goal);
+            GoalTree.SmallImageList.Add(PlanRes.low_goal);
         }
 
         private void GoalPanel_Load(object sender, EventArgs e)
@@ -65,7 +71,7 @@ namespace DeOps.Components.Plan
         {
             TreeMap.Clear();
             GoalTree.Nodes.Clear();
-
+            
             List<ulong> uplinks = Links.GetUplinkIDs(View.DhtID, View.ProjectID);
             uplinks.Add(View.DhtID);
 
@@ -393,22 +399,17 @@ namespace DeOps.Components.Plan
             if (node == null)
                 return;
 
-            GoalNode parent = node.ParentNode() as GoalNode;
 
             ContextMenuStripEx menu = new ContextMenuStripEx();
 
 
-            bool owned = false;
-            bool root = false;
+            bool owned = IsOwned(node);
 
-            if(parent != null &&  parent.Goal.Person == Core.LocalDhtID)
-                owned = true;
+            bool root = false;
+            GoalNode parent = node.ParentNode() as GoalNode;
 
             if (parent == null && node.Goal.Person == Core.LocalDhtID && Head.Person == Core.LocalDhtID)
-            {
-                owned = true;
                 root = true;
-            }
 
             if(owned)
             {
@@ -428,6 +429,19 @@ namespace DeOps.Components.Plan
 
   
             menu.Show(GoalTree, e.Location);
+        }
+
+        private bool IsOwned(GoalNode node)
+        {
+            GoalNode parent = node.ParentNode() as GoalNode;
+
+            if (parent != null && parent.Goal.Person == Core.LocalDhtID)
+                return true;
+
+            if (parent == null && node.Goal.Person == Core.LocalDhtID && Head.Person == Core.LocalDhtID)
+                return true;
+
+            return false;
         }
 
         void Goal_Edit(object sender, EventArgs e)
@@ -876,6 +890,43 @@ namespace DeOps.Components.Plan
                 parent = parent.Parent as GoalNode;
             }
         }
+
+        private void GoalTree_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            GoalNode node = GoalTree.GetNodeAt(e.Location) as GoalNode;
+
+            if (node == null)
+                return;
+
+            bool owned  = IsOwned(node);
+            EditGoalMode editMode = owned ? EditGoalMode.Edit : EditGoalMode.View;
+
+            EditGoal form = new EditGoal(editMode, Core, node.Goal);
+
+            if (form.ShowDialog(this) == DialogResult.OK)
+                if (owned)
+                    View.ChangesMade();
+        }
+
+        private void PlanList_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            PlanListItem item = PlanList.GetItemAt(e.Location) as PlanListItem;
+
+            if (item == null)
+                return;
+
+            if (Selected == null)
+                return;
+
+            bool local = (Selected.Person == Core.LocalDhtID);
+
+            EditItemMode mode = local ? EditItemMode.Edit : EditItemMode.View;
+            EditPlanItem form = new EditPlanItem(mode, Selected, item.Item);
+
+            if (form.ShowDialog(this) == DialogResult.OK)
+                if(local)
+                    View.ChangesMade();
+        }
     }
 
 
@@ -916,7 +967,33 @@ namespace DeOps.Components.Plan
             SubItems[0].Text = name;
             SubItems[2].Text = Panel.GetTimeText(goal.End.ToLocalTime() - Panel.Core.TimeNow, goal.End.ToLocalTime(), false);
 
+            if (goal.Person == Panel.View.DhtID)
+                ImageIndex = 1;
+            // higher
+            else if (Panel.Links.IsHigher(Panel.View.DhtID, goal.Person, Panel.View.ProjectID))
+                ImageIndex = 2;
+            // lower
+            else if (Panel.Links.IsHigher(goal.Person, Panel.View.DhtID, Panel.View.ProjectID))
+                ImageIndex = 3;
+            else
+                ImageIndex = 0;
+
             RefreshProgress();
+        }
+
+        private bool LowNode()
+        {
+            GoalNode above = Parent as GoalNode;
+
+            while (above != null)
+            {
+                if (above.Goal.Person == Panel.View.DhtID)
+                    return true;
+
+                above = above.Parent as GoalNode;
+            }
+
+            return false;
         }
 
         internal void RefreshProgress()
