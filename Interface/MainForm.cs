@@ -403,7 +403,7 @@ namespace DeOps.Interface
             // project menu
             if (clicked == CommandTree.ProjectNode && e.Button == MouseButtons.Right)
             {
-                ContextMenu treeMenu = new ContextMenu();
+                /*ContextMenu treeMenu = new ContextMenu();
 
                 treeMenu.MenuItems.Add(new MenuItem("Properties", new EventHandler(OnProjectProperties)));
 
@@ -415,7 +415,7 @@ namespace DeOps.Interface
                         treeMenu.MenuItems.Add(new MenuItem("Join", new EventHandler(OnProjectJoin)));
                 }
 
-                treeMenu.Show(CommandTree, e.Location);
+                treeMenu.Show(CommandTree, e.Location);*/
 
                 return;
             }
@@ -563,7 +563,7 @@ namespace DeOps.Interface
             // bold new and set
             SelectedProject = project;
 
-            CommandTree.SelectLink(id);
+            CommandTree.SelectLink(id, project);
 
 
             // setup toolbar with menu items for user
@@ -644,7 +644,7 @@ namespace DeOps.Interface
                 PersonNavItem self = null;
                 
                 // add higher and subs of higher
-                OpLink higher = link.GetHigher(SelectedProject);
+                OpLink higher = link.GetHigher(SelectedProject, false);
                 if (higher != null)
                 {
                     PersonNavButton.DropDownItems.Add(new PersonNavItem(higher.Name, higher.DhtID, this, PersonNav_Clicked));
@@ -819,8 +819,14 @@ namespace DeOps.Interface
             ProjectsButton.DropDownItems.Add(new ToolStripMenuItem("New...", null, new EventHandler(ProjectMenu_New)));
 
             foreach (uint id in Links.ProjectNames.Keys)
-                if (id != 0)
+                if (id != 0 && Links.ProjectRoots.ContainsKey(id))
                     ProjectsButton.DropDownItems.Add(new ProjectItem(Links.ProjectNames[id], id, new EventHandler(ProjectMenu_Click)));
+
+            if (ProjectButton != null)
+            {
+                ProjectsButton.DropDownItems.Add(new ToolStripSeparator());
+                ProjectsButton.DropDownItems.Add(new ToolStripMenuItem("Leave " + ProjectButton.Text, null, new EventHandler(OnProjectLeave)));
+            }
         }
 
         private void ProjectMenu_New(object sender, EventArgs e)
@@ -943,11 +949,6 @@ namespace DeOps.Interface
 
                 SideMode = false;
             }
-        }
-
-        private void OnProjectProperties(object sender, EventArgs e)
-        {
-
         }
 
         private void OnProjectLeave(object sender, EventArgs e)

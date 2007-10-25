@@ -954,7 +954,7 @@ namespace DeOps.Components.Storage
                     {
                         StorageRoot packet = StorageRoot.Decode(Protocol, header);
 
-                        local = GetHigherIDs(storage.DhtID, packet.ProjectID).Contains(Core.LocalDhtID) ||
+                        local = GetHigherRegion(storage.DhtID, packet.ProjectID).Contains(Core.LocalDhtID) ||
                             Links.GetDownlinkIDs(storage.DhtID, packet.ProjectID, 1).Contains(Core.LocalDhtID);
                     }
 
@@ -1244,8 +1244,10 @@ namespace DeOps.Components.Storage
             if (!Working.ContainsKey(project))
                 return null;
 
-            // saveworking
-            Working[project].SaveWorking();
+            // LockAll() to prevent unlocked discarded changes from conflicting with previous versions of
+            // files when they are unlocked again by the user
+            List<LockError> errors = new List<LockError>();
+            Working[project].LockAll(errors);
             Working.Remove(project);
 
             // call unload on working
@@ -1537,10 +1539,14 @@ namespace DeOps.Components.Storage
             else
                 finalpath += Path.DirectorySeparatorChar + file.Name;
 
-            if (File.Exists(finalpath))
-                File.Delete(finalpath);
+            try
+            {
+                if (File.Exists(finalpath))
+                    File.Delete(finalpath);
 
-            file.RemoveFlag(StorageFlags.Unlocked);
+                file.RemoveFlag(StorageFlags.Unlocked);
+            }
+            catch { }
         }
 
 
@@ -1589,15 +1595,14 @@ namespace DeOps.Components.Storage
         }
 
 
-        internal List<ulong> GetHigherIDs(ulong id, uint project)
+        internal List<ulong> GetHigherRegion(ulong id, uint project)
         {
             List<ulong> highers = Links.GetUplinkIDs(id, project);
 
-            if (highers.Count > 0)
-            {
-                highers.AddRange(Links.GetDownlinkIDs(highers[0], project, 1));
-                highers.Remove(id);
-            }
+            highers.AddRange(Links.GetAdjacentIDs(id, project));
+
+            highers.Remove(id); // remove target
+
 
             return highers;
         }

@@ -2,8 +2,8 @@
 now
 	43 crits, 13 warnings
 	test packets/gui/timer in diff threads let run fast with lots of updates, check resources are locked properly
+	load components asyncronously? see if sim load speeds up a lot
 	refactor components, get ready for visual/database plus think about 3rd party components
-	
 	network demo, customization, performance tuning
 
 Testing
@@ -27,25 +27,17 @@ Interface
 	Link
 		sometimes on link changes, cannot select confirm link even though node is pending
 		encapsulate common link functions in link control, prevent other controls from directly using linkmap
-	
-		***
-		change selected in nav bar, bolds in command tree for right project
-		dont bold name in project/command when focus is on diff project
-		only bold tree item for selected dhtid AND project
-		changing person focus perserves view
-		changing project focus perserves view
-		perserve view going from collapse to restore
+		Online - Show as currently online nodes structured into makeshift hierarchy
+			chat/voice uses this hierarchy for high/low - done so that realtime communication is not fragmented when people go offline
+		***update little profile box with javascript to avoid flicker
 
+		
 	Invite 
 		password protected invite file
 		invite contains singed, who invited
 		Keep deops.net file with as many ips as possible on load
 		delete invite file when new user created
 	
-	Groups on buddy list
-		Locals
-		Tabs, etc.. so permanent tabs can be kept on people, grey if offline
-
 	News
 		crazy refreshes when news not visible and button clicked
 		show connected / disconnected
@@ -72,6 +64,8 @@ Components
 		break control into interface comm / control comm so that multiple guis (mobile/mono/wpf) can be implemented easily
 		Many actions in gui isnt piped down into control to fire events back to the interface to signal updates for multiple interface instances
 		component plug-ins / view plugins for private components
+		Remove references to LinkMap, use GetLink
+		when component handles exit, assert that all events are emptied of references to debug gui's not releasing event handles
 		
 	Location 
 		global replication
@@ -96,6 +90,7 @@ Components
 		Custom rooms - priave requires signed key, public key kept in chat file, can be queried for and found over network 
 		dont mention disconnect unless connection was made, also in IM
 		log does chat/im - setup like yahoo chat log
+		Default display when no chat panels visible
 		
 	Mail 
 	    debug send/recv mail
@@ -120,12 +115,11 @@ Components
 		old plans not being deleted? seems like extra files in dir, try loading solo and updating local plan file
 		shutdown in the middle of the causing load corruption?			
 		transfer branch path when goal <-> schedule
-		hyperlink at bottom to view details for currently selected plan/goal item
+		make details visible somehow for selected schedule
+		***goal interface - left hand side panel split in two - top goal list with add/remove/archive, bottom with selected description
 			
 	Storage
-	
-		drag into secure storage gives user option to replace what is already there, either on disk or locked
-		***auto-inheriting/accepting/replacing should overwrite unlocked on disk, will be saved in history anyways
+		***drag into secure storage gives user option to replace what is already there, either on disk or locked
 		
 		review file references system
 		drag files folder over highlights target
@@ -141,6 +135,7 @@ Components
 Core
     old projects not cleared from components during savelocal, save / ditch / option?
     multisource downloading
+    each component's minute action should have unique interrupt given by core class
      
 	Rudp
 		location updates
@@ -173,7 +168,7 @@ Core
 		what does search result from firewalled host look like?
 		search results seem to only go out udp
 		
-		**location info should include array of latest versions of each component
+		location info should include array of latest versions of each component
 			so local area can update for everyone on login to the network
 			storage, plans, profile - need latest fetched data of local area
 			location data needs to be stored when user is offline for this to work
@@ -184,6 +179,7 @@ Core
 		cache entries only last for like 5 mins
 		requester do theh caching, or should requested auto-cache if load too high
 			auto-caching might not hit the nodes that requesting nodes would be likely to hit
+		index file hashes on network for files over 10 meg, otherwise file can be multisourced from default replicators of file
 
 	udp packet throttle **** especially for patches
 		backlog for packets, for patches, etc.. not for rudp
@@ -203,6 +199,7 @@ Core
 		IM settings allow host to not allow messages from untrusted
 		refuse replication of network pieces to blacklisted, inherit blacklist from higher
 			dont not replicate to untrusted because then each id needs to be trust verified continually
+		heartbeat from top down with unique key, wont talk to 'unknown' nodes in dht without it
 		
 Simulator
 	add collection test to simulator by randomly accessing de-op collections in seperate sim thread
@@ -247,6 +244,8 @@ Future
     lock read/write individually, let multiple reads go at same time
     voice chat in rooms / IM using skype API - can get to land lines
     load goal/board/mail archives serperately to speed load / reduce memory usage
+    put all strings in resource file, mass convert using google translate, let user on run choose flag/language from upper left corner
+		autodetect lang on OS as well
     
 	de-ops urls boards storages chats anything, extendable
 		peoples emails, profiles, etc.. can include <links>
@@ -257,6 +256,9 @@ Future
 			
 		signed invitation files - so that if bad people get in, we know who signed them in
 		
+		periodic heart beat with secuity key sent from to all trusted nodes, key transmitted during all ops
+			keeps untrusted from being sent any storage information, if kicked out of trusted tree		
+		
 	web based node
 		server like caching if enabled
 		web node is owned by an individual, like any other node	
@@ -265,44 +267,56 @@ Future
 	huge part of project is allowing companies to sell licensense (applications) throughout network
 		subs auto inherit purchased apps, never be anywhere without apps, look at encryption techniques to make this work
 
-
-	visual component
-		user can inherit or create new canvases
-		default background is transparent so overlays easy
-		zoom in/out infinite, images created on 'planes' z-axis coordinate
-			zooming out if other regions in view, their sub-regions are found
-			affiliate zoom with levels down so that people know on what level to draw
-		node inherits higher's images which overlay lower's drawings
-			ie higher can create bounds that lower fills in
-		node can define regions for lowers to draw in
-			lowers by default see this region when they open visuals not the whole canvas
-		interface - basic paint operations with copy/paste, show transparent zones (off by default)
-		layers for putting down map img/ people img and being able to edit it easily
-		3d component uses imported models from any souce, sketch up ? 
-		lower corner box shows zoomed out view
-	
-	audio component
-		headphones/speakers, left side is lowers, right side is higher/adjacents	
-			on mono prefix high/low beep before audio clip to signal what level talker is from
-			save last x voice messages received for playback
-		push to talk attached to each ear (or on pda), for talking to higher/lower side
-		fastest human to human comunication possilbe, questions go as far up and then down as they need to go instantaneously
-		if people are off line, or voice is off, voice network auto-configurse to fill in missing links
-			everyone on the network is connected through high/low to someone else by voice
+	components
+		visual 
+			user can inherit or create new canvases
+			default background is transparent so overlays easy
+			zoom in/out infinite, images created on 'planes' z-axis coordinate
+				zooming out if other regions in view, their sub-regions are found
+				affiliate zoom with levels down so that people know on what level to draw
+			node inherits higher's images which overlay lower's drawings
+				ie higher can create bounds that lower fills in
+			node can define regions for lowers to draw in
+				lowers by default see this region when they open visuals not the whole canvas
+			interface - basic paint operations with copy/paste, show transparent zones (off by default)
+			layers for putting down map img/ people img and being able to edit it easily
+			3d component uses imported models from any souce, sketch up ? 
+			lower corner box shows zoomed out view
 		
-	stats component
-		how many people in org, follow link tree
-		% active in last x, crawl persistant locs
-		balance of tree at diff levels, also could do graphical reresentation
-			like sequoia view showing where most people are and who follows them
+		database 
+			holder of database can create dashboards, custom views into data for highers ups to understand
+			lowers to aggregate data, example - call center statistics, support database with issues
+			nodes post sql commands to database, sort of like mail, send, receive, ack, once processed into db
+			db entries peer reviewed at host (holder of db), db's can be replicated and hosted somewhere else, exported, imported
+			sql express backend? should work on phones as well
+		
+		audio 
+			headphones/speakers, left side is lowers, right side is higher/adjacents	
+				on mono prefix high/low beep before audio clip to signal what level talker is from
+				save last x voice messages received for playback
+			push to talk attached to each ear (or on pda), for talking to higher/lower side
+			fastest human to human comunication possilbe, questions go as far up and then down as they need to go instantaneously
+			if people are off line, or voice is off, voice network auto-configurse to fill in missing links
+				everyone on the network is connected through high/low to someone else by voice
+			
+		stats 
+			how many people in org, follow link tree
+			% active in last x, crawl persistant locs
+			balance of tree at diff levels, also could do graphical reresentation
+				like sequoia view showing where most people are and who follows them
+			security, show all ips and resolve their hosts
 
-	portal component
-		links 2 organizatinos between a single point of trust
-		portal manaages information flow
-		how would something like a credit card work?
-			i trust credit company
-			business trusts credit company
-			portal process credit transaction?
+		portal 
+			links 2 organizatinos between a single point of trust
+			portal manaages information flow
+			how would something like a credit card work?
+				i trust credit company
+				business trusts credit company
+				portal process credit transaction?
+		
+		security
+			keeps dns resolved list of online contacts
+			can crawl network, list all dns
 
 	Compartmentalization
 		sign with level key, mark with level version of key signed

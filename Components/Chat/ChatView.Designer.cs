@@ -28,46 +28,35 @@ namespace DeOps.Components.Chat
         /// </summary>
         private void InitializeComponent()
         {
-            this.ViewTabs = new System.Windows.Forms.TabControl();
-            this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.ViewTabs.SuspendLayout();
+            this.ViewContainer = new System.Windows.Forms.SplitContainer();
+            this.ViewContainer.SuspendLayout();
             this.SuspendLayout();
             // 
-            // ViewTabs
+            // ViewContainer
             // 
-            this.ViewTabs.Controls.Add(this.tabPage1);
-            this.ViewTabs.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ViewTabs.Location = new System.Drawing.Point(0, 0);
-            this.ViewTabs.Name = "ViewTabs";
-            this.ViewTabs.SelectedIndex = 0;
-            this.ViewTabs.Size = new System.Drawing.Size(252, 191);
-            this.ViewTabs.TabIndex = 0;
-            // 
-            // tabPage1
-            // 
-            this.tabPage1.Location = new System.Drawing.Point(4, 22);
-            this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(244, 165);
-            this.tabPage1.TabIndex = 0;
-            this.tabPage1.Text = "Log";
-            this.tabPage1.UseVisualStyleBackColor = true;
+            this.ViewContainer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ViewContainer.Location = new System.Drawing.Point(0, 0);
+            this.ViewContainer.Name = "ViewContainer";
+            this.ViewContainer.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            this.ViewContainer.Size = new System.Drawing.Size(316, 286);
+            this.ViewContainer.SplitterDistance = 137;
+            this.ViewContainer.TabIndex = 0;
             // 
             // ChatView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.ViewTabs);
+            this.Controls.Add(this.ViewContainer);
             this.Name = "ChatView";
-            this.Size = new System.Drawing.Size(252, 191);
-            this.ViewTabs.ResumeLayout(false);
+            this.Size = new System.Drawing.Size(316, 286);
+            this.ViewContainer.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
 
         #endregion
 
-        private System.Windows.Forms.TabControl ViewTabs;
-        private System.Windows.Forms.TabPage tabPage1;
+        private System.Windows.Forms.SplitContainer ViewContainer;
+
     }
 }

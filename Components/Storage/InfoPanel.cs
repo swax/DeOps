@@ -1303,14 +1303,16 @@ namespace DeOps.Components.Storage
                     StorageFile replacement = file.Clone();
                     replacement.Note = file.Note;
 
-                    ParentView.Working.ReplaceFile(CurrentFile.GetPath(), replacement);
+                    List<LockError> errors = new List<LockError>();
+                    ParentView.Working.ReplaceFile(CurrentFile.GetPath(), replacement, errors);
+                    LockMessage.Alert(ParentView, errors);
                 }
                 else
                 {
                     StorageFolder replacement = folder.Clone();
                     replacement.Note = folder.Note;
 
-                    ParentView.Working.ReplaceFolder(CurrentFolder.GetPath(), replacement);
+                    ParentView.Working.ReplaceFolder(CurrentFolder.GetPath(), replacement, true);
                 }
             }
 

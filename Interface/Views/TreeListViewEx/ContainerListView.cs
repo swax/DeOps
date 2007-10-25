@@ -315,7 +315,13 @@ namespace DeOps.Interface.TLVex
 		public int Add(ContainerListViewItem item)
 		{
 			item.MouseDown += new MouseEventHandler(OnMouseDown);
-			return item.Index = List.Add(item);
+			 
+            int iIndex = List.Add(item);
+
+            if (item.Selected)
+                Container.Select(item);
+
+            return iIndex;
 		}
 
         public void Insert(int index, ContainerListViewItem item)
@@ -2895,10 +2901,20 @@ namespace DeOps.Interface.TLVex
 
         public void Select(ContainerListViewItem item)
         {
-            if(SelectedItems.IndexOf(item) == -1)
-                SelectedItems.Add(item);
+            // return if already selected
+            int iIndex = SelectedItems.IndexOf(item);
+
+            if(iIndex != -1)
+                return;
+
+            // add item to selected lists
+            iIndex = Items.IndexOf(item);
 
             item.Selected = true;
+            item.Focused = true;
+
+            selectedIndices.Add(iIndex);
+            selectedItems.Add(item);            
         }
     }
 	#endregion

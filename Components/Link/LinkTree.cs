@@ -25,6 +25,8 @@ namespace DeOps.Components.Link
         Dictionary<ulong, LinkNode> NodeMap = new Dictionary<ulong, LinkNode>();
 
         internal ulong SelectedLink;
+        internal uint SelectedProject;
+
         internal ulong ForceRootID;
         internal bool HideUnlinked;
 
@@ -103,14 +105,15 @@ namespace DeOps.Components.Link
             
             Nodes.Add(UnlinkedNode);
 
-            // nodes
-            List<OpLink> roots = null;
 
+            // if forced, load specific node as root
             if (ForceRootID != 0)
             {
                 if (Links.LinkMap.ContainsKey(ForceRootID))
                     SetupRoot(Links.LinkMap[ForceRootID]);
             }
+
+            // get roots for specific project
             else if (Links.ProjectRoots.ContainsKey(Project))
                 lock (Links.ProjectRoots[Project])
                     foreach (OpLink root in Links.ProjectRoots[Project])
@@ -131,7 +134,7 @@ namespace DeOps.Components.Link
             LinkNode node = CreateNode(root);
             LoadRoot(node);
 
-            List<ulong> uplinks = Links.GetUplinkIDs(Core.LocalDhtID, Project);
+            List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(Core.LocalDhtID, Project);
             uplinks.Add(Core.LocalDhtID);
 
             ExpandPath(node, uplinks);
@@ -144,13 +147,14 @@ namespace DeOps.Components.Link
             // set up root with hidden subs
             LoadNode(node);
 
-            if (node.Nodes.Count == 0)
-            {
-                if (!HideUnlinked)
-                    InsertRootNode(UnlinkedNode, node);
-            }
-            else
+            // if self or uplinks contains root, put in project
+            if(node.Link.DhtID == Core.LocalDhtID || Links.IsUnconfirmedHigher(node.Link.DhtID, Project))
                 InsertRootNode(ProjectNode, node);
+
+            // else put in untrusted
+            else if (!HideUnlinked)
+                InsertRootNode(UnlinkedNode, node);
+
         }
 
         private void LoadNode(LinkNode node)
@@ -183,17 +187,14 @@ namespace DeOps.Components.Link
 
             int index = 0;
 
-
             TreeListNode root = start.Parent;
             node.Section = start;
             bool ready = false;
 
             foreach (TreeListNode entry in root.Nodes)
             {
-                LinkNode compare = entry as LinkNode;
-
                 if (ready)
-                    if ((start == ProjectNode && compare != null && node.Link.Downlinks[Project].Count > compare.Link.Downlinks[Project].Count) ||
+                    if (start == ProjectNode ||
                         (start == UnlinkedNode && string.Compare(node.Text, entry.Text, true) < 0) ||
                         entry.GetType() == typeof(LabelNode)) // lower bounds
                     {
@@ -343,7 +344,7 @@ namespace DeOps.Components.Link
             if (ForceRootID != 0)
             {
                 // root must be a parent of the updating node
-                if (link.DhtID != ForceRootID || !Links.IsHigher(link.DhtID, ForceRootID, Project))
+                if (link.DhtID != ForceRootID || !Links.IsUnconfirmedHigher(link.DhtID, ForceRootID, Project))
                     return;
             }
 
@@ -368,7 +369,7 @@ namespace DeOps.Components.Link
 
             TreeListNode parent = null;
 
-            OpLink uplink = link.GetHigher(Project);
+            OpLink uplink = link.GetHigher(Project, false);
 
             if (uplink == null)
                 parent = virtualParent;
@@ -383,7 +384,7 @@ namespace DeOps.Components.Link
             {
                 if (parent == null)
                 {
-                    List<ulong> uplinks = Links.GetUplinkIDs(Core.LocalDhtID, Project);
+                    List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(Core.LocalDhtID, Project);
                     uplinks.Add(Core.LocalDhtID);
 
                     ExpandPath(node, uplinks);
@@ -420,20 +421,13 @@ namespace DeOps.Components.Link
                     UnloadNode(node, visible);
                     NodeMap.Remove(link.DhtID);
                     node.Remove();
-
-                    // check if should be moved to unlinked
-                    if (oldParent != null && oldParent.Section == ProjectNode && oldParent.Nodes.Count == 0)
-                    {
-                        RemoveNode(oldParent);
-                        LoadRoot(CreateNode(oldParent.Link)); // unlink not removing from parents downlinks
-                    }
                 }
 
                 if (parent == null)
                     return;
 
                 // if new parent is hidden, dont bother adding till user expands
-                LinkNode newParent = parent as LinkNode; // null if root
+                LinkNode newParent = parent as LinkNode; // null if virtual parent (root)
 
                 if (newParent != null && newParent.AddSubs == false)
                     return;
@@ -442,24 +436,20 @@ namespace DeOps.Components.Link
                 // copy node to start fresh
                 LinkNode newNode = CreateNode(node.Link);
 
-
-                // check if parent should be moved to project header
                 if (newParent != null)
-                    if (newParent.Section == UnlinkedNode)
-                    {
-                        RemoveNode(newParent);
-                        newParent = CreateNode(newParent.Link);
-                        LoadRoot(newParent);
-                    }
-                    else
-                        Utilities.InsertSubNode(newParent, newNode);
-
-
-                // if node itself is the root
-                if (newParent == null)
+                    Utilities.InsertSubNode(newParent, newNode);
+                else
                     LoadRoot(newNode);
 
 
+                ArrangeRoots();
+
+                // arrange nodes can cause newNode to become invalid, retrieve updated copy
+                if(!NodeMap.ContainsKey(link.DhtID))
+                    return;
+
+                newNode = NodeMap[link.DhtID];
+     
                 if (loadsubs) // if previous node set to add kids
                 {
                     LoadNode(newNode);
@@ -480,7 +470,7 @@ namespace DeOps.Components.Link
 
                 foreach (ulong id in visible)
                 {
-                    List<ulong> uplinks = Links.GetUplinkIDs(id, Project);
+                    List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(id, Project);
 
                     foreach (LinkNode root in roots)
                         VisiblePath(root, uplinks);
@@ -497,14 +487,69 @@ namespace DeOps.Components.Link
             node.UpdateName(CommandTreeMode.Operation, Project);
 
             if (selected)
-            {
                 node.Selected = true;
-                
-                //CRIT!!!!! *****
-                //UpdateCommandPanel();
-            }
 
             Invalidate();
+        }
+
+        private void ArrangeRoots()
+        {
+            List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(Core.LocalDhtID, Project);
+            uplinks.Add(Core.LocalDhtID);
+
+            List<LinkNode> makeUntrusted = new List<LinkNode>();
+            List<LinkNode> makeProject = new List<LinkNode>();
+
+            int mode = 0; // 1 for project, 2 for untrusted
+
+            // look for nodes to switch
+            foreach (TreeListNode entry in Nodes)
+            {
+                LinkNode node = entry as LinkNode;
+
+                if (entry == ProjectNode)
+                    mode = 1;
+                else if (entry == UnlinkedNode)
+                    mode = 2;
+
+
+                if (node == null) 
+                    continue;
+
+
+                if(mode == 1 && !uplinks.Contains(node.Link.DhtID))
+                    makeUntrusted.Add(node);
+                else if(mode == 2 && uplinks.Contains(node.Link.DhtID))
+                    makeProject.Add(node);
+            }
+
+            // remove, recreate, insert, expand root, expand to self
+            foreach (LinkNode delNode in makeUntrusted)
+            {
+                RemoveNode(delNode); 
+
+                if (HideUnlinked)
+                    continue;
+
+                LinkNode node = CreateNode(delNode.Link);
+                LoadNode(node);
+                InsertRootNode(UnlinkedNode, node);
+                node.Expand();
+            }
+
+            Debug.Assert(makeProject.Count <= 1);
+
+            foreach (LinkNode delNode in makeProject)
+            {
+                RemoveNode(delNode);
+                LinkNode node = CreateNode(delNode.Link);
+                LoadNode(node);
+                InsertRootNode(ProjectNode, node);
+
+                node.Expand();
+                ExpandPath(node, uplinks);
+            }
+
         }
 
         private void RemoveNode(LinkNode node)
@@ -626,7 +671,7 @@ namespace DeOps.Components.Link
             node.Collapse();
         }
 
-        internal void SelectLink(ulong id)
+        internal void SelectLink(ulong id, uint project)
         {
             if (!Links.LinkMap.ContainsKey(id))
                 id = Core.LocalDhtID;
@@ -637,8 +682,9 @@ namespace DeOps.Components.Link
 
             // bold new and set
             SelectedLink = id;
+            SelectedProject = project;
 
-            if (NodeMap.ContainsKey(id))
+            if (NodeMap.ContainsKey(id) && Project == SelectedProject)
             {
                 NodeMap[id].Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
                 NodeMap[id].EnsureVisible();
@@ -736,9 +782,9 @@ namespace DeOps.Components.Link
             Links = main.Links;
             Locations = main.Core.Locations;
 
-            UpdateName(mode, 0);
+            UpdateName(mode, main.Project);
 
-            if (main.SelectedLink == Link.DhtID)
+            if (main.SelectedLink == Link.DhtID && main.Project == main.SelectedProject)
                 Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
         }
 
@@ -777,9 +823,9 @@ namespace DeOps.Components.Link
                     if (confirmed)
                     { }
                     else if (requested)
-                        txt += " (Link Pending)";
+                        txt += " (Trust Pending)";
                     else
-                        txt += " (Link Unconfirmed)";
+                        txt += " (Trust Unconfirmed)";
                 }
 
                 else if (!Link.Projects.Contains(proj))

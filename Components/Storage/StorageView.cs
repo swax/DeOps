@@ -167,7 +167,7 @@ namespace DeOps.Components.Storage
             // research higher / lowers
             List<ulong> ids = new List<ulong>();
             ids.Add(DhtID);
-            ids.AddRange(Storages.GetHigherIDs(DhtID, ProjectID));
+            ids.AddRange(Links.GetAdjacentIDs(DhtID, ProjectID));
             ids.AddRange(Links.GetDownlinkIDs(DhtID, ProjectID, 1));
 
             foreach (ulong id in ids)
@@ -220,7 +220,7 @@ namespace DeOps.Components.Storage
 
         private void DiffCombo_SelectedIndexChanged(object sender, EventArgs e)
         {
-            HigherIDs = Storages.GetHigherIDs(DhtID, ProjectID);
+            HigherIDs = Storages.GetHigherRegion(DhtID, ProjectID);
 
             CurrentDiffs.Clear();
 
@@ -610,7 +610,7 @@ namespace DeOps.Components.Storage
 
             // check if command structure has changed
             List<ulong> check = new List<ulong>();
-            List<ulong> highers = Storages.GetHigherIDs(DhtID, ProjectID);
+            List<ulong> highers = Storages.GetHigherRegion(DhtID, ProjectID);
 
             if (DiffCombo.Text == "Local")
             {
@@ -956,9 +956,11 @@ namespace DeOps.Components.Storage
 
             UpdateListItems();
 
-            if (SelectedFolder.GetPath() == infoPath)
+            if (!infoSet && SelectedFolder.GetPath() == infoPath)
+            {
                 infoSet = true;
-
+                SelectedInfo.ShowItem(SelectedFolder, null);
+            }
             if (!infoSet)
                 SelectedInfo.ShowDiffs();
         }

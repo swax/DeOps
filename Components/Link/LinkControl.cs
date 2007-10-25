@@ -1301,12 +1301,14 @@ namespace DeOps.Components.Link
 
         private OpLink TraverseUp(OpLink link, uint project, int distance)
         {
+            // needs to get unconfiremd ids so unconfirmed above / below are updated with link status
+
             if (distance == 0)
                 return link;
 
             int traverse = 0;
 
-            OpLink uplink = link.GetHigher(project);
+            OpLink uplink = link.GetHigher(project, false);
 
             while (uplink != null)
             {
@@ -1314,7 +1316,7 @@ namespace DeOps.Components.Link
                 if (traverse == distance)
                     return uplink;
 
-                uplink = uplink.GetHigher(project);
+                uplink = uplink.GetHigher(project, false);
             }
 
             return null;
@@ -1350,27 +1352,39 @@ namespace DeOps.Components.Link
 
         internal bool IsHigher(ulong key, uint project)
         {
-            return IsHigher(Core.LocalDhtID, key, project);
+            return IsHigher(Core.LocalDhtID, key, project, true);
+        }
+
+        internal bool IsUnconfirmedHigher(ulong key, uint project)
+        {
+            return IsHigher(Core.LocalDhtID, key, project, false);
         }
         
-        internal bool IsHigher(ulong localID, ulong higherID, uint project)
+        internal bool IsHigher(ulong localID, ulong key, uint project)
         {
-            if (!LinkMap.ContainsKey(localID))
-                return false;
+            return IsHigher(Core.LocalDhtID, key, project, true);
+        }
 
-            OpLink local = LinkMap[localID];
+        internal bool IsUnconfirmedHigher(ulong localID, ulong key, uint project)
+        {
+            return IsHigher(Core.LocalDhtID, key, project, false);
+        }
 
-            if (!local.Loaded)
-                return false;
+        private bool IsHigher(ulong localID, ulong higherID, uint project, bool confirmed)
+        {
+            OpLink local = GetLink(localID);
 
-            OpLink uplink = local.GetHigher(project);
+            if (local == null)
+                return false;   
+
+            OpLink uplink = local.GetHigher(project, confirmed);
 
             while (uplink != null)
             {
                 if (uplink.DhtID == higherID)
                     return true;
 
-                uplink = uplink.GetHigher(project);
+                uplink = uplink.GetHigher(project, confirmed);
             }
 
             return false;
@@ -1379,22 +1393,19 @@ namespace DeOps.Components.Link
 
         internal bool IsLower(ulong localID, ulong lowerID, uint project)
         {
-            if (!LinkMap.ContainsKey(lowerID))
-                return false;
+            OpLink lower = GetLink(lowerID);
 
-            OpLink lower = LinkMap[lowerID];
+            if (lower == null)
+                return false; 
 
-            if (!lower.Loaded)
-                return false;
-
-            OpLink uplink = lower.GetHigher(project);
+            OpLink uplink = lower.GetHigher(project, true);
 
             while (uplink != null)
             {
                 if (uplink.DhtID == localID)
                     return true;
 
-                uplink = uplink.GetHigher(project);
+                uplink = uplink.GetHigher(project, true);
             }
 
             return false;
@@ -1412,26 +1423,55 @@ namespace DeOps.Components.Link
 
         internal List<ulong> GetUplinkIDs(ulong id, uint project)
         {
+            return GetUplinkIDs(id, project, true);
+        }
+
+        internal List<ulong> GetUnconfirmedUplinkIDs(ulong id, uint project)
+        {
+            return GetUplinkIDs(id, project, false);
+        }
+
+        private List<ulong> GetUplinkIDs(ulong id, uint project, bool confirmed)
+        {
             // get uplinks from id, not including id, starting with directly above and ending with root
 
             List<ulong> list = new List<ulong>();
-            
-            if (!LinkMap.ContainsKey(id))
+
+            OpLink link = GetLink(id);
+
+            if (link == null)
                 return list;
 
-            OpLink link = LinkMap[id];
-
-            if (!link.Loaded)
-                return list;
-
-            OpLink uplink = link.GetHigher(project);
+            OpLink uplink = link.GetHigher(project, confirmed);
 
             while (uplink != null)
             {
                 list.Add(uplink.DhtID);
 
-                uplink = uplink.GetHigher(project);
+                uplink = uplink.GetHigher(project, confirmed);
             }
+
+            return list;
+        }
+
+        internal List<ulong> GetAdjacentIDs(ulong id, uint project)
+        {
+            List<ulong> list = new List<ulong>();
+
+            OpLink link = GetLink(id);
+
+            if (link == null)
+                return list;
+
+            OpLink uplink = link.GetHigher(project, true);
+
+            if (uplink == null)
+                return list;
+
+            foreach(OpLink sub in uplink.GetLowers(project, true))
+                list.Add(sub.DhtID);
+
+            list.Remove(id);
 
             return list;
         }
@@ -1440,16 +1480,14 @@ namespace DeOps.Components.Link
         {
             List<ulong> list = new List<ulong>();
 
-            if (!LinkMap.ContainsKey(id))
-                return list;
+            OpLink link = GetLink(id);
 
-            OpLink link = LinkMap[id];
-
-            if (!link.Loaded)
+            if (link == null)
                 return list;
 
             levels--;
 
+            //crit could probably use yield trick here get directly from the link itself
             if (link.Confirmed.ContainsKey(project) && link.Downlinks.ContainsKey(project))
                 foreach (OpLink downlink in link.Downlinks[project])
                     if (link.Confirmed[project].Contains(downlink.DhtID))
@@ -1482,7 +1520,7 @@ namespace DeOps.Components.Link
 
         internal bool IsAdjacent(ulong id, uint project)
         {
-            OpLink higher = LocalLink.GetHigher(project);
+            OpLink higher = LocalLink.GetHigher(project, true);
 
             if (higher != null &&
                 higher.Confirmed.ContainsKey(project) &&
@@ -1509,15 +1547,12 @@ namespace DeOps.Components.Link
 
         internal bool IsHigherDirect(ulong id, uint project)
         {
-            if (!LinkMap.ContainsKey(id))
+            OpLink link = GetLink(id);
+
+            if (link == null)
                 return false;
 
-            OpLink link = LinkMap[id];
-
-            if (!link.Loaded)
-                return false;
-
-            OpLink uplink = link.GetHigher(project);
+            OpLink uplink = link.GetHigher(project, true);
 
             if (uplink == null)
                 return false;
@@ -1552,6 +1587,21 @@ namespace DeOps.Components.Link
 
             return false;
         }
+
+        internal OpLink GetLink(ulong id)
+        {
+            if (!LinkMap.ContainsKey(id))
+                return null;
+
+            OpLink link = LinkMap[id];
+
+            if (!link.Loaded)
+                return null;
+
+            return link;
+        }
+
+
     }
 
 
@@ -1609,20 +1659,27 @@ namespace DeOps.Components.Link
 
 
             // only clear downlinks that are no longer uplinked to us
+            List<uint> removeIDs = new List<uint>();
+
             foreach (uint id in Downlinks.Keys)
             {
-                List<OpLink> downList = Downlinks[id];
-                List<OpLink> removeList = new List<OpLink>();
+                List<OpLink> list = Downlinks[id];
+                List<OpLink> remove = new List<OpLink>();
 
-                foreach (OpLink downlink in downList)
+                foreach (OpLink downlink in Downlinks[id])
                     if (downlink.Uplink.ContainsKey(id))
                         if (downlink.Uplink[id] != this)
-                            removeList.Add(downlink);
+                            remove.Add(downlink);
 
-                foreach (OpLink downlink in removeList)
-                    downList.Remove(downlink);
+                foreach (OpLink downlink in remove)
+                    list.Remove(downlink);
+
+                if (list.Count == 0)
+                    removeIDs.Add(id);
             }
 
+            foreach (uint id in removeIDs)
+                Downlinks.Remove(id);
  
             Projects.Clear();
             Title.Clear();
@@ -1685,12 +1742,37 @@ namespace DeOps.Components.Link
             }
         }
 
-        internal OpLink GetHigher(uint project)
+        internal OpLink GetHigher(uint project, bool confirmed)
         {
-            if(Uplink.ContainsKey(project))
+            if (!Uplink.ContainsKey(project))
+                return null;
+
+            if (!confirmed)
                 return Uplink[project];
 
+            OpLink uplink = Uplink[project];
+
+             if (!uplink.Confirmed.ContainsKey(project))
+                return null;
+
+            // if we are one of the uplinks confirmed downlinks then return trusted uplink
+            if (uplink.Confirmed[project].Contains(DhtID)) 
+                return uplink;
+             
             return null;
+        }
+
+        internal List<OpLink> GetLowers(uint project, bool confirmed)
+        {
+            List<OpLink> lowers = new List<OpLink>();
+
+             if (Downlinks.ContainsKey(project))
+                 if(!confirmed || Confirmed.ContainsKey(project))
+                    foreach (OpLink downlink in Downlinks[project])
+                        if (!confirmed || Confirmed[project].Contains(downlink.DhtID))
+                            lowers.Add(downlink);
+
+            return lowers;
         }
     }
 }

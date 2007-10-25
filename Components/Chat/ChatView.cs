@@ -14,12 +14,17 @@ namespace DeOps.Components.Chat
     internal partial class ChatView : ViewShell
     {
         ChatControl Chat;
+        uint ProjectID;
 
-        internal ChatView(ChatControl chat)
+        RoomView ViewHigh;
+        RoomView ViewLow;
+
+        internal ChatView(ChatControl chat, uint project)
         {
             InitializeComponent();
 
             Chat = chat;
+            ProjectID = project;
 
             Chat.CreateRoomEvent += new CreateRoomHandler(OnCreateRoom);
             Chat.RemoveRoomEvent += new RemoveRoomHandler(OnRemoveRoom);
@@ -28,10 +33,8 @@ namespace DeOps.Components.Chat
         internal override void Init()
         {
             foreach (ChatRoom room in Chat.Rooms)
-                OnCreateRoom(room);
-
-            if (ViewTabs.TabPages.Count > 1)
-                ViewTabs.SelectedTab = ViewTabs.TabPages[1];
+                if(room.ProjectID == ProjectID)
+                    OnCreateRoom(room);
         }
 
         internal override bool Fin()
@@ -39,15 +42,29 @@ namespace DeOps.Components.Chat
             Chat.CreateRoomEvent -= new CreateRoomHandler(OnCreateRoom);
             Chat.RemoveRoomEvent -= new RemoveRoomHandler(OnRemoveRoom);
 
-            foreach (TabPage page in ViewTabs.TabPages)
-                    foreach (Control obj in page.Controls)
-                        if (obj is ChatSplit)
-                        {
-                            ClearPanel(((ChatSplit)obj).ViewContainer.Panel1);
-                            ClearPanel(((ChatSplit)obj).ViewContainer.Panel2);
-                        }
+            ClearRoom(ViewHigh);
+            ClearRoom(ViewLow);
 
             return true;
+        }
+
+        private void ClearRoom(RoomView room)
+        {
+            if (room == null)
+                return;
+
+            if (room == ViewHigh)
+            {
+                ViewHigh.Fin();
+                ViewContainer.Panel1.Controls.Clear();
+            }
+
+            if (room == ViewLow)
+            {
+                ViewLow.Fin();
+                ViewContainer.Panel2.Controls.Clear();
+            }
+
         }
 
         internal override string GetTitle(bool small)
@@ -55,7 +72,14 @@ namespace DeOps.Components.Chat
             if (small)
                 return "Chat";
 
-            return "My Chat";
+            string title = "My ";
+
+            if (ProjectID != 0)
+                title += Chat.Core.Links.ProjectNames[ProjectID] + " ";
+
+            title += " Chat";
+
+            return title;
         }
 
         internal override Size GetDefaultSize()
@@ -70,108 +94,56 @@ namespace DeOps.Components.Chat
 
         private void OnCreateRoom(ChatRoom room)
         {
-            ChatSplit splitView = FindSplit(room);
-
-            // if split not found, create
-            if(splitView == null)
-            {
-                TabPage page = new TabPage(room.Name);
-                ViewTabs.TabPages.Add(page);
-
-                splitView = new ChatSplit(room.ID);
-                splitView.Dock = DockStyle.Fill;
-                page.Controls.Add(splitView);
-            }
-
             // high room
             if (room.Kind != RoomKind.Command_Low)
             {
-                ClearPanel(splitView.ViewContainer.Panel1);
+                ClearRoom(ViewHigh);
 
-                RoomView view = new RoomView(Chat, room);
-                view.Dock = DockStyle.Fill;
-                splitView.ViewContainer.Panel1.Controls.Add(view);
-                
-                view.Init();
-                splitView.ViewContainer.Panel1Collapsed = false;
+                ViewHigh = new RoomView(Chat, room);
+                ViewHigh.Dock = DockStyle.Fill;
+                ViewContainer.Panel1.Controls.Add(ViewHigh);
+
+                ViewHigh.Init();
+                ViewContainer.Panel1Collapsed = false;
             }
 
             // low room
             else
             {
-                ClearPanel(splitView.ViewContainer.Panel2);
+                ClearRoom(ViewLow);
 
-                RoomView view = new RoomView(Chat, room);
-                view.Dock = DockStyle.Fill;
-                splitView.ViewContainer.Panel2.Controls.Add(view);
-                
-                view.Init();
-                splitView.ViewContainer.Panel2Collapsed = false;
+                ViewLow = new RoomView(Chat, room);
+                ViewLow.Dock = DockStyle.Fill;
+                ViewContainer.Panel2.Controls.Add(ViewLow);
+
+                ViewLow.Init();
+                ViewContainer.Panel2Collapsed = false;
             }
 
             // collapse unused panels
-            if (splitView.ViewContainer.Panel1.Controls.Count == 0)
-                splitView.ViewContainer.Panel1Collapsed = true;
+            if (ViewContainer.Panel1.Controls.Count == 0)
+                ViewContainer.Panel1Collapsed = true;
 
-            if (splitView.ViewContainer.Panel2.Controls.Count == 0)
-                splitView.ViewContainer.Panel2Collapsed = true;
+            if (ViewContainer.Panel2.Controls.Count == 0)
+                ViewContainer.Panel2Collapsed = true;
         }
 
         private void OnRemoveRoom(ChatRoom room)
         {
-            ChatSplit splitView = FindSplit(room);
-
-            if (splitView == null)
-                return;
 
             // high room
             if (room.Kind != RoomKind.Command_Low)
             {
-                ClearPanel(splitView.ViewContainer.Panel1);
-                splitView.ViewContainer.Panel1Collapsed = true;
+                ClearRoom(ViewHigh);
+                ViewContainer.Panel1Collapsed = true;
             }
 
             // low room
             else
             {
-                ClearPanel(splitView.ViewContainer.Panel2);
-                splitView.ViewContainer.Panel2Collapsed = true;
-            }
-
-            // check if tab page needs to be removed
-            if (splitView.ViewContainer.Panel1.Controls.Count == 0 &&
-                splitView.ViewContainer.Panel2.Controls.Count == 0)
-            {
-                foreach (TabPage page in ViewTabs.TabPages)
-                    foreach (Control obj in page.Controls)
-                        if (obj is ChatSplit)
-                            if(obj == splitView)
-                            {
-                                ViewTabs.TabPages.Remove(page);
-                                return;
-                            }
+                ClearRoom(ViewLow);
+                ViewContainer.Panel2Collapsed = true;
             }
         }
-
-        private void ClearPanel(SplitterPanel panel)
-        {
-            foreach (Control item in panel.Controls)
-                if (item is RoomView)
-                    ((RoomView)item).Fin();
-
-            panel.Controls.Clear();
-        }
-        
-        private ChatSplit FindSplit(ChatRoom room)
-        {
-            foreach (TabPage page in ViewTabs.TabPages)
-                foreach (Control obj in page.Controls)
-                    if (obj is ChatSplit && ((ChatSplit)obj).RoomID == room.ID)
-                        return obj as ChatSplit;
-
-            return null;
-        }
-
-
     }
 }

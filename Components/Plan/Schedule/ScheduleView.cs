@@ -259,20 +259,24 @@ namespace DeOps.Components.Plan
             node.AddSubs = true;
 
             // go through downlinks
-            if (node.Link.Downlinks.ContainsKey(ProjectID))
-                foreach (OpLink link in node.Link.Downlinks[ProjectID])
+            foreach (ulong id in Links.GetDownlinkIDs(node.Link.DhtID, ProjectID, 1))
+            {
+                OpLink link = Links.GetLink(id);
+
+                if (link == null)
+                    continue;
+
+                // if doesnt exist search for it
+                if (!link.Loaded)
                 {
-                    // if doesnt exist search for it
-                    if (!link.Loaded)
-                    {
-                        Links.Research(link.DhtID, ProjectID, false);
-                        continue;
-                    }
-
-                    Plans.Research(link.DhtID);
-
-                    Utilities.InsertSubNode(node, CreateNode(link));
+                    Links.Research(link.DhtID, ProjectID, false);
+                    continue;
                 }
+
+                Plans.Research(link.DhtID);
+
+                Utilities.InsertSubNode(node, CreateNode(link));
+            }
         }
 
         private PlanNode CreateNode(OpLink link)

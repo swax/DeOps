@@ -281,7 +281,7 @@ namespace DeOps.Components.Storage
             Storages.CallFileUpdate(ProjectID, folder.GetPath(), file.Info.UID, WorkingChange.Created);
         }
 
-        internal void ReplaceFile(string path, StorageFile replacement)
+        internal void ReplaceFile(string path, StorageFile replacement, List<LockError> errors)
         {
             string name = Path.GetFileName(path);
             string dir = Utilities.StripOneLevel(path);
@@ -289,22 +289,56 @@ namespace DeOps.Components.Storage
             LocalFolder folder = GetLocalFolder(dir);
             LocalFile file = folder.GetFile(name);
 
-            //crit if unlocked need to replace file on drive as well
-                
-            // only create new entry for un-modified file
-            ReadyChange(file, replacement);
+            ReplaceFile(file, replacement, dir, true, errors);
 
             Storages.CallFileUpdate(ProjectID, folder.GetPath(), file.Info.UID, WorkingChange.Updated);
         }
 
-        internal void ReplaceFolder(string path, StorageFolder replacement)
+        void ReplaceFile(LocalFile file, StorageFile replacement, string dir, bool setModified, List<LockError> errors)
+        {
+            // this will lock file if it is unlocked
+            bool unlocked = Storages.IsFileUnlocked(Core.LocalDhtID, ProjectID, dir, file.Info, false);
+
+            Storages.LockFile(Core.LocalDhtID, ProjectID, dir, file.Info, false);
+
+            if (setModified)
+                ReadyChange(file, replacement);
+            else
+            {
+                file.Info = replacement;
+                file.Archived.AddFirst(replacement);
+            }
+
+            if (unlocked)
+                Storages.UnlockFile(Core.LocalDhtID, ProjectID, dir, file.Info, false, errors);
+        }
+
+        internal void ReplaceFolder(string path, StorageFolder replacement, bool setModified)
         {
             LocalFolder folder = GetLocalFolder(path);
 
-            //crit if unlocked need to replace file on drive as well
+            string oldPath = RootPath + path;
 
             // only create new entry for un-modified file
-            ReadyChange(folder, replacement);
+            if (setModified)
+                ReadyChange(folder, replacement);
+            else
+            {
+                folder.Info = replacement;
+                folder.Archived.AddFirst(replacement);
+            }
+
+            // rename folder on drive if it exists to match new folder
+            try
+            {
+                if (Directory.Exists(oldPath))
+                    if (Path.GetFileName(oldPath) != folder.Info.Name)
+                    {
+                        Directory.Move(oldPath, RootPath + folder.GetPath());
+                        folder.Info.SetFlag(StorageFlags.Unlocked);
+                    }
+            }
+            catch { }
 
             Storages.CallFolderUpdate(ProjectID, folder.Parent.GetPath(), folder.Info.UID, WorkingChange.Updated);
         }
@@ -753,7 +787,7 @@ namespace DeOps.Components.Storage
                 throw new Exception("Name Contains Invalid Characters");
 
             // check that scope includes self
-            if (!Core.Links.IsInScope(scope, Core.LocalDhtID, ProjectID))
+            if (scope.Count > 0 && !Core.Links.IsInScope(scope, Core.LocalDhtID, ProjectID))
                 throw new Exception("Visibility Must Include Yourself");
                 
 
@@ -797,7 +831,7 @@ namespace DeOps.Components.Storage
                 throw new Exception("Name Contains Invalid Characters");
 
             // check that scope includes self
-            if (!Core.Links.IsInScope(scope, Core.LocalDhtID, ProjectID))
+            if (scope.Count > 0 && !Core.Links.IsInScope(scope, Core.LocalDhtID, ProjectID))
                 throw new Exception("Visibility Must Include Yourself");
 
             string oldName = Path.GetFileName(path);
@@ -1247,14 +1281,16 @@ namespace DeOps.Components.Storage
             // only 'save' if file system in a saved state
 			// still merge with unsaved file system, just won't be made permanent till save is clicked
 
-            if (AutoIntegrate(RootFolder) || doSave)
+            List<LockError> errors = new List<LockError>();
+
+            if (AutoIntegrate(RootFolder, errors) || doSave)
                 if (!Modified)
                     Storages.SaveLocal(ProjectID); // triggers permanent save of system for publish on the network
                 else
                     PeriodicSave = true; // triggers save of working file system
         }
 
-        private bool AutoIntegrate(LocalFolder folder)
+        private bool AutoIntegrate(LocalFolder folder, List<LockError> errors)
         {
             bool save = false;
 
@@ -1283,29 +1319,26 @@ namespace DeOps.Components.Storage
                 // if current file/folder is not our own (itemdiff)
                 if (Storages.ItemDiff(latestFolder, folder.Info) != StorageActions.None)
                 {
-                    //crit
-                    /*if unlocked, overwrites
-                      replace should also use this function
-                    */
-                    folder.Info = latestFolder;
-                    folder.Archived.AddFirst(latestFolder);
+                    ReplaceFolder(folder.GetPath(), latestFolder, false);
 
                     save = true;
                 }
             }
 
+            string dir = folder.GetPath();
+
             foreach (LocalFile file in folder.Files.Values)
-                if(AutoIntegrate(file))
+                if(AutoIntegrate(file, dir, errors))
                     save = true;
 
             foreach (LocalFolder subfolder in folder.Folders.Values)
-                if( AutoIntegrate(subfolder))
+                if( AutoIntegrate(subfolder, errors))
                     save = true;
 
             return save;
         }
 
-        private bool AutoIntegrate(LocalFile file)
+        private bool AutoIntegrate(LocalFile file, string dir, List<LockError> errors)
         {
             // If file/folder not flagged as modified
             if(file.Info.IsFlagged(StorageFlags.Modified))
@@ -1349,12 +1382,7 @@ namespace DeOps.Components.Storage
 
             if (Storages.ItemDiff(latestFile, file.Info) != StorageActions.None)
             {
-                //crit
-                //if unlocked, overwrites
-				//replace should also use this function
-						
-                file.Info = latestFile;
-                file.Archived.AddFirst(latestFile);
+                ReplaceFile(file, latestFile, dir , false, errors);
 
                 save = true;
             }

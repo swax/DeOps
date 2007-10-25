@@ -41,6 +41,7 @@ namespace DeOps.Components.Profile
 
         internal string DefaultTemplate;
 
+        Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
         Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
         
 
@@ -172,22 +173,22 @@ namespace DeOps.Components.Profile
 
 
             // prune
+            List<ulong> removeIDs = new List<ulong>();
+            
             if (ProfileMap.Count > PruneSize)
             {
-                List<ulong> removeIds = new List<ulong>();
-
                 foreach (OpProfile profile in ProfileMap.Values)
                     if (profile.DhtID != Core.LocalDhtID &&
                         !Core.Links.LinkMap.ContainsKey(profile.DhtID) &&
                         !Utilities.InBounds(profile.DhtID, profile.DhtBounds, Core.LocalDhtID))
-                        removeIds.Add(profile.DhtID);
+                        removeIDs.Add(profile.DhtID);
 
-                while (removeIds.Count > 0 && ProfileMap.Count > PruneSize / 2)
+                while (removeIDs.Count > 0 && ProfileMap.Count > PruneSize / 2)
                 {
                     ulong furthest = Core.LocalDhtID;
                     OpProfile profile = ProfileMap[furthest];
 
-                    foreach (ulong id in removeIds)
+                    foreach (ulong id in removeIDs)
                         if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
                             furthest = id;
 
@@ -196,10 +197,21 @@ namespace DeOps.Components.Profile
                         catch { }
 
                     ProfileMap.Remove(furthest);
-                    removeIds.Remove(furthest);
+                    removeIDs.Remove(furthest);
                     RunSaveHeaders = true;
                 }
             }
+
+            // clean research map
+            removeIDs.Clear();
+
+            foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
+                if (Core.TimeNow > pair.Value)
+                    removeIDs.Add(pair.Key);
+
+            foreach (ulong id in removeIDs)
+                NextResearch.Remove(id);
+
         }
 
         void Network_Established()
@@ -229,8 +241,6 @@ namespace DeOps.Components.Profile
         {
             if (ProfileMap.ContainsKey(dhtid))
                 return ProfileMap[dhtid];
-
-            // dont need to search here cause search done when view inited
 
             return null;
         }
@@ -811,6 +821,25 @@ namespace DeOps.Components.Profile
             if (ProfileMap[key].Header != null)
                 if (ProfileMap[key].Header.Version < version)
                     StartSearch(key, version);
+        }
+
+        internal void Research(ulong key)
+        {
+            if (!Network.Routing.Responsive())
+                return;
+
+            // limit re-search to once per 30 secs
+            if (NextResearch.ContainsKey(key))
+                if (Core.TimeNow < NextResearch[key])
+                    return;
+
+            uint version = 0;
+            if (ProfileMap.ContainsKey(key))
+                version = ProfileMap[key].Header.Version + 1;
+
+            StartSearch(key, version);
+
+            NextResearch[key] = Core.TimeNow.AddSeconds(30);
         }
     }
 

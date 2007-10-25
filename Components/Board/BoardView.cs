@@ -97,6 +97,7 @@ namespace DeOps.Components.Board
         internal override bool Fin()
         {
             Board.PostUpdate -= new PostUpdateHandler(Board_PostUpdate);
+            Links.GuiUpdate  -= new LinkGuiUpdateHandler(Links_Update);
 
             Board.UnloadView(this, DhtID);
 

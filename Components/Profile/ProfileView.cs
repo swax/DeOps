@@ -20,6 +20,8 @@ namespace DeOps.Components.Profile
     {
         OpCore Core;
         ProfileControl Profiles;
+        LinkControl Links;
+
         ulong CurrentDhtID;
         internal uint ProjectID;
 
@@ -34,13 +36,16 @@ namespace DeOps.Components.Profile
 
             Profiles = profile;
             Core = profile.Core;
+            Links = Core.Links;
+
             CurrentDhtID = id;
             ProjectID = project;
         }
 
         internal override void Init()
         {
-            Profiles.ProfileUpdate += new ProfileUpdateHandler(OnProfileUpdate);
+            Profiles.ProfileUpdate += new ProfileUpdateHandler(Profile_Update);
+            Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
             
             OpProfile profile = Profiles.GetProfile(CurrentDhtID);
 
@@ -48,12 +53,20 @@ namespace DeOps.Components.Profile
                 DisplayLoading();
 
             else
-                OnProfileUpdate(profile);
+                Profile_Update(profile);
+
+            List<ulong> ids = new List<ulong>();
+            ids.AddRange(Links.GetUplinkIDs(CurrentDhtID, ProjectID));
+            ids.AddRange(Links.GetAdjacentIDs(CurrentDhtID, ProjectID));
+
+            foreach (ulong id in ids)
+                Profiles.Research(id);
         }
 
         internal override bool Fin()
         {
-            Profiles.ProfileUpdate -= new ProfileUpdateHandler(OnProfileUpdate);
+            Profiles.ProfileUpdate -= new ProfileUpdateHandler(Profile_Update);
+            Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
 
             return true;
         }
@@ -102,7 +115,16 @@ namespace DeOps.Components.Profile
             return ProfileRes.Icon;
         }
 
-        void OnProfileUpdate(OpProfile profile)
+        void Links_Update(ulong key)
+        {
+            // if updated node is local, or higher, refresh so motd updates
+
+            if(key == CurrentDhtID || Core.Links.IsHigher(CurrentDhtID, key, ProjectID))
+                if(Profiles.ProfileMap.ContainsKey(CurrentDhtID))
+                    Profile_Update(Profiles.ProfileMap[CurrentDhtID]);
+        }
+
+        void Profile_Update(OpProfile profile)
         {
             // if self or in uplink chain, update profile
             List<ulong> uplinks = new List<ulong>();

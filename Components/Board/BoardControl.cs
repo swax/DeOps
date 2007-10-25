@@ -1016,10 +1016,11 @@ namespace DeOps.Components.Board
 
             targets.Add(id); // need to include self in high and low scopes, for re-searching, onlinkupdate purposes
 
-            if (!Core.Links.LinkMap.ContainsKey(id))
+            OpLink link = Links.GetLink(id);
+
+            if (link == null)
                 return targets;
 
-            OpLink link = Core.Links.LinkMap[id];
 
             // get parent and children of parent
             if(scope != ScopeType.Low)

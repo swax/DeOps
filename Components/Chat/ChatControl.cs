@@ -17,6 +17,7 @@ namespace DeOps.Components.Chat
     internal class ChatControl : OpComponent
     {
         internal OpCore Core;
+        internal LinkControl Links;
 
         internal List<ChatRoom> Rooms = new List<ChatRoom>();
         Dictionary<ulong, List<ushort>> ConnectedClients = new Dictionary<ulong, List<ushort>>();
@@ -28,6 +29,7 @@ namespace DeOps.Components.Chat
         internal ChatControl(OpCore core)
         {
             Core = core;
+            Links = core.Links;
 
             Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
             Core.RudpControl.SessionData[ComponentID.Chat] = new SessionDataHandler(Session_Data);
@@ -38,12 +40,10 @@ namespace DeOps.Components.Chat
 
         void Core_Load()
         {
-            Core.Links.LinkUpdate += new LinkUpdateHandler(Link_Update);
+            Links.LinkUpdate += new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate += new LocationUpdateHandler(Location_Update);
 
-            lock (Core.Links.LinkMap)
-                foreach (OpLink link in Core.Links.LinkMap.Values)
-                    Link_Update(link);
+            Link_Update(Links.LocalLink);
         }
 
         void Core_Exit()
@@ -80,84 +80,84 @@ namespace DeOps.Components.Chat
                 return;
 
             // gui creates viewshell, component just passes view object
-            ChatView view = new ChatView(this);
+            ChatView view = new ChatView(this, node.GetProject());
 
             Core.InvokeView(node.IsExternal(), view);
         }
 
         internal void Link_Update(OpLink link)
         {
-            foreach (uint id in Core.Links.ProjectRoots.Keys)
+            foreach (uint project in Links.ProjectRoots.Keys)
             {
+                OpLink uplink = link.GetHigher(project, true);
+                List<OpLink> downlinks = link.GetLowers(project, true);
+
                 // if us
-                if (link == Core.Links.LocalLink)
+                if (link == Links.LocalLink)
                 {
                     // if uplink exists, refresh high room, else remove it
-                    if(link.Uplink.ContainsKey(id) && link.Uplink[id].Confirmed.ContainsKey(id))
-                        RefreshRoom(RoomKind.Command_High, id);
+                    if (uplink != null)
+                        RefreshRoom(RoomKind.Command_High, project);
                     else
-                        RemoveRoom(RoomKind.Command_High, id);
+                        RemoveRoom(RoomKind.Command_High, project);
 
                     // if downlinks exist
-                    if (link.Downlinks.ContainsKey(id) && link.Downlinks[id].Count > 0 &&
-                        link.Confirmed.ContainsKey(id) && link.Confirmed[id].Count > 0)
-                        RefreshRoom(RoomKind.Command_Low, id);
+                    if (downlinks.Count > 0)
+                        RefreshRoom(RoomKind.Command_Low, project);
                     else
-                        RemoveRoom(RoomKind.Command_Low, id);
+                        RemoveRoom(RoomKind.Command_Low, project);
                 }
 
                 // if not us
                 else
                 {
                     // remove link from whatever room
-                    ChatRoom currentRoom = FindRoom(link.DhtID, id);
+                    ChatRoom currentRoom = FindRoom(link.DhtID, project);
                     
                     if(currentRoom != null)
-                        RefreshRoom(currentRoom.Kind, id);
+                        RefreshRoom(currentRoom.Kind, project);
 
                     // find where node belongs
-                    if (Core.Links.LocalLink.Uplink.ContainsKey(id) && (
-                        link == Core.Links.LocalLink.Uplink[id] || IsDownlink(Core.Links.LocalLink.Uplink[id], link, id)))
-                        RefreshRoom(RoomKind.Command_High, id);
+                    if (uplink != null && (link == uplink || Links.IsLower(uplink.DhtID, link.DhtID, project)))
+                        RefreshRoom(RoomKind.Command_High, project);
 
-                    else if (IsDownlink(Core.Links.LocalLink, link, id))
-                        RefreshRoom(RoomKind.Command_Low, id);
+                    else if (Links.IsLowerDirect(link.DhtID, project))
+                        RefreshRoom(RoomKind.Command_Low, project);
                 }
             }
         }
 
-        private void RefreshRoom(RoomKind kind, uint id)
+        private void RefreshRoom(RoomKind kind, uint project)
         {
             OpLink highNode = null;
 
             if (kind == RoomKind.Command_High)
             {
-                if (Core.Links.LocalLink.Uplink.ContainsKey(id) && 
-                    Core.Links.LocalLink.Uplink[id].Confirmed.ContainsKey(id))
-                    highNode = Core.Links.LocalLink.Uplink[id];
-                else
+                highNode = Links.LocalLink.GetHigher(project, true) ;
+
+                if(highNode == null)
                 {
-                    RemoveRoom(kind, id);
+                    RemoveRoom(kind, project);
                     return;
                 }
             }
 
             if (kind == RoomKind.Command_Low)
-                highNode = Core.Links.LocalLink;
+                highNode = Links.LocalLink;
 
             // ensure top room exists
-            ChatRoom room = FindRoom(kind, id);
+            ChatRoom room = FindRoom(kind, project);
             bool newRoom = false;
 
             if (room == null)
             {
                 string name = "error";
-                if (id == 0)
+                if (project == 0)
                     name = Core.User.Settings.Operation;
-                else if (Core.Links.ProjectNames.ContainsKey(id))
-                    name = Core.Links.ProjectNames[id];
+                else if (Links.ProjectNames.ContainsKey(project))
+                    name = Links.ProjectNames[project];
 
-                room = new ChatRoom(kind, id, name);
+                room = new ChatRoom(kind, project, name);
                 Rooms.Add(room);
 
                 newRoom = true;
@@ -169,13 +169,12 @@ namespace DeOps.Components.Chat
             // add members
             room.Members.Add(highNode);
 
-            foreach (OpLink downlink in highNode.Downlinks[id])
-                if (highNode.Confirmed[id].Contains(downlink.DhtID))
-                    room.Members.Add(downlink);
+            foreach (OpLink downlink in highNode.GetLowers(project, true))
+                room.Members.Add(downlink);
 
             if(room.Members.Count == 1)
             {
-                RemoveRoom(kind, id);
+                RemoveRoom(kind, project);
                 return;
             }
 
@@ -197,10 +196,10 @@ namespace DeOps.Components.Chat
             Core.InvokeInterface(RemoveRoomEvent, room);
         }
 
-        private ChatRoom FindRoom(RoomKind kind, uint id)
+        private ChatRoom FindRoom(RoomKind kind, uint project)
         {
             foreach (ChatRoom room in Rooms)
-                if (kind == room.Kind && id == room.ID)
+                if (kind == room.Kind && project == room.ProjectID)
                     return room;
 
             return null;
@@ -221,25 +220,15 @@ namespace DeOps.Components.Chat
             return results;
         }
 
-        private ChatRoom FindRoom(ulong key, uint id)
+        private ChatRoom FindRoom(ulong key, uint project)
         {
             foreach (ChatRoom room in Rooms)
-                if (room.ID == id)
+                if (room.ProjectID == project)
                     foreach (OpLink member in room.Members)
                         if (member.DhtID == key)
                             return room;
 
             return null;
-        }
-
-        bool IsDownlink(OpLink high, OpLink low, uint id)
-        {
-            if (high != null)
-                if (high.Downlinks.ContainsKey(id) && high.Confirmed.ContainsKey(id))
-                    if (high.Downlinks[id].Contains(low) && high.Confirmed[id].Contains(low.DhtID))
-                        return true;
-
-            return false;
         }
 
         internal void Location_Update(LocationData location)
@@ -263,8 +252,8 @@ namespace DeOps.Components.Chat
 
             // getstatus message
             string name = "unknown ";
-            if (Core.Links.LinkMap.ContainsKey(key) && Core.Links.LinkMap[key].Name != null)
-                name = Core.Links.LinkMap[key].Name + " ";
+            if (Links.LinkMap.ContainsKey(key) && Links.LinkMap[key].Name != null)
+                name = Links.LinkMap[key].Name + " ";
 
             string location = "";
             if (Core.Locations.ClientCount(session.DhtID ) > 1)
@@ -312,7 +301,7 @@ namespace DeOps.Components.Chat
             bool sent = false;
 
             ChatData packet = new ChatData(ChatPacketType.Message);
-            packet.ChatID = Room.ID;
+            packet.ChatID = Room.ProjectID;
             packet.Text   = text;
             packet.Custom = (Room.Kind == RoomKind.Custom);
 
@@ -382,7 +371,7 @@ namespace DeOps.Components.Chat
 
     internal class ChatRoom
     {
-        internal uint     ID;
+        internal uint     ProjectID;
         internal string   Name;
         internal RoomKind Kind;
 
@@ -394,10 +383,10 @@ namespace DeOps.Components.Chat
         internal ChatUpdateHandler    ChatUpdate;
 
 
-        internal ChatRoom(RoomKind kind, uint id, string name)
+        internal ChatRoom(RoomKind kind, uint project, string name)
         {
             Kind = kind;
-            ID   = id;
+            ProjectID   = project;
             Name = name;
         }
     }
