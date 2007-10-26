@@ -90,7 +90,6 @@ namespace DeOps.Components.Storage
             MenuDelete = new ToolStripMenuItem("Delete", StorageRes.Reject, FileView_Delete);
             MenuDetails = new ToolStripMenuItem("Details", StorageRes.details, FileView_Details);
 
-
             toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
         }
 

@@ -10,6 +10,8 @@ using DeOps.Interface;
 using DeOps.Implementation;
 using DeOps.Components.Link;
 using DeOps.Interface.TLVex;
+using DeOps.Interface.Views;
+
 
 namespace DeOps.Components.Plan
 {
@@ -23,6 +25,9 @@ namespace DeOps.Components.Plan
         internal uint ProjectID;
 
         List<int> SpecialList = new List<int>();
+
+        List<PlanGoal> RootList = new List<PlanGoal>();
+        List<PlanGoal> ArchiveList = new List<PlanGoal>();
 
         internal int LoadIdent;
         internal int LoadBranch;
@@ -38,6 +43,8 @@ namespace DeOps.Components.Plan
 
             DhtID = id;
             ProjectID = project;
+
+            toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
         }
 
         internal override string GetTitle(bool small)
@@ -79,34 +86,36 @@ namespace DeOps.Components.Plan
             Plans.GetFocused += new PlanGetFocusedHandler(LinkandPlans_GetFocused);
 
 
-            GoalTabs.Height = Height;
+            splitContainer1.Height = Height - toolStrip1.Height;
 
-            if (DhtID != Core.LocalDhtID)
-                CreateButton.Hide();
-
+            MainPanel.Init(this);
+            
+         
             // research highers for assignments
             List<ulong> ids = Links.GetUplinkIDs(DhtID, ProjectID);
 
             foreach (ulong id in ids)
                 Plans.Research(id);
 
-            UpdateTabs();
 
-            if (GoalTabs.TabPages.Count > 1)
-                GoalTabs.SelectedTab = GoalTabs.TabPages[1];
+            RefreshAssigned();
         }
         private void GoalsView_Load(object sender, EventArgs e)
         {
-             foreach (TabPage tab in GoalTabs.TabPages)
-                if (tab.GetType() == typeof(GoalPage))
-                    if (((GoalPage)tab).Goal.Ident == LoadIdent)
+            if(LoadIdent != 0)
+                foreach(PlanGoal goal in RootList)
+                    if (goal.Ident == LoadIdent)
                     {
-                        GoalTabs.SelectedTab = tab;
                         //crit go to specific branch ((GoalPage)tab).SelectBranch(LoadBranch);
                         // schedule needs to pass a list of the branches from the root to this node
                         // so appropriate path can be expanded
-                        break;
+
+                        MainPanel.LoadGoal(goal);
+                        return;
                     }
+
+            if (RootList.Count > 0)
+                MainPanel.LoadGoal(RootList[0]);
         }
 
         internal override bool Fin()
@@ -134,142 +143,112 @@ namespace DeOps.Components.Plan
         {
             List<ulong> focus = new List<ulong>(); // new List<ulong>(ids);
 
-            foreach (TabPage tab in GoalTabs.TabPages)
-                if (tab.GetType() == typeof(GoalPage))
-                    ((GoalPage)tab).Panel.GetFocused(focus);
+            MainPanel.GetFocused(focus);
 
             return focus;
         }
 
         void Links_Update(ulong key)
         {
-            UpdateTabs();
+            RefreshAssigned();
 
-            foreach (TabPage tab in GoalTabs.TabPages )
-                if (tab.GetType() == typeof(GoalPage))
-                    ((GoalPage)tab).Panel.LinkUpdate(key);
+            MainPanel.LinkUpdate(key);
         }
 
         void Plans_Update(OpPlan plan)
         {
-            UpdateTabs();
+            RefreshAssigned();
 
-
-            foreach (TabPage tab in GoalTabs.TabPages)
-                if (tab.GetType() == typeof(GoalPage))
-                    ((GoalPage)tab).Panel.PlanUpdate(plan);
+            MainPanel.PlanUpdate(plan);
         }
 
 
-        void UpdateTabs()
+        void RefreshAssigned()
         {
-            List<PlanGoal> rootList = new List<PlanGoal>();
-            List<PlanGoal> archiveList = new List<PlanGoal>();
-            List<int> assigned = new List<int>();
+            RootList.Clear();
+            ArchiveList.Clear();
 
-            // foreach self & higher
-            List<ulong> ids = Links.GetUplinkIDs(DhtID, ProjectID);
-            ids.Add(DhtID);
-            
-            foreach (ulong id in ids)
+            Plans.GetAssignedGoals(DhtID, ProjectID, RootList, ArchiveList);
+
+            string label = RootList.Count.ToString();
+            label += (RootList.Count == 1) ? " Goal" : " Goals";
+            SelectGoalButton.Text = label;
+        }
+
+        internal void ChangesMade()
+        {
+            Plans_Update(Plans.LocalPlan);
+
+            ChangesLabel.Visible = true;
+            SaveLink.Visible = true;
+            DiscardLink.Visible = true;
+
+            splitContainer1.Height = Height - toolStrip1.Height - 15;
+        }
+
+        private void SaveLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            ChangesLabel.Visible = false;
+            SaveLink.Visible = false;
+            DiscardLink.Visible = false;
+
+            splitContainer1.Height = Height - toolStrip1.Height;
+
+            Plans.SaveLocal();
+        }
+
+        private void DiscardLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            ChangesLabel.Visible = false;
+            SaveLink.Visible = false;
+            DiscardLink.Visible = false;
+            splitContainer1.Height = Height - toolStrip1.Height;
+
+            Plans.LoadPlan(Core.LocalDhtID);
+            Plans_Update(Plans.LocalPlan);
+        }
+
+
+        private void SelectGoal_DropDownOpening(object sender, EventArgs e)
+        {
+            SelectGoalButton.DropDownItems.Clear();
+
+            // add plans
+            foreach(PlanGoal goal in RootList)
+                SelectGoalButton.DropDownItems.Add(new SelectMenuItem(goal, new EventHandler(SelectGoalMenu_Click)));
+
+            // add archived if exists
+            if (ArchiveList.Count > 0)
             {
-                OpPlan plan = Plans.GetPlan(id);
+                ToolStripMenuItem archived = new ToolStripMenuItem("Archived");
 
-                if (plan == null)
-                    continue;
+                foreach (PlanGoal goal in ArchiveList)
+                    archived.DropDownItems.Add(new SelectMenuItem(goal, new EventHandler(SelectGoalMenu_Click)));
 
-                // apart of goals we have been assigned to
-
-                foreach (List<PlanGoal> list in plan.GoalMap.Values)
-                    foreach (PlanGoal goal in list)
-                    {
-                        if (goal.Project != ProjectID)
-                            break;
-
-                        if (goal.Person == DhtID && !assigned.Contains(goal.Ident))
-                            assigned.Add(goal.Ident);
-
-                        if (goal.BranchDown == 0)
-                        {
-                            if(goal.Archived)
-                                archiveList.Add(goal);
-                            else
-                                rootList.Add(goal);
-                        }
-                    }
+                SelectGoalButton.DropDownItems.Add(archived);
             }
 
-            // update archive
-            ArchivedList.Items.Clear();
+            // if local, add create option
+            if (DhtID == Core.LocalDhtID)
+            {
+                SelectGoalButton.DropDownItems.Add(new ToolStripSeparator());
 
-            foreach (PlanGoal goal in archiveList)
-                if(assigned.Contains(goal.Ident))
-                    ArchivedList.Items.Add(new ArchiveItem(goal));
-
-            ArchivedList.Invalidate();
-
-            // check if in tabs, if not (add tab)
-            foreach (PlanGoal goal in rootList)
-                if (assigned.Contains(goal.Ident))
-                {
-                    bool add = true;
-
-                    foreach (TabPage tab in GoalTabs.TabPages)
-                        if (tab.GetType() == typeof(GoalPage))
-                            if (((GoalPage)tab).Goal.Ident == goal.Ident)
-                            {
-                                add = false;
-                                break;
-                            }
-
-                    if (add)
-                        AddTab(goal);
-                }
-
-            // check if in list, if not remove
-            List<TabPage> removeTabs = new List<TabPage>();
-
-            foreach (TabPage tab in GoalTabs.TabPages )
-                if (tab.GetType() == typeof(GoalPage))
-                {
-                    bool remove = true;
-
-                    GoalPage page = (GoalPage)tab;
-
-                    foreach (PlanGoal goal in rootList)
-                        if(assigned.Contains(goal.Ident))
-                            if (goal.Ident == page.Goal.Ident)
-                            {
-                                page.Update(goal);
-                                remove = false;
-                                break;
-                            }
-
-                    if (remove && // special for archive tabs
-                        SpecialList.Contains(page.Goal.Ident) &&
-                        Plans.GetPlan(page.Goal.Person).GoalMap.ContainsKey(page.Goal.Ident))
-                    {
-                        page.Update(page.Goal);
-                        remove = false;
-                    }
-
-                    if (remove)
-                        removeTabs.Add(tab);
-                }
-               
-            foreach(TabPage page in removeTabs)
-                GoalTabs.TabPages.Remove(page);
+                SelectGoalButton.DropDownItems.Add(new ToolStripMenuItem("Create Goal", null, SelectGoalMenu_Create));
+            }
         }
 
-        void AddTab(PlanGoal goal)
+        private void SelectGoalMenu_Click(object sender, EventArgs e)
         {
-            // sort from highest assigner to lowest, and by deadline
+            SelectMenuItem item = sender as SelectMenuItem;
 
+            if (item == null)
+                return;
 
-            GoalTabs.TabPages.Add(new GoalPage(goal, this)); 
+            MainPanel.LoadGoal(item.Goal);
         }
 
-        private void CreateButton_Click(object sender, EventArgs e)
+
+        private void SelectGoalMenu_Create(object sender, EventArgs e)
         {
             PlanGoal goal = new PlanGoal();
             goal.Ident = Core.RndGen.Next();
@@ -280,44 +259,21 @@ namespace DeOps.Components.Plan
             EditGoal form = new EditGoal(EditGoalMode.New, Core, goal);
 
             if (form.ShowDialog(this) == DialogResult.OK)
+            {
                 ChangesMade();
 
+                MainPanel.LoadGoal(goal);
+            }
         }
 
-        internal void ChangesMade()
+        private void DetailsButton_CheckedChanged(object sender, EventArgs e)
         {
-            Plans_Update(Plans.LocalPlan);
+            splitContainer1.Panel2Collapsed = !DetailsButton.Checked;
 
-            ChangesLabel.Visible = true;
-            SaveLink.Visible = true;
-            DiscardLink.Visible = true;
-            
-            GoalTabs.Height = Height - 15;
         }
 
-        private void SaveLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            ChangesLabel.Visible = false;
-            SaveLink.Visible = false;
-            DiscardLink.Visible = false;
 
-            GoalTabs.Height = Height;
-
-            Plans.SaveLocal();
-        }
-
-        private void DiscardLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            ChangesLabel.Visible = false;
-            SaveLink.Visible = false;
-            DiscardLink.Visible = false;
-            GoalTabs.Height = Height;
-
-            Plans.LoadPlan(Core.LocalDhtID);
-            Plans_Update(Plans.LocalPlan);
-        }
-
-        private void ArchivedList_SelectedIndexChanged(object sender, EventArgs e)
+        /*private void ArchivedList_SelectedIndexChanged(object sender, EventArgs e)
         {
             ArchiveItem item = GetSelectedArchive();
 
@@ -349,16 +305,6 @@ namespace DeOps.Components.Plan
                     }
 
             ViewLink.Text = viewing ? "Hide" : "View";
-        }
-
-        ArchiveItem GetSelectedArchive()
-        {
-            if (ArchivedList.SelectedItems.Count == 0)
-                return null;
-
-            ArchiveItem item = ArchivedList.SelectedItems[0] as ArchiveItem;
-
-            return item;
         }
 
         void HideLinks()
@@ -449,50 +395,17 @@ namespace DeOps.Components.Plan
             ChangesMade();
 
             ArchivedList_SelectedIndexChanged(null, null);
-        }
-        
-
-
+        }*/
     }
 
-    internal class GoalPage : TabPage
+    class SelectMenuItem : ToolStripMenuItem
     {
         internal PlanGoal Goal;
 
-        internal GoalPanel Panel;
-
-
-        internal GoalPage(PlanGoal goal, GoalsView view)
-        {
-            UseVisualStyleBackColor = true;
-
-            Update(goal);
-
-            Panel = new GoalPanel(view, goal);
-            Panel.Dock = DockStyle.Fill;
-            Controls.Add(Panel);
-        }
-
-        internal void Update(PlanGoal goal)
+        internal SelectMenuItem(PlanGoal goal, EventHandler onClick)
+            : base(goal.Title, null, onClick)
         {
             Goal = goal;
-
-            if (Goal.Archived)
-                Text = "* " + Goal.Title;
-            else
-                Text = Goal.Title;
-        }
-    }
-
-    internal class ArchiveItem : ContainerListViewItem
-    {
-        internal PlanGoal Goal;
-
-        internal ArchiveItem(PlanGoal goal)
-        {
-            Goal = goal;
-
-            Text = goal.Title;
         }
     }
 }

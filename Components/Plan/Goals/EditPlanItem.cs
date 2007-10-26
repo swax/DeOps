@@ -103,5 +103,10 @@ namespace DeOps.Components.Plan
         {
             Close();
         }
+
+        private void EditPlanItem_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

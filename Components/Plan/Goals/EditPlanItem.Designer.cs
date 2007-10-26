@@ -117,6 +117,7 @@ namespace DeOps.Components.Plan
             this.DescriptionInput.EnterClears = false;
             this.DescriptionInput.Location = new System.Drawing.Point(14, 144);
             this.DescriptionInput.Name = "DescriptionInput";
+            this.DescriptionInput.ReadOnly = false;
             this.DescriptionInput.ShowFontStrip = true;
             this.DescriptionInput.Size = new System.Drawing.Size(266, 194);
             this.DescriptionInput.TabIndex = 38;
@@ -230,6 +231,7 @@ namespace DeOps.Components.Plan
             this.Name = "EditPlanItem";
             this.ShowInTaskbar = false;
             this.Text = "EditPlanItem";
+            this.Load += new System.EventHandler(this.EditPlanItem_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 

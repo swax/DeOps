@@ -115,8 +115,10 @@ Components
 		old plans not being deleted? seems like extra files in dir, try loading solo and updating local plan file
 		shutdown in the middle of the causing load corruption?			
 		transfer branch path when goal <-> schedule
+		
 		make details visible somehow for selected schedule
-		***goal interface - left hand side panel split in two - top goal list with add/remove/archive, bottom with selected description
+		lower icons not loading?
+
 			
 	Storage
 		***drag into secure storage gives user option to replace what is already there, either on disk or locked

@@ -847,6 +847,54 @@ namespace DeOps.Components.Plan
                         GetEstimate(sub, ref completed, ref total);
                     }
         }
+
+        internal void GetAssignedGoals(ulong target, uint project, List<PlanGoal> roots, List<PlanGoal> archived)
+        {
+            List<PlanGoal> tempRoots = new List<PlanGoal>();
+            List<PlanGoal> tempArchived = new List<PlanGoal>();
+
+            List<int> assigned = new List<int>();
+
+            // foreach self & higher
+            List<ulong> ids = Links.GetUplinkIDs(target, project);
+            ids.Add(target);
+
+            foreach (ulong id in ids)
+            {
+                OpPlan plan = GetPlan(id);
+
+                if (plan == null)
+                    continue;
+
+                // apart of goals we have been assigned to
+
+                foreach (List<PlanGoal> list in plan.GoalMap.Values)
+                    foreach (PlanGoal goal in list)
+                    {
+                        if (goal.Project != project)
+                            break;
+
+                        if (goal.Person == target && !assigned.Contains(goal.Ident))
+                            assigned.Add(goal.Ident);
+
+                        if (goal.BranchDown == 0)
+                        {
+                            if (goal.Archived)
+                                tempArchived.Add(goal);
+                            else
+                                tempRoots.Add(goal);
+                        }
+                    }
+            }
+
+            foreach (PlanGoal goal in tempArchived)
+                if (assigned.Contains(goal.Ident))
+                    archived.Add(goal);
+
+            foreach (PlanGoal goal in tempRoots)
+                if (assigned.Contains(goal.Ident))
+                    roots.Add(goal);
+        }
     }
 
     internal class OpPlan

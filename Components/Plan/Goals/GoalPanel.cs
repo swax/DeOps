@@ -28,35 +28,39 @@ namespace DeOps.Components.Plan
 
         Dictionary<ulong, List<GoalNode>> TreeMap = new Dictionary<ulong, List<GoalNode>>();
 
-
-        internal GoalPanel(GoalsView view, PlanGoal head)
+        internal GoalPanel()
         {
             InitializeComponent();
+        }
 
+        internal void Init(GoalsView view)
+        {
             View = view;
             Core = View.Core;
             Plans = Core.Plans;
             Links = Core.Links;
-            Head = head;
             
             GoalTree.NodeExpanding += new EventHandler(GoalTree_NodeExpanding);
             GoalTree.NodeCollapsed += new EventHandler(GoalTree_NodeCollapsed);
 
             GoalTree.ControlPadding = 3;
-            //splitContainer2.Panel1Collapsed = true;
 
             GoalTree.SmallImageList = new List<Image>();
             GoalTree.SmallImageList.Add(new Bitmap(16, 16));
             GoalTree.SmallImageList.Add(PlanRes.star);
             GoalTree.SmallImageList.Add(PlanRes.high_goal);
             GoalTree.SmallImageList.Add(PlanRes.low_goal);
+
+            DelegateLink.Hide();
+            AddItemLink.Hide();
         }
 
-        private void GoalPanel_Load(object sender, EventArgs e)
+        internal void LoadGoal(PlanGoal head)
         {
+            Head = head;
+
             ReloadGoals();
 
-            
             // make self visible / select
             if (TreeMap.ContainsKey(View.DhtID))
             {
@@ -64,7 +68,8 @@ namespace DeOps.Components.Plan
 
                 list[0].Selected = true;
                 UpdatePlanItems(list[0]);
-            } 
+            }
+
         }
 
         private void ReloadGoals()
@@ -679,6 +684,10 @@ namespace DeOps.Components.Plan
 
         internal void LinkUpdate(ulong key)
         {
+            if (Head == null)
+                return;
+
+
             List<ulong> visible = new List<ulong>();
 
             // remove key from all parent sub items
@@ -767,9 +776,12 @@ namespace DeOps.Components.Plan
 
         internal void PlanUpdate(OpPlan plan)
         {
+            if (Head == null)
+                return;
+
+
             if (!plan.Loaded)
                 Plans.LoadPlan(plan.DhtID);
-
 
             // update progress of high levels for updated plan not in tree map because it is hidden
             if (plan.GoalMap.ContainsKey(Head.Ident) || plan.ItemMap.ContainsKey(Head.Ident))

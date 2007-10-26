@@ -243,7 +243,6 @@ namespace DeOps.Components.Plan
             this.Controls.Add(this.splitContainer1);
             this.Name = "GoalPanel";
             this.Size = new System.Drawing.Size(469, 343);
-            this.Load += new System.EventHandler(this.GoalPanel_Load);
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel1.PerformLayout();
             this.splitContainer1.Panel2.ResumeLayout(false);
