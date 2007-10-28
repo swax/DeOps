@@ -69,9 +69,9 @@ namespace DeOps.Interface
             TopToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
             NavStrip.Renderer = new ToolStripProfessionalRenderer(new NavColorTable());
             SideToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
-            SideModeStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
-
-            SideModeStrip.Visible = false;
+            SideNavStrip.Renderer = new ToolStripProfessionalRenderer(new NavColorTable());
+            
+            SideNavStrip.Visible = false;
             CommandTree.Top = 0;
             CommandTree.Height = CommandSplit.Panel1.Height;
         }
@@ -924,7 +924,7 @@ namespace DeOps.Interface
                 Width -= Panel2Width;
                 Left += Panel2Width;
 
-                SideModeStrip.Visible = true;
+                SideNavStrip.Visible = true;
                 CommandTree.Top = 23;
                 CommandTree.Height = CommandSplit.Panel1.Height - 23;
 
@@ -941,7 +941,7 @@ namespace DeOps.Interface
 
                 MainSplit.Panel2Collapsed = false;
 
-                SideModeStrip.Visible = false;
+                SideNavStrip.Visible = false;
 
                 CommandTree.Top = 0;
                 CommandTree.Height = CommandSplit.Panel1.Height;
@@ -1071,7 +1071,7 @@ namespace DeOps.Interface
             NewsSequence++;
 
             if (SideMode)
-                SideModeStrip.Invalidate();
+                SideNavStrip.Invalidate();
             else
                 NavStrip.Invalidate();
         }
@@ -1100,7 +1100,7 @@ namespace DeOps.Interface
 
             queue.Enqueue(item);
 
-            while (queue.Count > 15)
+            while (queue.Count > 15) // prevent flooding
                 queue.Dequeue();
 
             if (NewsHideUpdates)
@@ -1160,7 +1160,7 @@ namespace DeOps.Interface
                     NewsRecent.Enqueue(NewsPending.Dequeue());
 
             if (SideMode)
-                SideModeStrip.Invalidate();
+                SideNavStrip.Invalidate();
             else
                 NavStrip.Invalidate();
         }

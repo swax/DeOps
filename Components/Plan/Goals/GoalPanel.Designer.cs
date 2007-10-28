@@ -38,8 +38,8 @@ namespace DeOps.Components.Plan
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.MineOnly = new System.Windows.Forms.CheckBox();
             this.DelegateLink = new System.Windows.Forms.LinkLabel();
-            this.GoalTree = new DeOps.Interface.TLVex.TreeListViewEx();
             this.AddItemLink = new System.Windows.Forms.LinkLabel();
+            this.GoalTree = new DeOps.Interface.TLVex.TreeListViewEx();
             this.PlanList = new DeOps.Interface.TLVex.ContainerListViewEx();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -92,6 +92,18 @@ namespace DeOps.Components.Plan
             this.DelegateLink.TabStop = true;
             this.DelegateLink.Text = "Delegate Responsibility";
             this.DelegateLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.DelegateLink_LinkClicked);
+            // 
+            // AddItemLink
+            // 
+            this.AddItemLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.AddItemLink.AutoSize = true;
+            this.AddItemLink.Location = new System.Drawing.Point(3, 114);
+            this.AddItemLink.Name = "AddItemLink";
+            this.AddItemLink.Size = new System.Drawing.Size(102, 13);
+            this.AddItemLink.TabIndex = 5;
+            this.AddItemLink.TabStop = true;
+            this.AddItemLink.Text = "Add Item to My Plan";
+            this.AddItemLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.AddItemLink_LinkClicked);
             // 
             // GoalTree
             // 
@@ -165,18 +177,6 @@ namespace DeOps.Components.Plan
             this.GoalTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.GoalTree_MouseClick);
             this.GoalTree.SelectedItemChanged += new System.EventHandler(this.GoalTree_SelectedItemChanged);
             // 
-            // AddItemLink
-            // 
-            this.AddItemLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.AddItemLink.AutoSize = true;
-            this.AddItemLink.Location = new System.Drawing.Point(3, 114);
-            this.AddItemLink.Name = "AddItemLink";
-            this.AddItemLink.Size = new System.Drawing.Size(102, 13);
-            this.AddItemLink.TabIndex = 5;
-            this.AddItemLink.TabStop = true;
-            this.AddItemLink.Text = "Add Item to My Plan";
-            this.AddItemLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.AddItemLink_LinkClicked);
-            // 
             // PlanList
             // 
             this.PlanList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
@@ -193,17 +193,16 @@ namespace DeOps.Components.Plan
             toggleColumnHeader5.Text = "Plan";
             toggleColumnHeader5.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader5.Visible = true;
-            toggleColumnHeader5.Width = 179;
+            toggleColumnHeader5.Width = 209;
             toggleColumnHeader6.Hovered = false;
             toggleColumnHeader6.Image = null;
             toggleColumnHeader6.Index = 0;
             toggleColumnHeader6.Pressed = false;
             toggleColumnHeader6.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader6.Selected = false;
-            toggleColumnHeader6.Text = "When";
+            toggleColumnHeader6.Text = "Time Estimate";
             toggleColumnHeader6.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader6.Visible = true;
-            toggleColumnHeader6.Width = 140;
             toggleColumnHeader7.Hovered = false;
             toggleColumnHeader7.Image = null;
             toggleColumnHeader7.Index = 0;
@@ -213,7 +212,7 @@ namespace DeOps.Components.Plan
             toggleColumnHeader7.Text = "Progress";
             toggleColumnHeader7.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader7.Visible = true;
-            toggleColumnHeader7.Width = 150;
+            toggleColumnHeader7.Width = 170;
             this.PlanList.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader5,
             toggleColumnHeader6,
@@ -235,6 +234,7 @@ namespace DeOps.Components.Plan
             this.PlanList.TabIndex = 4;
             this.PlanList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.PlanList_MouseClick);
             this.PlanList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.PlanList_MouseDoubleClick);
+            this.PlanList.SelectedIndexChanged += new System.EventHandler(this.PlanList_SelectedIndexChanged);
             // 
             // GoalPanel
             // 

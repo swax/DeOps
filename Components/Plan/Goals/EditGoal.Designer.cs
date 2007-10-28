@@ -87,7 +87,7 @@ namespace DeOps.Components.Plan
             // 
             // NotesInput
             // 
-            this.NotesInput.AcceptTabs = false;
+            this.NotesInput.AcceptTabs = true;
             this.NotesInput.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
@@ -95,7 +95,8 @@ namespace DeOps.Components.Plan
             this.NotesInput.EnterClears = false;
             this.NotesInput.Location = new System.Drawing.Point(15, 122);
             this.NotesInput.Name = "NotesInput";
-            this.NotesInput.ShowFontStrip = true;
+            this.NotesInput.ReadOnly = false;
+            this.NotesInput.ShowFontStrip = false;
             this.NotesInput.Size = new System.Drawing.Size(260, 189);
             this.NotesInput.TabIndex = 39;
             // 

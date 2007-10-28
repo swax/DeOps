@@ -36,9 +36,11 @@ namespace DeOps.Components.Plan
             this.SelectGoalButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.DetailsButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.DetailsBrowser = new System.Windows.Forms.WebBrowser();
             MainPanel = new GoalPanel();
             this.toolStrip1.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
+            this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -135,9 +137,12 @@ namespace DeOps.Components.Plan
             // splitContainer1.Panel1
             // 
             this.splitContainer1.Panel1.Controls.Add(this.MainPanel);
-            this.splitContainer1.Panel2Collapsed = true;
+            // 
+            // splitContainer1.Panel2
+            // 
+            this.splitContainer1.Panel2.Controls.Add(this.DetailsBrowser);
             this.splitContainer1.Size = new System.Drawing.Size(489, 389);
-            this.splitContainer1.SplitterDistance = 317;
+            this.splitContainer1.SplitterDistance = 313;
             this.splitContainer1.TabIndex = 21;
             // 
             // MainPanel
@@ -145,8 +150,19 @@ namespace DeOps.Components.Plan
             this.MainPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.MainPanel.Location = new System.Drawing.Point(0, 0);
             this.MainPanel.Name = "MainPanel";
-            this.MainPanel.Size = new System.Drawing.Size(489, 389);
+            this.MainPanel.Size = new System.Drawing.Size(313, 389);
             this.MainPanel.TabIndex = 0;
+            // 
+            // DetailsBrowser
+            // 
+            this.DetailsBrowser.AllowWebBrowserDrop = false;
+            this.DetailsBrowser.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.DetailsBrowser.IsWebBrowserContextMenuEnabled = false;
+            this.DetailsBrowser.Location = new System.Drawing.Point(0, 0);
+            this.DetailsBrowser.MinimumSize = new System.Drawing.Size(20, 20);
+            this.DetailsBrowser.Name = "DetailsBrowser";
+            this.DetailsBrowser.Size = new System.Drawing.Size(172, 389);
+            this.DetailsBrowser.TabIndex = 0;
             // 
             // GoalsView
             // 
@@ -163,6 +179,7 @@ namespace DeOps.Components.Plan
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
             this.splitContainer1.Panel1.ResumeLayout(false);
+            this.splitContainer1.Panel2.ResumeLayout(false);
             this.splitContainer1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -179,5 +196,6 @@ namespace DeOps.Components.Plan
         private System.Windows.Forms.ToolStripDropDownButton SelectGoalButton;
         private System.Windows.Forms.ToolStripButton DetailsButton;
         private GoalPanel MainPanel;
+        private System.Windows.Forms.WebBrowser DetailsBrowser;
     }
 }

@@ -26,11 +26,11 @@ namespace DeOps.Components.Plan
             Editing = editing;
 
             TitleBox.Text = editing.Title;
-            StartTime.Value = editing.Start.ToLocalTime();
-            EndTime.Value = editing.End.ToLocalTime();
+            //StartTime.Value = editing.Start.ToLocalTime();
+            //EndTime.Value = editing.End.ToLocalTime();
             CompletedHours.Text = editing.HoursCompleted.ToString();
             TotalHours.Text = editing.HoursTotal.ToString();
-            DescriptionInput.InputBox.Rtf = editing.Description;
+            DescriptionInput.InputBox.Text = editing.Description;
 
             if (Mode == EditItemMode.New)
                 Text = "New Plan Item";
@@ -43,8 +43,8 @@ namespace DeOps.Components.Plan
                 Text = editing.Title;
 
                 TitleBox.ReadOnly = true;
-                StartTime.Enabled = false;
-                EndTime.Enabled = false;
+                //StartTime.Enabled = false;
+                //EndTime.Enabled = false;
                 CompletedHours.ReadOnly = true;
                 TotalHours.ReadOnly = true;
                 DescriptionInput.ReadOnly = true;
@@ -66,11 +66,11 @@ namespace DeOps.Components.Plan
                     throw new Exception("Title cannot be Empty");
 
                 // check deadline
-                if (StartTime.Value > EndTime.Value)
-                    throw new Exception("Start Time cannot be set after End Time");
+                //if (StartTime.Value > EndTime.Value)
+                //    throw new Exception("Start Time cannot be set after End Time");
 
-                if (EndTime.Value.ToUniversalTime() > Goal.End)
-                    throw new Exception("End Time cannot be set after Job Deadline");
+                //if (EndTime.Value.ToUniversalTime() > Goal.End)
+                //    throw new Exception("End Time cannot be set after Job Deadline");
 
 
                 int total = int.Parse(TotalHours.Text);
@@ -81,11 +81,11 @@ namespace DeOps.Components.Plan
 
 
                 Editing.Title = TitleBox.Text;
-                Editing.Start = StartTime.Value.ToUniversalTime();
-                Editing.End = EndTime.Value.ToUniversalTime();
+                //Editing.Start = StartTime.Value.ToUniversalTime();
+                //Editing.End = EndTime.Value.ToUniversalTime();
                 Editing.HoursCompleted = completed;
                 Editing.HoursTotal = total;
-                Editing.Description = DescriptionInput.InputBox.Rtf;
+                Editing.Description = DescriptionInput.InputBox.Text;
 
                 // signal commit
                 DialogResult = DialogResult.OK;

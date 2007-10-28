@@ -355,8 +355,8 @@ namespace DeOps.Components.Plan
         internal int  BranchUp;
 
         internal string   Title = "";
-        internal DateTime Start;
-        internal DateTime End;
+         DateTime Start;
+         DateTime End;
         internal string   Description = "";
 
         internal int HoursCompleted;

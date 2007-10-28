@@ -1362,12 +1362,12 @@ namespace DeOps.Components.Link
         
         internal bool IsHigher(ulong localID, ulong key, uint project)
         {
-            return IsHigher(Core.LocalDhtID, key, project, true);
+            return IsHigher(localID, key, project, true);
         }
 
         internal bool IsUnconfirmedHigher(ulong localID, ulong key, uint project)
         {
-            return IsHigher(Core.LocalDhtID, key, project, false);
+            return IsHigher(localID, key, project, false);
         }
 
         private bool IsHigher(ulong localID, ulong higherID, uint project, bool confirmed)

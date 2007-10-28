@@ -436,6 +436,8 @@ namespace DeOps.Components.Plan
                     {
                         View.SelectedBlock = area.Block;
                         View.RefreshRows();
+
+                        View.SetDetails(area.Block);
                     }
 
                     break;

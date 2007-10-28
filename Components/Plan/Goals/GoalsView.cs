@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Data;
 using System.Text;
@@ -32,6 +33,86 @@ namespace DeOps.Components.Plan
         internal int LoadIdent;
         internal int LoadBranch;
 
+        StringBuilder Details = new StringBuilder(4096);
+        const string DefaultPage = @"<html>
+                                    <head>
+                                    <style>
+                                        body { font-family:tahoma; font-size:12px;margin-top:3px;}
+                                        td { font-size:10px;vertical-align: middle; }
+                                    </style>
+                                    </head>
+
+                                    <body bgcolor=#f5f5f5>
+
+                                        
+
+                                    </body>
+                                    </html>";
+
+        const string GoalPage = @"<html>
+                                    <head>
+                                    <style>
+                                        body { font-family:tahoma; font-size:12px;margin-top:3px;}
+                                        td { font-size:10px;vertical-align: middle; }
+                                    </style>
+
+                                    <script>
+                                        function SetElement(id, text)
+                                        {
+                                            document.getElementById(id).innerHTML = text;
+                                        }
+                                    </script>
+                                    
+                                    </head>
+
+                                    <body bgcolor=#f5f5f5>
+
+                                        <br>
+                                        <b><u><span id='title'><?=title?></span></u></b><br>
+                                        <br>
+                                        <b>Due</b><br>
+                                        <span id='due'><?=due?></span><br>
+                                        <br>
+                                        <b>Assigned to</b><br>
+                                        <span id='person'><?=person?></span><br>
+                                        <br>
+                                        <b>Notes</b><br>
+                                        <span id='notes'><?=notes?></span>
+
+                                    </body>
+                                    </html>";
+
+
+        const string ItemPage = @"<html>
+                                    <head>
+                                    <style>
+                                        body { font-family:tahoma; font-size:12px;margin-top:3px;}
+                                        td { font-size:10px;vertical-align: middle; }
+                                    </style>
+
+                                    <script>
+                                        function SetElement(id, text)
+                                        {
+                                            document.getElementById(id).innerHTML = text;
+                                        }
+                                    </script>
+                                    
+                                    </head>
+
+                                    <body bgcolor=#f5f5f5>
+
+                                        <br>
+                                        <b><u><span id='title'><?=title?></span></u></b><br>
+                                        <br>
+                                        <b>Progress</b><br>
+                                        <span id='progress'><?=progress?></span><br>
+                                        <br>
+                                        <b>Notes</b><br>
+                                        <span id='notes'><?=notes?></span>
+
+                                    </body>
+                                    </html>";
+
 
         internal GoalsView(PlanControl plans, ulong id, uint project)
         {
@@ -45,6 +126,9 @@ namespace DeOps.Components.Plan
             ProjectID = project;
 
             toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+            splitContainer1.Panel2Collapsed = true;
+
+            SetDetails(null, null);
         }
 
         internal override string GetTitle(bool small)
@@ -160,8 +244,9 @@ namespace DeOps.Components.Plan
             RefreshAssigned();
 
             MainPanel.PlanUpdate(plan);
-        }
 
+            SetDetails(LastGoal, LastItem);
+        }
 
         void RefreshAssigned()
         {
@@ -396,6 +481,95 @@ namespace DeOps.Components.Plan
 
             ArchivedList_SelectedIndexChanged(null, null);
         }*/
+
+        PlanGoal LastGoal;
+        PlanItem LastItem;
+
+        enum DetailsModeType { None, Goal, Item };
+
+        DetailsModeType DetailsMode;
+
+        internal void SetDetails(PlanGoal goal, PlanItem item)
+        {
+            LastGoal = goal;
+            LastItem = item;
+
+            List<string[]> tuples = new List<string[]>();
+
+            string notes = null;
+            DetailsModeType mode = DetailsModeType.None;
+
+            // get inof that needs to be set
+            if (goal != null)
+            {
+                tuples.Add(new string[] { "title", goal.Title });
+                tuples.Add(new string[] { "due", goal.End.ToLocalTime().ToString("D") });
+                tuples.Add(new string[] { "person", Links.GetName(goal.Person) });
+                tuples.Add(new string[] { "notes", goal.Description.Replace("\r\n", "<br>") });
+
+                notes = goal.Description;
+                mode = DetailsModeType.Goal;
+            }
+
+            else if (item != null)
+            {
+                tuples.Add(new string[] { "title", item.Title });
+                tuples.Add(new string[] { "progress", item.HoursCompleted.ToString() + " of " + item.HoursTotal.ToString() + " Hours Completed" });
+                tuples.Add(new string[] { "notes", item.Description.Replace("\r\n", "<br>") });
+
+                notes = item.Description;
+                mode = DetailsModeType.Item;
+            }
+
+            // set details button
+            DetailsButton.ForeColor = Color.Black;
+
+            if (splitContainer1.Panel2Collapsed && notes != null && notes != "")
+                DetailsButton.ForeColor = Color.Red;
+
+
+
+            if (mode != DetailsMode)
+            {
+                DetailsMode = mode;
+
+                Details.Length = 0;
+
+                if (mode == DetailsModeType.Goal)
+                    Details.Append(GoalPage);
+                else if (mode == DetailsModeType.Item)
+                    Details.Append(ItemPage);
+                else
+                    Details.Append(DefaultPage);
+
+                foreach (string[] tuple in tuples)
+                    Details.Replace("<?=" + tuple[0] + "?>", tuple[1]);
+
+                SetDisplay(Details.ToString());
+            }
+            else
+            {
+                foreach (string[] tuple in tuples)
+                    DetailsBrowser.Document.InvokeScript("SetElement", new String[] { tuple[0], tuple[1] });
+            }
+        }
+
+        private void SetDisplay(string html)
+        {
+            Debug.Assert(!html.Contains("<?"));
+
+            //if (!DisplayActivated)
+            //    return;
+
+            // watch transfers runs per second, dont update unless we need to 
+            if (html.CompareTo(DetailsBrowser.DocumentText) == 0)
+                return;
+
+            // prevents clicking sound when browser navigates
+            DetailsBrowser.Hide();
+            DetailsBrowser.DocumentText = html;
+            DetailsBrowser.Show();
+        }
     }
 
     class SelectMenuItem : ToolStripMenuItem

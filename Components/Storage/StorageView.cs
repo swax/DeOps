@@ -2989,7 +2989,7 @@ namespace DeOps.Components.Storage
             }
 
             if (!Temp)
-                SubItems[1].Text = Details.Date.ToString();
+                SubItems[1].Text = Details.Date.ToLocalTime().ToString();
         }
 
         internal bool IsUnlocked()

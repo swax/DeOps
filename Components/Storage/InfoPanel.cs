@@ -735,7 +735,7 @@ namespace DeOps.Components.Storage
 
                 html.Replace("<?=who?>", row.Name);
                 html.Replace("<?=action?>", Storages.ItemDiff(row.Item, original).ToString());
-                html.Replace("<?=date?>", row.Item.Date.ToString());
+                html.Replace("<?=date?>", row.Item.Date.ToLocalTime().ToString());
                 html.Replace("<?=note?>", row.Item.Note != null ? row.Item.Note : "");
 
                 i++;
@@ -867,7 +867,7 @@ namespace DeOps.Components.Storage
 
                 html.Replace("<?=who?>", row.Name);
                 html.Replace("<?=action?>", Storages.ItemDiff(row.Item, original).ToString());
-                html.Replace("<?=date?>", row.Item.Date.ToString());
+                html.Replace("<?=date?>", row.Item.Date.ToLocalTime().ToString());
                 html.Replace("<?=note?>", row.Item.Note != null ? row.Item.Note : "");
 
                 i++;
@@ -980,7 +980,7 @@ namespace DeOps.Components.Storage
                     html.Replace("<?=textcolor?>", "");
 
                 html.Replace("<?=action?>", Storages.ItemDiff(item, prev).ToString());
-                html.Replace("<?=date?>", item.Date.ToString());
+                html.Replace("<?=date?>", item.Date.ToLocalTime().ToString());
                 html.Replace("<?=note?>", item.Note != null ? item.Note : "");
 
                 // if local
@@ -1385,7 +1385,7 @@ namespace DeOps.Components.Storage
 
                 else
                 {
-                    status = " at " + Storages.StorageMap[id].Header.Date.ToString();
+                    status = " at " + Storages.StorageMap[id].Header.Date.ToLocalTime().ToString();
 
                     if (ParentView.ChangeCount.ContainsKey(id) && ParentView.ChangeCount[id] > 0)
                     {

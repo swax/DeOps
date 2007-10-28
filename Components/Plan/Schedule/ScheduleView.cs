@@ -11,6 +11,7 @@ using DeOps.Components.Link;
 using DeOps.Implementation;
 using DeOps.Interface;
 using DeOps.Interface.TLVex;
+using DeOps.Interface.Views;
 
 
 namespace DeOps.Components.Plan
@@ -42,7 +43,54 @@ namespace DeOps.Components.Plan
         internal int LoadGoal;
         internal int LoadGoalBranch;
 
+        StringBuilder Details = new StringBuilder(4096);
+        const string DefaultPage = @"<html>
+                                    <head>
+                                    <style>
+                                        body { font-family:tahoma; font-size:12px;margin-top:3px;}
+                                        td { font-size:10px;vertical-align: middle; }
+                                    </style>
+                                    </head>
 
+                                    <body bgcolor=#f5f5f5>
+
+                                        
+
+                                    </body>
+                                    </html>";
+
+        const string BlockPage = @"<html>
+                                    <head>
+                                    <style>
+                                        body { font-family:tahoma; font-size:12px;margin-top:3px;}
+                                        td { font-size:10px;vertical-align: middle; }
+                                    </style>
+
+                                    <script>
+                                        function SetElement(id, text)
+                                        {
+                                            document.getElementById(id).innerHTML = text;
+                                        }
+                                    </script>
+                                    
+                                    </head>
+
+                                    <body bgcolor=#f5f5f5>
+
+                                        <br>
+                                        <b><u><span id='title'><?=title?></span></u></b><br>
+                                        <br>
+                                        <b>Start</b><br>
+                                        <span id='start'><?=start?></span><br>
+                                        <br>
+                                        <b>Finish</b><br>
+                                        <span id='finish'><?=finish?></span><br>
+                                        <br>
+                                        <b>Notes</b><br>
+                                        <span id='notes'><?=notes?></span>
+
+                                    </body>
+                                    </html>";
 
         internal ScheduleView(PlanControl plans, ulong id, uint project)
         {
@@ -57,12 +105,17 @@ namespace DeOps.Components.Plan
 
             StartTime = Core.TimeNow;
             EndTime   = Core.TimeNow.AddMonths(3);
+            
+            TopStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+            splitContainer1.Panel2Collapsed = true;
 
             Links.GetFocused += new LinkGetFocusedHandler(LinkandPlans_GetFocused);
             Plans.GetFocused += new PlanGetFocusedHandler(LinkandPlans_GetFocused);
 
             PlanStructure.NodeExpanding += new EventHandler(PlanStructure_NodeExpanding);
             PlanStructure.NodeCollapsed += new EventHandler(PlanStructure_NodeCollapsed);
+
+            SetDetails(null);
         }
 
         internal override string GetTitle(bool small)
@@ -88,7 +141,7 @@ namespace DeOps.Components.Plan
         internal override void Init()
         {
             if (DhtID != Core.LocalDhtID)
-                NewItem.Visible = false;
+                NewButton.Visible = false;
 
             PlanStructure.Columns[1].WidthResized += new EventHandler(PlanStructure_Resized);
 
@@ -119,10 +172,10 @@ namespace DeOps.Components.Plan
         {
             RefreshGoalCombo();
 
-            foreach(GoalComboItem item in GoalsCombo.Items)
+            foreach(GoalComboItem item in GoalCombo.Items)
                 if (item.ID == LoadGoal)
                 {
-                    GoalsCombo.SelectedItem = item;
+                    GoalCombo.SelectedItem = item;
                     break;
                 }
         }
@@ -176,7 +229,7 @@ namespace DeOps.Components.Plan
 
             DateRange.Width = LabelPlus.Location.X + 1 - DateRange.Location.X;
             
-            ScheduleSlider.Location = new Point( Size.Width - PlanStructure.Columns[1].Width, ScheduleSlider.Location.Y);
+            ScheduleSlider.Location = new Point( splitContainer1.Panel1.Width - PlanStructure.Columns[1].Width, ScheduleSlider.Location.Y);
             ScheduleSlider.Width = PlanStructure.Columns[1].Width;
 
             ExtendedLabel.Location = new Point(ScheduleSlider.Location.X, ExtendedLabel.Location.Y);
@@ -498,17 +551,6 @@ namespace DeOps.Components.Plan
                 RecurseFocus(sub, focused);
         }
 
-        private void NewItem_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            EditBlock form = new EditBlock(BlockViewMode.New, this, null);
-
-            if (form.ShowDialog(this) == DialogResult.OK)
-            {
-                ChangesMade();
-                Plans_Update(Plans.LocalPlan);
-            }
-        }
-
         void Plans_Update(OpPlan plan)
         {
             // if node not tracked
@@ -542,6 +584,8 @@ namespace DeOps.Components.Plan
 
                 done = PlanStructure.GetNextNode(ref node);
             }
+
+            SetDetails(LastBlock);
         }
 
         private void PlanStructure_SelectedItemChanged(object sender, EventArgs e)
@@ -553,8 +597,10 @@ namespace DeOps.Components.Plan
             PlanNode node = GetSelected();
 
             if (node == null)
+            {
+                SetDetails(null);
                 return;
-
+            }
             // link research
             Links.Research(node.Link.DhtID, ProjectID, false);
 
@@ -676,16 +722,13 @@ namespace DeOps.Components.Plan
             HoverTip.Hide(this);
         }
 
-        private void NowLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            GotoTime(Core.TimeNow);
-        }
-
         private void SaveLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             ChangesLabel.Visible = false;
             SaveLink.Visible = false;
             DiscardLink.Visible = false;
+
+            PlanStructure.Height += 15;
 
             Plans.SaveLocal();
         }
@@ -696,6 +739,8 @@ namespace DeOps.Components.Plan
             SaveLink.Visible = false;
             DiscardLink.Visible = false;
 
+            PlanStructure.Height += 20;
+
             Plans.LoadPlan(Core.LocalDhtID);
             Plans_Update(Plans.LocalPlan);
         }
@@ -705,20 +750,22 @@ namespace DeOps.Components.Plan
             ChangesLabel.Visible = true;
             SaveLink.Visible = true;
             DiscardLink.Visible = true;
+
+            PlanStructure.Height -= 20;
         }
 
 
         private void RefreshGoalCombo()
         {
-            GoalComboItem prevItem = GoalsCombo.SelectedItem as GoalComboItem;
+            GoalComboItem prevItem = GoalCombo.SelectedItem as GoalComboItem;
 
             int prevSelectedID = 0;
             if (prevItem != null)
                 prevSelectedID = prevItem.ID;
 
-            GoalsCombo.Items.Clear();
+            GoalCombo.Items.Clear();
 
-            GoalsCombo.Items.Add(new GoalComboItem("None", 0));
+            GoalCombo.Items.Add(new GoalComboItem("None", 0));
 
             // go up the chain looking for goals which have been assigned to this person
             // at root goal is the title of the goal
@@ -765,18 +812,34 @@ namespace DeOps.Components.Plan
                     if (goal.Ident == prevSelectedID)
                         prevSelected = item;
 
-                    GoalsCombo.Items.Add(item);
+                    GoalCombo.Items.Add(item);
                 }
 
             if (prevSelected != null)
-                GoalsCombo.SelectedItem = prevSelected;
+                GoalCombo.SelectedItem = prevSelected;
             else
-                GoalsCombo.SelectedIndex = 0;
+                GoalCombo.SelectedIndex = 0;
         }
 
-        private void GoalsCombo_SelectedIndexChanged(object sender, EventArgs e)
+        private void NewButton_Click(object sender, EventArgs e)
         {
-            GoalComboItem item = GoalsCombo.SelectedItem as GoalComboItem;
+            EditBlock form = new EditBlock(BlockViewMode.New, this, null);
+
+            if (form.ShowDialog(this) == DialogResult.OK)
+            {
+                ChangesMade();
+                Plans_Update(Plans.LocalPlan);
+            }
+        }
+
+        private void NowButton_Click(object sender, EventArgs e)
+        {
+            GotoTime(Core.TimeNow);
+        }
+
+        private void GoalCombo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            GoalComboItem item = GoalCombo.SelectedItem as GoalComboItem;
 
             if (item == null)
                 return;
@@ -784,6 +847,79 @@ namespace DeOps.Components.Plan
             SelectedGoalID = item.ID;
 
             RefreshRows();
+        }
+
+        private void DetailsButton_Click(object sender, EventArgs e)
+        {
+            splitContainer1.Panel2Collapsed = !DetailsButton.Checked;
+
+        }
+
+
+        PlanBlock LastBlock;
+
+        internal void SetDetails(PlanBlock block)
+        {
+            List<string[]> tuples = new List<string[]>();
+
+            string notes = null;
+ 
+            // get inof that needs to be set
+            if (block != null)
+            {
+                tuples.Add(new string[] { "title",  block.Title });
+                tuples.Add(new string[] { "start",  block.StartTime.ToLocalTime().ToString("D") });
+                tuples.Add(new string[] { "finish", block.EndTime.ToLocalTime().ToString("D") });
+                tuples.Add(new string[] { "notes", block.Description.Replace("\r\n", "<br>") });
+
+                notes = block.Description;
+            }
+
+            // set details button
+            DetailsButton.ForeColor = Color.Black;
+
+            if (splitContainer1.Panel2Collapsed && notes != null && notes != "")
+                DetailsButton.ForeColor = Color.Red;
+
+
+            if (LastBlock != block)
+            {
+                Details.Length = 0;
+
+                if (block != null)
+                    Details.Append(BlockPage);
+                else
+                    Details.Append(DefaultPage);
+
+                foreach (string[] tuple in tuples)
+                    Details.Replace("<?=" + tuple[0] + "?>", tuple[1]);
+
+                SetDisplay(Details.ToString());
+            }
+            else
+            {
+                foreach (string[] tuple in tuples)
+                    DetailsBrowser.Document.InvokeScript("SetElement", new String[] { tuple[0], tuple[1] });
+            }
+
+            LastBlock = block;
+        }
+
+        private void SetDisplay(string html)
+        {
+            Debug.Assert(!html.Contains("<?"));
+
+            //if (!DisplayActivated)
+            //    return;
+
+            // watch transfers runs per second, dont update unless we need to 
+            if (html.CompareTo(DetailsBrowser.DocumentText) == 0)
+                return;
+
+            // prevents clicking sound when browser navigates
+            DetailsBrowser.Hide();
+            DetailsBrowser.DocumentText = html;
+            DetailsBrowser.Show();
         }
 
     }

@@ -19,6 +19,7 @@ Interface
 	General
 		Sorting of listviews
 		
+		
 	Internal 
 		expand a little more (names associated with sessions/transfers/searches/publish)
 		browsing using nav bar needs to trigger searches and let link control know of whats focused
@@ -42,6 +43,7 @@ Interface
 		crazy refreshes when news not visible and button clicked
 		show connected / disconnected
 		chat msg (if chat not visible or visited in last minute, or alerted in last minute)
+			<project> Chat activityk, Betty: hey group....
 		new people online 
 		
 		more refined, if care about user, do detailed diff between new and old file
@@ -52,7 +54,7 @@ Interface
 		storage - restore
 		mail	- forward, reply
 		board   - high, low, all
-		plans	- edit
+		plans	- new, edit, now
 		goals	- edit
 		tray	- restore, exit
 	
@@ -102,6 +104,7 @@ Components
 		delete mail not refreshing view
 		sync local mail between users
 		test/do re-publishing mail
+		***lots of clicking when changing mail view, look at javascripting that up as well
 
 	Board 
 		 board scope sub-levels down, auto search highers for posts that have source==target, and show if in scope
@@ -115,11 +118,8 @@ Components
 		old plans not being deleted? seems like extra files in dir, try loading solo and updating local plan file
 		shutdown in the middle of the causing load corruption?			
 		transfer branch path when goal <-> schedule
-		
-		make details visible somehow for selected schedule
-		lower icons not loading?
+		probably want a custom renderer for the progress bar, default xp has it green
 
-			
 	Storage
 		***drag into secure storage gives user option to replace what is already there, either on disk or locked
 		
@@ -315,6 +315,13 @@ Future
 				i trust credit company
 				business trusts credit company
 				portal process credit transaction?
+		
+		commendations
+			people want to be acknowledged/rewarded for progress
+			commendation is a signed/and issued by someone to someone else for anything
+				dated, details, image
+			good canidate for an opensource plugin
+				
 		
 		security
 			keeps dns resolved list of online contacts

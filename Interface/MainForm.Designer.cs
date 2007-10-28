@@ -32,7 +32,7 @@ namespace DeOps.Interface
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.MainSplit = new System.Windows.Forms.SplitContainer();
             this.CommandSplit = new System.Windows.Forms.SplitContainer();
-            this.SideModeStrip = new System.Windows.Forms.ToolStrip();
+            this.SideNavStrip = new System.Windows.Forms.ToolStrip();
             this.SideViewsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.SideNewsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.StatusBrowser = new System.Windows.Forms.WebBrowser();
@@ -75,7 +75,7 @@ namespace DeOps.Interface
             this.CommandSplit.Panel1.SuspendLayout();
             this.CommandSplit.Panel2.SuspendLayout();
             this.CommandSplit.SuspendLayout();
-            this.SideModeStrip.SuspendLayout();
+            this.SideNavStrip.SuspendLayout();
             this.RightClickMenu.SuspendLayout();
             this.NavStrip.SuspendLayout();
             this.TopToolStrip.SuspendLayout();
@@ -116,7 +116,7 @@ namespace DeOps.Interface
             // 
             // CommandSplit.Panel1
             // 
-            this.CommandSplit.Panel1.Controls.Add(this.SideModeStrip);
+            this.CommandSplit.Panel1.Controls.Add(this.SideNavStrip);
             this.CommandSplit.Panel1.Controls.Add(this.CommandTree);
             // 
             // CommandSplit.Panel2
@@ -130,18 +130,18 @@ namespace DeOps.Interface
             // 
             // SideModeStrip
             // 
-            this.SideModeStrip.BackColor = System.Drawing.Color.CornflowerBlue;
-            this.SideModeStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
-            this.SideModeStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.SideNavStrip.BackColor = System.Drawing.Color.CornflowerBlue;
+            this.SideNavStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
+            this.SideNavStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.SideViewsButton,
             this.SideNewsButton});
-            this.SideModeStrip.Location = new System.Drawing.Point(0, 0);
-            this.SideModeStrip.Name = "SideModeStrip";
-            this.SideModeStrip.Size = new System.Drawing.Size(171, 25);
-            this.SideModeStrip.TabIndex = 1;
-            this.SideModeStrip.Paint += new System.Windows.Forms.PaintEventHandler(this.SideModeStrip_Paint);
-            this.SideModeStrip.MouseClick += new System.Windows.Forms.MouseEventHandler(this.SideModeStrip_MouseClick);
-            this.SideModeStrip.MouseMove += new System.Windows.Forms.MouseEventHandler(this.SideModeStrip_MouseMove);
+            this.SideNavStrip.Location = new System.Drawing.Point(0, 0);
+            this.SideNavStrip.Name = "SideModeStrip";
+            this.SideNavStrip.Size = new System.Drawing.Size(171, 25);
+            this.SideNavStrip.TabIndex = 1;
+            this.SideNavStrip.Paint += new System.Windows.Forms.PaintEventHandler(this.SideModeStrip_Paint);
+            this.SideNavStrip.MouseClick += new System.Windows.Forms.MouseEventHandler(this.SideModeStrip_MouseClick);
+            this.SideNavStrip.MouseMove += new System.Windows.Forms.MouseEventHandler(this.SideModeStrip_MouseMove);
             // 
             // SideViewsButton
             // 
@@ -560,8 +560,8 @@ namespace DeOps.Interface
             this.CommandSplit.Panel1.PerformLayout();
             this.CommandSplit.Panel2.ResumeLayout(false);
             this.CommandSplit.ResumeLayout(false);
-            this.SideModeStrip.ResumeLayout(false);
-            this.SideModeStrip.PerformLayout();
+            this.SideNavStrip.ResumeLayout(false);
+            this.SideNavStrip.PerformLayout();
             this.RightClickMenu.ResumeLayout(false);
             this.NavStrip.ResumeLayout(false);
             this.NavStrip.PerformLayout();
@@ -612,7 +612,7 @@ namespace DeOps.Interface
         private System.Windows.Forms.ToolStripButton LockButton;
         private System.Windows.Forms.Timer NewsTimer;
         private System.Windows.Forms.ToolStripDropDownButton NewsButton;
-        private System.Windows.Forms.ToolStrip SideModeStrip;
+        private System.Windows.Forms.ToolStrip SideNavStrip;
         private System.Windows.Forms.ToolStripDropDownButton SideViewsButton;
         private System.Windows.Forms.ToolStripDropDownButton SideNewsButton;
     }

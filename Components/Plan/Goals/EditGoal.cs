@@ -58,7 +58,7 @@ namespace DeOps.Components.Plan
             TitleBox.Text = Editing.Title;
             Deadline.Value = Editing.End.ToLocalTime();
             SetPerson(Editing.Person);
-            NotesInput.InputBox.Rtf = Editing.Description;
+            NotesInput.InputBox.Text = Editing.Description;
 
 
         }
@@ -110,7 +110,7 @@ namespace DeOps.Components.Plan
 
                 Editing.Title = TitleBox.Text;
                 Editing.End = Deadline.Value.ToUniversalTime();
-                Editing.Description = NotesInput.InputBox.Rtf;
+                Editing.Description = NotesInput.InputBox.Text;
 
 
                 if (Mode == EditGoalMode.New || Mode == EditGoalMode.Delgate)

@@ -213,10 +213,16 @@ namespace DeOps.Components.Plan
             Links.Research(node.Goal.Person, View.ProjectID, false);
 
             UpdatePlanItems(node);
+
+            View.SetDetails(node.Goal, null);
         }
 
         private void UpdatePlanItems(GoalNode node)
         {
+            PlanListItem ReselectPlanItem = null;
+            if (PlanList.SelectedItems.Count > 0)
+                ReselectPlanItem = PlanList.SelectedItems[0] as PlanListItem;
+
             PlanList.Items.Clear();
             
             
@@ -231,23 +237,6 @@ namespace DeOps.Components.Plan
 
             Selected = node.Goal;
 
-            /* notes panel
-            NotesBox.Rtf = Selected.Description;
-            splitContainer2.Panel1Collapsed = (NotesBox.Text == "");
-
-            if (!splitContainer2.Panel1Collapsed)
-            {
-                Color backColor = Color.WhiteSmoke;
-
-                if (View.DhtID == node.Goal.Person || Links.IsHigher(View.DhtID, node.Goal.Person, View.ProjectID))
-                    backColor = Color.FromArgb(255, 245, 245);
-
-                else if (Links.IsLower(View.DhtID, node.Goal.Person, View.ProjectID))
-                    backColor = Color.FromArgb(245, 245, 255);
-
-                splitContainer2.Panel1.BackColor = backColor;
-                NotesBox.BackColor = backColor;
-            }*/
 
             // set delegate task vis
             if (Selected.Person == Core.LocalDhtID && Links.HasSubs(Selected.Person, View.ProjectID ))
@@ -282,6 +271,10 @@ namespace DeOps.Components.Plan
                     if (item.BranchUp == Selected.BranchDown)
                     {
                         PlanListItem row = new PlanListItem(item);
+
+                        if (ReselectPlanItem != null && item == ReselectPlanItem.Item)
+                            row.Selected = true;
+
                         PlanList.Items.Add(row);
                         FormatTime(row);
                     }
@@ -312,8 +305,8 @@ namespace DeOps.Components.Plan
             item.Ident = Head.Ident;
             item.Project = Head.Project;
             item.BranchUp = Selected.BranchDown;
-            item.Start = Core.TimeNow.ToUniversalTime();
-            item.End = Selected.End;
+            //item.Start = Core.TimeNow.ToUniversalTime();
+            //item.End = Selected.End;
 
             EditPlanItem form = new EditPlanItem(EditItemMode.New, Selected, item);
 
@@ -538,9 +531,9 @@ namespace DeOps.Components.Plan
 
         private void FormatTime(PlanListItem row)
         {
-            row.SubItems[0].Text =
+            /*row.SubItems[0].Text =
                 GetTimeText(row.Item.Start.ToLocalTime() - Core.TimeNow, row.Item.Start.ToLocalTime(), true) + " to " +
-                GetTimeText(row.Item.End.ToLocalTime() - Core.TimeNow, row.Item.End.ToLocalTime(), false);
+                GetTimeText(row.Item.End.ToLocalTime() - Core.TimeNow, row.Item.End.ToLocalTime(), false);*/
         }
 
         internal string GetTimeText(TimeSpan span, DateTime time, bool start)
@@ -939,6 +932,20 @@ namespace DeOps.Components.Plan
                 if(local)
                     View.ChangesMade();
         }
+
+        private void PlanList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            PlanListItem selected = null;
+
+            if (PlanList.SelectedItems.Count > 0)
+                selected = PlanList.SelectedItems[0] as PlanListItem;
+
+            if (selected == null)
+                return;
+
+
+            View.SetDetails(null, selected.Item);
+        }
     }
 
 
@@ -1044,8 +1051,8 @@ namespace DeOps.Components.Plan
             Item = item;
             Text = item.Title;
 
-            // when
-            SubItems.Add("");
+            // est time
+            SubItems.Add(item.HoursTotal.ToString() + " Hours");
 
             // progress
             Progress.Total = item.HoursTotal;

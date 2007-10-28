@@ -415,7 +415,7 @@ namespace DeOps.Components.Storage
                 header.Key = Core.User.Settings.KeyPublic;
                 header.KeyID = Core.LocalDhtID; // set so keycheck works
                 header.Version++;
-                header.Date = Core.TimeNow;
+                header.Date = Core.TimeNow.ToUniversalTime();
                 header.FileKey.GenerateKey();
                 header.FileKey.IV = new byte[header.FileKey.IV.Length];
 

@@ -46,7 +46,7 @@ namespace DeOps.Components.Plan
             TitleBox.Text = block.Title;
             StartTime.Value = block.StartTime.ToLocalTime();
             EndTime.Value = block.EndTime.ToLocalTime();
-            DescriptionInput.InputBox.Rtf = block.Description;
+            DescriptionInput.InputBox.Text = block.Description;
             SetScopeLink(block.Scope);
 
             if (mode != BlockViewMode.Show)
@@ -109,7 +109,7 @@ namespace DeOps.Components.Plan
             block.Title         = TitleBox.Text;
             block.StartTime     = StartTime.Value.ToUniversalTime();
             block.EndTime       = EndTime.Value.ToUniversalTime();
-            block.Description   = DescriptionInput.InputBox.Rtf;
+            block.Description   = DescriptionInput.InputBox.Text;
             block.Scope         = CurrentScope;
 
             if (Mode == BlockViewMode.New)

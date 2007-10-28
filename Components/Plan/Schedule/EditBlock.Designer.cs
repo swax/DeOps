@@ -138,7 +138,7 @@ namespace DeOps.Components.Plan
             // 
             // DescriptionInput
             // 
-            this.DescriptionInput.AcceptTabs = false;
+            this.DescriptionInput.AcceptTabs = true;
             this.DescriptionInput.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
@@ -147,7 +147,7 @@ namespace DeOps.Components.Plan
             this.DescriptionInput.Location = new System.Drawing.Point(12, 120);
             this.DescriptionInput.Name = "DescriptionInput";
             this.DescriptionInput.ReadOnly = false;
-            this.DescriptionInput.ShowFontStrip = true;
+            this.DescriptionInput.ShowFontStrip = false;
             this.DescriptionInput.Size = new System.Drawing.Size(271, 219);
             this.DescriptionInput.TabIndex = 9;
             // 
