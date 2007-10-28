@@ -189,7 +189,7 @@
       <DependentUpon>GoalPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.Designer.cs">
       <DependentUpon>GoalsView.cs</DependentUpon>
@@ -200,19 +200,13 @@
     <Compile Include="Components\Plan\Goals\ProgressText.Designer.cs">
       <DependentUpon>ProgressText.cs</DependentUpon>
     </Compile>
-    <Compile Include="Components\Plan\PanelDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Components\Plan\PanelDialog.Designer.cs">
-      <DependentUpon>PanelDialog.cs</DependentUpon>
-    </Compile>
     <Compile Include="Components\Plan\Res\PlanRes.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>PlanRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.Designer.cs">
       <DependentUpon>BlockRow.cs</DependentUpon>
@@ -235,7 +229,7 @@
       <DependentUpon>DateSlider.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\ScheduleView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\ScheduleView.Designer.cs">
       <DependentUpon>ScheduleView.cs</DependentUpon>
@@ -748,10 +742,6 @@
     <EmbeddedResource Include="Components\Plan\Goals\ProgressText.resx">
       <SubType>Designer</SubType>
       <DependentUpon>ProgressText.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Components\Plan\PanelDialog.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>PanelDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Components\Plan\Res\PlanRes.resx">
       <SubType>Designer</SubType>
