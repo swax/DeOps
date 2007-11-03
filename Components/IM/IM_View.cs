@@ -47,9 +47,7 @@ namespace DeOps.Components.IM
 
         private void UpdateName()
         {
-            if (Links.LinkMap.ContainsKey(DhtID))
-                if (Links.LinkMap[DhtID].Loaded)
-                    NodeName = Links.LinkMap[DhtID].Name;
+            NodeName = Links.GetName(DhtID);
         }
 
         internal override void Init()
@@ -102,40 +100,26 @@ namespace DeOps.Components.IM
 
         private void DisplayLog()
         {
-            if(IM.MessageLog.ContainsKey(DhtID))
-                foreach (InstantMessage message in IM.MessageLog[DhtID])
-                    OnMessageUpdate(DhtID, message);
+            IM.MessageLog.LockReading(delegate()
+            {
+                if (IM.MessageLog.ContainsKey(DhtID))
+                    foreach (InstantMessage message in IM.MessageLog[DhtID])
+                        OnMessageUpdate(DhtID, message);
+            });
         }
 
         private void CheckBackColor()
         {
-            // check if higher
-            OpLink parent = null;
-
-            if (Links.LocalLink.Uplink.ContainsKey(0))
-                parent = Links.LocalLink.Uplink[0];
-
-            while (parent != null)
-            {
-                if (parent.DhtID == DhtID)
-                {
-                    MessageTextBox.BackColor = Color.FromArgb(255, 250, 250);
-                    return;
-                }
-
-                parent = parent.Uplink.ContainsKey(0) ? parent.Uplink[0] : null;
-            }
-
-            // check if lower
-            if(Links.LinkMap.ContainsKey(DhtID))
-                if (Links.LocalLink.SearchBranch(0, Links.LinkMap[DhtID]))
-                {
-                    MessageTextBox.BackColor = Color.FromArgb(250, 250, 255);
-                    return;
-                }
-
-            // neither, just set white
-            MessageTextBox.BackColor = Color.White;
+            // higher
+            if(Links.IsHigher(DhtID, 0))
+                MessageTextBox.BackColor = Color.FromArgb(255, 250, 250);
+            
+            // lower
+            else if(Links.IsHigher(DhtID, IM.Core.LocalDhtID, 0))
+                MessageTextBox.BackColor = Color.FromArgb(250, 250, 255);
+            
+            else
+                MessageTextBox.BackColor = Color.White;
         }
 
         internal void OnSendMessage(string message)

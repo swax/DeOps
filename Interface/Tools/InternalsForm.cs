@@ -482,8 +482,8 @@ namespace DeOps.Interface.Tools
 
             listValues.Items.Add(new ListViewItem(new string[] { "LocationVersion", xStr(Core.Locations.LocationVersion) }));
             listValues.Items.Add(new ListViewItem(new string[] { "NextLocationUpdate", xStr(Core.Locations.NextLocationUpdate) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "GlobalIndex", xStr(Core.Locations.GlobalIndex.Count) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "LocationMap", xStr(Core.Locations.LocationMap.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "GlobalIndex", xStr(Core.Locations.GlobalIndex.SafeCount) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "LocationMap", xStr(Core.Locations.LocationMap.SafeCount) }));
             
         }
 
@@ -491,31 +491,38 @@ namespace DeOps.Interface.Tools
         {
             SetupLocationList();
 
-            foreach (ulong opid in Core.Locations.GlobalIndex.Keys)
-                foreach (CryptLoc loc in Core.Locations.GlobalIndex[opid])
-                {
-                    SignedData signed = SignedData.Decode(Core.Protocol, loc.Data);
-
-                    if (signed != null)
+            Core.Locations.GlobalIndex.LockReading(delegate()
+            {
+                foreach (ulong opid in Core.Locations.GlobalIndex.Keys)
+                    foreach (CryptLoc loc in Core.Locations.GlobalIndex[opid])
                     {
-                        LocationData data = LocationData.Decode(Core.Protocol, signed.Data);
+                        SignedData signed = SignedData.Decode(Core.Protocol, loc.Data);
 
-                        LocInfo info = new LocInfo();
-                        info.Location = data;
-                        info.TTL = loc.TTL;
+                        if (signed != null)
+                        {
+                            LocationData data = LocationData.Decode(Core.Protocol, signed.Data);
 
-                        DisplayLoc(opid, info);
+                            LocInfo info = new LocInfo();
+                            info.Location = data;
+                            info.TTL = loc.TTL;
+
+                            DisplayLoc(opid, info);
+                        }
                     }
-                }
+            });
         }
 
         internal void ShowLocOperation(object pass)
         {
             SetupLocationList();
 
-            foreach (Dictionary<ushort, LocInfo> dict in Core.Locations.LocationMap.Values)
-                foreach (LocInfo info in dict.Values)
-                    DisplayLoc(Core.OpID, info);
+            Core.Locations.LocationMap.LockReading(delegate()
+            {
+                foreach (Dictionary<ushort, LocInfo> dict in Core.Locations.LocationMap.Values)
+                    foreach (LocInfo info in dict.Values)
+                        DisplayLoc(Core.OpID, info);
+            });
+
         }
 
         private void DisplayLoc(ulong opid, LocInfo info)
@@ -797,11 +804,11 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("Property", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
-            listValues.Items.Add(new ListViewItem(new string[] { "LocalLink",       xStr(Core.Links.LocalLink.Name) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "LocalLink",       xStr(Core.Links.GetName(Core.LocalDhtID)) }));
 
-            listValues.Items.Add(new ListViewItem(new string[] { "ProjectRoots",    xStr(Core.Links.ProjectRoots.Count) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "LinkMap",         xStr(Core.Links.LinkMap.Count) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "ProjectNames",    xStr(Core.Links.ProjectNames.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "ProjectRoots",    xStr(Core.Links.ProjectRoots.SafeCount) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "LinkMap",         xStr(Core.Links.LinkMap.SafeCount) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "ProjectNames",    xStr(Core.Links.ProjectNames.SafeCount) }));
 
             listValues.Items.Add(new ListViewItem(new string[] { "LinkPath",        xStr(Core.Links.LinkPath) }));
             listValues.Items.Add(new ListViewItem(new string[] { "StructureKnown",  xStr(Core.Links.StructureKnown) }));
@@ -832,57 +839,59 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("Path", 100, HorizontalAlignment.Left);
 
 
-            foreach (OpLink link in Core.Links.LinkMap.Values)
+            Core.Links.LinkMap.LockReading(delegate()
             {
-                string projects  = "";
-                string titles    = "";
-                string uplinks   = "";
-                string downlinks = "";
-                string confirmed = "";
-                string requests = "";
-
-                foreach (uint id in link.Projects)
+                foreach (OpLink link in Core.Links.LinkMap.Values)
                 {
-                    string projectName = GetProjectName(id);
-                    
-                    projects += projectName + ", ";
+                    string projects = "";
+                    string titles = "";
+                    string uplinks = "";
+                    string downlinks = "";
+                    string confirmed = "";
+                    string requests = "";
 
-                    if (link.Title.ContainsKey(id) && link.Title[id] != "")
-                        titles += projectName + ": " + link.Title[id] + ", ";
-
-                    if (link.Uplink.ContainsKey(id))
-                        uplinks += projectName + ": " + GetLinkName(link.Uplink[id].DhtID) + ", ";
-
-                    if (link.Confirmed.ContainsKey(id) && link.Confirmed[id].Count > 0)
+                    foreach (uint id in link.Projects)
                     {
-                        confirmed += projectName + ": ";
+                        string projectName = GetProjectName(id);
 
-                        foreach (ulong key in link.Confirmed[id])
-                            confirmed += GetLinkName(key) + ", ";
+                        projects += projectName + ", ";
+
+                        if (link.Title.ContainsKey(id) && link.Title[id] != "")
+                            titles += projectName + ": " + link.Title[id] + ", ";
+
+                        if (link.Uplink.ContainsKey(id))
+                            uplinks += projectName + ": " + GetLinkName(link.Uplink[id].DhtID) + ", ";
+
+                        if (link.Confirmed.ContainsKey(id) && link.Confirmed[id].Count > 0)
+                        {
+                            confirmed += projectName + ": ";
+
+                            foreach (ulong key in link.Confirmed[id])
+                                confirmed += GetLinkName(key) + ", ";
+                        }
                     }
-                }
 
-                foreach (uint id in link.Downlinks.Keys)
-                    if(link.Downlinks[id].Count > 0)
-                    {
-                        downlinks += GetProjectName(id) + ": ";
+                    foreach (uint id in link.Downlinks.Keys)
+                        if (link.Downlinks[id].Count > 0)
+                        {
+                            downlinks += GetProjectName(id) + ": ";
 
-                        foreach (OpLink downlink in link.Downlinks[id])
-                            downlinks += GetLinkName(downlink.DhtID) + ", ";
-                    }
+                            foreach (OpLink downlink in link.Downlinks[id])
+                                downlinks += GetLinkName(downlink.DhtID) + ", ";
+                        }
 
-                 foreach (uint id in link.Requests.Keys)
-                     if (link.Requests[id].Count > 0)
-                     {
-                         requests += GetProjectName(id) + ": ";
+                    foreach (uint id in link.Requests.Keys)
+                        if (link.Requests[id].Count > 0)
+                        {
+                            requests += GetProjectName(id) + ": ";
 
-                         foreach (UplinkRequest request in link.Requests[id])
-                             requests += GetLinkName(request.KeyID) + ", ";
-                     }
+                            foreach (UplinkRequest request in link.Requests[id])
+                                requests += GetLinkName(request.KeyID) + ", ";
+                        }
 
-                ListViewItem item = new ListViewItem(new string[]
+                    ListViewItem item = new ListViewItem(new string[]
 					{
-						xStr(link.Name),		
+						xStr(Core.Links.GetName(link.DhtID)),		
 						IDtoStr(link.DhtID),
                         xStr(link.Loaded),
 						xStr(link.Error),		
@@ -902,16 +911,17 @@ namespace DeOps.Interface.Tools
 						""
                     });
 
-                if (link.Header != null)
-                {
-                    item.SubItems[12] = new ListViewItem.ListViewSubItem(item, xStr(link.Header.Version));
-                    item.SubItems[13] = new ListViewItem.ListViewSubItem(item, Utilities.BytestoHex(link.Header.FileHash));
-                    item.SubItems[14] = new ListViewItem.ListViewSubItem(item, xStr(link.Header.FileSize));
-                    item.SubItems[15] = new ListViewItem.ListViewSubItem(item, xStr(Core.Links.GetFilePath(link.Header)));
+                    if (link.Header != null)
+                    {
+                        item.SubItems[12] = new ListViewItem.ListViewSubItem(item, xStr(link.Header.Version));
+                        item.SubItems[13] = new ListViewItem.ListViewSubItem(item, Utilities.BytestoHex(link.Header.FileHash));
+                        item.SubItems[14] = new ListViewItem.ListViewSubItem(item, xStr(link.Header.FileSize));
+                        item.SubItems[15] = new ListViewItem.ListViewSubItem(item, xStr(Core.Links.GetFilePath(link.Header)));
+                    }
+
+                    listValues.Items.Add(item);
                 }
-            
-                listValues.Items.Add(item);
-            }
+            });
         }
 
 
@@ -1050,15 +1060,17 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("Target", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Posts", 100, HorizontalAlignment.Left);
 
-            foreach (ulong target in Core.Board.BoardMap.Keys)
+            Core.Board.BoardMap.LockReading(delegate()
             {
-                listValues.Items.Add(new ListViewItem(new string[]
+                foreach (OpBoard board in Core.Board.BoardMap.Values)
+                {
+                    listValues.Items.Add(new ListViewItem(new string[]
 					{
-						GetLinkName(target),
-                        Core.Board.BoardMap[target].Posts.Count.ToString()
+						GetLinkName(board.DhtID),
+                        board.Posts.Count.ToString()
 					}));
-            }
-
+                }
+            });
             AddBoardNodes((StructureNode)treeStructure.SelectedNode);
         }
 
@@ -1066,8 +1078,11 @@ namespace DeOps.Interface.Tools
         {
             parentNode.Nodes.Clear();
 
-            foreach (OpBoard board in Core.Board.BoardMap.Values)
-                parentNode.Nodes.Add(new StructureNode(GetLinkName(board.DhtID), new ShowDelegate(ShowTargetBoard), board));
+            Core.Board.BoardMap.LockReading(delegate()
+            {
+                foreach (OpBoard board in Core.Board.BoardMap.Values)
+                    parentNode.Nodes.Add(new StructureNode(GetLinkName(board.DhtID), new ShowDelegate(ShowTargetBoard), board));
+            });
         }
 
         internal void ShowTargetBoard(object pass)
@@ -1116,21 +1131,12 @@ namespace DeOps.Interface.Tools
 
         private string GetLinkName(ulong key)
         {
-            string name = IDtoStr(key);
-
-            if (Core.Links.LinkMap.ContainsKey(key))
-                if (Core.Links.LinkMap[key].Loaded)
-                    name = Core.Links.LinkMap[key].Name;
-            
-            return name;
+            return Core.Links.GetName(key);;
         }
 
         private string GetProjectName(uint id)
         {
-            string name = "unknown " + id.ToString();
-
-            if (Core.Links.ProjectNames.ContainsKey(id))
-                name = Core.Links.ProjectNames[id];
+            string name = Core.Links.GetProjectName(id);
 
             return name;
         }
@@ -1143,19 +1149,19 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("ID", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Name", 300, HorizontalAlignment.Left);
 
-            foreach (uint id in Core.Links.ProjectRoots.Keys)
+            Core.Links.ProjectRoots.LockReading(delegate()
             {
-                string project = "unknown";
-                string names = "";
+                foreach (uint id in Core.Links.ProjectRoots.Keys)
+                {
+                    string project = Core.Links.GetProjectName(id);
+                    string names = "";
 
-                if (Core.Links.ProjectNames.ContainsKey(id))
-                    project = Core.Links.ProjectNames[id];
+                    foreach (OpLink link in Core.Links.ProjectRoots[id])
+                        names += xStr(Core.Links.GetName(link.DhtID)) + ", ";
 
-                foreach (OpLink link in Core.Links.ProjectRoots[id])
-                    names += xStr(link.Name) + ", ";
-
-                listValues.Items.Add(new ListViewItem(new string[] { project, names }));
-            }
+                    listValues.Items.Add(new ListViewItem(new string[] { project, names }));
+                }
+            });
         }
 
         internal void ShowLinkProjects(object pass)
@@ -1166,10 +1172,13 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("ID", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Name", 300, HorizontalAlignment.Left);
 
-            foreach (uint id in Core.Links.ProjectNames.Keys)
+            Core.Links.ProjectNames.LockReading(delegate()
             {
-                listValues.Items.Add(new ListViewItem(new string[] { id.ToString(), xStr(Core.Links.ProjectNames[id]) }));
-            }
+                foreach (uint id in Core.Links.ProjectNames.Keys)
+                {
+                    listValues.Items.Add(new ListViewItem(new string[] { id.ToString(), xStr(Core.Links.GetProjectName(id)) }));
+                }
+            });
 
         }
 
@@ -1188,16 +1197,18 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("Embedded", 100, HorizontalAlignment.Left);
 
 
-            foreach (OpProfile profile in Core.Profiles.ProfileMap.Values)
+            Core.Profiles.ProfileMap.LockReading(delegate()
             {
-                if (!profile.Loaded)
-                    Core.Profiles.LoadProfile(profile.DhtID);
+                foreach (OpProfile profile in Core.Profiles.ProfileMap.Values)
+                {
+                    if (!profile.Loaded)
+                        Core.Profiles.LoadProfile(profile.DhtID);
 
-                string embedded = "";
-                foreach (ProfileFile file in profile.Files)
-                    embedded += file.Name + ": " + file.Size.ToString() + "bytes, ";
+                    string embedded = "";
+                    foreach (ProfileFile file in profile.Files)
+                        embedded += file.Name + ": " + file.Size.ToString() + "bytes, ";
 
-                ListViewItem item = new ListViewItem(new string[]
+                    ListViewItem item = new ListViewItem(new string[]
 				{
 					GetLinkName(profile.DhtID),
 					"",
@@ -1209,17 +1220,18 @@ namespace DeOps.Interface.Tools
 					embedded
 				});
 
-                if (profile.Header != null)
-                {
-                    item.SubItems[2] = new ListViewItem.ListViewSubItem(item, xStr(profile.Header.Version));
-                    item.SubItems[3] = new ListViewItem.ListViewSubItem(item, Utilities.BytestoHex(profile.Header.FileHash));
-                    item.SubItems[4] = new ListViewItem.ListViewSubItem(item, xStr(profile.Header.FileSize));
-                    item.SubItems[5] = new ListViewItem.ListViewSubItem(item, xStr(profile.Header.EmbeddedStart));
-                    item.SubItems[6] = new ListViewItem.ListViewSubItem(item, xStr(Core.Profiles.GetFilePath(profile.Header)));
-                }
+                    if (profile.Header != null)
+                    {
+                        item.SubItems[2] = new ListViewItem.ListViewSubItem(item, xStr(profile.Header.Version));
+                        item.SubItems[3] = new ListViewItem.ListViewSubItem(item, Utilities.BytestoHex(profile.Header.FileHash));
+                        item.SubItems[4] = new ListViewItem.ListViewSubItem(item, xStr(profile.Header.FileSize));
+                        item.SubItems[5] = new ListViewItem.ListViewSubItem(item, xStr(profile.Header.EmbeddedStart));
+                        item.SubItems[6] = new ListViewItem.ListViewSubItem(item, xStr(Core.Profiles.GetFilePath(profile.Header)));
+                    }
 
-                listValues.Items.Add(item);
-            }
+                    listValues.Items.Add(item);
+                }
+            });
         }
 
 		internal void UpdateLogs(object pass)

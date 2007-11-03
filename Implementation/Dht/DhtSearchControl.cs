@@ -96,8 +96,17 @@ namespace DeOps.Implementation.Dht
             }
         }
 
+        //delegate DhtSearch StartHandler(ulong key, string name, ushort component, byte[] parameters, EndSearchHandler endSearch); 
+
+
         internal DhtSearch Start(ulong key, string name, ushort component, byte[] parameters, EndSearchHandler endSearch)
         {
+            /*if (Core.InvokeRequired)
+            {
+                Core.BeginInvoke(new StartHandler(Start), key, name, component, parameters, endSearch);
+                return;
+            }*/
+
             // transfer componenent does its own duplicate checks
             // also there can exist multiple transfers with with same trar
 

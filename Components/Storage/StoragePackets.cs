@@ -72,9 +72,9 @@ namespace DeOps.Components.Storage
             StorageHeader header = new StorageHeader();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -137,9 +137,9 @@ namespace DeOps.Components.Storage
             StorageRoot root = new StorageRoot();
             G2Header child = new G2Header(header.Data);
 
-            while (protocol.ReadNextChild(header, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(header, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -258,9 +258,9 @@ namespace DeOps.Components.Storage
             StorageFolder folder = new StorageFolder();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -411,9 +411,9 @@ namespace DeOps.Components.Storage
             StorageFile file = new StorageFile();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)

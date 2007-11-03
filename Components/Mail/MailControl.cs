@@ -399,7 +399,7 @@ namespace DeOps.Components.Mail
                                 Process_MailHeader(null, signed, MailHeader.Decode(Core.Protocol, embedded));
 
                             else if (embedded.Name == MailPacket.Ack)
-                                Process_MailAck(null, signed, MailAck.Decode(Core.Protocol, embedded));
+                                Process_MailAck(null, signed, MailAck.Decode(Core.Protocol, embedded), true);
 
                             if (embedded.Name == MailPacket.Pending)
                                 Process_PendingHeader(null, signed, PendingHeader.Decode(Core.Protocol, embedded));
@@ -602,7 +602,7 @@ namespace DeOps.Components.Mail
             Core.InvokeView(node.IsExternal(), view);
         }
 
-        internal void SendMail(List<ulong> to, List<ulong> cc, List<AttachedFile> files, string subject, string body)
+        internal void SendMail(List<ulong> to, List<AttachedFile> files, string subject, string body)
         {
             // exception handled by compose mail interface
             MailHeader header = new MailHeader();
@@ -623,9 +623,6 @@ namespace DeOps.Components.Mail
 
             foreach (ulong id in to)
                 written += Protocol.WriteToFile(new MailDestination(Core.KeyMap[id], false), stream);
-
-            foreach (ulong id in cc)
-                written += Protocol.WriteToFile(new MailDestination(Core.KeyMap[id], true), stream);
 
             byte[] bodyBytes = Core.Protocol.UTF.GetBytes(body);
             written += Protocol.WriteToFile(new MailFile("body", bodyBytes.Length), stream);
@@ -689,7 +686,6 @@ namespace DeOps.Components.Mail
             // write headers to outbound cache file
             List<ulong> targets = new List<ulong>();
             targets.AddRange(to);
-            targets.AddRange(cc);
 
             // add targets as unacked
             ulong hashID = BitConverter.ToUInt64(header.FileHash, 0);
@@ -901,7 +897,7 @@ namespace DeOps.Components.Mail
                     Process_MailHeader(store, signed, MailHeader.Decode(Core.Protocol, embedded));
 
                 else if (embedded.Name == MailPacket.Ack)
-                    Process_MailAck(store, signed, MailAck.Decode(Core.Protocol, embedded));
+                    Process_MailAck(store, signed, MailAck.Decode(Core.Protocol, embedded), false);
 
                 else if (embedded.Name == MailPacket.Pending)
                     Process_PendingHeader(store, signed, PendingHeader.Decode(Core.Protocol, embedded));
@@ -1081,7 +1077,6 @@ namespace DeOps.Components.Mail
         {
             Core.IndexKey(header.SourceID, ref header.Source);
             Core.IndexKey(header.TargetID, ref header.Target);
-            Utilities.CheckSignedData(header.Source, signed.Data, signed.Signature);
 
             // check if already cached
             if (MailMap.ContainsKey(header.TargetID))
@@ -1146,6 +1141,8 @@ namespace DeOps.Components.Mail
 
         private void Download_Mail(SignedData signed, MailHeader header)
         {
+            Utilities.CheckSignedData(header.Source, signed.Data, signed.Signature);
+
             FileDetails details = new FileDetails(ComponentID.Mail, header.FileHash, header.FileSize, null);
 
             Core.Transfers.StartDownload(header.TargetID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload_Mail));
@@ -1361,11 +1358,13 @@ namespace DeOps.Components.Mail
             return false;
         }
 
-        private void Process_MailAck(DataReq data, SignedData signed, MailAck ack)
+        private void Process_MailAck(DataReq data, SignedData signed, MailAck ack, bool verified)
         {
             Core.IndexKey(ack.SourceID, ref ack.Source);
             Core.IndexKey(ack.TargetID, ref ack.Target);
-            Utilities.CheckSignedData(ack.Source, signed.Data, signed.Signature);
+
+            if(!verified)
+                Utilities.CheckSignedData(ack.Source, signed.Data, signed.Signature);
 
             // check if local
             if(ack.TargetID == Core.LocalDhtID)
@@ -1451,8 +1450,7 @@ namespace DeOps.Components.Mail
         private void Process_PendingHeader(DataReq data, SignedData signed, PendingHeader header)
         {
             Core.IndexKey(header.KeyID, ref header.Key);
-            Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature);
-
+           
             // if link loaded
             if (PendingMap.ContainsKey(header.KeyID))
             {
@@ -1482,6 +1480,8 @@ namespace DeOps.Components.Mail
 
         private void Download_Pending(SignedData signed, PendingHeader header)
         {
+            Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature);
+
             FileDetails details = new FileDetails(ComponentID.Mail, header.FileHash, header.FileSize, null);
 
             Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload_Pending));

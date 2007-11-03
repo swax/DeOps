@@ -88,9 +88,9 @@ namespace DeOps.Components.Board
             PostHeader header = new PostHeader();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -226,9 +226,9 @@ namespace DeOps.Components.Board
             PostInfo info = new PostInfo();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -284,9 +284,9 @@ namespace DeOps.Components.Board
             PostFile file = new PostFile();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)

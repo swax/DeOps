@@ -98,9 +98,9 @@ namespace DeOps.Components.Mail
             MailHeader header = new MailHeader();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -201,9 +201,9 @@ namespace DeOps.Components.Mail
             MailInfo info = new MailInfo();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -264,9 +264,9 @@ namespace DeOps.Components.Mail
             MailDestination dest = new MailDestination();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -324,9 +324,9 @@ namespace DeOps.Components.Mail
             MailFile file = new MailFile();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -383,9 +383,9 @@ namespace DeOps.Components.Mail
             MailAck ack = new MailAck();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -457,9 +457,9 @@ namespace DeOps.Components.Mail
             PendingHeader header = new PendingHeader();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)

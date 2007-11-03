@@ -22,12 +22,11 @@ namespace DeOps.Components.Board
     {
         OpCore Core;
         BoardControl Board;
+        BoardInterface BoardInt;
         LinkControl Links;
 
         ulong DhtID;
         uint ProjectID;
-
-        OpLink CurrentLink;
 
         ScopeType CurrentScope = ScopeType.All;
         
@@ -43,18 +42,18 @@ namespace DeOps.Components.Board
                 </html>";
 
 
-        internal BoardView(BoardControl board, ulong id, uint project)
+        internal BoardView(BoardInterface board, ulong id, uint project)
         {
             InitializeComponent();
 
             Core = board.Core;
-            Board = board;
+            Board = board.Control;
+            BoardInt = board;
             Links = Core.Links;
             
 
             DhtID = id;
             ProjectID = project;
-            CurrentLink = Links.LinkMap[DhtID];
 
             if (DhtID != Core.LocalDhtID)
             {
@@ -84,7 +83,7 @@ namespace DeOps.Components.Board
             PostView.NodeExpanding += new EventHandler(OnNodeExpanding);
             PostView.NodeCollapsed += new EventHandler(OnNodeCollapsed);
 
-            Board.LoadView(this, DhtID);
+            BoardInt.LoadView(this, DhtID);
 
             SelectProject(ProjectID);
         }
@@ -99,7 +98,7 @@ namespace DeOps.Components.Board
             Board.PostUpdate -= new PostUpdateHandler(Board_PostUpdate);
             Links.GuiUpdate  -= new LinkGuiUpdateHandler(Links_Update);
 
-            Board.UnloadView(this, DhtID);
+            BoardInt.UnloadView(this, DhtID);
 
             return true;
         }
@@ -117,7 +116,7 @@ namespace DeOps.Components.Board
                 title += Core.Links.GetName(DhtID) + "'s ";
 
             if(ProjectID != 0)
-                title += Core.Links.ProjectNames[ProjectID] + " ";
+                title += Core.Links.GetProjectName(ProjectID) + " ";
 
             title += "Board";
 
@@ -140,9 +139,15 @@ namespace DeOps.Components.Board
 
             ProjectButton.DropDownItems.Add(new ProjectItem("Main", 0, new EventHandler(ProjectMenu_Click)));
 
-            foreach (uint id in Links.ProjectNames.Keys)
-                if (id != 0 && CurrentLink.Projects.Contains(id) && id != ProjectID)
-                    ProjectButton.DropDownItems.Add(new ProjectItem(Links.ProjectNames[id], id, new EventHandler(ProjectMenu_Click)));
+            OpLink link = Links.GetLink(DhtID);
+
+            if(link != null)
+                Links.ProjectNames.LockReading(delegate()
+                {
+                    foreach (uint id in Links.ProjectNames.Keys)
+                        if (id != 0 && link.Projects.Contains(id) && id != ProjectID)
+                            ProjectButton.DropDownItems.Add(new ProjectItem(Links.ProjectNames[id], id, new EventHandler(ProjectMenu_Click)));
+                });
         }
 
         private void ProjectMenu_Click(object sender, EventArgs e)
@@ -161,7 +166,7 @@ namespace DeOps.Components.Board
 
             string name = "Main";
             if (id != 0)
-                name = Links.ProjectNames[id];
+                name = Links.GetProjectName(id);
 
             ProjectButton.Text = "Project: " + name;
 
@@ -199,8 +204,8 @@ namespace DeOps.Components.Board
             PostView.Nodes.Clear();
             ThreadMap.Clear();     
 
-            HighIDs = Board.GetBoardRegion(DhtID, ProjectID, ScopeType.High);
-            LowIDs = Board.GetBoardRegion(DhtID, ProjectID, ScopeType.Low);
+            HighIDs = BoardInt.GetBoardRegion(DhtID, ProjectID, ScopeType.High);
+            LowIDs = BoardInt.GetBoardRegion(DhtID, ProjectID, ScopeType.Low);
 
             Board.LoadRegion(DhtID, ProjectID);
 
@@ -278,15 +283,17 @@ namespace DeOps.Components.Board
             // reply - must be on active threads list to show
             else 
             {
-                if (!Board.BoardMap.ContainsKey(post.Header.TargetID))
+                OpBoard board = Board.GetBoard(post.Header.TargetID);
+
+                if (board == null)
                     return;
 
                 PostUID parentUid = new PostUID(post.Header.TargetID, post.Header.ProjectID, post.Header.ParentID);
 
-                if (!Board.BoardMap[post.Header.TargetID].Posts.ContainsKey(parentUid))
+                if (!board.Posts.ContainsKey(parentUid))
                     return;
 
-                int parentIdent = Board.BoardMap[post.Header.TargetID].Posts[parentUid].Ident;
+                int parentIdent = board.Posts[parentUid].Ident;
 
                 if (!ActiveThreads.ContainsKey(parentIdent) || 
                     !ThreadMap.ContainsKey(parentIdent))
@@ -346,12 +353,12 @@ namespace DeOps.Components.Board
         {
             // reset high and low scopes, if change detected to refresh
 
-            if(CurrentScope != ScopeType.Low && 
-                DetectChange( HighIDs, Board.GetBoardRegion(DhtID, ProjectID, ScopeType.High)))
+            if(CurrentScope != ScopeType.Low &&
+                DetectChange(HighIDs, BoardInt.GetBoardRegion(DhtID, ProjectID, ScopeType.High)))
                 RefreshBoard();
 
-            else if (CurrentScope != ScopeType.High && 
-                DetectChange( LowIDs, Board.GetBoardRegion(DhtID, ProjectID, ScopeType.Low)))
+            else if (CurrentScope != ScopeType.High &&
+                DetectChange(LowIDs, BoardInt.GetBoardRegion(DhtID, ProjectID, ScopeType.Low)))
                 RefreshBoard();
         }
 
@@ -554,7 +561,7 @@ namespace DeOps.Components.Board
 
         private void RefreshButton_Click(object sender, EventArgs e)
         {
-            List<ulong> targets = Board.GetBoardRegion(DhtID, ProjectID, CurrentScope);
+            List<ulong> targets = BoardInt.GetBoardRegion(DhtID, ProjectID, CurrentScope);
 
             foreach (ulong target in targets)
                 Board.SearchBoard(target, ProjectID);
@@ -688,13 +695,13 @@ namespace DeOps.Components.Board
     class PostViewNode : TreeListNode
     {
         internal OpPost Post;
-        ScopeType Level;
+        ScopeType Position;
         ScopeType Scope;
 
-        internal PostViewNode(OpCore core, OpPost post, ScopeType level, ScopeType scope)
+        internal PostViewNode(OpCore core, OpPost post, ScopeType position, ScopeType scope)
         {
             Post = post;
-            Level = level;
+            Position = position;
             Scope = scope;
 
             SubItems.Add(new ContainerSubListViewItem());
@@ -730,10 +737,10 @@ namespace DeOps.Components.Board
             if (Overlays == null)
                 Overlays = new List<int>();
 
-            if (Level == ScopeType.High)
+            if (Position == ScopeType.High)
                 Overlays.Add(0);
 
-            if (Level == ScopeType.Low)
+            if (Position == ScopeType.Low)
                 Overlays.Add(1);
 
             if (Scope == ScopeType.High)

@@ -525,7 +525,7 @@ namespace DeOps.Implementation.Transport
 				G2ReceivedPacket packet = new G2ReceivedPacket();
 				packet.Root = new G2Header(FinalRecvBuffer);
 
-                streamStatus = Core.Protocol.ReadNextPacket(packet.Root, ref Start, ref FinalRecvBuffSize);
+                streamStatus = G2Protocol.ReadNextPacket(packet.Root, ref Start, ref FinalRecvBuffSize);
 
 				if( streamStatus != G2ReadResult.PACKET_GOOD )
 					break;
@@ -533,17 +533,30 @@ namespace DeOps.Implementation.Transport
 				packet.Tcp       = this;
 				packet.Source = new DhtAddress(RemoteIP, this);
 
-                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tcp, DirectionType.In, packet.Source, Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize));
+                byte[] packetData = Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize);
+                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tcp, DirectionType.In, packet.Source, packetData);
                 Network.LogPacket(logEntry);
 
-				try
-				{
-                    Network.ReceivePacket(packet);
-				}
-				catch(Exception ex)
-				{
-					LogException("ReceivePackets", ex.Message + "\n" + ex.StackTrace);
-				}
+
+                if (Core.Sim == null || Core.Sim.Internet.TestCoreThread)
+                {
+                    lock (Network.IncomingPackets)
+                        if (Network.IncomingPackets.Count < 100)
+                            Network.IncomingPackets.Enqueue(new PacketCopy(packet, packetData, Network.IsGlobal));
+
+                    Core.ProcessEvent.Set();
+                }
+                else
+                {
+                    try
+                    {
+                        Network.ReceivePacket(packet);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogException("ReceivePackets", ex.Message + "\n" + ex.StackTrace);
+                    }
+                }
 			}
 
             // re-align buffer

@@ -49,18 +49,7 @@ namespace DeOps.Components.Profile
             Templates.Clear();
 
             // list chain of command first
-            List<ulong> chainIDs = new List<ulong>();
-
-            if (Links.LocalLink.Uplink.ContainsKey(0))
-            {
-                OpLink parent = Links.LocalLink.Uplink[0];
-
-                while (parent != null)
-                {
-                    chainIDs.Add(parent.DhtID);
-                    parent = parent.Uplink.ContainsKey(0) ? parent.Uplink[0] : null;
-                }
-            }
+            List<ulong> chainIDs = Links.GetUplinkIDs(Core.LocalDhtID, 0);
             chainIDs.Reverse();
             chainIDs.Add(Links.LocalLink.DhtID);
 
@@ -90,26 +79,29 @@ namespace DeOps.Components.Profile
             List<ProfileTemplate> templates = new List<ProfileTemplate>();
 
             // read profile header file
-            foreach (ulong id in Profiles.ProfileMap.Keys)
+            Profiles.ProfileMap.LockReading(delegate()
             {
-                ProfileTemplate add = GetTemplate(id);
+                foreach (ulong id in Profiles.ProfileMap.Keys)
+                {
+                    ProfileTemplate add = GetTemplate(id);
 
-                if (add == null || add.Hash == null)
-                    continue;
+                    if (add == null || add.Hash == null)
+                        continue;
 
-                bool dupe = false; 
+                    bool dupe = false;
 
-                foreach (ProfileTemplate template in TemplateCombo.Items)
-                    if (Utilities.MemCompare(add.Hash, template.Hash))
-                        dupe = true;
+                    foreach (ProfileTemplate template in TemplateCombo.Items)
+                        if (Utilities.MemCompare(add.Hash, template.Hash))
+                            dupe = true;
 
-                foreach (ProfileTemplate template in templates)
-                    if (Utilities.MemCompare(add.Hash, template.Hash))
-                        dupe = true;
+                    foreach (ProfileTemplate template in templates)
+                        if (Utilities.MemCompare(add.Hash, template.Hash))
+                            dupe = true;
 
-                if(!dupe)
-                    templates.Add(add);
-            }
+                    if (!dupe)
+                        templates.Add(add);
+                }
+            });
 
             // add space between chain items and other items
             if (TemplateCombo.Items.Count > 0 && templates.Count > 0)
@@ -133,17 +125,14 @@ namespace DeOps.Components.Profile
 
         private ProfileTemplate GetTemplate(ulong id)
         {
-            if (!Profiles.ProfileMap.ContainsKey(id) || !Links.LinkMap.ContainsKey(id))
-                return null;
+            OpProfile profile = Profiles.GetProfile(id);
 
-            if ( !Links.LinkMap[id].Loaded)
+            if (profile == null)
                 return null;
-
-            OpProfile profile = Profiles.ProfileMap[id];
 
             ProfileTemplate template = new ProfileTemplate(false, true);
 
-            template.User     = Links.LinkMap[id].Name;
+            template.User = Links.GetName(id); ;
             template.FilePath = Profiles.GetFilePath(profile.Header);
             template.FileKey  = profile.Header.FileKey;
 
@@ -334,7 +323,7 @@ namespace DeOps.Components.Profile
                 string fieldName = tag.Name;
 
                 if (fieldName == "MOTD")
-                    fieldName = "MOTD-" + MainView.ProjectID.ToString();
+                    fieldName = "MOTD-" + MainView.GetProjectID().ToString();
 
                 if (TextFields.ContainsKey(fieldName))
                     ValueTextBox.Text = TextFields[fieldName];
@@ -362,7 +351,7 @@ namespace DeOps.Components.Profile
                 string fieldName = tag.Name;
 
                 if (fieldName == "MOTD")
-                    fieldName = "MOTD-" + MainView.ProjectID.ToString();
+                    fieldName = "MOTD-" + MainView.GetProjectID().ToString();
 
                 TextFields[fieldName] = ValueTextBox.Text;
             }

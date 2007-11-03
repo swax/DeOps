@@ -26,17 +26,17 @@ namespace DeOps.Components.Location
         internal DateTime NextGlobalPublish;
 
         internal LocInfo LocalLocation;
-        internal Dictionary<ulong, LinkedList<CryptLoc>> GlobalIndex = new Dictionary<ulong, LinkedList<CryptLoc>>();
-        internal Dictionary<ulong, Dictionary<ushort, LocInfo>> LocationMap = new Dictionary<ulong, Dictionary<ushort, LocInfo>>();
+        internal ThreadedDictionary<ulong, LinkedList<CryptLoc>> GlobalIndex = new ThreadedDictionary<ulong, LinkedList<CryptLoc>>();
+        internal ThreadedDictionary<ulong, Dictionary<ushort, LocInfo>> LocationMap = new ThreadedDictionary<ulong, Dictionary<ushort, LocInfo>>();
 
-        Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
+        ThreadedDictionary<ulong, DateTime> NextResearch = new ThreadedDictionary<ulong, DateTime>();
 
         internal LocationUpdateHandler LocationUpdate;
         internal LocationGuiUpdateHandler GuiUpdate;
 
         int PruneGlobalKeys    = 100;
         int PruneGlobalEntries = 20;
-        int PruneLocations     = 100;
+       // int PruneLocations     = 100;
 
 
         internal LocationControl(OpCore core)
@@ -61,7 +61,7 @@ namespace DeOps.Components.Location
             {
                 PruneGlobalKeys    = 50;
                 PruneGlobalEntries = 10;
-                PruneLocations     = 25;
+                //PruneLocations     = 25;
             }
         }
 
@@ -81,24 +81,31 @@ namespace DeOps.Components.Location
                 return;
 
             // prune global keys
-            if (GlobalIndex.Count > PruneGlobalKeys)
-                while (GlobalIndex.Count > PruneGlobalKeys / 2)
+            if (GlobalIndex.SafeCount > PruneGlobalKeys)
+                GlobalIndex.LockWriting(delegate()
                 {
-                    ulong furthest = Core.LocalDhtID;
+                    while (GlobalIndex.Count > PruneGlobalKeys / 2)
+                    {
+                        ulong furthest = Core.LocalDhtID;
 
-                    foreach (ulong id in GlobalIndex.Keys)
-                        if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
-                            furthest = id;
+                        foreach (ulong id in GlobalIndex.Keys)
+                            if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                                furthest = id;
 
-                    GlobalIndex.Remove(furthest);
-                }
+                        GlobalIndex.Remove(furthest);
+                    }
+                });
 
             // prune global entries
-            foreach (LinkedList<CryptLoc> list in GlobalIndex.Values)
-                if (list.Count > PruneGlobalEntries)
-                    while (list.Count > PruneGlobalEntries / 2)
-                        list.RemoveLast();
+            GlobalIndex.LockReading(delegate()
+            {
+                foreach (LinkedList<CryptLoc> list in GlobalIndex.Values)
+                    if (list.Count > PruneGlobalEntries)
+                        while (list.Count > PruneGlobalEntries / 2)
+                            list.RemoveLast();
+            });
 
+            //crit op locs need pruning?
             /* prune op locations
             if (LocationMap.Count > PruneLocations)
             {
@@ -128,10 +135,13 @@ namespace DeOps.Components.Location
             }*/
 
             // global ttl, once per minute
-            if(second == 60)
-                lock (GlobalIndex)
+            if (second == 60)
+            {
+
+                List<ulong> removeKeys = new List<ulong>();
+
+                GlobalIndex.LockReading(delegate()
                 {
-                    List<ulong> removeKeys = new List<ulong>();
                     List<CryptLoc> removeList = new List<CryptLoc>();
 
                     foreach (ulong key in GlobalIndex.Keys)
@@ -154,64 +164,69 @@ namespace DeOps.Components.Location
                             removeKeys.Add(key);
                     }
 
-                    foreach (ulong key in removeKeys)
-                        GlobalIndex.Remove(key);
-                }
 
-            // operation ttl (similar as above, but not the same)
-            lock (LocationMap)
-            {
-                List<ulong> removeKeys = new List<ulong>();
-                List<ushort> removeClients = new List<ushort>();
+                });
 
-                foreach (ulong key in LocationMap.Keys)
-                {
-                    removeClients.Clear();
-
-                    foreach (ushort id in LocationMap[key].Keys)
-                    {
-                        if (second == 60)
-                        {
-                            if (LocationMap[key][id].TTL > 0)
-                                LocationMap[key][id].TTL--;
-
-                            if (LocationMap[key][id].TTL == 0)
-                                removeClients.Add(id);
-                        }
-
-                        //crit hack - last 30 and 15 secs before loc destroyed do searches (working pretty good through...)
-                        if (LocationMap[key][id].TTL == 1 &&
-                            (second == 15 || second == 30)) 
-                            if(Core.Links.LinkMap.ContainsKey(key))
-                                StartSearch(key, 0, false);
-                    }
-
-                    foreach (ushort id in removeClients)
-                        LocationMap[key].Remove(id);
-
-                    if (LocationMap[key].Count == 0)
-                        removeKeys.Add(key);
-                }
-
-                foreach (ulong key in removeKeys)
-                {
-                    LocationMap.Remove(key);
-
-                    Core.InvokeInterface(GuiUpdate, key);
-                }
-                
-                // clean research map
-                List<ulong> removeIDs = new List<ulong>();
-
-                foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
-                    if (Core.TimeNow > pair.Value)
-                        removeIDs.Add(pair.Key);
-
-                foreach (ulong id in removeIDs)
-                    NextResearch.Remove(id);
+                GlobalIndex.LockWriting(delegate()
+                 {
+                     foreach (ulong key in removeKeys)
+                         GlobalIndex.Remove(key);
+                 });
             }
 
- 
+            // operation ttl (similar as above, but not the same)
+            if (second % 15 == 0)
+            {
+                List<ulong> removeKeys = new List<ulong>();
+
+                LocationMap.LockReading(delegate()
+                {
+                     List<ushort> removeClients = new List<ushort>();
+
+                     foreach (ulong key in LocationMap.Keys)
+                     {
+                         removeClients.Clear();
+
+                         foreach (ushort id in LocationMap[key].Keys)
+                         {
+                             if (second == 60)
+                             {
+                                 if (LocationMap[key][id].TTL > 0)
+                                     LocationMap[key][id].TTL--;
+
+                                 if (LocationMap[key][id].TTL == 0)
+                                     removeClients.Add(id);
+                             }
+
+                             //crit hack - last 30 and 15 secs before loc destroyed do searches (working pretty good through...)
+                             if (LocationMap[key][id].TTL == 1 &&
+                                 (second == 15 || second == 30))
+                                 if (Core.Links.LinkMap.SafeContainsKey(key))
+                                     StartSearch(key, 0, false);
+                         }
+
+                         foreach (ushort id in removeClients)
+                             LocationMap[key].Remove(id);
+
+                         if (LocationMap[key].Count == 0)
+                             removeKeys.Add(key);
+                     }
+                });
+
+                LocationMap.LockWriting(delegate()
+                {
+                    foreach (ulong key in removeKeys)
+                     {
+                         LocationMap.Remove(key);
+
+                         Core.InvokeInterface(GuiUpdate, key);
+                     }
+                });
+            }
+
+            // clean research map
+            if (second == 60)
+                NextResearch.RemoveWhere(delegate(DateTime timeout) { return Core.TimeNow > timeout; });
         }
 
         internal void UpdateLocation()
@@ -276,10 +291,12 @@ namespace DeOps.Components.Location
         {
             List<Byte[]> results = new List<byte[]>();
 
-            lock (GlobalIndex)
+            GlobalIndex.LockReading(delegate()
+            {
                 if (GlobalIndex.ContainsKey(key))
-                    foreach(CryptLoc loc in GlobalIndex[key])
+                    foreach (CryptLoc loc in GlobalIndex[key])
                         results.Add(loc.Data);
+            });
 
             return results;
         }
@@ -291,11 +308,13 @@ namespace DeOps.Components.Location
             uint minVersion = BitConverter.ToUInt32(parameters, 0);
 
 
-            lock (LocationMap)
+            LocationMap.LockReading(delegate()
+            {
                 if (LocationMap.ContainsKey(key))
-                    foreach(LocInfo info in LocationMap[key].Values)
-                        if (info.Location.Version >= minVersion)
+                    foreach (LocInfo info in LocationMap[key].Values)
+                        if (!info.Location.Global && info.Location.Version >= minVersion)
                             results.Add(info.SignedData);
+            });
 
             return results;
         }
@@ -308,24 +327,27 @@ namespace DeOps.Components.Location
                 return;
 
             // check for duplicates
-            lock (GlobalIndex)
+
+            LinkedList<CryptLoc> locs = null;
+
+            if (GlobalIndex.SafeTryGetValue(location.Target, out locs))
             {
-                if (GlobalIndex.ContainsKey(location.Target))
-                    foreach (CryptLoc loc in GlobalIndex[location.Target])
-                        if (Utilities.MemCompare(location.Data, loc.Data))
-                        {
-                            if (newLoc.TTL > loc.TTL)
-                                loc.TTL = newLoc.TTL;
+                foreach (CryptLoc loc in locs)
+                       if (Utilities.MemCompare(location.Data, loc.Data))
+                       {
+                           if (newLoc.TTL > loc.TTL)
+                               loc.TTL = newLoc.TTL;
 
-                            return;
-                        }
-
-                // add
-                if (!GlobalIndex.ContainsKey(location.Target))
-                    GlobalIndex[location.Target] = new LinkedList<CryptLoc>();
-
-                GlobalIndex[location.Target].AddFirst(newLoc);
+                           return;
+                       }
             }
+            else
+            {
+                locs = new LinkedList<CryptLoc>();
+                GlobalIndex.SafeAdd(location.Target, locs);
+            }
+
+            locs.AddFirst(newLoc);
         }
 
         void OperationStore_Local(DataReq data)
@@ -339,24 +361,26 @@ namespace DeOps.Components.Location
             LocInfo current = null;
 
             // check location version
-            lock(LocationMap)
-                if (LocationMap.ContainsKey(location.KeyID))
-                    if (LocationMap[location.KeyID].ContainsKey(location.Source.ClientID))
-                    {
-                        current = LocationMap[location.KeyID][location.Source.ClientID];
+           LocationMap.LockReading(delegate()
+           {
+               if (LocationMap.ContainsKey(location.KeyID))
+                   if (LocationMap[location.KeyID].ContainsKey(location.Source.ClientID))
+                   {
+                       current = LocationMap[location.KeyID][location.Source.ClientID];
 
-                        if (location.Version == current.Location.Version)
-                            return;
+                       if (location.Version == current.Location.Version)
+                           return;
 
-                        else if (location.Version < current.Location.Version)
-                        {
-                            if (data != null && data.Sources != null)
-                                foreach (DhtAddress source in data.Sources)
-                                    Core.OperationNet.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Location.KeyID, ComponentID.Location, current.SignedData));
-               
-                            return;
-                        }
-                    }
+                       else if (location.Version < current.Location.Version)
+                       {
+                           if (data != null && data.Sources != null)
+                               foreach (DhtAddress source in data.Sources)
+                                   Core.OperationNet.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Location.KeyID, ComponentID.Location, current.SignedData));
+
+                           return;
+                       }
+                   }
+           });
 
             // version checks
             Core.Profiles.CheckVersion(location.KeyID, location.ProfileVersion);
@@ -364,16 +388,20 @@ namespace DeOps.Components.Location
 
 
             // add location
-            if(current == null)
-                lock (LocationMap)
-                {
-                    if (!LocationMap.ContainsKey(location.KeyID))
-                        LocationMap[location.KeyID] = new Dictionary<ushort, LocInfo>();
+            if (current == null)
+            {
+                Dictionary<ushort, LocInfo> locations = null;
 
-                    current = new LocInfo();
-                    current.Cached = Core.OperationNet.Store.IsCached(location.KeyID);
-                    LocationMap[location.KeyID][location.Source.ClientID] = current;
+                if (!LocationMap.SafeTryGetValue(location.KeyID, out locations))
+                {
+                    locations = new Dictionary<ushort, LocInfo>();
+                    LocationMap.SafeAdd(location.KeyID, locations);
                 }
+
+                current = new LocInfo();
+                current.Cached = Core.OperationNet.Store.IsCached(location.KeyID);
+                locations[location.Source.ClientID] = current;
+            }
 
             current.Location   = location;
             current.SignedData = data.Data;
@@ -466,9 +494,11 @@ namespace DeOps.Components.Location
 
         internal LocationData FindLocation(ulong key, ushort client)
         {
-            if (LocationMap.ContainsKey(key))
-                if (LocationMap[key].ContainsKey(client))
-                    return LocationMap[key][client].Location;
+            Dictionary<ushort, LocInfo> locations = null;
+
+            if (LocationMap.SafeTryGetValue(key, out locations))
+                if (locations.ContainsKey(client))
+                    return locations[client].Location;
 
             return null;
         }
@@ -489,19 +519,23 @@ namespace DeOps.Components.Location
                 return;
 
             // limit re-search to once per 30 secs
-            if (NextResearch.ContainsKey(key))
-                if (Core.TimeNow < NextResearch[key])
+            DateTime timeout = default(DateTime);
+
+            if (NextResearch.SafeTryGetValue(key, out timeout))
+                if (Core.TimeNow < timeout)
                     return;
 
             StartSearch(key, 0, false);
 
-            NextResearch[key] = Core.TimeNow.AddSeconds(30);
+            NextResearch.SafeAdd(key, Core.TimeNow.AddSeconds(30));
         }
 
         internal int ClientCount(ulong id)
         {
-            if (LocationMap.ContainsKey(id))
-                return LocationMap[id].Count;
+            Dictionary<ushort, LocInfo> locations = null;
+
+            if (LocationMap.SafeTryGetValue(id, out locations))
+                return locations.Count;
 
             return 0;
         }

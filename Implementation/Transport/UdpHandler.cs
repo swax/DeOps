@@ -206,6 +206,7 @@ namespace DeOps.Implementation.Transport
 
         internal void OnReceive(byte[] buff, int length, IPEndPoint sender)
         {
+            bool copied = false;
             byte[] finalBuff = buff;
 
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption) // turn off encryption during simulation
@@ -219,13 +220,14 @@ namespace DeOps.Implementation.Transport
 
                     finalBuff = Utilities.DecryptBytes(buff, length, Network.AugmentedCrypt);
                     length = finalBuff.Length;
+                    copied = true;
                 }
             }
 
-            ParsePacket(finalBuff, length, sender);
+            ParsePacket(finalBuff, length, sender, copied);
         }
 
-		void ParsePacket(byte[] buff, int length, IPEndPoint sender)
+		void ParsePacket(byte[] buff, int length, IPEndPoint sender, bool copied)
 		{
 			G2ReceivedPacket packet = new G2ReceivedPacket();
             packet.Root = new G2Header(buff);
@@ -234,17 +236,31 @@ namespace DeOps.Implementation.Transport
             {
                 packet.Source = new DhtAddress(0, sender.Address, (ushort)sender.Port);
 
-                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Udp, DirectionType.In, packet.Source, Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize));
+                byte[] packetData = copied ? buff : Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize);
+                
+                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Udp, DirectionType.In, packet.Source, packetData);
 				Network.LogPacket(logEntry);
 
-				try
-				{
-					Network.ReceivePacket(packet);
-				}
-				catch(Exception ex)
-				{ 
-					Network.UpdateLog("Exception", "UdpHandler::ParsePacket: " + ex.Message);
-				}
+
+                if (Core.Sim == null || Core.Sim.Internet.TestCoreThread)
+                {
+                    lock (Network.IncomingPackets)
+                        if (Network.IncomingPackets.Count < 100)
+                            Network.IncomingPackets.Enqueue(new PacketCopy(packet, packetData, Network.IsGlobal));
+
+                    Core.ProcessEvent.Set();
+                }
+                else
+                {
+                    try
+                    {
+                        Network.ReceivePacket(packet);
+                    }
+                    catch (Exception ex)
+                    {
+                        Network.UpdateLog("Exception", "UdpHandler::ParsePacket: " + ex.Message);
+                    }
+                }
 			}
 		}
 	}

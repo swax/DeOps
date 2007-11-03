@@ -45,7 +45,7 @@ namespace DeOps.Components.Storage
         internal Dictionary<ulong, OpFile> InternalFileMap = new Dictionary<ulong, OpFile>();// used to bring together files encrypted with different keys
 
         Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
-        Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
+        ThreadedDictionary<ulong, uint> DownloadLater = new ThreadedDictionary<ulong, uint>();
 
         int PruneSize = 100;
 
@@ -160,26 +160,28 @@ namespace DeOps.Components.Storage
             Working.Clear();
 
             // delete completely folders made for other user's storages
-            foreach (uint project in Links.ProjectRoots.Keys)
+            Links.ProjectRoots.LockReading(delegate()
             {
-                string path = Core.User.RootPath + Path.DirectorySeparatorChar + Links.ProjectNames[project] + " Storage";
-                string local = Links.GetName(Core.LocalDhtID);
+                foreach (uint project in Links.ProjectRoots.Keys)
+                {
+                    string path = Core.User.RootPath + Path.DirectorySeparatorChar + Links.GetProjectName(project) + " Storage";
+                    string local = Links.GetName(Core.LocalDhtID);
 
-                if(Directory.Exists(path))
-                    foreach (string dir in Directory.GetDirectories(path))
-                        if (Path.GetFileName(dir) != local)
-                        {
-                            try
+                    if (Directory.Exists(path))
+                        foreach (string dir in Directory.GetDirectories(path))
+                            if (Path.GetFileName(dir) != local)
                             {
-                                Directory.Delete(dir, true);
+                                try
+                                {
+                                    Directory.Delete(dir, true);
+                                }
+                                catch
+                                {
+                                    errors.Add(new LockError(dir, "", false, LockErrorType.Blocked));
+                                }
                             }
-                            catch (Exception ex)
-                            {
-                                errors.Add(new LockError(dir, "", false, LockErrorType.Blocked));
-                            }
-                        }
-            }
-
+                }
+            });
             // security warning: could not secure these files
             if (errors.Count > 0)
             {
@@ -240,7 +242,7 @@ namespace DeOps.Components.Storage
             {
                 foreach (OpStorage storage in StorageMap.Values)
                     if (storage.DhtID != Core.LocalDhtID &&
-                        !Core.Links.LinkMap.ContainsKey(storage.DhtID) && // dont remove nodes in our local hierarchy
+                        !Core.Links.LinkMap.SafeContainsKey(storage.DhtID) && // dont remove nodes in our local hierarchy
                         !focused.Contains(storage.DhtID) &&
                         !Utilities.InBounds(storage.DhtID, storage.DhtBounds, Core.LocalDhtID))
                         removeIDs.Add(storage.DhtID);
@@ -499,8 +501,7 @@ namespace DeOps.Components.Storage
         private void Process_StorageHeader(DataReq data, SignedData signed, StorageHeader header)
         {
             Core.IndexKey(header.KeyID, ref header.Key);
-            Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature);
-
+           
 
             // if link loaded
             if (StorageMap.ContainsKey(header.KeyID))
@@ -531,6 +532,8 @@ namespace DeOps.Components.Storage
 
         private void DownloadStorage(SignedData signed, StorageHeader header)
         {
+            Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature);
+
             FileDetails details = new FileDetails(ComponentID.Storage, header.FileHash, header.FileSize, BitConverter.GetBytes(StoragePacket.Header));
 
             Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
@@ -598,25 +601,31 @@ namespace DeOps.Components.Storage
                 LoadHeaderFile(path, storage, false, false);
 
                 // record changes of higher nodes for auto-integration purposes
-                foreach (uint project in Links.ProjectRoots.Keys)
-                    if (Core.LocalDhtID == storage.DhtID || Links.IsHigher(storage.DhtID, project))
-                        // doesnt get called on startup because working not initialized before headers are loaded
-                        if (Working.ContainsKey(project))
-                        {
-                            bool doSave = Working[project].RefreshHigherChanges(storage.DhtID);
+                Links.ProjectRoots.LockReading(delegate()
+                {
+                    foreach (uint project in Links.ProjectRoots.Keys)
+                        if (Core.LocalDhtID == storage.DhtID || Links.IsHigher(storage.DhtID, project))
+                            // doesnt get called on startup because working not initialized before headers are loaded
+                            if (Working.ContainsKey(project))
+                            {
+                                bool doSave = Working[project].RefreshHigherChanges(storage.DhtID);
 
-                            if (!Core.Loading && !SavingLocal)
-                                Working[project].AutoIntegrate(doSave);
-                        }
+                                if (!Core.Loading && !SavingLocal)
+                                    Working[project].AutoIntegrate(doSave);
+                            }
+                });
 
                 // update subs
                 if (Network.Established)
                 {
                     List<LocationData> locations = new List<LocationData>();
-                    foreach (uint project in Links.ProjectRoots.Keys)
-                        if (storage.DhtID == Core.LocalDhtID || Links.IsHigher(storage.DhtID, project))
-                            Links.GetLocsBelow(Core.LocalDhtID, project, locations);
 
+                    Links.ProjectRoots.LockReading(delegate()
+                    {
+                        foreach (uint project in Links.ProjectRoots.Keys)
+                            if (storage.DhtID == Core.LocalDhtID || Links.IsHigher(storage.DhtID, project))
+                                Links.GetLocsBelow(Core.LocalDhtID, project, locations);
+                    });
                     Store.PublishDirect(locations, storage.DhtID, ComponentID.Storage, storage.SignedHeader);
                 }
 
@@ -803,7 +812,7 @@ namespace DeOps.Components.Storage
                 if (Network.Established)
                     Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Storage, BitConverter.GetBytes(version));
                 else
-                    DownloadLater[dhtid] = version;
+                    DownloadLater.SafeAdd(dhtid, version);
             }
         }
 
@@ -863,12 +872,14 @@ namespace DeOps.Components.Storage
 
 
             // only download those objects in our local area
-            foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
-                if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
-                    StartSearch(pair.Key, pair.Value);
+            DownloadLater.LockWriting(delegate()
+            {
+                foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
+                    if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
+                        StartSearch(pair.Key, pair.Value);
 
-            DownloadLater.Clear();
-
+                DownloadLater.Clear();
+            });
 
             // delete loose files not in map - do here because now files in cache range are marked as reffed
             foreach (string filepath in Directory.GetFiles(StoragePath + Path.DirectorySeparatorChar + "0"))
@@ -1236,7 +1247,7 @@ namespace DeOps.Components.Storage
 
         internal string GetRootPath(ulong user, uint project)
         {
-            return Core.User.RootPath + Path.DirectorySeparatorChar + Links.ProjectNames[project] + " Storage" + Path.DirectorySeparatorChar + Links.GetName(user);
+            return Core.User.RootPath + Path.DirectorySeparatorChar + Links.GetProjectName(project) + " Storage" + Path.DirectorySeparatorChar + Links.GetName(user);
         }
 
         internal WorkingStorage Discard(uint project)

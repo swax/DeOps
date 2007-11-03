@@ -139,7 +139,7 @@ namespace DeOps.Components.Board
                     title += Core.Links.GetName(DhtID) + "'s ";
 
                 if (ProjectID != 0)
-                    title += Core.Links.ProjectNames[ProjectID] + " ";
+                    title += Core.Links.GetProjectName(ProjectID) + " ";
 
                 title += "Board";
             }

@@ -19,8 +19,8 @@ namespace DeOps.Components.Chat
         internal OpCore Core;
         internal LinkControl Links;
 
-        internal List<ChatRoom> Rooms = new List<ChatRoom>();
-        Dictionary<ulong, List<ushort>> ConnectedClients = new Dictionary<ulong, List<ushort>>();
+        internal ThreadedList<ChatRoom> Rooms = new ThreadedList<ChatRoom>();
+        ThreadedDictionary<ulong, List<ushort>> ConnectedClients = new ThreadedDictionary<ulong, List<ushort>>();
 
         internal CreateRoomHandler  CreateRoomEvent;
         internal RemoveRoomHandler  RemoveRoomEvent;
@@ -87,44 +87,47 @@ namespace DeOps.Components.Chat
 
         internal void Link_Update(OpLink link)
         {
-            foreach (uint project in Links.ProjectRoots.Keys)
+            Links.ProjectRoots.LockReading(delegate()
             {
-                OpLink uplink = link.GetHigher(project, true);
-                List<OpLink> downlinks = link.GetLowers(project, true);
-
-                // if us
-                if (link == Links.LocalLink)
+                foreach (uint project in Links.ProjectRoots.Keys)
                 {
-                    // if uplink exists, refresh high room, else remove it
-                    if (uplink != null)
-                        RefreshRoom(RoomKind.Command_High, project);
+                    OpLink uplink = link.GetHigher(project, true);
+                    List<OpLink> downlinks = link.GetLowers(project, true);
+
+                    // if us
+                    if (link == Links.LocalLink)
+                    {
+                        // if uplink exists, refresh high room, else remove it
+                        if (uplink != null)
+                            RefreshRoom(RoomKind.Command_High, project);
+                        else
+                            RemoveRoom(RoomKind.Command_High, project);
+
+                        // if downlinks exist
+                        if (downlinks.Count > 0)
+                            RefreshRoom(RoomKind.Command_Low, project);
+                        else
+                            RemoveRoom(RoomKind.Command_Low, project);
+                    }
+
+                    // if not us
                     else
-                        RemoveRoom(RoomKind.Command_High, project);
+                    {
+                        // remove link from whatever room
+                        ChatRoom currentRoom = FindRoom(link.DhtID, project);
 
-                    // if downlinks exist
-                    if (downlinks.Count > 0)
-                        RefreshRoom(RoomKind.Command_Low, project);
-                    else
-                        RemoveRoom(RoomKind.Command_Low, project);
+                        if (currentRoom != null)
+                            RefreshRoom(currentRoom.Kind, project);
+
+                        // find where node belongs
+                        if (uplink != null && (link == uplink || Links.IsLower(uplink.DhtID, link.DhtID, project)))
+                            RefreshRoom(RoomKind.Command_High, project);
+
+                        else if (Links.IsLowerDirect(link.DhtID, project))
+                            RefreshRoom(RoomKind.Command_Low, project);
+                    }
                 }
-
-                // if not us
-                else
-                {
-                    // remove link from whatever room
-                    ChatRoom currentRoom = FindRoom(link.DhtID, project);
-                    
-                    if(currentRoom != null)
-                        RefreshRoom(currentRoom.Kind, project);
-
-                    // find where node belongs
-                    if (uplink != null && (link == uplink || Links.IsLower(uplink.DhtID, link.DhtID, project)))
-                        RefreshRoom(RoomKind.Command_High, project);
-
-                    else if (Links.IsLowerDirect(link.DhtID, project))
-                        RefreshRoom(RoomKind.Command_Low, project);
-                }
-            }
+            });
         }
 
         private void RefreshRoom(RoomKind kind, uint project)
@@ -151,28 +154,24 @@ namespace DeOps.Components.Chat
 
             if (room == null)
             {
-                string name = "error";
-                if (project == 0)
-                    name = Core.User.Settings.Operation;
-                else if (Links.ProjectNames.ContainsKey(project))
-                    name = Links.ProjectNames[project];
+                string name = Links.GetProjectName(project);
 
                 room = new ChatRoom(kind, project, name);
-                Rooms.Add(room);
+                Rooms.SafeAdd(room);
 
                 newRoom = true;
             }
 
             // remove members
-            room.Members.Clear();
+            room.Members.SafeClear();
 
             // add members
-            room.Members.Add(highNode);
+            room.Members.SafeAdd(highNode);
 
             foreach (OpLink downlink in highNode.GetLowers(project, true))
-                room.Members.Add(downlink);
+                room.Members.SafeAdd(downlink);
 
-            if(room.Members.Count == 1)
+            if(room.Members.SafeCount == 1)
             {
                 RemoveRoom(kind, project);
                 return;
@@ -191,44 +190,73 @@ namespace DeOps.Components.Chat
             if (room == null)
                 return;
 
-            Rooms.Remove(room);
+            Rooms.SafeRemove(room);
 
             Core.InvokeInterface(RemoveRoomEvent, room);
         }
 
         private ChatRoom FindRoom(RoomKind kind, uint project)
         {
-            foreach (ChatRoom room in Rooms)
-                if (kind == room.Kind && project == room.ProjectID)
-                    return room;
+            ChatRoom result = null;
 
-            return null;
+            Rooms.LockReading(delegate()
+            {
+                foreach (ChatRoom room in Rooms)
+                    if (kind == room.Kind && project == room.ProjectID)
+                    {
+                        result = room;
+                        break;
+                    }
+            });
+
+            return result;
         }
 
         private List<ChatRoom> FindRoom(ulong key)
         {
             List<ChatRoom> results = new List<ChatRoom>();
 
-            foreach (ChatRoom room in Rooms)
-                foreach (OpLink member in room.Members)
-                    if (member.DhtID == key)
+            Rooms.LockReading(delegate()
+            {
+                foreach (ChatRoom room in Rooms)
+                    room.Members.LockReading(delegate()
                     {
-                        results.Add(room);
-                        break;
-                    }
+                        foreach (OpLink member in room.Members)
+                            if (member.DhtID == key)
+                            {
+                                results.Add(room);
+                                break;
+                            }
+                    });
+            });
 
             return results;
         }
 
         private ChatRoom FindRoom(ulong key, uint project)
         {
-            foreach (ChatRoom room in Rooms)
-                if (room.ProjectID == project)
-                    foreach (OpLink member in room.Members)
-                        if (member.DhtID == key)
-                            return room;
+            ChatRoom result = null;
 
-            return null;
+            Rooms.LockReading(delegate()
+            {
+                foreach (ChatRoom room in Rooms)
+                    if (room.ProjectID == project)
+                    {
+                        room.Members.LockReading(delegate()
+                        {
+                            foreach (OpLink member in room.Members)
+                                if (member.DhtID == key)
+                                {
+                                    result = room;
+                                    break;
+                                }
+                        });
+
+                        break;
+                    }
+            });
+
+            return result;
         }
 
         internal void Location_Update(LocationData location)
@@ -251,9 +279,7 @@ namespace DeOps.Components.Chat
                 return;
 
             // getstatus message
-            string name = "unknown ";
-            if (Links.LinkMap.ContainsKey(key) && Links.LinkMap[key].Name != null)
-                name = Links.LinkMap[key].Name + " ";
+            string name = Links.GetName(key);
 
             string location = "";
             if (Core.Locations.ClientCount(session.DhtID ) > 1)
@@ -262,26 +288,32 @@ namespace DeOps.Components.Chat
 
             string message = null;
 
+            List<ushort> connected = null;
+            ConnectedClients.TryGetValue(session.DhtID, out connected);
+
             if (session.Status == SessionStatus.Active &&
-                (!ConnectedClients.ContainsKey(session.DhtID) || !ConnectedClients[session.DhtID].Contains(session.ClientID)))
+                (connected == null || connected.Contains(session.ClientID)))
             {
                 message = "Connected to " + name + location;
 
-                if (!ConnectedClients.ContainsKey(session.DhtID))
-                    ConnectedClients[session.DhtID] = new List<ushort>();
-                    
-                ConnectedClients[session.DhtID].Add(session.ClientID);
+                if (connected == null)
+                {
+                    connected = new List<ushort>();
+                    ConnectedClients.SafeAdd(session.DhtID, connected);
+                }
+
+                connected.Add(session.ClientID);
             }
 
             if (session.Status == SessionStatus.Closed &&
-                ConnectedClients.ContainsKey(session.DhtID) && ConnectedClients[session.DhtID].Contains(session.ClientID))
+                connected != null && connected.Contains(session.ClientID))
             {
                 message = "Disconnected from " + name + location;
 
-                ConnectedClients[session.DhtID].Remove(session.ClientID);
+                connected.Remove(session.ClientID);
 
-                if (ConnectedClients[session.DhtID].Count == 0)
-                    ConnectedClients.Remove(session.DhtID);
+                if (connected.Count == 0)
+                    ConnectedClients.SafeRemove(session.DhtID);
             }
 
             // update interface
@@ -294,29 +326,32 @@ namespace DeOps.Components.Chat
                 }
         }
 
-        internal void SendMessage(ChatRoom Room, string text)
+        internal void SendMessage(ChatRoom room, string text)
         {
-            ProcessMessage(Room, new ChatMessage(Core, text, false));
+            ProcessMessage(room, new ChatMessage(Core, text, false));
 
             bool sent = false;
 
             ChatData packet = new ChatData(ChatPacketType.Message);
-            packet.ChatID = Room.ProjectID;
+            packet.ChatID = room.ProjectID;
             packet.Text   = text;
-            packet.Custom = (Room.Kind == RoomKind.Custom);
+            packet.Custom = (room.Kind == RoomKind.Custom);
 
-            lock(Core.RudpControl.SessionMap)
-                foreach (OpLink link in Room.Members)             
-                    if (Core.RudpControl.SessionMap.ContainsKey(link.DhtID))
-                        foreach (RudpSession session in Core.RudpControl.SessionMap[link.DhtID])
-                            if (session.Status == SessionStatus.Active)
-                            {
-                                sent = true;
-                                session.SendData(ComponentID.Chat, packet, true);
-                            }
+            lock (Core.RudpControl.SessionMap)
+                room.Members.LockReading(delegate()
+                {
+                    foreach (OpLink link in room.Members)
+                        if (Core.RudpControl.SessionMap.ContainsKey(link.DhtID))
+                            foreach (RudpSession session in Core.RudpControl.SessionMap[link.DhtID])
+                                if (session.Status == SessionStatus.Active)
+                                {
+                                    sent = true;
+                                    session.SendData(ComponentID.Chat, packet, true);
+                                }
+                });
 
             if(!sent)
-                ProcessMessage(Room, new ChatMessage(Core, "Message not sent (no one connected to room)", true));
+                ProcessMessage(room, new ChatMessage(Core, "Message not sent (no one connected to room)", true));
         }
 
         void Session_Data(RudpSession session, byte[] data)
@@ -346,20 +381,23 @@ namespace DeOps.Components.Chat
             }
         }
 
-        private void ProcessMessage(ChatRoom Room, ChatMessage message)
+        private void ProcessMessage(ChatRoom room, ChatMessage message)
         {
-            Room.Log.Add(message);
+            room.Log.SafeAdd(message);
 
             // ask user here if invite to room
 
-            Core.InvokeInterface(Room.ChatUpdate, message );
+            Core.InvokeInterface(room.ChatUpdate, message);
         }
 
-        internal override void GetActiveSessions(ref ActiveSessions active)
+        internal override void GetActiveSessions( ActiveSessions active)
         {
-            foreach (ChatRoom room in Rooms)
-                foreach (OpLink member in room.Members)
-                    active.Add(member.DhtID);
+            Rooms.LockReading(delegate()
+            {
+                foreach (ChatRoom room in Rooms)
+                    foreach (OpLink member in room.Members)
+                        active.Add(member.DhtID);
+            });
         }
     }
 
@@ -375,9 +413,9 @@ namespace DeOps.Components.Chat
         internal string   Name;
         internal RoomKind Kind;
 
-        internal List<ChatMessage> Log = new List<ChatMessage>();
+        internal ThreadedList<ChatMessage> Log = new ThreadedList<ChatMessage>();
 
-        internal List<OpLink> Members = new List<OpLink>();
+        internal ThreadedList<OpLink> Members = new ThreadedList<OpLink>();
 
         internal MembersUpdateHandler MembersUpdate;
         internal ChatUpdateHandler    ChatUpdate;

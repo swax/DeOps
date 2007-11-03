@@ -70,13 +70,13 @@ namespace DeOps.Components.Chat
         {
             ChatData chat = new ChatData(ChatPacketType.Unknown);
 
-            protocol.ResetPacket(root);
+            G2Protocol.ResetPacket(root);
 
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)

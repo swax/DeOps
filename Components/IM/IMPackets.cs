@@ -47,9 +47,9 @@ namespace DeOps.Components.IM
 
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)

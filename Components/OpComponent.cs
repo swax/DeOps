@@ -108,7 +108,7 @@ namespace DeOps.Components
             return null;
         }
 
-        internal virtual void GetActiveSessions(ref ActiveSessions active)
+        internal virtual void GetActiveSessions( ActiveSessions active)
         {
 
         }
@@ -190,9 +190,9 @@ namespace DeOps.Components
             SignedData signed = new SignedData();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)

@@ -34,7 +34,7 @@ namespace DeOps.Components.Plan
         internal PlanBlock SelectedBlock;
         internal int SelectedGoalID;
 
-        BlockTip HoverTip = new BlockTip();
+        ToolTip  HoverTip = new ToolTip();
         Point    HoverPos = new Point();
         BlockRow HoverBlock;
         int      HoverTicks;
@@ -115,6 +115,8 @@ namespace DeOps.Components.Plan
             PlanStructure.NodeExpanding += new EventHandler(PlanStructure_NodeExpanding);
             PlanStructure.NodeCollapsed += new EventHandler(PlanStructure_NodeCollapsed);
 
+            // set last block so that setdetails shows correctly
+            LastBlock = new PlanBlock();
             SetDetails(null);
         }
 
@@ -131,7 +133,7 @@ namespace DeOps.Components.Plan
                 title += Links.GetName(DhtID) + "'s ";
 
             if (ProjectID != 0)
-                title += Links.ProjectNames[ProjectID] + " ";
+                title += Links.GetProjectName(ProjectID) + " ";
 
             title += "Schedule";
 
@@ -283,21 +285,21 @@ namespace DeOps.Components.Plan
 
      
             // nodes
-            if (Links.ProjectRoots.ContainsKey(ProjectID))
-                lock (Links.ProjectRoots[ProjectID])        
-                    foreach (OpLink root in Links.ProjectRoots[ProjectID])
-                        if (Uplinks.Contains(root.DhtID))
-                        {
-                            PlanNode node = CreateNode(root);
+            List<OpLink> roots = null;
+            if (Links.ProjectRoots.SafeTryGetValue(ProjectID, out roots))
+                foreach (OpLink root in roots)
+                    if (Uplinks.Contains(root.DhtID))
+                    {
+                        PlanNode node = CreateNode(root);
 
-                            Plans.Research(root.DhtID);
+                        Plans.Research(root.DhtID);
 
-                            LoadNode(node);
+                        LoadNode(node);
 
-                            PlanStructure.Nodes.Add(node);
+                        PlanStructure.Nodes.Add(node);
 
-                            ExpandPath(node, Uplinks);
-                        }
+                        ExpandPath(node, Uplinks);
+                    }
 
             PlanStructure.EndUpdate();
         }
@@ -355,21 +357,16 @@ namespace DeOps.Components.Plan
 
         void Links_Update(ulong key)
         {
-            // if removed from link control, remove from gui
-            if (!Links.LinkMap.ContainsKey(key))
+            // must be loaded and pertaining to our current project to display
+            OpLink link = Links.GetLink(key);
+
+            if (link == null)
             {
                 if (NodeMap.ContainsKey(key))
                     RemoveNode(NodeMap[key]);
 
                 return;
             }
-
-
-            // must be loaded and pertaining to our current project to display
-            OpLink link = Links.LinkMap[key];
-
-            if (!link.Loaded)
-                return;
 
             if (!link.Projects.Contains(ProjectID) && !link.Downlinks.ContainsKey(ProjectID))
             {
@@ -394,14 +391,16 @@ namespace DeOps.Components.Plan
                 node = new PlanNode(this, link, key == DhtID);
 
 
-            // get the right parent node for this iem
+            // get the right parent node for this item
             TreeListNode parent = null;
 
-            if (!link.Uplink.ContainsKey(ProjectID)) // dont combine below, causes next if to fail
+            OpLink parentLink = link.GetHigher(ProjectID, false);
+
+            if (parentLink == null) // dont combine below, causes next if to fail
                 parent = Uplinks.Contains(key) ? PlanStructure.virtualParent : null;
 
-            else if (NodeMap.ContainsKey(link.Uplink[ProjectID].DhtID))
-                parent = NodeMap[link.Uplink[ProjectID].DhtID];
+            else if (NodeMap.ContainsKey(parentLink.DhtID))
+                parent = NodeMap[parentLink.DhtID];
 
             else
                 parent = null; // branch this link is apart of is not visible in current display
@@ -493,18 +492,7 @@ namespace DeOps.Components.Plan
         {
             Uplinks.Clear();
             Uplinks.Add(DhtID);
-
-            if(Links.LinkMap.ContainsKey(DhtID))
-                if (Links.LinkMap[DhtID].Uplink.ContainsKey(ProjectID))
-                {
-                    OpLink next = Links.LinkMap[DhtID].Uplink[ProjectID];
-
-                    while (next != null)
-                    {
-                        Uplinks.Add(next.DhtID);
-                        next = next.Uplink.ContainsKey(ProjectID) ? next.Uplink[ProjectID] : null;
-                    }
-                }
+            Uplinks.AddRange(Links.GetUplinkIDs(DhtID, ProjectID));
         }
 
         private void VisiblePath(PlanNode node, List<ulong> path)
@@ -701,7 +689,7 @@ namespace DeOps.Components.Plan
                 return;
             }
 
-            if (HoverText == null)
+            if (HoverText == null && HoverBlock != null)
             {
                 HoverText = HoverBlock.GetHoverText();
 
@@ -780,7 +768,7 @@ namespace DeOps.Components.Plan
 
             foreach (ulong id in ids)
             {
-                OpPlan plan = Plans.GetPlan(id);
+                OpPlan plan = Plans.GetPlan(id, true);
 
                 if (plan == null)
                     continue;
@@ -922,6 +910,16 @@ namespace DeOps.Components.Plan
             DetailsBrowser.Show();
         }
 
+        // call is a MarshalByRefObject so cant access value types directly
+        internal DateTime GetStartTime()
+        {
+            return StartTime;
+        }
+
+        internal DateTime GetEndTime()
+        {
+            return EndTime;
+        }
     }
 
 
@@ -966,9 +964,9 @@ namespace DeOps.Components.Plan
         internal void UpdateName()
         {
             if (Link.Title.ContainsKey(View.ProjectID) && Link.Title[View.ProjectID] != "")
-                Text = Link.Name + "\n" + Link.Title[View.ProjectID];
+                Text = View.Core.Links.GetName(Link.DhtID) + "\n" + Link.Title[View.ProjectID];
             else
-                Text = Link.Name;
+                Text = View.Core.Links.GetName(Link.DhtID);
         }
 
         internal void UpdateBlock()
@@ -982,8 +980,4 @@ namespace DeOps.Components.Plan
         }
     }
 
-    internal class BlockTip : ToolTip
-    {
-        internal PlanBlock Block;
-    }
 }

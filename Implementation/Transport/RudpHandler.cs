@@ -69,7 +69,7 @@ namespace DeOps.Implementation.Transport
             ActiveSessions active = new ActiveSessions();
 
             foreach (OpComponent component in Core.Components.Values)
-                component.GetActiveSessions(ref active);
+                component.GetActiveSessions( active);
 
             foreach(List<RudpSession> list in SessionMap.Values)
                 foreach(RudpSession session in list)

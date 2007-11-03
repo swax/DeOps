@@ -19,6 +19,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Windows.Forms;
 using System.Text;
+using System.Threading;
 using System.IO;
 
 using DeOps.Implementation;
@@ -30,11 +31,9 @@ using DeOps.Interface.TLVex;
 
 namespace DeOps
 {
-	/// <summary>
-	/// Summary description for Utilities.
-	/// </summary>
+
 	internal static class Utilities
-	{
+	{  
 		internal static RijndaelManaged PasswordtoRijndael(string password)
 		{
 			// Encrypt password with sha1
@@ -487,23 +486,26 @@ namespace DeOps
             File.Delete(source);
         }
 
-        internal static void PruneMap(Dictionary<ulong, uint> map, ulong local, int max)
+        internal static void PruneMap(ThreadedDictionary<ulong, uint> map, ulong local, int max)
         {
-            if (map.Count < max)
-                return;
+           if (map.SafeCount < max)
+               return;
 
-            List<ulong> removeIDs = new List<ulong>();
-
-            while (map.Count > 0 && map.Count > max)
+            map.LockWriting(delegate() 
             {
-                ulong furthest = local;
+                List<ulong> removeIDs = new List<ulong>();
 
-                foreach (ulong id in map.Keys)
-                    if ((id ^ local) > (furthest ^ local))
-                        furthest = id;
+                while (map.Count > 0 && map.Count > max)
+                {
+                    ulong furthest = local;
 
-                map.Remove(furthest);
-            }     
+                    foreach (ulong id in map.Keys)
+                        if ((id ^ local) > (furthest ^ local))
+                            furthest = id;
+
+                    map.Remove(furthest);
+                }
+            });
         }
 
         internal static string StripOneLevel(string path)
@@ -695,6 +697,328 @@ namespace DeOps.Implementation
         public override string ToString()
         {
             return Name + " (" + Utilities.ByteSizetoString(Size) + ")";
+        }
+    }
+
+    internal class ThreadedDictionary<TKey, TValue> : Dictionary<TKey, TValue>
+    {
+        // default functions accessible but lock checked when accessed
+
+        // special safe overrides provided for common functions
+
+        internal ReaderWriterLock Access = new ReaderWriterLock();
+
+        //LockCookie Cookie;
+
+        #region Overrides
+
+        internal new TValue this[TKey key]
+        {
+            get
+            {
+                Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+                  
+                return base[key];
+            }
+            set
+            {
+                Debug.Assert(Access.IsWriterLockHeld);
+
+                base[key] = value;
+            }
+        }
+
+        internal new Dictionary<TKey, TValue>.KeyCollection Keys
+        {
+            get
+            {
+                Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+
+                return base.Keys;
+            }
+        }
+
+        internal new Dictionary<TKey, TValue>.ValueCollection Values
+        {
+            get
+            {
+                Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+             
+                return base.Values;
+            }
+        }
+
+        internal new int Count
+        {
+            get 
+            {
+                Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+
+                return base.Count;
+            }
+        }
+
+        internal new bool ContainsKey(TKey key)
+        {
+            Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+   
+            return base.ContainsKey(key);
+        }
+
+        internal new void Add(TKey key, TValue value)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+     
+            base.Add(key, value);
+        }
+
+        internal new void Remove(TKey key)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+ 
+            base.Remove(key);
+        }
+
+        internal new void Clear()
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.Clear();
+        }
+
+        #endregion
+
+        #region CustomOps
+
+        /*internal void ToWriteLock()
+        {
+            Cookie = Access.UpgradeToWriterLock(-1);
+        }
+
+        internal void ToReadLock()
+        {
+            Access.DowngradeFromWriterLock(ref Cookie);
+        }*/
+
+        internal delegate void VoidType();
+
+        internal void LockReading(VoidType code)
+        {
+             Access.AcquireReaderLock(-1);
+             try
+             {
+                 code();
+             }
+             finally { Access.ReleaseReaderLock(); }
+        }
+
+        internal void LockWriting(VoidType code)
+        {
+            Access.AcquireWriterLock(-1);
+            try
+            {
+                code();
+            }
+            finally { Access.ReleaseWriterLock(); }
+        }
+
+        internal delegate bool MatchType(TValue value);
+
+        internal void RemoveWhere(MatchType isMatch)
+        {
+            List<TKey> removeKeys = new List<TKey>();
+
+            LockReading(delegate()
+            {
+                foreach (KeyValuePair<TKey, TValue> pair in this)
+                    if (isMatch(pair.Value))
+                        removeKeys.Add(pair.Key);
+            });
+
+            if(removeKeys.Count > 0)
+                LockWriting(delegate()
+                {
+                    foreach (TKey id in removeKeys)
+                        Remove(id);
+                });
+        }
+
+        internal void SafeAdd(TKey key, TValue value)
+        {
+            LockWriting(delegate()
+            {
+                base[key] = value;
+            });
+        }
+
+        internal bool SafeTryGetValue(TKey key, out TValue value)
+        {
+            // cant pass out through lockreading anonymous delegate
+            Access.AcquireReaderLock(-1);
+            try
+            {
+                return base.TryGetValue(key, out value);
+            }
+            finally { Access.ReleaseReaderLock(); }
+
+        }
+
+        internal bool SafeContainsKey(TKey key)
+        {
+            Access.AcquireReaderLock(-1);
+            try
+            {
+                return base.ContainsKey(key);
+            }
+            finally { Access.ReleaseReaderLock(); }
+        }
+
+
+        internal void SafeRemove(TKey key)
+        {
+            LockWriting(delegate()
+            {
+                base.Remove(key);
+            });
+        }
+
+
+        internal int SafeCount
+        {
+            get
+            {
+                Access.AcquireReaderLock(-1);
+                try
+                {
+                    return base.Count;
+                }
+                finally { Access.ReleaseReaderLock(); }
+
+            }
+        }
+
+        internal void SafeClear()
+        {
+            LockWriting(delegate()
+            {
+                base.Clear();
+            });
+        }
+
+        #endregion
+
+    }
+
+    internal class ThreadedList<T> : List<T>
+    {
+        internal ReaderWriterLock Access = new ReaderWriterLock();
+
+        internal delegate void VoidType();
+
+
+        internal new int Count
+        {
+            get
+            {
+                Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+
+                return base.Count;
+            }
+        }
+
+        internal new bool Contains(T value)
+        {
+            Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+
+            return base.Contains(value);
+        }
+
+        internal new void Add(T value)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.Add(value);
+        }
+
+        internal new void Remove(T value)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.Remove(value);
+        }
+
+        internal new void Clear()
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.Clear();
+        }
+
+        internal void LockReading(VoidType code)
+        {
+            Access.AcquireReaderLock(-1);
+            try
+            {
+                code();
+            }
+            finally { Access.ReleaseReaderLock(); }
+        }
+
+        internal void LockWriting(VoidType code)
+        {
+            Access.AcquireWriterLock(-1);
+            try
+            {
+                code();
+            }
+            finally { Access.ReleaseWriterLock(); }
+        }
+
+        internal void SafeAdd(T value)
+        {
+            LockWriting(delegate()
+            {
+                base.Add(value);
+            });
+        }
+
+        internal void SafeRemove(T value)
+        {
+            LockWriting(delegate()
+            {
+                base.Remove(value);
+            });
+        }
+
+        internal bool SafeContains(T value)
+        {
+            Access.AcquireReaderLock(-1);
+            try
+            {
+                return base.Contains(value);
+            }
+            finally { Access.ReleaseReaderLock(); }
+        }
+
+        internal int SafeCount
+        {
+            get
+            {
+                Access.AcquireReaderLock(-1);
+                try
+                {
+                    return base.Count;
+                }
+                finally { Access.ReleaseReaderLock(); }
+            }
+        }
+
+        internal void SafeClear()
+        {
+            LockWriting(delegate()
+            {
+                base.Clear();
+            });
         }
     }
 

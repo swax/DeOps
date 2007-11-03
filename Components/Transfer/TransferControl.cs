@@ -88,11 +88,13 @@ namespace DeOps.Components.Transfer
             if (!DownloadMap.ContainsKey(id))
                 return;
 
-            if (!Core.Locations.LocationMap.ContainsKey(key))
-                return;
-
-            foreach (LocInfo info in Core.Locations.LocationMap[key].Values)
-                DownloadMap[id].AddSource(info.Location);
+            Core.Locations.LocationMap.LockReading(delegate()
+            {
+                if (Core.Locations.LocationMap.ContainsKey(key))
+                    foreach (LocInfo info in Core.Locations.LocationMap[key].Values)
+                        if (!info.Location.Global) //crit works when proxying over global?
+                            DownloadMap[id].AddSource(info.Location);
+            });
         }
 
         internal void CancelDownload(ushort id, byte[] hash, long size)
@@ -263,7 +265,7 @@ namespace DeOps.Components.Transfer
             return null;
         }
 
-        internal override void GetActiveSessions(ref ActiveSessions active)
+        internal override void GetActiveSessions( ActiveSessions active)
         {
             foreach (FileDownload transfer in DownloadMap.Values)
                 foreach (RudpSession session in transfer.Sessions)

@@ -42,7 +42,7 @@ namespace DeOps.Components.Storage
 
            
             StorageFolder packet = new StorageFolder();
-            packet.Name = Core.Links.ProjectNames[project] + " Storage";
+            packet.Name = Core.Links.GetProjectName(project) + " Storage";
 
             RootFolder = new LocalFolder(null, packet);
 

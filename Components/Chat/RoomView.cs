@@ -67,8 +67,11 @@ namespace DeOps.Components.Chat
 
         private void DisplayLog()
         {
-            foreach (ChatMessage message in Room.Log)
-                OnChatUpdate(message);
+            Room.Log.LockReading(delegate()
+            {
+                foreach (ChatMessage message in Room.Log)
+                    OnChatUpdate(message);
+            });
         }
 
         internal void OnSendMessage(string message)
@@ -85,17 +88,21 @@ namespace DeOps.Components.Chat
                 NameMap.Clear();
                 MemberTree.Nodes.Clear();
 
-                if (Room.Members.Count > 0 && Room.Members[0].Name != null)
-                {
-                    MemberNode root = new MemberNode(this, Room.Members[0]);
+               Room.Members.LockReading(delegate()
+               {
+                   if (Room.Members.Count > 0)
+                   {
+ 
+                       MemberNode root = new MemberNode(this, Room.Members[0].DhtID);
 
-                    foreach (OpLink member in Room.Members)
-                        if (member != root.Node)
-                            Utilities.InsertSubNode(root, new MemberNode(this, member));
+                       foreach (OpLink member in Room.Members)
+                           if (member.DhtID != root.DhtID)
+                               Utilities.InsertSubNode(root, new MemberNode(this, member.DhtID));
 
-                    MemberTree.Nodes.Add(root);
-                    root.Expand();
-                }
+                       MemberTree.Nodes.Add(root);
+                       root.Expand();
+                   }
+               });
             }
 
             else
@@ -197,30 +204,27 @@ namespace DeOps.Components.Chat
     {
         RoomView View;
         OpCore Core;
-        internal OpLink Node;
+        internal ulong DhtID;
 
-        internal MemberNode(RoomView view, OpLink node)
+        internal MemberNode(RoomView view, ulong id)
         {
             View = view;
             Core = view.Chat.Core;
-            Node = node;
+            DhtID = id;
 
             Update();
         }
 
         internal void Update()
         {
-            if (Node.Name != null)
-                Text = Node.Name;
-            else
-                Text = "Unknown";
+            Text = Core.Links.GetName(DhtID);
 
-            View.NameMap[Node.DhtID] = Text;
+            View.NameMap[DhtID] = Text;
 
-            if (Node == Core.Links.LocalLink)
+            if (DhtID == Core.LocalDhtID)
                 Font = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
         
-            else if(Core.RudpControl.IsConnected(Node.DhtID))
+            else if(Core.RudpControl.IsConnected(DhtID))
                 ForeColor = Color.Black;
 
             else

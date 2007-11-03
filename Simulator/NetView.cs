@@ -213,16 +213,25 @@ namespace DeOps.Simulator
 
         private bool IsTracked(OpCore core)
         {
+            bool found = false;
 
             // link
-            foreach (OpLink link in core.Links.LinkMap.Values)
-                if (link.Loaded && Utilities.MemCompare(link.Header.FileHash, TrackHash))
-                    return true;
+            if(!found)
+                core.Links.LinkMap.LockReading(delegate()
+                {
+                    foreach (OpLink link in core.Links.LinkMap.Values)
+                        if (link.Loaded && Utilities.MemCompare(link.Header.FileHash, TrackHash))
+                            found = true;
+                });
 
             // profile
-            foreach (OpProfile profile in core.Profiles.ProfileMap.Values)
-                if (Utilities.MemCompare(profile.Header.FileHash, TrackHash))
-                    return true;
+            if (!found)
+                core.Profiles.ProfileMap.LockReading(delegate()
+                {
+                    foreach (OpProfile profile in core.Profiles.ProfileMap.Values)
+                        if (Utilities.MemCompare(profile.Header.FileHash, TrackHash))
+                            found = true ;
+                });
 
             // mail
             foreach (CachedPending pending in core.Mail.PendingMap.Values)
@@ -235,12 +244,16 @@ namespace DeOps.Simulator
                         return true;
 
             // board
-            foreach(OpBoard board in core.Board.BoardMap.Values)
-                foreach(OpPost post in board.Posts.Values)
-                    if (Utilities.MemCompare(post.Header.FileHash, TrackHash))
-                        return true;
+            if (!found)
+                core.Board.BoardMap.LockReading(delegate()
+                {
+                    foreach (OpBoard board in core.Board.BoardMap.Values)
+                        foreach (OpPost post in board.Posts.Values)
+                            if (Utilities.MemCompare(post.Header.FileHash, TrackHash))
+                                found = true;
+                });
 
-            return false;
+            return found;
         }
 
         private bool IsTransferring(OpCore core)

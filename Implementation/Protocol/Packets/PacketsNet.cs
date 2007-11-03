@@ -230,17 +230,17 @@ namespace DeOps.Implementation.Protocol.Net
 
             NetworkPacket gn = new NetworkPacket();
 
-            if (protocol.ReadPayload(root))
+            if (G2Protocol.ReadPayload(root))
                 gn.InternalData = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
 
-            protocol.ResetPacket(root);
+            G2Protocol.ResetPacket(root);
 
 
 			G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -310,9 +310,9 @@ namespace DeOps.Implementation.Protocol.Net
 
 			G2Header child = new G2Header(packet.Root.Data);
 	
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -400,7 +400,7 @@ namespace DeOps.Implementation.Protocol.Net
 
 			G2Header child = new G2Header(packet.Root.Data);
 	
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
                 if (child.Name == Packet_Proxied)
                 {
@@ -408,7 +408,7 @@ namespace DeOps.Implementation.Protocol.Net
                     continue;
                 }
 
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -481,9 +481,9 @@ namespace DeOps.Implementation.Protocol.Net
 
             G2Header child = new G2Header(packet.Root.Data);
 
-            while (protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -549,9 +549,9 @@ namespace DeOps.Implementation.Protocol.Net
 
 			G2Header child = new G2Header(packet.Root.Data);
 
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -604,9 +604,9 @@ namespace DeOps.Implementation.Protocol.Net
 
 			G2Header child = new G2Header(packet.Root.Data);
 
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -664,9 +664,9 @@ namespace DeOps.Implementation.Protocol.Net
 
 			G2Header child = new G2Header(packet.Root.Data);
 	
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -726,12 +726,12 @@ namespace DeOps.Implementation.Protocol.Net
 
 			G2Header child = new G2Header(packet.Root.Data);
 
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
                 switch (child.Name)
                 {
                     case Packet_Source:
-                        if (protocol.ReadPayload(child))
+                        if (G2Protocol.ReadPayload(child))
                             pr.SenderID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
                         break;
 
@@ -788,12 +788,12 @@ namespace DeOps.Implementation.Protocol.Net
 
 			G2Header child = new G2Header(packet.Root.Data);
 
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
                 switch (child.Name)
                 {
                     case Packet_Source:
-                        if (protocol.ReadPayload(child))
+                        if (G2Protocol.ReadPayload(child))
                             pa.Source = DhtSource.FromBytes(child.Data, child.PayloadPos);
                         break;
 
@@ -802,7 +802,7 @@ namespace DeOps.Implementation.Protocol.Net
                         break;
 
                     case Packet_Contacts:
-                        if (protocol.ReadPayload(child))
+                        if (G2Protocol.ReadPayload(child))
                             pa.ContactList = DhtContact.FromByteList(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
@@ -844,9 +844,9 @@ namespace DeOps.Implementation.Protocol.Net
 
 			G2Header child = new G2Header(packet.Root.Data);
 
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -908,9 +908,9 @@ namespace DeOps.Implementation.Protocol.Net
 
 			G2Header child = new G2Header(packet.Root.Data);
 
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -993,7 +993,7 @@ namespace DeOps.Implementation.Protocol.Net
 
             G2Header child = new G2Header(packet.Root.Data);
 
-            while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+            while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
             {
 				
             }

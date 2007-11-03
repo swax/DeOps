@@ -92,7 +92,7 @@ namespace DeOps.Components.Plan
             {
                 foreach (ulong id in uplinks)
                 {
-                    OpPlan plan = Plans.GetPlan(id);
+                    OpPlan plan = Plans.GetPlan(id, true);
 
                     if (plan != null && plan.GoalMap.ContainsKey(Head.Ident))
                         foreach (PlanGoal goal in plan.GoalMap[Head.Ident])
@@ -160,7 +160,7 @@ namespace DeOps.Components.Plan
             node.AddSubs = true;
 
             // load that person specified by the node
-            OpPlan plan = Plans.GetPlan(node.Goal.Person);
+            OpPlan plan = Plans.GetPlan(node.Goal.Person, true);
 
             if (plan == null)
             {
@@ -260,7 +260,7 @@ namespace DeOps.Components.Plan
             PlanList.Columns[0].Text = Links.GetName(node.Goal.Person) + "'s Plan for " + node.Goal.Title;
 
             // set plan items
-            OpPlan plan = Plans.GetPlan(Selected.Person);
+            OpPlan plan = Plans.GetPlan(Selected.Person, true);
 
             if (plan == null) // re-searched at during selection
                 return;
@@ -709,7 +709,7 @@ namespace DeOps.Components.Plan
             // each uplink from this key can assign goals, we need to see if a re-add is necessary
             foreach (ulong uplink in linkUplinks)
             {
-                OpPlan plan = Plans.GetPlan(uplink);
+                OpPlan plan = Plans.GetPlan(uplink, true);
 
                 if (plan != null && TreeMap.ContainsKey(uplink))
                     foreach (GoalNode treeNode in TreeMap[uplink])
@@ -976,12 +976,6 @@ namespace DeOps.Components.Plan
             Text = Goal.Title;
 
             string name = Panel.Links.GetName(goal.Person);
-
-            if (name == "")
-            {
-                name = "Unknown";
-                Panel.Links.Research(goal.Person, goal.Project, false);
-            }
 
             SubItems[0].Text = name;
             SubItems[2].Text = Panel.GetTimeText(goal.End.ToLocalTime() - Panel.Core.TimeNow, goal.End.ToLocalTime(), false);

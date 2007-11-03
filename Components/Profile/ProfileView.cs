@@ -66,7 +66,7 @@ namespace DeOps.Components.Profile
         internal override bool Fin()
         {
             Profiles.ProfileUpdate -= new ProfileUpdateHandler(Profile_Update);
-            Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
+            Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
 
             return true;
         }
@@ -118,10 +118,15 @@ namespace DeOps.Components.Profile
         void Links_Update(ulong key)
         {
             // if updated node is local, or higher, refresh so motd updates
+            if (key != CurrentDhtID && !Core.Links.IsHigher(CurrentDhtID, key, ProjectID))
+                return;
 
-            if(key == CurrentDhtID || Core.Links.IsHigher(CurrentDhtID, key, ProjectID))
-                if(Profiles.ProfileMap.ContainsKey(CurrentDhtID))
-                    Profile_Update(Profiles.ProfileMap[CurrentDhtID]);
+            OpProfile profile = Profiles.GetProfile(CurrentDhtID);
+
+            if (profile == null)
+                return;
+
+            Profile_Update(profile);
         }
 
         void Profile_Update(OpProfile profile)
@@ -248,7 +253,7 @@ namespace DeOps.Components.Profile
                             G2ReceivedPacket packet = new G2ReceivedPacket();
                             packet.Root = new G2Header(data);
 
-                            streamStatus = core.Protocol.ReadNextPacket(packet.Root, ref start, ref length);
+                            streamStatus = G2Protocol.ReadNextPacket(packet.Root, ref start, ref length);
 
                             if (streamStatus != G2ReadResult.PACKET_GOOD)
                                 break;
@@ -319,9 +324,11 @@ namespace DeOps.Components.Profile
             string final = template;
 
             // get link
-            OpLink link = null;
-            if (core.Links.LinkMap.ContainsKey(id))
-                link = core.Links.LinkMap[id];
+            OpLink link = core.Links.GetLink(id) ;
+
+            if (link == null)
+                return "";
+
 
             // replace fields
             while (final.Contains("<?"))
@@ -388,7 +395,7 @@ namespace DeOps.Components.Profile
                         tagfilled = true;
 
                         if (parts[1] == "name")
-                            final = final.Replace(fulltag, link.Name);
+                            final = final.Replace(fulltag, core.Links.GetName(id));
 
                         else if (parts[1] == "title" && link.Title.ContainsKey(0))
                             final = final.Replace(fulltag, link.Title[0]);
@@ -452,11 +459,14 @@ namespace DeOps.Components.Profile
             string finalMotd = "";
 
             foreach (ulong uplink in uplinks)
-                if (core.Profiles.ProfileMap.ContainsKey(uplink))
+            {
+                OpProfile upperProfile = core.Profiles.GetProfile(uplink);
+
+                if (upperProfile != null)
                 {
                     Dictionary<string, string> textFields = new Dictionary<string, string>();
 
-                    LoadProfile(core, core.Profiles.ProfileMap[uplink], null, textFields, null);
+                    LoadProfile(core, upperProfile, null, textFields, null);
 
                     string motdTag = "MOTD-" + project.ToString();
                     if(!textFields.ContainsKey(motdTag))
@@ -473,6 +483,7 @@ namespace DeOps.Components.Profile
                     else if(finalMotd.IndexOf(nextTag) != -1)
                         finalMotd = finalMotd.Replace(nextTag, currentMotd);
                 }
+            }
 
             finalMotd = finalMotd.Replace(nextTag, "");
 
@@ -494,5 +505,10 @@ namespace DeOps.Components.Profile
             edit.ShowDialog(this);
         }
 
+
+        internal uint GetProjectID()
+        {
+            return ProjectID; // call is a MarshalByRefObject so cant access value types directly
+        }
     }
 }

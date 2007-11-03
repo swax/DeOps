@@ -113,17 +113,17 @@ namespace DeOps.Implementation.Protocol.Comm
 		{
             RudpPacket gc = new RudpPacket();
 
-			if( protocol.ReadPayload(root) )
+			if( G2Protocol.ReadPayload(root) )
 				gc.Payload = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
 
-			protocol.ResetPacket(root);
+			G2Protocol.ResetPacket(root);
 
 
 			G2Header child = new G2Header(root.Data);
 
-			while( protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD )
 			{
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -259,10 +259,10 @@ namespace DeOps.Implementation.Protocol.Comm
 
 			G2Header child = new G2Header(packet.Root.Data);
 
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
                 if (child.Name == Packet_Key)
-                    if (protocol.ReadPayload(child))
+                    if (G2Protocol.ReadPayload(child))
                         sr.EncryptedKey = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
 			}
 
@@ -303,14 +303,14 @@ namespace DeOps.Implementation.Protocol.Comm
 
 			G2Header child = new G2Header(packet.Root.Data);
 
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
                 if (child.Name == Packet_GMT)
-                    if (protocol.ReadPayload(child) && child.PayloadSize == 2)
+                    if (G2Protocol.ReadPayload(child) && child.PayloadSize == 2)
                         sa.GmtOffset = (short)BitConverter.ToUInt16(child.Data, child.PayloadPos);
 
                 if (child.Name == Packet_Features)
-                    if (protocol.ReadPayload(child) && child.PayloadSize == 1)
+                    if (G2Protocol.ReadPayload(child) && child.PayloadSize == 1)
                         sa.Features = child.Data[child.PayloadPos];
 			}
 
@@ -389,18 +389,18 @@ namespace DeOps.Implementation.Protocol.Comm
 
 			G2Header child = new G2Header(packet.Root.Data);
 
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
                 if (child.Name == Packet_Encryption)
-                    if (protocol.ReadPayload(child))
+                    if (G2Protocol.ReadPayload(child))
                         kr.Encryption = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
 
                 if (child.Name == Packet_Key)
-                    if (protocol.ReadPayload(child))
+                    if (G2Protocol.ReadPayload(child))
                         kr.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
 
                 if (child.Name == Packet_IV)
-                    if (protocol.ReadPayload(child))
+                    if (G2Protocol.ReadPayload(child))
                         kr.IV = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
 			}
 
@@ -443,18 +443,18 @@ namespace DeOps.Implementation.Protocol.Comm
 
 			G2Header child = new G2Header(packet.Root.Data);
 
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
                 if (child.Name == Packet_Name)
-                    if (protocol.ReadPayload(child))
+                    if (G2Protocol.ReadPayload(child))
                         ka.Name = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
 
                 if (child.Name == Packet_Mod)
-					if( protocol.ReadPayload(child) )
+					if( G2Protocol.ReadPayload(child) )
 						ka.SenderPubKey.Modulus = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
 
                 if (child.Name == Packet_Exp)
-					if( protocol.ReadPayload(child) )
+					if( G2Protocol.ReadPayload(child) )
 						ka.SenderPubKey.Exponent = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
 			}
 
@@ -505,9 +505,9 @@ namespace DeOps.Implementation.Protocol.Comm
 
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -554,10 +554,10 @@ namespace DeOps.Implementation.Protocol.Comm
 			
 			G2Header child = new G2Header(packet.Root.Data);
 
-			while( protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
                 if (child.Name == Packet_Message)
-					if( protocol.ReadPayload(child) )
+					if( G2Protocol.ReadPayload(child) )
                         close.Reason = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
 			}
 

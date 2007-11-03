@@ -23,13 +23,13 @@ namespace DeOps.Components.Storage
             // label
             string text = "Unlock ";
 
-            text += View.Links.ProjectNames[View.ProjectID] + "'s ";
+            text += View.Links.GetProjectName(View.ProjectID) + "'s ";
             text += "File System to";
 
             MainLabel.Text = text;
 
             // link
-            text = View.Core.User.RootPath + Path.DirectorySeparatorChar + View.Links.ProjectNames[View.ProjectID] + " Storage";
+            text = View.Core.User.RootPath + Path.DirectorySeparatorChar + View.Links.GetProjectName(View.ProjectID) + " Storage";
 
             PathLink.Text = text;
         }

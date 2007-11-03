@@ -28,7 +28,7 @@ namespace DeOps.Implementation.Transport
 
 		// extra info
 		internal int GmtOffset;
-		internal int IdleTime;
+		//internal int IdleTime;
 		internal bool SupportsRTF;
         internal string Name;
 
@@ -84,8 +84,7 @@ namespace DeOps.Implementation.Transport
             NegotiateTimeout = Core.TimeNow.AddSeconds(10);
             Startup = Core.TimeNow;
 
-            if (Core.Links.LinkMap.ContainsKey(DhtID))
-                Name = Core.Links.LinkMap[DhtID].Name;
+            Name = Core.Links.GetName(DhtID);
 
             //DebugWriter = new FileStream("Log " + Network.Profile.ScreenName + "-" + Buddy.ScreenName + "-" + Comm.PeerID.ToString() + ".txt", FileMode.CreateNew, FileAccess.Write);
 		}
@@ -573,7 +572,7 @@ namespace DeOps.Implementation.Transport
                 if (RecvDecryptor == null)
                 {
                     packet.Root = new G2Header(ReceiveBuffer);
-                    streamStatus = Core.Protocol.ReadNextPacket(packet.Root, ref start, ref RecvBuffSize);
+                    streamStatus = G2Protocol.ReadNextPacket(packet.Root, ref start, ref RecvBuffSize);
 
                     if (streamStatus != G2ReadResult.PACKET_GOOD)
                         break;
@@ -616,7 +615,7 @@ namespace DeOps.Implementation.Transport
 
                     // read packets from decrypt buffer
                     packet.Root = new G2Header(DecryptBuffer);
-                    streamStatus = Core.Protocol.ReadNextPacket(packet.Root, ref start, ref DecryptBuffSize);
+                    streamStatus = G2Protocol.ReadNextPacket(packet.Root, ref start, ref DecryptBuffSize);
 
                     if (streamStatus != G2ReadResult.PACKET_GOOD)
                         break;

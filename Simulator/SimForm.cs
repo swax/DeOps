@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Windows.Forms;
@@ -775,7 +776,7 @@ namespace DeOps.Simulator
             }
 
             // locations
-            if (Instance.Core.Locations.LocationMap.Count <= 1)
+            if (Instance.Core.Locations.LocationMap.SafeCount <= 1)
                 alerts += "Locs, ";
 
             string localip = (Instance.Core.LocalIP == null) ? "null" : Instance.Core.LocalIP.ToString();
@@ -816,9 +817,9 @@ namespace DeOps.Simulator
 
             StringBuilder summary = new StringBuilder();
 
-            summary.Append(core.Links.LinkMap.Count.ToString() + " links, ");
+            summary.Append(core.Links.LinkMap.SafeCount.ToString() + " links, ");
 
-            summary.Append(core.Locations.LocationMap.Count.ToString() + " locs, ");
+            summary.Append(core.Locations.LocationMap.SafeCount.ToString() + " locs, ");
 
             summary.Append(core.OperationNet.Searches.Pending.Count.ToString() + " searches, ");
 

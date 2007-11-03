@@ -17,7 +17,7 @@ using DeOps.Components.Transfer;
 namespace DeOps.Components.Profile
 {
     internal delegate void ProfileUpdateHandler(OpProfile profile);
-
+    
 
     class ProfileControl : OpComponent
     {
@@ -30,7 +30,7 @@ namespace DeOps.Components.Profile
         internal string ProfilePath;
         
         internal OpProfile LocalProfile;
-        internal Dictionary<ulong, OpProfile> ProfileMap = new Dictionary<ulong, OpProfile>();
+        internal ThreadedDictionary<ulong, OpProfile> ProfileMap = new ThreadedDictionary<ulong, OpProfile>();
         
         internal ProfileUpdateHandler ProfileUpdate;
         
@@ -41,8 +41,8 @@ namespace DeOps.Components.Profile
 
         internal string DefaultTemplate;
 
-        Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
-        Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
+        ThreadedDictionary<ulong, DateTime> NextResearch = new ThreadedDictionary<ulong, DateTime>();
+        ThreadedDictionary<ulong, uint> DownloadLater = new ThreadedDictionary<ulong, uint>();
         
 
         internal ProfileControl(OpCore core)
@@ -128,7 +128,7 @@ namespace DeOps.Components.Profile
         {
             Links = Core.Links;
 
-            Core.Transfers.FileSearch[ComponentID.Profile]  = new FileSearchHandler(Transfers_FileSearch);
+            Core.Transfers.FileSearch[ComponentID.Profile] = new FileSearchHandler(Transfers_FileSearch);
             Core.Transfers.FileRequest[ComponentID.Profile] = new FileRequestHandler(Transfers_FileRequest);
 
             ProfilePath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Profile.ToString();
@@ -139,21 +139,18 @@ namespace DeOps.Components.Profile
             LoadHeaders();
 
 
-            lock (ProfileMap)
+            if (!ProfileMap.SafeContainsKey(Core.LocalDhtID))
             {
-                if (!ProfileMap.ContainsKey(Core.LocalDhtID) )
-                {
-                    ProfileMap[Core.LocalDhtID] = new OpProfile(Core.User.Settings.KeyPublic);
-                    SaveLocal(DefaultTemplate, null, null);
-                }
-
-                //crit - delete
-                //Dictionary<string, string> test = new Dictionary<string, string>();
-                //test["Photo"] = @"C:\Dev\De-Ops\Graphics\guy.jpg";
-                //SaveLocal(DefaultTemplate, null, test);
-
-                LocalProfile = ProfileMap[Core.LocalDhtID];
+                ProfileMap.SafeAdd(Core.LocalDhtID, new OpProfile(Core.User.Settings.KeyPublic));
+                SaveLocal(DefaultTemplate, null, null);
             }
+
+            //crit - delete
+            //Dictionary<string, string> test = new Dictionary<string, string>();
+            //test["Photo"] = @"C:\Dev\De-Ops\Graphics\guy.jpg";
+            //SaveLocal(DefaultTemplate, null, test);
+
+            ProfileMap.SafeTryGetValue(Core.LocalDhtID, out LocalProfile);
         }
 
         void Core_Timer()
@@ -174,44 +171,41 @@ namespace DeOps.Components.Profile
 
             // prune
             List<ulong> removeIDs = new List<ulong>();
-            
-            if (ProfileMap.Count > PruneSize)
+
+            ProfileMap.LockReading(delegate()
             {
-                foreach (OpProfile profile in ProfileMap.Values)
-                    if (profile.DhtID != Core.LocalDhtID &&
-                        !Core.Links.LinkMap.ContainsKey(profile.DhtID) &&
-                        !Utilities.InBounds(profile.DhtID, profile.DhtBounds, Core.LocalDhtID))
-                        removeIDs.Add(profile.DhtID);
+                if (ProfileMap.Count > PruneSize)
+                    foreach (OpProfile profile in ProfileMap.Values)
+                        if (profile.DhtID != Core.LocalDhtID &&
+                            !Core.Links.LinkMap.ContainsKey(profile.DhtID) &&
+                            !Utilities.InBounds(profile.DhtID, profile.DhtBounds, Core.LocalDhtID))
+                            removeIDs.Add(profile.DhtID);
+            });
 
-                while (removeIDs.Count > 0 && ProfileMap.Count > PruneSize / 2)
+            if (removeIDs.Count > 0)
+                ProfileMap.LockWriting(delegate()
                 {
-                    ulong furthest = Core.LocalDhtID;
-                    OpProfile profile = ProfileMap[furthest];
+                    while (removeIDs.Count > 0 && ProfileMap.Count > PruneSize / 2)
+                    {
+                        ulong furthest = Core.LocalDhtID;
+                        OpProfile profile = ProfileMap[furthest];
 
-                    foreach (ulong id in removeIDs)
-                        if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
-                            furthest = id;
+                        foreach (ulong id in removeIDs)
+                            if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                                furthest = id;
 
-                    if (profile.Header != null)
-                        try { File.Delete(GetFilePath(profile.Header)); }
-                        catch { }
+                        if (profile.Header != null)
+                            try { File.Delete(GetFilePath(profile.Header)); }
+                            catch { }
 
-                    ProfileMap.Remove(furthest);
-                    removeIDs.Remove(furthest);
-                    RunSaveHeaders = true;
-                }
-            }
-
+                        ProfileMap.Remove(furthest);
+                        removeIDs.Remove(furthest);
+                        RunSaveHeaders = true;
+                    }
+                });
+            
             // clean research map
-            removeIDs.Clear();
-
-            foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
-                if (Core.TimeNow > pair.Value)
-                    removeIDs.Add(pair.Key);
-
-            foreach (ulong id in removeIDs)
-                NextResearch.Remove(id);
-
+            NextResearch.RemoveWhere(delegate(DateTime timeout) { return Core.TimeNow > timeout; });
         }
 
         void Network_Established()
@@ -219,30 +213,36 @@ namespace DeOps.Components.Profile
             ulong localBounds = Store.RecalcBounds(Core.LocalDhtID);
 
             // set bounds for objects
-            foreach (OpProfile profile in ProfileMap.Values)
+            ProfileMap.LockReading(delegate()
             {
-                profile.DhtBounds = Store.RecalcBounds(profile.DhtID);
+                foreach (OpProfile profile in ProfileMap.Values)
+                {
+                    profile.DhtBounds = Store.RecalcBounds(profile.DhtID);
 
-                // republish objects that were not seen on the network during startup
-                if (profile.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, profile.DhtID))
-                    Store.PublishNetwork(profile.DhtID, ComponentID.Profile, profile.SignedHeader);
-            }
-
+                    // republish objects that were not seen on the network during startup
+                    if (profile.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, profile.DhtID))
+                        Store.PublishNetwork(profile.DhtID, ComponentID.Profile, profile.SignedHeader);
+                }
+            });
 
             // only download those objects in our local area
-            foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
-                if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
-                    StartSearch(pair.Key, pair.Value);
+            DownloadLater.LockWriting(delegate()
+            {
+                foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
+                    if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
+                        StartSearch(pair.Key, pair.Value);
 
-            DownloadLater.Clear();
+                DownloadLater.Clear();
+            });
         }
 
         internal OpProfile GetProfile(ulong dhtid)
         {
-            if (ProfileMap.ContainsKey(dhtid))
-                return ProfileMap[dhtid];
+            OpProfile profile = null;
 
-            return null;
+            ProfileMap.SafeTryGetValue(dhtid, out profile);
+
+            return profile;
         }
 
         internal override List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
@@ -268,8 +268,10 @@ namespace DeOps.Components.Profile
 
             ulong key = node.GetKey();
             uint searchVersion = 0;
-            if (ProfileMap.ContainsKey(key))
-                searchVersion = ProfileMap[key].Header.Version + 1;
+
+            OpProfile profile = GetProfile(key);
+            if (profile != null)
+                searchVersion = profile.Header.Version + 1;
 
             if (Network.Routing.Responsive())
                 StartSearch(key, searchVersion);
@@ -301,42 +303,34 @@ namespace DeOps.Components.Profile
 
             uint minVersion = BitConverter.ToUInt32(parameters, 0);
 
-            lock (ProfileMap)
-                if (ProfileMap.ContainsKey(key))
-                {
-                    OpProfile profile = ProfileMap[key];
+            OpProfile profile = GetProfile(key);
 
-                    if (profile.Header.Version >= minVersion)
-                        results.Add(profile.SignedHeader);
-                }
+            if (profile != null)
+                if (profile.Header.Version >= minVersion)
+                    results.Add(profile.SignedHeader);
+
 
             return results;
         }
 
         bool Transfers_FileSearch(ulong key, FileDetails details)
         {
-            lock (ProfileMap)
-                if (ProfileMap.ContainsKey(key))
-                {
-                    OpProfile profile = ProfileMap[key];
+            OpProfile profile = GetProfile(key);
 
-                    if (details.Size == profile.Header.FileSize && Utilities.MemCompare(details.Hash, profile.Header.FileHash))
-                        return true;
-                }
+            if (profile != null)
+                if (details.Size == profile.Header.FileSize && Utilities.MemCompare(details.Hash, profile.Header.FileHash))
+                    return true;
 
             return false;
         }
 
         string Transfers_FileRequest(ulong key, FileDetails details)
         {
-            lock (ProfileMap)
-                if (ProfileMap.ContainsKey(key))
-                {
-                    OpProfile profile = ProfileMap[key];
+            OpProfile profile = GetProfile(key);
 
-                    if (details.Size == profile.Header.FileSize && Utilities.MemCompare(details.Hash, profile.Header.FileHash))
-                        return GetFilePath(profile.Header);
-                }
+            if (profile != null)
+                if (details.Size == profile.Header.FileSize && Utilities.MemCompare(details.Hash, profile.Header.FileHash))
+                    return GetFilePath(profile.Header);
 
             return null;
         }
@@ -363,9 +357,10 @@ namespace DeOps.Components.Profile
 
             byte[] patch = new byte[PatchEntrySize];
 
-            lock (ProfileMap)
+            ProfileMap.LockReading(delegate()
+            {
                 foreach (OpProfile profile in ProfileMap.Values)
-                    if (Utilities.InBounds(profile.DhtID, profile.DhtBounds, contact.DhtID)) 
+                    if (Utilities.InBounds(profile.DhtID, profile.DhtBounds, contact.DhtID))
                     {
                         DhtContact target = contact;
                         profile.DhtBounds = Store.RecalcBounds(profile.DhtID, add, ref target);
@@ -378,6 +373,7 @@ namespace DeOps.Components.Profile
                             data.Add(target, patch);
                         }
                     }
+            });
 
             return data;
         }
@@ -399,10 +395,10 @@ namespace DeOps.Components.Profile
                 if (!Utilities.InBounds(Core.LocalDhtID, distance, dhtid))
                     continue;
 
-                if (ProfileMap.ContainsKey(dhtid))
-                {
-                    OpProfile profile = ProfileMap[dhtid];
+                OpProfile profile = GetProfile(dhtid);
 
+                if(profile != null)
+                {
                     if (profile.Header != null)
                     {
                         if (profile.Header.Version > version)
@@ -423,7 +419,7 @@ namespace DeOps.Components.Profile
                 if (Network.Established)
                     Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Profile, BitConverter.GetBytes(version));
                 else
-                    DownloadLater[dhtid] = version;
+                    DownloadLater.SafeAdd(dhtid, version);
             }
         }
 
@@ -434,8 +430,10 @@ namespace DeOps.Components.Profile
             try
             {
                 ProfileHeader header = null;
-                if (ProfileMap.ContainsKey(Core.LocalDhtID))
-                    header = ProfileMap[Core.LocalDhtID].Header;
+
+                OpProfile oldProfile = GetProfile(Core.LocalDhtID);
+                if(oldProfile != null)
+                    header = oldProfile.Header;
 
                 string oldFile = null;
 
@@ -564,9 +562,13 @@ namespace DeOps.Components.Profile
 
             
                 // publish header
-                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Profile, ProfileMap[Core.LocalDhtID].SignedHeader);
+                OpProfile profile = GetProfile(Core.LocalDhtID);
+                if (profile == null)
+                    return;
 
-                Store.PublishDirect(Links.GetSuperLocs(), Core.LocalDhtID, ComponentID.Profile, ProfileMap[Core.LocalDhtID].SignedHeader);
+                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Profile, profile.SignedHeader);
+
+                Store.PublishDirect(Links.GetSuperLocs(), Core.LocalDhtID, ComponentID.Profile, profile.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -584,11 +586,13 @@ namespace DeOps.Components.Profile
                 FileStream file = new FileStream(tempPath, FileMode.Create);
                 CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
 
-                lock (ProfileMap)
+                ProfileMap.LockReading(delegate()
+                {
                     foreach (OpProfile profile in ProfileMap.Values)
                         if (profile.SignedHeader != null)
                             stream.Write(profile.SignedHeader, 0, profile.SignedHeader.Length);
-                
+                });
+
                 stream.FlushFinalBlock();
                 stream.Close();
 
@@ -643,14 +647,12 @@ namespace DeOps.Components.Profile
         private void Process_ProfileHeader(DataReq data, SignedData signed, ProfileHeader header)
         {
             Core.IndexKey(header.KeyID, ref header.Key);
-            Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature);
 
+            OpProfile current = GetProfile(header.KeyID);
 
             // if link loaded
-            if (ProfileMap.ContainsKey(header.KeyID))
+            if (current != null)
             {
-                OpProfile current = ProfileMap[header.KeyID];
-
                 // lower version
                 if (header.Version < current.Header.Version)
                 {
@@ -675,6 +677,8 @@ namespace DeOps.Components.Profile
 
         private void DownloadProfile(SignedData signed, ProfileHeader header)
         {
+            Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature);
+
             FileDetails details = new FileDetails(ComponentID.Profile, header.FileHash, header.FileSize, null);
 
             Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
@@ -707,14 +711,15 @@ namespace DeOps.Components.Profile
                 }
 
                 // get profile
-                if (!ProfileMap.ContainsKey(header.KeyID))
+                OpProfile profile = GetProfile(header.KeyID);
+
+                if(profile == null)
                 {
-                    lock (ProfileMap)
-                        ProfileMap[header.KeyID] = new OpProfile(header.Key);
+                    profile = new OpProfile(header.Key);
+                    ProfileMap.SafeAdd(header.KeyID, profile);
                 }
 
-                OpProfile profile = ProfileMap[header.KeyID];
-                
+   
                 // delete old file
                 if (profile.Header != null)
                 {
@@ -744,9 +749,13 @@ namespace DeOps.Components.Profile
                 if (Network.Established)
                 {
                     List<LocationData> locations = new List<LocationData>();
-                    foreach (uint project in Links.ProjectRoots.Keys)
-                        if (profile.DhtID == Core.LocalDhtID || Links.IsHigher(profile.DhtID, project))
-                            Links.GetLocsBelow(Core.LocalDhtID, project, locations);
+
+                    Links.ProjectRoots.LockReading(delegate()
+                    {
+                        foreach (uint project in Links.ProjectRoots.Keys)
+                            if (profile.DhtID == Core.LocalDhtID || Links.IsHigher(profile.DhtID, project))
+                                Links.GetLocsBelow(Core.LocalDhtID, project, locations);
+                    });
 
                     Store.PublishDirect(locations, profile.DhtID, ComponentID.Profile, profile.SignedHeader);
                 }
@@ -766,10 +775,10 @@ namespace DeOps.Components.Profile
 
         internal void LoadProfile(ulong id)
         {
-            if (!ProfileMap.ContainsKey(id))
-                return;
+            OpProfile profile = GetProfile(id);
 
-            OpProfile profile = ProfileMap[id];
+            if (profile == null)
+                return;
 
             try
             {
@@ -815,12 +824,13 @@ namespace DeOps.Components.Profile
 
         internal void CheckVersion(ulong key, uint version)
         {
-            if (!ProfileMap.ContainsKey(key))
+            OpProfile profile = GetProfile(key);
+
+            if (profile == null || profile.Header == null)
                 return;
 
-            if (ProfileMap[key].Header != null)
-                if (ProfileMap[key].Header.Version < version)
-                    StartSearch(key, version);
+            if (profile.Header.Version < version)
+                StartSearch(key, version);
         }
 
         internal void Research(ulong key)
@@ -829,17 +839,21 @@ namespace DeOps.Components.Profile
                 return;
 
             // limit re-search to once per 30 secs
-            if (NextResearch.ContainsKey(key))
-                if (Core.TimeNow < NextResearch[key])
+            DateTime timeout = default(DateTime);
+
+            if (NextResearch.SafeTryGetValue(key, out timeout))
+                if (Core.TimeNow < timeout)
                     return;
 
             uint version = 0;
-            if (ProfileMap.ContainsKey(key))
-                version = ProfileMap[key].Header.Version + 1;
+            OpProfile profile = GetProfile(key);
+
+            if (profile != null)
+                version = profile.Header.Version + 1;
 
             StartSearch(key, version);
 
-            NextResearch[key] = Core.TimeNow.AddSeconds(30);
+            NextResearch.SafeAdd(key, Core.TimeNow.AddSeconds(30));
         }
     }
 

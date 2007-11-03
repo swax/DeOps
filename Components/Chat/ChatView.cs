@@ -75,7 +75,7 @@ namespace DeOps.Components.Chat
             string title = "My ";
 
             if (ProjectID != 0)
-                title += Chat.Core.Links.ProjectNames[ProjectID] + " ";
+                title += Chat.Core.Links.GetProjectName(ProjectID) + " ";
 
             title += " Chat";
 

@@ -44,12 +44,80 @@ namespace DeOps.Interface
 
         Font BoldFont = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 
+        // news
         int NewsSequence;
         Queue<NewsItem> NewsPending = new Queue<NewsItem>();
         Queue<NewsItem> NewsRecent = new Queue<NewsItem>();
         SolidBrush NewsBrush = new SolidBrush(Color.FromArgb(0, Color.White));
         Rectangle NewsArea;
         bool NewsHideUpdates;
+
+        // bottom status panel
+        StringBuilder StatusHtml = new StringBuilder(4096);
+
+        const string NetworkPage =
+             @"<html>
+                <head>
+	                <style type=""text/css"">
+	                <!--
+	                    body { margin: 0; }
+	                    p    { font-size: 8.25pt; font-family: Tahoma }
+	                -->
+	                </style>
+
+                    <script>
+                        function SetElement(id, text)
+                        {
+                            document.getElementById(id).innerHTML = text;
+                        }
+                    </script>
+                </head>
+                <body bgcolor=WhiteSmoke>
+	                <table width=100% cellpadding=4>
+	                    <tr><td bgcolor=green><p><b><font color=#ffffff>Network Status</font></b></p></td></tr>
+	                </table>
+                    <table callpadding=3>    
+                        <tr><td><p><b>Global:</b></p></td><td><p><span id='global'><?=global?></span></p></td></tr>
+	                    <tr><td><p><b>Network:</b></p></td><td><p><span id='operation'><?=operation?></span></p></td></tr>
+	                    <tr><td><p><b>Firewall:</b></p></td><td><p><span id='firewall'><?=firewall?></span></p></td></tr>
+                    </table>
+                </body>
+                </html>";
+
+        const string NodePage =
+                @"<html>
+                <head>
+	                <style type=""text/css"">
+	                <!--
+	                    body { margin: 0 }
+	                    p    { font-size: 8.25pt; font-family: Tahoma }
+                        A:link {text-decoration: none; color: black}
+                        A:visited {text-decoration: none; color: black}
+                        A:active {text-decoration: none; color: black}
+                        A:hover {text-decoration: underline; color: black}
+	                -->
+	                </style>
+
+                    <script>
+                        function SetElement(id, text)
+                        {
+                            document.getElementById(id).innerHTML = text;
+                        }
+                    </script>
+                </head>
+                <body bgcolor=WhiteSmoke>
+	                <table width=100% cellpadding=4>
+	                    <tr><td bgcolor=MediumSlateBlue><p><b><font color=#ffffff><span id='name'><?=name?></span></font></b></p></td></tr>
+	                </table>
+                    <table callpadding=3>  
+                        <tr><td><p><b>Title:</b></p></td><td><p><span id='title'><?=title?></span></p></td></tr>
+	                    <tr><td><p><b>Projects:</b></p></td><td><p><span id='projects'><?=projects?></span></p></td></tr>
+                        <tr><td><p><b>Locations:</b></p></td><td><p><span id='locations'><?=locations?></span></p></td></tr>
+                        <tr><td><p><b>Last Seen:</b></p></td><td><p></p></td></tr>
+                    </table>
+                </body>
+                </html>";
+
 
         internal MainForm(OpCore core)
         {
@@ -212,18 +280,12 @@ namespace DeOps.Interface
 
         void Links_Update(ulong key)
         {
+            OpLink link = Links.GetLink(key);
 
-            // check if removed
-            if (!Links.LinkMap.ContainsKey(key))
+            if (link == null)
                 return;
 
-            // update
-            OpLink link = Links.LinkMap[key];
-
-            if (!link.Loaded)
-                return;
-
-            if (!Links.ProjectRoots.ContainsKey(CommandTree.Project))
+            if (!Links.ProjectRoots.SafeContainsKey(CommandTree.Project))
             {
                 if (ProjectButton.Checked)
                     OperationButton.Checked = true;
@@ -258,57 +320,55 @@ namespace DeOps.Interface
                 ShowNodeStatus();
         }
 
+        enum StatusModeType {None, Network, Node };
+        StatusModeType CurrentStatusMode = StatusModeType.None;
+
+
         private void ShowNetworkStatus()
         {
-            string GlobalStatus = "";
-            string OpStatus = "";
+            StatusModeType mode = StatusModeType.Network;
+            
+            string global = "";
+            string operation = "";
 
             if (Core.GlobalNet == null)
-                GlobalStatus = "Disconnected";
+                global = "Disconnected";
             else if (Core.GlobalNet.Routing.Responsive())
-                GlobalStatus = "Connected";
+                global = "Connected";
             else
-                GlobalStatus = "Connecting";
-
+                global = "Connecting";
 
             if (Core.OperationNet.Routing.Responsive())
-                OpStatus = "Connected";
+                operation = "Connected";
             else
-                OpStatus = "Connecting";
+                operation = "Connecting";
+
+
+            List<string[]> tuples = new List<string[]>();
+            tuples.Add(new string[] { "global", global });
+            tuples.Add(new string[] { "operation", operation });
+            tuples.Add(new string[] { "firewall", Core.Firewall.ToString() });
 
             
-            string html = 
-             
-                @"<html>
-                <head>
-	                <style type=""text/css"">
-	                <!--
-	                    body { margin: 0; }
-	                    p    { font-size: 8.25pt; font-family: Tahoma }
-	                -->
-	                </style>
-                </head>
-                <body bgcolor=WhiteSmoke>
-	                <table width=100% cellpadding=4>
-	                    <tr><td bgcolor=green><p><b><font color=#ffffff>Network Status</font></b></p></td></tr>
-	                </table>
-                    <table callpadding=3>    
-                        <tr><td><p><b>Global:</b></p></td><td><p>" + GlobalStatus + @"</p></td></tr>
-	                    <tr><td><p><b>Network:</b></p></td><td><p>" + OpStatus + @"</p></td></tr>
-	                    <tr><td><p><b>Firewall:</b></p></td><td><p>" + Core.Firewall.ToString() + @"</p></td></tr>
-                    </table>
-                </body>
-                </html>
-                ";
-
-            // prevents clicking sound when browser navigates
-            if (!StatusBrowser.DocumentText.Equals(html))
+            if (CurrentStatusMode != mode)
             {
-                StatusBrowser.Hide();
-                StatusBrowser.DocumentText = html;
-                StatusBrowser.Show();
+                CurrentStatusMode = mode;
+
+                StatusHtml.Length = 0;
+                StatusHtml.Append(NetworkPage);
+
+                foreach (string[] tuple in tuples)
+                    StatusHtml.Replace("<?=" + tuple[0] + "?>", tuple[1]);
+
+                SetStatus(StatusHtml.ToString());
+            }
+            else
+            {
+                foreach (string[] tuple in tuples)
+                    StatusBrowser.Document.InvokeScript("SetElement", new String[] { tuple[0], tuple[1] });
             }
         }
+
 
         private void ShowNodeStatus()
         {
@@ -320,10 +380,13 @@ namespace DeOps.Interface
                 return;
             }
 
+            StatusModeType mode = StatusModeType.Node;
+            
+
             OpLink link = node.Link;
 
-            string name = link.Name;
-            
+            string name = Links.GetName(link.DhtID);
+
             string title = "None";
             if (link.Title.ContainsKey(CommandTree.Project))
                 if (link.Title[CommandTree.Project] != "")
@@ -331,64 +394,62 @@ namespace DeOps.Interface
 
             string projects = "";
             foreach (uint id in link.Projects)
-                if(id != 0)
-                    projects += "<a href='project:" + id.ToString() + "'>" + Links.ProjectNames[id] +"</a>, ";
+                if (id != 0)
+                    projects += "<a href='project:" + id.ToString() + "'>" + Links.GetProjectName(id) + "</a>, ";
             projects = projects.TrimEnd(new char[] { ' ', ',' });
 
 
             string locations = "";
             if (Core.OperationNet.Routing.Responsive())
             {
-                if (Core.Locations.LocationMap.ContainsKey(link.DhtID))
-                    foreach (LocInfo info in Core.Locations.LocationMap[link.DhtID].Values)
-                        if (info.Location.Location == "")
-                            locations += "Unknown, ";
-                        else
-                            locations += info.Location.Location + ", ";
+                Core.Locations.LocationMap.LockReading(delegate()
+                {
+                    if (Core.Locations.LocationMap.ContainsKey(link.DhtID))
+                        foreach (LocInfo info in Core.Locations.LocationMap[link.DhtID].Values)
+                            if (!info.Location.Global)
+                                if (info.Location.Location == "")
+                                    locations += "Unknown, ";
+                                else
+                                    locations += info.Location.Location + ", ";
+                });
 
                 locations = locations.TrimEnd(new char[] { ' ', ',' });
             }
 
-            string html =
-                @"<html>
-                <head>
-	                <style type=""text/css"">
-	                <!--
-	                    body { margin: 0 }
-	                    p    { font-size: 8.25pt; font-family: Tahoma }
-                        A:link {text-decoration: none; color: black}
-                        A:visited {text-decoration: none; color: black}
-                        A:active {text-decoration: none; color: black}
-                        A:hover {text-decoration: underline; color: black}
-	                -->
-	                </style>
-                </head>
-                <body bgcolor=WhiteSmoke>
-	                <table width=100% cellpadding=4>
-	                    <tr><td bgcolor=MediumSlateBlue><p><b><font color=#ffffff>" + link.Name + @"</font></b></p></td></tr>
-	                </table>
-                    <table callpadding=3>  
-                        <tr><td><p><b>Title:</b></p></td><td><p>" + title + @"</p></td></tr>
-	                    <tr><td><p><b>Projects:</b></p></td><td><p>" + projects + @"</p></td></tr>";
+            List<string[]> tuples = new List<string[]>();
+            tuples.Add(new string[] { "name", Links.GetName(link.DhtID) });
+            tuples.Add(new string[] { "title", title });
+            tuples.Add(new string[] { "projects", projects });
+            tuples.Add(new string[] { "locations", locations });
 
-            if (locations != "")
-                html += @"<tr><td><p><b>Locations:</b></p></td><td><p>" + locations + @"</p></td></tr>";
-                            
-            html += 
-                        @"<tr><td><p><b>Last Seen:</b></p></td><td><p></p></td></tr>
-                    </table>
-                </body>
-                </html>";
+            if (CurrentStatusMode != mode)
+            {
+                CurrentStatusMode = mode;
 
-            //crit show locations local time
+                StatusHtml.Length = 0;
+                StatusHtml.Append(NodePage);
+
+                foreach (string[] tuple in tuples)
+                    StatusHtml.Replace("<?=" + tuple[0] + "?>", tuple[1]);
+
+                SetStatus(StatusHtml.ToString());
+            }
+            else
+            {
+                foreach (string[] tuple in tuples)
+                    StatusBrowser.Document.InvokeScript("SetElement", new String[] { tuple[0], tuple[1] });
+            }
+        }
+
+
+        private void SetStatus(string html)
+        {
+            Debug.Assert(!html.Contains("<?"));
 
             // prevents clicking sound when browser navigates
-            if (!StatusBrowser.DocumentText.Equals(html))
-            {
-                StatusBrowser.Hide();
-                StatusBrowser.DocumentText = html;
-                StatusBrowser.Show();
-            }
+            StatusBrowser.Hide();
+            StatusBrowser.DocumentText = html;
+            StatusBrowser.Show();
         }
 
 
@@ -526,7 +587,7 @@ namespace DeOps.Interface
 
             OpMenuItem info = new OpMenuItem(item.Link.DhtID, 0);
 
-            if (Core.Locations.LocationMap.ContainsKey(info.DhtID))
+            if (Core.Locations.LocationMap.SafeContainsKey(info.DhtID))
                 ((IMControl)Core.Components[ComponentID.IM]).QuickMenu_View(info, null);
             else
                 Core.Mail.QuickMenu_View(info, null);
@@ -552,10 +613,13 @@ namespace DeOps.Interface
         {
             SuspendLayout();
 
-            if (!Links.LinkMap.ContainsKey(id))
-                id = Core.LocalDhtID;
+            OpLink link = Links.GetLink(id);
 
-            OpLink link = Links.LinkMap[id];
+            if (link == null)
+            {
+                link = Links.LocalLink;
+                id = Core.LocalDhtID;
+            }
 
             if (!link.Projects.Contains(project))
                 project = 0;
@@ -630,16 +694,14 @@ namespace DeOps.Interface
             ProjectNavButton.DropDownItems.Clear();
             ComponentNavButton.DropDownItems.Clear();
 
-            OpLink link = null;
+            OpLink link = Links.GetLink(CommandTree.SelectedLink);
 
-            if (Links.LinkMap.ContainsKey(CommandTree.SelectedLink))
+            if (link != null)
             {
-                link = Links.LinkMap[CommandTree.SelectedLink];
-
                 if (link.DhtID == Core.LocalDhtID)
                     PersonNavButton.Text = "My";
                 else
-                    PersonNavButton.Text = link.Name + "'s";
+                    PersonNavButton.Text = Links.GetName(link.DhtID) + "'s";
 
                 PersonNavItem self = null;
                 
@@ -647,7 +709,7 @@ namespace DeOps.Interface
                 OpLink higher = link.GetHigher(SelectedProject, false);
                 if (higher != null)
                 {
-                    PersonNavButton.DropDownItems.Add(new PersonNavItem(higher.Name, higher.DhtID, this, PersonNav_Clicked));
+                    PersonNavButton.DropDownItems.Add(new PersonNavItem(Links.GetName(higher.DhtID), higher.DhtID, this, PersonNav_Clicked));
 
                     List<ulong> adjacentIDs = Links.GetDownlinkIDs(higher.DhtID, SelectedProject, 1);
                     foreach (ulong id in adjacentIDs)
@@ -668,7 +730,7 @@ namespace DeOps.Interface
                 // if self not added yet, add
                 if (self == null)
                 {
-                    PersonNavItem item = new PersonNavItem(link.Name, link.DhtID, this, PersonNav_Clicked);
+                    PersonNavItem item = new PersonNavItem(Links.GetName(link.DhtID), link.DhtID, this, PersonNav_Clicked);
                     item.Font = BoldFont;
                     self = item;
                     PersonNavButton.DropDownItems.Add(item);
@@ -694,17 +756,12 @@ namespace DeOps.Interface
 
 
             // set person's projects
-            if (Links.ProjectNames.ContainsKey(SelectedProject))
-                ProjectNavButton.Text = Links.ProjectNames[SelectedProject];
-            else
-                ProjectNavButton.Text = "Unknown";
+            ProjectNavButton.Text = Links.GetProjectName(SelectedProject);
 
             if (link != null)
                 foreach (uint project in link.Projects)
                 {
-                    string name = "Unknown";
-                    if (Links.ProjectNames.ContainsKey(project))
-                        name = Links.ProjectNames[project];
+                    string name = Links.GetProjectName(project);
 
                     string spacing = (project == 0) ? "" : "   ";
 
@@ -818,9 +875,12 @@ namespace DeOps.Interface
 
             ProjectsButton.DropDownItems.Add(new ToolStripMenuItem("New...", null, new EventHandler(ProjectMenu_New)));
 
-            foreach (uint id in Links.ProjectNames.Keys)
-                if (id != 0 && Links.ProjectRoots.ContainsKey(id))
-                    ProjectsButton.DropDownItems.Add(new ProjectItem(Links.ProjectNames[id], id, new EventHandler(ProjectMenu_Click)));
+            Links.ProjectNames.LockReading(delegate()
+            {
+                foreach (uint id in Links.ProjectNames.Keys)
+                    if (id != 0 && Links.ProjectRoots.SafeContainsKey(id))
+                        ProjectsButton.DropDownItems.Add(new ProjectItem(Links.ProjectNames[id], id, new EventHandler(ProjectMenu_Click)));
+            });
 
             if (ProjectButton != null)
             {
@@ -859,7 +919,7 @@ namespace DeOps.Interface
                 SideToolStrip.Items.Remove(ProjectButton);
 
             // create button for project
-            ProjectButton = new ToolStripButton(Links.ProjectNames[ProjectButtonID], null, new EventHandler(ShowProject));
+            ProjectButton = new ToolStripButton(Links.GetProjectName(ProjectButtonID), null, new EventHandler(ShowProject));
             ProjectButton.TextDirection = ToolStripTextDirection.Vertical90;
             ProjectButton.CheckOnClick = true;
             ProjectButton.Checked = true;
@@ -878,7 +938,7 @@ namespace DeOps.Interface
                 return;
 
             // check project exists
-            if (!Links.ProjectRoots.ContainsKey(ProjectButtonID))
+            if (!Links.ProjectRoots.SafeContainsKey(ProjectButtonID))
             {
                 OperationButton.Checked = true;
                 SideToolStrip.Items.Remove(ProjectButton);
@@ -957,7 +1017,7 @@ namespace DeOps.Interface
                 Links.LeaveProject(CommandTree.Project);
 
             // if no roots, remove button change projectid to 0
-            if (!Links.ProjectRoots.ContainsKey(CommandTree.Project))
+            if (!Links.ProjectRoots.SafeContainsKey(CommandTree.Project))
             {
                 SideToolStrip.Items.Remove(ProjectButton);
                 ProjectButton = null;
@@ -1018,6 +1078,9 @@ namespace DeOps.Interface
 
         private void PopoutButton_Click(object sender, EventArgs e)
         {
+            if(InternalView == null) // no controls loaded
+                return;
+
             SuspendLayout();
             InternalPanel.Controls.Clear();
 
@@ -1260,9 +1323,9 @@ namespace DeOps.Interface
                 SideViewsButton.DropDownItems.Add("-");
 
             foreach(uint id in Links.LocalLink.Projects)
-                if(id != 0 && Links.ProjectNames.ContainsKey(id))
+                if(id != 0 && Links.ProjectNames.SafeContainsKey(id))
                 {
-                    ToolStripMenuItem projectItem = new ToolStripMenuItem(Links.ProjectNames[id]);
+                    ToolStripMenuItem projectItem = new ToolStripMenuItem(Links.GetProjectName(id));
                     AddSideViewMenus(projectItem.DropDownItems, id);
                     SideViewsButton.DropDownItems.Add(projectItem);
                 }

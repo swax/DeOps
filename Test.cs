@@ -30,6 +30,7 @@ namespace DeOps
         byte[] Hash = new byte[50];
     }
 
+
 	/// <summary>
 	/// Summary description for Tests.
 	/// </summary>
@@ -184,33 +185,33 @@ namespace DeOps
 			
             protocol.ReadNextPacket(undefPacket, ref readPos, ref readSize);
 
-            if( protocol.ReadPayload(undefPacket) )
+            if( G2Protocol.ReadPayload(undefPacket) )
             {
                 string test = stringEnc.GetString(readStream, undefPacket.PayloadPos, undefPacket.PayloadSize);
                 test += " ";
             }
 
-            protocol.ResetPacket(undefPacket);
+            G2Protocol.ResetPacket(undefPacket);
 
             G2Header childPacket = new G2Header(readStream);
             G2ReadResult childStatus = G2ReadResult.PACKET_GOOD;
 
             while( childStatus == G2ReadResult.PACKET_GOOD )
             {
-                childStatus = protocol.ReadNextChild( undefPacket, childPacket );
+                childStatus = G2Protocol.ReadNextChild( undefPacket, childPacket );
 
                 if( childStatus != G2ReadResult.PACKET_GOOD )
                     continue;
 
                 if( childPacket.Name == "/Dogs/Pug")
-                    if( protocol.ReadPayload(childPacket) && childPacket.PayloadSize != 0)
+                    if( G2Protocol.ReadPayload(childPacket) && childPacket.PayloadSize != 0)
                     {
                         string test = stringEnc.GetString(readStream, childPacket.PayloadPos, childPacket.PayloadSize);
                         test += " ";
                     }
 
                 if( childPacket.Name == "/Dogs/Rapper")
-                    if( protocol.ReadPayload(childPacket) && childPacket.PayloadSize != 0)
+                    if( G2Protocol.ReadPayload(childPacket) && childPacket.PayloadSize != 0)
                     {
                         string test = stringEnc.GetString(readStream, childPacket.PayloadPos, childPacket.PayloadSize);
                         test += " ";

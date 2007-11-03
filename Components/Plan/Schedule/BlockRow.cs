@@ -113,8 +113,8 @@ namespace DeOps.Components.Plan
             tempRect.Y = 0;
             tempRect.Height = Height;
 
-            StartTime = View.StartTime.ToUniversalTime();
-            EndTime   = View.EndTime.ToUniversalTime();
+            StartTime = View.GetStartTime().ToUniversalTime();
+            EndTime = View.GetEndTime().ToUniversalTime();
             TicksperPixel = View.ScheduleSlider.TicksperPixel;
 
 
@@ -210,9 +210,12 @@ namespace DeOps.Components.Plan
                 upnodes.Add(Node); // add self to scan
 
                 foreach (PlanNode upnode in upnodes)
-                    if (View.Plans.PlanMap.ContainsKey(upnode.Link.DhtID))
-                        if (View.Plans.PlanMap[upnode.Link.DhtID].GoalMap.ContainsKey(View.SelectedGoalID))
-                            foreach (PlanGoal goal in View.Plans.PlanMap[upnode.Link.DhtID].GoalMap[View.SelectedGoalID])
+                {
+                    OpPlan upPlan = View.Plans.GetPlan(upnode.Link.DhtID, true);
+
+                    if (upPlan != null)
+                        if (upPlan.GoalMap.ContainsKey(View.SelectedGoalID))
+                            foreach (PlanGoal goal in upPlan.GoalMap[View.SelectedGoalID])
                                 if (goal.Project == View.ProjectID && goal.Person == DhtID)
                                     if (StartTime < goal.End && goal.End < EndTime)
                                     {
@@ -223,7 +226,7 @@ namespace DeOps.Components.Plan
 
                                         // draw divider line with little right triangles in top / bottom
                                         buffer.FillRectangle(WhiteBrush, new Rectangle(x - 4, 2, 2, Height - 4));
-                                     
+
                                         if (total > 0)
                                         {
                                             int progress = completed * (Height - 4) / total;
@@ -241,6 +244,7 @@ namespace DeOps.Components.Plan
 
                                         GoalAreas.Add(new BlockArea(new Rectangle(x - 6, 2, 6, Height - 4), goal));
                                     }
+                }
             }
 
             // draw strings
@@ -285,12 +289,14 @@ namespace DeOps.Components.Plan
 
         private List<PlanBlock> GetBlocks(ulong key)
         {
-            if (View.Plans.PlanMap.ContainsKey(key) &&
-                View.Plans.PlanMap[key].Loaded &&
-                View.Plans.PlanMap[key].Blocks != null && 
-                View.Plans.PlanMap[key].Blocks.ContainsKey(View.ProjectID))
+            OpPlan plan = View.Plans.GetPlan(key, true);
 
-                return View.Plans.PlanMap[key].Blocks[View.ProjectID];
+            if (plan != null &&
+                plan.Loaded &&
+                plan.Blocks != null &&
+                plan.Blocks.ContainsKey(View.ProjectID))
+
+                return plan.Blocks[View.ProjectID];
 
 
             return new List<PlanBlock>();
@@ -412,7 +418,9 @@ namespace DeOps.Components.Plan
 
         internal void UpdateRow(bool immediate)
         {
-            if (View.Plans.PlanMap.ContainsKey(DhtID) && !View.Plans.PlanMap[DhtID].Loaded)
+            OpPlan plan = View.Plans.GetPlan(DhtID, true);
+
+            if (plan != null && !plan.Loaded)
                 View.Plans.LoadPlan(DhtID);
 
             Redraw = true;
@@ -517,9 +525,12 @@ namespace DeOps.Components.Plan
                 return;
 
             EditBlock form = new EditBlock(BlockViewMode.Edit, View, menu.Block);
-            
-            if(form.ShowDialog(View) == DialogResult.OK)
+
+            if (form.ShowDialog(View) == DialogResult.OK)
+            {
                 View.RefreshRows();
+                View.ChangesMade();
+            }
         }
 
         private void RClickDelete(object sender, EventArgs e)
@@ -572,7 +583,8 @@ namespace DeOps.Components.Plan
                     BlockViewMode mode = (DhtID == View.Core.LocalDhtID) ? BlockViewMode.Edit : BlockViewMode.Show;
 
                     EditBlock form = new EditBlock(mode, View, area.Block);
-                    form.ShowDialog(View);
+                    if (form.ShowDialog(View) == DialogResult.OK && mode == BlockViewMode.Edit)
+                        View.ChangesMade();
 
                     break;
                 }
@@ -590,7 +602,7 @@ namespace DeOps.Components.Plan
             bool good = false;
             StringBuilder text = new StringBuilder(100);
 
-            text.Append(Node.Link.Name);
+            text.Append(View.Core.Links.GetName(Node.Link.DhtID));
             //text.Append(" - ");
 
             //DateTime start = View.StartTime;

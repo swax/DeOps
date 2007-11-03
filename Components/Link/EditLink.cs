@@ -33,7 +33,7 @@ namespace DeOps.Components.Link
 
         private void EditLink_Load(object sender, EventArgs e)
         {
-            NameBox.Text = Links.LocalLink.Name;
+            NameBox.Text = Links.GetName(Core.LocalDhtID);
             LocationBox.Text = Links.Core.User.Settings.Location;
 
             if (Links.LocalLink.Title.ContainsKey(ProjectID))

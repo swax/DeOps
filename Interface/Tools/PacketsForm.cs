@@ -425,10 +425,10 @@ namespace DeOps.Interface.Tools
                     string name = root.Name.ToString() + " : " + GetVariableName(typeof(CommPacket), root.Name);
                     TreeNode rootNode = TreeViewPacket.Nodes.Add(name);
 
-                    if (Protocol.ReadPayload(root))
+                    if (G2Protocol.ReadPayload(root))
                         rootNode.Nodes.Add(Utilities.BytestoHex(root.Data, root.PayloadPos, root.PayloadSize, true));
 
-                    Protocol.ResetPacket(root);
+                    G2Protocol.ResetPacket(root);
 
                     // get type
                     Type packetType = null;
@@ -463,13 +463,13 @@ namespace DeOps.Interface.Tools
 
                     byte[] payload = null;
                     TreeNode payloadNode = null;
-                    if (Protocol.ReadPayload(root))
+                    if (G2Protocol.ReadPayload(root))
                     {
                         payloadNode = new TreeNode(Utilities.BytestoHex(root.Data, root.PayloadPos, root.PayloadSize, true));
                         rootNode.Nodes.Add(payloadNode);
                         payload = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
                     }
-                    Protocol.ResetPacket(root);
+                    G2Protocol.ResetPacket(root);
 
                     if (root.Name == RootPacket.Comm)
                     {
@@ -486,9 +486,9 @@ namespace DeOps.Interface.Tools
                             name = payloadRoot.Name.ToString() + " : " + GetVariableName(typeof(NetworkPacket), payloadRoot.Name);
                             TreeNode netNode = payloadNode.Nodes.Add(name);
 
-                            if (Protocol.ReadPayload(payloadRoot))
+                            if (G2Protocol.ReadPayload(payloadRoot))
                                 netNode.Nodes.Add(Utilities.BytestoHex(payloadRoot.Data, payloadRoot.PayloadPos, payloadRoot.PayloadSize, true));
-                            Protocol.ResetPacket(payloadRoot);
+                            G2Protocol.ResetPacket(payloadRoot);
 
                             Type packetType = null;
                             switch (payloadRoot.Name)
@@ -543,13 +543,13 @@ namespace DeOps.Interface.Tools
 			{
 				TreeNode rootNode = TreeViewPacket.Nodes.Add( TrimName(rootPacket.Name.ToString()) );
 
-				if(Protocol.ReadPayload(rootPacket))
+				if(G2Protocol.ReadPayload(rootPacket))
 				{
 					//rootNode.Nodes.Add( Utilities.BytestoAscii(rootPacket.Data, rootPacket.PayloadPos, rootPacket.PayloadSize));
 					rootNode.Nodes.Add( Utilities.BytestoHex(rootPacket.Data, rootPacket.PayloadPos, rootPacket.PayloadSize, true));
 				}
 
-				Protocol.ResetPacket(rootPacket);
+				G2Protocol.ResetPacket(rootPacket);
 
 				ReadChildren(rootPacket, rootNode, null);
 			}*/
@@ -561,7 +561,7 @@ namespace DeOps.Interface.Tools
 		{
 			G2Header child = new G2Header(rootPacket.Data);
 	
-			while( Protocol.ReadNextChild(rootPacket, child) == G2ReadResult.PACKET_GOOD )
+			while( G2Protocol.ReadNextChild(rootPacket, child) == G2ReadResult.PACKET_GOOD )
 			{
                 string name = child.Name.ToString();
 
@@ -570,13 +570,13 @@ namespace DeOps.Interface.Tools
 
 				TreeNode childNode = rootNode.Nodes.Add(name);
 
-				if(Protocol.ReadPayload(child))
+				if(G2Protocol.ReadPayload(child))
 				{
 					//childNode.Nodes.Add( "Payload Ascii: " + Utilities.BytestoAscii(childPacket.Data, childPacket.PayloadPos, childPacket.PayloadSize));
 					childNode.Nodes.Add(Utilities.BytestoHex(child.Data, child.PayloadPos, child.PayloadSize, true));
 				}
 
-				Protocol.ResetPacket(child);
+				G2Protocol.ResetPacket(child);
 
 				ReadChildren(child, childNode, null);
 			}

@@ -457,18 +457,18 @@ namespace DeOps.Implementation.Dht
             PatchPacket patch = new PatchPacket();
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (child.Name == Packet_Component && protocol.ReadPayload(child))
+                if (child.Name == Packet_Component && G2Protocol.ReadPayload(child))
                 {
                     ushort component = BitConverter.ToUInt16(child.Data, child.PayloadPos);
                     byte[] data = null;
 
-                    protocol.ResetPacket(child);
+                    G2Protocol.ResetPacket(child);
 
                     G2Header embedded = new G2Header(child.Data);
-                    if (protocol.ReadNextChild(child, embedded) == G2ReadResult.PACKET_GOOD)
-                        if(embedded.Name == Packet_Data && protocol.ReadPayload(embedded))
+                    if (G2Protocol.ReadNextChild(child, embedded) == G2ReadResult.PACKET_GOOD)
+                        if(embedded.Name == Packet_Data && G2Protocol.ReadPayload(embedded))
                             data = Utilities.ExtractBytes(embedded.Data, embedded.PayloadPos, embedded.PayloadSize);
 
                     if(data != null)

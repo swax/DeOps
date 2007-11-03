@@ -196,7 +196,7 @@ namespace DeOps.Implementation.Protocol
             return Utilities.ExtractBytes(FinalPacket, 0, FinalSize);
 		}
 
-		internal G2ReadResult ReadNextPacket( G2Header packet, ref int readPos, ref int readSize )
+		internal static G2ReadResult ReadNextPacket( G2Header packet, ref int readPos, ref int readSize )
 		{
 			if( readSize == 0 )
 				return G2ReadResult.PACKET_INCOMPLETE;
@@ -301,7 +301,7 @@ namespace DeOps.Implementation.Protocol
 			return G2ReadResult.PACKET_GOOD;
 		}
 
-		internal bool ReadPayload(G2Header packet)
+		internal static bool ReadPayload(G2Header packet)
 		{
 			ResetPacket(packet);
 
@@ -330,7 +330,7 @@ namespace DeOps.Implementation.Protocol
 			return false;
 		}
 
-		internal void ResetPacket(G2Header packet)
+		internal static void ResetPacket(G2Header packet)
 		{
 			packet.NextBytePos   = packet.InternalPos;
 			packet.NextBytesLeft = packet.InternalSize;
@@ -339,7 +339,7 @@ namespace DeOps.Implementation.Protocol
 			packet.PayloadSize = 0;
 		}
 
-		internal G2ReadResult ReadNextChild( G2Header root, G2Header child)
+		internal static G2ReadResult ReadNextChild( G2Header root, G2Header child)
 		{
 			if( !root.HasChildren )
 				return G2ReadResult.STREAM_END;
@@ -449,7 +449,7 @@ namespace DeOps.Implementation.Protocol
         {
             if (ReadSize > 0)
             {
-                ReadStatus = Protocol.ReadNextPacket(root, ref Start, ref ReadSize);
+                ReadStatus = G2Protocol.ReadNextPacket(root, ref Start, ref ReadSize);
 
                 if (ReadStatus == G2ReadResult.PACKET_GOOD)
                     return true;

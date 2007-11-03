@@ -33,6 +33,7 @@ namespace DeOps.Components.Plan
         internal int LoadIdent;
         internal int LoadBranch;
 
+
         StringBuilder Details = new StringBuilder(4096);
         const string DefaultPage = @"<html>
                                     <head>
@@ -144,7 +145,7 @@ namespace DeOps.Components.Plan
                 title += Links.GetName(DhtID) + "'s ";
 
             if (ProjectID != 0)
-                title += Links.ProjectNames[ProjectID] + " ";
+                title += Links.GetProjectName(ProjectID) + " ";
 
             title += "Goals";
 
@@ -485,7 +486,7 @@ namespace DeOps.Components.Plan
         PlanGoal LastGoal;
         PlanItem LastItem;
 
-        enum DetailsModeType { None, Goal, Item };
+        enum DetailsModeType { Uninit, None, Goal, Item };
 
         DetailsModeType DetailsMode;
 
@@ -557,13 +558,6 @@ namespace DeOps.Components.Plan
         private void SetDisplay(string html)
         {
             Debug.Assert(!html.Contains("<?"));
-
-            //if (!DisplayActivated)
-            //    return;
-
-            // watch transfers runs per second, dont update unless we need to 
-            if (html.CompareTo(DetailsBrowser.DocumentText) == 0)
-                return;
 
             // prevents clicking sound when browser navigates
             DetailsBrowser.Hide();

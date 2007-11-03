@@ -81,7 +81,7 @@ namespace DeOps.Components.Link
             if(FirstLineBlank)
                 Nodes.Add(new LabelNode(""));
 
-            if (!Links.ProjectRoots.ContainsKey(Project))
+            if (!Links.ProjectRoots.SafeContainsKey(Project))
             {
                 EndUpdate();
                 return;
@@ -89,7 +89,7 @@ namespace DeOps.Components.Link
 
             string rootname = Core.User.Settings.Operation;
             if (Project != 0)
-                rootname = Links.ProjectNames[Project];
+                rootname = Links.GetProjectName(Project);
 
             // operation
             ProjectNode = new LabelNode(rootname);
@@ -109,15 +109,20 @@ namespace DeOps.Components.Link
             // if forced, load specific node as root
             if (ForceRootID != 0)
             {
-                if (Links.LinkMap.ContainsKey(ForceRootID))
-                    SetupRoot(Links.LinkMap[ForceRootID]);
+                OpLink root = Links.GetLink(ForceRootID);
+
+                if (root != null)
+                    SetupRoot(root);
             }
 
             // get roots for specific project
-            else if (Links.ProjectRoots.ContainsKey(Project))
-                lock (Links.ProjectRoots[Project])
-                    foreach (OpLink root in Links.ProjectRoots[Project])
-                        SetupRoot(root);
+            else
+            {
+                List<OpLink> roots = null;
+                if (Links.ProjectRoots.SafeTryGetValue(Project, out roots))
+                    foreach (OpLink root in roots)
+                            SetupRoot(root);
+            }
 
             // show unlinked if there's something to show
             if (Nodes.IndexOf(UnlinkedNode) + 1 == Nodes.Count)
@@ -266,9 +271,11 @@ namespace DeOps.Components.Link
             Nodes.Add(OnlineNode);
 
             // add nodes
-            lock (Links.LinkMap)
+            Links.LinkMap.LockReading(delegate()
+            {
                 foreach (ulong key in Links.LinkMap.Keys)
                     OnUpdateLink(key);
+            });
 
             EndUpdate();
 
@@ -318,20 +325,16 @@ namespace DeOps.Components.Link
 
         void OnUpdateLink(ulong key)
         {
-            // check if removed
-            if (!Links.LinkMap.ContainsKey(key))
+            // update
+            OpLink link = Links.GetLink(key);
+
+            if (link == null)
             {
                 if (NodeMap.ContainsKey(key))
                     RemoveNode(NodeMap[key]);
 
                 return;
             }
-
-            // update
-            OpLink link = Links.LinkMap[key];
-
-            if (!link.Loaded)
-                return;
 
             if (!link.Projects.Contains(Project) && !link.Downlinks.ContainsKey(Project))
             {
@@ -562,7 +565,7 @@ namespace DeOps.Components.Link
         private void UpdateOnline(LinkNode node)
         {
             // if node offline, remove
-            if (!Core.Locations.LocationMap.ContainsKey(node.Link.DhtID))
+            if (!Core.Locations.LocationMap.SafeContainsKey(node.Link.DhtID))
             {
                 if (NodeMap.ContainsKey(node.Link.DhtID))
                 {
@@ -673,7 +676,7 @@ namespace DeOps.Components.Link
 
         internal void SelectLink(ulong id, uint project)
         {
-            if (!Links.LinkMap.ContainsKey(id))
+            if (!Links.LinkMap.SafeContainsKey(id))
                 id = Core.LocalDhtID;
 
             // unbold current
@@ -798,25 +801,27 @@ namespace DeOps.Components.Link
 
             if (mode == CommandTreeMode.Operation)
             {
-                txt += Link.Name;
+                txt += Links.GetName(Link.DhtID);
 
                 //if (title != "")
                 //    txt += " - " + title;
 
+                OpLink parent = Link.GetHigher(proj, false);
+
                 if (Link.Error != null && Link.Error != "")
                     txt += " (Error " + Link.Error + ")";
 
-                else if (Link.Uplink.ContainsKey(proj))
+                else if (parent != null)
                 {
                     bool confirmed = false;
                     bool requested = false;
 
-                    if (Link.Uplink[proj].Confirmed.ContainsKey(proj))
-                        if (Link.Uplink[proj].Confirmed[proj].Contains(Link.DhtID))
+                    if (parent.Confirmed.ContainsKey(proj))
+                        if (parent.Confirmed[proj].Contains(Link.DhtID))
                             confirmed = true;
 
-                    if (Link.Uplink[proj].Requests.ContainsKey(proj))
-                        foreach (UplinkRequest request in Link.Uplink[proj].Requests[proj])
+                    if (parent.Requests.ContainsKey(proj))
+                        foreach (UplinkRequest request in parent.Requests[proj])
                             if (request.KeyID == Link.DhtID)
                                 requested = true;
 
@@ -835,7 +840,7 @@ namespace DeOps.Components.Link
             }
             else
             {
-                txt += Link.Name;
+                txt += Links.GetName(Link.DhtID);
 
                 // if (title != "")
                 //     txt += " - " + title;
@@ -851,7 +856,7 @@ namespace DeOps.Components.Link
         {
             Color newColor = Color.Black;
 
-            if (Link == Links.LocalLink || Locations.LocationMap.ContainsKey(Link.DhtID))
+            if (Link == Links.LocalLink || Locations.LocationMap.SafeContainsKey(Link.DhtID))
                 newColor = Color.Black;
             else
                 newColor = Color.DarkGray;

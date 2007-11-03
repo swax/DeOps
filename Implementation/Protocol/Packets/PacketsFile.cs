@@ -29,10 +29,10 @@ namespace DeOps.Implementation.Protocol.File
         {
             FilePacket file = new FilePacket();
 
-            if (protocol.ReadPayload(root))
+            if (G2Protocol.ReadPayload(root))
                 file.Embedded = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
 
-            protocol.ResetPacket(root);
+            G2Protocol.ResetPacket(root);
 
             return file;
         }
@@ -128,7 +128,7 @@ namespace DeOps.Implementation.Protocol.File
 
             G2Header child = new G2Header(root.Data);
 
-            while (protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
                 if (child.Name == Packet_KeyPair)
                 {
@@ -136,7 +136,7 @@ namespace DeOps.Implementation.Protocol.File
                     continue;
                 }
 
-                if (!protocol.ReadPayload(child))
+                if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
@@ -193,9 +193,9 @@ namespace DeOps.Implementation.Protocol.File
 
             RSAParameters rsa = new RSAParameters();
 
-            while (protocol.ReadNextChild(child, key) == G2ReadResult.PACKET_GOOD)
+            while (G2Protocol.ReadNextChild(child, key) == G2ReadResult.PACKET_GOOD)
             {
-                if (!protocol.ReadPayload(key))
+                if (!G2Protocol.ReadPayload(key))
                     continue;
 
                 switch (key.Name)
@@ -266,10 +266,10 @@ namespace DeOps.Implementation.Protocol.File
         {
             CachePacket cache = new CachePacket(FilePacket.GlobalCache); // type doesnt matter here
 
-            if (protocol.ReadPayload(root))
+            if (G2Protocol.ReadPayload(root))
                 cache.IPs = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
 
-            protocol.ResetPacket(root);
+            G2Protocol.ResetPacket(root);
 
             return cache;
         }

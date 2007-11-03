@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
@@ -103,8 +104,8 @@ namespace DeOps.Implementation
         internal event TimerHandler TimerEvent;
         internal event NewsUpdateHandler NewsUpdate;
 
-		[DllImport("USER32.DLL", SetLastError=true)]
-		private static extern bool GetLastInputInfo(ref LastInputInfo ii);
+		//[DllImport("USER32.DLL", SetLastError=true)]
+		//private static extern bool GetLastInputInfo(ref LastInputInfo ii);
 
 		internal int GmtOffset = System.TimeZone.CurrentTimeZone.GetUtcOffset( DateTime.Now ).Hours;
 
@@ -122,6 +123,12 @@ namespace DeOps.Implementation
         // other
         internal Random RndGen = new Random(unchecked((int)DateTime.Now.Ticks));
         internal RNGCryptoServiceProvider StrongRndGen = new RNGCryptoServiceProvider();
+
+        // threading
+        Thread CoreThread;
+        bool   CoreRunning = true;
+        bool   RunTimer;
+        internal AutoResetEvent ProcessEvent = new AutoResetEvent(false);
 
 
         internal OpCore(LoaderForm loader, string path, string pass)
@@ -187,7 +194,70 @@ namespace DeOps.Implementation
                 LoadEvent.Invoke();
             Loading = false;
 
-            Test test = new Test(); // should be empty unless running a test            
+            Test test = new Test(); // should be empty unless running a test    
+
+            if (Sim == null || Sim.Internet.TestCoreThread)
+            {
+                CoreThread = new Thread(RunCore);
+                CoreThread.Start();
+            }
+        }
+
+        void RunCore()
+        {
+            // timer / network events are brought into this thread so that locking between network/core/components is minimized
+            // so only place we need to be real careful is at the core/gui interface
+
+            bool morePackets = false;
+            AutoResetEvent[] CoreEvents = new AutoResetEvent[] { ProcessEvent };
+
+            while (CoreRunning)
+            {
+                AutoResetEvent.WaitAll(CoreEvents);
+
+                morePackets = true;
+
+                while (morePackets)
+                {
+                    // run timer, in packet loop so that if we're getting unbelievably flooded timer
+                    // can still run and clear out component maps
+                    if (RunTimer)
+                    {
+                        RunTimer = false;
+
+                        SecondTimer();
+                    }
+
+
+                    // get the next packet off the queue without blocking it
+                    morePackets = false; 
+                    PacketCopy incoming = null;
+
+                    
+                    lock (OperationNet.IncomingPackets)
+                        if (OperationNet.IncomingPackets.Count > 0)
+                            incoming = OperationNet.IncomingPackets.Dequeue();
+
+
+                    // if no more, get the next global packet
+                    if (incoming == null)
+                        lock (GlobalNet.IncomingPackets)
+                            if (GlobalNet.IncomingPackets.Count > 0)
+                                incoming = GlobalNet.IncomingPackets.Dequeue();
+
+
+                    // process packet
+                    if (incoming != null)
+                    {
+                        if (incoming.Global)
+                            GlobalNet.ReceivePacket(incoming.Packet);
+                        else
+                            OperationNet.ReceivePacket(incoming.Packet);
+
+                        morePackets = true;
+                    }
+                }
+            }
         }
 
 		internal void SignOff()
@@ -395,14 +465,14 @@ namespace DeOps.Implementation
 			}
 		}
 
-        internal struct LastInputInfo
+        /*internal struct LastInputInfo
         {
             internal int Size;
             internal int Time;
-        }
+        }*/
 
 
-        internal int GetIdleTime()
+        /*internal int GetIdleTime()
         {
             try
             {
@@ -420,7 +490,7 @@ namespace DeOps.Implementation
             }
 
             return 0;
-        }
+        }*/
 
         internal void ConsoleLog( string message)
         {
@@ -531,9 +601,37 @@ namespace DeOps.Implementation
             InvokeInterface(NewsUpdate, new NewsItemInfo(message, id, project, showRemote, symbol, onClick));
         }
 
+        internal void SignalTimer()
+        {
+            RunTimer = true;
+            ProcessEvent.Set();
+        }
+
         internal void Exit()
         {
+            CoreRunning = false;
+
+            if(CoreThread != null)
+            {
+                ProcessEvent.Set();
+                CoreThread.Join();
+            }
+
             ExitEvent.Invoke();
+        }
+
+
+        internal bool InvokeRequired
+        {
+            get 
+            {
+                return true;
+            }
+        }
+
+        internal IAsyncResult BeginInvoke(Delegate method, params object[] args)
+        {
+            return null;
         }
     }
 }

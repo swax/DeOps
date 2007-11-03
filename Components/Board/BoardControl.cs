@@ -30,17 +30,20 @@ namespace DeOps.Components.Board
         internal DhtStore Store;
         LinkControl Links;
 
+        BoardInterface Interface;
+
+
         internal string BoardPath;
         RijndaelManaged LocalFileKey;
 
         int PruneSize = 64;
 
         internal List<ulong> SaveHeaders = new List<ulong>();
-        internal Dictionary<ulong, OpBoard> BoardMap = new Dictionary<ulong, OpBoard>();    
-        internal Dictionary<ulong, List<BoardView>> WindowMap = new Dictionary<ulong, List<BoardView>>();
-       
-        Dictionary<int, ushort> SavedReplyCount = new Dictionary<int, ushort>();
-        Dictionary<ulong, List<PostUID>> DownloadLater = new Dictionary<ulong, List<PostUID>>();
+        internal ThreadedDictionary<ulong, OpBoard> BoardMap = new ThreadedDictionary<ulong, OpBoard>();    
+        
+
+        ThreadedDictionary<int, ushort> SavedReplyCount = new ThreadedDictionary<int, ushort>();
+        ThreadedDictionary<ulong, List<PostUID>> DownloadLater = new ThreadedDictionary<ulong, List<PostUID>>();
 
         internal PostUpdateHandler PostUpdate;
 
@@ -54,6 +57,7 @@ namespace DeOps.Components.Board
             Network  = Core.OperationNet;
             Store    = Network.Store;
 
+            Interface = new BoardInterface(this);
             Core.LoadEvent += new LoadHandler(Core_Load);
             Core.TimerEvent += new TimerHandler(Core_Timer);
 
@@ -67,6 +71,8 @@ namespace DeOps.Components.Board
 
             if (Core.Sim != null)
                 PruneSize = 32;
+
+            
         }
 
         void Core_Load()
@@ -130,73 +136,83 @@ namespace DeOps.Components.Board
             if (Core.TimeNow.Second != 0)
                 return;
 
+            List<ulong> removeBoards = new List<ulong>();
+
+               
             // prune loaded boards
-            if (BoardMap.Count > PruneSize)
+            BoardMap.LockReading(delegate()
             {
-                List<ulong> removeBoards = new List<ulong>();
-
-                List<ulong> localRegion = new List<ulong>();
-                foreach (uint project in Core.Links.LocalLink.Projects)
-                    localRegion.AddRange(GetBoardRegion(Core.LocalDhtID, project, ScopeType.All));
-
-                foreach(OpBoard board in BoardMap.Values)
-                    if (board.DhtID != Core.LocalDhtID &&
-                        !Utilities.InBounds(board.DhtID, board.DhtBounds, Core.LocalDhtID) &&
-                        !WindowMap.ContainsKey(board.DhtID) &&
-                        !localRegion.Contains(board.DhtID))
-                    {
-                        removeBoards.Add(board.DhtID);
-                    }
-
-                while (removeBoards.Count > 0 && BoardMap.Count > PruneSize / 2)
+                if (BoardMap.Count > PruneSize)
                 {
-                    // find furthest id
-                    ulong furthest = Core.LocalDhtID;
+                    List<ulong> localRegion = new List<ulong>();
+                    foreach (uint project in Core.Links.LocalLink.Projects)
+                        localRegion.AddRange(Interface.GetBoardRegion(Core.LocalDhtID, project, ScopeType.All));
 
-                    foreach (ulong id in removeBoards)
-                        if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
-                            furthest = id;
-
-                    // remove
-                    OpBoard board = BoardMap[furthest];
-
-                    try 
-                    {
-                        string dir = BoardPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, board.DhtID.ToString());
-                        string[] files = Directory.GetFiles(dir);
-
-                        foreach(string path in files)
-                            File.Delete(path);
-
-                        Directory.Delete(dir);
-                    }
-                    catch { }
-
-                    BoardMap.Remove(furthest);
-                    removeBoards.Remove(furthest);
+                    foreach (OpBoard board in BoardMap.Values)
+                        if (board.DhtID != Core.LocalDhtID &&
+                            !Utilities.InBounds(board.DhtID, board.DhtBounds, Core.LocalDhtID) &&
+                            !Interface.WindowMap.SafeContainsKey(board.DhtID) &&
+                            !localRegion.Contains(board.DhtID))
+                        {
+                            removeBoards.Add(board.DhtID);
+                        }
                 }
-            }
+            });
+
+            if (removeBoards.Count > 0)
+                BoardMap.LockWriting(delegate()
+                {
+                    while (removeBoards.Count > 0 && BoardMap.Count > PruneSize / 2)
+                    {
+                        // find furthest id
+                        ulong furthest = Core.LocalDhtID;
+
+                        foreach (ulong id in removeBoards)
+                            if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                                furthest = id;
+
+                        // remove
+                        try
+                        {
+                            string dir = BoardPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, furthest.ToString());
+                            string[] files = Directory.GetFiles(dir);
+
+                            foreach (string path in files)
+                                File.Delete(path);
+
+                            Directory.Delete(dir);
+                        }
+                        catch { }
+
+                        BoardMap.Remove(furthest);
+                        removeBoards.Remove(furthest);
+                    }
+                });
+            
         }
 
-        private void PruneMap(Dictionary<ulong, List<PostUID>> map)
+        private void PruneMap(ThreadedDictionary<ulong, List<PostUID>> map)
         {
-            if (map.Count < PruneSize)
+            if (map.SafeCount < PruneSize)
                 return;
 
             List<ulong> removeIDs = new List<ulong>();
 
-            while (map.Count > 0 && map.Count > PruneSize)
+            map.LockWriting(delegate()
             {
-                ulong furthest = Core.LocalDhtID;
+                while (map.Count > 0 && map.Count > PruneSize)
+                {
+                    ulong furthest = Core.LocalDhtID;
 
-                // get furthest id
-                foreach (ulong id in map.Keys)
-                    if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
-                        furthest = id;
+                    // get furthest id
+                    foreach (ulong id in map.Keys)
+                        if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                            furthest = id;
 
-                // remove one 
-                map.Remove(furthest);
-            }  
+                    // remove one 
+                    map.Remove(furthest);
+                }
+            });
         }
 
         void Network_Established()
@@ -204,24 +220,29 @@ namespace DeOps.Components.Board
             ulong localBounds = Store.RecalcBounds(Core.LocalDhtID);
 
             // set bounds for objects
-            foreach (OpBoard board in BoardMap.Values)
+            BoardMap.LockReading(delegate()
             {
-                board.DhtBounds = Store.RecalcBounds(board.DhtID);
+                foreach (OpBoard board in BoardMap.Values)
+                {
+                    board.DhtBounds = Store.RecalcBounds(board.DhtID);
 
-                // republish objects that were not seen on the network during startup
-                foreach(OpPost post in board.Posts.Values)
-                    if (post.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, board.DhtID))
-                        Store.PublishNetwork(board.DhtID, ComponentID.Board, post.SignedHeader);
-            }
-
+                    // republish objects that were not seen on the network during startup
+                    foreach (OpPost post in board.Posts.Values)
+                        if (post.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, board.DhtID))
+                            Store.PublishNetwork(board.DhtID, ComponentID.Board, post.SignedHeader);
+                }
+            });
 
             // only download those objects in our local area
-            foreach(ulong key in DownloadLater.Keys)
-                if (Utilities.InBounds(Core.LocalDhtID, localBounds, key))
-                    foreach(PostUID uid in DownloadLater[key])
-                        PostSearch(key, uid, 0);
-            
-            DownloadLater.Clear();
+            DownloadLater.LockWriting(delegate()
+            {
+                foreach (ulong key in DownloadLater.Keys)
+                    if (Utilities.InBounds(Core.LocalDhtID, localBounds, key))
+                        foreach (PostUID uid in DownloadLater[key])
+                            PostSearch(key, uid, 0);
+
+                DownloadLater.Clear();
+            });
         }
 
         private void LoadHeader(ulong id)
@@ -261,16 +282,19 @@ namespace DeOps.Components.Board
 
         private void SaveHeader(ulong id)
         {
+            OpBoard board = GetBoard(id);
+
+            if (board == null)
+                return;
+
             try
             {
                 string tempPath = Core.GetTempPath();
                 FileStream file = new FileStream(tempPath, FileMode.Create);
                 CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
 
-                lock (BoardMap)
-                    if (BoardMap.ContainsKey(id))
-                        foreach (OpPost post in BoardMap[id].Posts.Values)
-                            stream.Write(post.SignedHeader, 0, post.SignedHeader.Length);
+                foreach (OpPost post in board.Posts.Values)
+                    stream.Write(post.SignedHeader, 0, post.SignedHeader.Length);
 
                 stream.FlushFinalBlock();
                 stream.Close();
@@ -309,7 +333,7 @@ namespace DeOps.Components.Board
             if (node == null)
                 return;
 
-            BoardView view = new BoardView(this, node.GetKey(), node.GetProject());
+            BoardView view = new BoardView(Interface, node.GetKey(), node.GetProject());
 
             Core.InvokeView(node.IsExternal(), view);
         }
@@ -474,14 +498,15 @@ namespace DeOps.Components.Board
         {
             Core.IndexKey(header.SourceID, ref header.Source);
             Core.IndexKey(header.TargetID, ref header.Target);
-            Utilities.CheckSignedData(header.Source, signed.Data, signed.Signature);
-
+            
             PostUID uid = new PostUID(header);
 
+            OpBoard board = GetBoard(header.TargetID);
+
             // if link loaded
-            if (BoardMap.ContainsKey(header.TargetID) && BoardMap[header.TargetID].Posts.ContainsKey(uid))
+            if (board != null && board.Posts.ContainsKey(uid))
             {
-                OpPost current = BoardMap[header.TargetID].Posts[uid];
+                OpPost current = board.Posts[uid];
 
                 // lower version, send update
                 if (header.Version < current.Header.Version)
@@ -534,10 +559,14 @@ namespace DeOps.Components.Board
             }
 
             // put into map
-            if (!BoardMap.ContainsKey(header.TargetID))
-                BoardMap[header.TargetID] = new OpBoard(header.Target);
+            OpBoard board = GetBoard(header.TargetID);
 
-            OpBoard board = BoardMap[header.TargetID];
+            if (board == null)
+            {
+                board = new OpBoard(header.Target);
+                BoardMap.SafeAdd(header.TargetID, board);
+            }
+
             PostUID uid = new PostUID(header);
 
             post = new OpPost();
@@ -571,12 +600,12 @@ namespace DeOps.Components.Board
                 if (!SaveHeaders.Contains(header.TargetID))
                     SaveHeaders.Add(header.TargetID);
 
-            lock (SavedReplyCount)
-                if (SavedReplyCount.ContainsKey(post.Ident))
-                {
-                    post.Replies = SavedReplyCount[post.Ident];
-                    SavedReplyCount.Remove(post.Ident);
-                }
+            ushort replies = 0;
+            if (SavedReplyCount.SafeTryGetValue(post.Ident, out replies))
+            {
+                post.Replies = replies;
+                SavedReplyCount.SafeRemove(post.Ident);
+            }
 
             if(PostUpdate != null)
                 Core.InvokeInterface(PostUpdate, post);
@@ -588,6 +617,8 @@ namespace DeOps.Components.Board
 
         void DownloadPost(SignedData signed, PostHeader header)
         {
+            Utilities.CheckSignedData(header.Source, signed.Data, signed.Signature);
+
             FileDetails details = new FileDetails(ComponentID.Board, header.FileHash, header.FileSize, new PostUID(header).ToBytes());
 
             Core.Transfers.StartDownload(header.TargetID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
@@ -640,10 +671,11 @@ namespace DeOps.Components.Board
 
         internal OpPost GetPost(ulong target, PostUID uid)
         {
-            lock(BoardMap)
-                if (BoardMap.ContainsKey(target))
-                    if (BoardMap[target].Posts.ContainsKey(uid))
-                        return BoardMap[target].Posts[uid];
+            OpBoard board = GetBoard(target);
+
+            if (board != null)
+                if (board.Posts.ContainsKey(uid))
+                    return board.Posts[uid];
 
             return null;
         }
@@ -661,16 +693,17 @@ namespace DeOps.Components.Board
 
             byte[] patch = new byte[PatchEntrySize];
 
-            lock(BoardMap)
-                foreach(OpBoard board in BoardMap.Values)
-                    if(Utilities.InBounds(board.DhtID, board.DhtBounds, contact.DhtID))
+            BoardMap.LockReading(delegate()
+            {
+                foreach (OpBoard board in BoardMap.Values)
+                    if (Utilities.InBounds(board.DhtID, board.DhtBounds, contact.DhtID))
                     {
                         // bounds is a distance value
                         DhtContact target = contact;
                         board.DhtBounds = Store.RecalcBounds(board.DhtID, add, ref target);
 
                         if (target != null)
-                        {                      
+                        {
                             BitConverter.GetBytes(board.DhtID).CopyTo(patch, 0);
 
                             foreach (PostUID uid in board.Posts.Keys)
@@ -682,6 +715,7 @@ namespace DeOps.Components.Board
                             }
                         }
                     }
+            });
 
             return data;
         }
@@ -704,10 +738,11 @@ namespace DeOps.Components.Board
                 if (!Utilities.InBounds(Core.LocalDhtID, distance, dhtid))
                     continue;
 
+                OpBoard board = GetBoard(dhtid);
 
-                if (BoardMap.ContainsKey(dhtid) && BoardMap[dhtid].Posts.ContainsKey(uid))
+                if (board != null && board.Posts.ContainsKey(uid))
                 {
-                    OpPost post = BoardMap[dhtid].Posts[uid];
+                    OpPost post = board.Posts[uid];
 
                     // remote version is lower, send update
                     if (post.Header.Version > version)
@@ -730,49 +765,38 @@ namespace DeOps.Components.Board
                     Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Board, uid.ToBytes());
                 else
                 {
-                    if (!DownloadLater.ContainsKey(dhtid))
-                        DownloadLater[dhtid] = new List<PostUID>();
+                    List<PostUID> list = null;
+                    if (!DownloadLater.SafeTryGetValue(dhtid, out list))
+                    {
+                        list = new List<PostUID>();
+                        DownloadLater.SafeAdd(dhtid, list);
+                    }
 
-                    DownloadLater[dhtid].Add(uid);
+                    list.Add(uid);
                 }
             }
         }
 
-        internal void LoadView(BoardView view, ulong id)
-        {
-            if(!WindowMap.ContainsKey(id))
-                WindowMap[id] = new List<BoardView>();
 
-            WindowMap[id].Add(view);
-        }
-
-        internal void UnloadView(BoardView view, ulong id )
-        {
-            if(!WindowMap.ContainsKey(id))
-                return;
-
-            WindowMap[id].Remove(view);
-
-            if(WindowMap[id].Count == 0)
-                WindowMap.Remove(id);
-        }
 
         internal void LoadRegion(ulong id, uint project)
         {
             // get all boards in local region
-            List<ulong> targets = GetBoardRegion(id, project, ScopeType.All);
+            List<ulong> targets = Interface.GetBoardRegion(id, project, ScopeType.All);
 
 
             foreach (ulong target in targets)
             {
-                if (!BoardMap.ContainsKey(target))
+                OpBoard board = GetBoard(target);
+
+                if (board == null)
                 {
                     LoadHeader(target); // updateinterface called in processheader
                     continue;
                 }
 
                 // call update for all posts
-                foreach (OpPost post in BoardMap[target].Posts.Values)
+                foreach (OpPost post in board.Posts.Values)
                     if (post.Header.ProjectID == project && post.Header.ParentID == 0)
                         Core.InvokeInterface(PostUpdate, post);
             }
@@ -785,32 +809,32 @@ namespace DeOps.Components.Board
 
         internal void SearchBoard(ulong target, uint project)
         {
-                bool fullSearch = true;
+            bool fullSearch = true;
 
-                if (BoardMap.ContainsKey(target))
-                {
-                    OpBoard board = BoardMap[target];
+            OpBoard board = GetBoard(target);
 
-                    if(board.LastRefresh.ContainsKey(project))
-                        fullSearch = false;
-                }
+            if (board != null)
+                if (board.LastRefresh.ContainsKey(project))
+                    fullSearch = false;
 
-                if (fullSearch)
-                    ThreadSearch(target, project, 0);
-                else // search for all theads posted since refresh, with an hour buffer
-                    TimeSearch(target, project, BoardMap[target].LastRefresh[project].AddHours(-1));
+            if (fullSearch)
+                ThreadSearch(target, project, 0);
+
+            // search for all theads posted since refresh, with an hour buffer
+            else 
+                TimeSearch(target, project, board.LastRefresh[project].AddHours(-1));
 
 
-                if(BoardMap.ContainsKey(target))
-                    BoardMap[target].LastRefresh[project] = Core.TimeNow;
+            if (board != null)
+                board.LastRefresh[project] = Core.TimeNow;
         }
 
         internal void LoadThread(OpPost parent)
         {
-            if (!BoardMap.ContainsKey(parent.Header.TargetID))
-                return;
+            OpBoard board = GetBoard(parent.Header.TargetID);
 
-            OpBoard board = BoardMap[parent.Header.TargetID];
+            if (board == null)
+                return;
 
             // have all replies fire an update
             foreach (OpPost post in board.Posts.Values)
@@ -844,6 +868,8 @@ namespace DeOps.Components.Board
 
         void EndThreadSearch(DhtSearch search)
         {
+            OpBoard board = GetBoard(search.TargetID);
+
             foreach (SearchValue found in search.FoundValues)
             {
                 if (found.Value.Length < TheadSearch_ResultsSize)
@@ -852,11 +878,12 @@ namespace DeOps.Components.Board
                 PostUID uid = PostUID.FromBytes(found.Value, 0);
                 ushort version = BitConverter.ToUInt16(found.Value, 16);
                 ushort replies = BitConverter.ToUInt16(found.Value, 18);
- 
-                if (BoardMap.ContainsKey(search.TargetID))
-                    if (BoardMap[search.TargetID].Posts.ContainsKey(uid))
+
+                
+                if (board != null)
+                    if (board.Posts.ContainsKey(uid))
                     {
-                        OpPost post = BoardMap[search.TargetID].Posts[uid];
+                        OpPost post = board.Posts[uid];
 
                         if (post.Replies < replies)
                         {
@@ -876,9 +903,10 @@ namespace DeOps.Components.Board
                 {
                     int hash = search.TargetID.GetHashCode() ^ uid.GetHashCode();
 
-                    lock (SavedReplyCount)
-                        if (!SavedReplyCount.ContainsKey(hash) || SavedReplyCount[hash] < replies)
-                            SavedReplyCount[hash] = replies;
+                    ushort savedReplies = 0;
+                    if (SavedReplyCount.SafeTryGetValue(hash, out savedReplies))
+                        if (savedReplies < replies)
+                            SavedReplyCount.SafeAdd(hash, replies);
                 }
             }
         }
@@ -903,6 +931,8 @@ namespace DeOps.Components.Board
 
         void EndTimeSearch(DhtSearch search)
         {
+            OpBoard board = GetBoard(search.TargetID);
+            
             foreach (SearchValue found in search.FoundValues)
             {
                 if (found.Value.Length < TheadSearch_ResultsSize)
@@ -911,9 +941,10 @@ namespace DeOps.Components.Board
                 PostUID uid = PostUID.FromBytes(found.Value, 0);
                 ushort version = BitConverter.ToUInt16(found.Value, 16);
 
-                if (BoardMap.ContainsKey(search.TargetID))
-                    if (BoardMap[search.TargetID].Posts.ContainsKey(uid))
-                        if(BoardMap[search.TargetID].Posts[uid].Header.Version >= version)
+                
+                if (board != null)
+                    if (board.Posts.ContainsKey(uid))
+                        if (board.Posts[uid].Header.Version >= version)
                             continue;
 
                 PostSearch(search.TargetID, uid, version);
@@ -947,7 +978,9 @@ namespace DeOps.Components.Board
         {
             List<Byte[]> results = new List<byte[]>();
 
-            if (!BoardMap.ContainsKey(key) || parameters == null)
+            OpBoard board = GetBoard(key);
+
+            if (board == null || parameters == null)
                 return null;
 
             // thread search
@@ -959,7 +992,7 @@ namespace DeOps.Components.Board
                 uint project = BitConverter.ToUInt32(parameters, 1);
                 uint parent = BitConverter.ToUInt32(parameters, 5);
 
-                foreach (OpPost post in BoardMap[key].Posts.Values)
+                foreach (OpPost post in board.Posts.Values)
                     if (post.Header.ProjectID == project)
                         if ((parent == 0 && post.Header.ParentID == 0) || // searching for top level threads
                             (parent == post.Header.ParentID)) // searching for posts under particular thread
@@ -982,7 +1015,7 @@ namespace DeOps.Components.Board
                 uint project = BitConverter.ToUInt32(parameters, 1);
                 DateTime time = DateTime.FromBinary(BitConverter.ToInt64(parameters, 5));
 
-                 foreach (OpPost post in BoardMap[key].Posts.Values)
+                 foreach (OpPost post in board.Posts.Values)
                      if (post.Header.ProjectID == project && post.Header.Time > time)
                      {
                          byte[] result = new byte[TimeSearch_ResultsSize];
@@ -1002,49 +1035,12 @@ namespace DeOps.Components.Board
                 PostUID uid = PostUID.FromBytes(parameters, 1);
                 ushort version = BitConverter.ToUInt16(parameters, 17);
 
-                if (BoardMap[key].Posts.ContainsKey(uid))
-                    if(BoardMap[key].Posts[uid].Header.Version == version)
-                        results.Add(BoardMap[key].Posts[uid].SignedHeader);
+                if (board.Posts.ContainsKey(uid))
+                    if (board.Posts[uid].Header.Version == version)
+                        results.Add(board.Posts[uid].SignedHeader);
             }
 
             return results;
-        }
-
-        internal List<ulong> GetBoardRegion(ulong id, uint project, ScopeType scope)
-        {
-            List<ulong> targets = new List<ulong>();
-
-            targets.Add(id); // need to include self in high and low scopes, for re-searching, onlinkupdate purposes
-
-            OpLink link = Links.GetLink(id);
-
-            if (link == null)
-                return targets;
-
-
-            // get parent and children of parent
-            if(scope != ScopeType.Low)
-                if (link.Uplink.ContainsKey(project))
-                {
-                    OpLink parent = link.Uplink[project];
-
-                    if (parent.Projects.Contains(project) &&
-                        parent.Confirmed[project].Contains(link.DhtID))
-                    {
-                        targets.Add(parent.DhtID);
-
-                        targets.AddRange(Links.GetDownlinkIDs(parent.DhtID, project, 1));
-
-                        targets.Remove(id); // remove self
-                    }
-                }
-
-            // get children of self
-            if (scope != ScopeType.High)
-                targets.AddRange(Links.GetDownlinkIDs(id, project, 1));
-
-
-            return targets;
         }
 
         internal string GetPostInfo(OpPost post)
@@ -1082,6 +1078,15 @@ namespace DeOps.Components.Board
 
             
             return (post.Info != null) ? post.Info.Subject : "";
+        }
+
+        internal OpBoard GetBoard(ulong key)
+        {
+            OpBoard board = null;
+
+            BoardMap.SafeTryGetValue(key, out board);
+
+            return board;
         }
     }
 

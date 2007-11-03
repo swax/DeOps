@@ -32,7 +32,7 @@ namespace DeOps.Components.Storage
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(HashStatus));
             this.QuarterSecondTimer = new System.Windows.Forms.Timer(this.components);
             this.StatusLabel = new System.Windows.Forms.Label();
-            this.CancelButton = new System.Windows.Forms.Button();
+            this.ExitButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // QuarterSecondTimer
@@ -54,20 +54,20 @@ namespace DeOps.Components.Storage
             // 
             // CancelButton
             // 
-            this.CancelButton.Location = new System.Drawing.Point(388, 66);
-            this.CancelButton.Name = "CancelButton";
-            this.CancelButton.Size = new System.Drawing.Size(75, 23);
-            this.CancelButton.TabIndex = 1;
-            this.CancelButton.Text = "Cancel";
-            this.CancelButton.UseVisualStyleBackColor = true;
-            this.CancelButton.Click += new System.EventHandler(this.CancelButton_Click);
+            this.ExitButton.Location = new System.Drawing.Point(388, 66);
+            this.ExitButton.Name = "CancelButton";
+            this.ExitButton.Size = new System.Drawing.Size(75, 23);
+            this.ExitButton.TabIndex = 1;
+            this.ExitButton.Text = "Cancel";
+            this.ExitButton.UseVisualStyleBackColor = true;
+            this.ExitButton.Click += new System.EventHandler(this.CancelButton_Click);
             // 
             // HashStatus
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(475, 101);
-            this.Controls.Add(this.CancelButton);
+            this.Controls.Add(this.ExitButton);
             this.Controls.Add(this.StatusLabel);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
@@ -83,6 +83,6 @@ namespace DeOps.Components.Storage
 
         private System.Windows.Forms.Timer QuarterSecondTimer;
         private System.Windows.Forms.Label StatusLabel;
-        private System.Windows.Forms.Button CancelButton;
+        private System.Windows.Forms.Button ExitButton;
     }
 }

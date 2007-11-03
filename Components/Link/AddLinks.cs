@@ -31,19 +31,20 @@ namespace DeOps.Components.Link
         private void LinkChooser_Load(object sender, EventArgs e)
         {
             // add projects to combo
-            foreach (uint id in Links.ProjectRoots.Keys)
+            Links.ProjectRoots.LockReading(delegate()
             {
-                string name = "";
+                foreach (uint id in Links.ProjectRoots.Keys)
+                {
+                    string name = "";
 
-                if (Links.ProjectNames.ContainsKey(id))
-                    name = Links.ProjectNames[id];
+                    if (id == 0)
+                        name = "Main";
+                    else
+                        name = Links.GetProjectName(id);
 
-                if (id == 0)
-                    name = "Main";
-
-                if (name != "")
                     ProjectCombo.Items.Add(new AddProjectItem(id, name));
-            }
+                }
+            });
 
             PersonTree.FirstLineBlank = false;
             PersonTree.Init(Links);

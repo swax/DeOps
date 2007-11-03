@@ -61,14 +61,15 @@ namespace DeOps.Simulator
         internal bool   Shutdown;
         
         // settings
-        int SleepTime = 500; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
+        int SleepTime = 0; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
 
         bool RandomCache = true;
         internal bool TestEncryption = false;
         internal bool FreshStart = false;
         internal bool TestTcpFullBuffer = false;
         internal bool UseTimeFile = true;
-        
+        internal bool TestCoreThread = false; // sleepTime needs to be set with this so packets have time to process ayncronously
+
         bool Flux        = false;
         int  FluxIn      = 1;
         int  FluxOut     = 0;
@@ -79,6 +80,7 @@ namespace DeOps.Simulator
 
         internal InternetSim(SimForm form)
         {
+       
             Interface = form;
 
             StartTime = new DateTime(2006, 1, 1, 0, 0, 0);
@@ -242,8 +244,11 @@ namespace DeOps.Simulator
 
         void Run()
         {
+            // 2 threads, background (core) and foreground (interface)
+
             int pumps = 4;
             List<SimPacket> tempList = new List<SimPacket>();
+
 
             while (true)
             {
@@ -319,6 +324,7 @@ namespace DeOps.Simulator
 
                     InPackets.Clear();
 
+
                     TimeNow = TimeNow.AddMilliseconds(1000 / pumps);
 
                     foreach (NetView view in Interface.NetViews.Values)
@@ -334,12 +340,202 @@ namespace DeOps.Simulator
                 // instance timer
                 lock (Online)
                     foreach (SimInstance instance in Online)
-                        instance.Core.SecondTimer();
+                    {
+                        if (TestCoreThread)
+                            instance.Core.SignalTimer();
+                        else
+                            instance.Core.SecondTimer();
+                    }
 
                 // if run sim slow
                 if (SleepTime > 0)
                     Thread.Sleep(SleepTime);
 
+            }
+        }
+
+        object TimerLock = new object();
+        object[] PacketsLock = new object[4] { new object(), new object(), new object(), new object() };
+
+        ManualResetEvent[] WaitHandles = new ManualResetEvent[5] {  new ManualResetEvent(true), new ManualResetEvent(true), 
+                                                                    new ManualResetEvent(true), new ManualResetEvent(true), 
+                                                                    new ManualResetEvent(true) };
+
+        
+        void OldRun()
+        {
+            int pumps = 4;
+            List<SimPacket> tempList = new List<SimPacket>();
+
+            Thread timerThread = new Thread(RunTimer);
+            timerThread.Start();
+
+            Thread[] packetsThread = new Thread[4];
+            for (int i = 0; i < 4; i++)
+            {
+                packetsThread[i] = new Thread(RunPackets);
+                packetsThread[i].Start(i);
+            }
+
+            Thread.Sleep(1000); // lets new threads reach wait(
+
+
+            while (true && !Shutdown)
+            {
+                if (Paused && !Step)
+                {
+                    Thread.Sleep(250);
+                    continue;
+                }
+
+                // load users
+                if (Flux)
+                    DoFlux();
+
+
+                // instance timer
+                lock (TimerLock)
+                {
+                    WaitHandles[0].Reset();
+                    Monitor.Pulse(TimerLock);
+                } 
+
+                // pump packets, 4 times (250ms latency
+                for (int i = 0; i < pumps; i++)
+                {
+                    // clear out buffer by switching with in buffer
+                    lock (OutPackets)
+                    {
+                        tempList = InPackets;
+                        InPackets = OutPackets;
+                        OutPackets = tempList;
+                    }
+
+                    for (int index = 0; index < 4; index++)
+                        lock (PacketsLock[index])
+                        {
+                            WaitHandles[1 + index].Reset();
+                            Monitor.Pulse(PacketsLock[index]);
+                        }
+
+              
+                    AutoResetEvent.WaitAll(WaitHandles);
+
+                    InPackets.Clear();
+
+                    TimeNow = TimeNow.AddMilliseconds(1000 / pumps);
+
+                    foreach (NetView view in Interface.NetViews.Values)
+                        view.BeginInvoke(view.UpdateView, null);
+
+                    if (Step || Shutdown)
+                    {
+                        Step = false;
+                        break;
+                    }
+                }
+
+                // if run sim slow
+                if (SleepTime > 0)
+                    Thread.Sleep(SleepTime);
+            }
+
+
+            lock(TimerLock)
+                Monitor.Pulse(TimerLock);
+
+            for(int i = 0; i < 4; i++)
+                lock(PacketsLock[i])
+                    Monitor.Pulse(PacketsLock[i]);
+        }
+
+        void RunTimer()
+        {
+            while (true && !Shutdown)
+            {
+                lock (TimerLock)
+                {
+                    Monitor.Wait(TimerLock);
+
+                    lock (Online)
+                        foreach (SimInstance instance in Online)
+                            instance.Core.SecondTimer();
+
+                    WaitHandles[0].Set();
+                }
+            }
+        }
+
+        void RunPackets(object val)
+        {
+            int index = (int)val;
+
+            while (true && !Shutdown)
+            {
+                lock (PacketsLock[index])
+                {
+                    Monitor.Wait(PacketsLock[index]);
+
+                    // send packets
+                    foreach (SimPacket packet in InPackets)
+                    {
+                        // 0 - global udp
+                        // 1 - global tcp
+                        // 2 - op udp
+                        // 3 - op tcp
+
+                        if ((index == 0 && packet.Type == SimPacketType.Udp && packet.Dest.IsGlobal) ||
+                            (index == 1 && packet.Type != SimPacketType.Udp && packet.Dest.IsGlobal) ||
+                            (index == 2 && packet.Type == SimPacketType.Udp && !packet.Dest.IsGlobal) ||
+                            (index == 3 && packet.Type != SimPacketType.Udp && !packet.Dest.IsGlobal))
+                        {
+
+                            switch (packet.Type)
+                            {
+                                case SimPacketType.Udp:
+                                    packet.Dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
+                                    packet.Dest.UdpControl.OnReceive(packet.Packet, packet.Packet.Length, packet.Source);
+                                    break;
+                                case SimPacketType.TcpConnect:
+                                    TcpConnect socket = packet.Dest.TcpControl.OnAccept(null, packet.Source);
+
+                                    if (socket != null)
+                                    {
+                                        TcpSourcetoDest[packet.Tcp] = socket;
+                                        TcpSourcetoDest[socket] = packet.Tcp;
+
+                                        packet.Tcp.OnConnect();
+                                    }
+
+                                    break;
+                                case SimPacketType.Tcp:
+                                    if (TcpSourcetoDest.ContainsKey(packet.Tcp))
+                                    {
+                                        TcpConnect dest = TcpSourcetoDest[packet.Tcp];
+
+                                        dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
+
+                                        packet.Packet.CopyTo(dest.RecvBuffer, dest.RecvBuffSize);
+                                        dest.OnReceive(packet.Packet.Length);
+                                    }
+                                    break;
+                                case SimPacketType.TcpClose:
+                                    if (TcpSourcetoDest.ContainsKey(packet.Tcp))
+                                    {
+                                        TcpConnect dest = TcpSourcetoDest[packet.Tcp];
+                                        dest.OnReceive(0);
+
+                                        TcpSourcetoDest.Remove(packet.Tcp);
+                                        TcpSourcetoDest.Remove(dest);
+                                    }
+                                    break;
+                            }
+                         
+                        }
+                    }
+
+                    WaitHandles[1 + index].Set();
+                }
             }
         }
 
@@ -466,6 +662,9 @@ namespace DeOps.Simulator
         {
             Shutdown = true;
 
+            foreach(ManualResetEvent handle in WaitHandles)
+                handle.Set();
+
             while(Online.Count > 0)
             {
                 BringOffline(Online[0]);
@@ -516,4 +715,5 @@ namespace DeOps.Simulator
             Path = path;
         }
     }
+
 }

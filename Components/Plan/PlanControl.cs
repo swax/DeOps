@@ -35,14 +35,14 @@ namespace DeOps.Components.Plan
         int  RunSaveLocal;
         int SaveInterval = 60*10; // 10 min stagger, prevent cascade up
 
-        internal Dictionary<ulong, OpPlan> PlanMap = new Dictionary<ulong, OpPlan>();
+        internal ThreadedDictionary<ulong, OpPlan> PlanMap = new ThreadedDictionary<ulong, OpPlan>();
         internal event PlanUpdateHandler PlanUpdate;
         internal event PlanGetFocusedHandler GetFocused;
 
         int PruneSize = 100;
 
-        Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong,DateTime>();
-        Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
+        ThreadedDictionary<ulong, DateTime> NextResearch = new ThreadedDictionary<ulong, DateTime>();
+        ThreadedDictionary<ulong, uint> DownloadLater = new ThreadedDictionary<ulong, uint>();
 
 
         internal PlanControl(OpCore core)
@@ -128,11 +128,10 @@ namespace DeOps.Components.Plan
 
             LoadHeaders();
 
-            if (!PlanMap.ContainsKey(Core.LocalDhtID))
+            if (!PlanMap.SafeContainsKey(Core.LocalDhtID))
                 SaveLocal();
 
-            LocalPlan = PlanMap[Core.LocalDhtID];
-            LoadPlan(Core.LocalDhtID);
+            LocalPlan = GetPlan(Core.LocalDhtID, true);
         }
 
         void Core_Timer()
@@ -141,9 +140,9 @@ namespace DeOps.Components.Plan
                 SaveHeaders();
 
             // clean download later map
-            if(!Network.Established)
+            if (!Network.Established)
                 Utilities.PruneMap(DownloadLater, Core.LocalDhtID, PruneSize);
-            
+
 
             // triggered on update estimates use time out so update doesnt cascade the network all the way up
             //  our save local can cause other save locals
@@ -159,65 +158,67 @@ namespace DeOps.Components.Plan
             if (Core.TimeNow.Second != 0)
                 return;
 
-            
+
             List<ulong> focused = new List<ulong>();
 
-            if(GetFocused != null)
+            if (GetFocused != null)
                 foreach (PlanGetFocusedHandler handler in GetFocused.GetInvocationList())
                     foreach (ulong id in handler.Invoke())
                         if (!focused.Contains(id))
                             focused.Add(id);
-            
+
             // unload
-            foreach (OpPlan plan in PlanMap.Values)
-                if (plan.Loaded && plan != LocalPlan && !focused.Contains(plan.DhtID))
-                {
-                    plan.Loaded  = false;
-                    plan.Blocks  = null;
-                    plan.GoalMap = null;
-                    plan.ItemMap = null;
-                }
+            PlanMap.LockReading(delegate()
+            {
+                foreach (OpPlan plan in PlanMap.Values)
+                    if (plan.Loaded && plan != LocalPlan && !focused.Contains(plan.DhtID))
+                    {
+                        plan.Loaded = false;
+                        plan.Blocks = null;
+                        plan.GoalMap = null;
+                        plan.ItemMap = null;
+                    }
+            });
 
             // prune
             List<ulong> removeIDs = new List<ulong>();
 
-            if (PlanMap.Count > PruneSize)
+            PlanMap.LockReading(delegate()
             {
-                foreach (OpPlan plan in PlanMap.Values)
-                    if (plan.DhtID != Core.LocalDhtID &&
-                        !Core.Links.LinkMap.ContainsKey(plan.DhtID) && // dont remove nodes in our local hierarchy
-                        !focused.Contains(plan.DhtID) &&
-                        !Utilities.InBounds(plan.DhtID, plan.DhtBounds, Core.LocalDhtID))
-                        removeIDs.Add(plan.DhtID);
+                if (PlanMap.Count > PruneSize)
+                    foreach (OpPlan plan in PlanMap.Values)
+                        if (plan.DhtID != Core.LocalDhtID &&
+                            !Core.Links.LinkMap.SafeContainsKey(plan.DhtID) && // dont remove nodes in our local hierarchy
+                            !focused.Contains(plan.DhtID) &&
+                            !Utilities.InBounds(plan.DhtID, plan.DhtBounds, Core.LocalDhtID))
+                            removeIDs.Add(plan.DhtID);
+            });
 
-                while (removeIDs.Count > 0 && PlanMap.Count > PruneSize / 2)
+            if (removeIDs.Count > 0)
+                PlanMap.LockWriting(delegate()
                 {
-                    ulong furthest = Core.LocalDhtID;
-                    OpPlan plan = PlanMap[furthest];
+                    while (removeIDs.Count > 0 && PlanMap.Count > PruneSize / 2)
+                    {
+                        ulong furthest = Core.LocalDhtID;
+                        OpPlan plan = PlanMap[furthest];
 
-                    foreach (ulong id in removeIDs)
-                        if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
-                            furthest = id;
+                        foreach (ulong id in removeIDs)
+                            if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                                furthest = id;
 
-                    if (plan.Header != null)
-                        try { File.Delete(GetFilePath(plan.Header)); }
-                        catch { }
+                        if (plan.Header != null)
+                            try { File.Delete(GetFilePath(plan.Header)); }
+                            catch { }
 
-                    PlanMap.Remove(furthest);
-                    removeIDs.Remove(furthest);
-                    RunSaveHeaders = true;
-                }
-            }
+                        PlanMap.Remove(furthest);
+                        removeIDs.Remove(furthest);
+                        RunSaveHeaders = true;
+                    }
+                });
 
             // clean research map
-            removeIDs.Clear();
+            NextResearch.RemoveWhere(delegate(DateTime timeout) { return Core.TimeNow > timeout; });
 
-            foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
-                if (Core.TimeNow > pair.Value)
-                    removeIDs.Add(pair.Key);
-
-            foreach (ulong id in removeIDs)
-                NextResearch.Remove(id);
         }
 
         void Network_Established()
@@ -225,22 +226,27 @@ namespace DeOps.Components.Plan
             ulong localBounds = Store.RecalcBounds(Core.LocalDhtID);
             
             // set bounds for objects
-            foreach (OpPlan plan in PlanMap.Values)
+            PlanMap.LockReading(delegate()
             {
-                plan.DhtBounds = Store.RecalcBounds(plan.DhtID);
+                foreach (OpPlan plan in PlanMap.Values)
+                {
+                    plan.DhtBounds = Store.RecalcBounds(plan.DhtID);
 
-                // republish objects that were not seen on the network during startup
-                if (plan.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, plan.DhtID))
-                    Store.PublishNetwork(plan.DhtID, ComponentID.Plan, plan.SignedHeader);
-            }
-
+                    // republish objects that were not seen on the network during startup
+                    if (plan.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, plan.DhtID))
+                        Store.PublishNetwork(plan.DhtID, ComponentID.Plan, plan.SignedHeader);
+                }
+            });
 
             // only download those objects in our local area
-            foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
-                if(Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
-                    StartSearch(pair.Key, pair.Value);
+            DownloadLater.LockWriting(delegate()
+            {
+                foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
+                    if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
+                        StartSearch(pair.Key, pair.Value);
 
-            DownloadLater.Clear();
+                DownloadLater.Clear();
+            });
         }
 
         private void LoadHeaders()
@@ -289,10 +295,12 @@ namespace DeOps.Components.Plan
                 FileStream file = new FileStream(tempPath, FileMode.Create);
                 CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
 
-                lock (PlanMap)
+                PlanMap.LockReading(delegate()
+                {
                     foreach (OpPlan plan in PlanMap.Values)
                         if (plan.SignedHeader != null)
                             stream.Write(plan.SignedHeader, 0, plan.SignedHeader.Length);
+                });
 
                 stream.FlushFinalBlock();
                 stream.Close();
@@ -312,14 +320,12 @@ namespace DeOps.Components.Plan
         private void Process_PlanHeader(DataReq data, SignedData signed, PlanHeader header)
         {
             Core.IndexKey(header.KeyID, ref header.Key);
-            Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature);
 
+            OpPlan current = GetPlan(header.KeyID, false);
 
             // if link loaded
-            if (PlanMap.ContainsKey(header.KeyID))
+            if (current != null)
             {
-                OpPlan current = PlanMap[header.KeyID];
-
                 // lower version
                 if (header.Version < current.Header.Version)
                 {
@@ -355,14 +361,15 @@ namespace DeOps.Components.Plan
                 }
 
                 // get plan
-                if (!PlanMap.ContainsKey(header.KeyID))
+                OpPlan plan = GetPlan(header.KeyID, false);
+
+                if (plan == null)
                 {
-                    lock (PlanMap)
-                        PlanMap[header.KeyID] = new OpPlan(header.Key);
+                    plan = new OpPlan(header.Key);
+                    PlanMap.SafeAdd(header.KeyID, plan);
                 }
 
-                OpPlan plan = PlanMap[header.KeyID];
-
+     
                 // delete old file
                 if (plan.Header != null)
                 {
@@ -390,9 +397,13 @@ namespace DeOps.Components.Plan
                 if (Network.Established)
                 {
                     List<LocationData> locations = new List<LocationData>();
-                    foreach (uint project in Links.ProjectRoots.Keys)
-                        if (plan.DhtID == Core.LocalDhtID || Links.IsHigher(plan.DhtID, project))
-                            Links.GetLocsBelow(Core.LocalDhtID, project, locations);
+
+                    Links.ProjectRoots.LockReading(delegate()
+                    {
+                        foreach (uint project in Links.ProjectRoots.Keys)
+                            if (plan.DhtID == Core.LocalDhtID || Links.IsHigher(plan.DhtID, project))
+                                Links.GetLocsBelow(Core.LocalDhtID, project, locations);
+                    });
 
                     Store.PublishDirect(locations, plan.DhtID, ComponentID.Plan, plan.SignedHeader);
                 }
@@ -400,32 +411,34 @@ namespace DeOps.Components.Plan
 
                 // see if we need to update our own goal estimates
                 if (plan.DhtID != Core.LocalDhtID && LocalPlan != null)
-                    foreach(uint project in Links.ProjectRoots.Keys)
-                        if(Links.IsLower(Core.LocalDhtID, plan.DhtID, project)) // updated plan must be lower than us to have an effect
-                            foreach (int ident in LocalPlan.GoalMap.Keys)
-                            {
-                                if (!plan.Loaded)
-                                    LoadPlan(plan.DhtID);
+                    Links.ProjectRoots.LockReading(delegate()
+                    {
+                        foreach (uint project in Links.ProjectRoots.Keys)
+                            if (Links.IsLower(Core.LocalDhtID, plan.DhtID, project)) // updated plan must be lower than us to have an effect
+                                foreach (int ident in LocalPlan.GoalMap.Keys)
+                                {
+                                    if (!plan.Loaded)
+                                        LoadPlan(plan.DhtID);
 
-                                // if updated plan part of the same goal ident, re-estimate our own goals, incorporating update's changes
-                                if (plan.GoalMap.ContainsKey(ident) || plan.ItemMap.ContainsKey(ident))
-                                    foreach (PlanGoal goal in LocalPlan.GoalMap[ident])
-                                    {
-                                        int completed = 0, total = 0;
-                                        
-                                        GetEstimate(goal, ref completed, ref total);
-
-                                        if (completed != goal.EstCompleted || total != goal.EstTotal)
+                                    // if updated plan part of the same goal ident, re-estimate our own goals, incorporating update's changes
+                                    if (plan.GoalMap.ContainsKey(ident) || plan.ItemMap.ContainsKey(ident))
+                                        foreach (PlanGoal goal in LocalPlan.GoalMap[ident])
                                         {
-                                            goal.EstCompleted = completed;
-                                            goal.EstTotal = total;
+                                            int completed = 0, total = 0;
 
-                                            if (RunSaveLocal == 0) // if countdown not started, start
-                                                RunSaveLocal = SaveInterval;
+                                            GetEstimate(goal, ref completed, ref total);
+
+                                            if (completed != goal.EstCompleted || total != goal.EstTotal)
+                                            {
+                                                goal.EstCompleted = completed;
+                                                goal.EstTotal = total;
+
+                                                if (RunSaveLocal == 0) // if countdown not started, start
+                                                    RunSaveLocal = SaveInterval;
+                                            }
                                         }
-                                    }
-                            }
-
+                                }
+                    });
 
 
                 if (PlanUpdate != null)
@@ -442,6 +455,8 @@ namespace DeOps.Components.Plan
 
         private void DownloadPlan(SignedData signed, PlanHeader header)
         {
+            Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature);
+
             FileDetails details = new FileDetails(ComponentID.Plan, header.FileHash, header.FileSize, null);
 
             Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
@@ -468,28 +483,23 @@ namespace DeOps.Components.Plan
 
         bool Transfers_FileSearch(ulong key, FileDetails details)
         {
-            lock (PlanMap)
-                if (PlanMap.ContainsKey(key))
-                {
-                    OpPlan plan = PlanMap[key];
+            OpPlan plan = GetPlan(key, false);
 
-                    if (details.Size == plan.Header.FileSize && Utilities.MemCompare(details.Hash, plan.Header.FileHash))
-                        return true;
-                }
+            if (plan != null)
+                if (details.Size == plan.Header.FileSize && Utilities.MemCompare(details.Hash, plan.Header.FileHash))
+                    return true;
 
             return false;
         }
 
         string Transfers_FileRequest(ulong key, FileDetails details)
         {
-            lock (PlanMap)
-                if (PlanMap.ContainsKey(key))
-                {
-                    OpPlan plan = PlanMap[key];
+            OpPlan plan = GetPlan(key, false);
 
-                    if (details.Size == plan.Header.FileSize && Utilities.MemCompare(details.Hash, plan.Header.FileHash))
-                        return GetFilePath(plan.Header);
-                }
+            if (plan != null)
+                if (details.Size == plan.Header.FileSize && Utilities.MemCompare(details.Hash, plan.Header.FileHash))
+                    return GetFilePath(plan.Header);
+
 
             return null;
         }
@@ -515,7 +525,8 @@ namespace DeOps.Components.Plan
 
             byte[] patch = new byte[PatchEntrySize];
 
-            lock (PlanMap)
+            PlanMap.LockReading(delegate()
+            {
                 foreach (OpPlan plan in PlanMap.Values)
                     if (Utilities.InBounds(plan.DhtID, plan.DhtBounds, contact.DhtID))
                     {
@@ -530,6 +541,7 @@ namespace DeOps.Components.Plan
                             data.Add(target, patch);
                         }
                     }
+            });
 
             return data;
         }
@@ -551,31 +563,29 @@ namespace DeOps.Components.Plan
                 if (!Utilities.InBounds(Core.LocalDhtID, distance, dhtid))
                     continue;
 
-                if (PlanMap.ContainsKey(dhtid))
+                OpPlan plan = GetPlan(dhtid, false);
+
+                if (plan != null && plan.Header != null)
                 {
-                    OpPlan plan = PlanMap[dhtid];
-
-                    if (plan.Header != null)
+                    if (plan.Header.Version > version)
                     {
-                        if (plan.Header.Version > version)
-                        {
-                            Store.Send_StoreReq(source, 0, new DataReq(null, plan.DhtID, ComponentID.Plan, plan.SignedHeader));
-                            continue;
-                        }
-
-                        plan.Unique = false; // network has current or newer version
-
-                        if (plan.Header.Version == version)
-                            continue;
-
-                        // else our version is old, download below
+                        Store.Send_StoreReq(source, 0, new DataReq(null, plan.DhtID, ComponentID.Plan, plan.SignedHeader));
+                        continue;
                     }
+
+                    plan.Unique = false; // network has current or newer version
+
+                    if (plan.Header.Version == version)
+                        continue;
+
+                    // else our version is old, download below
                 }
 
-                if(Network.Established)
+
+                if (Network.Established)
                     Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Plan, BitConverter.GetBytes(version));
                 else
-                    DownloadLater[dhtid] = version;
+                    DownloadLater.SafeAdd(dhtid, version);
             }
         }
 
@@ -600,14 +610,11 @@ namespace DeOps.Components.Plan
 
             uint minVersion = BitConverter.ToUInt32(parameters, 0);
 
-            lock (PlanMap)
-                if (PlanMap.ContainsKey(key))
-                {
-                    OpPlan plan = PlanMap[key];
+            OpPlan plan = GetPlan(key, false);
 
-                    if (plan.Header.Version >= minVersion)
-                        results.Add(plan.SignedHeader);
-                }
+            if (plan != null)
+                if (plan.Header.Version >= minVersion)
+                    results.Add(plan.SignedHeader);
 
             return results;
         }
@@ -616,9 +623,11 @@ namespace DeOps.Components.Plan
         {
             try
             {
+                OpPlan plan = GetPlan(Core.LocalDhtID, true);
                 PlanHeader header = null;
-                if (PlanMap.ContainsKey(Core.LocalDhtID))
-                    header = PlanMap[Core.LocalDhtID].Header;
+
+                if (plan != null)
+                    header = plan.Header;
 
                 string oldFile = null;
 
@@ -639,26 +648,26 @@ namespace DeOps.Components.Plan
                 CryptoStream stream = new CryptoStream(tempFile, header.FileKey.CreateEncryptor(), CryptoStreamMode.Write);
 
                 // write dummy block if nothing to write
-                if (!PlanMap.ContainsKey(Core.LocalDhtID) ||
-                    PlanMap[Core.LocalDhtID].Blocks == null || 
-                    PlanMap[Core.LocalDhtID].Blocks.Count == 0)
+                if (plan == null ||
+                    plan.Blocks == null ||
+                    plan.Blocks.Count == 0)
                     Protocol.WriteToFile(new PlanBlock(), stream);
 
 
-                if (PlanMap.ContainsKey(Core.LocalDhtID))
+                if (plan != null)
                 {
-                    foreach (List<PlanBlock> list in PlanMap[Core.LocalDhtID].Blocks.Values)
+                    foreach (List<PlanBlock> list in plan.Blocks.Values)
                         foreach (PlanBlock block in list)
                             Protocol.WriteToFile(block, stream);
 
-                    foreach (List<PlanGoal> list in PlanMap[Core.LocalDhtID].GoalMap.Values)
+                    foreach (List<PlanGoal> list in plan.GoalMap.Values)
                         foreach (PlanGoal goal in list)
                         {
                             GetEstimate(goal, ref goal.EstCompleted, ref goal.EstTotal);
                             Protocol.WriteToFile(goal, stream);
                         }
 
-                    foreach (List<PlanItem> list in PlanMap[Core.LocalDhtID].ItemMap.Values)
+                    foreach (List<PlanItem> list in plan.ItemMap.Values)
                         foreach (PlanItem item in list)
                             Protocol.WriteToFile(item, stream);
                 }
@@ -683,9 +692,14 @@ namespace DeOps.Components.Plan
                     catch { }
 
                 // publish header
-                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Plan, PlanMap[Core.LocalDhtID].SignedHeader);
+                plan = GetPlan(Core.LocalDhtID, true); // get newly loaded object
 
-                Store.PublishDirect(Links.GetSuperLocs(), Core.LocalDhtID, ComponentID.Plan, PlanMap[Core.LocalDhtID].SignedHeader);
+                if (plan == null)
+                    return;
+
+                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Plan, plan.SignedHeader);
+
+                Store.PublishDirect(Links.GetSuperLocs(), Core.LocalDhtID, ComponentID.Plan, plan.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -696,10 +710,10 @@ namespace DeOps.Components.Plan
 
         internal void LoadPlan(ulong id)
         {
-            if (!PlanMap.ContainsKey(id))
-                return;
+            OpPlan plan = GetPlan(id, false);
 
-            OpPlan plan = PlanMap[id];
+            if (plan == null)
+                return;
 
             try
             {
@@ -789,35 +803,40 @@ namespace DeOps.Components.Plan
                 return;
 
             // limit re-search to once per 30 secs
-            if(NextResearch.ContainsKey(key))
-                if (Core.TimeNow < NextResearch[key])
+            DateTime timeout = default(DateTime);
+
+            if (NextResearch.SafeTryGetValue(key, out timeout))
+                if (Core.TimeNow < timeout)
                     return;
 
             uint version = 0;
-            if (PlanMap.ContainsKey(key))
-                version = PlanMap[key].Header.Version + 1;
+            OpPlan plan = GetPlan(key, false);
+            if (plan != null)
+                version = plan.Header.Version + 1;
 
             StartSearch(key, version);
 
-            NextResearch[key] = Core.TimeNow.AddSeconds(30);
+            NextResearch.SafeAdd(key, Core.TimeNow.AddSeconds(30));
         }
 
-        internal OpPlan GetPlan(ulong id)
+        internal OpPlan GetPlan(ulong id, bool tryLoad)
         {
-            if (!PlanMap.ContainsKey(id))
+            OpPlan plan = null;
+
+            PlanMap.SafeTryGetValue(id, out plan);
+            
+            if (plan == null)
                 return null;
 
-            OpPlan plan = PlanMap[id];
-
-            if (!plan.Loaded)
+            if (tryLoad && !plan.Loaded)
                 LoadPlan(id);
 
-            return plan.Loaded ? plan : null;
+            return (!tryLoad || (tryLoad && plan.Loaded)) ? plan : null;
         }
 
         internal void GetEstimate(PlanGoal goal, ref int completed, ref int total)
         {
-            OpPlan plan = GetPlan(goal.Person);
+            OpPlan plan = GetPlan(goal.Person, true);
 
             // if person not found use last estimate
             if (plan == null)
@@ -841,7 +860,7 @@ namespace DeOps.Components.Plan
                 foreach (PlanGoal sub in plan.GoalMap[goal.Ident])
                     if (goal.BranchDown == sub.BranchUp && sub.BranchDown != 0)
                     {
-                        if (Links.LinkMap.ContainsKey(sub.Person) && !Links.IsLower(goal.Person, sub.Person, goal.Project))
+                        if (Links.LinkMap.SafeContainsKey(sub.Person) && !Links.IsLower(goal.Person, sub.Person, goal.Project))
                             continue; // only pass if link file for sub is loaded, else assume linked so whole net can be reported
 
                         GetEstimate(sub, ref completed, ref total);
@@ -861,7 +880,7 @@ namespace DeOps.Components.Plan
 
             foreach (ulong id in ids)
             {
-                OpPlan plan = GetPlan(id);
+                OpPlan plan = GetPlan(id, true);
 
                 if (plan == null)
                     continue;
@@ -907,7 +926,7 @@ namespace DeOps.Components.Plan
         internal PlanHeader Header;
         internal byte[] SignedHeader;
 
-        internal bool Loaded;
+        internal bool Loaded; // true if blocks/goals loaded
         
         internal Dictionary<uint, List<PlanBlock>> Blocks = null;
 

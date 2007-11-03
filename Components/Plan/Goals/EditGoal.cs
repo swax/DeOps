@@ -17,7 +17,6 @@ namespace DeOps.Components.Plan
     {
         EditGoalMode Mode;
         OpCore Core;
-        uint ProjectID;
 
         ulong PersonID;
 
@@ -73,7 +72,7 @@ namespace DeOps.Components.Plan
 
         private void PickLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            AddLinks add = new AddLinks(Core.Links, ProjectID);
+            AddLinks add = new AddLinks(Core.Links, Editing.Project);
             add.PersonTree.ForceRootID = Core.LocalDhtID;
             add.PersonTree.HideUnlinked = true;
             add.ProjectCombo.Visible = false;

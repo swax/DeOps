@@ -21,8 +21,8 @@ namespace DeOps.Components.IM
         internal OpCore Core;
 
         List<ushort> ConnectedClients = new List<ushort>();
-        Dictionary<ulong, TtlObj> SessionMap = new Dictionary<ulong, TtlObj>(); //crit multiple clients
-        internal Dictionary<ulong, List<InstantMessage>> MessageLog = new Dictionary<ulong, List<InstantMessage>>();
+        Dictionary<ulong, TtlObj> SessionMap = new Dictionary<ulong, TtlObj>();
+        internal ThreadedDictionary<ulong, List<InstantMessage>> MessageLog = new ThreadedDictionary<ulong, List<InstantMessage>>();
 
         internal IM_UpdateHandler IM_Update;
 
@@ -108,7 +108,7 @@ namespace DeOps.Components.IM
                 if (key == Core.LocalDhtID)
                     return null;
 
-                if (!Core.Locations.LocationMap.ContainsKey(key))
+                if (!Core.Locations.LocationMap.SafeContainsKey(key))
                     return null;
 
                 menus.Add(new MenuItemInfo("Send IM", IMRes.Icon, new EventHandler(QuickMenu_View)));
@@ -137,19 +137,22 @@ namespace DeOps.Components.IM
 
                 ulong key = node.GetKey();
 
-                if (Core.Locations.LocationMap.ContainsKey(key))
-                    foreach (LocInfo loc in Core.Locations.LocationMap[key].Values)
-                    {
-
-                        if(Core.RudpControl.IsConnected(loc.Location))
-                            ProcessMessage(key, new InstantMessage(Core, "Connected " + loc.Location.Location, true));
-
-                        else
+                Core.Locations.LocationMap.LockReading(delegate()
+                {
+                    if (Core.Locations.LocationMap.ContainsKey(key))
+                        foreach (LocInfo loc in Core.Locations.LocationMap[key].Values)
                         {
-                            Core.RudpControl.Connect(loc.Location);
-                            ProcessMessage(key, new InstantMessage(Core, "Connecting " + loc.Location.Location, true));
+
+                            if (Core.RudpControl.IsConnected(loc.Location))
+                                ProcessMessage(key, new InstantMessage(Core, "Connected " + loc.Location.Location, true));
+
+                            else
+                            {
+                                Core.RudpControl.Connect(loc.Location);
+                                ProcessMessage(key, new InstantMessage(Core, "Connecting " + loc.Location.Location, true));
+                            }
                         }
-                    }
+                });
             }
         }
 
@@ -260,13 +263,14 @@ namespace DeOps.Components.IM
 
         internal void ProcessMessage(ulong key, InstantMessage message)
         {
-            // log message
-            if (!MessageLog.ContainsKey(key))
-                MessageLog[key] = new List<InstantMessage>();
+            // log message - locks both dictionary and embedded list form reading
+            MessageLog.LockWriting(delegate()
+            {
+                if (!MessageLog.SafeContainsKey(key))
+                    MessageLog.SafeAdd(key,  new List<InstantMessage>());
 
-
-
-            MessageLog[key].Add(message);
+                MessageLog[key].Add(message);
+            });
 
             // update interface
             if (Core.GuiMain == null)
@@ -280,7 +284,7 @@ namespace DeOps.Components.IM
                 Core.InvokeInterface(IM_Update, key, message);
         }
 
-        internal override void GetActiveSessions(ref ActiveSessions active)
+        internal override void GetActiveSessions( ActiveSessions active)
         {
             lock(SessionMap)
                 foreach(ulong id in SessionMap.Keys)

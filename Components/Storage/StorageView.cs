@@ -106,7 +106,7 @@ namespace DeOps.Components.Storage
                 title += Links.GetName(DhtID) + "'s ";
 
             if (ProjectID != 0)
-                title += Links.ProjectNames[ProjectID] + " ";
+                title += Links.GetProjectName(ProjectID) + " ";
 
             title += "Storage";
 
@@ -272,7 +272,7 @@ namespace DeOps.Components.Storage
             else
             {
                 StorageFolder root = new StorageFolder();
-                root.Name = Links.ProjectNames[ProjectID] + " Storage";
+                root.Name = Links.GetProjectName(ProjectID) + " Storage";
 
                 RootFolder = new FolderNode(this, root, FolderTreeView.virtualParent, false);
                 FolderTreeView.Nodes.Add(RootFolder);
@@ -600,12 +600,10 @@ namespace DeOps.Components.Storage
 
         private void Links_Update(ulong key)
         {
-            // check if removed
-            if (!Links.LinkMap.ContainsKey(key))
-                return;
+            OpLink link = Links.GetLink(key);
 
-            // update
-            OpLink link = Links.LinkMap[key];
+            if (link == null)
+                return;
 
             // check if command structure has changed
             List<ulong> check = new List<ulong>();

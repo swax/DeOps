@@ -1114,6 +1114,9 @@ namespace DeOps.Interface.TLVex
 						ControlPaint.DrawFocusRectangle(g, sr);
 					}
 
+                
+                    g.Clip = new Region(new Rectangle(r.Left+2-hscrollBar.Value, r.Top+hb+2, iColWidth /* BMS 2003-05-23 columns[0].Width */, r.Height-hb-4));
+
                     // draw icons
                     if (smallIcon != null)
                         g.DrawImage(smallIcon, iconPoint.X, iconPoint.Y, 16, 16);
@@ -1121,9 +1124,6 @@ namespace DeOps.Interface.TLVex
                     if(smallIcons != null)
                         foreach (Image small in smallIcons)
                             g.DrawImage(small, iconPoint.X, iconPoint.Y, 16,16);
-                   
-
-					g.Clip = new Region(new Rectangle(r.Left+2-hscrollBar.Value, r.Top+hb+2, iColWidth /* BMS 2003-05-23 columns[0].Width */, r.Height-hb-4));
 
 					// render root lines if visible
 					bool bMoreSiblingNodes = node.NextSibling() != null;
@@ -1491,7 +1491,6 @@ namespace DeOps.Interface.TLVex
 		private bool styleall = false;
 		private bool hovered = false;
 		private bool expanded = false;
-		private bool visible = true;
         public List<int> Overlays;
 
 		private TreeListNode parent;

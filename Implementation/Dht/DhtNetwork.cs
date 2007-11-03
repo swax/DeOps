@@ -63,6 +63,7 @@ namespace DeOps.Implementation.Dht
         internal RijndaelManaged AugmentedCrypt;
 
         // log
+        internal Queue<PacketCopy> IncomingPackets = new Queue<PacketCopy>();
         internal Queue<PacketLogEntry> LoggedPackets = new Queue<PacketLogEntry>();
         internal Dictionary<string, Queue<string>> LogTable = new Dictionary<string, Queue<string>>();
 
@@ -859,7 +860,7 @@ namespace DeOps.Implementation.Dht
 
 
             // log in console
-            string message = logEntry.Protocol.ToString();
+            /*string message = logEntry.Protocol.ToString();
             message += (logEntry.Direction == DirectionType.In) ? " in from " : " out to ";
             message += logEntry.Address.ToString();
 
@@ -867,7 +868,7 @@ namespace DeOps.Implementation.Dht
             packet.Root = new G2Header(logEntry.Data);
 
             if(Core.Protocol.ReadPacket(packet.Root))
-                message += ", type " + packet.Root.Name;
+                message += ", type " + packet.Root.Name;*/
         }
     }
 
@@ -930,5 +931,18 @@ namespace DeOps.Implementation.Dht
         }
     }
 
+    internal class PacketCopy
+    {
+        internal G2ReceivedPacket Packet;
+        internal byte[] Data;
+        internal bool Global;
+
+        internal PacketCopy(G2ReceivedPacket packet, byte[] data, bool global)
+        {
+            Packet = packet;
+            Data = data;
+            Global = global;
+        }
+    }
 }
 

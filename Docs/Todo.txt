@@ -1,8 +1,8 @@
 
 now
-	43 crits, 13 warnings
-	test packets/gui/timer in diff threads let run fast with lots of updates, check resources are locked properly
-	load components asyncronously? see if sim load speeds up a lot
+	38 crits
+	simulation refinement, figure out locking needs
+	focus on starting up new networks
 	refactor components, get ready for visual/database plus think about 3rd party components
 	network demo, customization, performance tuning
 
@@ -19,7 +19,6 @@ Interface
 	General
 		Sorting of listviews
 		
-		
 	Internal 
 		expand a little more (names associated with sessions/transfers/searches/publish)
 		browsing using nav bar needs to trigger searches and let link control know of whats focused
@@ -30,8 +29,6 @@ Interface
 		encapsulate common link functions in link control, prevent other controls from directly using linkmap
 		Online - Show as currently online nodes structured into makeshift hierarchy
 			chat/voice uses this hierarchy for high/low - done so that realtime communication is not fragmented when people go offline
-		***update little profile box with javascript to avoid flicker
-
 		
 	Invite 
 		password protected invite file
@@ -84,6 +81,7 @@ Components
 		Internal interface
 		Log Interface - in chat log
 		If link is unknown, then name is unkown, make sure to search for name and update interface
+			reflect name changes in IM window / rest of interface
 		4 node network, running, send IM caused collection modified error in im_view:displaylog
 		remove dupe system messages
 		IM/Chat right click font view, right click timestamp view
@@ -104,11 +102,12 @@ Components
 		delete mail not refreshing view
 		sync local mail between users
 		test/do re-publishing mail
-		***lots of clicking when changing mail view, look at javascripting that up as well
+		lots of clicking when changing mail view, look at javascripting that up as well
 
 	Board 
 		 board scope sub-levels down, auto search highers for posts that have source==target, and show if in scope
 		 attaching files
+		 posts/replies not updating quickly or at all :(
 	
 	Profile
 		time out loading
@@ -119,9 +118,10 @@ Components
 		shutdown in the middle of the causing load corruption?			
 		transfer branch path when goal <-> schedule
 		probably want a custom renderer for the progress bar, default xp has it green
-
+		possibly using threadeddictionary for goals/blocks
+		
 	Storage
-		***drag into secure storage gives user option to replace what is already there, either on disk or locked
+		drag into secure storage gives user option to replace what is already there, either on disk or locked
 		
 		review file references system
 		drag files folder over highlights target
@@ -183,7 +183,7 @@ Core
 			auto-caching might not hit the nodes that requesting nodes would be likely to hit
 		index file hashes on network for files over 10 meg, otherwise file can be multisourced from default replicators of file
 
-	udp packet throttle **** especially for patches
+	udp packet throttle especially for patches
 		backlog for packets, for patches, etc.. not for rudp
 		packet cache for more than 4k sent in second
 		cache should go for 60 seconds make, 240k, bleed cache out, first in first out
@@ -204,17 +204,54 @@ Core
 		heartbeat from top down with unique key, wont talk to 'unknown' nodes in dht without it
 		
 Simulator
-	add collection test to simulator by randomly accessing de-op collections in seperate sim thread
+	track bandwidth / memory / allocated objects
+	figure out why IO writes in FiresoftDemo so high, getting 2min/sec through, pretty damn good
 	record max udp burst sizes, or do packet size distribution histogram
 
-	desynch timer from packets, diff thread
-		timer asyncronously run so main interface thread not affected
-		also diff thread in simulator, so that cross thread problems are debugged
-		main interface thread 1, socket packets thread 2, timer thread 3, run all fast ensure locking etc.. 
 
-	locking of resources, lay out flow
+
+
+
+	locking where interface/background cometogether
 	
+	lock when map/items is modified on background
+	lock when map/items are accessed in foreground
 	
+	prevent interface from directly triggering network threads
+		put checks in sendpacket to see if invokeRequired on mainthread
+	
+	create interface sub-class of controls so we know exactly what interface talks / accesses
+		can interface call beginInvoke on network threads?
+
+	Op objects are recreated when loaded so that interface with current handle doesnt get collections modified inbetween
+		dont need to lock inside op stucture if only interface accesses it
+		when someone is editing/wring a new opPlan and a new plan gets loaded there wont be a conflict
+	
+	save context of background thread and put asserts in network functions checking context is not being accessed from interface
+	
+	remove locks on thigs like activesessions and download later
+
+	like windows GUI, surround core/network/store methods with exceptions if functions not called from the core thread
+
+	// eventually move Core pointer from interfaces, and pointers to other controls, only other interfaces
+
+
+
+
+	use ReaderWriterLock - mail, storage, chat, IM, transfer, anywhere else?
+		threadedlist - chatroom, projectroots, location locs, oplink dictionaries
+
+	test linking up to a subordinate works correctly - 2 areas commented out
+		*could* allow interlinking - tree shown as local node in closest position to top
+	test lockreading inside writing and visa versa
+		
+
+	run full speed, min/max components with updates, try to get conflicts
+	run 30 clients, track mem/client, time/client, more sim control in interface
+
+	checksigned / idtokey throw exceptions, maybe just return false or something?
+	
+			
 quick
 	test with null global, even have option for secret at this point?
 	ensure callers know what to do when tcpcontrol.sendpacket is overloaded
@@ -257,7 +294,7 @@ Future
 			new Op ID can be secure mailed to entire org, or pointer can be put in link file (went to op id x)
 			
 		signed invitation files - so that if bad people get in, we know who signed them in
-		
+	
 		periodic heart beat with secuity key sent from to all trusted nodes, key transmitted during all ops
 			keeps untrusted from being sent any storage information, if kicked out of trusted tree		
 		

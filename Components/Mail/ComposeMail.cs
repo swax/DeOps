@@ -114,18 +114,8 @@ namespace DeOps.Components.Mail
         {
             try
             {
-                List<ulong> to = new List<ulong>();
-                List<ulong> cc = new List<ulong>();
-
-                // to
-                string[] names = ToTextBox.Text.Split(new char[] { ',' });
-                foreach (string name in names)
-                    NametoID(name.Trim(), to);
-
-                // cc
-                //names = CCTextBox.Text.Split(new char[] { ',' });
-                //foreach (string name in names)
-                //    NametoID(name.Trim(), cc);
+                if(ToIDs.Count == 0)
+                    throw new Exception("Letter not addressed to anyone");
 
                 // files
                 List<AttachedFile> files = new List<AttachedFile>();
@@ -141,7 +131,7 @@ namespace DeOps.Components.Mail
                     throw new Exception("Message body is blank");
 
 
-                Mail.SendMail(to, cc, files, SubjectTextBox.Text, MessageBody.InputBox.Rtf);
+                Mail.SendMail(ToIDs, files, SubjectTextBox.Text, MessageBody.InputBox.Rtf);
             }
             catch (Exception ex)
             {
@@ -153,30 +143,6 @@ namespace DeOps.Components.Mail
 
             if (External != null)
                 External.Close();
-        }
-
-        private void NametoID(string name, List<ulong> list)
-        {
-            if (name == "")
-                return;
-
-            ulong id = 0;
-
-            lock(Links.LinkMap)
-                foreach(OpLink link in Links.LinkMap.Values)
-                    if(link.Name != null)
-                        if (String.Compare(name, link.Name, true) == 0)
-                        {
-                            if (id == 0)
-                            {
-                                list.Add(link.DhtID);
-                                return;
-                            }
-                            else
-                                throw new Exception("There are multiple people with the name " + name);
-                        }
-
-            throw new Exception("Could not a person named " + name);
         }
 
         private void CancelButton_Click(object sender, EventArgs e)
