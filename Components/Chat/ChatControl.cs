@@ -178,9 +178,9 @@ namespace DeOps.Components.Chat
             }
 
             if(newRoom)
-                Core.InvokeInterface(CreateRoomEvent, room);
+                Core.RunInGuiThread(CreateRoomEvent, room);
 
-            Core.InvokeInterface(room.MembersUpdate, true);
+            Core.RunInGuiThread(room.MembersUpdate, true);
         }
         
         private void RemoveRoom(RoomKind kind, uint id)
@@ -192,7 +192,7 @@ namespace DeOps.Components.Chat
 
             Rooms.SafeRemove(room);
 
-            Core.InvokeInterface(RemoveRoomEvent, room);
+            Core.RunInGuiThread(RemoveRoomEvent, room);
         }
 
         private ChatRoom FindRoom(RoomKind kind, uint project)
@@ -322,35 +322,40 @@ namespace DeOps.Components.Chat
                 {
                     ProcessMessage(room, new ChatMessage(Core, message, true));
 
-                    Core.InvokeInterface(room.MembersUpdate, false );
+                    Core.RunInGuiThread(room.MembersUpdate, false );
                 }
         }
 
         internal void SendMessage(ChatRoom room, string text)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { SendMessage(room, text); });
+                return;
+            }
+
             ProcessMessage(room, new ChatMessage(Core, text, false));
 
             bool sent = false;
 
             ChatData packet = new ChatData(ChatPacketType.Message);
             packet.ChatID = room.ProjectID;
-            packet.Text   = text;
+            packet.Text = text;
             packet.Custom = (room.Kind == RoomKind.Custom);
 
-            lock (Core.RudpControl.SessionMap)
-                room.Members.LockReading(delegate()
-                {
-                    foreach (OpLink link in room.Members)
-                        if (Core.RudpControl.SessionMap.ContainsKey(link.DhtID))
-                            foreach (RudpSession session in Core.RudpControl.SessionMap[link.DhtID])
-                                if (session.Status == SessionStatus.Active)
-                                {
-                                    sent = true;
-                                    session.SendData(ComponentID.Chat, packet, true);
-                                }
-                });
+            room.Members.LockReading(delegate()
+            {
+               foreach (OpLink link in room.Members)
+                   if (Core.RudpControl.SessionMap.ContainsKey(link.DhtID))
+                       foreach (RudpSession session in Core.RudpControl.SessionMap[link.DhtID])
+                           if (session.Status == SessionStatus.Active)
+                           {
+                               sent = true;
+                               session.SendData(ComponentID.Chat, packet, true);
+                           }
+            });
 
-            if(!sent)
+            if (!sent)
                 ProcessMessage(room, new ChatMessage(Core, "Message not sent (no one connected to room)", true));
         }
 
@@ -387,7 +392,7 @@ namespace DeOps.Components.Chat
 
             // ask user here if invite to room
 
-            Core.InvokeInterface(room.ChatUpdate, message);
+            Core.RunInGuiThread(room.ChatUpdate, message);
         }
 
         internal override void GetActiveSessions( ActiveSessions active)

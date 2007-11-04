@@ -147,7 +147,7 @@ namespace DeOps.Interface
         private void TimerMain_Tick(object sender, EventArgs e)
         {
             if (Core != null)
-                Core.SignalTimer();
+                Core.SecondTimer();
         }
 
         private bool IsInvite(string path)

@@ -204,8 +204,8 @@ namespace DeOps.Implementation.Transport
             Ping ping = new Ping();
             ping.Source = Network.GetLocalSource();
             ping.RemoteIP = RemoteIP;
-           
-            SendPacket(ping);
+
+            Core.RunInCoreAsync(delegate() { SendPacket(ping); });
 
             // if we made connection to the node its not firewalled
             if (Outbound)
@@ -296,6 +296,9 @@ namespace DeOps.Implementation.Transport
 
 		internal void SendPacket(G2Packet packet)
 		{
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
                 if(Encryptor == null)
                     CreateEncryptor();

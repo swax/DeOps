@@ -30,9 +30,6 @@ namespace DeOps.Components.Board
         internal DhtStore Store;
         LinkControl Links;
 
-        BoardInterface Interface;
-
-
         internal string BoardPath;
         RijndaelManaged LocalFileKey;
 
@@ -40,7 +37,8 @@ namespace DeOps.Components.Board
 
         internal List<ulong> SaveHeaders = new List<ulong>();
         internal ThreadedDictionary<ulong, OpBoard> BoardMap = new ThreadedDictionary<ulong, OpBoard>();    
-        
+        internal ThreadedDictionary<ulong, List<BoardView>> WindowMap = new ThreadedDictionary<ulong, List<BoardView>>();
+
 
         ThreadedDictionary<int, ushort> SavedReplyCount = new ThreadedDictionary<int, ushort>();
         ThreadedDictionary<ulong, List<PostUID>> DownloadLater = new ThreadedDictionary<ulong, List<PostUID>>();
@@ -57,7 +55,6 @@ namespace DeOps.Components.Board
             Network  = Core.OperationNet;
             Store    = Network.Store;
 
-            Interface = new BoardInterface(this);
             Core.LoadEvent += new LoadHandler(Core_Load);
             Core.TimerEvent += new TimerHandler(Core_Timer);
 
@@ -146,12 +143,12 @@ namespace DeOps.Components.Board
                 {
                     List<ulong> localRegion = new List<ulong>();
                     foreach (uint project in Core.Links.LocalLink.Projects)
-                        localRegion.AddRange(Interface.GetBoardRegion(Core.LocalDhtID, project, ScopeType.All));
+                        localRegion.AddRange(GetBoardRegion(Core.LocalDhtID, project, ScopeType.All));
 
                     foreach (OpBoard board in BoardMap.Values)
                         if (board.DhtID != Core.LocalDhtID &&
                             !Utilities.InBounds(board.DhtID, board.DhtBounds, Core.LocalDhtID) &&
-                            !Interface.WindowMap.SafeContainsKey(board.DhtID) &&
+                            !WindowMap.SafeContainsKey(board.DhtID) &&
                             !localRegion.Contains(board.DhtID))
                         {
                             removeBoards.Add(board.DhtID);
@@ -245,7 +242,7 @@ namespace DeOps.Components.Board
             });
         }
 
-        private void LoadHeader(ulong id)
+        internal void LoadHeader(ulong id)
         {
             try
             {
@@ -333,7 +330,7 @@ namespace DeOps.Components.Board
             if (node == null)
                 return;
 
-            BoardView view = new BoardView(Interface, node.GetKey(), node.GetProject());
+            BoardView view = new BoardView(this, node.GetKey(), node.GetProject());
 
             Core.InvokeView(node.IsExternal(), view);
         }
@@ -439,6 +436,12 @@ namespace DeOps.Components.Board
 
         void FinishPost(PostHeader header)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreBlocked(delegate() { FinishPost(header); });
+                return;
+            }
+
             CachePost(new SignedData(Protocol, Core.User.Settings.KeyPair, header), header);
 
             // publish to network and local region of target
@@ -554,7 +557,7 @@ namespace DeOps.Components.Board
            
             if (post != null && post.Header.Version >= header.Version )
             {
-                Core.InvokeInterface(PostUpdate, post);
+                UpdateGui(post);
                 return;
             }
 
@@ -592,7 +595,7 @@ namespace DeOps.Components.Board
                 if (board.Posts.ContainsKey(parentUid))
                 {
                     board.UpdateReplies(board.Posts[parentUid]);
-                    Core.InvokeInterface(PostUpdate, board.Posts[parentUid]);
+                    UpdateGui(post);
                 }
             }
 
@@ -607,8 +610,7 @@ namespace DeOps.Components.Board
                 SavedReplyCount.SafeRemove(post.Ident);
             }
 
-            if(PostUpdate != null)
-                Core.InvokeInterface(PostUpdate, post);
+            UpdateGui(post);
 
             if (Core.NewsWorthy(header.TargetID, header.ProjectID, true))
                 Core.MakeNews("Board updated by " + Links.GetName(header.SourceID), header.SourceID, 0, false, BoardRes.Icon, Menu_View);
@@ -779,80 +781,19 @@ namespace DeOps.Components.Board
 
 
 
-        internal void LoadRegion(ulong id, uint project)
-        {
-            // get all boards in local region
-            List<ulong> targets = Interface.GetBoardRegion(id, project, ScopeType.All);
-
-
-            foreach (ulong target in targets)
-            {
-                OpBoard board = GetBoard(target);
-
-                if (board == null)
-                {
-                    LoadHeader(target); // updateinterface called in processheader
-                    continue;
-                }
-
-                // call update for all posts
-                foreach (OpPost post in board.Posts.Values)
-                    if (post.Header.ProjectID == project && post.Header.ParentID == 0)
-                        Core.InvokeInterface(PostUpdate, post);
-            }
-
-
-            // searches
-            foreach (ulong target in targets)
-                SearchBoard(target, project);
-        }
-
-        internal void SearchBoard(ulong target, uint project)
-        {
-            bool fullSearch = true;
-
-            OpBoard board = GetBoard(target);
-
-            if (board != null)
-                if (board.LastRefresh.ContainsKey(project))
-                    fullSearch = false;
-
-            if (fullSearch)
-                ThreadSearch(target, project, 0);
-
-            // search for all theads posted since refresh, with an hour buffer
-            else 
-                TimeSearch(target, project, board.LastRefresh[project].AddHours(-1));
-
-
-            if (board != null)
-                board.LastRefresh[project] = Core.TimeNow;
-        }
-
-        internal void LoadThread(OpPost parent)
-        {
-            OpBoard board = GetBoard(parent.Header.TargetID);
-
-            if (board == null)
-                return;
-
-            // have all replies fire an update
-            foreach (OpPost post in board.Posts.Values)
-                if (post.Header.ProjectID == parent.Header.ProjectID &&
-                    post.Header.ParentID == parent.Header.PostID)
-                    Core.InvokeInterface(PostUpdate, post);
-            
-            
-            // do search for thread
-            ThreadSearch(board.DhtID, parent.Header.ProjectID, parent.Header.PostID);
-        }
-
+        
 
         const int TheadSearch_ParamsSize = 9;   // type/project/parent  1 + 4 + 4
         const int TheadSearch_ResultsSize = 20; // UID/version/replies 16 + 2 + 2
 
         internal void ThreadSearch(ulong target, uint project, uint parent)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { ThreadSearch(target, project, parent); });
+                return;
+            }
+
             byte[] parameters = new byte[TheadSearch_ParamsSize];
             parameters[0] = (byte) BoardSearch.Threads;
             BitConverter.GetBytes(project).CopyTo(parameters, 1);
@@ -888,7 +829,7 @@ namespace DeOps.Components.Board
                         if (post.Replies < replies)
                         {
                             post.Replies = replies;
-                            Core.InvokeInterface(PostUpdate, post);
+                            UpdateGui(post);
                         }
 
                         // if we have current version, pass, else download
@@ -914,8 +855,15 @@ namespace DeOps.Components.Board
         const int TimeSearch_ParamsSize = 13;   // type/project/time 1 + 4 + 8
         const int TimeSearch_ResultsSize = 18;  // UID/version 16 + 2
 
-        private void TimeSearch(ulong target, uint project, DateTime time)
+        internal void TimeSearch(ulong target, uint project, DateTime time)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { TimeSearch(target, project, time); });
+                return;
+            }
+
+
             byte[] parameters = new byte[TimeSearch_ParamsSize];
             parameters[0] = (byte)BoardSearch.Time;
             BitConverter.GetBytes(project).CopyTo(parameters, 1);
@@ -955,6 +903,12 @@ namespace DeOps.Components.Board
 
         private void PostSearch(ulong target, PostUID uid, ushort version)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { PostSearch(target, uid, version); });
+                return;
+            }
+
             byte[] parameters = new byte[PostSearch_ParamsSize];
             parameters[0] = (byte)BoardSearch.Post;
             uid.ToBytes().CopyTo(parameters, 1);
@@ -1087,6 +1041,142 @@ namespace DeOps.Components.Board
             BoardMap.SafeTryGetValue(key, out board);
 
             return board;
+        }
+
+
+        internal void LoadView(BoardView view, ulong id)
+        {
+            WindowMap.LockWriting(delegate()
+            {
+                if (!WindowMap.ContainsKey(id))
+                    WindowMap[id] = new List<BoardView>();
+
+                WindowMap[id].Add(view);
+            });
+        }
+
+        internal void UnloadView(BoardView view, ulong id)
+        {
+            WindowMap.LockWriting(delegate()
+           {
+               if (!WindowMap.ContainsKey(id))
+                   return;
+
+               WindowMap[id].Remove(view);
+
+               if (WindowMap[id].Count == 0)
+                   WindowMap.Remove(id);
+           });
+        }
+
+        internal List<ulong> GetBoardRegion(ulong id, uint project, ScopeType scope)
+        {
+            List<ulong> targets = new List<ulong>();
+
+            targets.Add(id); // need to include self in high and low scopes, for re-searching, onlinkupdate purposes
+
+            OpLink link = Links.GetLink(id);
+
+            if (link == null)
+                return targets;
+
+
+            // get parent and children of parent
+            if (scope != ScopeType.Low)
+            {
+                OpLink parent = link.GetHigher(project, true);
+
+                if (parent != null)
+                {
+                    targets.Add(parent.DhtID);
+
+                    targets.AddRange(Links.GetDownlinkIDs(parent.DhtID, project, 1));
+
+                    targets.Remove(id); // remove self
+                }
+            }
+
+            // get children of self
+            if (scope != ScopeType.High)
+                targets.AddRange(Links.GetDownlinkIDs(id, project, 1));
+
+
+            return targets;
+        }
+
+        internal void LoadRegion(ulong id, uint project)
+        {
+            // get all boards in local region
+            List<ulong> targets = GetBoardRegion(id, project, ScopeType.All);
+
+
+            foreach (ulong target in targets)
+            {
+                OpBoard board = GetBoard(target);
+
+                if (board == null)
+                {
+                    LoadHeader(target); // updateinterface called in processheader
+                    continue;
+                }
+
+                // call update for all posts
+                foreach (OpPost post in board.Posts.Values)
+                    if (post.Header.ProjectID == project && post.Header.ParentID == 0)
+                        UpdateGui(post);
+            }
+
+
+            // searches
+            foreach (ulong target in targets)
+                SearchBoard(target, project);
+        }
+
+        internal void SearchBoard(ulong target, uint project)
+        {
+            bool fullSearch = true;
+
+            OpBoard board = GetBoard(target);
+
+            if (board != null)
+                if (board.LastRefresh.ContainsKey(project))
+                    fullSearch = false;
+
+            if (fullSearch)
+                Core.RunInCoreAsync(delegate() { ThreadSearch(target, project, 0); });
+
+            // search for all theads posted since refresh, with an hour buffer
+            else
+                TimeSearch(target, project, board.LastRefresh[project].AddHours(-1));
+
+
+            if (board != null)
+                board.LastRefresh[project] = Core.TimeNow;
+        }
+
+        internal void LoadThread(OpPost parent)
+        {
+            OpBoard board = GetBoard(parent.Header.TargetID);
+
+            if (board == null)
+                return;
+
+            // have all replies fire an update
+            foreach (OpPost post in board.Posts.Values)
+                if (post.Header.ProjectID == parent.Header.ProjectID &&
+                    post.Header.ParentID == parent.Header.PostID)
+                    UpdateGui(post);
+
+
+            // do search for thread
+            ThreadSearch(board.DhtID, parent.Header.ProjectID, parent.Header.PostID);
+        }
+
+
+        internal void UpdateGui(OpPost post)
+        {
+            if (PostUpdate != null)
+                Core.RunInGuiThread(PostUpdate, post);
         }
     }
 

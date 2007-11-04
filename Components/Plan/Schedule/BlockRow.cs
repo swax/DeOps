@@ -570,9 +570,9 @@ namespace DeOps.Components.Plan
             view.LoadBranch = menu.Goal.BranchUp;
 
             if (View.External != null)
-                View.Core.InvokeInterface(View.Core.GuiMain.ShowExternal, view);
+                View.Core.RunInGuiThread(View.Core.GuiMain.ShowExternal, view);
             else
-                View.Core.InvokeInterface(View.Core.GuiMain.ShowInternal, view);
+                View.Core.RunInGuiThread(View.Core.GuiMain.ShowInternal, view);
         }
 
         private void BlockRow_MouseDoubleClick(object sender, MouseEventArgs e)

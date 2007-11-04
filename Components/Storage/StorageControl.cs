@@ -45,7 +45,7 @@ namespace DeOps.Components.Storage
         internal Dictionary<ulong, OpFile> InternalFileMap = new Dictionary<ulong, OpFile>();// used to bring together files encrypted with different keys
 
         Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
-        ThreadedDictionary<ulong, uint> DownloadLater = new ThreadedDictionary<ulong, uint>();
+        Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
 
         int PruneSize = 100;
 
@@ -314,13 +314,13 @@ namespace DeOps.Components.Storage
         internal void CallFolderUpdate(uint project, string dir, ulong uid, WorkingChange action)
         {
             if (WorkingFolderUpdate != null)
-                Core.InvokeInterface(WorkingFolderUpdate, project, dir, uid, action);
+                Core.RunInGuiThread(WorkingFolderUpdate, project, dir, uid, action);
         }
 
         internal void CallFileUpdate(uint project, string dir, ulong uid, WorkingChange action)
         {
             if (WorkingFileUpdate != null)
-                Core.InvokeInterface(WorkingFileUpdate, project, dir, uid, action);
+                Core.RunInGuiThread(WorkingFileUpdate, project, dir, uid, action);
         }
         
         private void LoadHeaders()
@@ -391,6 +391,12 @@ namespace DeOps.Components.Storage
 
         internal void SaveLocal(uint project)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreBlocked(delegate() { SaveLocal(project); });
+                return;
+            }
+
             try
             {
                 StorageHeader header = null;
@@ -630,7 +636,7 @@ namespace DeOps.Components.Storage
                 }
 
                 if (StorageUpdate != null)
-                    Core.InvokeInterface(StorageUpdate, storage);
+                    Core.RunInGuiThread(StorageUpdate, storage);
 
                 if (Core.NewsWorthy(storage.DhtID, 0, false))
                     Core.MakeNews("Storage updated by " + Links.GetName(storage.DhtID), storage.DhtID, 0, false, StorageRes.Icon, Menu_View);
@@ -812,12 +818,18 @@ namespace DeOps.Components.Storage
                 if (Network.Established)
                     Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Storage, BitConverter.GetBytes(version));
                 else
-                    DownloadLater.SafeAdd(dhtid, version);
+                    DownloadLater[dhtid] = version;
             }
         }
 
         private void StartSearch(ulong key, uint version)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { StartSearch(key, version); });
+                return;
+            }
+
             byte[] parameters = BitConverter.GetBytes(version);
             DhtSearch search = Core.OperationNet.Searches.Start(key, "Storage", ComponentID.Storage, parameters, new EndSearchHandler(EndSearch));
 
@@ -858,7 +870,7 @@ namespace DeOps.Components.Storage
             {
                 storage.DhtBounds = Store.RecalcBounds(storage.DhtID);
 
-                
+
                 if (Utilities.InBounds(Core.LocalDhtID, localBounds, storage.DhtID))
                 {
                     // republish objects that were not seen on the network during startup
@@ -872,14 +884,11 @@ namespace DeOps.Components.Storage
 
 
             // only download those objects in our local area
-            DownloadLater.LockWriting(delegate()
-            {
-                foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
-                    if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
-                        StartSearch(pair.Key, pair.Value);
+            foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
+                if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
+                    StartSearch(pair.Key, pair.Value);
 
-                DownloadLater.Clear();
-            });
+            DownloadLater.Clear();
 
             // delete loose files not in map - do here because now files in cache range are marked as reffed
             foreach (string filepath in Directory.GetFiles(StoragePath + Path.DirectorySeparatorChar + "0"))

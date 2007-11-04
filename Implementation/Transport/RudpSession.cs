@@ -117,6 +117,9 @@ namespace DeOps.Implementation.Transport
 
 		internal bool SendPacket(G2Packet packet, bool expedite)
 		{
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             byte[] final = packet.Encode(Core.Protocol);
 
             if (Comm.State != RudpState.Connected)

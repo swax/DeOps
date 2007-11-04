@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Net;
@@ -41,6 +42,9 @@ namespace DeOps.Implementation.Dht
 
         internal void PublishNetwork(ulong target, ushort component, byte[] data)
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             string type = "Publish " + component.ToString();
 
             DhtSearch search = Network.Searches.Start(target, type, ComponentID.Node, null, new EndSearchHandler(EndPublishSearch));
@@ -61,6 +65,9 @@ namespace DeOps.Implementation.Dht
 
         internal void PublishDirect(List<LocationData> locations, ulong target, ushort component, byte[] data)
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             DataReq req = new DataReq(null, target, component, data);
             
             foreach (LocationData location in locations)

@@ -33,8 +33,8 @@ namespace DeOps.Components.Link
         internal ThreadedDictionary<uint, string> ProjectNames = new ThreadedDictionary<uint, string>();
         internal ThreadedDictionary<uint, List<OpLink>> ProjectRoots = new ThreadedDictionary<uint, List<OpLink>>();
         
-        ThreadedDictionary<ulong, DateTime> NextResearch = new ThreadedDictionary<ulong, DateTime>();
-        ThreadedDictionary<ulong, uint> DownloadLater = new ThreadedDictionary<ulong, uint>();
+        Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
+        Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
 
         internal string LinkPath;
         internal bool   StructureKnown;
@@ -149,13 +149,13 @@ namespace DeOps.Components.Link
                 return;
 
             ulong key = ((IViewParams)sender).GetKey();
-            uint proj = ((IViewParams)sender).GetProject();
+            uint project = ((IViewParams)sender).GetProject();
 
 
             // get user confirmation if nullifying previous uplink
-            if (LocalLink.Uplink.ContainsKey(proj))
+            if (LocalLink.Uplink.ContainsKey(project))
             {
-                string who = GetName(LocalLink.Uplink[proj].DhtID);
+                string who = GetName(LocalLink.Uplink[project].DhtID);
                 string message = "Transfer trust from " + who + " to " + GetName(key) + "?";
 
                 if (MessageBox.Show(Core.GuiMain, message, "Confirm Trust", MessageBoxButtons.YesNo) == DialogResult.No)
@@ -166,7 +166,7 @@ namespace DeOps.Components.Link
             {
                 OpLink uplink = GetLink(key);
 
-                if(uplink == null)
+                if (uplink == null)
                     throw new Exception("Could not find Person");
 
                 // check if self
@@ -174,44 +174,55 @@ namespace DeOps.Components.Link
                     throw new Exception("Cannot Trust in your Self");
 
                 // check if already linked
-                if (LocalLink.Uplink.ContainsKey(proj) && LocalLink.Uplink[proj] == uplink)
+                if (LocalLink.Uplink.ContainsKey(project) && LocalLink.Uplink[project] == uplink)
                     throw new Exception("Already Trusting " + GetName(key));
 
                 //crit check for loop
                 //if (LocalLink.SearchBranch(proj, uplink))
                 //    throw new Exception("Cannot uplink to a downlinked node");
 
-                LocalLink.AddProject(proj);
-                LocalLink.ResetUplink(proj);
-                LocalLink.Uplink[proj] = uplink;
+                LocalLink.AddProject(project);
+                LocalLink.ResetUplink(project);
+                LocalLink.Uplink[project] = uplink;
 
                 SaveLocal();
 
-                // create uplink request, publish
-                UplinkRequest request = new UplinkRequest();
-                request.LinkVersion     = LocalLink.Header.Version;
-                request.TargetVersion   = uplink.Header.Version;
-                request.Key             = LocalLink.Key;
-                request.KeyID           = LocalLink.DhtID;
-                request.Target          = uplink.Key;
-                request.TargetID        = uplink.DhtID;
-
-                byte[] signed =  SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, request);
-                Store.PublishNetwork(request.TargetID, ComponentID.Link, signed);
-
-                // store locally
-                Process_UplinkReq(null, new SignedData(Core.Protocol, Core.User.Settings.KeyPair, request), request);
-
-                // publish at neighbors so they are aware of request status
-                List<LocationData> locations = new List<LocationData>();
-                GetLocs(Core.LocalDhtID, proj, 1, 1, locations);
-                GetLocsBelow(Core.LocalDhtID, proj, locations);
-                Store.PublishDirect(locations, request.TargetID, ComponentID.Link, signed);
+                Core.RunInCoreAsync(delegate()
+                {
+                    LinkupRequest(uplink, project);
+                });
+               
             }
             catch (Exception ex)
             {
                 MessageBox.Show(Core.GuiMain, ex.Message);
             }
+        }
+
+        private void LinkupRequest(OpLink uplink, uint project)
+        {
+            
+
+            // create uplink request, publish
+            UplinkRequest request = new UplinkRequest();
+            request.LinkVersion = LocalLink.Header.Version;
+            request.TargetVersion = uplink.Header.Version;
+            request.Key = LocalLink.Key;
+            request.KeyID = LocalLink.DhtID;
+            request.Target = uplink.Key;
+            request.TargetID = uplink.DhtID;
+
+            byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, request);
+            Store.PublishNetwork(request.TargetID, ComponentID.Link, signed);
+
+            // store locally
+            Process_UplinkReq(null, new SignedData(Core.Protocol, Core.User.Settings.KeyPair, request), request);
+
+            // publish at neighbors so they are aware of request status
+            List<LocationData> locations = new List<LocationData>();
+            GetLocs(Core.LocalDhtID, project, 1, 1, locations);
+            GetLocsBelow(Core.LocalDhtID, project, locations);
+            Store.PublishDirect(locations, request.TargetID, ComponentID.Link, signed);
         }
 
         private void Menu_ConfirmLink(object sender, EventArgs e)
@@ -301,7 +312,10 @@ namespace DeOps.Components.Link
                 SaveLocal();
 
                 // notify old links of change
-                Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Link, LocalLink.SignedHeader);
+                Core.RunInCoreAsync(delegate()
+                {
+                    Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Link, LocalLink.SignedHeader);
+                });
             }
             catch (Exception ex)
             {
@@ -386,7 +400,15 @@ namespace DeOps.Components.Link
                 });
 
             // clean research map
-            NextResearch.RemoveWhere(delegate(DateTime timeout) { return Core.TimeNow > timeout; });
+            removeLinks.Clear();
+
+            foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
+                if (Core.TimeNow > pair.Value)
+                    removeLinks.Add(pair.Key);
+
+            if (removeLinks.Count > 0)
+                foreach (ulong id in removeLinks)
+                   NextResearch.Remove(id);
         }
 
         void Network_Established()
@@ -407,14 +429,11 @@ namespace DeOps.Components.Link
             });
 
             // only download those objects in our local area
-            DownloadLater.LockWriting(delegate()
-            {
-                foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
-                    if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
-                        StartSearch(pair.Key, pair.Value);
+            foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
+                if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
+                    StartSearch(pair.Key, pair.Value);
 
-                DownloadLater.Clear();
-            });
+            DownloadLater.Clear();
         }
 
         void RefreshLinked()
@@ -478,6 +497,12 @@ namespace DeOps.Components.Link
 
         internal void Research(ulong key, uint proj, bool searchDownlinks)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { Research(key, proj, searchDownlinks); });
+                return;
+            }
+
             if (!Network.Routing.Responsive())
                 return;
 
@@ -528,15 +553,15 @@ namespace DeOps.Components.Link
                 // limit re-search to once per 30 secs
                 DateTime timeout = default(DateTime);
 
-                if (NextResearch.SafeTryGetValue(key, out timeout))
+                if (NextResearch.TryGetValue(key, out timeout))
                     if (Core.TimeNow < timeout)
                         return;
 
                 StartSearch(id, version);
-                NextResearch.SafeAdd(id, Core.TimeNow.AddSeconds(30));
+                NextResearch[id] = Core.TimeNow.AddSeconds(30);
             }
 
-            NextResearch.SafeAdd(key, Core.TimeNow.AddSeconds(30));
+            NextResearch[key] = Core.TimeNow.AddSeconds(30);
         }
 
         internal void StartSearch(ulong key, uint version)
@@ -709,12 +734,18 @@ namespace DeOps.Components.Link
                 if (Network.Established)
                     Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Link, BitConverter.GetBytes(version));
                 else
-                    DownloadLater.SafeAdd(dhtid, version);
+                    DownloadLater[dhtid] = version;
             }
         }
 
         internal void SaveLocal()
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreBlocked(delegate() { SaveLocal(); });
+                return;
+            }
+
             try
             {
                 LinkHeader header = LocalLink.Header;
@@ -1140,11 +1171,11 @@ namespace DeOps.Components.Link
                 }
 
                 // update interface node
-                Core.InvokeInterface(GuiUpdate, link.DhtID);
+                Core.RunInGuiThread(GuiUpdate, link.DhtID);
 
                 foreach (uint id in link.Downlinks.Keys)
                     foreach (OpLink downlink in link.Downlinks[id])
-                        Core.InvokeInterface(GuiUpdate, downlink.DhtID);
+                        Core.RunInGuiThread(GuiUpdate, downlink.DhtID);
 
             }
             catch (Exception ex)
@@ -1283,7 +1314,10 @@ namespace DeOps.Components.Link
             SaveLocal();
 
             // update links in old project of update
-            Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Link, LocalLink.SignedHeader);
+            Core.RunInCoreAsync(delegate()
+            {
+                Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Link, LocalLink.SignedHeader);
+            });
         }
 
         internal string GetName(ulong id)

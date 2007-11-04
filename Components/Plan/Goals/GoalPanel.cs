@@ -476,9 +476,9 @@ namespace DeOps.Components.Plan
             view.LoadGoalBranch = item.Goal.BranchUp;
 
             if (View.External != null)
-                Core.InvokeInterface(Core.GuiMain.ShowExternal, view);
+                Core.RunInGuiThread(Core.GuiMain.ShowExternal, view);
             else
-                Core.InvokeInterface(Core.GuiMain.ShowInternal, view);
+                Core.RunInGuiThread(Core.GuiMain.ShowInternal, view);
         }
 
 

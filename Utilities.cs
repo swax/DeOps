@@ -486,27 +486,39 @@ namespace DeOps
             File.Delete(source);
         }
 
-        internal static void PruneMap(ThreadedDictionary<ulong, uint> map, ulong local, int max)
+        internal static void PruneMap(Dictionary<ulong, uint> map, ulong local, int max)
         {
-           if (map.SafeCount < max)
-               return;
+            if (map.Count < max)
+                return;
 
-            map.LockWriting(delegate() 
+            List<ulong> removeIDs = new List<ulong>();
+
+            while (map.Count > 0 && map.Count > max)
             {
-                List<ulong> removeIDs = new List<ulong>();
+                ulong furthest = local;
 
-                while (map.Count > 0 && map.Count > max)
-                {
-                    ulong furthest = local;
+                foreach (ulong id in map.Keys)
+                    if ((id ^ local) > (furthest ^ local))
+                        furthest = id;
 
-                    foreach (ulong id in map.Keys)
-                        if ((id ^ local) > (furthest ^ local))
-                            furthest = id;
-
-                    map.Remove(furthest);
-                }
-            });
+                map.Remove(furthest);
+            }
         }
+
+        /*internal static void RemoveWhere(Dictionary<TKey, TValue> map, MatchType isMatch)
+        {
+            List<TKey> removeKeys = new List<TKey>();
+
+            foreach (KeyValuePair<TKey, TValue> pair in this)
+                if (isMatch(pair.Value))
+                    removeKeys.Add(pair.Key);
+
+
+            if (removeKeys.Count > 0)
+                foreach (TKey id in removeKeys)
+                    Remove(id);
+
+        }*/
 
         internal static string StripOneLevel(string path)
         {

@@ -104,6 +104,9 @@ namespace DeOps.Implementation.Transport
 
 		internal void SendTo(DhtAddress address, G2Packet packet)
 		{
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             if (packet is NetworkPacket)
                 ((NetworkPacket)packet).SourceID = Core.LocalDhtID;
 

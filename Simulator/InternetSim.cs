@@ -46,6 +46,8 @@ namespace DeOps.Simulator
         internal List<SimPacket> OutPackets = new List<SimPacket>();
         internal List<SimPacket> InPackets = new List<SimPacket>();
 
+        internal Queue<AsyncCoreFunction> CoreMessages = new Queue<AsyncCoreFunction>();
+
         internal Dictionary<ulong, string> UserNames = new Dictionary<ulong, string>();
         internal Dictionary<ulong, string> OpNames = new Dictionary<ulong, string>();
 
@@ -55,20 +57,20 @@ namespace DeOps.Simulator
         internal DateTime TimeNow;
 
         // thread
-        Thread RunThread;
-        bool   Paused;
+        internal Thread RunThread;
+        internal bool Paused;
         bool   Step;
         internal bool   Shutdown;
         
         // settings
-        int SleepTime = 0; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
+        int SleepTime = 500; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
 
         bool RandomCache = true;
         internal bool TestEncryption = false;
         internal bool FreshStart = false;
         internal bool TestTcpFullBuffer = false;
         internal bool UseTimeFile = true;
-        internal bool TestCoreThread = false; // sleepTime needs to be set with this so packets have time to process ayncronously
+        internal bool TestCoreThread = true; // sleepTime needs to be set with this so packets have time to process ayncronously
 
         bool Flux        = false;
         int  FluxIn      = 1;
@@ -324,6 +326,23 @@ namespace DeOps.Simulator
 
                     InPackets.Clear();
 
+                    // send messages from gui
+                    AsyncCoreFunction function = null;
+
+                    // process invoked functions, dequeue quickly to continue processing
+                    lock (CoreMessages)
+                        while (CoreMessages.Count > 0)
+                        {
+                            function = CoreMessages.Dequeue();
+
+                            if (function != null)
+                            {
+                                function.Result = function.Method.DynamicInvoke(function.Args);
+                                function.Completed = true;
+                                function.Processed.Set();
+                            }
+                        }
+
 
                     TimeNow = TimeNow.AddMilliseconds(1000 / pumps);
 
@@ -340,12 +359,7 @@ namespace DeOps.Simulator
                 // instance timer
                 lock (Online)
                     foreach (SimInstance instance in Online)
-                    {
-                        if (TestCoreThread)
-                            instance.Core.SignalTimer();
-                        else
-                            instance.Core.SecondTimer();
-                    }
+                        instance.Core.SecondTimer();
 
                 // if run sim slow
                 if (SleepTime > 0)

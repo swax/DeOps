@@ -14,6 +14,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Security.Cryptography;
@@ -129,6 +130,8 @@ namespace DeOps.Implementation
         bool   CoreRunning = true;
         bool   RunTimer;
         internal AutoResetEvent ProcessEvent = new AutoResetEvent(false);
+        Queue<AsyncCoreFunction> CoreMessages = new Queue<AsyncCoreFunction>();
+
 
 
         internal OpCore(LoaderForm loader, string path, string pass)
@@ -196,11 +199,11 @@ namespace DeOps.Implementation
 
             Test test = new Test(); // should be empty unless running a test    
 
+
+            CoreThread = new Thread(RunCore);
+            
             if (Sim == null || Sim.Internet.TestCoreThread)
-            {
-                CoreThread = new Thread(RunCore);
                 CoreThread.Start();
-            }
         }
 
         void RunCore()
@@ -208,17 +211,34 @@ namespace DeOps.Implementation
             // timer / network events are brought into this thread so that locking between network/core/components is minimized
             // so only place we need to be real careful is at the core/gui interface
 
-            bool morePackets = false;
-            AutoResetEvent[] CoreEvents = new AutoResetEvent[] { ProcessEvent };
+            bool keepGoing = false;
+ 
 
             while (CoreRunning)
             {
-                AutoResetEvent.WaitAll(CoreEvents);
+                if (!keepGoing)
+                    ProcessEvent.WaitOne();
 
-                morePackets = true;
+                keepGoing = false;
 
-                while (morePackets)
+                try
                 {
+                    AsyncCoreFunction function = null;
+
+                    // process invoked functions, dequeue quickly to continue processing
+                    lock (CoreMessages)
+                        if (CoreMessages.Count > 0)
+                            function = CoreMessages.Dequeue();
+
+                    if (function != null)
+                    {
+                        function.Result = function.Method.DynamicInvoke(function.Args);
+                        function.Completed = true;
+                        function.Processed.Set();
+
+                        keepGoing = true;
+                    }
+
                     // run timer, in packet loop so that if we're getting unbelievably flooded timer
                     // can still run and clear out component maps
                     if (RunTimer)
@@ -229,17 +249,13 @@ namespace DeOps.Implementation
                     }
 
 
-                    // get the next packet off the queue without blocking it
-                    morePackets = false; 
+                    // get the next packet off the queue (op then global) without blocking it
                     PacketCopy incoming = null;
 
-                    
                     lock (OperationNet.IncomingPackets)
                         if (OperationNet.IncomingPackets.Count > 0)
                             incoming = OperationNet.IncomingPackets.Dequeue();
 
-
-                    // if no more, get the next global packet
                     if (incoming == null)
                         lock (GlobalNet.IncomingPackets)
                             if (GlobalNet.IncomingPackets.Count > 0)
@@ -254,8 +270,12 @@ namespace DeOps.Implementation
                         else
                             OperationNet.ReceivePacket(incoming.Packet);
 
-                        morePackets = true;
+                        keepGoing = true;
                     }
+                }
+                catch (Exception ex)
+                {
+                    OperationNet.UpdateLog("Core Thread", ex.Message + "\n" + ex.StackTrace);
                 }
             }
         }
@@ -280,17 +300,14 @@ namespace DeOps.Implementation
             */
 		}
 
-		bool InTimer;
-
 		internal void SecondTimer()
 		{
-            if (InTimer)
+            if (InvokeRequired)
             {
-                ConsoleLog("Timer pile-up");
+                RunTimer = true;
+                ProcessEvent.Set();
                 return;
             }
-
-			InTimer = true; // this isnt mfc, prevent timer pile up
 
 			try
 			{
@@ -314,8 +331,6 @@ namespace DeOps.Implementation
 			{
 				ConsoleLog("Exception KimCore::SecondTimer_Tick: " + ex.Message);
 			}
-		
-			InTimer = false;
 		}
 
 		internal void SetFirewallType(FirewallType type)
@@ -532,7 +547,7 @@ namespace DeOps.Implementation
             }
         }
 
-        internal void InvokeInterface(Delegate method, params object[] args)
+        internal void RunInGuiThread(Delegate method, params object[] args)
         {
             if (method == null || GuiMain == null)
                 return;
@@ -543,9 +558,9 @@ namespace DeOps.Implementation
         internal void InvokeView(bool external, ViewShell view)
         {
             if(external)
-                InvokeInterface(GuiMain.ShowExternal, view);
+                RunInGuiThread(GuiMain.ShowExternal, view);
             else
-                InvokeInterface(GuiMain.ShowInternal, view);
+                RunInGuiThread(GuiMain.ShowInternal, view);
         }
 
         internal string GetTempPath()
@@ -598,26 +613,22 @@ namespace DeOps.Implementation
         internal void MakeNews(string message, ulong id, uint project, bool showRemote, System.Drawing.Icon symbol, EventHandler onClick)
         {
             // use self id because point of news is alerting user to changes in their *own* interfaces
-            InvokeInterface(NewsUpdate, new NewsItemInfo(message, id, project, showRemote, symbol, onClick));
-        }
-
-        internal void SignalTimer()
-        {
-            RunTimer = true;
-            ProcessEvent.Set();
+            RunInGuiThread(NewsUpdate, new NewsItemInfo(message, id, project, showRemote, symbol, onClick));
         }
 
         internal void Exit()
         {
             CoreRunning = false;
 
-            if(CoreThread != null)
+            if(CoreThread != null && CoreThread.IsAlive)
             {
                 ProcessEvent.Set();
                 CoreThread.Join();
+                CoreThread = null;
             }
 
-            ExitEvent.Invoke();
+            if(ExitEvent != null)
+                ExitEvent.Invoke();
         }
 
 
@@ -625,13 +636,76 @@ namespace DeOps.Implementation
         {
             get 
             {
-                return true;
+                if (CoreThread == null)
+                    return false;
+
+                // keep gui responsive if sim thread not active to process messages
+                if (Sim != null && Sim.Internet.Paused && !Sim.Internet.TestCoreThread) 
+                    return false;
+
+                // in sim if not using core thread, then core thread is the sim thread
+                if(Sim != null && !Sim.Internet.TestCoreThread)
+                    return Sim.Internet.RunThread.ManagedThreadId != Thread.CurrentThread.ManagedThreadId;
+
+
+                return CoreThread.ManagedThreadId != Thread.CurrentThread.ManagedThreadId ;
             }
         }
 
-        internal IAsyncResult BeginInvoke(Delegate method, params object[] args)
+        internal void RunInCoreAsync(MethodInvoker code)
         {
-            return null;
+            RunInCoreThread(code, null);
         }
+
+        internal void RunInCoreBlocked(MethodInvoker code)
+        {
+            // if called from core thread, and blocked, this would result in a deadlock
+            if (!InvokeRequired)
+            {
+                Debug.Assert(false);
+                return;
+            }
+
+            RunInCoreThread(code, null).Processed.WaitOne();
+        }
+
+        AsyncCoreFunction RunInCoreThread(Delegate method, params object[] args)
+        {
+            AsyncCoreFunction function = new AsyncCoreFunction(method, args);
+
+            if (Sim != null && !Sim.Internet.TestCoreThread)
+            {
+                lock (Sim.Internet.CoreMessages)
+                    if (Sim.Internet.CoreMessages.Count < 100)
+                        Sim.Internet.CoreMessages.Enqueue(function);
+            }
+            {
+                lock (CoreMessages)
+                    if (CoreMessages.Count < 100)
+                        CoreMessages.Enqueue(function);
+            }
+
+            ProcessEvent.Set();
+
+            return function;
+        }
+    }
+
+    internal class AsyncCoreFunction
+    {
+        internal Delegate Method;
+        internal object[] Args;
+        internal object   Result;
+
+        internal bool Completed;
+        internal ManualResetEvent Processed = new ManualResetEvent(false);
+
+
+        internal AsyncCoreFunction(Delegate method, params object[] args)
+        {
+            Method = method;
+            Args = args;
+        }
+
     }
 }

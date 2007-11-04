@@ -604,6 +604,12 @@ namespace DeOps.Components.Mail
 
         internal void SendMail(List<ulong> to, List<AttachedFile> files, string subject, string body)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreBlocked(delegate() { SendMail(to, files, subject, body); });
+                return;
+            }
+
             // exception handled by compose mail interface
             MailHeader header = new MailHeader();
             header.Source = Core.User.Settings.KeyPublic;
@@ -680,7 +686,7 @@ namespace DeOps.Components.Mail
                 SaveLocalHeaders(Outbox, "outbox");
 
                 if (MailUpdate != null)
-                    Core.InvokeInterface(MailUpdate, false, message);
+                    Core.RunInGuiThread(MailUpdate, false, message);
             }
 
             // write headers to outbound cache file
@@ -1240,7 +1246,7 @@ namespace DeOps.Components.Mail
                 SaveLocalHeaders(Inbox, "inbox");
 
                 if (MailUpdate != null)
-                    Core.InvokeInterface(MailUpdate, true, message);
+                    Core.RunInGuiThread(MailUpdate, true, message);
             }
 
             // publish ack
@@ -1442,7 +1448,7 @@ namespace DeOps.Components.Mail
                 foreach(LocalMail message in Outbox)
                     if (Utilities.MemCompare(message.Header.MailID, ack.MailID))
                     {
-                        Core.InvokeInterface(MailUpdate, false, message);
+                        Core.RunInGuiThread(MailUpdate, false, message);
                         break;
                     }
         }
@@ -1963,7 +1969,7 @@ namespace DeOps.Components.Mail
             compose.MessageBody.InputBox.Select(0, 0);
 
             
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, compose);
+            Core.RunInGuiThread(Core.GuiMain.ShowExternal, compose);
         }
 
         internal void Forward(LocalMail message, string body)
@@ -1997,7 +2003,7 @@ namespace DeOps.Components.Mail
 
             compose.MessageBody.InputBox.Select(0, 0);
 
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, compose);
+            Core.RunInGuiThread(Core.GuiMain.ShowExternal, compose);
         }
 
         internal void DeleteLocal(LocalMail message, bool inbox)

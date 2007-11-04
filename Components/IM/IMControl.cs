@@ -64,21 +64,18 @@ namespace DeOps.Components.IM
             }
 
             // timeout sessions
-            lock (SessionMap)
+            List<ulong> removeKeys = new List<ulong>();
+
+            foreach (ulong id in SessionMap.Keys)
             {
-                List<ulong> removeKeys = new List<ulong>();
-
-                foreach (ulong id in SessionMap.Keys)
-                {
-                    if (SessionMap[id].Ttl == 0)
-                        removeKeys.Add(id);
-                    else if (SessionMap[id].Ttl > 0)
-                        SessionMap[id].Ttl--;
-                }
-
-                foreach (ulong id in removeKeys)
-                    SessionMap.Remove(id);
+                if (SessionMap[id].Ttl == 0)
+                    removeKeys.Add(id);
+                else if (SessionMap[id].Ttl > 0)
+                    SessionMap[id].Ttl--;
             }
+
+            foreach (ulong id in removeKeys)
+                SessionMap.Remove(id);
         }
 
         private List<IM_View> GetViews()
@@ -135,25 +132,35 @@ namespace DeOps.Components.IM
             {
                 view = CreateView(node.GetKey());
 
-                ulong key = node.GetKey();
-
-                Core.Locations.LocationMap.LockReading(delegate()
-                {
-                    if (Core.Locations.LocationMap.ContainsKey(key))
-                        foreach (LocInfo loc in Core.Locations.LocationMap[key].Values)
-                        {
-
-                            if (Core.RudpControl.IsConnected(loc.Location))
-                                ProcessMessage(key, new InstantMessage(Core, "Connected " + loc.Location.Location, true));
-
-                            else
-                            {
-                                Core.RudpControl.Connect(loc.Location);
-                                ProcessMessage(key, new InstantMessage(Core, "Connecting " + loc.Location.Location, true));
-                            }
-                        }
-                });
+                Connect(node.GetKey());
             }
+        }
+
+        private void Connect(ulong key)
+        {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { Connect(key); });
+                return;
+            }
+
+            Core.Locations.LocationMap.LockReading(delegate()
+            {
+                if (Core.Locations.LocationMap.ContainsKey(key))
+                    foreach (LocInfo loc in Core.Locations.LocationMap[key].Values)
+                    {
+
+                        if (Core.RudpControl.IsConnected(loc.Location))
+                            ProcessMessage(key, new InstantMessage(Core, "Connected " + loc.Location.Location, true));
+
+                        else
+                        {
+                            Core.RudpControl.Connect(loc.Location);
+                            ProcessMessage(key, new InstantMessage(Core, "Connecting " + loc.Location.Location, true));
+                        }
+                    }
+            });
+
         }
 
         private IM_View FindView(ulong key)
@@ -184,7 +191,7 @@ namespace DeOps.Components.IM
             if (FindView(link.DhtID) == null)
                 return;
 
-            Core.InvokeInterface(IM_Update, link.DhtID, null);
+            Core.RunInGuiThread(IM_Update, link.DhtID, null);
         }
 
         internal void Location_Update(LocationData location)
@@ -227,6 +234,12 @@ namespace DeOps.Components.IM
 
         internal void SendMessage(ulong key, string text)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { SendMessage(key, text); });
+                return;
+            }
+
             ProcessMessage(key, new InstantMessage(Core, text, false));
 
             if (!Core.RudpControl.SessionMap.ContainsKey(key))
@@ -281,16 +294,15 @@ namespace DeOps.Components.IM
             if (view == null)
                 CreateView(key);
             else
-                Core.InvokeInterface(IM_Update, key, message);
+                Core.RunInGuiThread(IM_Update, key, message);
         }
 
         internal override void GetActiveSessions( ActiveSessions active)
         {
-            lock(SessionMap)
-                foreach(ulong id in SessionMap.Keys)
-                    if (Core.RudpControl.SessionMap.ContainsKey(id))
-                        foreach (RudpSession session in Core.RudpControl.SessionMap[id])
-                            active.Add(session);
+            foreach(ulong id in SessionMap.Keys)
+                if (Core.RudpControl.SessionMap.ContainsKey(id))
+                    foreach (RudpSession session in Core.RudpControl.SessionMap[id])
+                        active.Add(session);
         }
     }
 

@@ -41,8 +41,8 @@ namespace DeOps.Components.Plan
 
         int PruneSize = 100;
 
-        ThreadedDictionary<ulong, DateTime> NextResearch = new ThreadedDictionary<ulong, DateTime>();
-        ThreadedDictionary<ulong, uint> DownloadLater = new ThreadedDictionary<ulong, uint>();
+        Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
+        Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
 
 
         internal PlanControl(OpCore core)
@@ -217,14 +217,21 @@ namespace DeOps.Components.Plan
                 });
 
             // clean research map
-            NextResearch.RemoveWhere(delegate(DateTime timeout) { return Core.TimeNow > timeout; });
+            removeIDs.Clear();
 
+            foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
+                if (Core.TimeNow > pair.Value)
+                    removeIDs.Add(pair.Key);
+
+            if (removeIDs.Count > 0)
+                foreach (ulong id in removeIDs)
+                    NextResearch.Remove(id);
         }
 
         void Network_Established()
         {
             ulong localBounds = Store.RecalcBounds(Core.LocalDhtID);
-            
+
             // set bounds for objects
             PlanMap.LockReading(delegate()
             {
@@ -239,14 +246,11 @@ namespace DeOps.Components.Plan
             });
 
             // only download those objects in our local area
-            DownloadLater.LockWriting(delegate()
-            {
-                foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
-                    if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
-                        StartSearch(pair.Key, pair.Value);
+            foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
+                if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
+                    StartSearch(pair.Key, pair.Value);
 
-                DownloadLater.Clear();
-            });
+            DownloadLater.Clear();
         }
 
         private void LoadHeaders()
@@ -442,7 +446,7 @@ namespace DeOps.Components.Plan
 
 
                 if (PlanUpdate != null)
-                    Core.InvokeInterface(PlanUpdate, plan);
+                    Core.RunInGuiThread(PlanUpdate, plan);
 
                 if (Core.NewsWorthy(plan.DhtID, 0, false))
                     Core.MakeNews("Plan updated by " + Links.GetName(plan.DhtID), plan.DhtID, 0, false, PlanRes.Schedule, Menu_ScheduleView);
@@ -585,12 +589,18 @@ namespace DeOps.Components.Plan
                 if (Network.Established)
                     Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Plan, BitConverter.GetBytes(version));
                 else
-                    DownloadLater.SafeAdd(dhtid, version);
+                    DownloadLater[dhtid] = version;
             }
         }
 
         private void StartSearch(ulong key, uint version)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { StartSearch(key, version); });
+                return;
+            }
+
             byte[] parameters = BitConverter.GetBytes(version);
             DhtSearch search = Core.OperationNet.Searches.Start(key, "Plan", ComponentID.Plan, parameters, new EndSearchHandler(EndSearch));
 
@@ -621,6 +631,14 @@ namespace DeOps.Components.Plan
 
         internal void SaveLocal()
         {
+            if (Core.InvokeRequired)
+            {
+                // block until completed
+                Core.RunInCoreBlocked(delegate() { SaveLocal(); });
+                return;
+            }
+
+
             try
             {
                 OpPlan plan = GetPlan(Core.LocalDhtID, true);
@@ -710,6 +728,12 @@ namespace DeOps.Components.Plan
 
         internal void LoadPlan(ulong id)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreBlocked(delegate() { LoadPlan(id); });
+                return;
+            }
+
             OpPlan plan = GetPlan(id, false);
 
             if (plan == null)
@@ -805,7 +829,7 @@ namespace DeOps.Components.Plan
             // limit re-search to once per 30 secs
             DateTime timeout = default(DateTime);
 
-            if (NextResearch.SafeTryGetValue(key, out timeout))
+            if (NextResearch.TryGetValue(key, out timeout))
                 if (Core.TimeNow < timeout)
                     return;
 
@@ -816,7 +840,7 @@ namespace DeOps.Components.Plan
 
             StartSearch(key, version);
 
-            NextResearch.SafeAdd(key, Core.TimeNow.AddSeconds(30));
+            NextResearch[key] = Core.TimeNow.AddSeconds(30);
         }
 
         internal OpPlan GetPlan(ulong id, bool tryLoad)

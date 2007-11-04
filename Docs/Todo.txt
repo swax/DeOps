@@ -54,7 +54,7 @@ Interface
 		plans	- new, edit, now
 		goals	- edit
 		tray	- restore, exit
-	
+		chat	- online (shinny green circle)
 	
 Components
 	General
@@ -85,12 +85,16 @@ Components
 		4 node network, running, send IM caused collection modified error in im_view:displaylog
 		remove dupe system messages
 		IM/Chat right click font view, right click timestamp view
+		***instead of showing connect/disconnect message have a top bar with green/red online offline status
 		
 	Chat 
 		Custom rooms - priave requires signed key, public key kept in chat file, can be queried for and found over network 
 		dont mention disconnect unless connection was made, also in IM
 		log does chat/im - setup like yahoo chat log
 		Default display when no chat panels visible
+		***instead of alerts in channel on join/part show on right side by red/green circle icon
+			if unlinked join default chatroom with other unlinked nodes
+			right click username in chat to pop-out user's profile
 		
 	Mail 
 	    debug send/recv mail
@@ -103,6 +107,7 @@ Components
 		sync local mail between users
 		test/do re-publishing mail
 		lots of clicking when changing mail view, look at javascripting that up as well
+		***default compose mail is showing zero for some reason
 
 	Board 
 		 board scope sub-levels down, auto search highers for posts that have source==target, and show if in scope
@@ -209,37 +214,21 @@ Simulator
 	record max udp burst sizes, or do packet size distribution histogram
 
 
-
-
-
-	locking where interface/background cometogether
-	
+	lock / re-create map objects
 	lock when map/items is modified on background
 	lock when map/items are accessed in foreground
+	try creating new object instead of resetting current in Op Maps, test updates are successfully changed
+	look at what GetX returns, and how re-creating X is reflected in the GUI
+		ensure gui's references to X are repalced with the new stuff
+		ensure core doesnt change X, only GUI
 	
-	prevent interface from directly triggering network threads
-		put checks in sendpacket to see if invokeRequired on mainthread
-	
-	create interface sub-class of controls so we know exactly what interface talks / accesses
-		can interface call beginInvoke on network threads?
-
 	Op objects are recreated when loaded so that interface with current handle doesnt get collections modified inbetween
 		dont need to lock inside op stucture if only interface accesses it
 		when someone is editing/wring a new opPlan and a new plan gets loaded there wont be a conflict
-	
-	save context of background thread and put asserts in network functions checking context is not being accessed from interface
-	
-	remove locks on thigs like activesessions and download later
-
-	like windows GUI, surround core/network/store methods with exceptions if functions not called from the core thread
-
-	// eventually move Core pointer from interfaces, and pointers to other controls, only other interfaces
-
-
-
 
 	use ReaderWriterLock - mail, storage, chat, IM, transfer, anywhere else?
 		threadedlist - chatroom, projectroots, location locs, oplink dictionaries
+
 
 	test linking up to a subordinate works correctly - 2 areas commented out
 		*could* allow interlinking - tree shown as local node in closest position to top

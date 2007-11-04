@@ -21,8 +21,7 @@ namespace DeOps.Components.Board
     internal partial class BoardView : ViewShell
     {
         OpCore Core;
-        BoardControl Board;
-        BoardInterface BoardInt;
+        BoardControl Boards;
         LinkControl Links;
 
         ulong DhtID;
@@ -42,13 +41,12 @@ namespace DeOps.Components.Board
                 </html>";
 
 
-        internal BoardView(BoardInterface board, ulong id, uint project)
+        internal BoardView(BoardControl boards, ulong id, uint project)
         {
             InitializeComponent();
 
-            Core = board.Core;
-            Board = board.Control;
-            BoardInt = board;
+            Core = boards.Core;
+            Boards = boards;
             Links = Core.Links;
             
 
@@ -77,13 +75,13 @@ namespace DeOps.Components.Board
 
         internal override void Init()
         {
-            Board.PostUpdate += new PostUpdateHandler(Board_PostUpdate);
+            Boards.PostUpdate += new PostUpdateHandler(Board_PostUpdate);
             Core.Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
 
             PostView.NodeExpanding += new EventHandler(OnNodeExpanding);
             PostView.NodeCollapsed += new EventHandler(OnNodeCollapsed);
 
-            BoardInt.LoadView(this, DhtID);
+            Boards.LoadView(this, DhtID);
 
             SelectProject(ProjectID);
         }
@@ -95,10 +93,10 @@ namespace DeOps.Components.Board
 
         internal override bool Fin()
         {
-            Board.PostUpdate -= new PostUpdateHandler(Board_PostUpdate);
+            Boards.PostUpdate -= new PostUpdateHandler(Board_PostUpdate);
             Links.GuiUpdate  -= new LinkGuiUpdateHandler(Links_Update);
 
-            BoardInt.UnloadView(this, DhtID);
+            Boards.UnloadView(this, DhtID);
 
             return true;
         }
@@ -202,12 +200,12 @@ namespace DeOps.Components.Board
             ActiveThreads.Clear();
 
             PostView.Nodes.Clear();
-            ThreadMap.Clear();     
+            ThreadMap.Clear();
 
-            HighIDs = BoardInt.GetBoardRegion(DhtID, ProjectID, ScopeType.High);
-            LowIDs = BoardInt.GetBoardRegion(DhtID, ProjectID, ScopeType.Low);
+            HighIDs = Boards.GetBoardRegion(DhtID, ProjectID, ScopeType.High);
+            LowIDs = Boards.GetBoardRegion(DhtID, ProjectID, ScopeType.Low);
 
-            Board.LoadRegion(DhtID, ProjectID);
+            Boards.LoadRegion(DhtID, ProjectID);
 
             PostHeader.DocumentText = PostHeaderDefault;
             PostBody.Rtf = "";
@@ -283,7 +281,7 @@ namespace DeOps.Components.Board
             // reply - must be on active threads list to show
             else 
             {
-                OpBoard board = Board.GetBoard(post.Header.TargetID);
+                OpBoard board = Boards.GetBoard(post.Header.TargetID);
 
                 if (board == null)
                     return;
@@ -332,7 +330,7 @@ namespace DeOps.Components.Board
 
             ActiveThreads[node.Post.Ident] = new Dictionary<int,PostViewNode>();
 
-            Board.LoadThread(node.Post);
+            Boards.LoadThread(node.Post);
         }
 
         void OnNodeCollapsed(object sender, EventArgs e)
@@ -354,11 +352,11 @@ namespace DeOps.Components.Board
             // reset high and low scopes, if change detected to refresh
 
             if(CurrentScope != ScopeType.Low &&
-                DetectChange(HighIDs, BoardInt.GetBoardRegion(DhtID, ProjectID, ScopeType.High)))
+                DetectChange(HighIDs, Boards.GetBoardRegion(DhtID, ProjectID, ScopeType.High)))
                 RefreshBoard();
 
             else if (CurrentScope != ScopeType.High &&
-                DetectChange(LowIDs, BoardInt.GetBoardRegion(DhtID, ProjectID, ScopeType.Low)))
+                DetectChange(LowIDs, Boards.GetBoardRegion(DhtID, ProjectID, ScopeType.Low)))
                 RefreshBoard();
         }
 
@@ -463,7 +461,7 @@ namespace DeOps.Components.Board
 
             try
             {
-                FileStream stream = new FileStream(Board.GetPostPath(post.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
+                FileStream stream = new FileStream(Boards.GetPostPath(post.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
                 CryptoStream crypto = new CryptoStream(stream, post.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                 int buffSize = 4096;
@@ -552,19 +550,19 @@ namespace DeOps.Components.Board
 
         private void PostButton_Click(object sender, EventArgs e)
         {
-            PostMessage post = new PostMessage(Board, DhtID, ProjectID);
+            PostMessage post = new PostMessage(Boards, DhtID, ProjectID);
 
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, post);
+            Core.RunInGuiThread(Core.GuiMain.ShowExternal, post);
 
         }
 
 
         private void RefreshButton_Click(object sender, EventArgs e)
         {
-            List<ulong> targets = BoardInt.GetBoardRegion(DhtID, ProjectID, CurrentScope);
+            List<ulong> targets = Boards.GetBoardRegion(DhtID, ProjectID, CurrentScope);
 
             foreach (ulong target in targets)
-                Board.SearchBoard(target, ProjectID);
+                Boards.SearchBoard(target, ProjectID);
 
 
             foreach(int parentHash in ActiveThreads.Keys)
@@ -572,7 +570,7 @@ namespace DeOps.Components.Board
                 {
                     OpPost post = ThreadMap[parentHash].Post;
 
-                    Board.ThreadSearch(post.Header.TargetID, post.Header.ProjectID, post.Header.PostID);
+                    Boards.ThreadSearch(post.Header.TargetID, post.Header.ProjectID, post.Header.PostID);
                 }
         }
 
@@ -625,10 +623,10 @@ namespace DeOps.Components.Board
 
             OpPost parent = item.Post;
 
-            PostMessage form = new PostMessage(Board, parent.Header.TargetID, parent.Header.ProjectID);
+            PostMessage form = new PostMessage(Boards, parent.Header.TargetID, parent.Header.ProjectID);
             form.PostReply(parent);
 
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, form);
+            Core.RunInGuiThread(Core.GuiMain.ShowExternal, form);
         }
 
         void Post_Edit(object sender, EventArgs e)
@@ -640,10 +638,10 @@ namespace DeOps.Components.Board
 
             OpPost post = item.Post;
 
-            PostMessage form = new PostMessage(Board, post.Header.TargetID, post.Header.ProjectID);
+            PostMessage form = new PostMessage(Boards, post.Header.TargetID, post.Header.ProjectID);
             form.PostEdit(post, post.Header.ParentID, PostBody.Rtf);
 
-            Core.InvokeInterface(Core.GuiMain.ShowExternal, form);
+            Core.RunInGuiThread(Core.GuiMain.ShowExternal, form);
         }
 
         void Post_Archive(object sender, EventArgs e)
@@ -654,7 +652,7 @@ namespace DeOps.Components.Board
                 return;
 
             item.Post.Header.Archived = true;
-            Board.PostEdit(item.Post);
+            Boards.PostEdit(item.Post);
             RefreshBoard();
         }
 
@@ -666,7 +664,7 @@ namespace DeOps.Components.Board
                 return;
 
             item.Post.Header.Archived = false;
-            Board.PostEdit(item.Post);
+            Boards.PostEdit(item.Post);
             RefreshBoard();
         }
 

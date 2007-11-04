@@ -41,8 +41,8 @@ namespace DeOps.Components.Profile
 
         internal string DefaultTemplate;
 
-        ThreadedDictionary<ulong, DateTime> NextResearch = new ThreadedDictionary<ulong, DateTime>();
-        ThreadedDictionary<ulong, uint> DownloadLater = new ThreadedDictionary<ulong, uint>();
+        Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
+        Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
         
 
         internal ProfileControl(OpCore core)
@@ -205,7 +205,15 @@ namespace DeOps.Components.Profile
                 });
             
             // clean research map
-            NextResearch.RemoveWhere(delegate(DateTime timeout) { return Core.TimeNow > timeout; });
+            removeIDs.Clear();
+
+            foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
+                if (Core.TimeNow > pair.Value)
+                    removeIDs.Add(pair.Key);
+
+            if (removeIDs.Count > 0)
+                foreach (ulong id in removeIDs)
+                    NextResearch.Remove(id);
         }
 
         void Network_Established()
@@ -226,14 +234,11 @@ namespace DeOps.Components.Profile
             });
 
             // only download those objects in our local area
-            DownloadLater.LockWriting(delegate()
-            {
-                foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
-                    if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
-                        StartSearch(pair.Key, pair.Value);
+            foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
+                if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
+                    StartSearch(pair.Key, pair.Value);
 
-                DownloadLater.Clear();
-            });
+            DownloadLater.Clear();
         }
 
         internal OpProfile GetProfile(ulong dhtid)
@@ -267,14 +272,9 @@ namespace DeOps.Components.Profile
                 return;
 
             ulong key = node.GetKey();
-            uint searchVersion = 0;
-
-            OpProfile profile = GetProfile(key);
-            if (profile != null)
-                searchVersion = profile.Header.Version + 1;
 
             if (Network.Routing.Responsive())
-                StartSearch(key, searchVersion);
+                Research(key);
 
             // gui creates viewshell, component just passes view object
             ProfileView view = new ProfileView(this, key, node.GetProject());
@@ -419,12 +419,18 @@ namespace DeOps.Components.Profile
                 if (Network.Established)
                     Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Profile, BitConverter.GetBytes(version));
                 else
-                    DownloadLater.SafeAdd(dhtid, version);
+                    DownloadLater[dhtid] = version;
             }
         }
 
         internal void SaveLocal(string template, Dictionary<string, string> textFields, Dictionary<string, string> fileFields)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreBlocked(delegate() {SaveLocal(template, textFields, fileFields); });
+                return;
+            }
+
             // timer must be active, so saveheaders is called, so update is made permanent
 
             try
@@ -761,7 +767,7 @@ namespace DeOps.Components.Profile
                 }
 
                 if (ProfileUpdate != null)
-                    Core.InvokeInterface(ProfileUpdate, profile );
+                    Core.RunInGuiThread(ProfileUpdate, profile );
 
                 if (Core.NewsWorthy(profile.DhtID, 0, false))
                     Core.MakeNews("Profile updated by " + Links.GetName(profile.DhtID), profile.DhtID, 0, true, ProfileRes.Icon, Menu_View);
@@ -835,13 +841,19 @@ namespace DeOps.Components.Profile
 
         internal void Research(ulong key)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { Research(key); });
+                return;
+            }
+
             if (!Network.Routing.Responsive())
                 return;
 
             // limit re-search to once per 30 secs
             DateTime timeout = default(DateTime);
 
-            if (NextResearch.SafeTryGetValue(key, out timeout))
+            if (NextResearch.TryGetValue(key, out timeout))
                 if (Core.TimeNow < timeout)
                     return;
 
@@ -853,7 +865,7 @@ namespace DeOps.Components.Profile
 
             StartSearch(key, version);
 
-            NextResearch.SafeAdd(key, Core.TimeNow.AddSeconds(30));
+            NextResearch[key] = Core.TimeNow.AddSeconds(30);
         }
     }
 

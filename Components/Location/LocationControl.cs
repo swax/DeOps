@@ -29,7 +29,7 @@ namespace DeOps.Components.Location
         internal ThreadedDictionary<ulong, LinkedList<CryptLoc>> GlobalIndex = new ThreadedDictionary<ulong, LinkedList<CryptLoc>>();
         internal ThreadedDictionary<ulong, Dictionary<ushort, LocInfo>> LocationMap = new ThreadedDictionary<ulong, Dictionary<ushort, LocInfo>>();
 
-        ThreadedDictionary<ulong, DateTime> NextResearch = new ThreadedDictionary<ulong, DateTime>();
+        Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
 
         internal LocationUpdateHandler LocationUpdate;
         internal LocationGuiUpdateHandler GuiUpdate;
@@ -219,18 +219,34 @@ namespace DeOps.Components.Location
                      {
                          LocationMap.Remove(key);
 
-                         Core.InvokeInterface(GuiUpdate, key);
+                         Core.RunInGuiThread(GuiUpdate, key);
                      }
                 });
             }
 
             // clean research map
             if (second == 60)
-                NextResearch.RemoveWhere(delegate(DateTime timeout) { return Core.TimeNow > timeout; });
+            {
+                List<ulong> removeIDs = new List<ulong>();
+
+                foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
+                    if (Core.TimeNow > pair.Value)
+                        removeIDs.Add(pair.Key);
+
+                if (removeIDs.Count > 0)
+                    foreach (ulong id in removeIDs)
+                        NextResearch.Remove(id);
+            }
         }
 
         internal void UpdateLocation()
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreBlocked(delegate() { UpdateLocation(); });
+                return;
+            }
+
             // do next update a minute before current update expires
             NextLocationUpdate = Core.TimeNow.AddMinutes(LocationData.OP_TTL - 1);
 
@@ -246,7 +262,8 @@ namespace DeOps.Components.Location
 
             location.Location = Core.User.Settings.Location;
             location.Version  = LocationVersion++;
-            location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
+            if( Core.Profiles != null)
+                location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
             location.LinkVersion = Core.Links.LocalLink.Header.Version;
 
 
@@ -383,7 +400,9 @@ namespace DeOps.Components.Location
            });
 
             // version checks
-            Core.Profiles.CheckVersion(location.KeyID, location.ProfileVersion);
+            if(Core.Profiles != null)
+                Core.Profiles.CheckVersion(location.KeyID, location.ProfileVersion);
+
             Core.Links.CheckVersion(location.KeyID, location.LinkVersion);
 
 
@@ -414,8 +433,10 @@ namespace DeOps.Components.Location
             if (location.Source.Firewall == FirewallType.Open && !location.Global)
                 Core.OperationNet.Routing.Add(new DhtContact(location.Source, location.IP, Core.TimeNow));
 
-            LocationUpdate.Invoke(current.Location);
-            Core.InvokeInterface(GuiUpdate, current.Location.KeyID);
+            if(LocationUpdate != null)
+                LocationUpdate.Invoke(current.Location);
+            
+            Core.RunInGuiThread(GuiUpdate, current.Location.KeyID);
         }
 
         internal void PublishGlobal()
@@ -462,7 +483,9 @@ namespace DeOps.Components.Location
             location.Location = Core.User.Settings.Location;
             location.Version = LocationVersion++;
             location.LinkVersion = Core.Links.LocalLink.Header.Version;
-            location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
+
+            if(Core.Profiles != null)
+                location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
 
             location.TTL = LocationData.GLOBAL_TTL; // set expire 1 hour
 
@@ -515,19 +538,25 @@ namespace DeOps.Components.Location
 
         internal void Research(ulong key)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { Research(key); });
+                return;
+            }
+
             if (!Core.OperationNet.Routing.Responsive())
                 return;
 
             // limit re-search to once per 30 secs
             DateTime timeout = default(DateTime);
 
-            if (NextResearch.SafeTryGetValue(key, out timeout))
+            if (NextResearch.TryGetValue(key, out timeout))
                 if (Core.TimeNow < timeout)
                     return;
 
             StartSearch(key, 0, false);
 
-            NextResearch.SafeAdd(key, Core.TimeNow.AddSeconds(30));
+            NextResearch[key] = Core.TimeNow.AddSeconds(30);
         }
 
         internal int ClientCount(ulong id)
@@ -538,6 +567,15 @@ namespace DeOps.Components.Location
                 return locations.Count;
 
             return 0;
+        }
+
+        internal Dictionary<ushort, LocInfo> GetClients(ulong id)
+        {
+            Dictionary<ushort, LocInfo> clients = null;
+
+            LocationMap.SafeTryGetValue(id, out clients);
+
+            return clients;
         }
     }
 
