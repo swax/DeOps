@@ -248,9 +248,12 @@ namespace DeOps.Simulator
                 core.Board.BoardMap.LockReading(delegate()
                 {
                     foreach (OpBoard board in core.Board.BoardMap.Values)
-                        foreach (OpPost post in board.Posts.Values)
-                            if (Utilities.MemCompare(post.Header.FileHash, TrackHash))
-                                found = true;
+                        board.Posts.LockReading(delegate()
+                        {
+                            foreach (OpPost post in board.Posts.Values)
+                                if (Utilities.MemCompare(post.Header.FileHash, TrackHash))
+                                    found = true;
+                        });
                 });
 
             return found;

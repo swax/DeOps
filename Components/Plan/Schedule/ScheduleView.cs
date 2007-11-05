@@ -735,11 +735,12 @@ namespace DeOps.Components.Plan
 
         internal void ChangesMade()
         {
+            if(!ChangesLabel.Visible)
+                PlanStructure.Height -= 20;
+
             ChangesLabel.Visible = true;
             SaveLink.Visible = true;
             DiscardLink.Visible = true;
-
-            PlanStructure.Height -= 20;
         }
 
 

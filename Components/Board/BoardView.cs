@@ -288,10 +288,12 @@ namespace DeOps.Components.Board
 
                 PostUID parentUid = new PostUID(post.Header.TargetID, post.Header.ProjectID, post.Header.ParentID);
 
-                if (!board.Posts.ContainsKey(parentUid))
+                OpPost parentPost = Boards.GetPost(post.Header.TargetID, parentUid);
+
+                if (parentPost == null)
                     return;
 
-                int parentIdent = board.Posts[parentUid].Ident;
+                int parentIdent = parentPost.Ident;
 
                 if (!ActiveThreads.ContainsKey(parentIdent) || 
                     !ThreadMap.ContainsKey(parentIdent))

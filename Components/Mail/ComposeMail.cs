@@ -33,7 +33,11 @@ namespace DeOps.Components.Mail
             Links = mail.Core.Links;
             DefaultID = id;
 
-            ToTextBox.Text = Links.GetName(DefaultID);
+            if (id != 0)
+            {
+                ToTextBox.Text = Links.GetName(id);
+                ToIDs.Add(id);
+            }
         }
 
         internal override string GetTitle(bool small)
@@ -41,10 +45,8 @@ namespace DeOps.Components.Mail
             if (small)
                 return "Compose";
 
-            string name = Links.GetName(DefaultID);
-
-            if (name != "")
-                return "Mail " + name;
+            if (DefaultID != 0)
+                return "Mail " + Links.GetName(DefaultID);
 
             return "Compose Mail";
         }

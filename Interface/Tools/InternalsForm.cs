@@ -518,9 +518,12 @@ namespace DeOps.Interface.Tools
 
             Core.Locations.LocationMap.LockReading(delegate()
             {
-                foreach (Dictionary<ushort, LocInfo> dict in Core.Locations.LocationMap.Values)
-                    foreach (LocInfo info in dict.Values)
-                        DisplayLoc(Core.OpID, info);
+                foreach (ThreadedDictionary<ushort, LocInfo> dict in Core.Locations.LocationMap.Values)
+                    dict.LockReading(delegate()
+                    {
+                        foreach (LocInfo info in dict.Values)
+                            DisplayLoc(Core.OpID, info);
+                    });
             });
 
         }
@@ -538,7 +541,7 @@ namespace DeOps.Interface.Tools
 					xStr(info.Location.Source.Firewall),
 					xStr(info.Location.IP),		
 					xStr(info.Location.Proxies.Count),
-					xStr(info.Location.Location),
+					xStr(info.Location.Place),
 					xStr(info.Location.TTL),
 					xStr(info.Location.Version)
 				}));
@@ -1067,7 +1070,7 @@ namespace DeOps.Interface.Tools
                     listValues.Items.Add(new ListViewItem(new string[]
 					{
 						GetLinkName(board.DhtID),
-                        board.Posts.Count.ToString()
+                        board.Posts.SafeCount.ToString()
 					}));
                 }
             });
@@ -1107,13 +1110,15 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("Scope", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Hash", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Size", 100, HorizontalAlignment.Left);
-            
 
-            foreach (OpPost post in board.Posts.Values)
+
+            board.Posts.LockReading(delegate()
             {
-                PostHeader header = post.Header;
+                foreach (OpPost post in board.Posts.Values)
+                {
+                    PostHeader header = post.Header;
 
-                listValues.Items.Add(new ListViewItem(new string[]
+                    listValues.Items.Add(new ListViewItem(new string[]
 					{
 						GetLinkName(header.TargetID),
                         GetLinkName(header.SourceID),
@@ -1126,7 +1131,8 @@ namespace DeOps.Interface.Tools
                         Utilities.BytestoHex(header.FileHash),
                         header.FileSize.ToString()
 					}));
-            }
+                }
+            });
         }
 
         private string GetLinkName(ulong key)

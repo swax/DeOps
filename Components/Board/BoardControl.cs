@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -224,9 +225,12 @@ namespace DeOps.Components.Board
                     board.DhtBounds = Store.RecalcBounds(board.DhtID);
 
                     // republish objects that were not seen on the network during startup
-                    foreach (OpPost post in board.Posts.Values)
-                        if (post.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, board.DhtID))
-                            Store.PublishNetwork(board.DhtID, ComponentID.Board, post.SignedHeader);
+                    board.Posts.LockReading(delegate()
+                    {
+                       foreach (OpPost post in board.Posts.Values)
+                           if (post.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, board.DhtID))
+                               Store.PublishNetwork(board.DhtID, ComponentID.Board, post.SignedHeader);
+                    });
                 }
             });
 
@@ -290,8 +294,11 @@ namespace DeOps.Components.Board
                 FileStream file = new FileStream(tempPath, FileMode.Create);
                 CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
 
-                foreach (OpPost post in board.Posts.Values)
-                    stream.Write(post.SignedHeader, 0, post.SignedHeader.Length);
+                board.Posts.LockReading(delegate()
+                {
+                    foreach (OpPost post in board.Posts.Values)
+                        stream.Write(post.SignedHeader, 0, post.SignedHeader.Length);
+                });
 
                 stream.FlushFinalBlock();
                 stream.Close();
@@ -504,13 +511,11 @@ namespace DeOps.Components.Board
             
             PostUID uid = new PostUID(header);
 
-            OpBoard board = GetBoard(header.TargetID);
+            OpPost current = GetPost(header.TargetID, uid);
 
             // if link loaded
-            if (board != null && board.Posts.ContainsKey(uid))
+            if (current != null)
             {
-                OpPost current = board.Posts[uid];
-
                 // lower version, send update
                 if (header.Version < current.Header.Version)
                 {
@@ -538,6 +543,8 @@ namespace DeOps.Components.Board
 
         private void CachePost(SignedData signedHeader, PostHeader header)
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
 
             if (header.ParentID == 0 && header.SourceID != header.TargetID)
             {
@@ -579,11 +586,13 @@ namespace DeOps.Components.Board
             post.Unique = Core.Loading;
 
             // remove previous version of file, if its different
-            if (board.Posts.ContainsKey(uid) && GetPostPath(board.Posts[uid].Header) != GetPostPath(header)) 
-                try { File.Delete(GetPostPath(board.Posts[uid].Header)); }
+            OpPost prevPost = board.GetPost(uid);
+
+            if (prevPost != null && GetPostPath(prevPost.Header) != GetPostPath(header))
+                try { File.Delete(GetPostPath(prevPost.Header)); }
                 catch { }
 
-            board.Posts[uid] = post;
+            board.Posts.SafeAdd(uid,  post);
 
             // update replies
             if (post.Header.ParentID == 0)
@@ -591,10 +600,11 @@ namespace DeOps.Components.Board
             else
             {
                 PostUID parentUid = new PostUID(board.DhtID, post.Header.ProjectID, post.Header.ParentID);
+                OpPost parentPost = board.GetPost(parentUid);
 
-                if (board.Posts.ContainsKey(parentUid))
+                if (parentPost != null)
                 {
-                    board.UpdateReplies(board.Posts[parentUid]);
+                    board.UpdateReplies(parentPost);
                     UpdateGui(post);
                 }
             }
@@ -675,11 +685,10 @@ namespace DeOps.Components.Board
         {
             OpBoard board = GetBoard(target);
 
-            if (board != null)
-                if (board.Posts.ContainsKey(uid))
-                    return board.Posts[uid];
+            if (board == null)
+                return null;
 
-            return null;
+            return board.GetPost(uid);
         }
 
 
@@ -708,13 +717,16 @@ namespace DeOps.Components.Board
                         {
                             BitConverter.GetBytes(board.DhtID).CopyTo(patch, 0);
 
-                            foreach (PostUID uid in board.Posts.Keys)
+                            board.Posts.LockReading(delegate()
                             {
-                                uid.ToBytes().CopyTo(patch, 8);
-                                BitConverter.GetBytes(board.Posts[uid].Header.Version).CopyTo(patch, 24);
+                                foreach (PostUID uid in board.Posts.Keys)
+                                {
+                                    uid.ToBytes().CopyTo(patch, 8);
+                                    BitConverter.GetBytes(board.Posts[uid].Header.Version).CopyTo(patch, 24);
 
-                                data.Add(target, patch);
-                            }
+                                    data.Add(target, patch);
+                                }
+                            });
                         }
                     }
             });
@@ -740,12 +752,10 @@ namespace DeOps.Components.Board
                 if (!Utilities.InBounds(Core.LocalDhtID, distance, dhtid))
                     continue;
 
-                OpBoard board = GetBoard(dhtid);
+                OpPost post = GetPost(dhtid, uid);
 
-                if (board != null && board.Posts.ContainsKey(uid))
+                if (post != null)
                 {
-                    OpPost post = board.Posts[uid];
-
                     // remote version is lower, send update
                     if (post.Header.Version > version)
                     {
@@ -809,8 +819,6 @@ namespace DeOps.Components.Board
 
         void EndThreadSearch(DhtSearch search)
         {
-            OpBoard board = GetBoard(search.TargetID);
-
             foreach (SearchValue found in search.FoundValues)
             {
                 if (found.Value.Length < TheadSearch_ResultsSize)
@@ -820,22 +828,20 @@ namespace DeOps.Components.Board
                 ushort version = BitConverter.ToUInt16(found.Value, 16);
                 ushort replies = BitConverter.ToUInt16(found.Value, 18);
 
-                
-                if (board != null)
-                    if (board.Posts.ContainsKey(uid))
+                OpPost post = GetPost(search.TargetID, uid);
+
+                if (post != null)
+                {
+                    if (post.Replies < replies)
                     {
-                        OpPost post = board.Posts[uid];
-
-                        if (post.Replies < replies)
-                        {
-                            post.Replies = replies;
-                            UpdateGui(post);
-                        }
-
-                        // if we have current version, pass, else download
-                        if(post.Header.Version >= version)
-                            continue;
+                        post.Replies = replies;
+                        UpdateGui(post);
                     }
+
+                    // if we have current version, pass, else download
+                    if(post.Header.Version >= version)
+                        continue;
+                }
 
                 PostSearch(search.TargetID, uid, version);
 
@@ -889,11 +895,11 @@ namespace DeOps.Components.Board
                 PostUID uid = PostUID.FromBytes(found.Value, 0);
                 ushort version = BitConverter.ToUInt16(found.Value, 16);
 
-                
-                if (board != null)
-                    if (board.Posts.ContainsKey(uid))
-                        if (board.Posts[uid].Header.Version >= version)
-                            continue;
+                OpPost post = GetPost(search.TargetID, uid);
+
+                if (post != null)
+                    if (post.Header.Version >= version)
+                        continue;
 
                 PostSearch(search.TargetID, uid, version);
             }
@@ -946,18 +952,21 @@ namespace DeOps.Components.Board
                 uint project = BitConverter.ToUInt32(parameters, 1);
                 uint parent = BitConverter.ToUInt32(parameters, 5);
 
-                foreach (OpPost post in board.Posts.Values)
-                    if (post.Header.ProjectID == project)
-                        if ((parent == 0 && post.Header.ParentID == 0) || // searching for top level threads
-                            (parent == post.Header.ParentID)) // searching for posts under particular thread
-                        {
-                            byte[] result = new byte[TheadSearch_ResultsSize];
-                            new PostUID(post.Header).ToBytes().CopyTo(result, 0);
-                            BitConverter.GetBytes(post.Header.Version).CopyTo(result, 16);
-                            BitConverter.GetBytes(post.Replies).CopyTo(result, 18);
+                board.Posts.LockReading(delegate()
+                {
+                    foreach (OpPost post in board.Posts.Values)
+                        if (post.Header.ProjectID == project)
+                            if ((parent == 0 && post.Header.ParentID == 0) || // searching for top level threads
+                                (parent == post.Header.ParentID)) // searching for posts under particular thread
+                            {
+                                byte[] result = new byte[TheadSearch_ResultsSize];
+                                new PostUID(post.Header).ToBytes().CopyTo(result, 0);
+                                BitConverter.GetBytes(post.Header.Version).CopyTo(result, 16);
+                                BitConverter.GetBytes(post.Replies).CopyTo(result, 18);
 
-                            results.Add(result);
-                        }
+                                results.Add(result);
+                            }
+                });
             }
 
             // time search
@@ -969,15 +978,18 @@ namespace DeOps.Components.Board
                 uint project = BitConverter.ToUInt32(parameters, 1);
                 DateTime time = DateTime.FromBinary(BitConverter.ToInt64(parameters, 5));
 
-                 foreach (OpPost post in board.Posts.Values)
-                     if (post.Header.ProjectID == project && post.Header.Time > time)
-                     {
-                         byte[] result = new byte[TimeSearch_ResultsSize];
-                         new PostUID(post.Header).ToBytes().CopyTo(result, 0);
-                         BitConverter.GetBytes(post.Header.Version).CopyTo(result, 16);
+                board.Posts.LockReading(delegate()
+                {
+                    foreach (OpPost post in board.Posts.Values)
+                        if (post.Header.ProjectID == project && post.Header.Time > time)
+                        {
+                            byte[] result = new byte[TimeSearch_ResultsSize];
+                            new PostUID(post.Header).ToBytes().CopyTo(result, 0);
+                            BitConverter.GetBytes(post.Header.Version).CopyTo(result, 16);
 
-                         results.Add(result);
-                     }
+                            results.Add(result);
+                        }
+                });
             }
 
             // post search
@@ -989,9 +1001,10 @@ namespace DeOps.Components.Board
                 PostUID uid = PostUID.FromBytes(parameters, 1);
                 ushort version = BitConverter.ToUInt16(parameters, 17);
 
-                if (board.Posts.ContainsKey(uid))
-                    if (board.Posts[uid].Header.Version == version)
-                        results.Add(board.Posts[uid].SignedHeader);
+                OpPost post = GetPost(key, uid);
+                if (post != null)
+                    if (post.Header.Version == version)
+                        results.Add(post.SignedHeader);
             }
 
             return results;
@@ -1121,9 +1134,12 @@ namespace DeOps.Components.Board
                 }
 
                 // call update for all posts
-                foreach (OpPost post in board.Posts.Values)
-                    if (post.Header.ProjectID == project && post.Header.ParentID == 0)
-                        UpdateGui(post);
+                board.Posts.LockReading(delegate()
+                {
+                    foreach (OpPost post in board.Posts.Values)
+                        if (post.Header.ProjectID == project && post.Header.ParentID == 0)
+                            UpdateGui(post);
+                });
             }
 
 
@@ -1138,20 +1154,22 @@ namespace DeOps.Components.Board
 
             OpBoard board = GetBoard(target);
 
+            DateTime refresh = default(DateTime);
             if (board != null)
-                if (board.LastRefresh.ContainsKey(project))
+                if (board.LastRefresh.SafeTryGetValue(project, out refresh))
                     fullSearch = false;
 
+
             if (fullSearch)
-                Core.RunInCoreAsync(delegate() { ThreadSearch(target, project, 0); });
+                ThreadSearch(target, project, 0); 
 
             // search for all theads posted since refresh, with an hour buffer
             else
-                TimeSearch(target, project, board.LastRefresh[project].AddHours(-1));
+                TimeSearch(target, project, refresh.AddHours(-1));
 
 
             if (board != null)
-                board.LastRefresh[project] = Core.TimeNow;
+                board.LastRefresh.SafeAdd(project, Core.TimeNow);
         }
 
         internal void LoadThread(OpPost parent)
@@ -1162,10 +1180,13 @@ namespace DeOps.Components.Board
                 return;
 
             // have all replies fire an update
-            foreach (OpPost post in board.Posts.Values)
-                if (post.Header.ProjectID == parent.Header.ProjectID &&
-                    post.Header.ParentID == parent.Header.PostID)
-                    UpdateGui(post);
+            board.Posts.LockReading(delegate()
+            {
+               foreach (OpPost post in board.Posts.Values)
+                   if (post.Header.ProjectID == parent.Header.ProjectID &&
+                       post.Header.ParentID == parent.Header.PostID)
+                       UpdateGui(post);
+            });
 
 
             // do search for thread
@@ -1257,8 +1278,8 @@ namespace DeOps.Components.Board
         internal ulong DhtBounds = ulong.MaxValue;
         internal byte[] Key;    // make sure reference is the same as main key list
 
-        internal Dictionary<PostUID, OpPost> Posts = new Dictionary<PostUID, OpPost>();
-        internal Dictionary<uint, DateTime> LastRefresh = new Dictionary<uint, DateTime>();
+        internal ThreadedDictionary<PostUID, OpPost> Posts = new ThreadedDictionary<PostUID, OpPost>();
+        internal ThreadedDictionary<uint, DateTime> LastRefresh = new ThreadedDictionary<uint, DateTime>();
         
 
         internal OpBoard(byte[] key)
@@ -1267,19 +1288,32 @@ namespace DeOps.Components.Board
             DhtID = Utilities.KeytoID(key);
         }
 
+        internal OpPost GetPost(PostUID uid)
+        {
+            OpPost post = null;
+
+            Posts.SafeTryGetValue(uid, out post);
+
+            return post;
+        }
+
         internal void UpdateReplies(OpPost parent)
         {
             // count replies to post, if greater than variable set, overwrite
 
             ushort replies = 0;
 
-            foreach (OpPost post in Posts.Values)
-                if (post.Header.ParentID == parent.Header.PostID)
-                    replies++;
+            Posts.LockReading(delegate()
+            {
+                foreach (OpPost post in Posts.Values)
+                    if (post.Header.ParentID == parent.Header.PostID)
+                        replies++;
+            });
 
             if (replies > parent.Replies)
                 parent.Replies = replies;
         }
+
     }
 
     internal class OpPost

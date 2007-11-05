@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -129,9 +130,7 @@ namespace DeOps.Components.Plan
             LoadHeaders();
 
             if (!PlanMap.SafeContainsKey(Core.LocalDhtID))
-                SaveLocal();
-
-            LocalPlan = GetPlan(Core.LocalDhtID, true);
+                SaveLocal();   
         }
 
         void Core_Timer()
@@ -354,6 +353,9 @@ namespace DeOps.Components.Plan
 
         private void CachePlan(SignedData signedHeader, PlanHeader header)
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             try
             {
                 // check if file exists           
@@ -365,35 +367,35 @@ namespace DeOps.Components.Plan
                 }
 
                 // get plan
-                OpPlan plan = GetPlan(header.KeyID, false);
+                OpPlan prevPlan = GetPlan(header.KeyID, false);
 
-                if (plan == null)
-                {
-                    plan = new OpPlan(header.Key);
-                    PlanMap.SafeAdd(header.KeyID, plan);
-                }
+                OpPlan newPlan = new OpPlan(header.Key);
 
      
                 // delete old file
-                if (plan.Header != null)
+                if (prevPlan != null)
                 {
-                    if (header.Version < plan.Header.Version)
+                    if (header.Version < prevPlan.Header.Version)
                         return; // dont update with older version
 
-                    string oldPath = GetFilePath(plan.Header);
+                    string oldPath = GetFilePath(prevPlan.Header);
                     if (path != oldPath && File.Exists(oldPath))
                         try { File.Delete(oldPath); }
                         catch { }
                 }
 
                 // set new header
-                plan.Header = header;
-                plan.SignedHeader = signedHeader.Encode(Core.Protocol);
-                plan.Unique = Core.Loading;
+                newPlan.Header = header;
+                newPlan.SignedHeader = signedHeader.Encode(Core.Protocol);
+                newPlan.Unique = Core.Loading;
 
-                if (plan.Loaded) // if loaded, reload
-                    LoadPlan(plan.DhtID);
+                PlanMap.SafeAdd(header.KeyID, newPlan);
 
+                if (header.KeyID == Core.LocalDhtID)
+                    LocalPlan = newPlan;
+
+                if ((newPlan == LocalPlan ) || (prevPlan != null && prevPlan.Loaded)) // if loaded, reload
+                    LoadPlan(newPlan.DhtID);
                 
                 RunSaveHeaders = true;
                 
@@ -405,27 +407,27 @@ namespace DeOps.Components.Plan
                     Links.ProjectRoots.LockReading(delegate()
                     {
                         foreach (uint project in Links.ProjectRoots.Keys)
-                            if (plan.DhtID == Core.LocalDhtID || Links.IsHigher(plan.DhtID, project))
+                            if (newPlan.DhtID == Core.LocalDhtID || Links.IsHigher(newPlan.DhtID, project))
                                 Links.GetLocsBelow(Core.LocalDhtID, project, locations);
                     });
 
-                    Store.PublishDirect(locations, plan.DhtID, ComponentID.Plan, plan.SignedHeader);
+                    Store.PublishDirect(locations, newPlan.DhtID, ComponentID.Plan, newPlan.SignedHeader);
                 }
 
 
                 // see if we need to update our own goal estimates
-                if (plan.DhtID != Core.LocalDhtID && LocalPlan != null)
+                if (newPlan.DhtID != Core.LocalDhtID && LocalPlan != null)
                     Links.ProjectRoots.LockReading(delegate()
                     {
                         foreach (uint project in Links.ProjectRoots.Keys)
-                            if (Links.IsLower(Core.LocalDhtID, plan.DhtID, project)) // updated plan must be lower than us to have an effect
+                            if (Links.IsLower(Core.LocalDhtID, newPlan.DhtID, project)) // updated plan must be lower than us to have an effect
                                 foreach (int ident in LocalPlan.GoalMap.Keys)
                                 {
-                                    if (!plan.Loaded)
-                                        LoadPlan(plan.DhtID);
+                                    if (!newPlan.Loaded)
+                                        LoadPlan(newPlan.DhtID);
 
                                     // if updated plan part of the same goal ident, re-estimate our own goals, incorporating update's changes
-                                    if (plan.GoalMap.ContainsKey(ident) || plan.ItemMap.ContainsKey(ident))
+                                    if (newPlan.GoalMap.ContainsKey(ident) || newPlan.ItemMap.ContainsKey(ident))
                                         foreach (PlanGoal goal in LocalPlan.GoalMap[ident])
                                         {
                                             int completed = 0, total = 0;
@@ -446,10 +448,10 @@ namespace DeOps.Components.Plan
 
 
                 if (PlanUpdate != null)
-                    Core.RunInGuiThread(PlanUpdate, plan);
+                    Core.RunInGuiThread(PlanUpdate, newPlan);
 
-                if (Core.NewsWorthy(plan.DhtID, 0, false))
-                    Core.MakeNews("Plan updated by " + Links.GetName(plan.DhtID), plan.DhtID, 0, false, PlanRes.Schedule, Menu_ScheduleView);
+                if (Core.NewsWorthy(newPlan.DhtID, 0, false))
+                    Core.MakeNews("Plan updated by " + Links.GetName(newPlan.DhtID), newPlan.DhtID, 0, false, PlanRes.Schedule, Menu_ScheduleView);
             }
             catch (Exception ex)
             {

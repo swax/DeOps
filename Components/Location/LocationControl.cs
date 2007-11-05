@@ -27,7 +27,7 @@ namespace DeOps.Components.Location
 
         internal LocInfo LocalLocation;
         internal ThreadedDictionary<ulong, LinkedList<CryptLoc>> GlobalIndex = new ThreadedDictionary<ulong, LinkedList<CryptLoc>>();
-        internal ThreadedDictionary<ulong, Dictionary<ushort, LocInfo>> LocationMap = new ThreadedDictionary<ulong, Dictionary<ushort, LocInfo>>();
+        internal ThreadedDictionary<ulong, ThreadedDictionary<ushort, LocInfo>> LocationMap = new ThreadedDictionary<ulong, ThreadedDictionary<ushort, LocInfo>>();
 
         Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
 
@@ -187,41 +187,45 @@ namespace DeOps.Components.Location
                      {
                          removeClients.Clear();
 
-                         foreach (ushort id in LocationMap[key].Keys)
-                         {
-                             if (second == 60)
+                         ThreadedDictionary<ushort, LocInfo> clients = null;
+                         LocationMap.SafeTryGetValue(key, out clients);
+
+                         if (clients != null)
+                             clients.LockReading(delegate()
                              {
-                                 if (LocationMap[key][id].TTL > 0)
-                                     LocationMap[key][id].TTL--;
+                                 foreach (ushort id in clients.Keys)
+                                 {
+                                     if (second == 60)
+                                     {
+                                         if (clients[id].TTL > 0)
+                                             clients[id].TTL--;
 
-                                 if (LocationMap[key][id].TTL == 0)
-                                     removeClients.Add(id);
-                             }
+                                         if (clients[id].TTL == 0)
+                                             removeClients.Add(id);
+                                     }
 
-                             //crit hack - last 30 and 15 secs before loc destroyed do searches (working pretty good through...)
-                             if (LocationMap[key][id].TTL == 1 &&
-                                 (second == 15 || second == 30))
-                                 if (Core.Links.LinkMap.SafeContainsKey(key))
-                                     StartSearch(key, 0, false);
-                         }
+                                     //crit hack - last 30 and 15 secs before loc destroyed do searches (working pretty good through...)
+                                     if (clients[id].TTL == 1 &&
+                                         (second == 15 || second == 30))
+                                         if (Core.Links.LinkMap.SafeContainsKey(key))
+                                             StartSearch(key, 0, false);
+                                 }
+                             });
 
                          foreach (ushort id in removeClients)
-                             LocationMap[key].Remove(id);
+                             clients.SafeRemove(id);
 
-                         if (LocationMap[key].Count == 0)
+                         if (clients.SafeCount == 0)
                              removeKeys.Add(key);
                      }
                 });
 
-                LocationMap.LockWriting(delegate()
-                {
-                    foreach (ulong key in removeKeys)
-                     {
-                         LocationMap.Remove(key);
+                foreach (ulong key in removeKeys)
+                 {
+                     LocationMap.SafeRemove(key);
 
-                         Core.RunInGuiThread(GuiUpdate, key);
-                     }
-                });
+                     Core.RunInGuiThread(GuiUpdate, key);
+                 }
             }
 
             // clean research map
@@ -260,7 +264,7 @@ namespace DeOps.Components.Location
                 if (connect.Proxy == ProxyType.Server)
                     location.Proxies.Add(new DhtAddress(connect.RemoteIP, connect));
 
-            location.Location = Core.User.Settings.Location;
+            location.Place = Core.User.Settings.Location;
             location.Version  = LocationVersion++;
             if( Core.Profiles != null)
                 location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
@@ -324,14 +328,11 @@ namespace DeOps.Components.Location
 
             uint minVersion = BitConverter.ToUInt32(parameters, 0);
 
+            List<LocInfo> clients = GetClients(key);
 
-            LocationMap.LockReading(delegate()
-            {
-                if (LocationMap.ContainsKey(key))
-                    foreach (LocInfo info in LocationMap[key].Values)
-                        if (!info.Location.Global && info.Location.Version >= minVersion)
-                            results.Add(info.SignedData);
-            });
+            foreach (LocInfo info in clients)
+                if (!info.Location.Global && info.Location.Version >= minVersion)
+                    results.Add(info.SignedData);
 
             return results;
         }
@@ -375,29 +376,23 @@ namespace DeOps.Components.Location
             Core.IndexKey(location.KeyID, ref location.Key);
             Utilities.CheckSignedData(location.Key, signed.Data, signed.Signature);
 
-            LocInfo current = null;
+            LocInfo current = GetLocationInfo(location.KeyID, location.Source.ClientID);
 
             // check location version
-           LocationMap.LockReading(delegate()
-           {
-               if (LocationMap.ContainsKey(location.KeyID))
-                   if (LocationMap[location.KeyID].ContainsKey(location.Source.ClientID))
-                   {
-                       current = LocationMap[location.KeyID][location.Source.ClientID];
+            if (current != null)
+            {
+                if (location.Version == current.Location.Version)
+                    return;
 
-                       if (location.Version == current.Location.Version)
-                           return;
+                else if (location.Version < current.Location.Version)
+                {
+                    if (data != null && data.Sources != null)
+                        foreach (DhtAddress source in data.Sources)
+                            Core.OperationNet.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Location.KeyID, ComponentID.Location, current.SignedData));
 
-                       else if (location.Version < current.Location.Version)
-                       {
-                           if (data != null && data.Sources != null)
-                               foreach (DhtAddress source in data.Sources)
-                                   Core.OperationNet.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Location.KeyID, ComponentID.Location, current.SignedData));
-
-                           return;
-                       }
-                   }
-           });
+                    return;
+                }
+            }
 
             // version checks
             if(Core.Profiles != null)
@@ -409,17 +404,17 @@ namespace DeOps.Components.Location
             // add location
             if (current == null)
             {
-                Dictionary<ushort, LocInfo> locations = null;
+                ThreadedDictionary<ushort, LocInfo> locations = null;
 
                 if (!LocationMap.SafeTryGetValue(location.KeyID, out locations))
                 {
-                    locations = new Dictionary<ushort, LocInfo>();
+                    locations = new ThreadedDictionary<ushort, LocInfo>();
                     LocationMap.SafeAdd(location.KeyID, locations);
                 }
 
                 current = new LocInfo();
                 current.Cached = Core.OperationNet.Store.IsCached(location.KeyID);
-                locations[location.Source.ClientID] = current;
+                locations.SafeAdd(location.Source.ClientID, current);
             }
 
             current.Location   = location;
@@ -480,7 +475,7 @@ namespace DeOps.Components.Location
             else
                 return;
 
-            location.Location = Core.User.Settings.Location;
+            location.Place = Core.User.Settings.Location;
             location.Version = LocationVersion++;
             location.LinkVersion = Core.Links.LocalLink.Header.Version;
 
@@ -515,25 +510,28 @@ namespace DeOps.Components.Location
 
         }
 
-        internal LocationData FindLocation(ulong key, ushort client)
+        internal LocInfo GetLocationInfo(ulong key, ushort client)
         {
-            Dictionary<ushort, LocInfo> locations = null;
+            ThreadedDictionary<ushort, LocInfo> locations = null;
 
             if (LocationMap.SafeTryGetValue(key, out locations))
-                if (locations.ContainsKey(client))
-                    return locations[client].Location;
+            {
+                LocInfo info = null;
+                if (locations.SafeTryGetValue(client, out info))
+                    return info;
+            }
 
             return null;
         }
 
         internal string GetLocationName(ulong key, ushort id)
         {
-            LocationData data = Core.Locations.FindLocation(key, id);
+            LocationData data = Core.Locations.GetLocationInfo(key, id).Location;
 
-            if (data == null || data.Location == null || data.Location == "")
+            if (data == null || data.Place == null || data.Place == "")
                 return "Unknown";
 
-            return data.Location;
+            return data.Place;
         }
 
         internal void Research(ulong key)
@@ -561,21 +559,30 @@ namespace DeOps.Components.Location
 
         internal int ClientCount(ulong id)
         {
-            Dictionary<ushort, LocInfo> locations = null;
+            ThreadedDictionary<ushort, LocInfo> locations = null;
 
             if (LocationMap.SafeTryGetValue(id, out locations))
-                return locations.Count;
+                return locations.SafeCount;
 
             return 0;
         }
 
-        internal Dictionary<ushort, LocInfo> GetClients(ulong id)
+        internal List<LocInfo> GetClients(ulong id)
         {
-            Dictionary<ushort, LocInfo> clients = null;
+            List<LocInfo> results = new List<LocInfo>();
+            
+            ThreadedDictionary<ushort, LocInfo> clients = null;
 
-            LocationMap.SafeTryGetValue(id, out clients);
+            if(!LocationMap.SafeTryGetValue(id, out clients))
+                return results;
 
-            return clients;
+            clients.LockReading(delegate()
+            {
+                foreach (LocInfo info in clients.Values)
+                    results.Add(info);
+            });
+
+            return results;
         }
     }
 

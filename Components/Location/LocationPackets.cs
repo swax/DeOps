@@ -25,7 +25,7 @@ namespace DeOps.Components.Location
         const byte Packet_Global = 0x30;
         const byte Packet_IP = 0x40;
         const byte Packet_Proxies = 0x50;
-        const byte Packet_Location = 0x60;
+        const byte Packet_Place = 0x60;
         const byte Packet_Version = 0x70;
         const byte Packet_ProfileVersion = 0x80;
         const byte Packet_LinkVersion = 0x90;
@@ -36,7 +36,7 @@ namespace DeOps.Components.Location
         internal bool Global;
         internal IPAddress IP;
         internal List<DhtAddress> Proxies = new List<DhtAddress>();
-        internal string Location = "";
+        internal string Place = "";
         internal uint TTL;
         internal uint Version;
         internal uint ProfileVersion;
@@ -55,7 +55,7 @@ namespace DeOps.Components.Location
                 protocol.WritePacket(loc, Packet_Global, BitConverter.GetBytes(Global));
                 protocol.WritePacket(loc, Packet_IP, IP.GetAddressBytes());
                 protocol.WritePacket(loc, Packet_Proxies, DhtAddress.ToByteList(Proxies));
-                protocol.WritePacket(loc, Packet_Location, protocol.UTF.GetBytes(Location));
+                protocol.WritePacket(loc, Packet_Place, protocol.UTF.GetBytes(Place));
                 protocol.WritePacket(loc, Packet_TTL, BitConverter.GetBytes(TTL));
                 protocol.WritePacket(loc, Packet_Version, BitConverter.GetBytes(Version));
                 protocol.WritePacket(loc, Packet_ProfileVersion, BitConverter.GetBytes(ProfileVersion));
@@ -105,8 +105,8 @@ namespace DeOps.Components.Location
                         loc.Proxies = DhtAddress.FromByteList(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
-                    case Packet_Location:
-                        loc.Location = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                    case Packet_Place:
+                        loc.Place = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_TTL:

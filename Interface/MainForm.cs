@@ -399,28 +399,27 @@ namespace DeOps.Interface
             projects = projects.TrimEnd(new char[] { ' ', ',' });
 
 
-            string locations = "";
+            string places = "";
             if (Core.OperationNet.Routing.Responsive())
             {
-                Core.Locations.LocationMap.LockReading(delegate()
-                {
-                    if (Core.Locations.LocationMap.ContainsKey(link.DhtID))
-                        foreach (LocInfo info in Core.Locations.LocationMap[link.DhtID].Values)
-                            if (!info.Location.Global)
-                                if (info.Location.Location == "")
-                                    locations += "Unknown, ";
-                                else
-                                    locations += info.Location.Location + ", ";
-                });
+                List<LocInfo> clients = Core.Locations.GetClients(link.DhtID);
 
-                locations = locations.TrimEnd(new char[] { ' ', ',' });
+                foreach (LocInfo info in clients)
+                    if (!info.Location.Global)
+                        if (info.Location.Place == "")
+                            places += "Unknown, ";
+                        else
+                            places += info.Location.Place + ", ";
+
+
+                places = places.TrimEnd(new char[] { ' ', ',' });
             }
 
             List<string[]> tuples = new List<string[]>();
             tuples.Add(new string[] { "name", Links.GetName(link.DhtID) });
             tuples.Add(new string[] { "title", title });
             tuples.Add(new string[] { "projects", projects });
-            tuples.Add(new string[] { "locations", locations });
+            tuples.Add(new string[] { "locations", places });
 
             if (CurrentStatusMode != mode)
             {

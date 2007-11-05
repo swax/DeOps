@@ -1416,21 +1416,19 @@ namespace DeOps.Components.Link
         {
             bool online = false;
 
-              Core.Locations.LocationMap.LockReading(delegate()
-              {
-                  if (Core.Locations.LocationMap.ContainsKey(link.DhtID))
-                      foreach (LocInfo info in Core.Locations.LocationMap[link.DhtID].Values)
-                          if (!info.Location.Global)
-                          {
-                              if (info.Location.KeyID == Core.LocalDhtID && info.Location.Source.ClientID == Core.ClientID)
-                                  continue;
+            List<LocInfo> clients = Core.Locations.GetClients(link.DhtID);
 
-                              if (!locations.Contains(info.Location))
-                                  locations.Add(info.Location);
+            foreach (LocInfo info in clients)
+                if (!info.Location.Global)
+                {
+                    if (info.Location.KeyID == Core.LocalDhtID && info.Location.Source.ClientID == Core.ClientID)
+                        continue;
 
-                              online = true;
-                          }
-              });
+                    if (!locations.Contains(info.Location))
+                        locations.Add(info.Location);
+
+                    online = true;
+                }
 
             return online;
         }

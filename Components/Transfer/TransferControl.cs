@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Security.Cryptography;
@@ -68,11 +69,13 @@ namespace DeOps.Components.Transfer
 
         internal int StartDownload( ulong target, FileDetails details, object[] args, EndDownloadHandler endEvent)
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             // search for already started downloads
-            lock (DownloadMap)
-                foreach (int key in DownloadMap.Keys)
-                    if (DownloadMap[key].Details.Equals(details))
-                        return key;
+            foreach (int key in DownloadMap.Keys)
+                if (DownloadMap[key].Details.Equals(details))
+                    return key;
 
             // add to download pending
             int id = Core.RndGen.Next();
@@ -88,40 +91,36 @@ namespace DeOps.Components.Transfer
             if (!DownloadMap.ContainsKey(id))
                 return;
 
-            Core.Locations.LocationMap.LockReading(delegate()
-            {
-                if (Core.Locations.LocationMap.ContainsKey(key))
-                    foreach (LocInfo info in Core.Locations.LocationMap[key].Values)
-                        if (!info.Location.Global) //crit works when proxying over global?
-                            DownloadMap[id].AddSource(info.Location);
-            });
+            List<LocInfo> clients = Core.Locations.GetClients(key);
+
+            foreach (LocInfo info in clients)
+                if (!info.Location.Global) //crit works when proxying over global?
+                    DownloadMap[id].AddSource(info.Location);
         }
 
         internal void CancelDownload(ushort id, byte[] hash, long size)
         {
             FileDownload target = null;
 
-            lock (DownloadMap)
-                foreach (FileDownload download in DownloadMap.Values)
-                    if (download.Details.Component == id &&
-                       download.Details.Size == size &&
-                       Utilities.MemCompare(download.Details.Hash, hash))
-                    {
-                        target = download;
-                        break;
-                    }
-
-            if(target != null)
-                lock (DownloadMap)
+            foreach (FileDownload download in DownloadMap.Values)
+                if (download.Details.Component == id &&
+                   download.Details.Size == size &&
+                   Utilities.MemCompare(download.Details.Hash, hash))
                 {
-                    if (Pending.Contains(target.ID))
-                        Pending.Remove(target.ID);
-
-                    if (Active.Contains(target.ID))
-                        Active.Remove(target.ID);
-                    
-                    DownloadMap.Remove(target.ID);
+                    target = download;
+                    break;
                 }
+
+            if (target != null)
+            {
+                if (Pending.Contains(target.ID))
+                    Pending.Remove(target.ID);
+
+                if (Active.Contains(target.ID))
+                    Active.Remove(target.ID);
+
+                DownloadMap.Remove(target.ID);
+            }
         }
 
         void Core_Timer()
@@ -138,7 +137,7 @@ namespace DeOps.Components.Transfer
                 byte[] parameters = transfer.Details.Encode(Core.Protocol);
 
                 DhtSearch search = Core.OperationNet.Searches.Start(transfer.Target, "Transfer", ComponentID.Transfer, parameters, new EndSearchHandler(EndSearch));
-                
+
                 if (search != null)
                 {
                     transfer.Searching = true;
@@ -157,11 +156,11 @@ namespace DeOps.Components.Transfer
                         download.NextAttempt--;
                     else
                         Connect(DownloadMap[id]);
-               
+
                     // check if done
-                    if (!download.Searching && 
+                    if (!download.Searching &&
                         download.Sessions.Count == 0 && // ensure that removed
-                        download.Attempted.Count == download.Sources.Count && 
+                        download.Attempted.Count == download.Sources.Count &&
                         download.NextAttempt == 0)
                         download.Status = DownloadStatus.Failed;
                 }
@@ -169,57 +168,51 @@ namespace DeOps.Components.Transfer
 
 
             // run code below every 5 secs
-            if(Core.TimeNow.Second % 5 != 0)
+            if (Core.TimeNow.Second % 5 != 0)
                 return;
 
 
             //remove dead uploads
-            lock (UploadMap)
+            List<RudpSession> removeSessions = new List<RudpSession>();
+
+            foreach (RudpSession session in UploadMap.Keys)
             {
-                List<RudpSession> removeSessions = new List<RudpSession>();
+                List<FileUpload> doneList = new List<FileUpload>();
+                List<FileUpload> uploadList = UploadMap[session];
 
-                foreach (RudpSession session in UploadMap.Keys)
-                {
-                    List<FileUpload> doneList = new List<FileUpload>();
-                    List<FileUpload> uploadList = UploadMap[session];
+                foreach (FileUpload upload in uploadList)
+                    if (upload.Done)
+                        doneList.Add(upload);
 
-                    foreach (FileUpload upload in uploadList)
-                        if (upload.Done)
-                            doneList.Add(upload);
+                foreach (FileUpload upload in doneList)
+                    uploadList.Remove(upload);
 
-                    foreach (FileUpload upload in doneList)
-                        uploadList.Remove(upload);
-
-                    if (uploadList.Count == 0)
-                        removeSessions.Add(session);
-                }
-
-                foreach (RudpSession session in removeSessions)
-                    UploadMap.Remove(session);
+                if (uploadList.Count == 0)
+                    removeSessions.Add(session);
             }
 
+            foreach (RudpSession session in removeSessions)
+                UploadMap.Remove(session);
+
             // remove dead downloads
-            lock (DownloadMap)
+            List<int> removeList = new List<int>();
+
+            foreach (int id in Active)
+                if (DownloadMap[id].Status == DownloadStatus.Failed ||
+                    DownloadMap[id].Status == DownloadStatus.Done)
+                    removeList.Add(id);
+
+            foreach (int id in removeList)
             {
-                List<int> removeList = new List<int>();
-
-                foreach (int id in Active)
-                    if (DownloadMap[id].Status == DownloadStatus.Failed ||
-                        DownloadMap[id].Status == DownloadStatus.Done)
-                        removeList.Add(id);
-
-                foreach (int id in removeList)
+                try
                 {
-                    try
-                    {
-                        DownloadMap[id].CloseStream();
-                        File.Delete(DownloadMap[id].Destination);
-                    }
-                    catch { }
-
-                    Active.Remove(id);
-                    DownloadMap.Remove(id);
+                    DownloadMap[id].CloseStream();
+                    File.Delete(DownloadMap[id].Destination);
                 }
+                catch { }
+
+                Active.Remove(id);
+                DownloadMap.Remove(id);
             }
         }
 
@@ -228,15 +221,14 @@ namespace DeOps.Components.Transfer
         {
             FileDownload target = null;
 
-            lock (DownloadMap)
-                foreach (FileDownload download in DownloadMap.Values)
-                    if (download.Details.Component == id &&
-                       download.Details.Size == size &&
-                       Utilities.MemCompare(download.Details.Hash, hash))
-                    {
-                        target = download;
-                        break;
-                    }
+            foreach (FileDownload download in DownloadMap.Values)
+                if (download.Details.Component == id &&
+                   download.Details.Size == size &&
+                   Utilities.MemCompare(download.Details.Hash, hash))
+                {
+                    target = download;
+                    break;
+                }
 
             if(target == null)
                 return null;

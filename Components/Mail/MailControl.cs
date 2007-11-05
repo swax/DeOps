@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -50,6 +51,8 @@ namespace DeOps.Components.Mail
 {
     internal delegate void MailUpdateHandler(bool inbox, LocalMail message);
 
+    enum MailBoxType { Inbox, Outbox }
+
 
     class MailControl : OpComponent
     {
@@ -67,8 +70,11 @@ namespace DeOps.Components.Mail
         internal Dictionary<ulong, List<CachedAck>>  AckMap  = new Dictionary<ulong, List<CachedAck>>();
         internal Dictionary<ulong, CachedPending> PendingMap = new Dictionary<ulong, CachedPending>();
 
-        internal List<LocalMail> Inbox;
-        internal List<LocalMail> Outbox;
+        internal ThreadedList<LocalMail> Inbox;
+        internal ThreadedList<LocalMail> Outbox;
+
+        internal bool SaveInbox;
+        internal bool SaveOutbox;
 
         CachedPending LocalPending;
         internal Dictionary<ulong, List<ulong>>  PendingMail = new Dictionary<ulong, List<ulong>>();
@@ -126,15 +132,14 @@ namespace DeOps.Components.Mail
 
             LoadHeaders();
 
-            lock (PendingMap)
-                if (!PendingMap.ContainsKey(Core.LocalDhtID))
-                {
-                    PendingMap[Core.LocalDhtID] = new CachedPending();
-                    LocalPending = PendingMap[Core.LocalDhtID];
-                    
-                    SavePending();
-                    SaveHeaders();
-                }
+            if (!PendingMap.ContainsKey(Core.LocalDhtID))
+            {
+                PendingMap[Core.LocalDhtID] = new CachedPending();
+                LocalPending = PendingMap[Core.LocalDhtID];
+                
+                SavePending();
+                SaveHeaders();
+            }
         }
 
         void Core_Timer()
@@ -146,6 +151,12 @@ namespace DeOps.Components.Mail
 
             if (RunSaveHeaders)
                 SaveHeaders();
+
+            if (SaveInbox && Inbox != null)
+                SaveLocalHeaders(MailBoxType.Inbox);
+
+            if (SaveOutbox && Outbox != null)
+                SaveLocalHeaders(MailBoxType.Outbox);
 
 
             // clean download later map
@@ -334,6 +345,9 @@ namespace DeOps.Components.Mail
 
         void SaveHeaders()
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             RunSaveHeaders = false;
 
             try
@@ -353,9 +367,8 @@ namespace DeOps.Components.Mail
                         stream.Write(ack.SignedAck, 0, ack.SignedAck.Length);
 
                 // unacked
-                lock (PendingMap)
-                    foreach (CachedPending pending in PendingMap.Values)
-                        stream.Write(pending.SignedHeader, 0, pending.SignedHeader.Length);
+                foreach (CachedPending pending in PendingMap.Values)
+                    stream.Write(pending.SignedHeader, 0, pending.SignedHeader.Length);
 
                 stream.FlushFinalBlock();
                 stream.Close();
@@ -414,20 +427,37 @@ namespace DeOps.Components.Mail
             }
         }
 
-        internal void SaveLocalHeaders(List<LocalMail> mailList, string name)
-        {
+        internal void SaveLocalHeaders(MailBoxType box)
+        {           
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
+            ThreadedList<LocalMail> mailList = (box == MailBoxType.Inbox) ? Inbox : Outbox;
+            string name = (box == MailBoxType.Inbox) ? "inbox" : "outbox";
+
+            if (box == MailBoxType.Inbox)
+                SaveInbox = false;
+            if (box == MailBoxType.Outbox)
+                SaveOutbox = false;
+
+            if (mailList == null)
+                return;
+
+ 
             try
             {
                 string tempPath = Core.GetTempPath();
                 FileStream file = new FileStream(tempPath, FileMode.Create);
                 CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
 
-                lock (mailList)
+                mailList.LockReading(delegate()
+                {
                     foreach (LocalMail local in mailList)
                     {
                         byte[] encoded = local.Header.Encode(Core.Protocol, true);
                         stream.Write(encoded, 0, encoded.Length);
                     }
+                });
 
                 stream.FlushFinalBlock();
                 stream.Close();
@@ -443,46 +473,48 @@ namespace DeOps.Components.Mail
             }
         }
 
-        internal void LoadLocalHeaders(ref List<LocalMail> mailList, string name)
+        internal void LoadLocalHeaders(MailBoxType box)
         {
-            mailList = new List<LocalMail>();
+            ThreadedList<LocalMail> mailList = new ThreadedList<LocalMail>();
             List<MailHeader> headers = new List<MailHeader>();
-            
-            try
-            {
-                string path = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, name);
 
-                if (!File.Exists(path))
-                    return;
+            string name = (box == MailBoxType.Inbox) ? "inbox" : "outbox";
 
-                FileStream file = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+            string path = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, name);
 
-                G2Header root = null;
+            if (File.Exists(path))
+                try
+                {
+                    
 
-                while (stream.ReadPacket(ref root))
-                    if (root.Name == MailPacket.MailHeader)
-                    {
-                        MailHeader header = MailHeader.Decode(Core.Protocol, root);
+                    FileStream file = new FileStream(path, FileMode.Open);
+                    CryptoStream crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                    PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 
-                        if (header == null)
-                            continue;
+                    G2Header root = null;
 
-                        Core.IndexKey(header.SourceID, ref header.Source);
+                    while (stream.ReadPacket(ref root))
+                        if (root.Name == MailPacket.MailHeader)
+                        {
+                            MailHeader header = MailHeader.Decode(Core.Protocol, root);
 
-                        if(header.Target != null)
-                            Core.IndexKey(header.TargetID, ref header.Target);
+                            if (header == null)
+                                continue;
 
-                        headers.Add(header);
-                    }
+                            Core.IndexKey(header.SourceID, ref header.Source);
 
-                stream.Close();
-            }
-            catch (Exception ex)
-            {
-                Core.OperationNet.UpdateLog("Mail", "Error loading " + name + " " + ex.Message);
-            }
+                            if(header.Target != null)
+                                Core.IndexKey(header.TargetID, ref header.Target);
+
+                            headers.Add(header);
+                        }
+
+                    stream.Close();
+                }
+                catch (Exception ex)
+                {
+                    Core.OperationNet.UpdateLog("Mail", "Error loading " + name + " " + ex.Message);
+                }
 
             // load mail files that headers point to
             foreach (MailHeader header in headers)
@@ -490,8 +522,13 @@ namespace DeOps.Components.Mail
                 LocalMail local = LoadLocalMail(header);
 
                 if (local != null)
-                    mailList.Add(local);
+                    mailList.SafeAdd(local);
             }
+
+            if (box == MailBoxType.Inbox)
+                Inbox = mailList;
+            else
+                Outbox = mailList;
         }
 
         private LocalMail LoadLocalMail(MailHeader header)
@@ -676,14 +713,14 @@ namespace DeOps.Components.Mail
 
             // write header to outbound file
             if (Outbox == null)
-                LoadLocalHeaders(ref Outbox, "outbox");
+                LoadLocalHeaders(MailBoxType.Outbox);
 
             LocalMail message = LoadLocalMail(header);
 
             if (message != null)
             {
-                Outbox.Add(message);
-                SaveLocalHeaders(Outbox, "outbox");
+                Outbox.SafeAdd(message);
+                SaveOutbox = true;
 
                 if (MailUpdate != null)
                     Core.RunInGuiThread(MailUpdate, false, message);
@@ -831,56 +868,52 @@ namespace DeOps.Components.Mail
 
         bool Transfers_FileSearch(ulong key, FileDetails details)
         {
-            lock (MailMap)
-                if (MailMap.ContainsKey(key))
-                {
-                    List<CachedMail> list = MailMap[key];
+            if (MailMap.ContainsKey(key))
+            {
+                List<CachedMail> list = MailMap[key];
 
-                    foreach (CachedMail mail in list)
-                        if (details.Size == mail.Header.FileSize && Utilities.MemCompare(details.Hash, mail.Header.FileHash))
-                            return true;
-                }
-
-            lock (PendingMap)
-                if (PendingMap.ContainsKey(key))
-                {
-                    CachedPending pending = PendingMap[key];
-
-                    if (details.Size == pending.Header.FileSize && Utilities.MemCompare(details.Hash, pending.Header.FileHash))
+                foreach (CachedMail mail in list)
+                    if (details.Size == mail.Header.FileSize && Utilities.MemCompare(details.Hash, mail.Header.FileHash))
                         return true;
-                }
+            }
+
+            if (PendingMap.ContainsKey(key))
+            {
+                CachedPending pending = PendingMap[key];
+
+                if (details.Size == pending.Header.FileSize && Utilities.MemCompare(details.Hash, pending.Header.FileHash))
+                    return true;
+            }
 
             return false;
         }
 
         string Transfers_FileRequest(ulong key, FileDetails details)
         {
-            lock (MailMap)
-                if (MailMap.ContainsKey(key))
-                {
-                    List<CachedMail> list = MailMap[key];
+            if (MailMap.ContainsKey(key))
+            {
+                List<CachedMail> list = MailMap[key];
 
-                    foreach (CachedMail mail in list)
-                        if (details.Size == mail.Header.FileSize && Utilities.MemCompare(details.Hash, mail.Header.FileHash))
-                        {
-                            string path = GetCachePath(mail.Header);
-                            if (File.Exists(path))
-                                return path;
+                foreach (CachedMail mail in list)
+                    if (details.Size == mail.Header.FileSize && Utilities.MemCompare(details.Hash, mail.Header.FileHash))
+                    {
+                        string path = GetCachePath(mail.Header);
+                        if (File.Exists(path))
+                            return path;
 
-                            path = GetLocalPath(mail.Header);
-                            if (File.Exists(path))
-                                return path;
-                        }
-                }
+                        path = GetLocalPath(mail.Header);
+                        if (File.Exists(path))
+                            return path;
+                    }
+            }
 
-            lock (PendingMap)
-                if (PendingMap.ContainsKey(key))
-                {
-                    CachedPending pending = PendingMap[key];
+            if (PendingMap.ContainsKey(key))
+            {
+                CachedPending pending = PendingMap[key];
 
-                    if (details.Size == pending.Header.FileSize && Utilities.MemCompare(details.Hash, pending.Header.FileHash))
-                        return GetFilePath(pending.Header);
-                }
+                if (details.Size == pending.Header.FileSize && Utilities.MemCompare(details.Hash, pending.Header.FileHash))
+                    return GetFilePath(pending.Header);
+            }
 
             return null;
         }
@@ -926,42 +959,39 @@ namespace DeOps.Components.Mail
             byte[] patch = new byte[MailIdent.SIZE];
 
             // unacked
-            lock(PendingMap)
-                foreach (CachedPending pending in PendingMap.Values)
-                    if (Utilities.InBounds(pending.Header.KeyID, pending.DhtBounds, contact.DhtID)) 
-                    {
-                        DhtContact target = contact;
-                        pending.DhtBounds = Store.RecalcBounds(pending.Header.KeyID, add, ref target);
+            foreach (CachedPending pending in PendingMap.Values)
+                if (Utilities.InBounds(pending.Header.KeyID, pending.DhtBounds, contact.DhtID))
+                {
+                    DhtContact target = contact;
+                    pending.DhtBounds = Store.RecalcBounds(pending.Header.KeyID, add, ref target);
 
-                        if (target != null)
-                            data.Add(target, new MailIdent(MailPacket.Pending, pending.Header.KeyID, BitConverter.GetBytes(pending.Header.Version)).Encode());
-                    }
+                    if (target != null)
+                        data.Add(target, new MailIdent(MailPacket.Pending, pending.Header.KeyID, BitConverter.GetBytes(pending.Header.Version)).Encode());
+                }
 
             // acks
-            lock (AckMap)
-                foreach (List<CachedAck> list in AckMap.Values)
-                    foreach(CachedAck cached in list)
-                        if (Utilities.InBounds(cached.Ack.TargetID, cached.DhtBounds, contact.DhtID)) 
-                        {
-                            DhtContact target = contact;
-                            cached.DhtBounds = Store.RecalcBounds(cached.Ack.TargetID, add, ref target);
+            foreach (List<CachedAck> list in AckMap.Values)
+                foreach (CachedAck cached in list)
+                    if (Utilities.InBounds(cached.Ack.TargetID, cached.DhtBounds, contact.DhtID))
+                    {
+                        DhtContact target = contact;
+                        cached.DhtBounds = Store.RecalcBounds(cached.Ack.TargetID, add, ref target);
 
-                            if (target != null)
-                                data.Add(target, new MailIdent(MailPacket.Ack, cached.Ack.TargetID, Utilities.ExtractBytes(cached.Ack.MailID, 0, 4)).Encode());
-                        }
+                        if (target != null)
+                            data.Add(target, new MailIdent(MailPacket.Ack, cached.Ack.TargetID, Utilities.ExtractBytes(cached.Ack.MailID, 0, 4)).Encode());
+                    }
 
             // mail
-            lock (MailMap)
-                foreach (List<CachedMail> list in MailMap.Values)
-                    foreach (CachedMail cached in list)
-                        if (Utilities.InBounds(cached.Header.TargetID, cached.DhtBounds, contact.DhtID)) 
-                        {
-                            DhtContact target = contact;
-                            cached.DhtBounds = Store.RecalcBounds(cached.Header.TargetID, add, ref target);
+            foreach (List<CachedMail> list in MailMap.Values)
+                foreach (CachedMail cached in list)
+                    if (Utilities.InBounds(cached.Header.TargetID, cached.DhtBounds, contact.DhtID))
+                    {
+                        DhtContact target = contact;
+                        cached.DhtBounds = Store.RecalcBounds(cached.Header.TargetID, add, ref target);
 
-                            if (target != null)
-                                data.Add(target, new MailIdent(MailPacket.MailHeader, cached.Header.TargetID, Utilities.ExtractBytes(cached.Header.MailID, 0, 4)).Encode());                   
-                        }
+                        if (target != null)
+                            data.Add(target, new MailIdent(MailPacket.MailHeader, cached.Header.TargetID, Utilities.ExtractBytes(cached.Header.MailID, 0, 4)).Encode());
+                    }
 
             return data;
         }
@@ -1050,31 +1080,28 @@ namespace DeOps.Components.Mail
 
         CachedMail FindMail(MailIdent ident)
         {
-            lock (MailMap)
-                if (MailMap.ContainsKey(ident.DhtID))
-                    foreach (CachedMail cached in MailMap[ident.DhtID])
-                        if (Utilities.MemCompare(cached.Header.MailID, 0, ident.Data, 0, 4))
-                            return cached;
+            if (MailMap.ContainsKey(ident.DhtID))
+                foreach (CachedMail cached in MailMap[ident.DhtID])
+                    if (Utilities.MemCompare(cached.Header.MailID, 0, ident.Data, 0, 4))
+                        return cached;
 
             return null;
         }
 
         CachedAck FindAck(MailIdent ident)
         {
-            lock (AckMap)
-                if (AckMap.ContainsKey(ident.DhtID))
-                    foreach (CachedAck cached in AckMap[ident.DhtID])
-                        if (Utilities.MemCompare(cached.Ack.MailID, 0, ident.Data, 0, 4))
-                            return cached;
+            if (AckMap.ContainsKey(ident.DhtID))
+                foreach (CachedAck cached in AckMap[ident.DhtID])
+                    if (Utilities.MemCompare(cached.Ack.MailID, 0, ident.Data, 0, 4))
+                        return cached;
 
             return null;
         }
 
         private CachedPending FindPending(MailIdent ident)
         {
-            lock (PendingMap)
-                if (PendingMap.ContainsKey(ident.DhtID))
-                    return PendingMap[ident.DhtID];
+            if (PendingMap.ContainsKey(ident.DhtID))
+                return PendingMap[ident.DhtID];
 
             return null;
         }
@@ -1170,6 +1197,9 @@ namespace DeOps.Components.Mail
 
         private void CacheMail(SignedData signed, MailHeader header)
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             try
             {
                 bool exists = false;
@@ -1233,7 +1263,7 @@ namespace DeOps.Components.Mail
 
             // add to inbound list
             if (Inbox == null)
-                LoadLocalHeaders(ref Inbox, "inbox");
+                LoadLocalHeaders(MailBoxType.Inbox);
 
             DecodeFileKey(header.FileKey, ref header.LocalKey, ref header.FileStart);
 
@@ -1241,9 +1271,9 @@ namespace DeOps.Components.Mail
 
             if (message != null)
             {
-                Inbox.Add(message);
-                
-                SaveLocalHeaders(Inbox, "inbox");
+                Inbox.SafeAdd(message);
+
+                SaveInbox = true;
 
                 if (MailUpdate != null)
                     Core.RunInGuiThread(MailUpdate, true, message);
@@ -1444,13 +1474,16 @@ namespace DeOps.Components.Mail
             SavePending(); // also publishes
 
             // update interface
-            if(Outbox != null && MailUpdate != null)
-                foreach(LocalMail message in Outbox)
-                    if (Utilities.MemCompare(message.Header.MailID, ack.MailID))
-                    {
-                        Core.RunInGuiThread(MailUpdate, false, message);
-                        break;
-                    }
+            if (Outbox != null && MailUpdate != null)
+                Outbox.LockReading(delegate()
+                {
+                    foreach (LocalMail message in Outbox)
+                        if (Utilities.MemCompare(message.Header.MailID, ack.MailID))
+                        {
+                            Core.RunInGuiThread(MailUpdate, false, message);
+                            break;
+                        }
+                });
         }
 
         private void Process_PendingHeader(DataReq data, SignedData signed, PendingHeader header)
@@ -1509,6 +1542,9 @@ namespace DeOps.Components.Mail
 
         private void CachePending(SignedData signed, PendingHeader header)
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             try
             {
                 string path = "";
@@ -1679,79 +1715,75 @@ namespace DeOps.Components.Mail
             // check mail
             List<CachedMail> removeMails = new List<CachedMail>();    
             List<ulong> removeKeys = new List<ulong>();
-            
-            lock (MailMap)
+
+            foreach (ulong key in MailMap.Keys)
             {
-                foreach (ulong key in MailMap.Keys)
+                List<CachedMail> list = MailMap[key];
+                removeMails.Clear();
+
+                foreach (CachedMail mail in list)
                 {
-                    List<CachedMail> list = MailMap[key];
-                    removeMails.Clear();
+                    // ID not in source's pending mail list
+                    if (mail.Header.SourceID == header.KeyID &&
+                        header.Version >= mail.Header.SourceVersion &&
+                        !IDinList(mailIDs, mail.Header.MailID))
+                        removeMails.Add(mail);
+                    
 
-                    foreach (CachedMail mail in list)
-                    {
-                        // ID not in source's pending mail list
-                        if (mail.Header.SourceID == header.KeyID &&
-                            header.Version >= mail.Header.SourceVersion &&
-                            !IDinList(mailIDs, mail.Header.MailID))
-                            removeMails.Add(mail);
-                        
-
-                        // ID in target's pending ack list
-                        if (mail.Header.TargetID == pending.Header.KeyID &&
-                            header.Version >= mail.Header.TargetVersion &&
-                            IDinList(ackIDs, mail.Header.MailID))
-                            removeMails.Add(mail);
-                    }
-
-                    foreach (CachedMail mail in removeMails)
-                    {
-                        removePaths.Add(GetCachePath(mail.Header));
-                        list.Remove(mail);
-                    }
-
-                    if (list.Count == 0)
-                        removeKeys.Add(key);
+                    // ID in target's pending ack list
+                    if (mail.Header.TargetID == pending.Header.KeyID &&
+                        header.Version >= mail.Header.TargetVersion &&
+                        IDinList(ackIDs, mail.Header.MailID))
+                        removeMails.Add(mail);
                 }
 
-                foreach (ulong key in removeKeys)
-                    MailMap.Remove(key);
+                foreach (CachedMail mail in removeMails)
+                {
+                    removePaths.Add(GetCachePath(mail.Header));
+                    list.Remove(mail);
+                }
+
+                if (list.Count == 0)
+                    removeKeys.Add(key);
             }
+
+            foreach (ulong key in removeKeys)
+                MailMap.Remove(key);
+        
 
             List<CachedAck> removeAcks = new List<CachedAck>();
             removeKeys.Clear();
             
-            // check acks
-            lock (AckMap)
-            {              
-                foreach (ulong key in AckMap.Keys)
+            // check acks            
+            foreach (ulong key in AckMap.Keys)
+            {
+                List<CachedAck> list = AckMap[key];
+                removeAcks.Clear();
+
+                foreach (CachedAck cached in list)
                 {
-                    List<CachedAck> list = AckMap[key];
-                    removeAcks.Clear();
+                    // ID not in target's pending mail list
+                    if (cached.Ack.TargetID == header.KeyID &&
+                        header.Version >= cached.Ack.TargetVersion &&
+                        !IDinList(mailIDs, cached.Ack.MailID))
+                        removeAcks.Add(cached);
 
-                    foreach (CachedAck cached in list)
-                    {
-                        // ID not in target's pending mail list
-                        if (cached.Ack.TargetID == header.KeyID &&
-                            header.Version >= cached.Ack.TargetVersion &&
-                            !IDinList(mailIDs, cached.Ack.MailID))
-                            removeAcks.Add(cached);
-
-                        // ID not in source's pending ack list
-                        if (cached.Ack.SourceID == header.KeyID &&
-                            header.Version >= cached.Ack.SourceVersion &&
-                            !IDinList(ackIDs, cached.Ack.MailID))
-                            removeAcks.Add(cached);
-                    }
-                    foreach (CachedAck ack in removeAcks)
-                        list.Remove(ack);
-
-                    if (list.Count == 0)
-                        removeKeys.Add(key);
+                    // ID not in source's pending ack list
+                    if (cached.Ack.SourceID == header.KeyID &&
+                        header.Version >= cached.Ack.SourceVersion &&
+                        !IDinList(ackIDs, cached.Ack.MailID))
+                        removeAcks.Add(cached);
                 }
+                foreach (CachedAck ack in removeAcks)
+                    list.Remove(ack);
 
-                foreach (ulong key in removeKeys)
-                    AckMap.Remove(key);
+                if (list.Count == 0)
+                    removeKeys.Add(key);
             }
+
+            foreach (ulong key in removeKeys)
+                AckMap.Remove(key);
+        
 
             // mark pending changed and re-save pending
             bool resavePending = false;
@@ -1834,6 +1866,9 @@ namespace DeOps.Components.Mail
 
         private void SavePending()
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             // pending file is shared over the network, the first part is pending mail IDs
             // the next part is pending ack IDs, because IDs are encrypted ack side needs to seperately
             // store the target ID of the ack locally, local host is only able to decrypt pending mail IDs
@@ -2012,14 +2047,14 @@ namespace DeOps.Components.Mail
             
             if (inbox)
             {
-                Inbox.Remove(message);
-                SaveLocalHeaders(Inbox, "inbox");
+                Inbox.SafeRemove(message);
+                SaveInbox = true;
             }
 
             else
             {
-                Outbox.Remove(message);
-                SaveLocalHeaders(Outbox, "outbox");
+                Outbox.SafeRemove(message);
+                SaveOutbox = true;
             }
         }
 

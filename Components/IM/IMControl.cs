@@ -144,23 +144,19 @@ namespace DeOps.Components.IM
                 return;
             }
 
-            Core.Locations.LocationMap.LockReading(delegate()
+            List<LocInfo> clients = Core.Locations.GetClients(key);
+
+            foreach (LocInfo loc in clients)
             {
-                if (Core.Locations.LocationMap.ContainsKey(key))
-                    foreach (LocInfo loc in Core.Locations.LocationMap[key].Values)
-                    {
+                if (Core.RudpControl.IsConnected(loc.Location))
+                    ProcessMessage(key, new InstantMessage(Core, "Connected " + loc.Location.Place, true));
 
-                        if (Core.RudpControl.IsConnected(loc.Location))
-                            ProcessMessage(key, new InstantMessage(Core, "Connected " + loc.Location.Location, true));
-
-                        else
-                        {
-                            Core.RudpControl.Connect(loc.Location);
-                            ProcessMessage(key, new InstantMessage(Core, "Connecting " + loc.Location.Location, true));
-                        }
-                    }
-            });
-
+                else
+                {
+                    Core.RudpControl.Connect(loc.Location);
+                    ProcessMessage(key, new InstantMessage(Core, "Connecting " + loc.Location.Place, true));
+                }
+            }
         }
 
         private IM_View FindView(ulong key)
@@ -207,17 +203,17 @@ namespace DeOps.Components.IM
             if (FindView(session.DhtID) == null)
                 return;
 
-            LocationData location = Core.Locations.FindLocation(session.DhtID, session.ClientID);
+            LocationData location = Core.Locations.GetLocationInfo(session.DhtID, session.ClientID).Location ;
 
-            string locName = "";
+            string place = "";
             if (location != null)
-                locName = location.Location;
+                place = location.Place;
 
             if (session.Status == SessionStatus.Active)
             {
                 if (!ConnectedClients.Contains(session.ClientID))
                 {
-                    ProcessMessage(session.DhtID, new InstantMessage(Core, "Connected " + locName, true));
+                    ProcessMessage(session.DhtID, new InstantMessage(Core, "Connected " + place, true));
                     ConnectedClients.Add(session.ClientID);
                 }
 
@@ -227,7 +223,7 @@ namespace DeOps.Components.IM
 
             else if (session.Status == SessionStatus.Closed && ConnectedClients.Contains(session.ClientID))
             {
-                ProcessMessage(session.DhtID, new InstantMessage(Core, "Disconnected " + locName, true));
+                ProcessMessage(session.DhtID, new InstantMessage(Core, "Disconnected " + place, true));
                 ConnectedClients.Remove(session.ClientID);
             }
         }

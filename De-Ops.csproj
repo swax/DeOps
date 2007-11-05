@@ -119,7 +119,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Components\Board\BoardControl.cs" />
-    <Compile Include="Components\Board\BoardInterface.cs" />
     <Compile Include="Components\Board\BoardPackets.cs" />
     <Compile Include="Components\Board\Res\BoardRes.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -127,7 +126,7 @@
       <DependentUpon>BoardRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Board\BoardView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Board\BoardView.Designer.cs">
       <DependentUpon>BoardView.cs</DependentUpon>
@@ -207,7 +206,7 @@
       <DependentUpon>PlanRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.Designer.cs">
       <DependentUpon>BlockRow.cs</DependentUpon>
@@ -413,7 +412,7 @@
       <DependentUpon>ComposeMail.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Mail\MailView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Mail\MailView.Designer.cs">
       <DependentUpon>MailView.cs</DependentUpon>
@@ -546,7 +545,7 @@
       <DependentUpon>NetView.cs</DependentUpon>
     </Compile>
     <Compile Include="Simulator\SimForm.cs">
-      <SubType>Component</SubType>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Simulator\SimForm.Designer.cs">
       <DependentUpon>SimForm.cs</DependentUpon>

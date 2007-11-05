@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -149,8 +150,6 @@ namespace DeOps.Components.Profile
             //Dictionary<string, string> test = new Dictionary<string, string>();
             //test["Photo"] = @"C:\Dev\De-Ops\Graphics\guy.jpg";
             //SaveLocal(DefaultTemplate, null, test);
-
-            ProfileMap.SafeTryGetValue(Core.LocalDhtID, out LocalProfile);
         }
 
         void Core_Timer()
@@ -706,6 +705,9 @@ namespace DeOps.Components.Profile
 
         private void CacheProfile(SignedData signedHeader, ProfileHeader header)
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             try
             {
                 // check if file exists           
@@ -717,36 +719,37 @@ namespace DeOps.Components.Profile
                 }
 
                 // get profile
-                OpProfile profile = GetProfile(header.KeyID);
+                OpProfile prevProfile = GetProfile(header.KeyID);
 
-                if(profile == null)
-                {
-                    profile = new OpProfile(header.Key);
-                    ProfileMap.SafeAdd(header.KeyID, profile);
-                }
+                OpProfile newProfile = new OpProfile(header.Key);
 
-   
+
                 // delete old file
-                if (profile.Header != null)
+                if (prevProfile != null)
                 {
-                    if (header.Version < profile.Header.Version)
+                    if (header.Version < prevProfile.Header.Version)
                         return; // dont update with older version
 
-                    string oldPath = GetFilePath(profile.Header);
+                    string oldPath = GetFilePath(prevProfile.Header);
                     if (path != oldPath && File.Exists(oldPath))
                         try { File.Delete(oldPath); }
                         catch { }
                 }
 
                 // set new header
-                
-                
-                profile.Header = header;
-                profile.SignedHeader = signedHeader.Encode(Core.Protocol);
-                profile.Unique = Core.Loading;
+                newProfile.Header = header;
+                newProfile.SignedHeader = signedHeader.Encode(Core.Protocol);
+                newProfile.Unique = Core.Loading;
 
-                if (profile.Loaded)
-                    LoadProfile(profile.DhtID);
+                ProfileMap.SafeAdd(header.KeyID, newProfile);
+
+
+                if (header.KeyID == Core.LocalDhtID)
+                    LocalProfile = newProfile;
+
+                if ((newProfile == LocalProfile) || (prevProfile != null && prevProfile.Loaded))
+                    LoadProfile(newProfile.DhtID);
+
 
                 RunSaveHeaders = true;
 
@@ -759,18 +762,18 @@ namespace DeOps.Components.Profile
                     Links.ProjectRoots.LockReading(delegate()
                     {
                         foreach (uint project in Links.ProjectRoots.Keys)
-                            if (profile.DhtID == Core.LocalDhtID || Links.IsHigher(profile.DhtID, project))
+                            if (newProfile.DhtID == Core.LocalDhtID || Links.IsHigher(newProfile.DhtID, project))
                                 Links.GetLocsBelow(Core.LocalDhtID, project, locations);
                     });
 
-                    Store.PublishDirect(locations, profile.DhtID, ComponentID.Profile, profile.SignedHeader);
+                    Store.PublishDirect(locations, newProfile.DhtID, ComponentID.Profile, newProfile.SignedHeader);
                 }
 
                 if (ProfileUpdate != null)
-                    Core.RunInGuiThread(ProfileUpdate, profile );
+                    Core.RunInGuiThread(ProfileUpdate, newProfile);
 
-                if (Core.NewsWorthy(profile.DhtID, 0, false))
-                    Core.MakeNews("Profile updated by " + Links.GetName(profile.DhtID), profile.DhtID, 0, true, ProfileRes.Icon, Menu_View);
+                if (Core.NewsWorthy(newProfile.DhtID, 0, false))
+                    Core.MakeNews("Profile updated by " + Links.GetName(newProfile.DhtID), newProfile.DhtID, 0, true, ProfileRes.Icon, Menu_View);
          
             }
             catch (Exception ex)

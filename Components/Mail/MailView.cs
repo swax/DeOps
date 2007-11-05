@@ -17,6 +17,7 @@ using DeOps.Interface.Views;
 
 namespace DeOps.Components.Mail
 {
+
     internal partial class MailView : ViewShell
     {
         OpCore Core;
@@ -101,11 +102,14 @@ namespace DeOps.Components.Mail
             MessageList.RecalcLayout();
 
             if (Mail.Inbox == null)
-                Mail.LoadLocalHeaders(ref Mail.Inbox, "inbox");
+                Mail.LoadLocalHeaders(MailBoxType.Inbox);
             
             // display messages in list box
-            foreach (LocalMail message in Mail.Inbox)
-                AddInboxMessage(message);
+            Mail.Inbox.LockReading(delegate()
+            {
+                foreach (LocalMail message in Mail.Inbox)
+                    AddInboxMessage(message);
+            });
 
             // select first item
             if (MessageList.Items.Count > 0)
@@ -131,11 +135,14 @@ namespace DeOps.Components.Mail
             MessageList.RecalcLayout();
 
             if (Mail.Outbox == null)
-                Mail.LoadLocalHeaders(ref Mail.Outbox, "outbox");
+                Mail.LoadLocalHeaders(MailBoxType.Outbox);
 
             // display messages
-            foreach (LocalMail message in Mail.Outbox)
-                AddOutboxMessage(message);
+            Mail.Outbox.LockReading(delegate()
+            {
+                foreach (LocalMail message in Mail.Outbox)
+                    AddOutboxMessage(message);
+            });
 
             // select first item
             if (MessageList.Items.Count > 0)
@@ -369,7 +376,7 @@ namespace DeOps.Components.Mail
             {
                 message.Header.Read = true;
 
-                Mail.SaveLocalHeaders(Mail.Inbox, "inbox");
+                Mail.SaveInbox = true;
 
                 MessageListItem item = FindMessage(message);
 

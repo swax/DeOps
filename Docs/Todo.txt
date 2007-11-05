@@ -93,7 +93,7 @@ Components
 		log does chat/im - setup like yahoo chat log
 		Default display when no chat panels visible
 		***instead of alerts in channel on join/part show on right side by red/green circle icon
-			if unlinked join default chatroom with other unlinked nodes
+			if unlinked join default chatroom with other unlinked nodes, without subs
 			right click username in chat to pop-out user's profile
 		
 	Mail 
@@ -106,7 +106,7 @@ Components
 		delete mail not refreshing view
 		sync local mail between users
 		test/do re-publishing mail
-		lots of clicking when changing mail view, look at javascripting that up as well
+		***lots of clicking when changing mail view, look at javascripting that up as well, same with board
 		***default compose mail is showing zero for some reason
 
 	Board 
@@ -214,6 +214,8 @@ Simulator
 	record max udp burst sizes, or do packet size distribution histogram
 
 
+	done - profile, board, plan, mail, locations
+	** put thread checks in cache funtions
 	lock / re-create map objects
 	lock when map/items is modified on background
 	lock when map/items are accessed in foreground
@@ -226,12 +228,14 @@ Simulator
 		dont need to lock inside op stucture if only interface accesses it
 		when someone is editing/wring a new opPlan and a new plan gets loaded there wont be a conflict
 
-	use ReaderWriterLock - mail, storage, chat, IM, transfer, anywhere else?
-		threadedlist - chatroom, projectroots, location locs, oplink dictionaries
-
 
 	test linking up to a subordinate works correctly - 2 areas commented out
 		*could* allow interlinking - tree shown as local node in closest position to top
+		allow anyone to trust anyone else
+		prevent loops by before traversing to downlink, ensure it is not an uplink as well
+		what happens when there are no roots?
+		trust loop
+			get uplinks - traverse until null, or node reached that is already an uplink id
 	test lockreading inside writing and visa versa
 		
 
