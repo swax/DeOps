@@ -603,13 +603,16 @@ namespace DeOps.Components.Storage
                 {
                     bool found = false;
 
-                    foreach (LocalFolder sub in current.Folders.Values)
-                        if (string.Compare(name, sub.Info.Name, true) == 0)
-                        {
-                            found = true;
-                            current = sub;
-                            break;
-                        }
+                    current.Folders.LockReading(delegate()
+                    {
+                        foreach (LocalFolder sub in current.Folders.Values)
+                            if (string.Compare(name, sub.Info.Name, true) == 0)
+                            {
+                                found = true;
+                                current = sub;
+                                break;
+                            }
+                    });
 
                     if (!found)
                         return null;
@@ -743,38 +746,41 @@ namespace DeOps.Components.Storage
             }
 
             // foreach tracked folder, recurse
-            foreach (LocalFolder sub in folder.Folders.Values)
+            folder.Folders.LockReading(delegate()
             {
-                // history
-                int count = 0;
-                foreach (StorageFolder archive in sub.Archived)
+                foreach (LocalFolder sub in folder.Folders.Values)
                 {
-                    if (commit)
-                    {
-                        archive.RemoveFlag(StorageFlags.Modified);
-
-                        if (count == sub.Info.Revs)
-                            break;
-                    }
-
-                    Protocol.WriteToFile(archive, stream);
-                    count++;
-                }
-
-                // integrated
-                sub.Integrated.LockReading(delegate()
-                {
-                    foreach (StorageFile change in sub.Integrated.Values)
+                    // history
+                    int count = 0;
+                    foreach (StorageFolder archive in sub.Archived)
                     {
                         if (commit)
-                            change.RemoveFlag(StorageFlags.Modified);
+                        {
+                            archive.RemoveFlag(StorageFlags.Modified);
 
-                        Protocol.WriteToFile(change, stream);
+                            if (count == sub.Info.Revs)
+                                break;
+                        }
+
+                        Protocol.WriteToFile(archive, stream);
+                        count++;
                     }
-                });
 
-                WriteWorkingFile(stream, sub, commit);
-            }
+                    // integrated
+                    sub.Integrated.LockReading(delegate()
+                    {
+                        foreach (StorageFile change in sub.Integrated.Values)
+                        {
+                            if (commit)
+                                change.RemoveFlag(StorageFlags.Modified);
+
+                            Protocol.WriteToFile(change, stream);
+                        }
+                    });
+
+                    WriteWorkingFile(stream, sub, commit);
+                }
+            });
         }
 
         internal void LockAll(List<LockError> errors )
@@ -792,8 +798,11 @@ namespace DeOps.Components.Storage
             folder.Info.RemoveFlag(StorageFlags.Unlocked);
 
             if (subs)
-                foreach (LocalFolder subfolder in folder.Folders.Values)
-                    LockFolder(dirpath + Path.DirectorySeparatorChar + subfolder.Info.Name, subfolder, subs, errors);
+                folder.Folders.LockReading(delegate()
+                {
+                    foreach (LocalFolder subfolder in folder.Folders.Values)
+                        LockFolder(dirpath + Path.DirectorySeparatorChar + subfolder.Info.Name, subfolder, subs, errors);
+                });
 
             try
             {
@@ -970,7 +979,7 @@ namespace DeOps.Components.Storage
         {
             LocalFolder folder = GetLocalFolder(path);
 
-            folder.Parent.Folders.Remove(folder.Info.UID);
+            folder.Parent.Folders.SafeRemove(folder.Info.UID);
 
             Modified = true;
             PeriodicSave = true;
@@ -1151,12 +1160,9 @@ namespace DeOps.Components.Storage
                                 {
                                     if (currentFolder.Info.UID == readFolder.ParentUID)
                                     {
-                                        // if matches with local uid, set current file to file
-                                        if (currentFolder.Folders.ContainsKey(currentUID))
-                                            currentFolder = currentFolder.Folders[currentUID];
-
-                                        // if doesnt match
-                                        else
+                                        // if cant find current uid
+                                        currentFolder = null;
+                                        if (!currentFolder.Folders.SafeTryGetValue(currentUID, out currentFolder))
                                         {
                                             // if ignoring, add folder so we can traverse id's file, but dont save changes to local storage mapping
                                             if (ignoreCurrent)
@@ -1166,9 +1172,12 @@ namespace DeOps.Components.Storage
                                             }
 
                                             // check for conflicting name
-                                            foreach (LocalFolder subfolder in currentFolder.Folders.Values)
-                                                if (!subfolder.Info.IsFlagged(StorageFlags.Archived) && subfolder.Info.Name == readFolder.Name)
-                                                    subfolder.Info.Name = subfolder.Info.Name + ".fix";
+                                            currentFolder.Folders.LockReading(delegate()
+                                            {
+                                                foreach (LocalFolder subfolder in currentFolder.Folders.Values)
+                                                    if (!subfolder.Info.IsFlagged(StorageFlags.Archived) && subfolder.Info.Name == readFolder.Name)
+                                                        subfolder.Info.Name = subfolder.Info.Name + ".fix";
+                                            });
 
                                             // if not found, create folder
                                             currentFolder = currentFolder.AddFolderInfo(readFolder);
@@ -1292,16 +1301,19 @@ namespace DeOps.Components.Storage
                     file.HigherChanges.Remove(id);
             }
 
-            foreach(LocalFolder subfolder in folder.Folders.Values)
+            folder.Folders.LockReading(delegate()
             {
-                if (id == 0)
-                    subfolder.HigherChanges.Clear();
+                foreach (LocalFolder subfolder in folder.Folders.Values)
+                {
+                    if (id == 0)
+                        subfolder.HigherChanges.Clear();
 
-                else if (subfolder.HigherChanges.ContainsKey(id))
-                    subfolder.HigherChanges.Remove(id);
+                    else if (subfolder.HigherChanges.ContainsKey(id))
+                        subfolder.HigherChanges.Remove(id);
 
-                RemoveHigherChanges(subfolder, id);
-            }
+                    RemoveHigherChanges(subfolder, id);
+                }
+            });
         }
 
         internal void AutoIntegrate(bool doSave)
@@ -1359,9 +1371,12 @@ namespace DeOps.Components.Storage
                 if(AutoIntegrate(file, dir, errors))
                     save = true;
 
-            foreach (LocalFolder subfolder in folder.Folders.Values)
-                if( AutoIntegrate(subfolder, errors))
-                    save = true;
+            folder.Folders.LockReading(delegate()
+            {
+                foreach (LocalFolder subfolder in folder.Folders.Values)
+                    if (AutoIntegrate(subfolder, errors))
+                        save = true;
+            });
 
             return save;
         }
@@ -1535,22 +1550,24 @@ namespace DeOps.Components.Storage
 
 
             // if name exists with diff uid, return error
-            foreach (LocalFolder check in destFolder.Folders.Values)
-                if (check.Info.UID != sourceFolder.Info.UID &&
-                    String.Compare(check.Info.Name, sourceFolder.Info.Name, true) == 0)
-                {
-                    errors.Add("Folder with same name exists at " + destPath);
-                    return;
-                }
-
+            destFolder.Folders.LockReading(delegate()
+            {
+                foreach (LocalFolder check in destFolder.Folders.Values)
+                    if (check.Info.UID != sourceFolder.Info.UID &&
+                        String.Compare(check.Info.Name, sourceFolder.Info.Name, true) == 0)
+                    {
+                        errors.Add("Folder with same name exists at " + destPath);
+                        return;
+                    }
+            });
 
             // if uid exists in destination, merge histories with diff hashes
             WorkingChange destChange = WorkingChange.Created;
             WorkingChange sourceChange = WorkingChange.Updated;
 
-            if (destFolder.Folders.ContainsKey(sourceFolder.Info.UID))
+            if (destFolder.Folders.SafeContainsKey(sourceFolder.Info.UID))
             {
-                destFolder.Folders[sourceFolder.Info.UID] = sourceFolder;
+                destFolder.Folders.SafeAdd(sourceFolder.Info.UID, sourceFolder);
                 destChange = WorkingChange.Updated;
             }
             else
@@ -1566,7 +1583,7 @@ namespace DeOps.Components.Storage
             sourceFolder.Info.Note = "Moved from " + (parentPath == "" ? Path.DirectorySeparatorChar.ToString() : parentPath);
             sourceFolder.Info.ParentUID = destFolder.Info.UID;
 
-            parentFolder.Folders.Remove(sourceFolder.Info.UID);
+            parentFolder.Folders.SafeRemove(sourceFolder.Info.UID);
 
             // only leave a ghost if this file has a committed history
             if (sourceFolder.Archived.Count > 1 || !sourceFolder.Info.IsFlagged(StorageFlags.Modified))
@@ -1629,14 +1646,14 @@ namespace DeOps.Components.Storage
     {
         // keep track of untracked because when locked, this is the only way those files would be seen
         internal StorageFolder Info;
-        internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>();
+        internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>(); // make threaded
         internal ThreadedDictionary<ulong, StorageItem> Integrated = new ThreadedDictionary<ulong, StorageItem>();
         internal Dictionary<ulong, List<StorageItem>> HigherChanges = new Dictionary<ulong, List<StorageItem>>();
 
         internal LocalFolder Parent;
-        
-        internal Dictionary<ulong, LocalFolder> Folders = new Dictionary<ulong, LocalFolder>();
-        internal Dictionary<ulong, LocalFile> Files = new Dictionary<ulong, LocalFile>();
+
+        internal ThreadedDictionary<ulong, LocalFolder> Folders = new ThreadedDictionary<ulong, LocalFolder>();
+        internal Dictionary<ulong, LocalFile> Files = new Dictionary<ulong, LocalFile>(); // make threaded
 
        
         internal LocalFolder(LocalFolder parent, StorageFolder info)
@@ -1692,18 +1709,19 @@ namespace DeOps.Components.Storage
         {
             ulong uid = folder.Info.UID;
 
-            Debug.Assert(!Folders.ContainsKey(uid));
+            Debug.Assert(!Folders.SafeContainsKey(uid));
 
-            Folders[uid] = folder;
+            Folders.SafeAdd(uid, folder);
         }
 
         internal LocalFolder AddFolderInfo(StorageFolder info)
         {
-            if (!Folders.ContainsKey(info.UID))
-                Folders[info.UID] = new LocalFolder(this, info);
+            LocalFolder folder = null;
 
-            LocalFolder folder = Folders[info.UID];
+            if (!Folders.SafeTryGetValue(info.UID, out folder))
+                Folders.SafeAdd(info.UID, new LocalFolder(this, info));
 
+     
             // if this is integration info, add to integration map
             if (info.IntegratedID != 0)
                 folder.Integrated.SafeAdd(info.IntegratedID, info);
@@ -1756,7 +1774,7 @@ namespace DeOps.Components.Storage
     internal class LocalFile
     {
         internal StorageFile Info;
-        internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>();
+        internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>(); // make threaded
         internal ThreadedDictionary<ulong, StorageItem> Integrated = new ThreadedDictionary<ulong, StorageItem>();
         internal Dictionary<ulong, List<StorageItem>> HigherChanges = new Dictionary<ulong, List<StorageItem>>();
 

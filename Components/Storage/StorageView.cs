@@ -772,9 +772,11 @@ namespace DeOps.Components.Storage
             if (node.Details.IsFlagged(StorageFlags.Modified))
                 node.EnsureVisible();
 
-
-            foreach (LocalFolder sub in folder.Folders.Values)
-                LoadWorking(node, sub);
+            folder.Folders.LockReading(delegate()
+            {
+                foreach (LocalFolder sub in folder.Folders.Values)
+                    LoadWorking(node, sub);
+            });
 
             foreach (LocalFile file in folder.Files.Values)
             {
@@ -999,7 +1001,7 @@ namespace DeOps.Components.Storage
                 FolderNode treeParent = GetFolderNode(parent);
 
                 LocalFolder workingFolder;
-                workingParent.Folders.TryGetValue(uid, out workingFolder);
+                workingParent.Folders.SafeTryGetValue(uid, out workingFolder);
 
                 FolderNode treeFolder;
                 treeParent.Folders.TryGetValue(uid, out treeFolder);
@@ -1052,15 +1054,18 @@ namespace DeOps.Components.Storage
                                 treeFolder.Archived = workingFolder.Archived;
 
                                 // loop through working, if folder doesnt exist in tree, create it
-                                foreach (ulong id in workingFolder.Folders.Keys)
-                                    if (!treeFolder.Folders.ContainsKey(id))
-                                        LoadWorking(treeFolder, workingFolder);
+                                workingFolder.Folders.LockReading(delegate()
+                                {
+                                    foreach (ulong id in workingFolder.Folders.Keys)
+                                        if (!treeFolder.Folders.ContainsKey(id))
+                                            LoadWorking(treeFolder, workingFolder);
+                                });
 
                                 // loop through tree, if folder doesnt exist in working, delete it
                                 List<FolderNode> unload = new List<FolderNode>();
 
                                 foreach (ulong id in treeFolder.Folders.Keys)
-                                    if (!workingFolder.Folders.ContainsKey(id))
+                                    if (!workingFolder.Folders.SafeContainsKey(id))
                                         unload.Add(treeFolder.Folders[id]);
 
                                 foreach (FolderNode remove in unload)
@@ -2710,7 +2715,7 @@ namespace DeOps.Components.Storage
         internal StorageFolder Details;
         StorageView View;
 
-        internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>();
+        internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>(); // make threaded
         internal ThreadedDictionary<ulong, StorageItem> Integrated = new ThreadedDictionary<ulong, StorageItem>();
         internal Dictionary<ulong, StorageItem> Changes = new Dictionary<ulong, StorageItem>();
 
@@ -2918,7 +2923,7 @@ namespace DeOps.Components.Storage
         internal StorageItem Details;
         StorageView View;
 
-        internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>();
+        internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>(); // make threaded
         internal ThreadedDictionary<ulong, StorageItem> Integrated = new ThreadedDictionary<ulong, StorageItem>();
         internal Dictionary<ulong, StorageItem> Changes = new Dictionary<ulong, StorageItem>();
 
