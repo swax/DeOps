@@ -107,7 +107,6 @@ Components
 		sync local mail between users
 		test/do re-publishing mail
 		***lots of clicking when changing mail view, look at javascripting that up as well, same with board
-		***default compose mail is showing zero for some reason
 
 	Board 
 		 board scope sub-levels down, auto search highers for posts that have source==target, and show if in scope
@@ -223,6 +222,15 @@ Simulator
 	look at what GetX returns, and how re-creating X is reflected in the GUI
 		ensure gui's references to X are repalced with the new stuff
 		ensure core doesnt change X, only GUI
+		
+	storage
+		change maps to threaded
+		look at what functions call into storage from the gui
+	
+		file/folder events -> core thread
+		file hash thread
+		core thread
+		gui thread
 	
 	Op objects are recreated when loaded so that interface with current handle doesnt get collections modified inbetween
 		dont need to lock inside op stucture if only interface accesses it

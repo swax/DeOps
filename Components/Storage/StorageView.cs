@@ -277,12 +277,10 @@ namespace DeOps.Components.Storage
                 RootFolder = new FolderNode(this, root, FolderTreeView.virtualParent, false);
                 FolderTreeView.Nodes.Add(RootFolder);
 
-                if(Storages.StorageMap.ContainsKey(DhtID))
-                {
-                    StorageHeader header = Storages.StorageMap[DhtID].Header;
+                OpStorage storage = Storages.GetStorage(DhtID);
 
-                    LoadHeader(Storages.GetFilePath(header), header.FileKey);
-                }
+                if (storage != null)
+                    LoadHeader(Storages.GetFilePath(storage.Header), storage.Header.FileKey);
             }
 
             // re-diff
@@ -333,15 +331,15 @@ namespace DeOps.Components.Storage
 
             ChangeCount[id] = 0;
 
-            if (!Storages.StorageMap.ContainsKey(id))
+            OpStorage storage = Storages.GetStorage(id);
+
+            if (storage == null)
             {
                 FailedDiffs.Add(id);
                 return;
             }
 
-            StorageHeader headerx = Storages.StorageMap[id].Header;
-
-            string path = Storages.GetFilePath(headerx);
+            string path = Storages.GetFilePath(storage.Header);
 
             if (!File.Exists(path))
             {
@@ -352,7 +350,7 @@ namespace DeOps.Components.Storage
             try
             {
                 FileStream filex = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(filex, headerx.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = new CryptoStream(filex, storage.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 
                 ulong remoteUID = 0;
@@ -2015,13 +2013,12 @@ namespace DeOps.Components.Storage
                 set inTarget[uid], add further uids if recurse set
              */
 
+            OpStorage storage = Storages.GetStorage(id);
 
-            if (!Storages.StorageMap.ContainsKey(id))
+            if (storage == null)
                 return;
 
-            StorageHeader headerx = Storages.StorageMap[id].Header;
-
-            string path = Storages.GetFilePath(headerx);
+            string path = Storages.GetFilePath(storage.Header);
 
             if (!File.Exists(path))
                 return;
@@ -2029,7 +2026,7 @@ namespace DeOps.Components.Storage
             try
             {
                 FileStream filex = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(filex, headerx.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = new CryptoStream(filex, storage.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 
                 ulong remoteUID = 0;
@@ -2714,7 +2711,7 @@ namespace DeOps.Components.Storage
         StorageView View;
 
         internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>();
-        internal Dictionary<ulong, StorageItem> Integrated = new Dictionary<ulong, StorageItem>();
+        internal ThreadedDictionary<ulong, StorageItem> Integrated = new ThreadedDictionary<ulong, StorageItem>();
         internal Dictionary<ulong, StorageItem> Changes = new Dictionary<ulong, StorageItem>();
 
         internal Dictionary<ulong, FolderNode> Folders = new Dictionary<ulong, FolderNode>();
@@ -2816,7 +2813,7 @@ namespace DeOps.Components.Storage
             if (!remote)
             {
                 if (info.IntegratedID != 0)
-                    folder.Integrated[info.IntegratedID] = info;
+                    folder.Integrated.SafeAdd(info.IntegratedID, info);
                 else
                     folder.Archived.AddLast(info);
             }
@@ -2834,7 +2831,7 @@ namespace DeOps.Components.Storage
             if (!remote)
             {
                 if (info.IntegratedID != 0)
-                    file.Integrated[info.IntegratedID] = info;
+                    file.Integrated.SafeAdd(info.IntegratedID, info);
                 else
                     file.Archived.AddLast(info);
             }
@@ -2887,8 +2884,9 @@ namespace DeOps.Components.Storage
                     add = false;
 
                 // dont display if change is integrated
-                if (Integrated.ContainsKey(id))
-                    if (View.Storages.ItemDiff(change, Integrated[id]) == StorageActions.None)
+                StorageItem item = null;
+                if (Integrated.SafeTryGetValue(id, out item))
+                    if (View.Storages.ItemDiff(change, item) == StorageActions.None)
                         add = false;
 
                 if (add)
@@ -2921,7 +2919,7 @@ namespace DeOps.Components.Storage
         StorageView View;
 
         internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>();
-        internal Dictionary<ulong, StorageItem> Integrated = new Dictionary<ulong, StorageItem>();
+        internal ThreadedDictionary<ulong, StorageItem> Integrated = new ThreadedDictionary<ulong, StorageItem>();
         internal Dictionary<ulong, StorageItem> Changes = new Dictionary<ulong, StorageItem>();
 
         internal bool Temp;
@@ -3052,8 +3050,9 @@ namespace DeOps.Components.Storage
                     add = false;
 
                 // dont display if change is integrated
-                if (Integrated.ContainsKey(id))
-                    if (View.Storages.ItemDiff(change, Integrated[id]) == StorageActions.None)
+                StorageItem item = null;
+                if (Integrated.SafeTryGetValue(id, out item))
+                    if (View.Storages.ItemDiff(change, item) == StorageActions.None)
                         add = false;
 
                 if (add)
@@ -3067,23 +3066,26 @@ namespace DeOps.Components.Storage
         {
             Dictionary<ulong, StorageItem> realIntegrated = new Dictionary<ulong, StorageItem>();
 
-            foreach (ulong id in Integrated.Keys)
+            Integrated.LockReading(delegate()
             {
-                bool add = true;
-                StorageItem integrate = Integrated[id];
+                foreach (ulong id in Integrated.Keys)
+                {
+                    bool add = true;
+                    StorageItem integrate = Integrated[id];
 
-                // dont display if current file is equal to this change
-                if (View.Storages.ItemDiff(integrate, Details) == StorageActions.None)
-                    add = false;
-
-                // dont display if this file isnt the lastest from the person id
-                if (Changes.ContainsKey(id))
-                    if (View.Storages.ItemDiff(integrate, Changes[id]) != StorageActions.None)
+                    // dont display if current file is equal to this change
+                    if (View.Storages.ItemDiff(integrate, Details) == StorageActions.None)
                         add = false;
 
-                if (add)
-                    realIntegrated.Add(id, integrate);
-            }
+                    // dont display if this file isnt the lastest from the person id
+                    if (Changes.ContainsKey(id))
+                        if (View.Storages.ItemDiff(integrate, Changes[id]) != StorageActions.None)
+                            add = false;
+
+                    if (add)
+                        realIntegrated.Add(id, integrate);
+                }
+            });
 
             return realIntegrated;
         }

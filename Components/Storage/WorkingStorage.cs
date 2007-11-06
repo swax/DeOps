@@ -266,8 +266,9 @@ namespace DeOps.Components.Storage
                 return;
 
             // increase references
-            if(Storages.FileMap.ContainsKey(track.HashID))
-                Storages.FileMap[track.HashID].References++;
+            OpFile commonFile = null;
+            if (Storages.FileMap.SafeTryGetValue(track.HashID, out commonFile))
+                commonFile.References++;
 
             LocalFile file = new LocalFile(track);
             file.Info.SetFlag(StorageFlags.Modified);
@@ -407,6 +408,12 @@ namespace DeOps.Components.Storage
         // Define the event handlers.
         private void OnFileChanged(object source, FileSystemEventArgs e)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { OnFileChanged(source, e); });
+                return;
+            }
+
             string directory = Path.GetDirectoryName(e.FullPath);
             string filename = Path.GetFileName(e.FullPath); // e.Name is path from watch root
 
@@ -457,7 +464,11 @@ namespace DeOps.Components.Storage
         private void OnFileRenamed(object source, RenamedEventArgs e)
         {
             //Debug.WriteLine("File Renamed " + e.OldName + " to " + e.Name);
-
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { OnFileRenamed(source, e); });
+                return;
+            }
 
             try
             {
@@ -503,6 +514,12 @@ namespace DeOps.Components.Storage
 
         private void OnFolderChanged(object source, FileSystemEventArgs e)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { OnFolderChanged(source, e); });
+                return;
+            }
+
             try
             {
                 string directory = e.FullPath.Replace(RootPath, "");
@@ -539,6 +556,12 @@ namespace DeOps.Components.Storage
 
         private void OnFolderRenamed(object source, RenamedEventArgs e)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { OnFolderRenamed(source, e); });
+                return;
+            }
+
             try
             {
                 string newName = Path.GetFileName(e.FullPath);
@@ -704,16 +727,19 @@ namespace DeOps.Components.Storage
                 }
 
                 // integrated
-                foreach (ulong who in file.Integrated.Keys)
+                file.Integrated.LockReading(delegate()
                 {
-                    StorageFile integrated = (StorageFile) file.Integrated[who];
+                    foreach (ulong who in file.Integrated.Keys)
+                    {
+                        StorageFile integrated = (StorageFile)file.Integrated[who];
 
-                    if (commit)
-                        integrated.RemoveFlag(StorageFlags.Modified);
+                        if (commit)
+                            integrated.RemoveFlag(StorageFlags.Modified);
 
-                    integrated.IntegratedID = who;
-                    Protocol.WriteToFile(integrated, stream);
-                }
+                        integrated.IntegratedID = who;
+                        Protocol.WriteToFile(integrated, stream);
+                    }
+                });
             }
 
             // foreach tracked folder, recurse
@@ -736,13 +762,16 @@ namespace DeOps.Components.Storage
                 }
 
                 // integrated
-                foreach (StorageFile change in sub.Integrated.Values)
+                sub.Integrated.LockReading(delegate()
                 {
-                    if (commit)
-                        change.RemoveFlag(StorageFlags.Modified);
+                    foreach (StorageFile change in sub.Integrated.Values)
+                    {
+                        if (commit)
+                            change.RemoveFlag(StorageFlags.Modified);
 
-                    Protocol.WriteToFile(change, stream);
-                }
+                        Protocol.WriteToFile(change, stream);
+                    }
+                });
 
                 WriteWorkingFile(stream, sub, commit);
             }
@@ -886,7 +915,7 @@ namespace DeOps.Components.Storage
             LocalFolder folder = GetLocalFolder(path);
             LocalFile file = folder.Files[change.UID];
 
-            file.Integrated[who] = change.Clone(); 
+            file.Integrated.SafeAdd(who, change.Clone()); 
             // dont set file.info modified, because hash hasn't changed
 
             Modified = true;
@@ -899,11 +928,10 @@ namespace DeOps.Components.Storage
         {
             // put file in local's integration map for this user id
 
-
             LocalFolder folder = GetLocalFolder(path);
             LocalFile file = folder.Files[change.UID];
 
-            file.Integrated.Remove(who);
+            file.Integrated.SafeRemove(who);
 
             Modified = true;
             PeriodicSave = true;
@@ -1058,14 +1086,14 @@ namespace DeOps.Components.Storage
 
             bool save = false;
 
-            if (!Storages.StorageMap.ContainsKey(id))
+            OpStorage storage = Storages.GetStorage(id);
+
+            if (storage == null)
                 return save;
 
             // this is the first step in auto-integration
             // go through this id's storage file, and add any changes or updates to our own system
-            StorageHeader headerx = Storages.StorageMap[id].Header;
-
-            string path = Storages.GetFilePath(headerx);
+            string path = Storages.GetFilePath(storage.Header);
 
             if (!File.Exists(path))
                 return save;
@@ -1073,7 +1101,7 @@ namespace DeOps.Components.Storage
             try
             {
                 FileStream filex = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(filex, headerx.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = new CryptoStream(filex, storage.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 
                 ulong currentUID = 0;
@@ -1389,13 +1417,18 @@ namespace DeOps.Components.Storage
 
             // merges integration list for nodes adjacent to ourselves
             // works even if higher integrates more files, but doesn't necessarily change the file's hash
+            StorageItem prevIntegrated = null;
+
             foreach (StorageFile inherited in inheritIntegrated)
-                if (!file.Integrated.ContainsKey(inherited.IntegratedID) ||
-                    inherited.Date > file.Integrated[inherited.IntegratedID].Date)
+            {
+                file.Integrated.SafeTryGetValue(inherited.IntegratedID, out prevIntegrated);
+
+                if (prevIntegrated == null || inherited.Date > prevIntegrated.Date)
                 {
-                    file.Integrated[inherited.IntegratedID] = inherited;
+                    file.Integrated.SafeAdd(inherited.IntegratedID, inherited);
                     save = true;
                 }
+            }
 
             return save;
         }
@@ -1597,7 +1630,7 @@ namespace DeOps.Components.Storage
         // keep track of untracked because when locked, this is the only way those files would be seen
         internal StorageFolder Info;
         internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>();
-        internal Dictionary<ulong, StorageItem> Integrated = new Dictionary<ulong, StorageItem>();
+        internal ThreadedDictionary<ulong, StorageItem> Integrated = new ThreadedDictionary<ulong, StorageItem>();
         internal Dictionary<ulong, List<StorageItem>> HigherChanges = new Dictionary<ulong, List<StorageItem>>();
 
         internal LocalFolder Parent;
@@ -1673,7 +1706,7 @@ namespace DeOps.Components.Storage
 
             // if this is integration info, add to integration map
             if (info.IntegratedID != 0)
-                folder.Integrated[info.IntegratedID] = info;
+                folder.Integrated.SafeAdd(info.IntegratedID, info);
 
             // if history info, add to files history
             else
@@ -1699,7 +1732,7 @@ namespace DeOps.Components.Storage
             LocalFile file =  Files[info.UID];
 
             if(info.IntegratedID != 0)
-                file.Integrated[info.IntegratedID] = info; 
+                file.Integrated.SafeAdd(info.IntegratedID, info); 
             else
                 file.Archived.AddLast(info);
 
@@ -1724,7 +1757,7 @@ namespace DeOps.Components.Storage
     {
         internal StorageFile Info;
         internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>();
-        internal Dictionary<ulong, StorageItem> Integrated = new Dictionary<ulong, StorageItem>();
+        internal ThreadedDictionary<ulong, StorageItem> Integrated = new ThreadedDictionary<ulong, StorageItem>();
         internal Dictionary<ulong, List<StorageItem>> HigherChanges = new Dictionary<ulong, List<StorageItem>>();
 
         internal LocalFile(StorageFile info)

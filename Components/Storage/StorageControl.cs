@@ -40,9 +40,9 @@ namespace DeOps.Components.Storage
         internal StorageUpdateHandler StorageUpdate;
         internal event StorageGetFocusedHandler GetFocused;
 
-        internal Dictionary<ulong, OpStorage> StorageMap = new Dictionary<ulong, OpStorage>();
-        internal Dictionary<ulong, OpFile> FileMap = new Dictionary<ulong, OpFile>();
-        internal Dictionary<ulong, OpFile> InternalFileMap = new Dictionary<ulong, OpFile>();// used to bring together files encrypted with different keys
+        internal ThreadedDictionary<ulong, OpStorage> StorageMap = new ThreadedDictionary<ulong, OpStorage>();
+        internal ThreadedDictionary<ulong, OpFile> FileMap = new ThreadedDictionary<ulong, OpFile>();
+        internal ThreadedDictionary<ulong, OpFile> InternalFileMap = new ThreadedDictionary<ulong, OpFile>();// used to bring together files encrypted with different keys
 
         Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
         Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
@@ -110,19 +110,14 @@ namespace DeOps.Components.Storage
             LocalFileKey = Core.User.Settings.FileKey;
 
             LoadHeaders();
-
-
-            lock (StorageMap)
+     
+            if (!StorageMap.SafeContainsKey(Core.LocalDhtID))
             {
-                if (!StorageMap.ContainsKey(Core.LocalDhtID))
-                {
-                    StorageMap[Core.LocalDhtID] = new OpStorage(Core.User.Settings.KeyPublic);
-                    SaveLocal(0);
-                }
-
-                LocalStorage = StorageMap[Core.LocalDhtID];
+                StorageMap.SafeAdd(Core.LocalDhtID, new OpStorage(Core.User.Settings.KeyPublic));
+                SaveLocal(0);
             }
-            
+
+  
             // load working headers
             foreach (uint project in Links.LocalLink.Projects)
             {
@@ -238,36 +233,41 @@ namespace DeOps.Components.Storage
             // prune
             List<ulong> removeIDs = new List<ulong>();
 
-            if (StorageMap.Count > PruneSize)
+            StorageMap.LockReading(delegate()
             {
-                foreach (OpStorage storage in StorageMap.Values)
-                    if (storage.DhtID != Core.LocalDhtID &&
-                        !Core.Links.LinkMap.SafeContainsKey(storage.DhtID) && // dont remove nodes in our local hierarchy
-                        !focused.Contains(storage.DhtID) &&
-                        !Utilities.InBounds(storage.DhtID, storage.DhtBounds, Core.LocalDhtID))
-                        removeIDs.Add(storage.DhtID);
+                if (StorageMap.Count > PruneSize)
+                    foreach (OpStorage storage in StorageMap.Values)
+                        if (storage.DhtID != Core.LocalDhtID &&
+                            !Core.Links.LinkMap.SafeContainsKey(storage.DhtID) && // dont remove nodes in our local hierarchy
+                            !focused.Contains(storage.DhtID) &&
+                            !Utilities.InBounds(storage.DhtID, storage.DhtBounds, Core.LocalDhtID))
+                            removeIDs.Add(storage.DhtID);
+            });
 
-                while (removeIDs.Count > 0 && StorageMap.Count > PruneSize / 2)
+            if (removeIDs.Count > 0)
+                StorageMap.LockWriting(delegate()
                 {
-                    ulong furthest = Core.LocalDhtID;
-                    OpStorage storage = StorageMap[furthest];
+                    while (removeIDs.Count > 0 && StorageMap.Count > PruneSize / 2)
+                    {
+                        ulong furthest = Core.LocalDhtID;
+                        OpStorage storage = StorageMap[furthest];
 
-                    foreach (ulong id in removeIDs)
-                        if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
-                            furthest = id;
+                        foreach (ulong id in removeIDs)
+                            if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                                furthest = id;
 
-                    UnloadHeaderFile(GetFilePath(storage.Header), storage.Header.FileKey);
+                        UnloadHeaderFile(GetFilePath(storage.Header), storage.Header.FileKey);
 
-                    if (storage.Header != null)
-                        try { File.Delete(GetFilePath(storage.Header)); }
-                        catch { }
+                        if (storage.Header != null)
+                            try { File.Delete(GetFilePath(storage.Header)); }
+                            catch { }
 
-                    StorageMap.Remove(furthest);
-                    removeIDs.Remove(furthest);
-                    RunSaveHeaders = true;
-                }
-            }
-
+                        StorageMap.Remove(furthest);
+                        removeIDs.Remove(furthest);
+                        RunSaveHeaders = true;
+                    }
+                });
+ 
             // clean research map
             removeIDs.Clear();
 
@@ -280,9 +280,12 @@ namespace DeOps.Components.Storage
 
 
             // clear de-reffed files
-            foreach (KeyValuePair<ulong, OpFile> pair in FileMap)
-                if (pair.Value.References == 0)
-                    File.Delete(GetFilePath(pair.Key)); //crit test
+            FileMap.LockReading(delegate()
+            {
+                foreach (KeyValuePair<ulong, OpFile> pair in FileMap)
+                    if (pair.Value.References == 0)
+                        File.Delete(GetFilePath(pair.Key)); //crit test
+            });
         }
 
         internal override List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
@@ -370,10 +373,12 @@ namespace DeOps.Components.Storage
                 FileStream file = new FileStream(tempPath, FileMode.Create);
                 CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
 
-                lock (StorageMap)
+                StorageMap.LockReading(delegate()
+                {
                     foreach (OpStorage storage in StorageMap.Values)
                         if (storage.SignedHeader != null)
                             stream.Write(storage.SignedHeader, 0, storage.SignedHeader.Length);
+                });
 
                 stream.FlushFinalBlock();
                 stream.Close();
@@ -400,8 +405,10 @@ namespace DeOps.Components.Storage
             try
             {
                 StorageHeader header = null;
-                if (StorageMap.ContainsKey(Core.LocalDhtID))
-                    header = StorageMap[Core.LocalDhtID].Header;
+
+                OpStorage storage = GetStorage(Core.LocalDhtID);
+                if (storage != null)
+                    header = storage.Header;
 
                 string oldFile = null;
                 PacketStream oldStream = null;
@@ -493,9 +500,9 @@ namespace DeOps.Components.Storage
                     catch { }
 
                 // publish header
-                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Storage, StorageMap[Core.LocalDhtID].SignedHeader);
+                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Storage, storage.SignedHeader);
 
-                Store.PublishDirect(Links.GetSuperLocs(), Core.LocalDhtID, ComponentID.Storage, StorageMap[Core.LocalDhtID].SignedHeader);
+                Store.PublishDirect(Links.GetSuperLocs(), Core.LocalDhtID, ComponentID.Storage, storage.SignedHeader);
 
             }
             catch (Exception ex)
@@ -510,10 +517,10 @@ namespace DeOps.Components.Storage
            
 
             // if link loaded
-            if (StorageMap.ContainsKey(header.KeyID))
-            {
-                OpStorage current = StorageMap[header.KeyID];
+            OpStorage current = GetStorage(header.KeyID);
 
+            if (current != null)
+            {
                 // lower version
                 if (header.Version < current.Header.Version)
                 {
@@ -564,6 +571,10 @@ namespace DeOps.Components.Storage
 
         private void CacheStorage(SignedData signedHeader, StorageHeader header)
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
+
             try
             {
                 // check if file exists           
@@ -575,22 +586,18 @@ namespace DeOps.Components.Storage
                 }
 
                 // get storage
-                if (!StorageMap.ContainsKey(header.KeyID))
-                {
-                    lock (StorageMap)
-                        StorageMap[header.KeyID] = new OpStorage(header.Key);
-                }
+                OpStorage prevStorage = GetStorage(header.KeyID);
 
-                OpStorage storage = StorageMap[header.KeyID];
+                OpStorage newStorage = new OpStorage(header.Key);
 
                 // delete old file
-                if (storage.Header != null)
+                if (prevStorage.Header != null)
                 {
-                    if (header.Version < storage.Header.Version)
+                    if (header.Version < prevStorage.Header.Version)
                         return; // dont update with older version
 
-                    string oldPath = GetFilePath(storage.Header);
-                    UnloadHeaderFile(oldPath, storage.Header.FileKey);
+                    string oldPath = GetFilePath(prevStorage.Header);
+                    UnloadHeaderFile(oldPath, prevStorage.Header.FileKey);
 
                     if (path != oldPath && File.Exists(oldPath))
                         try { File.Delete(oldPath); }
@@ -598,23 +605,29 @@ namespace DeOps.Components.Storage
                 }
 
                 // set new header
-                storage.Header = header;
-                storage.SignedHeader = signedHeader.Encode(Core.Protocol);
-                storage.Unique = Core.Loading;
+                newStorage.Header = header;
+                newStorage.SignedHeader = signedHeader.Encode(Core.Protocol);
+                newStorage.Unique = Core.Loading;
+
+                StorageMap.SafeAdd(header.KeyID, newStorage);
+
+
+                if (header.KeyID == Core.LocalDhtID)
+                    LocalStorage = newStorage;
 
                 RunSaveHeaders = true;
 
-                LoadHeaderFile(path, storage, false, false);
+                LoadHeaderFile(path, newStorage, false, false);
 
                 // record changes of higher nodes for auto-integration purposes
                 Links.ProjectRoots.LockReading(delegate()
                 {
                     foreach (uint project in Links.ProjectRoots.Keys)
-                        if (Core.LocalDhtID == storage.DhtID || Links.IsHigher(storage.DhtID, project))
+                        if (Core.LocalDhtID == newStorage.DhtID || Links.IsHigher(newStorage.DhtID, project))
                             // doesnt get called on startup because working not initialized before headers are loaded
                             if (Working.ContainsKey(project))
                             {
-                                bool doSave = Working[project].RefreshHigherChanges(storage.DhtID);
+                                bool doSave = Working[project].RefreshHigherChanges(newStorage.DhtID);
 
                                 if (!Core.Loading && !SavingLocal)
                                     Working[project].AutoIntegrate(doSave);
@@ -629,17 +642,17 @@ namespace DeOps.Components.Storage
                     Links.ProjectRoots.LockReading(delegate()
                     {
                         foreach (uint project in Links.ProjectRoots.Keys)
-                            if (storage.DhtID == Core.LocalDhtID || Links.IsHigher(storage.DhtID, project))
+                            if (newStorage.DhtID == Core.LocalDhtID || Links.IsHigher(newStorage.DhtID, project))
                                 Links.GetLocsBelow(Core.LocalDhtID, project, locations);
                     });
-                    Store.PublishDirect(locations, storage.DhtID, ComponentID.Storage, storage.SignedHeader);
+                    Store.PublishDirect(locations, newStorage.DhtID, ComponentID.Storage, newStorage.SignedHeader);
                 }
 
                 if (StorageUpdate != null)
-                    Core.RunInGuiThread(StorageUpdate, storage);
+                    Core.RunInGuiThread(StorageUpdate, newStorage);
 
-                if (Core.NewsWorthy(storage.DhtID, 0, false))
-                    Core.MakeNews("Storage updated by " + Links.GetName(storage.DhtID), storage.DhtID, 0, false, StorageRes.Icon, Menu_View);
+                if (Core.NewsWorthy(newStorage.DhtID, 0, false))
+                    Core.MakeNews("Storage updated by " + Links.GetName(newStorage.DhtID), newStorage.DhtID, 0, false, StorageRes.Icon, Menu_View);
          
             }
             catch (Exception ex)
@@ -678,27 +691,21 @@ namespace DeOps.Components.Storage
 
             if (details.Extra[0] == StoragePacket.Header)
             {
-                lock (StorageMap)
-                    if (StorageMap.ContainsKey(key))
-                    {
-                        OpStorage storage = StorageMap[key];
-
-                        if (details.Size == storage.Header.FileSize && Utilities.MemCompare(details.Hash, storage.Header.FileHash))
-                            return true;
-                    }
+                OpStorage storage = GetStorage(key);
+                if (storage != null)
+                    if (details.Size == storage.Header.FileSize && Utilities.MemCompare(details.Hash, storage.Header.FileHash))
+                        return true;
             }
 
             if (details.Extra[0] == StoragePacket.File)
             {
                 ulong hashID = BitConverter.ToUInt64(details.Hash, 0);
 
-                if (FileMap.ContainsKey(hashID))
-                {
-                    OpFile file = FileMap[hashID];
+                OpFile file = null;
 
+                if (FileMap.SafeTryGetValue(hashID, out file))
                     if (details.Size == file.Size && Utilities.MemCompare(details.Hash, file.Hash))
                         return true;
-                }
             }
 
             return false;
@@ -709,29 +716,24 @@ namespace DeOps.Components.Storage
              if (details.Extra.Length == 0)
                  return null;
 
-            if (details.Extra[0] == StoragePacket.Header)
-            {
-                lock (StorageMap)
-                    if (StorageMap.ContainsKey(key))
-                    {
-                        OpStorage storage = StorageMap[key];
+             if (details.Extra[0] == StoragePacket.Header)
+             {
+                 OpStorage storage = GetStorage(key);
 
-                        if (details.Size == storage.Header.FileSize && Utilities.MemCompare(details.Hash, storage.Header.FileHash))
-                            return GetFilePath(storage.Header);
-                    }
-            }
+                 if (storage != null)
+                     if (details.Size == storage.Header.FileSize && Utilities.MemCompare(details.Hash, storage.Header.FileHash))
+                         return GetFilePath(storage.Header);
+             }
 
             if (details.Extra[0] == StoragePacket.File)
             {
                 ulong hashID = BitConverter.ToUInt64(details.Hash, 0);
 
-                if (FileMap.ContainsKey(hashID))
-                {
-                    OpFile file = FileMap[hashID];
+                OpFile file = null;
 
+                if (FileMap.SafeTryGetValue(hashID, out file))
                     if (details.Size == file.Size && Utilities.MemCompare(details.Hash, file.Hash))
                         return GetFilePath(hashID);
-                }
             }
 
             return null;
@@ -758,7 +760,8 @@ namespace DeOps.Components.Storage
 
             byte[] patch = new byte[PatchEntrySize];
 
-            lock (StorageMap)
+            StorageMap.LockReading(delegate()
+            {
                 foreach (OpStorage storage in StorageMap.Values)
                     if (Utilities.InBounds(storage.DhtID, storage.DhtBounds, contact.DhtID))
                     {
@@ -773,6 +776,7 @@ namespace DeOps.Components.Storage
                             data.Add(target, patch);
                         }
                     }
+            });
 
             return data;
         }
@@ -794,26 +798,24 @@ namespace DeOps.Components.Storage
                 if (!Utilities.InBounds(Core.LocalDhtID, distance, dhtid))
                     continue;
 
-                if (StorageMap.ContainsKey(dhtid))
+                OpStorage storage = GetStorage(dhtid);
+
+                if (storage != null && storage.Header != null)
                 {
-                    OpStorage storage = StorageMap[dhtid];
-
-                    if (storage.Header != null)
+                    if (storage.Header.Version > version)
                     {
-                        if (storage.Header.Version > version)
-                        {
-                            Store.Send_StoreReq(source, 0, new DataReq(null, storage.DhtID, ComponentID.Storage, storage.SignedHeader));
-                            continue;
-                        }
-
-                        storage.Unique = false; // network has current or newer version
-
-                        if (storage.Header.Version == version)
-                            continue;
-
-                        // else our version is old, download below
+                        Store.Send_StoreReq(source, 0, new DataReq(null, storage.DhtID, ComponentID.Storage, storage.SignedHeader));
+                        continue;
                     }
+
+                    storage.Unique = false; // network has current or newer version
+
+                    if (storage.Header.Version == version)
+                        continue;
+
+                    // else our version is old, download below
                 }
+                
 
                 if (Network.Established)
                     Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Storage, BitConverter.GetBytes(version));
@@ -849,14 +851,11 @@ namespace DeOps.Components.Storage
 
             uint minVersion = BitConverter.ToUInt32(parameters, 0);
 
-            lock (StorageMap)
-                if (StorageMap.ContainsKey(key))
-                {
-                    OpStorage storage = StorageMap[key];
+            OpStorage storage = GetStorage(key);
 
-                    if (storage.Header.Version >= minVersion)
-                        results.Add(storage.SignedHeader);
-                }
+            if (storage != null)
+                if (storage.Header.Version >= minVersion)
+                    results.Add(storage.SignedHeader);
 
             return results;
         }
@@ -866,21 +865,24 @@ namespace DeOps.Components.Storage
             ulong localBounds = Store.RecalcBounds(Core.LocalDhtID);
 
             // set bounds for objects
-            foreach (OpStorage storage in StorageMap.Values)
+            StorageMap.LockReading(delegate()
             {
-                storage.DhtBounds = Store.RecalcBounds(storage.DhtID);
-
-
-                if (Utilities.InBounds(Core.LocalDhtID, localBounds, storage.DhtID))
+                foreach (OpStorage storage in StorageMap.Values)
                 {
-                    // republish objects that were not seen on the network during startup
-                    if (storage.Unique)
-                        Store.PublishNetwork(storage.DhtID, ComponentID.Storage, storage.SignedHeader);
+                    storage.DhtBounds = Store.RecalcBounds(storage.DhtID);
 
-                    // trigger download of files now in cache range
-                    LoadHeaderFile(GetFilePath(storage.Header), storage, true, false);
+
+                    if (Utilities.InBounds(Core.LocalDhtID, localBounds, storage.DhtID))
+                    {
+                        // republish objects that were not seen on the network during startup
+                        if (storage.Unique)
+                            Store.PublishNetwork(storage.DhtID, ComponentID.Storage, storage.SignedHeader);
+
+                        // trigger download of files now in cache range
+                        LoadHeaderFile(GetFilePath(storage.Header), storage, true, false);
+                    }
                 }
-            }
+            });
 
 
             // only download those objects in our local area
@@ -904,13 +906,19 @@ namespace DeOps.Components.Storage
                 ICryptoTransform transform = LocalFileKey.CreateDecryptor(); //crit moved outside?
                 byte[] id = transform.TransformFinalBlock(hash, 0, hash.Length);
 
-                if (!FileMap.ContainsKey(BitConverter.ToUInt64(id, 0)))
+                if (!FileMap.SafeContainsKey(BitConverter.ToUInt64(id, 0)))
                     File.Delete(filepath);
             }
         }
 
         internal void Research(ulong key)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { Research(key); });
+                return;
+            }
+
             if (!Network.Routing.Responsive())
                 return;
 
@@ -920,8 +928,9 @@ namespace DeOps.Components.Storage
                     return;
 
             uint version = 0;
-            if (StorageMap.ContainsKey(key))
-                version = StorageMap[key].Header.Version + 1;
+            OpStorage storage = GetStorage(key);
+            if (storage != null)
+                version = storage.Header.Version + 1;
 
             StartSearch(key, version);
 
@@ -946,6 +955,15 @@ namespace DeOps.Components.Storage
         internal string GetWorkingPath(uint project)
         {
             return StoragePath + Path.DirectorySeparatorChar + "1" + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "working:" + project.ToString());
+        }
+
+        internal OpStorage GetStorage(ulong key)
+        {
+            OpStorage storage = null;
+
+            StorageMap.SafeTryGetValue(key, out storage);
+
+            return storage;
         }
 
         private void LoadHeaderFile(string path, OpStorage storage, bool reload, bool working)
@@ -992,11 +1010,11 @@ namespace DeOps.Components.Storage
                             currentUID = packet.UID;
                         }
 
-                        if (!FileMap.ContainsKey(packet.HashID))
-                            FileMap[packet.HashID] = new OpFile(packet);
+                        OpFile file = null;
+                        if(!FileMap.SafeTryGetValue(packet.HashID, out file))
+                            FileMap.SafeAdd(packet.HashID, new OpFile(packet));
 
-                        OpFile file = FileMap[packet.HashID];
-                        InternalFileMap[packet.InternalHashID] = file;
+                        InternalFileMap.SafeAdd(packet.InternalHashID, file);
 
                         if(!reload)
                             file.References++;
@@ -1057,8 +1075,9 @@ namespace DeOps.Components.Storage
             }
             catch { return; }
 
-            if (FileMap.ContainsKey(file.HashID))
-                FileMap[file.HashID].Downloaded = true;
+            OpFile commonFile = null;
+            if (FileMap.SafeTryGetValue(file.HashID, out commonFile))
+                commonFile.Downloaded = true;
 
             // interface list box would be watching if file is transferring, will catch completed update
         }
@@ -1085,10 +1104,11 @@ namespace DeOps.Components.Storage
                         if (packet == null)
                             continue;
 
-                        if (!FileMap.ContainsKey(packet.HashID))
+                        OpFile commonFile = null;
+                        if (!FileMap.SafeTryGetValue(packet.HashID, out commonFile))
                             continue;
 
-                        FileMap[packet.HashID].DeRef();
+                        commonFile.DeRef();
                     }
                 }
 
@@ -1123,9 +1143,6 @@ namespace DeOps.Components.Storage
 
                     HashQueue.Enqueue(pack);
                 }
-
-            lock (HashQueue)
-                Monitor.Pulse(HashQueue);
         }
 
         const int HashBufferSize = 1024 * 16;
@@ -1154,12 +1171,17 @@ namespace DeOps.Components.Storage
 
                     // remove old references from local file
                     if (!HashRetry)
-                        if (FileMap.ContainsKey(pack.File.Info.HashID))
-                            FileMap[pack.File.Info.HashID].DeRef(); //crit test
+                    {
+                        OpFile commonFile = null;
+                        if (FileMap.SafeTryGetValue(pack.File.Info.HashID, out commonFile))
+                            commonFile.DeRef(); //crit test
+                    }
 
                     if (!File.Exists(pack.Path))
                     {
-                        lock(HashQueue) HashQueue.Dequeue();
+                        lock(HashQueue) 
+                            HashQueue.Dequeue();
+
                         HashRetry = false;
 
                         continue;
@@ -1170,9 +1192,12 @@ namespace DeOps.Components.Storage
                     info.InternalHashID = BitConverter.ToUInt64(info.InternalHash, 0);
 
                     // if file exists in internal map, use key for that file
-                    if (InternalFileMap.ContainsKey(info.InternalHashID))
+                    OpFile internalFile = null;
+                    InternalFileMap.SafeTryGetValue(info.InternalHashID, out internalFile);
+
+                    if (internalFile != null)
                     {
-                        file = InternalFileMap[info.InternalHashID];
+                        file = internalFile;
                         file.References++;
 
                         info.Size = file.Size;
@@ -1220,15 +1245,17 @@ namespace DeOps.Components.Storage
                     // insert into file map - create new because internal for hash above was not in map already
                     file = new OpFile(info);
                     file.References++;
-                    FileMap[info.HashID] = file;
-                    InternalFileMap[info.InternalHashID] = file;
+                    FileMap.SafeAdd(info.HashID, file);
+                    InternalFileMap.SafeAdd(info.InternalHashID,  file);
 
                     // if hash is different than previous mark as modified
                     if (!Utilities.MemCompare(file.Hash, pack.File.Info.Hash))
                         ReviseFile(pack, info);
 
 
-                    lock (HashQueue) HashQueue.Dequeue(); // try to hash until finished without exception (wait for access to file)
+                    lock (HashQueue) 
+                        HashQueue.Dequeue(); // try to hash until finished without exception (wait for access to file)
+                    
                     HashRetry = false; // make sure we only deref once per file
                 }
                 catch (Exception ex)
@@ -1248,6 +1275,13 @@ namespace DeOps.Components.Storage
 
         private void ReviseFile(HashPack pack, StorageFile info)
         {
+            // called from hash thread
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { ReviseFile(pack, info); });
+                return;
+            }
+
             if (Working.ContainsKey(pack.Project))
                 Working[pack.Project].ReadyChange(pack.File, info);
 
@@ -1261,6 +1295,13 @@ namespace DeOps.Components.Storage
 
         internal WorkingStorage Discard(uint project)
         {
+            if (Core.InvokeRequired)
+            {
+                WorkingStorage previous = null;
+                Core.RunInCoreBlocked(delegate() { previous = Discard(project); });
+                return previous;
+            }
+
             if (!Working.ContainsKey(project))
                 return null;
 
@@ -1286,7 +1327,7 @@ namespace DeOps.Components.Storage
 
         internal bool FileExists(StorageFile file)
         {
-            if (FileMap.ContainsKey(file.HashID) &&
+            if (FileMap.SafeContainsKey(file.HashID) &&
                 File.Exists(GetFilePath(file.HashID)))
                 return true;
 
@@ -1358,7 +1399,7 @@ namespace DeOps.Components.Storage
 
 
             // file not in storage
-            if(!FileMap.ContainsKey(file.HashID) || !File.Exists(GetFilePath(file.HashID)))
+            if(!FileMap.SafeContainsKey(file.HashID) || !File.Exists(GetFilePath(file.HashID)))
             {
                 errors.Add(new LockError(finalpath, "", true, LockErrorType.Missing));
                 return null;

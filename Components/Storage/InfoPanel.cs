@@ -1378,14 +1378,16 @@ namespace DeOps.Components.Storage
         {
             string status = "Not Found";
 
-            if (Storages.StorageMap.ContainsKey(id))
+            OpStorage storage = Storages.GetStorage(id);
+
+            if (storage != null)
             {
                 if (ParentView.FailedDiffs.Contains(id))
                     status = "Failed to Compare";
 
                 else
                 {
-                    status = " at " + Storages.StorageMap[id].Header.Date.ToLocalTime().ToString();
+                    status = " at " + storage.Header.Date.ToLocalTime().ToString();
 
                     if (ParentView.ChangeCount.ContainsKey(id) && ParentView.ChangeCount[id] > 0)
                     {
