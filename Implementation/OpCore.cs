@@ -58,7 +58,7 @@ namespace DeOps.Implementation
     internal delegate void ExitHandler();
     internal delegate void TimerHandler();
     internal delegate void NewsUpdateHandler(NewsItemInfo info);
-
+    internal delegate void DCClientsHandler(ulong id, List<Tuple<ushort, SessionStatus>> clients);
 
 	internal class OpCore
 	{
@@ -95,6 +95,7 @@ namespace DeOps.Implementation
         internal DateTime     NextSaveCache;
         internal ulong        OpID;
         internal bool         Loading;
+        internal bool         Away;
 
         internal Dictionary<ulong, byte[]> KeyMap = new Dictionary<ulong, byte[]>();
 
@@ -104,11 +105,10 @@ namespace DeOps.Implementation
         internal event ExitHandler  ExitEvent;
         internal event TimerHandler TimerEvent;
         internal event NewsUpdateHandler NewsUpdate;
+        internal event DCClientsHandler  DCClientsUpdate;
 
 		//[DllImport("USER32.DLL", SetLastError=true)]
 		//private static extern bool GetLastInputInfo(ref LastInputInfo ii);
-
-		internal int GmtOffset = System.TimeZone.CurrentTimeZone.GetUtcOffset( DateTime.Now ).Hours;
 
         // interfaces
         internal MainForm      GuiMain;
@@ -614,6 +614,22 @@ namespace DeOps.Implementation
         {
             // use self id because point of news is alerting user to changes in their *own* interfaces
             RunInGuiThread(NewsUpdate, new NewsItemInfo(message, id, project, showRemote, symbol, onClick));
+        }
+
+
+        internal void RefreshDCClients(ulong id)
+        {
+            List<Tuple<ushort, SessionStatus>> clients = new List<Tuple<ushort, SessionStatus>>();
+
+            if (RudpControl.SessionMap.ContainsKey(id))
+                foreach (RudpSession session in RudpControl.SessionMap[id])
+                    if(session.Status != SessionStatus.Closed)
+                        clients.Add(new Tuple<ushort, SessionStatus>(session.ClientID, session.Status));
+
+            if(id == LocalDhtID)
+                clients.Add(new Tuple<ushort, SessionStatus>(ClientID, SessionStatus.Active));
+
+            RunInGuiThread(DCClientsUpdate, id, clients);
         }
 
         internal void Exit()

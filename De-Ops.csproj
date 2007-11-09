@@ -126,7 +126,7 @@
       <DependentUpon>BoardRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Board\BoardView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Board\BoardView.Designer.cs">
       <DependentUpon>BoardView.cs</DependentUpon>
@@ -189,7 +189,7 @@
       <DependentUpon>GoalPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.Designer.cs">
       <DependentUpon>GoalsView.cs</DependentUpon>
@@ -206,7 +206,7 @@
       <DependentUpon>PlanRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.Designer.cs">
       <DependentUpon>BlockRow.cs</DependentUpon>
@@ -577,6 +577,9 @@
     <None Include="Components\IM\Res\im.ico" />
     <None Include="Components\Link\Res\confirmlink.ico" />
     <None Include="Components\Link\Res\link.ico" />
+    <None Include="Components\IM\Res\redled.png" />
+    <None Include="Components\IM\Res\greenled.png" />
+    <None Include="Components\IM\Res\yellowled.png" />
     <Content Include="Components\Link\Link.txt" />
     <None Include="Components\Link\Res\unlink.ico" />
     <Content Include="Components\Location\Location.txt" />
@@ -606,6 +609,7 @@
     <Content Include="Docs\better web.txt" />
     <Content Include="Docs\Events.txt" />
     <Content Include="Components\Mail\Mail.txt" />
+    <Content Include="Docs\notes.txt" />
     <Content Include="Docs\Patent.txt" />
     <Content Include="Docs\People.txt" />
     <Content Include="Docs\Protocol.txt" />

@@ -289,7 +289,7 @@ namespace DeOps.Components.Plan
 
         Pen BlackPen = new Pen(Color.Black);
         Pen RefPen = new Pen(Color.LawnGreen, 2);
-        Brush ControlBrush = new SolidBrush(SystemColors.Control);
+        Brush ControlBrush = new SolidBrush(SystemColors.ControlLight);
 
         private void DateSlider_Paint(object sender, PaintEventArgs e)
         {
@@ -309,7 +309,7 @@ namespace DeOps.Components.Plan
             // background
             Graphics buffer = Graphics.FromImage(DisplayBuffer);
 
-            buffer.Clear(SystemColors.Control);
+            buffer.Clear(SystemColors.ControlLight);
             buffer.SmoothingMode = SmoothingMode.AntiAlias;
 
             // marks

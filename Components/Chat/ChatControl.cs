@@ -20,7 +20,6 @@ namespace DeOps.Components.Chat
         internal LinkControl Links;
 
         internal ThreadedList<ChatRoom> Rooms = new ThreadedList<ChatRoom>();
-        ThreadedDictionary<ulong, List<ushort>> ConnectedClients = new ThreadedDictionary<ulong, List<ushort>>();
 
         internal CreateRoomHandler  CreateRoomEvent;
         internal RemoveRoomHandler  RemoveRoomEvent;
@@ -31,7 +30,6 @@ namespace DeOps.Components.Chat
             Core = core;
             Links = core.Links;
 
-            Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
             Core.RudpControl.SessionData[ComponentID.Chat] = new SessionDataHandler(Session_Data);
 
             Core.LoadEvent += new LoadHandler(Core_Load);
@@ -132,6 +130,7 @@ namespace DeOps.Components.Chat
 
         private void RefreshRoom(RoomKind kind, uint project)
         {
+            
             OpLink highNode = null;
 
             if (kind == RoomKind.Command_High)
@@ -166,10 +165,10 @@ namespace DeOps.Components.Chat
             room.Members.SafeClear();
 
             // add members
-            room.Members.SafeAdd(highNode);
+            room.Members.SafeAdd(highNode.DhtID);
 
             foreach (OpLink downlink in highNode.GetLowers(project, true))
-                room.Members.SafeAdd(downlink);
+                room.Members.SafeAdd(downlink.DhtID);
 
             if(room.Members.SafeCount == 1)
             {
@@ -180,7 +179,7 @@ namespace DeOps.Components.Chat
             if(newRoom)
                 Core.RunInGuiThread(CreateRoomEvent, room);
 
-            Core.RunInGuiThread(room.MembersUpdate, true);
+            Core.RunInGuiThread(room.MembersUpdate);
         }
         
         private void RemoveRoom(RoomKind kind, uint id)
@@ -221,8 +220,8 @@ namespace DeOps.Components.Chat
                 foreach (ChatRoom room in Rooms)
                     room.Members.LockReading(delegate()
                     {
-                        foreach (OpLink member in room.Members)
-                            if (member.DhtID == key)
+                        foreach (ulong member in room.Members)
+                            if (member == key)
                             {
                                 results.Add(room);
                                 break;
@@ -244,8 +243,8 @@ namespace DeOps.Components.Chat
                     {
                         room.Members.LockReading(delegate()
                         {
-                            foreach (OpLink member in room.Members)
-                                if (member.DhtID == key)
+                            foreach (ulong member in room.Members)
+                                if (member == key)
                                 {
                                     result = room;
                                     break;
@@ -268,64 +267,6 @@ namespace DeOps.Components.Chat
                 Core.RudpControl.Connect(location); // func checks if already connected
         }
 
-        internal void Session_Update(RudpSession session)
-        {
-            ulong key = session.DhtID;
-
-            // if node a member of a room
-            List<ChatRoom> rooms = FindRoom(key);
-
-            if (rooms.Count == 0)
-                return;
-
-            // getstatus message
-            string name = Links.GetName(key);
-
-            string location = "";
-            if (Core.Locations.ClientCount(session.DhtID ) > 1)
-                location = " @" + Core.Locations.GetLocationName(session.DhtID, session.ClientID);
-
-
-            string message = null;
-
-            List<ushort> connected = null;
-            ConnectedClients.TryGetValue(session.DhtID, out connected);
-
-            if (session.Status == SessionStatus.Active &&
-                (connected == null || connected.Contains(session.ClientID)))
-            {
-                message = "Connected to " + name + location;
-
-                if (connected == null)
-                {
-                    connected = new List<ushort>();
-                    ConnectedClients.SafeAdd(session.DhtID, connected);
-                }
-
-                connected.Add(session.ClientID);
-            }
-
-            if (session.Status == SessionStatus.Closed &&
-                connected != null && connected.Contains(session.ClientID))
-            {
-                message = "Disconnected from " + name + location;
-
-                connected.Remove(session.ClientID);
-
-                if (connected.Count == 0)
-                    ConnectedClients.SafeRemove(session.DhtID);
-            }
-
-            // update interface
-            if(message != null)
-                foreach (ChatRoom room in rooms)
-                {
-                    ProcessMessage(room, new ChatMessage(Core, message, true));
-
-                    Core.RunInGuiThread(room.MembersUpdate, false );
-                }
-        }
-
         internal void SendMessage(ChatRoom room, string text)
         {
             if (Core.InvokeRequired)
@@ -345,9 +286,9 @@ namespace DeOps.Components.Chat
 
             room.Members.LockReading(delegate()
             {
-               foreach (OpLink link in room.Members)
-                   if (Core.RudpControl.SessionMap.ContainsKey(link.DhtID))
-                       foreach (RudpSession session in Core.RudpControl.SessionMap[link.DhtID])
+               foreach (ulong member in room.Members)
+                   if (Core.RudpControl.SessionMap.ContainsKey(member))
+                       foreach (RudpSession session in Core.RudpControl.SessionMap[member])
                            if (session.Status == SessionStatus.Active)
                            {
                                sent = true;
@@ -356,7 +297,7 @@ namespace DeOps.Components.Chat
             });
 
             if (!sent)
-                ProcessMessage(room, new ChatMessage(Core, "Message not sent (no one connected to room)", true));
+                ProcessMessage(room, new ChatMessage(Core, "Could not send message, not connected to anyone", true));
         }
 
         void Session_Data(RudpSession session, byte[] data)
@@ -400,8 +341,11 @@ namespace DeOps.Components.Chat
             Rooms.LockReading(delegate()
             {
                 foreach (ChatRoom room in Rooms)
-                    foreach (OpLink member in room.Members)
-                        active.Add(member.DhtID);
+                    room.Members.LockReading(delegate()
+                    {
+                        foreach (ulong member in room.Members)
+                            active.Add(member);
+                    });
             });
         }
     }
@@ -409,7 +353,7 @@ namespace DeOps.Components.Chat
 
     internal enum RoomKind { None, Command_High, Command_Low, Custom };
 
-    internal delegate void MembersUpdateHandler(bool refresh);
+    internal delegate void MembersUpdateHandler();
     internal delegate void ChatUpdateHandler(ChatMessage message);
 
     internal class ChatRoom
@@ -420,7 +364,7 @@ namespace DeOps.Components.Chat
 
         internal ThreadedList<ChatMessage> Log = new ThreadedList<ChatMessage>();
 
-        internal ThreadedList<OpLink> Members = new ThreadedList<OpLink>();
+        internal ThreadedList<ulong> Members = new ThreadedList<ulong>();
 
         internal MembersUpdateHandler MembersUpdate;
         internal ChatUpdateHandler    ChatUpdate;

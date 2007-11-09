@@ -410,13 +410,16 @@ namespace DeOps.Components.Storage
                                     bool found = false;
 
 
-                                    foreach (StorageFolder archive in currentFolder.Archived)
-                                        if (Storages.ItemDiff(archive, folder) == StorageActions.None)
-                                            if (archive.Date == folder.Date)
-                                            {
-                                                found = true;
-                                                break;
-                                            }
+                                    currentFolder.Archived.LockReading(delegate()
+                                    {
+                                        foreach (StorageFolder archive in currentFolder.Archived)
+                                            if (Storages.ItemDiff(archive, folder) == StorageActions.None)
+                                                if (archive.Date == folder.Date)
+                                                {
+                                                    found = true;
+                                                    break;
+                                                }
+                                    });
 
                                     if (!found)
                                     {
@@ -471,14 +474,16 @@ namespace DeOps.Components.Storage
 
                             bool found = false;
 
-
-                            foreach (StorageFile archive in currentFile.Archived)
-                                if (Storages.ItemDiff(archive, file) == StorageActions.None)
-                                    if (archive.Date == file.Date)
-                                    {
-                                        found = true;
-                                        break;
-                                    }
+                            currentFile.Archived.LockReading(delegate()
+                            {
+                                foreach (StorageFile archive in currentFile.Archived)
+                                    if (Storages.ItemDiff(archive, file) == StorageActions.None)
+                                        if (archive.Date == file.Date)
+                                        {
+                                            found = true;
+                                            break;
+                                        }
+                            });
 
                             if(!found)
                                 currentFile.Changes[id] = file;
@@ -778,14 +783,17 @@ namespace DeOps.Components.Storage
                     LoadWorking(node, sub);
             });
 
-            foreach (LocalFile file in folder.Files.Values)
+            folder.Files.LockReading(delegate()
             {
-                FileItem item = new FileItem(this, node, file.Info, false);
-                item.Archived = file.Archived;
-                item.Integrated = file.Integrated;
+                foreach (LocalFile file in folder.Files.Values)
+                {
+                    FileItem item = new FileItem(this, node, file.Info, false);
+                    item.Archived = file.Archived;
+                    item.Integrated = file.Integrated;
 
-                node.Files[file.Info.UID] = item;
-            }
+                    node.Files[file.Info.UID] = item;
+                }
+            });
 
             return node;
         }
@@ -1169,7 +1177,7 @@ namespace DeOps.Components.Storage
 
             folder.Details = folder.Details.Clone();
             folder.Details.RemoveFlag(StorageFlags.Modified);
-            folder.Archived.Clear();
+            folder.Archived.SafeClear();
             folder.Temp = true;
 
             if (parent.Nodes.Contains(folder))
@@ -1187,7 +1195,7 @@ namespace DeOps.Components.Storage
             {
                 file.Details = ((StorageFile)file.Details).Clone();
                 file.Details.RemoveFlag(StorageFlags.Modified);
-                file.Archived.Clear();
+                file.Archived.SafeClear();
                 file.Temp = true;
             }           
         }
@@ -1219,9 +1227,8 @@ namespace DeOps.Components.Storage
                  if (action == WorkingChange.Created)
                  {
                      LocalFile workingFile;
-                     workingFolder.Files.TryGetValue(uid, out workingFile);
 
-                     if (workingFile != null)
+                     if (workingFolder.Files.SafeTryGetValue(uid, out workingFile))
                      {
                          FileItem treeFile = new FileItem(this, treeFolder, workingFile.Info, false);
                          treeFile.Archived = workingFile.Archived;
@@ -1236,9 +1243,8 @@ namespace DeOps.Components.Storage
                      treeFolder.Files.TryGetValue(uid, out treeFile);
 
                      LocalFile workingFile;
-                     workingFolder.Files.TryGetValue(uid, out workingFile);
 
-                     if (workingFile != null)
+                     if (workingFolder.Files.SafeTryGetValue(uid, out workingFile))
                          if (treeFile != null)
                          {
                              treeFile.Details = workingFile.Info;
@@ -2715,7 +2721,7 @@ namespace DeOps.Components.Storage
         internal StorageFolder Details;
         StorageView View;
 
-        internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>(); // make threaded
+        internal ThreadedLinkedList<StorageItem> Archived = new ThreadedLinkedList<StorageItem>();
         internal ThreadedDictionary<ulong, StorageItem> Integrated = new ThreadedDictionary<ulong, StorageItem>();
         internal Dictionary<ulong, StorageItem> Changes = new Dictionary<ulong, StorageItem>();
 
@@ -2820,7 +2826,7 @@ namespace DeOps.Components.Storage
                 if (info.IntegratedID != 0)
                     folder.Integrated.SafeAdd(info.IntegratedID, info);
                 else
-                    folder.Archived.AddLast(info);
+                    folder.Archived.SafeAddLast(info);
             }
 
             return folder;
@@ -2838,7 +2844,7 @@ namespace DeOps.Components.Storage
                 if (info.IntegratedID != 0)
                     file.Integrated.SafeAdd(info.IntegratedID, info);
                 else
-                    file.Archived.AddLast(info);
+                    file.Archived.SafeAddLast(info);
             }
 
             return file;
@@ -2923,7 +2929,7 @@ namespace DeOps.Components.Storage
         internal StorageItem Details;
         StorageView View;
 
-        internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>(); // make threaded
+        internal ThreadedLinkedList<StorageItem> Archived = new ThreadedLinkedList<StorageItem>();
         internal ThreadedDictionary<ulong, StorageItem> Integrated = new ThreadedDictionary<ulong, StorageItem>();
         internal Dictionary<ulong, StorageItem> Changes = new Dictionary<ulong, StorageItem>();
 

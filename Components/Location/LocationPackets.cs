@@ -30,6 +30,9 @@ namespace DeOps.Components.Location
         const byte Packet_ProfileVersion = 0x80;
         const byte Packet_LinkVersion = 0x90;
         const byte Packet_TTL = 0xA0;
+        const byte Packet_GMTOffset = 0xB0;
+        const byte Packet_Away = 0xC0;
+        const byte Packet_AwayMsg = 0xD0;
 
         internal byte[] Key;
         internal DhtSource Source;
@@ -41,6 +44,11 @@ namespace DeOps.Components.Location
         internal uint Version;
         internal uint ProfileVersion;
         internal uint LinkVersion;
+
+        internal int GmtOffset;
+        internal bool Away;
+        internal string AwayMessage = "";
+
 
         internal ulong KeyID;
 
@@ -60,6 +68,9 @@ namespace DeOps.Components.Location
                 protocol.WritePacket(loc, Packet_Version, BitConverter.GetBytes(Version));
                 protocol.WritePacket(loc, Packet_ProfileVersion, BitConverter.GetBytes(ProfileVersion));
                 protocol.WritePacket(loc, Packet_LinkVersion, BitConverter.GetBytes(LinkVersion));
+                protocol.WritePacket(loc, Packet_GMTOffset, BitConverter.GetBytes(GmtOffset));
+                protocol.WritePacket(loc, Packet_Away, BitConverter.GetBytes(Away));
+                protocol.WritePacket(loc, Packet_AwayMsg, protocol.UTF.GetBytes(AwayMessage));
 
                 return protocol.WriteFinish();
             }
@@ -123,6 +134,18 @@ namespace DeOps.Components.Location
 
                     case Packet_LinkVersion:
                         loc.LinkVersion = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_GMTOffset:
+                        loc.GmtOffset = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Away:
+                        loc.Away = BitConverter.ToBoolean(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_AwayMsg:
+                        loc.AwayMessage = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }

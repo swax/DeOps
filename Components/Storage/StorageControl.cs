@@ -112,10 +112,7 @@ namespace DeOps.Components.Storage
             LoadHeaders();
      
             if (!StorageMap.SafeContainsKey(Core.LocalDhtID))
-            {
-                StorageMap.SafeAdd(Core.LocalDhtID, new OpStorage(Core.User.Settings.KeyPublic));
                 SaveLocal(0);
-            }
 
   
             // load working headers
@@ -499,6 +496,12 @@ namespace DeOps.Components.Storage
                     try { File.Delete(oldFile); }
                     catch { }
 
+
+                // get newly loaded object
+                storage = GetStorage(Core.LocalDhtID); 
+                if (storage == null)
+                    return;
+
                 // publish header
                 Store.PublishNetwork(Core.LocalDhtID, ComponentID.Storage, storage.SignedHeader);
 
@@ -591,7 +594,7 @@ namespace DeOps.Components.Storage
                 OpStorage newStorage = new OpStorage(header.Key);
 
                 // delete old file
-                if (prevStorage.Header != null)
+                if (prevStorage != null)
                 {
                     if (header.Version < prevStorage.Header.Version)
                         return; // dont update with older version
@@ -1011,8 +1014,11 @@ namespace DeOps.Components.Storage
                         }
 
                         OpFile file = null;
-                        if(!FileMap.SafeTryGetValue(packet.HashID, out file))
-                            FileMap.SafeAdd(packet.HashID, new OpFile(packet));
+                        if (!FileMap.SafeTryGetValue(packet.HashID, out file))
+                        {
+                            file = new OpFile(packet);
+                            FileMap.SafeAdd(packet.HashID, file);
+                        }
 
                         InternalFileMap.SafeAdd(packet.InternalHashID, file);
 
@@ -1353,16 +1359,24 @@ namespace DeOps.Components.Storage
             return File.Exists(finalpath);
         }
 
-        internal bool IsHistoryUnlocked(ulong dht, uint project, string path, LinkedList<StorageItem> archived)
+        internal bool IsHistoryUnlocked(ulong dht, uint project, string path, ThreadedLinkedList<StorageItem> archived)
         {
             string finalpath = GetRootPath(dht, project) + path + Path.DirectorySeparatorChar + ".history" + Path.DirectorySeparatorChar;
 
-            if(Directory.Exists(finalpath))
-                foreach (StorageFile file in archived)
-                    if (File.Exists(finalpath + GetHistoryName(file)))
-                        return true;
+            bool result = false;
 
-            return false;
+            if (Directory.Exists(finalpath))
+                archived.LockReading(delegate()
+                {
+                    foreach (StorageFile file in archived)
+                        if (File.Exists(finalpath + GetHistoryName(file)))
+                        {
+                            result = true;
+                            break;
+                        }
+                });
+
+            return result;
         }
 
         private string GetHistoryName(StorageFile file)
@@ -1489,12 +1503,12 @@ namespace DeOps.Components.Storage
             return finalpath;
         }
 
-        internal void LockFileCompletely(ulong dht, uint project, string path, LinkedList<StorageItem> archived, List<LockError> errors)
+        internal void LockFileCompletely(ulong dht, uint project, string path, ThreadedLinkedList<StorageItem> archived, List<LockError> errors)
         {
-            if (archived.Count == 0)
+            if (archived.SafeCount == 0)
                 return;
 
-            StorageFile main = (StorageFile) archived.First.Value;
+            StorageFile main = (StorageFile) archived.SafeFirst.Value;
             
             string dirpath = GetRootPath(dht, project) + path;
 
@@ -1511,17 +1525,20 @@ namespace DeOps.Components.Storage
             if (Directory.Exists(finalpath))
             {
                 List<string> stillLocked = new List<string>();
-            
-                foreach (StorageFile file in archived)
-                {
-                    string historyPath = finalpath + GetHistoryName(file);
 
-                    if (File.Exists(historyPath))
-                        if (DeleteFile(historyPath, errors, false))
-                            file.RemoveFlag(StorageFlags.Unlocked);
-                        else
-                            stillLocked.Add(historyPath);
-                }
+                archived.LockReading(delegate()
+                {
+                    foreach (StorageFile file in archived)
+                    {
+                        string historyPath = finalpath + GetHistoryName(file);
+
+                        if (File.Exists(historyPath))
+                            if (DeleteFile(historyPath, errors, false))
+                                file.RemoveFlag(StorageFlags.Unlocked);
+                            else
+                                stillLocked.Add(historyPath);
+                    }
+                });
 
                 // delete history folder
                 DeleteFolder(finalpath, errors, stillLocked);

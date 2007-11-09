@@ -27,9 +27,6 @@ namespace DeOps.Implementation.Transport
         int HashCode;
 
 		// extra info
-		internal int GmtOffset;
-		//internal int IdleTime;
-		internal bool SupportsRTF;
         internal string Name;
 
 		// negotiation
@@ -113,6 +110,8 @@ namespace DeOps.Implementation.Transport
             }
 
             Core.RudpControl.SessionUpdate.Invoke(this);
+
+            Core.RefreshDCClients(DhtID);
 		}	
 
 		internal bool SendPacket(G2Packet packet, bool expedite)
@@ -426,9 +425,6 @@ namespace DeOps.Implementation.Transport
 		{
 			SessionAck ack = new SessionAck();
 
-            ack.GmtOffset = (short)Core.GmtOffset;
-            ack.Features = (byte)SessionFeatures.RTF;
-
             Log("Session Ack Sent");
 
 			SendPacket(ack, true);
@@ -439,11 +435,6 @@ namespace DeOps.Implementation.Transport
 			SessionAck ack = SessionAck.Decode(Core.Protocol, embeddedPacket);
 
             Log("Session Ack Received");
-
-            GmtOffset = ack.GmtOffset;
-
-            if( (ack.Features & (byte)SessionFeatures.RTF) > 0)
-                SupportsRTF = true;
 
             if( AlreadyActive() )
             {

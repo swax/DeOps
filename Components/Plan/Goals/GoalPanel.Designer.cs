@@ -38,8 +38,8 @@ namespace DeOps.Components.Plan
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.MineOnly = new System.Windows.Forms.CheckBox();
             this.DelegateLink = new System.Windows.Forms.LinkLabel();
-            this.AddItemLink = new System.Windows.Forms.LinkLabel();
             this.GoalTree = new DeOps.Interface.TLVex.TreeListViewEx();
+            this.AddItemLink = new System.Windows.Forms.LinkLabel();
             this.PlanList = new DeOps.Interface.TLVex.ContainerListViewEx();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -92,18 +92,6 @@ namespace DeOps.Components.Plan
             this.DelegateLink.TabStop = true;
             this.DelegateLink.Text = "Delegate Responsibility";
             this.DelegateLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.DelegateLink_LinkClicked);
-            // 
-            // AddItemLink
-            // 
-            this.AddItemLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.AddItemLink.AutoSize = true;
-            this.AddItemLink.Location = new System.Drawing.Point(3, 114);
-            this.AddItemLink.Name = "AddItemLink";
-            this.AddItemLink.Size = new System.Drawing.Size(102, 13);
-            this.AddItemLink.TabIndex = 5;
-            this.AddItemLink.TabStop = true;
-            this.AddItemLink.Text = "Add Item to My Plan";
-            this.AddItemLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.AddItemLink_LinkClicked);
             // 
             // GoalTree
             // 
@@ -177,6 +165,18 @@ namespace DeOps.Components.Plan
             this.GoalTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.GoalTree_MouseClick);
             this.GoalTree.SelectedItemChanged += new System.EventHandler(this.GoalTree_SelectedItemChanged);
             // 
+            // AddItemLink
+            // 
+            this.AddItemLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.AddItemLink.AutoSize = true;
+            this.AddItemLink.Location = new System.Drawing.Point(3, 114);
+            this.AddItemLink.Name = "AddItemLink";
+            this.AddItemLink.Size = new System.Drawing.Size(102, 13);
+            this.AddItemLink.TabIndex = 5;
+            this.AddItemLink.TabStop = true;
+            this.AddItemLink.Text = "Add Item to My Plan";
+            this.AddItemLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.AddItemLink_LinkClicked);
+            // 
             // PlanList
             // 
             this.PlanList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
@@ -240,6 +240,7 @@ namespace DeOps.Components.Plan
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.SystemColors.ControlLight;
             this.Controls.Add(this.splitContainer1);
             this.Name = "GoalPanel";
             this.Size = new System.Drawing.Size(469, 343);

@@ -51,6 +51,7 @@ namespace DeOps.Implementation.Protocol.File
         const byte Packet_KeyPair       = 0x90;
         const byte Packet_Location      = 0xA0;
         const byte Packet_FileKey       = 0xB0;
+        const byte Packet_AwayMsg       = 0xC0;
 
         const byte Key_D        = 0x10;
         const byte Key_DP       = 0x20;
@@ -66,6 +67,8 @@ namespace DeOps.Implementation.Protocol.File
         internal string Operation;
         internal string ScreenName;
         internal string Location = "";
+        internal string AwayMessage = "";
+
         // network
         internal ushort GlobalPortTcp;
         internal ushort GlobalPortUdp;
@@ -99,6 +102,7 @@ namespace DeOps.Implementation.Protocol.File
                 protocol.WritePacket(settings, Packet_OpPortTcp,     BitConverter.GetBytes(OpPortTcp));
                 protocol.WritePacket(settings, Packet_OpPortUdp,     BitConverter.GetBytes(OpPortUdp));
                 protocol.WritePacket(settings, Packet_Location,      protocol.UTF.GetBytes(Location));
+                protocol.WritePacket(settings, Packet_AwayMsg,      protocol.UTF.GetBytes(AwayMessage));
 
                 protocol.WritePacket(settings, Packet_FileKey,  FileKey.Key);
                 protocol.WritePacket(settings, Packet_OpKey,    OpKey.Key);
@@ -180,6 +184,10 @@ namespace DeOps.Implementation.Protocol.File
 
                     case Packet_Location:
                         settings.Location = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_AwayMsg:
+                        settings.AwayMessage = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }

@@ -18,6 +18,8 @@ Testing
 Interface
 	General
 		Sorting of listviews
+		status panel needs to update as network connects network_statusupdate, trigger news as well
+		test gmt visible in status panel
 		
 	Internal 
 		expand a little more (names associated with sessions/transfers/searches/publish)
@@ -51,7 +53,7 @@ Interface
 		storage - restore
 		mail	- forward, reply
 		board   - high, low, all
-		plans	- new, edit, now
+		***plans - new, edit, now
 		goals	- edit
 		tray	- restore, exit
 		chat	- online (shinny green circle)
@@ -71,6 +73,7 @@ Components
 		make persistant so status panel can display last seen, also loaded can go straight to the cache
 		permanent locations, no ttl except for global
 		might be problem with different client ids
+		send direct connects location updates immediately so they get things like away messages
 		
 		location info should probably contain latest versions for all components so 
 			for example two of the same account would sync their storage without having to specifically having to open storage
@@ -82,31 +85,27 @@ Components
 		Log Interface - in chat log
 		If link is unknown, then name is unkown, make sure to search for name and update interface
 			reflect name changes in IM window / rest of interface
-		4 node network, running, send IM caused collection modified error in im_view:displaylog
-		remove dupe system messages
-		IM/Chat right click font view, right click timestamp view
-		***instead of showing connect/disconnect message have a top bar with green/red online offline status
+		Crash on close IM, fin being called? unhooking from IMcontrol events? 
 		
 	Chat 
 		Custom rooms - priave requires signed key, public key kept in chat file, can be queried for and found over network 
-		dont mention disconnect unless connection was made, also in IM
+			put invitations in toolbar
+			show messagebox for first invitation, afterwards ignore if already in toolbar
 		log does chat/im - setup like yahoo chat log
-		Default display when no chat panels visible
-		***instead of alerts in channel on join/part show on right side by red/green circle icon
-			if unlinked join default chatroom with other unlinked nodes, without subs
-			right click username in chat to pop-out user's profile
+		
+		***away location chagnes still not reflecting quickly in status panel
+
+		if unlinked join default chatroom with other unlinked nodes, without subs
+		on join chat, node asks other nodes for previous singed messages before specified time
 		
 	Mail 
 	    debug send/recv mail
 		tagging messages, filter by tags
-		add user link that pops up encapsulated link chooser control (LinkPanel), 
-			does queries, receives updates, etc.. (put in add task win also)
 		double clicking on name loacates them in link tree in panel
 		use labels for organization - for example a project label could be tagged on, so we could filter regarding project x
 		delete mail not refreshing view
-		sync local mail between users
+		soon - sync local mail between users
 		test/do re-publishing mail
-		***lots of clicking when changing mail view, look at javascripting that up as well, same with board
 
 	Board 
 		 board scope sub-levels down, auto search highers for posts that have source==target, and show if in scope
@@ -114,7 +113,7 @@ Components
 		 posts/replies not updating quickly or at all :(
 	
 	Profile
-		time out loading
+		time out loading - better searching interface use smoke color and better font, more info searching/dling/etc..
 		Search / Transfer process painfully slow in real time mode, analyze
 
 	Plans
@@ -122,8 +121,7 @@ Components
 		shutdown in the middle of the causing load corruption?			
 		transfer branch path when goal <-> schedule
 		probably want a custom renderer for the progress bar, default xp has it green
-		possibly using threadeddictionary for goals/blocks
-		
+
 	Storage
 		drag into secure storage gives user option to replace what is already there, either on disk or locked
 		
@@ -213,37 +211,17 @@ Simulator
 	record max udp burst sizes, or do packet size distribution histogram
 
 
-	done - profile, board, plan, mail, locations
-	** put thread checks in cache funtions
-	lock / re-create map objects
-	lock when map/items is modified on background
-	lock when map/items are accessed in foreground
-	try creating new object instead of resetting current in Op Maps, test updates are successfully changed
-	look at what GetX returns, and how re-creating X is reflected in the GUI
-		ensure gui's references to X are repalced with the new stuff
-		ensure core doesnt change X, only GUI
-		
-	storage
-		change maps to threaded
-		look at what functions call into storage from the gui
-	
-		file/folder events -> core thread
-		file hash thread
-		core thread
-		gui thread
-	
-	Op objects are recreated when loaded so that interface with current handle doesnt get collections modified inbetween
-		dont need to lock inside op stucture if only interface accesses it
-		when someone is editing/wring a new opPlan and a new plan gets loaded there wont be a conflict
-
-
 	test linking up to a subordinate works correctly - 2 areas commented out
-		*could* allow interlinking - tree shown as local node in closest position to top
 		allow anyone to trust anyone else
 		prevent loops by before traversing to downlink, ensure it is not an uplink as well
 		what happens when there are no roots?
 		trust loop
 			get uplinks - traverse until null, or node reached that is already an uplink id
+			details in math notebook
+			when link loaded in cache link, after it is reset
+				uplinks are traversed, and if cycle is detected, node is flagged as such
+				trust loop node created and added to project roots
+
 	test lockreading inside writing and visa versa
 		
 
@@ -322,6 +300,7 @@ Future
 			layers for putting down map img/ people img and being able to edit it easily
 			3d component uses imported models from any souce, sketch up ? 
 			lower corner box shows zoomed out view
+			samples - geographical area, flow chart, blueprints
 		
 		database 
 			holder of database can create dashboards, custom views into data for highers ups to understand
@@ -337,7 +316,14 @@ Future
 			push to talk attached to each ear (or on pda), for talking to higher/lower side
 			fastest human to human comunication possilbe, questions go as far up and then down as they need to go instantaneously
 			if people are off line, or voice is off, voice network auto-configurse to fill in missing links
+				higher node turns into who up the tree is online
+				helps people who don't know each other get to know each other
+					leads to eventual re-organization as those never on  are re-arranged into lower positions
 				everyone on the network is connected through high/low to someone else by voice
+				also used for chat
+				another reason is that it presueds people to make well structured orgs, not base  a structure
+					on what would have people around to talk to (lots of downlinks)
+					with this setup for voice/chat there is always a group in range for real-time comm
 			
 		stats 
 			how many people in org, follow link tree

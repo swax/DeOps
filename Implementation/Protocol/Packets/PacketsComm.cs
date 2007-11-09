@@ -227,8 +227,6 @@ namespace DeOps.Implementation.Protocol.Comm
         }	
 	}
 
-	internal enum SessionFeatures {RTF = 0x01};
-
 	internal class SessionRequest : G2Packet
 	{
         const byte Packet_Key = 0x10;

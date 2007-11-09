@@ -29,11 +29,41 @@ namespace DeOps.Components.Mail
         Font RegularFont = new Font("Tahoma", 8.25F);
         Font BoldFont = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 
-        string defaultHtml =
+        const string DefaultPage =
                 @"<html>
                 <body bgcolor=whitesmoke>
                 </body>
                 </html>";
+
+        const string HeaderPage =
+         @"<html>
+                <head>
+                    <style type='text/css'>
+                    <!--
+                        p    { font-size: 8.25pt; font-family: Tahoma }
+                        body { margin: 4; }
+                        A:link {text-decoration: none; color: blue}
+                        A:visited {text-decoration: none; color: blue}
+                        A:active {text-decoration: none; color: blue}
+                        A:hover {text-decoration: underline; color: blue}
+                    -->
+                    </style>
+
+                    <script>
+                        function SetElement(id, text)
+                        {
+                            document.getElementById(id).innerHTML = text;
+                        }
+                    </script>
+
+                </head>
+                <body bgcolor=whitesmoke>
+                    <p>
+                        <span id='content'></span>
+                    </p>
+                </body>
+            </html>";
+
 
         internal MailView(MailControl mail)
         {
@@ -49,7 +79,7 @@ namespace DeOps.Components.Mail
             MessageList.SmallImageList.Add(MailRes.Mail);
             MessageList.SmallImageList.Add(MailRes.Attach);
 
-            MessageHeader.DocumentText = defaultHtml;
+            MessageHeader.DocumentText = HeaderPage.ToString();
 
             toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
         }
@@ -84,6 +114,11 @@ namespace DeOps.Components.Mail
             Mail.MailUpdate -= new MailUpdateHandler(OnMailUpdate);
 
             return true;
+        }
+
+        internal void SetHeader(string content)
+        {
+            MessageHeader.Document.InvokeScript("SetElement", new String[] { "content", content });
         }
 
         private void InboxButton_Click(object sender, EventArgs e)
@@ -270,36 +305,20 @@ namespace DeOps.Components.Mail
         {
             if (message == null)
             {
-                MessageHeader.DocumentText = defaultHtml;
+                SetHeader("");
                 MessageBody.Clear();
                 
                 return;
             }
 
-            // header
-            string htmlHeader =
-                @"<html>
-                <head>
-                    <style type='text/css'>
-                    <!--
-                        p    { font-size: 8.25pt; font-family: Tahoma }
-                        body { margin: 4; }
-                        A:link {text-decoration: none; color: blue}
-                        A:visited {text-decoration: none; color: blue}
-                        A:active {text-decoration: none; color: blue}
-                        A:hover {text-decoration: underline; color: blue}
-                    -->
-                    </style>
-                </head>
-                <body bgcolor=whitesmoke>
-                    <p>
-                    <b><font size=2>" + message.Info.Subject + @"</font></b> from " + 
-                                      Links.GetName(message.Header.SourceID) + @", sent " +
-                                      Utilities.FormatTime(message.Info.Date) + @"<br> 
-                    <b>To:</b> " + Mail.GetNames(message.To) + @"<br>";
+      
+            string content = "<b><font size=2>" + message.Info.Subject + "</font></b> from " + 
+                              Links.GetName(message.Header.SourceID) + ", sent " +
+                              Utilities.FormatTime(message.Info.Date) + @"<br> 
+                              <b>To:</b> " + Mail.GetNames(message.To) + "<br>";
 
             if(message.CC.Count > 0)
-                htmlHeader += "<b>CC:</b> " + Mail.GetNames(message.CC) + @"<br>";
+                content += "<b>CC:</b> " + Mail.GetNames(message.CC) + "<br>";
                     
             if(message.Attached.Count > 1)
             {
@@ -315,10 +334,10 @@ namespace DeOps.Components.Mail
 
                 attachHtml = attachHtml.TrimEnd(new char[] { ' ', ',' });
 
-                htmlHeader += "<b>Attachments: </b> " + attachHtml;
+                content += "<b>Attachments: </b> " + attachHtml;
             }
 
-            htmlHeader += "<br>";
+            content += "<br>";
 
             string actions = "";
 
@@ -328,13 +347,9 @@ namespace DeOps.Components.Mail
             actions += @", <a href='forward:x'>Forward</a>";
             actions += @", <a href='delete:x'>Delete</a>";
 
-            htmlHeader +=  "<b>Actions: </b>" + actions.Trim(',', ' ');
+            content += "<b>Actions: </b>" + actions.Trim(',', ' ');
 
-            htmlHeader += @"</p>
-                </body>
-                </html>";
-
-            MessageHeader.DocumentText = htmlHeader;
+            SetHeader(content);
 
             // body
 

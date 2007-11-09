@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Security.Cryptography;
@@ -1041,6 +1042,9 @@ namespace DeOps.Components.Link
 
         private void CacheLinkFile(SignedData signedHeader, LinkHeader header)
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             try
             {
                 // check if file exists           

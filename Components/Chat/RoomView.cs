@@ -8,8 +8,12 @@ using System.Windows.Forms;
 
 using DeOps.Interface;
 using DeOps.Interface.TLVex;
+using DeOps.Interface.Views;
 using DeOps.Implementation;
+using DeOps.Implementation.Transport;
 using DeOps.Components.Link;
+using DeOps.Components.IM;
+using DeOps.Components.Location;
 
 
 namespace DeOps.Components.Chat
@@ -19,13 +23,18 @@ namespace DeOps.Components.Chat
         internal ChatControl Chat;
         ChatRoom Room;
 
-        //bool ShowTimestamps;
+        internal OpCore Core;
+        LocationControl Locations;
+        LinkControl Links;
+
+        MenuItem TimestampMenu;
 
         Font BoldFont = new Font("Tahoma", 10, FontStyle.Bold);
         Font RegularFont = new Font("Tahoma", 10, FontStyle.Regular);
-        Font TimeFont = new Font("Tahoma", 8, FontStyle.Bold);
+        Font TimeFont = new Font("Tahoma", 8, FontStyle.Regular);
+        Font SystemFont = new Font("Tahoma", 8, FontStyle.Bold);
 
-        internal Dictionary<ulong, string> NameMap = new Dictionary<ulong, string>();
+        Dictionary<ulong, MemberNode> NodeMap = new Dictionary<ulong, MemberNode>();
 
 
         internal RoomView(ChatControl chat, ChatRoom room)
@@ -35,91 +44,169 @@ namespace DeOps.Components.Chat
             Chat = chat;
             Room = room;
 
+            Core = chat.Core;
+            Locations = Core.Locations;
+            Links = Core.Links;
 
             if (room.Kind == RoomKind.Command_High)
                 MessageTextBox.BackColor = Color.FromArgb(255, 250, 250);
 
             else if(room.Kind == RoomKind.Command_Low)
                 MessageTextBox.BackColor = Color.FromArgb(250, 250, 255);
+
+            MemberTree.PreventCollapse = true;
+
+            ContextMenu menu = new ContextMenu();
+            TimestampMenu = new MenuItem("Timestamps", new EventHandler(Menu_Timestamps));
+            menu.MenuItems.Add(TimestampMenu);
+            MessageTextBox.ContextMenu = menu;
         }
 
         internal void Init()
         {
-            OnMembersUpdate(true);
+            InputControl.SendMessage += new TextInput.SendMessageHandler(Input_SendMessage);
 
-            InputControl.SendMessage += new TextInput.SendMessageHandler(OnSendMessage);
+            Room.MembersUpdate += new MembersUpdateHandler(Chat_MembersUpdate);
+            Room.ChatUpdate    += new ChatUpdateHandler(Chat_Update);
 
-            Room.MembersUpdate += new MembersUpdateHandler(OnMembersUpdate);
-            Room.ChatUpdate    += new ChatUpdateHandler(OnChatUpdate);
+            Core.DCClientsUpdate += new DCClientsHandler(Core_DCClientsUpdate);
+            Locations.GuiUpdate += new LocationGuiUpdateHandler(Location_Update);
+
+            Chat_MembersUpdate();
 
             DisplayLog();
         }
 
         internal bool Fin()
         {
-            InputControl.SendMessage -= new TextInput.SendMessageHandler(OnSendMessage);
+            InputControl.SendMessage -= new TextInput.SendMessageHandler(Input_SendMessage);
 
-            Room.MembersUpdate -= new MembersUpdateHandler(OnMembersUpdate);
-            Room.ChatUpdate    -= new ChatUpdateHandler(OnChatUpdate);
+            Room.MembersUpdate -= new MembersUpdateHandler(Chat_MembersUpdate);
+            Room.ChatUpdate    -= new ChatUpdateHandler(Chat_Update);
+
+            Core.DCClientsUpdate -= new DCClientsHandler(Core_DCClientsUpdate);
+            Locations.GuiUpdate -= new LocationGuiUpdateHandler(Location_Update);
 
             return true;
         }
 
         private void DisplayLog()
         {
+            MessageTextBox.Clear();
+
             Room.Log.LockReading(delegate()
             {
                 foreach (ChatMessage message in Room.Log)
-                    OnChatUpdate(message);
+                    Chat_Update(message);
             });
         }
 
-        internal void OnSendMessage(string message)
+        internal void Input_SendMessage(string message)
         {
             Chat.SendMessage(Room, message);
         }
 
-        void OnMembersUpdate(bool refresh)
+        void Location_Update(ulong key)
+        {
+            // away msg etc.. may have been modified
+            if (NodeMap.ContainsKey(key))
+                Core.RefreshDCClients(key);
+        }
+
+
+        internal void Core_DCClientsUpdate(ulong id, List<Tuple<ushort, SessionStatus>> clients)
+        {
+            if (!NodeMap.ContainsKey(id))
+                return;
+
+            bool connected = false;
+            bool away = false;
+
+            foreach (Tuple<ushort, SessionStatus> client in clients)
+                if (client.Second == SessionStatus.Active)
+                {
+                    connected = true;
+
+                    LocInfo info = Locations.GetLocationInfo(id, client.First);
+
+                    if (info != null && info.Location.Away)
+                        away = true;
+                }
+
+            UpdateNodeStatus(NodeMap[id], connected, away);
+        }
+
+        void UpdateNodeStatus(MemberNode node, bool connected, bool away)
+        {
+
+            node.Text = Links.GetName(node.DhtID);
+
+            if (away)
+                node.Text += " (away)";
+
+            Color foreColor = connected ? Color.Black : Color.Gray;
+
+            if (node.ForeColor == foreColor)
+            {
+                MemberTree.Invalidate();
+                return; // no change
+            }
+            if (!node.Unset) // on first run don't show everyone as joined
+            {
+                string message = "";
+
+                if (connected)
+                    message = Links.GetName(node.DhtID) + " has joined the room";
+                else
+                    message = Links.GetName(node.DhtID) + " has left the room";
+
+
+                // dont log
+                Chat_Update(new ChatMessage(Core, message, true));
+            }
+
+            node.Unset = false;
+
+            node.ForeColor = foreColor;
+            MemberTree.Invalidate();
+        }
+
+        void Chat_MembersUpdate()
         {
             MemberTree.BeginUpdate();
 
-            if (refresh)
+            MemberTree.Nodes.Clear();
+            NodeMap.Clear();
+
+            Room.Members.LockReading(delegate()
             {
-                NameMap.Clear();
-                MemberTree.Nodes.Clear();
-
-               Room.Members.LockReading(delegate()
-               {
-                   if (Room.Members.Count > 0)
-                   {
- 
-                       MemberNode root = new MemberNode(this, Room.Members[0].DhtID);
-
-                       foreach (OpLink member in Room.Members)
-                           if (member.DhtID != root.DhtID)
-                               Utilities.InsertSubNode(root, new MemberNode(this, member.DhtID));
-
-                       MemberTree.Nodes.Add(root);
-                       root.Expand();
-                   }
-               });
-            }
-
-            else
-            {
-                foreach (MemberNode root in MemberTree.Nodes)
+                if (Room.Members.Count == 0)
                 {
-                    root.Update();
-
-                    foreach (MemberNode node in root.Nodes)
-                        node.Update();
+                    MemberTree.EndUpdate();
+                    return;
                 }
-            }
+
+                MemberNode root = new MemberNode(this, Room.Members[0]);
+                Core.RefreshDCClients(root.DhtID);
+                NodeMap[root.DhtID] = root;
+
+                foreach (ulong member in Room.Members)
+                    if (member != root.DhtID)
+                    {
+                        MemberNode node = new MemberNode(this, member);
+                        Utilities.InsertSubNode(root, node);
+                        Core.RefreshDCClients(member);
+                        NodeMap[node.DhtID] = node;
+                    }
+
+                MemberTree.Nodes.Add(root);
+                root.Expand();
+            });
 
             MemberTree.EndUpdate();
         }
 
-        void OnChatUpdate(ChatMessage message)
+        void Chat_Update(ChatMessage message)
         {
             int oldStart  = MessageTextBox.SelectionStart;
             int oldLength = MessageTextBox.SelectionLength;
@@ -130,7 +217,7 @@ namespace DeOps.Components.Chat
             // name, in bold, blue for incoming, red for outgoing
             if (message.System)
                 MessageTextBox.SelectionColor = Color.Black;
-            else if (message.Source == Chat.Core.LocalDhtID)
+            else if (message.Source == Chat.Core.LocalDhtID && message.ClientID == Core.ClientID)
                 MessageTextBox.SelectionColor = Color.Red;
             else
                 MessageTextBox.SelectionColor = Color.Blue;
@@ -139,48 +226,47 @@ namespace DeOps.Components.Chat
 
             string prefix = " ";
             if (!message.System)
-            {
-                if (message.Source == Chat.Core.LocalDhtID)
-                    prefix += Chat.Core.User.Settings.ScreenName;
-                else if (NameMap.ContainsKey(message.Source))
-                    prefix += NameMap[message.Source];
-                else
-                    prefix += "unknown";
-            }
+                prefix += Links.GetName(message.Source);
 
             if (MessageTextBox.Text.Length != 0)
                 prefix = "\n" + prefix;
 
             
             // add timestamp
-            /*if (ShowTimestamps)
+            if (TimestampMenu.Checked)
             {
+                MessageTextBox.AppendText(prefix);
+
                 MessageTextBox.SelectionFont = TimeFont;
-                seperator = " (" + message.TimeStamp.ToString("T") + ")" + seperator;
-            }*/
+                MessageTextBox.AppendText(" (" + message.TimeStamp.ToString("T") + ")");
+
+                MessageTextBox.SelectionFont = BoldFont;
+                prefix = "";
+            }
 
             string location = "";
-            if (Chat.Core.Locations.ClientCount(message.Source) > 1)
-                location = " @" + Chat.Core.Locations.GetLocationName(message.Source, message.ClientID);
+            if (Locations.ClientCount(message.Source) > 1)
+                location = " @" + Locations.GetLocationName(message.Source, message.ClientID);
 
             if (!message.System)
                 prefix += location + ": ";
-            else
-                prefix += "> ";
 
             MessageTextBox.AppendText(prefix);
 
             // message, grey for not acked
             MessageTextBox.SelectionColor = Color.Black;
-            MessageTextBox.SelectionFont = RegularFont;
 
-            if (!message.System)
-                MessageTextBox.SelectedRtf = message.Text;
+            if (message.System)
+            {
+                MessageTextBox.SelectionFont = SystemFont;
+                MessageTextBox.AppendText(" *" + message.Text);
+            }
             else
             {
-                MessageTextBox.SelectionFont = BoldFont;
-                MessageTextBox.AppendText(message.Text);
+                MessageTextBox.SelectionFont = RegularFont;
+                MessageTextBox.SelectedRtf = message.Text;
             }
+
 
             MessageTextBox.SelectionStart = oldStart;
             MessageTextBox.SelectionLength = oldLength;
@@ -196,20 +282,99 @@ namespace DeOps.Components.Chat
                 InputControl.InputBox.Focus();
             }
         }
+
+        private void MemberTree_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right)
+                return;
+
+            MemberNode node = MemberTree.GetNodeAt(e.Location) as MemberNode;
+
+            if (node == null)
+                return;
+
+            ContextMenuStripEx treeMenu = new ContextMenuStripEx();
+
+            // views
+            List<ToolStripMenuItem> quickMenus = new List<ToolStripMenuItem>();
+            List<ToolStripMenuItem> extMenus = new List<ToolStripMenuItem>();
+
+            foreach (OpComponent component in Core.Components.Values)
+            {
+                if (component is LinkControl)
+                    continue;
+
+                // quick
+                List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Quick, node.DhtID, Room.ProjectID);
+
+                if (menuList != null && menuList.Count > 0)
+                    foreach (MenuItemInfo info in menuList)
+                        quickMenus.Add(new OpMenuItem(node.DhtID, Room.ProjectID, info.Path, info));
+
+                // external
+                menuList = component.GetMenuInfo(InterfaceMenuType.External, node.DhtID, Room.ProjectID);
+
+                if (menuList != null && menuList.Count > 0)
+                    foreach (MenuItemInfo info in menuList)
+                        extMenus.Add(new OpMenuItem(node.DhtID, Room.ProjectID, info.Path, info));
+            }
+
+            if (quickMenus.Count > 0 || extMenus.Count > 0)
+                if (treeMenu.Items.Count > 0)
+                    treeMenu.Items.Add("-");
+
+            foreach (ToolStripMenuItem menu in quickMenus)
+                treeMenu.Items.Add(menu);
+
+            if (extMenus.Count > 0)
+            {
+                ToolStripMenuItem viewItem = new ToolStripMenuItem("Views", InterfaceRes.views);
+
+                foreach (ToolStripMenuItem menu in extMenus)
+                    viewItem.DropDownItems.Add(menu);
+
+                treeMenu.Items.Add(viewItem);
+            }
+
+            // show
+            if (treeMenu.Items.Count > 0)
+                treeMenu.Show(MemberTree, e.Location);
+        }
+
+        private void MemberTree_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            MemberNode node = MemberTree.GetNodeAt(e.Location) as MemberNode;
+
+            if (node == null)
+                return;
+
+            OpMenuItem info = new OpMenuItem(node.DhtID, 0);
+
+            if (Locations.LocationMap.SafeContainsKey(node.DhtID))
+                ((IMControl)Core.Components[ComponentID.IM]).QuickMenu_View(info, null);
+            else
+                Core.Mail.QuickMenu_View(info, null);
+        }
+
+        void Menu_Timestamps(object sender, EventArgs e)
+        {
+            TimestampMenu.Checked = !TimestampMenu.Checked;
+
+            DisplayLog();
+        }
     }
 
   
 
     internal class MemberNode : TreeListNode
     {
-        RoomView View;
         OpCore Core;
         internal ulong DhtID;
+        internal bool Unset = true;
 
         internal MemberNode(RoomView view, ulong id)
         {
-            View = view;
-            Core = view.Chat.Core;
+            Core = view.Core;
             DhtID = id;
 
             Update();
@@ -219,17 +384,11 @@ namespace DeOps.Components.Chat
         {
             Text = Core.Links.GetName(DhtID);
 
-            View.NameMap[DhtID] = Text;
 
             if (DhtID == Core.LocalDhtID)
                 Font = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-        
-            else if(Core.RudpControl.IsConnected(DhtID))
-                ForeColor = Color.Black;
 
-            else
-                ForeColor = Color.DarkGray;
-        
+            ForeColor = Color.Gray;
         }
     }
 }

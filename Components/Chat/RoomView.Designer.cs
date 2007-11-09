@@ -95,12 +95,14 @@ namespace DeOps.Components.Chat
             // 
             // InputControl
             // 
+            this.InputControl.AcceptTabs = false;
             this.InputControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.InputControl.EnterClears = true;
             this.InputControl.Font = new System.Drawing.Font("Tahoma", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.InputControl.Location = new System.Drawing.Point(0, 0);
             this.InputControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.InputControl.Name = "InputControl";
+            this.InputControl.ReadOnly = false;
             this.InputControl.ShowFontStrip = false;
             this.InputControl.Size = new System.Drawing.Size(168, 29);
             this.InputControl.TabIndex = 0;
@@ -127,12 +129,14 @@ namespace DeOps.Components.Chat
             this.MemberTree.SmallImageList = null;
             this.MemberTree.StateImageList = null;
             this.MemberTree.TabIndex = 0;
-            this.MemberTree.VisualStyles = false;
+            this.MemberTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.MemberTree_MouseDoubleClick);
+            this.MemberTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.MemberTree_MouseClick);
             // 
             // RoomView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.SystemColors.ControlLight;
             this.Controls.Add(this.splitContainer1);
             this.Name = "RoomView";
             this.Size = new System.Drawing.Size(315, 194);

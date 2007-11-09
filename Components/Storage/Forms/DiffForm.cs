@@ -71,8 +71,11 @@ namespace DeOps.Components.Storage
                 IntegratedRadio.Enabled = false;
 
             // history
-            foreach (StorageFile item in info.CurrentFile.Archived)
-                HistoryCombo.Items.Add(new ComboFileItem(this, 0, item));
+            info.CurrentFile.Archived.LockReading(delegate()
+            {
+                foreach (StorageFile item in info.CurrentFile.Archived)
+                    HistoryCombo.Items.Add(new ComboFileItem(this, 0, item));
+            });
 
             if (HistoryCombo.Items.Count > 0)
                 HistoryCombo.SelectedIndex = 0;

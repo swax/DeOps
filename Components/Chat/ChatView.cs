@@ -32,9 +32,12 @@ namespace DeOps.Components.Chat
 
         internal override void Init()
         {
-            foreach (ChatRoom room in Chat.Rooms)
-                if(room.ProjectID == ProjectID)
-                    OnCreateRoom(room);
+            Chat.Rooms.LockReading(delegate()
+            {
+                foreach (ChatRoom room in Chat.Rooms)
+                    if (room.ProjectID == ProjectID)
+                        OnCreateRoom(room);
+            });
         }
 
         internal override bool Fin()

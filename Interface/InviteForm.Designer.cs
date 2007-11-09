@@ -55,8 +55,8 @@ namespace DeOps.Interface
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(238, 64);
             this.label2.TabIndex = 1;
-            this.label2.Text = "Email this file to those you want to invite into the operation.  For internal opera" +
-                "tions post this file on a website.";
+            this.label2.Text = "Email this file to those you want to invite into the operation.  For internal ope" +
+                "rations post this file on a website.";
             // 
             // label3
             // 
@@ -109,6 +109,7 @@ namespace DeOps.Interface
             this.AcceptButton = this.ButtonOK;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.SystemColors.ControlLight;
             this.CancelButton = this.ButtonCancel;
             this.ClientSize = new System.Drawing.Size(262, 174);
             this.Controls.Add(this.ButtonOK);

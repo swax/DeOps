@@ -265,6 +265,10 @@ namespace DeOps.Components.Location
                     location.Proxies.Add(new DhtAddress(connect.RemoteIP, connect));
 
             location.Place = Core.User.Settings.Location;
+            location.GmtOffset = System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes;
+            location.Away = Core.Away;
+            location.AwayMessage = Core.Away ? Core.User.Settings.AwayMessage : "";
+
             location.Version  = LocationVersion++;
             if( Core.Profiles != null)
                 location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
@@ -412,7 +416,7 @@ namespace DeOps.Components.Location
                     LocationMap.SafeAdd(location.KeyID, locations);
                 }
 
-                current = new LocInfo();
+                current = new LocInfo(location.Source.ClientID);
                 current.Cached = Core.OperationNet.Store.IsCached(location.KeyID);
                 locations.SafeAdd(location.Source.ClientID, current);
             }
@@ -526,10 +530,15 @@ namespace DeOps.Components.Location
 
         internal string GetLocationName(ulong key, ushort id)
         {
-            LocationData data = Core.Locations.GetLocationInfo(key, id).Location;
+            LocInfo current = Core.Locations.GetLocationInfo(key, id);
+
+            if(current == null)
+                return id.ToString();
+
+            LocationData data = current.Location;
 
             if (data == null || data.Place == null || data.Place == "")
-                return "Unknown";
+                return data.IP.ToString();
 
             return data.Place;
         }
@@ -594,5 +603,11 @@ namespace DeOps.Components.Location
 
         internal uint TTL;
         internal bool Cached;
+        internal ushort ClientID;
+
+        internal LocInfo(ushort id)
+        {
+            ClientID = id;
+        }
     }
 }

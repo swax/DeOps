@@ -30,9 +30,9 @@ namespace DeOps.Components.Storage
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(StorageView));
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader4 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader5 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader6 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.FoldersButton = new System.Windows.Forms.ToolStripButton();
@@ -199,40 +199,40 @@ namespace DeOps.Components.Storage
             this.FileListView.AllowDrop = true;
             this.FileListView.BackColor = System.Drawing.SystemColors.Window;
             this.FileListView.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            toggleColumnHeader4.Hovered = false;
-            toggleColumnHeader4.Image = null;
-            toggleColumnHeader4.Index = 0;
-            toggleColumnHeader4.Pressed = false;
-            toggleColumnHeader4.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader4.Selected = false;
-            toggleColumnHeader4.Text = "Name";
-            toggleColumnHeader4.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader4.Visible = true;
-            toggleColumnHeader4.Width = 168;
-            toggleColumnHeader5.Hovered = false;
-            toggleColumnHeader5.Image = null;
-            toggleColumnHeader5.Index = 0;
-            toggleColumnHeader5.Pressed = false;
-            toggleColumnHeader5.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
-            toggleColumnHeader5.Selected = false;
-            toggleColumnHeader5.Text = "Size";
-            toggleColumnHeader5.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            toggleColumnHeader5.Visible = true;
-            toggleColumnHeader5.Width = 70;
-            toggleColumnHeader6.Hovered = false;
-            toggleColumnHeader6.Image = null;
-            toggleColumnHeader6.Index = 0;
-            toggleColumnHeader6.Pressed = false;
-            toggleColumnHeader6.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
-            toggleColumnHeader6.Selected = false;
-            toggleColumnHeader6.Text = "Date Modified";
-            toggleColumnHeader6.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader6.Visible = true;
-            toggleColumnHeader6.Width = 120;
+            toggleColumnHeader1.Hovered = false;
+            toggleColumnHeader1.Image = null;
+            toggleColumnHeader1.Index = 0;
+            toggleColumnHeader1.Pressed = false;
+            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.Selected = false;
+            toggleColumnHeader1.Text = "Name";
+            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader1.Visible = true;
+            toggleColumnHeader1.Width = 168;
+            toggleColumnHeader2.Hovered = false;
+            toggleColumnHeader2.Image = null;
+            toggleColumnHeader2.Index = 0;
+            toggleColumnHeader2.Pressed = false;
+            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader2.Selected = false;
+            toggleColumnHeader2.Text = "Size";
+            toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            toggleColumnHeader2.Visible = true;
+            toggleColumnHeader2.Width = 70;
+            toggleColumnHeader3.Hovered = false;
+            toggleColumnHeader3.Image = null;
+            toggleColumnHeader3.Index = 0;
+            toggleColumnHeader3.Pressed = false;
+            toggleColumnHeader3.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader3.Selected = false;
+            toggleColumnHeader3.Text = "Date Modified";
+            toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader3.Visible = true;
+            toggleColumnHeader3.Width = 120;
             this.FileListView.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
-            toggleColumnHeader4,
-            toggleColumnHeader5,
-            toggleColumnHeader6});
+            toggleColumnHeader1,
+            toggleColumnHeader2,
+            toggleColumnHeader3});
             this.FileListView.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.FileListView.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.FileListView.DisableHorizontalScroll = true;
@@ -342,6 +342,7 @@ namespace DeOps.Components.Storage
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.SystemColors.ControlLight;
             this.Controls.Add(this.RescanLabel);
             this.Controls.Add(this.ChangesLabel);
             this.Controls.Add(this.DiscardLink);

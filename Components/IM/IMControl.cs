@@ -13,6 +13,7 @@ using DeOps.Components.Location;
 namespace DeOps.Components.IM
 {
     internal delegate void IM_UpdateHandler(ulong dhtid, InstantMessage message);
+    internal delegate void StatusUpdateHandler(ulong dhtid, InstantMessage message);
 
     internal class IMControl : OpComponent
     {
@@ -20,7 +21,6 @@ namespace DeOps.Components.IM
 
         internal OpCore Core;
 
-        List<ushort> ConnectedClients = new List<ushort>();
         Dictionary<ulong, TtlObj> SessionMap = new Dictionary<ulong, TtlObj>();
         internal ThreadedDictionary<ulong, List<InstantMessage>> MessageLog = new ThreadedDictionary<ulong, List<InstantMessage>>();
 
@@ -35,7 +35,7 @@ namespace DeOps.Components.IM
             Core.ExitEvent += new ExitHandler(Core_Exit);
             Core.TimerEvent += new TimerHandler(Core_Timer);
             
-            Core.RudpControl.SessionUpdate    += new SessionUpdateHandler(Session_Update);
+            Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
             Core.RudpControl.SessionData[ComponentID.IM] = new SessionDataHandler(Session_Data);
         }
 
@@ -78,6 +78,7 @@ namespace DeOps.Components.IM
                 SessionMap.Remove(id);
         }
 
+        //crit not thread locked/protected
         private List<IM_View> GetViews()
         {
             List<IM_View> views = new List<IM_View>();
@@ -144,19 +145,10 @@ namespace DeOps.Components.IM
                 return;
             }
 
-            List<LocInfo> clients = Core.Locations.GetClients(key);
-
-            foreach (LocInfo loc in clients)
-            {
-                if (Core.RudpControl.IsConnected(loc.Location))
-                    ProcessMessage(key, new InstantMessage(Core, "Connected " + loc.Location.Place, true));
-
-                else
-                {
-                    Core.RudpControl.Connect(loc.Location);
-                    ProcessMessage(key, new InstantMessage(Core, "Connecting " + loc.Location.Place, true));
-                }
-            }
+ 
+            foreach (LocInfo loc in Core.Locations.GetClients(key))
+                Core.RudpControl.Connect(loc.Location);
+            
         }
 
         private IM_View FindView(ulong key)
@@ -203,28 +195,10 @@ namespace DeOps.Components.IM
             if (FindView(session.DhtID) == null)
                 return;
 
-            LocationData location = Core.Locations.GetLocationInfo(session.DhtID, session.ClientID).Location ;
-
-            string place = "";
-            if (location != null)
-                place = location.Place;
-
             if (session.Status == SessionStatus.Active)
             {
-                if (!ConnectedClients.Contains(session.ClientID))
-                {
-                    ProcessMessage(session.DhtID, new InstantMessage(Core, "Connected " + place, true));
-                    ConnectedClients.Add(session.ClientID);
-                }
-
                 session.SendData(ComponentID.IM, new IMKeepAlive(), true);
                 SessionMap[session.DhtID] = new TtlObj(SessionTimeout);
-            }
-
-            else if (session.Status == SessionStatus.Closed && ConnectedClients.Contains(session.ClientID))
-            {
-                ProcessMessage(session.DhtID, new InstantMessage(Core, "Disconnected " + place, true));
-                ConnectedClients.Remove(session.ClientID);
             }
         }
 
@@ -240,7 +214,8 @@ namespace DeOps.Components.IM
 
             if (!Core.RudpControl.SessionMap.ContainsKey(key))
             {
-                ProcessMessage(key, new InstantMessage(Core, "Message not sent (not connected)", true));
+                // run direct, dont log
+                Core.RunInGuiThread(IM_Update, key, new InstantMessage(Core, "Could not send message, client disconnected", true));
                 return;
             }
 
@@ -310,8 +285,7 @@ namespace DeOps.Components.IM
         internal ushort   ClientID;
         internal DateTime TimeStamp;
         internal string   Text;
-        internal bool     System;
-
+        internal bool System;
         // local / system message
         internal InstantMessage(OpCore core, string text, bool system)
         {

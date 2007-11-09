@@ -125,6 +125,7 @@ namespace DeOps.Components.Board
             this.MessageBody.EnterClears = false;
             this.MessageBody.Location = new System.Drawing.Point(6, 68);
             this.MessageBody.Name = "MessageBody";
+            this.MessageBody.ReadOnly = false;
             this.MessageBody.ShowFontStrip = true;
             this.MessageBody.Size = new System.Drawing.Size(384, 239);
             this.MessageBody.TabIndex = 26;
@@ -198,6 +199,7 @@ namespace DeOps.Components.Board
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.SystemColors.ControlLight;
             this.Controls.Add(this.ScopeAll);
             this.Controls.Add(this.ScopeLow);
             this.Controls.Add(this.ScopeHigh);

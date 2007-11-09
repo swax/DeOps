@@ -35,11 +35,34 @@ namespace DeOps.Components.Board
         Dictionary<int, PostViewNode> ThreadMap = new Dictionary<int, PostViewNode>();
         Dictionary<int, Dictionary<int, PostViewNode>> ActiveThreads = new Dictionary<int,Dictionary<int, PostViewNode>>();
 
-        string PostHeaderDefault = @"<html>
-                <body bgcolor=whitesmoke>
-                </body>
-                </html>";
+        const string HeaderPage = @"<html>
+                <head>
+                    <style type='text/css'>
+                    <!--
+                        p    { font-size: 8.25pt; font-family: Tahoma }
+                        body { margin: 4; }
+                        A:link {text-decoration: none; color: blue}
+                        A:visited {text-decoration: none; color: blue}
+                        A:active {text-decoration: none; color: blue}
+                        A:hover {text-decoration: underline; color: blue}
+                    -->
+                    </style>
 
+
+                    <script>
+                        function SetElement(id, text)
+                        {
+                            document.getElementById(id).innerHTML = text;
+                        }
+                    </script>
+
+                </head>
+                <body bgcolor=whitesmoke>
+                    <p>
+                        <span id='content'></span>
+                    </p>
+                </body>
+            </html>";
 
         internal BoardView(BoardControl boards, ulong id, uint project)
         {
@@ -62,7 +85,7 @@ namespace DeOps.Components.Board
 
             toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
 
-            PostHeader.DocumentText = PostHeaderDefault;
+            PostHeader.DocumentText = HeaderPage.ToString();
 
             PostView.SmallImageList = new List<Image>();
             PostView.SmallImageList.Add(BoardRes.post);
@@ -207,10 +230,15 @@ namespace DeOps.Components.Board
 
             Boards.LoadRegion(DhtID, ProjectID);
 
-            PostHeader.DocumentText = PostHeaderDefault;
+            SetHeader("");
             PostBody.Rtf = "";
         }
-        
+
+        internal void SetHeader(string content)
+        {
+            PostHeader.Document.InvokeScript("SetElement", new String[] { "content", content });
+        }
+
         void Board_PostUpdate(OpPost post)
         {
             if (post.Header.ProjectID != ProjectID)
@@ -406,31 +434,15 @@ namespace DeOps.Components.Board
                 responseTo = "Response to ";
 
             // header
-            string htmlHeader =
-                @"<html>
-                <head>
-                    <style type='text/css'>
-                    <!--
-                        p    { font-size: 8.25pt; font-family: Tahoma }
-                        body { margin: 4; }
-                        A:link {text-decoration: none; color: blue}
-                        A:visited {text-decoration: none; color: blue}
-                        A:active {text-decoration: none; color: blue}
-                        A:hover {text-decoration: underline; color: blue}
-                    -->
-                    </style>
-                </head>
-                <body bgcolor=whitesmoke>
-                    <p>
-                    " + responseTo + "<b><font size=2>" + parent.Info.Subject + @"</font></b> posted by " +
-                                      Links.GetName(post.Header.SourceID) + @" at " +
-                                      Utilities.FormatTime(post.Header.Time) + @"<br>";
+            string content = responseTo + "<b><font size=2>" + parent.Info.Subject + @"</font></b> posted by " +
+                              Links.GetName(post.Header.SourceID) + @" at " +
+                              Utilities.FormatTime(post.Header.Time) + @"<br>";
 
             // edit time
             if (post.Header.EditTime > post.Header.Time)
-                htmlHeader += "Edited at " + Utilities.FormatTime(post.Header.EditTime);
+                content += "Edited at " + Utilities.FormatTime(post.Header.EditTime);
 
-            htmlHeader += "<br>";
+            content += "<br>";
 
             // actions
             string actions = "";
@@ -450,14 +462,10 @@ namespace DeOps.Components.Board
                         actions += @", <a href='archive:" + post.Ident.ToString() + "'>Archive</a>";
             }
 
-            htmlHeader += "<b>Actions: </b>" + actions.Trim(',', ' ');
+            content += "<b>Actions: </b>" + actions.Trim(',', ' ');
 
-            htmlHeader +=
-                    @"</p>
-                </body>
-                </html>";
+            SetHeader(content);
 
-            PostHeader.DocumentText = htmlHeader;
 
             // body
 

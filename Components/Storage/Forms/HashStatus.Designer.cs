@@ -52,10 +52,10 @@ namespace DeOps.Components.Storage
             this.StatusLabel.TabIndex = 0;
             this.StatusLabel.Text = "Securing test.mpg\r\n2 Files Left\r\n200 MB Total";
             // 
-            // CancelButton
+            // ExitButton
             // 
             this.ExitButton.Location = new System.Drawing.Point(388, 66);
-            this.ExitButton.Name = "CancelButton";
+            this.ExitButton.Name = "ExitButton";
             this.ExitButton.Size = new System.Drawing.Size(75, 23);
             this.ExitButton.TabIndex = 1;
             this.ExitButton.Text = "Cancel";
@@ -66,6 +66,7 @@ namespace DeOps.Components.Storage
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.SystemColors.ControlLight;
             this.ClientSize = new System.Drawing.Size(475, 101);
             this.Controls.Add(this.ExitButton);
             this.Controls.Add(this.StatusLabel);

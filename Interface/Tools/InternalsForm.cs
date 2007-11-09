@@ -502,7 +502,7 @@ namespace DeOps.Interface.Tools
                         {
                             LocationData data = LocationData.Decode(Core.Protocol, signed.Data);
 
-                            LocInfo info = new LocInfo();
+                            LocInfo info = new LocInfo(0);
                             info.Location = data;
                             info.TTL = loc.TTL;
 

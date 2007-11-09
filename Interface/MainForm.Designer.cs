@@ -84,7 +84,7 @@ namespace DeOps.Interface
             // 
             // MainSplit
             // 
-            this.MainSplit.BackColor = System.Drawing.SystemColors.Control;
+            this.MainSplit.BackColor = System.Drawing.SystemColors.ControlLight;
             this.MainSplit.Dock = System.Windows.Forms.DockStyle.Fill;
             this.MainSplit.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
             this.MainSplit.Location = new System.Drawing.Point(27, 0);
@@ -106,7 +106,7 @@ namespace DeOps.Interface
             // 
             // CommandSplit
             // 
-            this.CommandSplit.BackColor = System.Drawing.SystemColors.Control;
+            this.CommandSplit.BackColor = System.Drawing.SystemColors.ControlLight;
             this.CommandSplit.Dock = System.Windows.Forms.DockStyle.Fill;
             this.CommandSplit.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
             this.CommandSplit.ForeColor = System.Drawing.Color.White;
@@ -128,7 +128,7 @@ namespace DeOps.Interface
             this.CommandSplit.SplitterDistance = 277;
             this.CommandSplit.TabIndex = 4;
             // 
-            // SideModeStrip
+            // SideNavStrip
             // 
             this.SideNavStrip.BackColor = System.Drawing.Color.CornflowerBlue;
             this.SideNavStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
@@ -136,7 +136,7 @@ namespace DeOps.Interface
             this.SideViewsButton,
             this.SideNewsButton});
             this.SideNavStrip.Location = new System.Drawing.Point(0, 0);
-            this.SideNavStrip.Name = "SideModeStrip";
+            this.SideNavStrip.Name = "SideNavStrip";
             this.SideNavStrip.Size = new System.Drawing.Size(171, 25);
             this.SideNavStrip.TabIndex = 1;
             this.SideNavStrip.Paint += new System.Windows.Forms.PaintEventHandler(this.SideModeStrip_Paint);
@@ -305,6 +305,7 @@ namespace DeOps.Interface
             this.InternalPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
+            this.InternalPanel.BackColor = System.Drawing.SystemColors.ControlLight;
             this.InternalPanel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.InternalPanel.Location = new System.Drawing.Point(0, 56);
             this.InternalPanel.Name = "InternalPanel";
@@ -543,6 +544,7 @@ namespace DeOps.Interface
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.SystemColors.ControlLight;
             this.ClientSize = new System.Drawing.Size(701, 445);
             this.Controls.Add(this.MainSplit);
             this.Controls.Add(this.SideToolStrip);

@@ -29,6 +29,10 @@ namespace DeOps.Components.Link
             Links = core.Links;
 
             ProjectID = id;
+
+            AwayCheckBox.Checked = Core.Away;
+            AwayMessage.Enabled = Core.Away;
+            AwayMessage.Text = Core.User.Settings.AwayMessage;
         }
 
         private void EditLink_Load(object sender, EventArgs e)
@@ -51,14 +55,21 @@ namespace DeOps.Components.Link
             Links.LocalLink.Title[ProjectID] = TitleBox.Text;
             Links.SaveLocal();
 
-            if (LocationBox.Text != Core.User.Settings.Location)
+            Core.Away = AwayCheckBox.Checked;
+
+            if (LocationBox.Text != Core.User.Settings.Location || AwayMessage.Text != Core.User.Settings.AwayMessage)
             {
                 Core.User.Settings.Location = LocationBox.Text;
-                Links.Core.User.Save();
+                Core.User.Settings.AwayMessage = AwayMessage.Text;
 
-                if (Core.OperationNet.Routing.Responsive())
-                    Core.Locations.UpdateLocation();
+                if (Core.User.Settings.AwayMessage.Length > 100)
+                    Core.User.Settings.AwayMessage = Core.User.Settings.AwayMessage.Substring(0, 100);
+
+                Links.Core.User.Save();
             }
+
+            if (Core.OperationNet.Routing.Responsive())
+                Core.Locations.UpdateLocation();
 
             Close();
         }
@@ -66,6 +77,11 @@ namespace DeOps.Components.Link
         private void ButtonCancel_Click(object sender, EventArgs e)
         {
             Close();
+        }
+
+        private void AwayCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            AwayMessage.Enabled = AwayCheckBox.Checked;
         }
 
 

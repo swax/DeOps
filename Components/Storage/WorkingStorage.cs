@@ -272,7 +272,7 @@ namespace DeOps.Components.Storage
 
             LocalFile file = new LocalFile(track);
             file.Info.SetFlag(StorageFlags.Modified);
-            file.Archived.AddFirst(track);
+            file.Archived.SafeAddFirst(track);
 
             folder.AddFile(file);
 
@@ -307,7 +307,7 @@ namespace DeOps.Components.Storage
             else
             {
                 file.Info = replacement;
-                file.Archived.AddFirst(replacement);
+                file.Archived.SafeAddFirst(replacement);
             }
 
             if (unlocked)
@@ -326,7 +326,7 @@ namespace DeOps.Components.Storage
             else
             {
                 folder.Info = replacement;
-                folder.Archived.AddFirst(replacement);
+                folder.Archived.SafeAddFirst(replacement);
             }
 
             // rename folder on drive if it exists to match new folder
@@ -391,7 +391,7 @@ namespace DeOps.Components.Storage
                 return;
 
             folder = new LocalFolder(parent, track);
-            folder.Archived.AddFirst(track);
+            folder.Archived.SafeAddFirst(track);
             folder.Info.SetFlag(StorageFlags.Modified);
 
             parent.AddFolder(folder);
@@ -682,7 +682,7 @@ namespace DeOps.Components.Storage
             info.Date = Core.TimeNow.ToUniversalTime();
             info.Revs = 5;
 
-            folder.Archived.AddFirst(info);
+            folder.Archived.SafeAddFirst(info);
 
             return folder;
         }
@@ -700,7 +700,7 @@ namespace DeOps.Components.Storage
             info.Date = Core.TimeNow.ToUniversalTime();
             info.Revs = 5;
 
-            file.Archived.AddFirst(info);
+            file.Archived.SafeAddFirst(info);
 
             return file;
         }
@@ -708,42 +708,48 @@ namespace DeOps.Components.Storage
         internal void WriteWorkingFile(CryptoStream stream, LocalFolder folder, bool commit)
         {
             // write files and all archives if tracked
-            foreach (LocalFile file in folder.Files.Values)
+            folder.Files.LockReading(delegate()
             {
-                // history
-                int count = 0;
-                foreach (StorageFile archive in file.Archived)
+                foreach (LocalFile file in folder.Files.Values)
                 {
-                    if (file.Info.HashID == 0 || file.Info.Hash == null)
-                        continue; // happens if file is still being hashed and auto-save is called
-
-                    if (commit)
+                    // history
+                    int count = 0;
+                    file.Archived.LockReading(delegate()
                     {
-                        archive.RemoveFlag(StorageFlags.Modified);
+                        foreach (StorageFile archive in file.Archived)
+                        {
+                            if (file.Info.HashID == 0 || file.Info.Hash == null)
+                                continue; // happens if file is still being hashed and auto-save is called
 
-                        if (count == file.Info.Revs)
-                            break;
-                    }
+                            if (commit)
+                            {
+                                archive.RemoveFlag(StorageFlags.Modified);
 
-                    Protocol.WriteToFile(archive, stream);
-                    count++;
+                                if (count == file.Info.Revs)
+                                    break;
+                            }
+
+                            Protocol.WriteToFile(archive, stream);
+                            count++;
+                        }
+                    });
+
+                    // integrated
+                    file.Integrated.LockReading(delegate()
+                    {
+                        foreach (ulong who in file.Integrated.Keys)
+                        {
+                            StorageFile integrated = (StorageFile)file.Integrated[who];
+
+                            if (commit)
+                                integrated.RemoveFlag(StorageFlags.Modified);
+
+                            integrated.IntegratedID = who;
+                            Protocol.WriteToFile(integrated, stream);
+                        }
+                    });
                 }
-
-                // integrated
-                file.Integrated.LockReading(delegate()
-                {
-                    foreach (ulong who in file.Integrated.Keys)
-                    {
-                        StorageFile integrated = (StorageFile)file.Integrated[who];
-
-                        if (commit)
-                            integrated.RemoveFlag(StorageFlags.Modified);
-
-                        integrated.IntegratedID = who;
-                        Protocol.WriteToFile(integrated, stream);
-                    }
-                });
-            }
+            });
 
             // foreach tracked folder, recurse
             folder.Folders.LockReading(delegate()
@@ -752,19 +758,22 @@ namespace DeOps.Components.Storage
                 {
                     // history
                     int count = 0;
-                    foreach (StorageFolder archive in sub.Archived)
+                    sub.Archived.LockReading(delegate()
                     {
-                        if (commit)
+                        foreach (StorageFolder archive in sub.Archived)
                         {
-                            archive.RemoveFlag(StorageFlags.Modified);
+                            if (commit)
+                            {
+                                archive.RemoveFlag(StorageFlags.Modified);
 
-                            if (count == sub.Info.Revs)
-                                break;
+                                if (count == sub.Info.Revs)
+                                    break;
+                            }
+
+                            Protocol.WriteToFile(archive, stream);
+                            count++;
                         }
-
-                        Protocol.WriteToFile(archive, stream);
-                        count++;
-                    }
+                    });
 
                     // integrated
                     sub.Integrated.LockReading(delegate()
@@ -792,8 +801,11 @@ namespace DeOps.Components.Storage
 
         internal void LockFolder(string dirpath, LocalFolder folder, bool subs, List<LockError> errors )
         {
-            foreach (LocalFile file in folder.Files.Values)
-                Storages.LockFileCompletely(Core.LocalDhtID, ProjectID, dirpath, file.Archived, errors);
+            folder.Files.LockReading(delegate()
+            {
+                foreach (LocalFile file in folder.Files.Values)
+                    Storages.LockFileCompletely(Core.LocalDhtID, ProjectID, dirpath, file.Archived, errors);
+            });
 
             folder.Info.RemoveFlag(StorageFlags.Unlocked);
 
@@ -922,7 +934,10 @@ namespace DeOps.Components.Storage
             // put file in local's integration map for this user id
 
             LocalFolder folder = GetLocalFolder(path);
-            LocalFile file = folder.Files[change.UID];
+            LocalFile file = null;
+            
+            if(!folder.Files.SafeTryGetValue(change.UID, out file))
+                return;
 
             file.Integrated.SafeAdd(who, change.Clone()); 
             // dont set file.info modified, because hash hasn't changed
@@ -938,7 +953,10 @@ namespace DeOps.Components.Storage
             // put file in local's integration map for this user id
 
             LocalFolder folder = GetLocalFolder(path);
-            LocalFile file = folder.Files[change.UID];
+            LocalFile file = null;
+
+            if (!folder.Files.SafeTryGetValue(change.UID, out file))
+                return;
 
             file.Integrated.SafeRemove(who);
 
@@ -954,7 +972,7 @@ namespace DeOps.Components.Storage
             LocalFolder folder = GetLocalFolder(path);
             LocalFile file = folder.GetFile(name);
 
-            folder.Files.Remove(file.Info.UID);
+            folder.Files.SafeRemove(file.Info.UID);
 
             Modified = true;
             PeriodicSave = true;
@@ -1160,9 +1178,11 @@ namespace DeOps.Components.Storage
                                 {
                                     if (currentFolder.Info.UID == readFolder.ParentUID)
                                     {
-                                        // if cant find current uid
-                                        currentFolder = null;
-                                        if (!currentFolder.Folders.SafeTryGetValue(currentUID, out currentFolder))
+                                        LocalFolder subFolder = null;
+                                        if (currentFolder.Folders.SafeTryGetValue(currentUID, out subFolder))
+                                            currentFolder = subFolder;
+                                        
+                                        else
                                         {
                                             // if ignoring, add folder so we can traverse id's file, but dont save changes to local storage mapping
                                             if (ignoreCurrent)
@@ -1241,17 +1261,16 @@ namespace DeOps.Components.Storage
                                     continue;
                                 }
 
-                                // if file exists with UID
-                                if (currentFolder.Files.ContainsKey(currentUID))
-                                    currentFile = currentFolder.Files[currentUID];
-
-                                // else add file as temp, mark as changed
-                                else
+                                // if file exists with UID, else add file as temp, mark as changed
+                                if(!currentFolder.Files.SafeTryGetValue(currentUID, out currentFile))
                                 {
                                     // check for conflicting name
-                                    foreach (LocalFile checkFile in currentFolder.Files.Values)
-                                        if (!checkFile.Info.IsFlagged(StorageFlags.Archived) && checkFile.Info.Name == readFile.Name)
-                                            checkFile.Info.Name = checkFile.Info.Name + ".fix";
+                                    currentFolder.Files.LockReading(delegate()
+                                    {
+                                        foreach (LocalFile checkFile in currentFolder.Files.Values)
+                                            if (!checkFile.Info.IsFlagged(StorageFlags.Archived) && checkFile.Info.Name == readFile.Name)
+                                                checkFile.Info.Name = checkFile.Info.Name + ".fix";
+                                    });
 
                                     currentFile = currentFolder.AddFileInfo(readFile);
                                     save = true;
@@ -1292,14 +1311,17 @@ namespace DeOps.Components.Storage
 
         private void RemoveHigherChanges(LocalFolder folder, ulong id)
         {
-            foreach (LocalFile file in folder.Files.Values)
+            folder.Files.LockReading(delegate()
             {
-                if (id == 0)
-                    file.HigherChanges.Clear();
+                foreach (LocalFile file in folder.Files.Values)
+                {
+                    if (id == 0)
+                        file.HigherChanges.Clear();
 
-                else if (file.HigherChanges.ContainsKey(id))
-                    file.HigherChanges.Remove(id);
-            }
+                    else if (file.HigherChanges.ContainsKey(id))
+                        file.HigherChanges.Remove(id);
+                }
+            });
 
             folder.Folders.LockReading(delegate()
             {
@@ -1367,9 +1389,12 @@ namespace DeOps.Components.Storage
 
             string dir = folder.GetPath();
 
-            foreach (LocalFile file in folder.Files.Values)
-                if(AutoIntegrate(file, dir, errors))
-                    save = true;
+            folder.Files.LockReading(delegate()
+            {
+                foreach (LocalFile file in folder.Files.Values)
+                    if (AutoIntegrate(file, dir, errors))
+                        save = true;
+            });
 
             folder.Folders.LockReading(delegate()
             {
@@ -1469,22 +1494,32 @@ namespace DeOps.Components.Storage
                 return;
 
             // if name exists with diff uid, return error
-            foreach (LocalFile check in destFolder.Files.Values)
-                if (check.Info.UID != sourceFile.Info.UID && 
-                    String.Compare(check.Info.Name, sourceFile.Info.Name, true) == 0)
-                {
-                    errors.Add("File with same name exists at " + destPath);
-                    return;
-                }
+            bool exists = false;
+
+            destFolder.Files.LockReading(delegate()
+            {
+                foreach (LocalFile check in destFolder.Files.Values)
+                    if (check.Info.UID != sourceFile.Info.UID &&
+                        String.Compare(check.Info.Name, sourceFile.Info.Name, true) == 0)
+                    {
+                        errors.Add("File with same name exists at " + destPath);
+                        exists = true;
+                    }
+            });
+
+            if (exists)
+                return;
 
             // if uid exists in destination, merge histories with diff hashes
             WorkingChange destChange = WorkingChange.Created;
             WorkingChange sourceChange = WorkingChange.Updated;
 
-            if (destFolder.Files.ContainsKey(sourceFile.Info.UID))
+            LocalFile mergeFile = null;
+
+            if (destFolder.Files.SafeTryGetValue(sourceFile.Info.UID, out mergeFile))
             {
-                sourceFile.MergeFile( destFolder.Files[sourceFile.Info.UID] );
-                destFolder.Files[sourceFile.Info.UID] = sourceFile;
+                sourceFile.MergeFile(mergeFile);
+                destFolder.Files.SafeAdd(sourceFile.Info.UID, sourceFile);
                 destChange = WorkingChange.Updated;
             }
             else
@@ -1495,12 +1530,12 @@ namespace DeOps.Components.Storage
             ReadyChange(sourceFile);
             sourceFile.Info.Note = "Moved from " + (sourcePath == "" ? Path.DirectorySeparatorChar.ToString() : sourcePath);
 
-            sourceFolder.Files.Remove(sourceFile.Info.UID);
+            sourceFolder.Files.SafeRemove(sourceFile.Info.UID);
             
             // only leave a ghost if this file has a committed history
-            if (sourceFile.Archived.Count > 1 || !sourceFile.Info.IsFlagged(StorageFlags.Modified))
+            if (sourceFile.Archived.SafeCount > 1 || !sourceFile.Info.IsFlagged(StorageFlags.Modified))
             {
-                ghost.Archived.AddFirst(ghost.Info);
+                ghost.Archived.SafeAddFirst(ghost.Info);
                 sourceFolder.AddFile(ghost);
                 ReadyChange(ghost);
                 ghost.Info.Note = "Moved to " + (destPath == "" ? Path.DirectorySeparatorChar.ToString() : destPath);
@@ -1586,9 +1621,9 @@ namespace DeOps.Components.Storage
             parentFolder.Folders.SafeRemove(sourceFolder.Info.UID);
 
             // only leave a ghost if this file has a committed history
-            if (sourceFolder.Archived.Count > 1 || !sourceFolder.Info.IsFlagged(StorageFlags.Modified))
+            if (sourceFolder.Archived.SafeCount > 1 || !sourceFolder.Info.IsFlagged(StorageFlags.Modified))
             {
-                ghost.Archived.AddFirst(ghost.Info);
+                ghost.Archived.SafeAddFirst(ghost.Info);
                 parentFolder.AddFolder(ghost);
                 ReadyChange(ghost); // created ghost needs to have 2 entries because applydiff() looks for date of previous file to apply change
                 ghost.Info.Note = "Moved to " + (destPath == "" ? Path.DirectorySeparatorChar.ToString() : destPath);
@@ -1646,14 +1681,14 @@ namespace DeOps.Components.Storage
     {
         // keep track of untracked because when locked, this is the only way those files would be seen
         internal StorageFolder Info;
-        internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>(); // make threaded
+        internal ThreadedLinkedList<StorageItem> Archived = new ThreadedLinkedList<StorageItem>(); 
         internal ThreadedDictionary<ulong, StorageItem> Integrated = new ThreadedDictionary<ulong, StorageItem>();
         internal Dictionary<ulong, List<StorageItem>> HigherChanges = new Dictionary<ulong, List<StorageItem>>();
 
         internal LocalFolder Parent;
 
         internal ThreadedDictionary<ulong, LocalFolder> Folders = new ThreadedDictionary<ulong, LocalFolder>();
-        internal Dictionary<ulong, LocalFile> Files = new Dictionary<ulong, LocalFile>(); // make threaded
+        internal ThreadedDictionary<ulong, LocalFile> Files = new ThreadedDictionary<ulong, LocalFile>(); 
 
        
         internal LocalFolder(LocalFolder parent, StorageFolder info)
@@ -1668,12 +1703,12 @@ namespace DeOps.Components.Storage
             if (Info.IsFlagged(StorageFlags.Modified))
             {
                 Info = newInfo;
-                Archived.RemoveFirst();
-                Archived.AddFirst(newInfo);
+                Archived.SafeRemoveFirst();
+                Archived.SafeAddFirst(newInfo);
             }
             else
             {
-                Archived.AddFirst(newInfo);
+                Archived.SafeAddFirst(newInfo);
                 Info = newInfo;
             }
 
@@ -1698,11 +1733,19 @@ namespace DeOps.Components.Storage
 
         internal LocalFile GetFile(string name)
         {
-            foreach (LocalFile file in Files.Values)
-                if (string.Compare(name, file.Info.Name, true) == 0)
-                    return file;
+            LocalFile result = null;
 
-            return null;
+            Files.LockReading(delegate()
+            {
+                foreach (LocalFile file in Files.Values)
+                    if (string.Compare(name, file.Info.Name, true) == 0)
+                    {
+                        result = file;
+                        break;
+                    }
+            });
+
+            return result;
         }
 
         internal void AddFolder(LocalFolder folder)
@@ -1719,8 +1762,10 @@ namespace DeOps.Components.Storage
             LocalFolder folder = null;
 
             if (!Folders.SafeTryGetValue(info.UID, out folder))
-                Folders.SafeAdd(info.UID, new LocalFolder(this, info));
-
+            {
+                folder = new LocalFolder(this, info);
+                Folders.SafeAdd(info.UID, folder);
+            }
      
             // if this is integration info, add to integration map
             if (info.IntegratedID != 0)
@@ -1728,7 +1773,7 @@ namespace DeOps.Components.Storage
 
             // if history info, add to files history
             else
-                folder.Archived.AddLast(info);   
+                folder.Archived.SafeAddLast(info);   
 
             return folder;
         }
@@ -1737,22 +1782,25 @@ namespace DeOps.Components.Storage
         {
             ulong uid = file.Info.UID;
 
-            Debug.Assert(!Files.ContainsKey(uid));
+            Debug.Assert(!Files.SafeContainsKey(uid));
 
-            Files[uid] = file;
+            Files.SafeAdd(uid, file);
         }
 
         internal LocalFile AddFileInfo(StorageFile info)
         {
-            if (!Files.ContainsKey(info.UID))
-                Files[info.UID] = new LocalFile(info);
+            LocalFile file = null;
 
-            LocalFile file =  Files[info.UID];
-
+            if (!Files.SafeTryGetValue(info.UID, out file))
+            {
+                file = new LocalFile(info);
+                Files.SafeAdd(info.UID, file);
+            }
+            
             if(info.IntegratedID != 0)
                 file.Integrated.SafeAdd(info.IntegratedID, info); 
             else
-                file.Archived.AddLast(info);
+                file.Archived.SafeAddLast(info);
 
             return file;
         }
@@ -1774,7 +1822,7 @@ namespace DeOps.Components.Storage
     internal class LocalFile
     {
         internal StorageFile Info;
-        internal LinkedList<StorageItem> Archived = new LinkedList<StorageItem>(); // make threaded
+        internal ThreadedLinkedList<StorageItem> Archived = new ThreadedLinkedList<StorageItem>(); 
         internal ThreadedDictionary<ulong, StorageItem> Integrated = new ThreadedDictionary<ulong, StorageItem>();
         internal Dictionary<ulong, List<StorageItem>> HigherChanges = new Dictionary<ulong, List<StorageItem>>();
 
@@ -1792,12 +1840,12 @@ namespace DeOps.Components.Storage
             if (Info.IsFlagged(StorageFlags.Modified))
             {
                 Info = newInfo;
-                Archived.RemoveFirst();
-                Archived.AddFirst(newInfo);
+                Archived.SafeRemoveFirst();
+                Archived.SafeAddFirst(newInfo);
             }
             else
             {
-                Archived.AddFirst(newInfo);
+                Archived.SafeAddFirst(newInfo);
                 Info = newInfo;
             }
 
@@ -1823,42 +1871,53 @@ namespace DeOps.Components.Storage
         {
             // if there are any unique files in the merge that don't exist locally, add them
 
-
-            foreach (StorageFile merge in file.Archived)
+            file.Archived.LockReading(delegate()
             {
-                // check if exists
-                bool fileExists = false;
-
-                foreach (StorageFile item in Archived)
-                    if (Utilities.MemCompare(item.InternalHash, merge.InternalHash))
-                    {
-                        fileExists = true;
-                        break;
-                    }
-
-                // add file if doesnt exist
-                if (!fileExists)
+                foreach (StorageFile merge in file.Archived)
                 {
-                    bool added = false;
+                    // check if exists
+                    bool fileExists = false;
 
-                    for (LinkedListNode<StorageItem> item = Archived.First; item != null; item = item.Next)
-                        if (item.Value.Date > merge.Date) // loop until item is no longer the lowest (oldest)
+                    Archived.LockReading(delegate()
+                    {
+                        foreach (StorageFile item in Archived)
+                            if (Utilities.MemCompare(item.InternalHash, merge.InternalHash))
+                            {
+                                fileExists = true;
+                                break;
+                            }
+                    });
+
+                    // add file if doesnt exist
+                    if (!fileExists)
+                    {
+                        bool added = false;
+                        LinkedListNode<StorageItem> item = null;
+
+                        Archived.LockReading(delegate()
                         {
-                            if(item.Value == Info)
-                                Archived.AddAfter(item, merge); // even if newest, the file being moved is the one at top
+                            for (item = Archived.First; item != null; item = item.Next)
+                                if (item.Value.Date > merge.Date) // loop until item is no longer the lowest (oldest)
+                                {
+                                    added = true;
+
+                                    break;
+                                }
+                        });
+
+                        if (added && item != null)
+                        {
+                            if (item.Value == Info)
+                                Archived.SafeAddAfter(item, merge); // even if newest, the file being moved is the one at top
                             else
-                                Archived.AddBefore(item, merge); // put file in right spot
-
-                            added = true;
-
-                            break;
+                                Archived.SafeAddBefore(item, merge); // put file in right spot
                         }
+                        else
+                            Archived.SafeAddLast(merge); // oldest, at end
 
-                    if (!added)
-                        Archived.AddLast(merge); // oldest, at end
-
+                    }
                 }
-            }
+            });
         }
     }
 

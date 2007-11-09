@@ -10,6 +10,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
+using DeOps.Implementation;
 using DeOps.Interface;
 
 
@@ -903,94 +904,97 @@ namespace DeOps.Components.Storage
 
             History.Clear();
 
-            LinkedList<StorageItem> archived = IsFile ? CurrentFile.Archived : CurrentFolder.Archived;
+            ThreadedLinkedList<StorageItem> archived = IsFile ? CurrentFile.Archived : CurrentFolder.Archived;
 
-            IEnumerator<StorageItem> next = archived.GetEnumerator();
-            next.MoveNext();
-
-            int i = 1;
-
-            foreach (StorageItem item in archived)
+            archived.LockReading(delegate()
             {
-                StorageItem prev = next.MoveNext() ? next.Current : null;
+                IEnumerator<StorageItem> next = archived.GetEnumerator();
+                next.MoveNext();
 
+                int i = 1;
 
-                History.Add(item);
-
-                html.Replace("<?=next_history_row?>", HistoryRowTemplate);
-
-                string color = (i % 2 == 0) ? "bgcolor=#ebebeb" : "";
-                html.Replace("<?=bgcolor?>", color);
-
-                // if file exists
-                if (IsFile)
+                foreach (StorageItem item in archived)
                 {
-                    StorageFile file = (StorageFile) item;
-
-                    string unlocked = "";
-                    if ((i == 1 && CurrentItem.IsFlagged(StorageFlags.Unlocked)) ||
-                        Storages.IsFileUnlocked(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, true))
-                        unlocked = "<a href='http://history.lock." + i.ToString() + "'><img border= 0 src='" + ImgUnlocked + "'></a>";
+                    StorageItem prev = next.MoveNext() ? next.Current : null;
 
 
-                    string id = "h" + i.ToString();
-                    html.Replace("<?=menu?>", MenuTemplate + unlocked);
-                    html.Replace("<?=menu_id?>", id);
-                    html.Replace("<?=menu_img_id?>", id + "img");
+                    History.Add(item);
 
-                    AddReset(id);
+                    html.Replace("<?=next_history_row?>", HistoryRowTemplate);
 
-                    if (Storages.FileExists(file))
+                    string color = (i % 2 == 0) ? "bgcolor=#ebebeb" : "";
+                    html.Replace("<?=bgcolor?>", color);
+
+                    // if file exists
+                    if (IsFile)
                     {
-                        html.Replace("<?=next_menu_row?>", GetMenuRow("history.open." + i.ToString(), "Open", ImgOpen));
-                        html.Replace("<?=next_menu_row?>", GetMenuRow("history.diff." + i.ToString(), "Diff", ImgDiff));
+                        StorageFile file = (StorageFile)item;
 
-                        if(ParentView.IsLocal)
-                            html.Replace("<?=next_menu_row?>", GetMenuRow("history.replace." + i.ToString(), "Replace", ImgReplace));
-                    }
-                    else
-                    {
-                        string status = Storages.FileStatus(file);
+                        string unlocked = "";
+                        if ((i == 1 && CurrentItem.IsFlagged(StorageFlags.Unlocked)) ||
+                            Storages.IsFileUnlocked(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, true))
+                            unlocked = "<a href='http://history.lock." + i.ToString() + "'><img border= 0 src='" + ImgUnlocked + "'></a>";
 
-                        if (status == null)
-                            html.Replace("<?=next_menu_row?>", GetMenuRow("history.download." + i.ToString(), "Download", ImgDownload));
+
+                        string id = "h" + i.ToString();
+                        html.Replace("<?=menu?>", MenuTemplate + unlocked);
+                        html.Replace("<?=menu_id?>", id);
+                        html.Replace("<?=menu_img_id?>", id + "img");
+
+                        AddReset(id);
+
+                        if (Storages.FileExists(file))
+                        {
+                            html.Replace("<?=next_menu_row?>", GetMenuRow("history.open." + i.ToString(), "Open", ImgOpen));
+                            html.Replace("<?=next_menu_row?>", GetMenuRow("history.diff." + i.ToString(), "Diff", ImgDiff));
+
+                            if (ParentView.IsLocal)
+                                html.Replace("<?=next_menu_row?>", GetMenuRow("history.replace." + i.ToString(), "Replace", ImgReplace));
+                        }
                         else
                         {
-                            html.Replace("<?=next_menu_row?>", GetMenuRow("history.dlcancel." + i.ToString(), "Cancel", ImgDownloadCancel));
+                            string status = Storages.FileStatus(file);
 
-                            html.Replace("<?=next_history_row?>", HistoryDownloadRow);
-                            html.Replace("<?=bgcolor?>", color);
-                            html.Replace("<?=statusID?>", "status" + StatusList.Count.ToString());
-                            html.Replace("<?=status?>", status);
-                            StatusList.Add(file);
+                            if (status == null)
+                                html.Replace("<?=next_menu_row?>", GetMenuRow("history.download." + i.ToString(), "Download", ImgDownload));
+                            else
+                            {
+                                html.Replace("<?=next_menu_row?>", GetMenuRow("history.dlcancel." + i.ToString(), "Cancel", ImgDownloadCancel));
 
-                            WatchTransfers = true;
+                                html.Replace("<?=next_history_row?>", HistoryDownloadRow);
+                                html.Replace("<?=bgcolor?>", color);
+                                html.Replace("<?=statusID?>", "status" + StatusList.Count.ToString());
+                                html.Replace("<?=status?>", status);
+                                StatusList.Add(file);
+
+                                WatchTransfers = true;
+                            }
                         }
+
+                        html.Replace("<?=next_menu_row?>", "");
                     }
+                    else
+                        html.Replace("<?=menu?>", "");
 
-                    html.Replace("<?=next_menu_row?>", "");
+                    // if modified
+                    if (item.IsFlagged(StorageFlags.Modified))
+                        html.Replace("<?=textcolor?>", "color:darkred;");
+                    else
+                        html.Replace("<?=textcolor?>", "");
+
+                    html.Replace("<?=action?>", Storages.ItemDiff(item, prev).ToString());
+                    html.Replace("<?=date?>", item.Date.ToLocalTime().ToString());
+                    html.Replace("<?=note?>", item.Note != null ? item.Note : "");
+
+                    // if local
+                    if (Local)
+                        html.Replace("<?=edit?>", "<a href='http://history.edit." + i.ToString() + "'><img border= 0 src='" + ImgEdit + "'></a>");
+                    else
+                        html.Replace("<?=edit?>", "");
+
+                    i++;
                 }
-                else
-                    html.Replace("<?=menu?>", "");
-
-                // if modified
-                if(item.IsFlagged(StorageFlags.Modified))
-                    html.Replace("<?=textcolor?>", "color:darkred;");
-                else
-                    html.Replace("<?=textcolor?>", "");
-
-                html.Replace("<?=action?>", Storages.ItemDiff(item, prev).ToString());
-                html.Replace("<?=date?>", item.Date.ToLocalTime().ToString());
-                html.Replace("<?=note?>", item.Note != null ? item.Note : "");
-
-                // if local
-                if(Local)
-                    html.Replace("<?=edit?>", "<a href='http://history.edit." + i.ToString() + "'><img border= 0 src='" + ImgEdit + "'></a>");
-                else
-                    html.Replace("<?=edit?>", "");
-                
-                i++;
-            }
+            });
 
             html.Replace("<?=next_history_row?>", "");
         }

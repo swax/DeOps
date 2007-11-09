@@ -73,6 +73,7 @@ namespace DeOps.Components.Link
             this.AcceptButton = this.RemoveButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.SystemColors.ControlLight;
             this.CancelButton = this.TheCancelButton;
             this.ClientSize = new System.Drawing.Size(207, 212);
             this.Controls.Add(this.RemoveButton);

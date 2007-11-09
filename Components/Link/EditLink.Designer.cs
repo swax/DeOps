@@ -28,6 +28,7 @@ namespace DeOps.Components.Link
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(EditLink));
             this.ButtonCancel = new System.Windows.Forms.Button();
             this.ButtonOK = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
@@ -36,13 +37,15 @@ namespace DeOps.Components.Link
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.LocationBox = new System.Windows.Forms.TextBox();
+            this.AwayCheckBox = new System.Windows.Forms.CheckBox();
+            this.AwayMessage = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // ButtonCancel
             // 
             this.ButtonCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ButtonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.ButtonCancel.Location = new System.Drawing.Point(151, 112);
+            this.ButtonCancel.Location = new System.Drawing.Point(121, 170);
             this.ButtonCancel.Name = "ButtonCancel";
             this.ButtonCancel.Size = new System.Drawing.Size(75, 23);
             this.ButtonCancel.TabIndex = 0;
@@ -53,7 +56,7 @@ namespace DeOps.Components.Link
             // ButtonOK
             // 
             this.ButtonOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.ButtonOK.Location = new System.Drawing.Point(69, 112);
+            this.ButtonOK.Location = new System.Drawing.Point(39, 170);
             this.ButtonOK.Name = "ButtonOK";
             this.ButtonOK.Size = new System.Drawing.Size(75, 23);
             this.ButtonOK.TabIndex = 1;
@@ -78,7 +81,7 @@ namespace DeOps.Components.Link
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.NameBox.Location = new System.Drawing.Point(69, 15);
             this.NameBox.Name = "NameBox";
-            this.NameBox.Size = new System.Drawing.Size(157, 21);
+            this.NameBox.Size = new System.Drawing.Size(127, 21);
             this.NameBox.TabIndex = 3;
             // 
             // TitleBox
@@ -87,7 +90,7 @@ namespace DeOps.Components.Link
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.TitleBox.Location = new System.Drawing.Point(69, 42);
             this.TitleBox.Name = "TitleBox";
-            this.TitleBox.Size = new System.Drawing.Size(157, 21);
+            this.TitleBox.Size = new System.Drawing.Size(127, 21);
             this.TitleBox.TabIndex = 4;
             // 
             // label2
@@ -116,16 +119,40 @@ namespace DeOps.Components.Link
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.LocationBox.Location = new System.Drawing.Point(69, 72);
             this.LocationBox.Name = "LocationBox";
-            this.LocationBox.Size = new System.Drawing.Size(157, 21);
+            this.LocationBox.Size = new System.Drawing.Size(127, 21);
             this.LocationBox.TabIndex = 8;
+            // 
+            // AwayCheckBox
+            // 
+            this.AwayCheckBox.AutoSize = true;
+            this.AwayCheckBox.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.AwayCheckBox.Location = new System.Drawing.Point(27, 110);
+            this.AwayCheckBox.Name = "AwayCheckBox";
+            this.AwayCheckBox.Size = new System.Drawing.Size(171, 17);
+            this.AwayCheckBox.TabIndex = 9;
+            this.AwayCheckBox.Text = "Away, set message below";
+            this.AwayCheckBox.UseVisualStyleBackColor = true;
+            this.AwayCheckBox.CheckedChanged += new System.EventHandler(this.AwayCheckBox_CheckedChanged);
+            // 
+            // AwayMessage
+            // 
+            this.AwayMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.AwayMessage.Location = new System.Drawing.Point(27, 133);
+            this.AwayMessage.Name = "AwayMessage";
+            this.AwayMessage.Size = new System.Drawing.Size(169, 21);
+            this.AwayMessage.TabIndex = 10;
             // 
             // EditLink
             // 
             this.AcceptButton = this.ButtonOK;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.SystemColors.ControlLight;
             this.CancelButton = this.ButtonCancel;
-            this.ClientSize = new System.Drawing.Size(238, 147);
+            this.ClientSize = new System.Drawing.Size(208, 205);
+            this.Controls.Add(this.AwayMessage);
+            this.Controls.Add(this.AwayCheckBox);
             this.Controls.Add(this.LocationBox);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
@@ -136,12 +163,13 @@ namespace DeOps.Components.Link
             this.Controls.Add(this.ButtonCancel);
             this.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "EditLink";
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "My Link";
+            this.Text = "My Status";
             this.Load += new System.EventHandler(this.EditLink_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -158,5 +186,7 @@ namespace DeOps.Components.Link
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox LocationBox;
+        private System.Windows.Forms.CheckBox AwayCheckBox;
+        private System.Windows.Forms.TextBox AwayMessage;
     }
 }

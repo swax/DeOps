@@ -38,29 +38,26 @@ namespace DeOps.Implementation.Transport
             List<RudpSession> removeSessions = new List<RudpSession>();
 
             // remove dead sessions
-            lock (SessionMap)
+            foreach (List<RudpSession> list in SessionMap.Values)
             {
-                foreach (List<RudpSession> list in SessionMap.Values)
-                {
-                    removeSessions.Clear();
+                removeSessions.Clear();
 
-                    foreach (RudpSession session in list)
-                        if (session.Status != SessionStatus.Closed)
-                            session.SecondTimer();
-                        else
-                            removeSessions.Add(session);
+                foreach (RudpSession session in list)
+                    if (session.Status != SessionStatus.Closed)
+                        session.SecondTimer();
+                    else
+                        removeSessions.Add(session);
 
 
-                    foreach (RudpSession session in removeSessions)
-                        list.Remove(session);
+                foreach (RudpSession session in removeSessions)
+                    list.Remove(session);
 
-                    if (list.Count == 0)
-                        removeKeys.Add(removeSessions[0].DhtID);
-                }
-
-                foreach (ulong key in removeKeys)
-                    SessionMap.Remove(key);
+                if (list.Count == 0)
+                    removeKeys.Add(removeSessions[0].DhtID);
             }
+
+            foreach (ulong key in removeKeys)
+                SessionMap.Remove(key);
 
             // every 10 secs check for sessions no longer in use
             if (Core.TimeNow.Second % 10 != 0)
@@ -86,30 +83,26 @@ namespace DeOps.Implementation.Transport
             if (IsConnected(location))
                 return;
 
-            lock (SessionMap)
-            {
-                if (!SessionMap.ContainsKey(location.KeyID))
-                    SessionMap[location.KeyID] = new List<RudpSession>();
+            if (!SessionMap.ContainsKey(location.KeyID))
+                SessionMap[location.KeyID] = new List<RudpSession>();
 
-                RudpSession session = new RudpSession(Core, location.KeyID, location.Source.ClientID, false);
-                SessionMap[location.KeyID].Add(session);
+            RudpSession session = new RudpSession(Core, location.KeyID, location.Source.ClientID, false);
+            SessionMap[location.KeyID].Add(session);
 
-                session.Comm.AddAddress(new RudpAddress(Core, new DhtAddress(location.IP, location.Source), location.Global));
+            session.Comm.AddAddress(new RudpAddress(Core, new DhtAddress(location.IP, location.Source), location.Global));
 
-                foreach (DhtAddress address in location.Proxies)
-                    session.Comm.AddAddress(new RudpAddress(Core, address, location.Global));
+            foreach (DhtAddress address in location.Proxies)
+                session.Comm.AddAddress(new RudpAddress(Core, address, location.Global));
 
-                session.Connect();
-            }
+            session.Connect(); 
         }
 
         internal RudpSession GetSession(LocationData location)
         {
-            lock (SessionMap)
-                if (SessionMap.ContainsKey(location.KeyID))
-                    foreach (RudpSession session in SessionMap[location.KeyID])
-                        if (session.ClientID == location.Source.ClientID)
-                            return session;
+            if (SessionMap.ContainsKey(location.KeyID))
+                foreach (RudpSession session in SessionMap[location.KeyID])
+                    if (session.ClientID == location.Source.ClientID)
+                        return session;
 
             return null;
         }
@@ -119,7 +112,7 @@ namespace DeOps.Implementation.Transport
             RudpSession session = GetSession(location);
 
             if (session != null)
-                if (session.Comm.State == RudpState.Connected)
+                if (session.Status == SessionStatus.Active)
                     return true;
 
             return false;
@@ -127,14 +120,14 @@ namespace DeOps.Implementation.Transport
 
         internal bool IsConnected(ulong id)
         {
-            lock (SessionMap)
-                if (SessionMap.ContainsKey(id))
-                    foreach (RudpSession session in SessionMap[id])
-                        if (session.Status == SessionStatus.Active)
-                            return true;
+            if (SessionMap.ContainsKey(id))
+                foreach (RudpSession session in SessionMap[id])
+                    if (session.Status == SessionStatus.Active)
+                        return true;
 
             return false;
         }
+
     }
 
     internal class ActiveSessions

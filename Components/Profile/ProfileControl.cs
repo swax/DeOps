@@ -141,10 +141,7 @@ namespace DeOps.Components.Profile
 
 
             if (!ProfileMap.SafeContainsKey(Core.LocalDhtID))
-            {
-                ProfileMap.SafeAdd(Core.LocalDhtID, new OpProfile(Core.User.Settings.KeyPublic));
                 SaveLocal(DefaultTemplate, null, null);
-            }
 
             //crit - delete
             //Dictionary<string, string> test = new Dictionary<string, string>();

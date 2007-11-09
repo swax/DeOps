@@ -938,6 +938,13 @@ namespace DeOps.Implementation
             }
         }
 
+        public new List<T>.Enumerator GetEnumerator()
+        {
+            Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+
+            return base.GetEnumerator();
+        }
+
         internal new bool Contains(T value)
         {
             Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
@@ -1034,4 +1041,309 @@ namespace DeOps.Implementation
         }
     }
 
+    internal class ThreadedLinkedList<T> : LinkedList<T>
+    {
+        internal ReaderWriterLock Access = new ReaderWriterLock();
+
+        internal delegate void VoidType();
+
+
+        public new LinkedList<T>.Enumerator GetEnumerator()
+        {
+            Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+
+            return base.GetEnumerator();
+        }
+
+        internal new void AddAfter(LinkedListNode<T> node, T value)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.AddAfter(node, value);
+        }
+
+        internal new void AddAfter(LinkedListNode<T> node, LinkedListNode<T> newNode)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.AddAfter(node, newNode);
+        }
+
+        internal new void AddBefore(LinkedListNode<T> node, T value)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.AddBefore(node, value);
+        }
+
+        internal new void AddBefore(LinkedListNode<T> node, LinkedListNode<T> newNode)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.AddBefore(node, newNode);
+        }
+
+        internal new void AddFirst(T value)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.AddFirst(value);
+        }
+
+        internal new void AddFirst(LinkedListNode<T> node)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.AddFirst(node);
+        }
+
+        internal new void AddLast(T value)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.AddLast(value);
+        }
+
+        internal new void AddLast(LinkedListNode<T> node)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.AddLast(node);
+        }
+
+        internal new void Clear()
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.Clear();
+        }
+
+        internal new bool Contains(T value)
+        {
+            Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+
+            return base.Contains(value);
+        }
+
+        internal new int Count
+        {
+            get
+            {
+                Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+
+                return base.Count;
+            }
+        }
+
+        internal new bool Remove(T value)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            return base.Remove(value);
+        }
+
+        internal new void Remove(LinkedListNode<T> node)
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.Remove(node);
+        }
+
+        internal new void RemoveFirst()
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.RemoveFirst();
+        }
+
+        internal new void RemoveLast()
+        {
+            Debug.Assert(Access.IsWriterLockHeld);
+
+            base.RemoveLast();
+        }
+
+        internal new LinkedListNode<T> First
+        {
+            get
+            {
+                Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+
+                return base.First;
+            }
+        }
+
+        internal new LinkedListNode<T> Last
+        {
+            get
+            {
+                Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+
+                return base.Last;
+            }
+        }
+
+        internal new LinkedListNode<T> Find(T value)
+        {
+            Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+
+            return base.Find(value);
+        }
+
+        internal new LinkedListNode<T> FindLast(T value)
+        {
+            Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+
+            return base.FindLast(value);
+        }
+
+
+
+
+        internal void LockReading(VoidType code)
+        {
+            Access.AcquireReaderLock(-1);
+            try
+            {
+                code();
+            }
+            finally { Access.ReleaseReaderLock(); }
+        }
+
+        internal void LockWriting(VoidType code)
+        {
+            Access.AcquireWriterLock(-1);
+            try
+            {
+                code();
+            }
+            finally { Access.ReleaseWriterLock(); }
+        }
+
+        internal void SafeAddFirst(T value)
+        {
+            LockWriting(delegate()
+            {
+                base.AddFirst(value);
+            });
+        }
+
+        internal void SafeAddLast(T value)
+        {
+            LockWriting(delegate()
+            {
+                base.AddLast(value);
+            });
+        }
+
+        internal void SafeAddAfter(LinkedListNode<T> node, T value)
+        {
+            LockWriting(delegate()
+            {
+               base.AddAfter(node, value);
+            });
+        }
+
+        internal void SafeAddBefore(LinkedListNode<T> node, T value)
+        {
+            LockWriting(delegate()
+            {
+               base.AddBefore(node, value);
+            });
+        }
+
+
+        internal void SafeRemove(T value)
+        {
+            LockWriting(delegate()
+            {
+                base.Remove(value);
+            });
+        }
+
+        internal void SafeRemoveFirst()
+        {
+            LockWriting(delegate()
+            {
+                base.RemoveFirst();
+            });
+        }
+
+        internal void SafeRemoveLast()
+        {
+            LockWriting(delegate()
+            {
+                base.RemoveLast();
+            });
+        }
+
+       /* internal bool SafeContains(T value)
+        {
+            Access.AcquireReaderLock(-1);
+            try
+            {
+                return base.Contains(value);
+            }
+            finally { Access.ReleaseReaderLock(); }
+        }*/
+
+        internal int SafeCount
+        {
+            get
+            {
+                Access.AcquireReaderLock(-1);
+                try
+                {
+                    return base.Count;
+                }
+                finally { Access.ReleaseReaderLock(); }
+            }
+        }
+
+        internal void SafeClear()
+        {
+            LockWriting(delegate()
+            {
+                base.Clear();
+            });
+        }
+
+        internal LinkedListNode<T> SafeFirst
+        {
+            get
+            {
+                Access.AcquireReaderLock(-1);
+                try
+                {
+                    return base.First;
+                }
+                finally { Access.ReleaseReaderLock(); }
+            }
+        }
+
+        internal LinkedListNode<T> SafeLast
+        {
+            get
+            {
+                Access.AcquireReaderLock(-1);
+                try
+                {
+                    return base.Last;
+                }
+                finally { Access.ReleaseReaderLock(); }
+            }
+        }
+    }
+
+    internal class Tuple<T, U>
+    {
+        internal T First;
+        internal U Second;
+
+        internal Tuple(T first, U second)
+        {
+            First = first;
+            Second = second;
+        }
+    }
 }

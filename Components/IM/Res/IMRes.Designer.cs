@@ -60,10 +60,31 @@ namespace DeOps.Components.IM {
             }
         }
         
+        internal static System.Drawing.Bitmap greenled {
+            get {
+                object obj = ResourceManager.GetObject("greenled", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Icon Icon {
             get {
                 object obj = ResourceManager.GetObject("Icon", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap redled {
+            get {
+                object obj = ResourceManager.GetObject("redled", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap yellowled {
+            get {
+                object obj = ResourceManager.GetObject("yellowled", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
             }
         }
     }

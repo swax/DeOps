@@ -137,6 +137,8 @@ namespace DeOps.Interface.TLVex
 		private TreeListNode firstSelectedNode = null;
 		public TreeListNode virtualParent = null;
 
+        public bool PreventCollapse;
+
 		// private SelectedTreeListNodeCollection selectedNodes;
 
 		private System.ComponentModel.Container components = null;
@@ -327,6 +329,9 @@ namespace DeOps.Interface.TLVex
 
 		protected virtual void OnLeftRightKeys(KeyEventArgs e)
 		{
+            if (PreventCollapse)
+                return;
+
 			if (nodes.Count > 0)
 			{
 				if (curNode != null)
@@ -713,6 +718,9 @@ namespace DeOps.Interface.TLVex
 		{
 			base.OnKeyUp(e);
 			if (e.Handled) return;
+
+            if (PreventCollapse)
+                return;
 
 			if (e.KeyCode == Keys.F5)
 			{
@@ -1761,6 +1769,9 @@ namespace DeOps.Interface.TLVex
 
 		public void Toggle()
 		{
+            if (TreeList.PreventCollapse)
+                return;
+
             if (expanded)
                 Collapse();
             

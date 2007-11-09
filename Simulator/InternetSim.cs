@@ -201,6 +201,9 @@ namespace DeOps.Simulator
 
             SimMap.Remove(instance.RealIP);
 
+            if (instance.Core.GuiMain != null)
+                instance.Core.GuiMain.Close();
+
             instance.Core.Exit();
             instance.Core = null;
             

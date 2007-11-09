@@ -107,17 +107,19 @@ namespace DeOps.Interface
                 </head>
                 <body bgcolor=WhiteSmoke>
 	                <table width=100% cellpadding=4>
-	                    <tr><td bgcolor=MediumSlateBlue><p><b><font color=#ffffff><span id='name'><?=name?></span></font></b></p></td></tr>
+	                    <tr><td bgcolor=MediumSlateBlue><p><font color=#ffffff><span id='name'><?=name?></span></font></p></td></tr>
 	                </table>
-                    <table callpadding=3>  
-                        <tr><td><p><b>Title:</b></p></td><td><p><span id='title'><?=title?></span></p></td></tr>
-	                    <tr><td><p><b>Projects:</b></p></td><td><p><span id='projects'><?=projects?></span></p></td></tr>
-                        <tr><td><p><b>Locations:</b></p></td><td><p><span id='locations'><?=locations?></span></p></td></tr>
-                        <tr><td><p><b>Last Seen:</b></p></td><td><p></p></td></tr>
-                    </table>
+
+                    <span id='content'><?=content?></span>
+
+                    
                 </body>
                 </html>";
 
+        // add gmt
+        // add away status
+        // add online status
+        // add edit link
 
         internal MainForm(OpCore core)
         {
@@ -131,6 +133,7 @@ namespace DeOps.Interface
 
             Core.NewsUpdate += new NewsUpdateHandler(Core_NewsUpdate);
             Links.GuiUpdate  += new LinkGuiUpdateHandler(Links_Update);
+            Core.Locations.GuiUpdate += new LocationGuiUpdateHandler(Location_Update);
 
             CommandTree.SelectedLink = Core.LocalDhtID;
 
@@ -192,6 +195,7 @@ namespace DeOps.Interface
 
             Core.NewsUpdate -= new NewsUpdateHandler(Core_NewsUpdate);
             Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
+            Core.Locations.GuiUpdate -= new LocationGuiUpdateHandler(Location_Update);
 
             Core.GuiMain = null;
 
@@ -285,6 +289,8 @@ namespace DeOps.Interface
             if (link == null)
                 return;
 
+            
+
             if (!Links.ProjectRoots.SafeContainsKey(CommandTree.Project))
             {
                 if (ProjectButton.Checked)
@@ -295,6 +301,15 @@ namespace DeOps.Interface
             }
 
             UpdateNavBar();
+
+            if(key == CurrentStatusID)
+                UpdateCommandPanel();
+        }
+
+        void Location_Update(ulong key)
+        {
+            if (key == CurrentStatusID)
+                UpdateCommandPanel();
         }
 
         LinkNode GetSelected()
@@ -322,12 +337,13 @@ namespace DeOps.Interface
 
         enum StatusModeType {None, Network, Node };
         StatusModeType CurrentStatusMode = StatusModeType.None;
-
+        ulong CurrentStatusID;
 
         private void ShowNetworkStatus()
         {
             StatusModeType mode = StatusModeType.Network;
-            
+            CurrentStatusID = 0;
+
             string global = "";
             string operation = "";
 
@@ -382,44 +398,67 @@ namespace DeOps.Interface
 
             StatusModeType mode = StatusModeType.Node;
             
-
             OpLink link = node.Link;
+            CurrentStatusID = link.DhtID;
 
-            string name = Links.GetName(link.DhtID);
+            List<Tuple<string, string>> tuples = new List<Tuple<string, string>>();
+            
 
-            string title = "None";
+            // name
+            string name = "<b>" + Links.GetName(link.DhtID) + "</b>";
+
+            if (link.DhtID == Core.LocalDhtID)
+                name += "  &nbsp&nbsp  (<a href='edit:local'><font color=white>edit</font></a>)";
+
+            // title
+            string title = "";
             if (link.Title.ContainsKey(CommandTree.Project))
                 if (link.Title[CommandTree.Project] != "")
                     title = link.Title[CommandTree.Project];
 
+            if (title != "") 
+                tuples.Add(new Tuple<string, string>("Title: ", title));
+
+            // projects
             string projects = "";
             foreach (uint id in link.Projects)
                 if (id != 0)
                     projects += "<a href='project:" + id.ToString() + "'>" + Links.GetProjectName(id) + "</a>, ";
             projects = projects.TrimEnd(new char[] { ' ', ',' });
 
+            if (projects != "") 
+                tuples.Add(new Tuple<string, string>("Projects: ", projects));
 
-            string places = "";
+            //Locations:
+            List<Tuple<string, string>> locations = new List<Tuple<string, string>>();
+            //    Home: Online
+            //    Office: Away - At Home
+            //    Mobile: Online, Local Time 2:30pm
+            //    Server: Last Seen 10/2/2007
+
+      
             if (Core.OperationNet.Routing.Responsive())
             {
                 List<LocInfo> clients = Core.Locations.GetClients(link.DhtID);
 
                 foreach (LocInfo info in clients)
                     if (!info.Location.Global)
-                        if (info.Location.Place == "")
-                            places += "Unknown, ";
+                    {
+                        string status = "";
+
+                        if (info.Location.Away)
+                            status += "Away " + info.Location.AwayMessage;
                         else
-                            places += info.Location.Place + ", ";
+                            status += "Online";
 
+                        if(info.Location.GmtOffset != System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes)
+                            status += ", Local Time " + Core.TimeNow.ToUniversalTime().AddMinutes(info.Location.GmtOffset).ToString("t");
 
-                places = places.TrimEnd(new char[] { ' ', ',' });
+                        // last seen stuff here
+
+                        locations.Add(new Tuple<string, string>(Core.Locations.GetLocationName(link.DhtID, info.ClientID), status));
+                    }
             }
-
-            List<string[]> tuples = new List<string[]>();
-            tuples.Add(new string[] { "name", Links.GetName(link.DhtID) });
-            tuples.Add(new string[] { "title", title });
-            tuples.Add(new string[] { "projects", projects });
-            tuples.Add(new string[] { "locations", places });
 
             if (CurrentStatusMode != mode)
             {
@@ -428,18 +467,37 @@ namespace DeOps.Interface
                 StatusHtml.Length = 0;
                 StatusHtml.Append(NodePage);
 
-                foreach (string[] tuple in tuples)
-                    StatusHtml.Replace("<?=" + tuple[0] + "?>", tuple[1]);
+                StatusHtml.Replace("<?=name?>", name);
+                StatusHtml.Replace("<?=content?>", GenerateContent(tuples, locations));
 
                 SetStatus(StatusHtml.ToString());
             }
             else
             {
-                foreach (string[] tuple in tuples)
-                    StatusBrowser.Document.InvokeScript("SetElement", new String[] { tuple[0], tuple[1] });
+                StatusBrowser.Document.InvokeScript("SetElement", new String[] { "name", name });
+                StatusBrowser.Document.InvokeScript("SetElement", new String[] { "content", GenerateContent(tuples, locations ) });
             }
         }
 
+        string GenerateContent(List<Tuple<string, string>> tuples, List<Tuple<string, string>> locations)
+        {
+            string content = "<table callpadding=3>  ";
+
+            foreach (Tuple<string, string> tuple in tuples)
+                content += "<tr><td><p><b>" + tuple.First + "</b></p></td> <td><p>" + tuple.Second + "</p></td></tr>";
+
+            // locations
+            string ifonline = locations.Count > 0 ? "Locations" : "Offline";
+
+            content += "<tr><td colspan=2><p><b>" + ifonline + "</b><br>";
+            foreach (Tuple<string, string> tuple in locations)
+                content += "&nbsp&nbsp&nbsp <b>" + tuple.First + ":</b> " + tuple.Second + "<br>";
+            content += "</p></td></tr>";
+
+            content += "</table>";
+
+            return content;
+        }
 
         private void SetStatus(string html)
         {
@@ -489,81 +547,81 @@ namespace DeOps.Interface
 
 
             // right click menu
-            if (e.Button == MouseButtons.Right)
+            if (e.Button != MouseButtons.Right)
+                return;
+
+            // menu
+            ContextMenuStripEx treeMenu = new ContextMenuStripEx();
+
+            // select
+            if (!SideMode)
+                treeMenu.Items.Add("Select", InterfaceRes.star, TreeMenu_Select);
+
+            // views
+            List<ToolStripMenuItem> quickMenus = new List<ToolStripMenuItem>();
+            List<ToolStripMenuItem> extMenus = new List<ToolStripMenuItem>();
+
+            foreach (OpComponent component in Core.Components.Values)
             {
-                // menu
-                ContextMenuStripEx treeMenu = new ContextMenuStripEx();
+                if (component is LinkControl)
+                    continue;
 
-                // select
-                if(!SideMode)
-                    treeMenu.Items.Add("Select", InterfaceRes.star, TreeMenu_Select);
+                // quick
+                List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, CommandTree.Project);
 
-                // views
-                List<ToolStripMenuItem> quickMenus = new List<ToolStripMenuItem>();
-                List<ToolStripMenuItem> extMenus = new List<ToolStripMenuItem>();
+                if (menuList != null && menuList.Count > 0)
+                    foreach (MenuItemInfo info in menuList)
+                        quickMenus.Add(new OpMenuItem(item.Link.DhtID, CommandTree.Project, info.Path, info));
 
-                foreach (OpComponent component in Core.Components.Values)
+                // external
+                menuList = component.GetMenuInfo(InterfaceMenuType.External, item.Link.DhtID, CommandTree.Project);
+
+                if (menuList != null && menuList.Count > 0)
+                    foreach (MenuItemInfo info in menuList)
+                        extMenus.Add(new OpMenuItem(item.Link.DhtID, CommandTree.Project, info.Path, info));
+            }
+
+            if (quickMenus.Count > 0 || extMenus.Count > 0)
+                if (treeMenu.Items.Count > 0)
+                    treeMenu.Items.Add("-");
+
+            foreach (ToolStripMenuItem menu in quickMenus)
+                treeMenu.Items.Add(menu);
+
+            if (extMenus.Count > 0)
+            {
+                ToolStripMenuItem viewItem = new ToolStripMenuItem("Views", InterfaceRes.views);
+
+                foreach (ToolStripMenuItem menu in extMenus)
+                    viewItem.DropDownItems.Add(menu);
+
+                treeMenu.Items.Add(viewItem);
+            }
+
+            // link
+            if (CommandTree.TreeMode == CommandTreeMode.Operation)
+            {
+                List<ToolStripMenuItem> linkMenus = new List<ToolStripMenuItem>();
+
+                List<MenuItemInfo> menuList = Links.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, CommandTree.Project);
+
+                if (menuList != null && menuList.Count > 0)
+                    foreach (MenuItemInfo info in menuList)
+                        linkMenus.Add(new OpMenuItem(item.Link.DhtID, CommandTree.Project, info.Path, info));
+
+                if (linkMenus.Count > 0)
                 {
-                    if (component is LinkControl)
-                        continue;
-
-                    // quick
-                    List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, CommandTree.Project);
-
-                    if (menuList != null && menuList.Count > 0)
-                        foreach (MenuItemInfo info in menuList)
-                            quickMenus.Add(new OpMenuItem(item.Link.DhtID, CommandTree.Project, info.Path, info));
-
-                    // external
-                    menuList = component.GetMenuInfo(InterfaceMenuType.External, item.Link.DhtID, CommandTree.Project);
-
-                    if (menuList != null && menuList.Count > 0)
-                        foreach (MenuItemInfo info in menuList)
-                            extMenus.Add(new OpMenuItem(item.Link.DhtID, CommandTree.Project, info.Path, info));
-                }
-
-                if (quickMenus.Count > 0 || extMenus.Count > 0)
                     if (treeMenu.Items.Count > 0)
                         treeMenu.Items.Add("-");
 
-                foreach (ToolStripMenuItem menu in quickMenus)
-                    treeMenu.Items.Add(menu);
-            
-                if (extMenus.Count > 0)
-                {
-                    ToolStripMenuItem viewItem = new ToolStripMenuItem("Views", InterfaceRes.views);
-
-                    foreach (ToolStripMenuItem menu in extMenus)
-                        viewItem.DropDownItems.Add(menu);
-
-                    treeMenu.Items.Add(viewItem);
+                    foreach (ToolStripMenuItem menu in linkMenus)
+                        treeMenu.Items.Add(menu);
                 }
-
-                // link
-                if (CommandTree.TreeMode == CommandTreeMode.Operation)
-                {
-                    List<ToolStripMenuItem> linkMenus = new List<ToolStripMenuItem>();
-
-                    List<MenuItemInfo> menuList = Links.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, CommandTree.Project);
-
-                    if (menuList != null && menuList.Count > 0)
-                        foreach (MenuItemInfo info in menuList)
-                            linkMenus.Add(new OpMenuItem(item.Link.DhtID, CommandTree.Project, info.Path, info));
-
-                    if (linkMenus.Count > 0)
-                    {
-                        if (treeMenu.Items.Count > 0)
-                            treeMenu.Items.Add("-");
-
-                        foreach (ToolStripMenuItem menu in linkMenus)
-                            treeMenu.Items.Add(menu);
-                    }
-                }
-
-                // show
-                if (treeMenu.Items.Count > 0)
-                    treeMenu.Show(CommandTree, e.Location);
             }
+
+            // show
+            if (treeMenu.Items.Count > 0)
+                treeMenu.Show(CommandTree, e.Location);
         }
 
         void TreeMenu_Select(object sender, EventArgs e)
@@ -1039,6 +1097,13 @@ namespace DeOps.Interface
             if(parts.Length < 2)
                 return;
 
+            if (parts[0] == "edit")
+            {
+                EditMenu_Click(null, null);
+                e.Cancel = true;
+                return;
+            }
+
             if (parts[0] == "project")
             {
                 UpdateProjectButton(uint.Parse(parts[1]));
@@ -1068,6 +1133,8 @@ namespace DeOps.Interface
         {
             EditLink edit = new EditLink(Core, CommandTree.Project);
             edit.ShowDialog(this);
+
+            UpdateCommandPanel();
         }
 
         private void CommandTree_SelectedItemChanged(object sender, EventArgs e)
