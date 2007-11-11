@@ -116,7 +116,7 @@ namespace DeOps.Interface
             
             if (TextPassword.Text.Length == 0)
             {
-                MessageBox.Show(this, "Please Enter a Password");
+                MessageBox.Show(this, "Please Enter a Passphrase");
                 return;
             }
 
@@ -138,7 +138,7 @@ namespace DeOps.Interface
             {
                 //MessageBox.Show(ex.ToString());
                 //UpdateLog("Exception", "Login: " + ex.ToString());
-                MessageBox.Show(this, "Wrong Password");
+                MessageBox.Show(this, "Wrong Passphrase");
             }
 
             TextPassword.Clear();

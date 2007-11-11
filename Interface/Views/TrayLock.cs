@@ -43,7 +43,7 @@ namespace DeOps.Interface.Views
         
         void Menu_Restore(object sender, EventArgs e)
         {
-            GetTextDialog form = new GetTextDialog(Tray.Text, "Enter Password", "");
+            GetTextDialog form = new GetTextDialog(Tray.Text, "Enter Passphrase", "");
             
             form.ResultBox.UseSystemPasswordChar = true;
 
@@ -65,7 +65,7 @@ namespace DeOps.Interface.Views
                 Core.GuiTray = null;
             }
             else
-                MessageBox.Show("Wrong Password", "De-Ops");
+                MessageBox.Show("Wrong Passphrase", "De-Ops");
         }
 
         void Menu_Exit(object sender, EventArgs e)

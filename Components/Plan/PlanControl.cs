@@ -719,7 +719,7 @@ namespace DeOps.Components.Plan
 
                 Store.PublishNetwork(Core.LocalDhtID, ComponentID.Plan, plan.SignedHeader);
 
-                Store.PublishDirect(Links.GetSuperLocs(), Core.LocalDhtID, ComponentID.Plan, plan.SignedHeader);
+                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ComponentID.Plan, plan.SignedHeader);
             }
             catch (Exception ex)
             {

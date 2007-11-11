@@ -79,7 +79,7 @@ namespace DeOps.Interface
             this.groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.groupBox1.Location = new System.Drawing.Point(15, 106);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(265, 111);
+            this.groupBox1.Size = new System.Drawing.Size(265, 142);
             this.groupBox1.TabIndex = 6;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Your Identity";
@@ -87,30 +87,30 @@ namespace DeOps.Interface
             // TextConfirm
             // 
             this.TextConfirm.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.TextConfirm.Location = new System.Drawing.Point(145, 75);
+            this.TextConfirm.Location = new System.Drawing.Point(19, 114);
             this.TextConfirm.Name = "TextConfirm";
             this.TextConfirm.PasswordChar = '•';
-            this.TextConfirm.Size = new System.Drawing.Size(114, 20);
+            this.TextConfirm.Size = new System.Drawing.Size(240, 20);
             this.TextConfirm.TabIndex = 5;
             // 
             // TextPassword
             // 
             this.TextPassword.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.TextPassword.Location = new System.Drawing.Point(145, 49);
+            this.TextPassword.Location = new System.Drawing.Point(19, 68);
             this.TextPassword.Name = "TextPassword";
             this.TextPassword.PasswordChar = '•';
-            this.TextPassword.Size = new System.Drawing.Size(114, 20);
+            this.TextPassword.Size = new System.Drawing.Size(240, 20);
             this.TextPassword.TabIndex = 3;
             // 
             // label5
             // 
             this.label5.AutoSize = true;
             this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label5.Location = new System.Drawing.Point(16, 78);
+            this.label5.Location = new System.Drawing.Point(16, 98);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(107, 13);
+            this.label5.Size = new System.Drawing.Size(118, 13);
             this.label5.TabIndex = 4;
-            this.label5.Text = "Confirm Password";
+            this.label5.Text = "Confirm Passphrase";
             // 
             // label4
             // 
@@ -118,9 +118,9 @@ namespace DeOps.Interface
             this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label4.Location = new System.Drawing.Point(16, 52);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(61, 13);
+            this.label4.Size = new System.Drawing.Size(72, 13);
             this.label4.TabIndex = 2;
-            this.label4.Text = "Password";
+            this.label4.Text = "Passphrase";
             // 
             // label2
             // 
@@ -135,15 +135,15 @@ namespace DeOps.Interface
             // TextName
             // 
             this.TextName.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.TextName.Location = new System.Drawing.Point(145, 23);
+            this.TextName.Location = new System.Drawing.Point(109, 23);
             this.TextName.Name = "TextName";
-            this.TextName.Size = new System.Drawing.Size(114, 20);
+            this.TextName.Size = new System.Drawing.Size(150, 20);
             this.TextName.TabIndex = 1;
             // 
             // ButtonCancel
             // 
             this.ButtonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.ButtonCancel.Location = new System.Drawing.Point(205, 342);
+            this.ButtonCancel.Location = new System.Drawing.Point(205, 370);
             this.ButtonCancel.Name = "ButtonCancel";
             this.ButtonCancel.Size = new System.Drawing.Size(75, 23);
             this.ButtonCancel.TabIndex = 12;
@@ -153,7 +153,7 @@ namespace DeOps.Interface
             // 
             // ButtonOK
             // 
-            this.ButtonOK.Location = new System.Drawing.Point(124, 342);
+            this.ButtonOK.Location = new System.Drawing.Point(124, 370);
             this.ButtonOK.Name = "ButtonOK";
             this.ButtonOK.Size = new System.Drawing.Size(75, 23);
             this.ButtonOK.TabIndex = 11;
@@ -208,7 +208,7 @@ namespace DeOps.Interface
             // 
             this.label6.AutoSize = true;
             this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label6.Location = new System.Drawing.Point(12, 234);
+            this.label6.Location = new System.Drawing.Point(12, 262);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(90, 13);
             this.label6.TabIndex = 7;
@@ -217,7 +217,7 @@ namespace DeOps.Interface
             // LinkLocation
             // 
             this.LinkLocation.AutoSize = true;
-            this.LinkLocation.Location = new System.Drawing.Point(12, 247);
+            this.LinkLocation.Location = new System.Drawing.Point(12, 275);
             this.LinkLocation.Name = "LinkLocation";
             this.LinkLocation.Size = new System.Drawing.Size(80, 13);
             this.LinkLocation.TabIndex = 8;
@@ -229,7 +229,7 @@ namespace DeOps.Interface
             // 
             this.label7.AutoSize = true;
             this.label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.Location = new System.Drawing.Point(12, 281);
+            this.label7.Location = new System.Drawing.Point(12, 309);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(34, 13);
             this.label7.TabIndex = 9;
@@ -237,7 +237,7 @@ namespace DeOps.Interface
             // 
             // label8
             // 
-            this.label8.Location = new System.Drawing.Point(12, 294);
+            this.label8.Location = new System.Drawing.Point(12, 322);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(262, 45);
             this.label8.TabIndex = 10;
@@ -251,7 +251,7 @@ namespace DeOps.Interface
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlLight;
             this.CancelButton = this.ButtonCancel;
-            this.ClientSize = new System.Drawing.Size(292, 376);
+            this.ClientSize = new System.Drawing.Size(292, 405);
             this.Controls.Add(this.label8);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.LinkLocation);

@@ -825,7 +825,6 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("Name", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("DhtID", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Loaded", 100, HorizontalAlignment.Left);
-            listValues.Columns.Add("Error", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Local Link", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Searched", 100, HorizontalAlignment.Left);
             
@@ -896,8 +895,7 @@ namespace DeOps.Interface.Tools
 					{
 						xStr(Core.Links.GetName(link.DhtID)),		
 						IDtoStr(link.DhtID),
-                        xStr(link.Loaded),
-						xStr(link.Error),		
+                        xStr(link.Loaded),	
 						xStr(link.InLocalLinkTree),
 						xStr(link.Searched),	
 

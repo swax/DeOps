@@ -570,7 +570,7 @@ namespace DeOps.Components.Profile
 
                 Store.PublishNetwork(Core.LocalDhtID, ComponentID.Profile, profile.SignedHeader);
 
-                Store.PublishDirect(Links.GetSuperLocs(), Core.LocalDhtID, ComponentID.Profile, profile.SignedHeader);
+                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ComponentID.Profile, profile.SignedHeader);
             }
             catch (Exception ex)
             {

@@ -169,13 +169,13 @@ namespace DeOps.Interface
                     throw new Exception("Display Name Blank");
 
                 if (TextPassword.Text.Length == 0)
-                    throw new Exception("Password Blank");
+                    throw new Exception("Passphrase Blank");
 
                 if (TextConfirm.Text.Length == 0)
-                    throw new Exception("Confirm Password Blank");
+                    throw new Exception("Confirm Passphrase Blank");
 
                 if(TextPassword.Text != TextConfirm.Text)
-                    throw new Exception("Password Confirmation does not match");
+                    throw new Exception("Passphrase Confirmation does not match");
             }
             catch (Exception ex)
             {

@@ -505,7 +505,7 @@ namespace DeOps.Components.Storage
                 // publish header
                 Store.PublishNetwork(Core.LocalDhtID, ComponentID.Storage, storage.SignedHeader);
 
-                Store.PublishDirect(Links.GetSuperLocs(), Core.LocalDhtID, ComponentID.Storage, storage.SignedHeader);
+                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ComponentID.Storage, storage.SignedHeader);
 
             }
             catch (Exception ex)

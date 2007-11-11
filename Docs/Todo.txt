@@ -57,6 +57,7 @@ Interface
 		goals	- edit
 		tray	- restore, exit
 		chat	- online (shinny green circle)
+		link    - icons should be chain with arrow pointing in direction of link
 	
 Components
 	General
@@ -68,6 +69,66 @@ Components
 		Remove references to LinkMap, use GetLink
 		when component handles exit, assert that all events are emptied of references to debug gui's not releasing event handles
 		
+	Link
+		hide script errors
+		only update tree when updated link's parent is different
+		keep selection between refreshes
+	
+		on link update
+			clear link's uplinks and uplink's downlinks of the link being updated
+			if the project roots contains the link remove it
+			if the project roots contains a trust loop that has the link as a downlink, remove the loop
+				set loop status of all nodes in loop to false
+			
+			set link's uplinks, and place pointers in uplink's downlinks
+				create temps if needed
+			if uplinks for project is none, put in root
+			if uplink leads back to self, create trust loop with all uplinks as downlinks
+				set all loop status to true for nodes in loop
+				remove all nodes in loop from project roots
+	
+		interface
+			if link update is a visible node, or if uplink is visible with subs expanded
+				freeze tree control updating
+					save visible
+					save selected
+				refresh tree root nodes
+				expand top levels
+				expand until previous visibles are visible
+				re-select node
+				unfreeze tree
+	
+			clicking on loop node itself shows order of loop
+	
+		operations
+			uplinks - contains all nodes in loop
+			downlinks - excludes nodes in loop
+			adjacent - if in loop then none
+			give/take back/accept trust
+			check that uplink/confirm/request operations can all be performed
+				warn user when operation will create a loop
+			
+		components
+			plans - inherit plans from highers in loop
+			goals - can be assigned in lowers of any branch
+			board - higher (uplinks), lower (downlinks)
+			chat - high level chat is others in loop
+			profile - show motd by all those in loop, uplinks
+			storage - auto-inherit from uplinks
+			links - getlocs/ishigher/islower, prevent looping to self
+		
+			
+		test linking up to a subordinate works correctly - 2 areas commented out
+		allow anyone to trust anyone else
+		prevent loops by before traversing to downlink, ensure it is not an uplink as well
+		what happens when there are no roots?
+		trust loop
+			get uplinks - traverse until null, or node reached that is already an uplink id
+			details in math notebook
+			when link loaded in cache link, after it is reset
+				uplinks are traversed, and if cycle is detected, node is flagged as such
+				trust loop node created and added to project roots
+
 	Location 
 		global replication
 		make persistant so status panel can display last seen, also loaded can go straight to the cache
@@ -88,13 +149,18 @@ Components
 		Crash on close IM, fin being called? unhooking from IMcontrol events? 
 		
 	Chat 
-		Custom rooms - priave requires signed key, public key kept in chat file, can be queried for and found over network 
-			put invitations in toolbar
-			show messagebox for first invitation, afterwards ignore if already in toolbar
-		log does chat/im - setup like yahoo chat log
+		Custom rooms - 
+			public room, unique ID, anyone can invite anyone else
+			pure p2p everyone connected to everyone else, rudp should have low overhead 100bytes/min max, 100 users would be 1,000/6 bps
+			use chat pings to ensure connections are in same room
+				if chat ping received and not in room respond with leave msg
+				if ping received without signed invite, ask for it
+			works same as other chats, people we're connected to are black, join/parts shown the same way
+			invite contains ids of other users in chat, when leaving ids and all that saved in id list
+			private requires signed key in invitation that members can verify with each other
+			put invitations in toolbar, show messagebox for first invitation, afterwards ignore if already in toolbar
 		
-		***away location chagnes still not reflecting quickly in status panel
-
+		log does chat/im - setup like yahoo chat log
 		if unlinked join default chatroom with other unlinked nodes, without subs
 		on join chat, node asks other nodes for previous singed messages before specified time
 		
@@ -210,21 +276,8 @@ Simulator
 	figure out why IO writes in FiresoftDemo so high, getting 2min/sec through, pretty damn good
 	record max udp burst sizes, or do packet size distribution histogram
 
-
-	test linking up to a subordinate works correctly - 2 areas commented out
-		allow anyone to trust anyone else
-		prevent loops by before traversing to downlink, ensure it is not an uplink as well
-		what happens when there are no roots?
-		trust loop
-			get uplinks - traverse until null, or node reached that is already an uplink id
-			details in math notebook
-			when link loaded in cache link, after it is reset
-				uplinks are traversed, and if cycle is detected, node is flagged as such
-				trust loop node created and added to project roots
-
 	test lockreading inside writing and visa versa
 		
-
 	run full speed, min/max components with updates, try to get conflicts
 	run 30 clients, track mem/client, time/client, more sim control in interface
 

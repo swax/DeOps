@@ -75,9 +75,9 @@ namespace DeOps.Interface
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label2.Location = new System.Drawing.Point(12, 242);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(61, 13);
+            this.label2.Size = new System.Drawing.Size(72, 13);
             this.label2.TabIndex = 3;
-            this.label2.Text = "Password";
+            this.label2.Text = "Passphrase";
             // 
             // TextPassword
             // 
@@ -85,7 +85,7 @@ namespace DeOps.Interface
             this.TextPassword.Location = new System.Drawing.Point(15, 258);
             this.TextPassword.Name = "TextPassword";
             this.TextPassword.PasswordChar = '•';
-            this.TextPassword.Size = new System.Drawing.Size(138, 20);
+            this.TextPassword.Size = new System.Drawing.Size(250, 20);
             this.TextPassword.TabIndex = 4;
             // 
             // ButtonLoad

@@ -400,6 +400,24 @@ namespace DeOps.Components.Link
                     }
                 });
 
+            // clean roots
+            List<uint> removeList = new List<uint>();
+
+            ProjectRoots.LockReading(delegate()
+                {
+                    foreach (uint project in ProjectRoots.Keys)
+                        if (ProjectRoots[project].Count == 0)
+                            removeList.Add(project);
+                });
+
+            if(removeList.Count > 0)
+                ProjectRoots.LockWriting(delegate()
+               {
+                   foreach (uint project in removeList)
+                        ProjectRoots.Remove(project);
+                        //ProjectNames.Remove(id); // if we are only root, and leave project, but have downlinks, still need the name
+               });
+
             // clean research map
             removeLinks.Clear();
 
@@ -450,31 +468,32 @@ namespace DeOps.Components.Link
 
 
                 // TraverseDown 2 from self
-                foreach (uint id in LocalLink.Projects)
+                foreach (uint project in LocalLink.Projects)
                 {
-                    MarkBranchLinked(LocalLink, id, 2);
+                    MarkBranchLinked(LocalLink, project, 2);
 
                     // TraverseDown 1 from all parents above self
-                    OpLink parent = LocalLink.GetHigher(id, false);
+                    List<ulong> uplinks = GetUplinkIDs(LocalLink.DhtID, project, false);
 
-                    while (parent != null)
+                    foreach (ulong id in uplinks)
                     {
-                        MarkBranchLinked(parent, id, 1);
-                        parent = parent.GetHigher(id, false);
+                        OpLink uplink = GetLink(id);
+
+                        if(uplink != null)
+                            MarkBranchLinked(uplink, project, 1);
                     }
-                    
 
                     // TraverseDown 2 from Roots
                     List<OpLink> roots = null;
-                    if (ProjectRoots.SafeTryGetValue(id, out roots))
+                    if (ProjectRoots.SafeTryGetValue(project, out roots))
                         foreach (OpLink link in roots)
                         {
                             // structure known if node found with no uplinks, and a number of downlinks
-                            if (id == 0 && link.Loaded && !link.Uplink.ContainsKey(0))
-                                if (link.Downlinks.ContainsKey(id) && link.Downlinks[id].Count > 0 && LinkMap.Count > 8)
+                            if (project == 0 && link.Loaded && !link.Uplink.ContainsKey(0))
+                                if (link.Downlinks.ContainsKey(project) && link.Downlinks[project].Count > 0 && LinkMap.Count > 8)
                                     StructureKnown = true;
 
-                            MarkBranchLinked(link, id, 2);
+                            MarkBranchLinked(link, project, 2);
                         }
                 }
             });
@@ -829,7 +848,7 @@ namespace DeOps.Components.Link
                 // publish header
                 Store.PublishNetwork(Core.LocalDhtID, ComponentID.Link, LocalLink.SignedHeader);
 
-                Store.PublishDirect(GetSuperLocs(), Core.LocalDhtID, ComponentID.Link, LocalLink.SignedHeader);
+                Store.PublishDirect(GetLocsAbove(), Core.LocalDhtID, ComponentID.Link, LocalLink.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -1079,28 +1098,31 @@ namespace DeOps.Components.Link
                         catch { }
                 }
 
-                // clean roots
-                List<uint> removeList = new List<uint>();
-
+                // clean roots, if link has loopID, remove loop node entirely
                 ProjectRoots.LockReading(delegate()
                 {
                     foreach (uint project in ProjectRoots.Keys)
                     {
                         ProjectRoots[project].Remove(link);
 
-                        if (ProjectRoots[project].Count == 0)
-                            removeList.Add(project);
+                        // remove loop node
+                        OpLink loop = null;
+                        if (link.LoopRoot.TryGetValue(project, out loop))
+                            foreach(OpLink root in ProjectRoots[project])
+                                if (root.DhtID == loop.DhtID)
+                                {
+                                    ProjectRoots[project].Remove(root); // root is a loop node
+
+                                    // remove associations with loop node
+                                    if(root.Downlinks.ContainsKey(project))
+                                        foreach(OpLink downlink in root.Downlinks[project])
+                                            if(downlink.LoopRoot.ContainsKey(project))
+                                                downlink.LoopRoot.Remove(project);
+
+                                    break;
+                                }
                     }
                 });
-
-                ProjectRoots.LockWriting(delegate()
-               {
-                   foreach (uint project in removeList)
-                   {
-                       //ProjectNames.Remove(id); // if we are only root, and leave project, but have downlinks, still need the name
-                       ProjectRoots.Remove(project);
-                   }
-               });
 
                 link.Reset();
 
@@ -1110,12 +1132,12 @@ namespace DeOps.Components.Link
                 CryptoStream crypto = new CryptoStream(file, header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 
-                G2Header root = null;
+                G2Header packetRoot = null;
 
-                while (stream.ReadPacket(ref root))
-                    if (root.Name == DataPacket.SignedData)
+                while (stream.ReadPacket(ref packetRoot))
+                    if (packetRoot.Name == DataPacket.SignedData)
                     {
-                        SignedData signed = SignedData.Decode(Core.Protocol, root);
+                        SignedData signed = SignedData.Decode(Core.Protocol, packetRoot);
                         G2Header embedded = new G2Header(signed.Data);
 
                         // figure out data contained
@@ -1131,23 +1153,42 @@ namespace DeOps.Components.Link
 
                 stream.Close();
 
-                // set as root if node has no uplinks
-                foreach (uint project in link.Projects)
-                    if (!link.Uplink.ContainsKey(project))
-                        AddRoot(project, link);
-
-                foreach (uint project in link.Downlinks.Keys) // add root for projects this node is not apart of
-                    if (!link.Uplink.ContainsKey(project))
-                        AddRoot(project, link);
-
-                
-
                 // set new header
                 link.Header = header;
                 link.SignedHeader = signedHeader.Encode(Core.Protocol);
                 link.Loaded = true;
                 link.Unique = Core.Loading;
+                
+                // set as root if node has no uplinks
+                foreach (uint project in link.Projects)
+                    if (!link.Uplink.ContainsKey(project))
+                        AddRoot(project, link);
 
+                // add root for projects this node is not apart of
+                foreach (uint project in link.Downlinks.Keys) 
+                    if (!link.Projects.Contains(project) && !link.Uplink.ContainsKey(project))
+                        AddRoot(project, link);
+
+                // if loop created, create new loop node with unique ID, assign all nodes in loop the ID and add as downlinks
+                foreach(uint project in link.Uplink.Keys)
+                    if (IsLooped(link, project))
+                    {
+                        OpLink loop = new OpLink(project, (ulong) Core.RndGen.Next());
+
+                        List<ulong> uplinks = GetUnconfirmedUplinkIDs(link.DhtID, project);
+                        uplinks.Add(link.DhtID);
+
+                        foreach (ulong uplink in uplinks)
+                        {
+                            OpLink member = GetLink(uplink);
+                            member.LoopRoot[project] = loop;
+                            loop.Downlinks[project].Add(member);
+                        }
+
+                        AddRoot(project, loop);
+                    }
+
+                
                 link.CheckRequestVersions();
 
                 RunSaveHeaders = true;
@@ -1188,14 +1229,14 @@ namespace DeOps.Components.Link
             }
         }
 
-        private void AddRoot(uint id, OpLink link)
+        private void AddRoot(uint project, OpLink link)
         {
             List<OpLink> roots = null;
 
-            if (!ProjectRoots.SafeTryGetValue(id, out roots))
+            if (!ProjectRoots.SafeTryGetValue(project, out roots))
             {
                 roots = new List<OpLink>();
-                ProjectRoots.SafeAdd(id, roots);
+                ProjectRoots.SafeAdd(project, roots);
             }
 
             if (!roots.Contains(link)) // possible it wasnt removed above because link might not be part of project locally but others think it does (uplink)
@@ -1242,11 +1283,11 @@ namespace DeOps.Components.Link
 
             if (linkData.Uplink)
             {
-                if (link.SearchBranch(id, targetLink))
+                /*if (link.SearchBranch(id, targetLink))
                 {
                     link.Error = "Uplink contained in local branch";
                     return;
-                }
+                }*/
 
                 link.Uplink[id] = targetLink;
 
@@ -1383,6 +1424,50 @@ namespace DeOps.Components.Link
                         if( !AddLinkLocations(child, locations)) 
                             GetLocsBelow(child.DhtID, project,  locations);
         }
+        private void GetLinkLocs(OpLink parent, uint project, int depth, List<LocationData> locations)
+        {
+            AddLinkLocations(parent, locations);
+
+            if (depth > 0 && parent.Downlinks.ContainsKey(project))
+                foreach (OpLink child in parent.Downlinks[project])
+                    if (!parent.IsLoopedTo(child, project))
+                        GetLinkLocs(child, project, depth - 1, locations);
+        }
+
+        private bool AddLinkLocations(OpLink link, List<LocationData> locations)
+        {
+            bool online = false;
+
+            List<LocInfo> clients = Core.Locations.GetClients(link.DhtID);
+
+            foreach (LocInfo info in clients)
+                if (!info.Location.Global)
+                {
+                    if (info.Location.KeyID == Core.LocalDhtID && info.Location.Source.ClientID == Core.ClientID)
+                        continue;
+
+                    if (!locations.Contains(info.Location))
+                        locations.Add(info.Location);
+
+                    online = true;
+                }
+
+            return online;
+        }
+
+
+        internal List<LocationData> GetLocsAbove()
+        {
+            List<LocationData> locations = new List<LocationData>();
+
+            ProjectRoots.LockReading(delegate()
+            {
+                foreach (uint project in ProjectRoots.Keys)
+                    GetLocs(Core.LocalDhtID, project, 1, 1, locations);  // below done by cacheplan
+            });
+
+            return locations;
+        }
 
         private OpLink TraverseUp(OpLink link, uint project, int distance)
         {
@@ -1407,35 +1492,6 @@ namespace DeOps.Components.Link
             return null;
         }
 
-        private void GetLinkLocs(OpLink parent, uint project, int depth, List<LocationData> locations)
-        {
-            AddLinkLocations(parent, locations);
-
-            if (depth > 0 && parent.Downlinks.ContainsKey(project))
-                foreach (OpLink child in parent.Downlinks[project])
-                    GetLinkLocs(child, project, depth - 1, locations);
-        }
-
-        private bool AddLinkLocations(OpLink link, List<LocationData> locations)
-        {
-            bool online = false;
-
-            List<LocInfo> clients = Core.Locations.GetClients(link.DhtID);
-
-            foreach (LocInfo info in clients)
-                if (!info.Location.Global)
-                {
-                    if (info.Location.KeyID == Core.LocalDhtID && info.Location.Source.ClientID == Core.ClientID)
-                        continue;
-
-                    if (!locations.Contains(info.Location))
-                        locations.Add(info.Location);
-
-                    online = true;
-                }
-
-            return online;
-        }
 
         internal bool IsHigher(ulong key, uint project)
         {
@@ -1462,17 +1518,21 @@ namespace DeOps.Components.Link
             OpLink local = GetLink(localID);
 
             if (local == null)
-                return false;   
+                return false;
 
-            OpLink uplink = local.GetHigher(project, confirmed);
+            List<ulong> uplinks = GetUplinkIDs(localID, project, confirmed);
 
-            while (uplink != null)
-            {
-                if (uplink.DhtID == higherID)
-                    return true;
+            if (uplinks.Count == 0)
+                return false;
 
-                uplink = uplink.GetHigher(project, confirmed);
-            }
+            if(uplinks.Contains(higherID))
+                return true;
+
+            // check if id we're looping for is the loop node's id
+            OpLink highest = GetLink(uplinks[uplinks.Count - 1]);
+
+            if(highest.LoopRoot.ContainsKey(project) && highest.LoopRoot[project].DhtID == higherID)
+                return true;
 
             return false;
         }
@@ -1498,17 +1558,29 @@ namespace DeOps.Components.Link
             return false;
         }
 
-        internal List<LocationData> GetSuperLocs()
+        internal bool IsLooped(OpLink local, uint project)
         {
-            List<LocationData> locations = new List<LocationData>();
+            // this function is the same as getUplinkIDs with minor mods
+            List<ulong> list = new List<ulong>();
 
-            ProjectRoots.LockReading(delegate()
+            OpLink uplink = local.GetHigher(project, false);
+
+            while (uplink != null)
             {
-                foreach (uint project in ProjectRoots.Keys)
-                    GetLocs(Core.LocalDhtID, project, 1, 1, locations);  // below done by cacheplan
-            });
+                // if loop lead back to self, link is in loop
+                if (uplink == local)
+                    return true;
+                
+                // if there is a loop higher up, but link is not in it, return
+                if(list.Contains(uplink.DhtID))
+                    return false;
 
-            return locations;
+                list.Add(uplink.DhtID);
+
+                uplink = uplink.GetHigher(project, false);
+            }
+
+            return false;
         }
 
         internal List<ulong> GetUplinkIDs(ulong id, uint project)
@@ -1521,13 +1593,13 @@ namespace DeOps.Components.Link
             return GetUplinkIDs(id, project, false);
         }
 
-        private List<ulong> GetUplinkIDs(ulong id, uint project, bool confirmed)
+        private List<ulong> GetUplinkIDs(ulong local, uint project, bool confirmed)
         {
             // get uplinks from id, not including id, starting with directly above and ending with root
 
             List<ulong> list = new List<ulong>();
 
-            OpLink link = GetLink(id);
+            OpLink link = GetLink(local);
 
             if (link == null)
                 return list;
@@ -1535,7 +1607,11 @@ namespace DeOps.Components.Link
             OpLink uplink = link.GetHigher(project, confirmed);
 
             while (uplink != null)
-            {
+            {       
+                // if looping, return
+                if (uplink.DhtID == local || list.Contains(uplink.DhtID))
+                    return list;       
+                
                 list.Add(uplink.DhtID);
 
                 uplink = uplink.GetHigher(project, confirmed);
@@ -1555,7 +1631,7 @@ namespace DeOps.Components.Link
 
             OpLink uplink = link.GetHigher(project, true);
 
-            if (uplink == null)
+            if (uplink == null || link.IsLoopedTo(uplink, project))
                 return list;
 
             foreach(OpLink sub in uplink.GetLowers(project, true))
@@ -1579,13 +1655,14 @@ namespace DeOps.Components.Link
 
             if (link.Confirmed.ContainsKey(project) && link.Downlinks.ContainsKey(project))
                 foreach (OpLink downlink in link.Downlinks[project])
-                    if (link.Confirmed[project].Contains(downlink.DhtID))
-                    {
-                        list.Add(downlink.DhtID);
+                    if(!link.IsLoopedTo(downlink, project))
+                        if (link.Confirmed[project].Contains(downlink.DhtID))
+                        {
+                            list.Add(downlink.DhtID);
 
-                        if (levels > 0)
-                            list.AddRange(GetDownlinkIDs(downlink.DhtID, project, levels));
-                    }
+                            if (levels > 0)
+                                list.AddRange(GetDownlinkIDs(downlink.DhtID, project, levels));
+                        }
 
             return list;
         }
@@ -1599,8 +1676,9 @@ namespace DeOps.Components.Link
             if (link != null)
                 if (link.Confirmed.ContainsKey(project) && link.Downlinks.ContainsKey(project))
                     foreach (OpLink downlink in link.Downlinks[project])
-                        if (link.Confirmed[project].Contains(downlink.DhtID))
-                            count++;
+                        if(!link.IsLoopedTo(downlink, project))
+                            if (link.Confirmed[project].Contains(downlink.DhtID))
+                                count++;
 
             return count > 0;
         }
@@ -1614,8 +1692,9 @@ namespace DeOps.Components.Link
                 higher.Confirmed[project].Contains(id) &&
                 higher.Downlinks.ContainsKey(project))
                 foreach (OpLink downlink in higher.Downlinks[project])
-                    if (downlink.DhtID == id)
-                        return true;
+                    if(!higher.IsLoopedTo(downlink, project))
+                        if (downlink.DhtID == id)
+                            return true;
 
             return false;
         }
@@ -1626,8 +1705,9 @@ namespace DeOps.Components.Link
                 LocalLink.Confirmed[project].Contains(id) &&
                 LocalLink.Downlinks.ContainsKey(project))
                 foreach (OpLink downlink in LocalLink.Downlinks[project])
-                    if (downlink.DhtID == id)
-                        return true;
+                    if(!LocalLink.IsLoopedTo(downlink, project))
+                        if (downlink.DhtID == id)
+                            return true;
 
             return false;
         }
@@ -1641,7 +1721,7 @@ namespace DeOps.Components.Link
 
             OpLink uplink = link.GetHigher(project, true);
 
-            if (uplink == null)
+            if (uplink == null || link.IsLoopedTo(uplink, project))
                 return false;
 
             return uplink.DhtID == id;
@@ -1679,12 +1759,11 @@ namespace DeOps.Components.Link
         {
             OpLink link = null;
 
-            LinkMap.SafeTryGetValue(id, out link);
+            if(LinkMap.SafeTryGetValue(id, out link))
+                if(link.Loaded)
+                    return link;
 
-            if (link == null || !link.Loaded)
-                return null;
-
-            return link;
+            return null;
         }
 
 
@@ -1699,9 +1778,12 @@ namespace DeOps.Components.Link
         internal byte[]   Key;    // make sure reference is the same as main key list
         internal bool     Loaded;
         internal bool     Unique; 
-        internal string   Error;
         internal bool     InLocalLinkTree;
         internal bool     Searched;
+
+        internal bool IsLoopRoot;
+        
+        internal Dictionary<uint, OpLink> LoopRoot = new Dictionary<uint, OpLink>();
 
         internal List<uint> Projects = new List<uint>();
         internal Dictionary<uint, string> Title = new Dictionary<uint, string>();
@@ -1720,6 +1802,16 @@ namespace DeOps.Components.Link
             Key = key;
             DhtID = Utilities.KeytoID(key);
         }
+
+        internal OpLink(uint project, ulong loopID)
+        {
+            IsLoopRoot = true;
+            Loaded = true;
+            Name = "Trust Loop";
+            DhtID = loopID;
+            AddProject(project);
+        }
+
 
         internal void AddProject(uint id)
         {
@@ -1772,8 +1864,6 @@ namespace DeOps.Components.Link
 
             Uplink.Clear();
             Confirmed.Clear();
-
-            Error = null;
         }
 
         internal void ResetUplink(uint id)
@@ -1855,10 +1945,24 @@ namespace DeOps.Components.Link
              if (Downlinks.ContainsKey(project))
                  if(!confirmed || Confirmed.ContainsKey(project))
                     foreach (OpLink downlink in Downlinks[project])
-                        if (!confirmed || Confirmed[project].Contains(downlink.DhtID))
-                            lowers.Add(downlink);
+                        if(!IsLoopedTo(downlink, project))
+                            if (!confirmed || Confirmed[project].Contains(downlink.DhtID))
+                                lowers.Add(downlink);
 
             return lowers;
+        }
+
+        internal bool IsLoopedTo(OpLink test, uint Project)
+        {
+            if(!LoopRoot.ContainsKey(Project))
+                return false;
+
+            ulong loopID = LoopRoot[Project].DhtID;
+
+            if (test.LoopRoot.ContainsKey(Project) && test.LoopRoot[Project].DhtID == loopID)
+                return true;
+
+            return false;
         }
     }
 }

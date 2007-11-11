@@ -74,6 +74,16 @@ namespace DeOps.Components.Link
         {
             BeginUpdate();
 
+            // save visible
+            List<ulong> visible = new List<ulong>();
+            foreach (TreeListNode node in Nodes)
+                if (node.GetType() == typeof(LinkNode))
+                    UnloadNode((LinkNode)node, visible);
+
+            // save selected
+            LinkNode selected = GetSelected();
+
+
             NodeMap.Clear();
             Nodes.Clear();
 
@@ -121,7 +131,7 @@ namespace DeOps.Components.Link
                 List<OpLink> roots = null;
                 if (Links.ProjectRoots.SafeTryGetValue(Project, out roots))
                     foreach (OpLink root in roots)
-                            SetupRoot(root);
+                        SetupRoot(root);
             }
 
             // show unlinked if there's something to show
@@ -130,6 +140,20 @@ namespace DeOps.Components.Link
             else
                 UnlinkedNode.Text = "Untrusted";
 
+            // restore visible
+            foreach (ulong id in visible)
+                foreach (TreeListNode node in Nodes)
+                    if (node.GetType() == typeof(LinkNode))
+                    {
+                        List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(id, Project);
+                        uplinks.Add(id);
+                        VisiblePath((LinkNode)node, uplinks);
+                    }
+            
+            // restore selected
+            if(selected != null)
+                if(NodeMap.ContainsKey(selected.Link.DhtID))
+                    NodeMap[selected.Link.DhtID].Selected = true;
 
             EndUpdate();
         }
@@ -153,7 +177,8 @@ namespace DeOps.Components.Link
             LoadNode(node);
 
             // if self or uplinks contains root, put in project
-            if(node.Link.DhtID == Core.LocalDhtID || Links.IsUnconfirmedHigher(node.Link.DhtID, Project))
+            if(node.Link.DhtID == Core.LocalDhtID || 
+                Links.IsUnconfirmedHigher(node.Link.DhtID, Project))
                 InsertRootNode(ProjectNode, node);
 
             // else put in untrusted
@@ -168,22 +193,22 @@ namespace DeOps.Components.Link
             if (node.AddSubs)
                 return;
 
-
             node.AddSubs = true;
 
             // go through downlinks
             if (node.Link.Downlinks.ContainsKey(Project))
                 foreach (OpLink link in node.Link.Downlinks[Project])
-                {
-                    // if doesnt exist search for it
-                    if (!link.Loaded)
+                    if (!node.Link.IsLoopedTo(link, Project))
                     {
-                        Links.Research(link.DhtID, Project, false);
-                        continue;
-                    }
+                        // if doesnt exist search for it
+                        if (!link.Loaded)
+                        {
+                            Links.Research(link.DhtID, Project, false);
+                            continue;
+                        }
 
-                    Utilities.InsertSubNode(node, CreateNode(link));
-                }
+                        Utilities.InsertSubNode(node, CreateNode(link));
+                    }
         }
 
         internal void InsertRootNode(LabelNode start, LinkNode node)
@@ -281,16 +306,6 @@ namespace DeOps.Components.Link
 
         }
 
-        void RecurseUpdate(OpLink link)
-        {
-            OnUpdateLink(link.DhtID);
-
-            if (link.Downlinks.ContainsKey(Project))
-                foreach (OpLink downlink in link.Downlinks[Project])
-                    RecurseUpdate(downlink);
-        }
-
-
         List<ulong> Links_GetFocused()
         {
             List<ulong> focused = new List<ulong>();
@@ -347,7 +362,7 @@ namespace DeOps.Components.Link
             if (ForceRootID != 0)
             {
                 // root must be a parent of the updating node
-                if (link.DhtID != ForceRootID || !Links.IsUnconfirmedHigher(link.DhtID, ForceRootID, Project))
+                if (link.DhtID != ForceRootID && !Links.IsUnconfirmedHigher(link.DhtID, ForceRootID, Project))
                     return;
             }
 
@@ -360,7 +375,8 @@ namespace DeOps.Components.Link
 
 
             if (TreeMode == CommandTreeMode.Operation)
-                UpdateOperation(node);
+                SetupOperationTree();
+                //UpdateOperation(node);
 
             else if (TreeMode == CommandTreeMode.Online)
                 UpdateOnline(node);
@@ -372,7 +388,7 @@ namespace DeOps.Components.Link
 
             TreeListNode parent = null;
 
-            OpLink uplink = link.GetHigher(Project, false);
+            OpLink uplink = GetTreeHigher(link);
 
             if (uplink == null)
                 parent = virtualParent;
@@ -380,7 +396,14 @@ namespace DeOps.Components.Link
             else if (NodeMap.ContainsKey(uplink.DhtID))
                 parent = NodeMap[uplink.DhtID];
 
+            else if (uplink.IsLoopRoot)
+            {
+                parent = CreateNode(uplink);
+                LoadRoot((LinkNode)parent);
+            }
+
             // else branch this link is apart of is not visible in current display
+            
 
             // self is changing ensure it's visible 
             if (node.Link.DhtID == Core.LocalDhtID)
@@ -421,9 +444,11 @@ namespace DeOps.Components.Link
 
                     LinkNode oldParent = node.Parent as LinkNode;
 
-                    UnloadNode(node, visible);
-                    NodeMap.Remove(link.DhtID);
-                    node.Remove();
+                    LinkNode unload = (oldParent != null && oldParent.Link.IsLoopRoot) ? oldParent : node;
+                    
+                    // if old parent is a loop node, the loop is made obsolete by change
+                    UnloadNode(unload, visible);
+                    unload.Remove();
                 }
 
                 if (parent == null)
@@ -495,34 +520,39 @@ namespace DeOps.Components.Link
             Invalidate();
         }
 
+        private OpLink GetTreeHigher(OpLink link)
+        {
+            if (link.LoopRoot.ContainsKey(Project))
+                return link.LoopRoot[Project];
+
+            return link.GetHigher(Project, false);
+        }
+
         private void ArrangeRoots()
         {
             List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(Core.LocalDhtID, Project);
             uplinks.Add(Core.LocalDhtID);
 
+            OpLink highest = Links.GetLink(uplinks[uplinks.Count - 1]);
+            if (highest.LoopRoot.ContainsKey(Project))
+                uplinks.Add(highest.LoopRoot[Project].DhtID);
+
             List<LinkNode> makeUntrusted = new List<LinkNode>();
             List<LinkNode> makeProject = new List<LinkNode>();
-
-            int mode = 0; // 1 for project, 2 for untrusted
 
             // look for nodes to switch
             foreach (TreeListNode entry in Nodes)
             {
                 LinkNode node = entry as LinkNode;
 
-                if (entry == ProjectNode)
-                    mode = 1;
-                else if (entry == UnlinkedNode)
-                    mode = 2;
-
-
                 if (node == null) 
                     continue;
 
 
-                if(mode == 1 && !uplinks.Contains(node.Link.DhtID))
+                if(entry == ProjectNode && !uplinks.Contains(node.Link.DhtID))
                     makeUntrusted.Add(node);
-                else if(mode == 2 && uplinks.Contains(node.Link.DhtID))
+
+                else if(entry == UnlinkedNode && uplinks.Contains(node.Link.DhtID))
                     makeProject.Add(node);
             }
 
@@ -589,39 +619,6 @@ namespace DeOps.Components.Link
             }
         }
 
-        void ParentCheck(TreeListNode node)
-        {
-            if (node == null)
-                return;
-
-            if (node.GetType() != typeof(LinkNode))
-                return;
-
-            LinkNode item = (LinkNode)node;
-
-            TreeListNode newParent = null;
-            bool expand = false;
-
-            if (item.Parent == ProjectNode && !item.Link.Downlinks.ContainsKey(Project))
-                newParent = UnlinkedNode;
-
-            if (item.Parent == UnlinkedNode && item.Link.Downlinks.ContainsKey(Project))
-            {
-                newParent = ProjectNode;
-                expand = true;
-            }
-
-            if (newParent != null)
-            {
-                item.Remove();
-
-                Utilities.InsertSubNode(newParent, item);
-
-                if (expand)
-                    newParent.Expand();
-            }
-        }
-
         void LinkTree_NodeExpanding(object sender, EventArgs e)
         {
             LinkNode node = sender as LinkNode;
@@ -660,14 +657,12 @@ namespace DeOps.Components.Link
             if (visible != null && node.IsVisible())
                 visible.Add(node.Link.DhtID);
 
+            if (NodeMap.ContainsKey(node.Link.DhtID))
+                NodeMap.Remove(node.Link.DhtID);
+            
             // for each child, call unload node, then clear
             foreach (LinkNode child in node.Nodes)
-            {
-                if (NodeMap.ContainsKey(child.Link.DhtID))
-                    NodeMap.Remove(child.Link.DhtID);
-
                 UnloadNode(child, visible);
-            }
 
             // unloads children of node, not the node itself
             node.Nodes.Clear();
@@ -806,12 +801,12 @@ namespace DeOps.Components.Link
                 //if (title != "")
                 //    txt += " - " + title;
 
+                if (Link.IsLoopRoot)
+                    txt = "Trust Loop";
+
                 OpLink parent = Link.GetHigher(proj, false);
 
-                if (Link.Error != null && Link.Error != "")
-                    txt += " (Error " + Link.Error + ")";
-
-                else if (parent != null)
+                if (parent != null)
                 {
                     bool confirmed = false;
                     bool requested = false;
