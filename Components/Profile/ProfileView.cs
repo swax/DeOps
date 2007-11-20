@@ -57,7 +57,6 @@ namespace DeOps.Components.Profile
 
             List<ulong> ids = new List<ulong>();
             ids.AddRange(Links.GetUplinkIDs(CurrentDhtID, ProjectID));
-            ids.AddRange(Links.GetAdjacentIDs(CurrentDhtID, ProjectID));
 
             foreach (ulong id in ids)
                 Profiles.Research(id);

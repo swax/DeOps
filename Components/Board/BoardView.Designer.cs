@@ -300,6 +300,7 @@ namespace DeOps.Components.Board
             this.PostHeader.TabIndex = 0;
             this.PostHeader.WebBrowserShortcutsEnabled = false;
             this.PostHeader.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.PostHeader_Navigating);
+            this.PostHeader.ScriptErrorsSuppressed = true;
             // 
             // PostBody
             // 

@@ -1,7 +1,6 @@
 
 now
 	38 crits
-	simulation refinement, figure out locking needs
 	focus on starting up new networks
 	refactor components, get ready for visual/database plus think about 3rd party components
 	network demo, customization, performance tuning
@@ -20,6 +19,7 @@ Interface
 		Sorting of listviews
 		status panel needs to update as network connects network_statusupdate, trigger news as well
 		test gmt visible in status panel
+		unload tray icon on exit?
 		
 	Internal 
 		expand a little more (names associated with sessions/transfers/searches/publish)
@@ -27,17 +27,9 @@ Interface
 		create function to search through externals for type/id/project, when popping external look for existing window?
 
 	Link
-		sometimes on link changes, cannot select confirm link even though node is pending
-		encapsulate common link functions in link control, prevent other controls from directly using linkmap
 		Online - Show as currently online nodes structured into makeshift hierarchy
 			chat/voice uses this hierarchy for high/low - done so that realtime communication is not fragmented when people go offline
 		
-	Invite 
-		password protected invite file
-		invite contains singed, who invited
-		Keep deops.net file with as many ips as possible on load
-		delete invite file when new user created
-	
 	News
 		crazy refreshes when news not visible and button clicked
 		show connected / disconnected
@@ -53,11 +45,10 @@ Interface
 		storage - restore
 		mail	- forward, reply
 		board   - high, low, all
-		***plans - new, edit, now
+		plans   - new, edit, now
 		goals	- edit
 		tray	- restore, exit
-		chat	- online (shinny green circle)
-		link    - icons should be chain with arrow pointing in direction of link
+		chat	- new room
 	
 Components
 	General
@@ -69,72 +60,28 @@ Components
 		Remove references to LinkMap, use GetLink
 		when component handles exit, assert that all events are emptied of references to debug gui's not releasing event handles
 		
-	Link
-		hide script errors
-		only update tree when updated link's parent is different
-		keep selection between refreshes
-	
-		on link update
-			clear link's uplinks and uplink's downlinks of the link being updated
-			if the project roots contains the link remove it
-			if the project roots contains a trust loop that has the link as a downlink, remove the loop
-				set loop status of all nodes in loop to false
-			
-			set link's uplinks, and place pointers in uplink's downlinks
-				create temps if needed
-			if uplinks for project is none, put in root
-			if uplink leads back to self, create trust loop with all uplinks as downlinks
-				set all loop status to true for nodes in loop
-				remove all nodes in loop from project roots
-	
-		interface
-			if link update is a visible node, or if uplink is visible with subs expanded
-				freeze tree control updating
-					save visible
-					save selected
-				refresh tree root nodes
-				expand top levels
-				expand until previous visibles are visible
-				re-select node
-				unfreeze tree
-	
-			clicking on loop node itself shows order of loop
-	
-		operations
-			uplinks - contains all nodes in loop
-			downlinks - excludes nodes in loop
-			adjacent - if in loop then none
-			give/take back/accept trust
-			check that uplink/confirm/request operations can all be performed
-				warn user when operation will create a loop
-			
-		components
-			plans - inherit plans from highers in loop
-			goals - can be assigned in lowers of any branch
-			board - higher (uplinks), lower (downlinks)
-			chat - high level chat is others in loop
-			profile - show motd by all those in loop, uplinks
-			storage - auto-inherit from uplinks
-			links - getlocs/ishigher/islower, prevent looping to self
+	***handle link get focused safely
+		check if its in storage as well
+		handle get focused in IM as well
+		plans
+		board
+		chat
+		profile?
+		ensure name resoluton works, chat/IM updated when link loaded
 		
-			
-		test linking up to a subordinate works correctly - 2 areas commented out
-		allow anyone to trust anyone else
-		prevent loops by before traversing to downlink, ensure it is not an uplink as well
-		what happens when there are no roots?
-		trust loop
-			get uplinks - traverse until null, or node reached that is already an uplink id
-			details in math notebook
-			when link loaded in cache link, after it is reset
-				uplinks are traversed, and if cycle is detected, node is flagged as such
-				trust loop node created and added to project roots
+	Link
+		components
+			links   - getlocs .. check cache functions
+			chat    - high level chat is others in loop,
 
 	Location 
 		global replication
 		make persistant so status panel can display last seen, also loaded can go straight to the cache
 		permanent locations, no ttl except for global
 		might be problem with different client ids
+		can probably get rid of thread locks on location map
 		send direct connects location updates immediately so they get things like away messages
+		
 		
 		location info should probably contain latest versions for all components so 
 			for example two of the same account would sync their storage without having to specifically having to open storage
@@ -150,6 +97,117 @@ Components
 		
 	Chat 
 		Custom rooms - 
+			live high/low, command high/low rooms are persistant
+			control can query interface for active rooms
+				periodically ping members in active rooms
+			if in loop, show other members in loop, only connect to those we trust
+
+			
+				
+			link update
+				if trusting someone
+					join command/live channel
+				else
+					join untrusted channel, leave command
+					
+				if self
+					update members of all command/live
+				else
+					find command/live rooms member is part of and refresh member list
+					if link is an uplink of us or visa versa, refresh member list of those rooms
+
+			refresh room
+				updates member list
+
+			location update
+				if in channel, but not connected, connect
+
+			
+				
+			leave room
+				status received with leave status
+				disconnected from member
+			
+			invitation
+				keep track of processed invites list<room id>
+				once user decides what to do remove from list
+				ignore invite if in list
+			
+			timer
+				if room custom and no members, kill
+			
+			rooms map<uint, room> key is either unique or project ID, or untrusted ID
+				room
+					host - means invite only
+					ID
+					type high/low/untrusted/custom
+					title
+					invite contains version/room ID
+					list<ulong> members
+					ttl map<ulong, int> ttl till next ping
+					
+					active - means continually ping members
+
+			on connect 
+				send host what channels both local and host are apart of (send status)
+
+			join/leave room
+				send status update to nodes who are in the channel as well, channels must be actvie
+				if custom channel add member to channel
+				
+			
+			on session update
+				disconnected, signal leave from rooms, if no more clients connected from id
+				
+			on keep active
+				add members we're connected to
+			
+			location update
+				try re-connecting
+				
+			packets
+				invitation
+					title
+					room ID
+					invite
+					members[]
+			
+				status request
+					room type/ID
+					want member list
+					want invite
+					
+				status
+					room type/ID
+					status - joined/left
+					~members[]
+					~invite
+					recently added verified members that didnt exist in our own member list before
+					
+				message
+					room type/ID
+					string message
+					
+			interface
+				room should tell chat control what ID messages it wants
+				
+				messages
+					chat_member
+						refresh members
+						host set to higher id, if no host, then no subs
+					chat_room 
+						check which rooms exists in map for project
+						if there are more than 0 members in the rooms, show
+						update accordingly
+					chat_message
+			
+				toolbar
+					New Room
+					Send Invite
+					
+					
+					
+				
 			public room, unique ID, anyone can invite anyone else
 			pure p2p everyone connected to everyone else, rudp should have low overhead 100bytes/min max, 100 users would be 1,000/6 bps
 			use chat pings to ensure connections are in same room
@@ -159,9 +217,13 @@ Components
 			invite contains ids of other users in chat, when leaving ids and all that saved in id list
 			private requires signed key in invitation that members can verify with each other
 			put invitations in toolbar, show messagebox for first invitation, afterwards ignore if already in toolbar
-		
+			if no room exists create untrusted room, max 100
+			connected / disconnected status based on chat ping, not simply direct connect
+				broken trust loops can result in leave/join repeats
+						
+		startup client in chat view		
+		if chat not visible alert user in news of project chat activity
 		log does chat/im - setup like yahoo chat log
-		if unlinked join default chatroom with other unlinked nodes, without subs
 		on join chat, node asks other nodes for previous singed messages before specified time
 		
 	Mail 
@@ -176,8 +238,9 @@ Components
 	Board 
 		 board scope sub-levels down, auto search highers for posts that have source==target, and show if in scope
 		 attaching files
-		 posts/replies not updating quickly or at all :(
-	
+		 ***posts/replies not updating quickly or at all :(
+		 *** use high/low check buttons, not a drop down
+		 
 	Profile
 		time out loading - better searching interface use smoke color and better font, more info searching/dling/etc..
 		Search / Transfer process painfully slow in real time mode, analyze
@@ -186,8 +249,9 @@ Components
 		old plans not being deleted? seems like extra files in dir, try loading solo and updating local plan file
 		shutdown in the middle of the causing load corruption?			
 		transfer branch path when goal <-> schedule
-		probably want a custom renderer for the progress bar, default xp has it green
-
+		***probably want a custom renderer for the progress bar, default xp has it green
+		***schedule slider should respond to mouse scrolls
+		
 	Storage
 		drag into secure storage gives user option to replace what is already there, either on disk or locked
 		
@@ -243,6 +307,28 @@ Core
 			storage, plans, profile - need latest fetched data of local area
 			location data needs to be stored when user is offline for this to work
 
+	connecting
+		secret
+			prevent connection to global network
+			there needs to be stable points for invite to talk to
+			outstanding invites are accepted incoming encryption keys
+			   removing invite, removes key
+			similar to private, but contact address points directly to sender
+			file also passworded
+
+		private 
+		   Invite file contains sender's address on the global network
+			Sender stores contact info at an invite ID address on the global network
+			Opening invite file connects to global network, and finds invite ID info if it exists
+				unencrypts to get senders location info, OpID, OpID only exposed if invite still published
+			Sender contacted by invitee, people can IM, sender can choose to authorize invite
+			Authorization sends OpID to new user
+			file passworded as well
+
+		public
+			opID is embedded in link riseop://network:opid
+
+
 	store caching 
 		used when high load
 		how to keep cache entries up to date?
@@ -250,6 +336,9 @@ Core
 		requester do theh caching, or should requested auto-cache if load too high
 			auto-caching might not hit the nodes that requesting nodes would be likely to hit
 		index file hashes on network for files over 10 meg, otherwise file can be multisourced from default replicators of file
+		always get content once found from node closest to SELF, pull content away from source, ensure it doesn't get flooded
+			node publishes data (he is focal point), diseminates to adjacent peers (focal point splits in two, etc..)
+	
 
 	udp packet throttle especially for patches
 		backlog for packets, for patches, etc.. not for rudp
@@ -270,18 +359,16 @@ Core
 		refuse replication of network pieces to blacklisted, inherit blacklist from higher
 			dont not replicate to untrusted because then each id needs to be trust verified continually
 		heartbeat from top down with unique key, wont talk to 'unknown' nodes in dht without it
+		if user is ignored, chat invites are ignored as well
+		storage quotas per id to prevent flooding
 		
 Simulator
 	track bandwidth / memory / allocated objects
 	figure out why IO writes in FiresoftDemo so high, getting 2min/sec through, pretty damn good
 	record max udp burst sizes, or do packet size distribution histogram
 
-	test lockreading inside writing and visa versa
-		
-	run full speed, min/max components with updates, try to get conflicts
-	run 30 clients, track mem/client, time/client, more sim control in interface
-
-	checksigned / idtokey throw exceptions, maybe just return false or something?
+	***test lockreading inside writing and visa versa
+	***checksigned / idtokey throw exceptions, maybe just return false or something?
 	
 			
 quick
@@ -306,18 +393,23 @@ Future
     good leadership/management guide
     web based problem simulation, people assigned roles, sim starts, try to solve, katrina sim ;)
     database to storage system (for use with bug trackers, inventories, etc..)
-    network determined time that emails / messages are tagged with to prevent one computers off clock from screwing crap up
-		intergrate with location component
     detect when computer changes then prompt user for location string update
     project/op name and other settings should be taken from whoever is the root node of self, info in projectdata
     quota storage space per node, interface to show, per component storage req as well as over all memory auditing interface
-    implementing help button on all dialogs
-    lock read/write individually, let multiple reads go at same time
     voice chat in rooms / IM using skype API - can get to land lines
     load goal/board/mail archives serperately to speed load / reduce memory usage
     put all strings in resource file, mass convert using google translate, let user on run choose flag/language from upper left corner
 		autodetect lang on OS as well
-    
+	purchase through website, allows user to sign in, take their any of their project files, have it signed as registered, and returned to them
+		online signature could also include keys to unlock purchased components
+		registered version ONLY on usb key
+		master riseOp public key put on hardware key, never known, used to authenticate licensed components
+		anyone can go to website, and if they have an account secure their third party component so that only people with pro
+			version can use it
+		orgs could upgrade to fully secured, replace their free versions with secured ones, == big business for us
+		orgs would want unqiue physical keys per person, people *could* have multiple orgs on the same key, or use multiple keys
+		loosing keys also means $$ for us, piggy back off hardware sales, like apple lolz
+		
 	de-ops urls boards storages chats anything, extendable
 		peoples emails, profiles, etc.. can include <links>
 
@@ -392,6 +484,11 @@ Future
 				i trust credit company
 				business trusts credit company
 				portal process credit transaction?
+			seperate global network for portal communication, so a orgs OpID isnt exposed
+				Ops have portalID that can change, and is published on portal network
+				Sending mail for example would be bob <userID@portalID>
+					enc with portal ID, and signed with bob's user ID
+					published on portal network until picked up by bob's operation network
 		
 		commendations
 			people want to be acknowledged/rewarded for progress
@@ -403,6 +500,12 @@ Future
 		security
 			keeps dns resolved list of online contacts
 			can crawl network, list all dns
+
+		time
+			uses samples of UTC time from nodes on network to determine mean time, with certian confidence
+			alerts user if local time looks like its an outlier from the network
+			posts, changes, etc.. uses this time to tag packets instead of computers own time
+			trial versions, invite expirations, etc.. can also use network time as opposed to system time
 
 	Compartmentalization
 		sign with level key, mark with level version of key signed

@@ -1338,10 +1338,21 @@ namespace DeOps.Components.Storage
             });
         }
 
+        List<ulong> InheritIDs;
+
         internal void AutoIntegrate(bool doSave)
         {
             // only 'save' if file system in a saved state
 			// still merge with unsaved file system, just won't be made permanent till save is clicked
+
+            // we don't inherit from all nodes in loop because infinite loop could form where we continually
+            // inherit different changes, it is just asking for problems, diffs still show up for user
+            // with all changes in loop, but only auto-integrate from our own parent in the loop
+
+            InheritIDs = new List<ulong>();
+            InheritIDs.Add(Core.LocalDhtID);
+            InheritIDs.AddRange(Core.Links.GetAutoInheritIDs(Core.LocalDhtID, ProjectID));
+
 
             List<LockError> errors = new List<LockError>();
 
@@ -1360,15 +1371,11 @@ namespace DeOps.Components.Storage
             {
                 StorageFolder latestFolder = folder.Info;
 
-                List<ulong> uplinkIDs = new List<ulong>();
-                uplinkIDs.Add(Core.LocalDhtID);
-                uplinkIDs.AddRange(Core.Links.GetUplinkIDs(Core.LocalDhtID, ProjectID));
-
                 // this will process will find higher has integrated my file
                 // and highest has integrated his file, and return latest
 
                 // from self to highest
-                foreach (ulong id in uplinkIDs)
+                foreach (ulong id in InheritIDs)
                     if (folder.HigherChanges.ContainsKey(id))
                         // higherChanges consists of files that are newer than local
                         foreach (StorageFolder changeFolder in folder.HigherChanges[id])
@@ -1415,18 +1422,14 @@ namespace DeOps.Components.Storage
             StorageFile latestFile = file.Info;
             List<StorageFile> inheritIntegrated = new List<StorageFile>();
 
-            List<ulong> uplinkIDs = new List<ulong>();
-            uplinkIDs.Add(Core.LocalDhtID);
-            uplinkIDs.AddRange(Core.Links.GetUplinkIDs(Core.LocalDhtID, ProjectID));
-
-            ulong directHigher = (uplinkIDs.Count >= 2) ? uplinkIDs[1] : 0;
+            ulong directHigher = (InheritIDs.Count >= 2) ? InheritIDs[1] : 0;
 
 
             // this process will find higher has integrated my file
             // and highest has integrated his file, and return latest
             
             // from self to highest
-            foreach (ulong id in uplinkIDs)
+            foreach (ulong id in InheritIDs)
                 if (file.HigherChanges.ContainsKey(id))
                     // higherChanges consists of files that are newer than local
                     foreach (StorageFile changeFile in file.HigherChanges[id])

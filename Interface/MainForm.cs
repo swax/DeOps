@@ -402,64 +402,107 @@ namespace DeOps.Interface
             CurrentStatusID = link.DhtID;
 
             List<Tuple<string, string>> tuples = new List<Tuple<string, string>>();
-            
 
-            // name
-            string name = "<b>" + Links.GetName(link.DhtID) + "</b>";
+            string name = "";
+            string content = "";
 
-            if (link.DhtID == Core.LocalDhtID)
-                name += "  &nbsp&nbsp  (<a href='edit:local'><font color=white>edit</font></a>)";
-
-            // title
-            string title = "";
-            if (link.Title.ContainsKey(CommandTree.Project))
-                if (link.Title[CommandTree.Project] != "")
-                    title = link.Title[CommandTree.Project];
-
-            if (title != "") 
-                tuples.Add(new Tuple<string, string>("Title: ", title));
-
-            // projects
-            string projects = "";
-            foreach (uint id in link.Projects)
-                if (id != 0)
-                    projects += "<a href='project:" + id.ToString() + "'>" + Links.GetProjectName(id) + "</a>, ";
-            projects = projects.TrimEnd(new char[] { ' ', ',' });
-
-            if (projects != "") 
-                tuples.Add(new Tuple<string, string>("Projects: ", projects));
-
-            //Locations:
-            List<Tuple<string, string>> locations = new List<Tuple<string, string>>();
-            //    Home: Online
-            //    Office: Away - At Home
-            //    Mobile: Online, Local Time 2:30pm
-            //    Server: Last Seen 10/2/2007
-
-      
-            if (Core.OperationNet.Routing.Responsive())
+            // if loop root
+            if (link.IsLoopRoot)
             {
-                List<LocInfo> clients = Core.Locations.GetClients(link.DhtID);
+                name = "<b>Trust Loop</b>";
 
-                foreach (LocInfo info in clients)
-                    if (!info.Location.Global)
+                content = @"<table callpadding=3>
+                            <tr><td>
+                            <p><b>Order:</b><br>";
+
+                string order = "";
+                List<OpLink> downlinks = null;
+                if (link.Downlinks.TryGetValue(CommandTree.Project, out downlinks))
+                {
+                    string confirmed = "";
+
+                    foreach (OpLink downlink in downlinks)
                     {
-                        string status = "";
+                        confirmed = downlink.GetHigher(CommandTree.Project, true) == null ? "(unconfirmed)" : "";
 
-                        if (info.Location.Away)
-                            status += "Away " + info.Location.AwayMessage;
+                        if (downlink.DhtID == Core.LocalDhtID)
+                            order += " &nbsp&nbsp&nbsp <b>" + Links.GetName(downlink.DhtID) + "</b> <i>trusts ";
                         else
-                            status += "Online";
+                            order += " &nbsp&nbsp&nbsp " + Links.GetName(downlink.DhtID) + " <i>trusts ";
 
-                        if(info.Location.GmtOffset != System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes)
-                            status += ", Local Time " + Core.TimeNow.ToUniversalTime().AddMinutes(info.Location.GmtOffset).ToString("t");
-
-                        // last seen stuff here
-
-                        locations.Add(new Tuple<string, string>(Core.Locations.GetLocationName(link.DhtID, info.ClientID), status));
+                        order += confirmed + "</i><br>";
                     }
+
+                    order += " &nbsp&nbsp&nbsp " + Links.GetName(downlinks[0].DhtID) + "<br>";
+                }
+                content += order + 
+                            @"</p>
+                            </tr></td>
+                            </table>";
+            }
+            else
+            {
+                // name
+                name = "<b>" + Links.GetName(link.DhtID) + "</b>";
+
+                if (link.DhtID == Core.LocalDhtID)
+                    name += "  &nbsp&nbsp  (<a href='edit:local'><font color=white>edit</font></a>)";
+
+                // title
+                string title = "";
+                if (link.Title.ContainsKey(CommandTree.Project))
+                    if (link.Title[CommandTree.Project] != "")
+                        title = link.Title[CommandTree.Project];
+
+                if (title != "")
+                    tuples.Add(new Tuple<string, string>("Title: ", title));
+
+                // projects
+                string projects = "";
+                foreach (uint id in link.Projects)
+                    if (id != 0)
+                        projects += "<a href='project:" + id.ToString() + "'>" + Links.GetProjectName(id) + "</a>, ";
+                projects = projects.TrimEnd(new char[] { ' ', ',' });
+
+                if (projects != "")
+                    tuples.Add(new Tuple<string, string>("Projects: ", projects));
+
+                //Locations:
+                List<Tuple<string, string>> locations = new List<Tuple<string, string>>();
+
+                //    Home: Online
+                //    Office: Away - At Home
+                //    Mobile: Online, Local Time 2:30pm
+                //    Server: Last Seen 10/2/2007
+
+
+                if (Core.OperationNet.Routing.Responsive())
+                {
+                    List<LocInfo> clients = Core.Locations.GetClients(link.DhtID);
+
+                    foreach (LocInfo info in clients)
+                        if (!info.Location.Global)
+                        {
+                            string status = "";
+
+                            if (info.Location.Away)
+                                status += "Away " + info.Location.AwayMessage;
+                            else
+                                status += "Online";
+
+                            if (info.Location.GmtOffset != System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes)
+                                status += ", Local Time " + Core.TimeNow.ToUniversalTime().AddMinutes(info.Location.GmtOffset).ToString("t");
+
+                            // last seen stuff here
+
+                            locations.Add(new Tuple<string, string>(Core.Locations.GetLocationName(link.DhtID, info.ClientID), status));
+                        }
+                }
+
+                content = GenerateContent(tuples, locations);
             }
 
+            // display
             if (CurrentStatusMode != mode)
             {
                 CurrentStatusMode = mode;
@@ -468,14 +511,14 @@ namespace DeOps.Interface
                 StatusHtml.Append(NodePage);
 
                 StatusHtml.Replace("<?=name?>", name);
-                StatusHtml.Replace("<?=content?>", GenerateContent(tuples, locations));
+                StatusHtml.Replace("<?=content?>", content);
 
                 SetStatus(StatusHtml.ToString());
             }
             else
             {
                 StatusBrowser.Document.InvokeScript("SetElement", new String[] { "name", name });
-                StatusBrowser.Document.InvokeScript("SetElement", new String[] { "content", GenerateContent(tuples, locations ) });
+                StatusBrowser.Document.InvokeScript("SetElement", new String[] { "content", content  });
             }
         }
 
@@ -486,6 +529,9 @@ namespace DeOps.Interface
             foreach (Tuple<string, string> tuple in tuples)
                 content += "<tr><td><p><b>" + tuple.First + "</b></p></td> <td><p>" + tuple.Second + "</p></td></tr>";
 
+            if (locations == null)
+                return content + "</table>";
+
             // locations
             string ifonline = locations.Count > 0 ? "Locations" : "Offline";
 
@@ -494,9 +540,7 @@ namespace DeOps.Interface
                 content += "&nbsp&nbsp&nbsp <b>" + tuple.First + ":</b> " + tuple.Second + "<br>";
             content += "</p></td></tr>";
 
-            content += "</table>";
-
-            return content;
+            return content + "</table>";
         }
 
         private void SetStatus(string html)
@@ -725,10 +769,10 @@ namespace DeOps.Interface
 
 
             // find previous component in drop down, activate click on it
-            string previous = InternalView != null? InternalView.GetTitle(true) : "Profile";
+            string previous = InternalView != null? InternalView.GetTitle(true) : "Chat";
 
             if (!SelectComponent(previous))
-                SelectComponent("Profile");
+                SelectComponent("Chat");
 
             ResumeLayout();
         }

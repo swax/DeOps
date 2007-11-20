@@ -163,6 +163,7 @@ namespace DeOps.Components.Plan
             this.DetailsBrowser.Name = "DetailsBrowser";
             this.DetailsBrowser.Size = new System.Drawing.Size(172, 389);
             this.DetailsBrowser.TabIndex = 0;
+            this.DetailsBrowser.ScriptErrorsSuppressed = true;
             // 
             // GoalsView
             // 

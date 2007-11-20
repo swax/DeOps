@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Windows.Forms;
 
@@ -12,24 +13,28 @@ using DeOps.Components.Location;
 
 namespace DeOps.Components.IM
 {
-    internal delegate void IM_UpdateHandler(ulong dhtid, InstantMessage message);
-    internal delegate void StatusUpdateHandler(ulong dhtid, InstantMessage message);
+    internal delegate void IM_MessageHandler(ulong dhtid, InstantMessage message);
+    internal delegate void IM_StatusHandler(ulong dhtid);
 
     internal class IMControl : OpComponent
     {
         const int SessionTimeout = 10;
 
         internal OpCore Core;
+        internal LinkControl Links;
+        internal LocationControl Locations;
 
-        Dictionary<ulong, TtlObj> SessionMap = new Dictionary<ulong, TtlObj>();
-        internal ThreadedDictionary<ulong, List<InstantMessage>> MessageLog = new ThreadedDictionary<ulong, List<InstantMessage>>();
+        internal ThreadedDictionary<ulong, IMStatus> IMMap = new ThreadedDictionary<ulong, IMStatus>();
 
-        internal IM_UpdateHandler IM_Update;
+        internal IM_MessageHandler MessageUpdate;
+        internal IM_StatusHandler StatusUpdate;
 
 
         internal IMControl(OpCore core)
         {
             Core = core;
+            Links = core.Links;
+            Locations = core.Locations;
 
             Core.LoadEvent  += new LoadHandler(Core_Load);
             Core.ExitEvent += new ExitHandler(Core_Exit);
@@ -37,6 +42,7 @@ namespace DeOps.Components.IM
             
             Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
             Core.RudpControl.SessionData[ComponentID.IM] = new SessionDataHandler(Session_Data);
+            Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
         }
 
         void Core_Load()
@@ -47,7 +53,7 @@ namespace DeOps.Components.IM
 
         void Core_Timer()
         {
-            // need keep alives because we might have IM window open while other party has it closed
+            // need keep alives because someone else might have IM window open while we have it closed
 
             // send keep alives every x secs
             if (Core.TimeNow.Second % SessionTimeout == 0)
@@ -55,27 +61,32 @@ namespace DeOps.Components.IM
                 List<IM_View> views = GetViews();
 
                 foreach (IM_View view in views)
-                    if (Core.RudpControl.SessionMap.ContainsKey(view.DhtID))
-                        foreach (RudpSession session in Core.RudpControl.SessionMap[view.DhtID])
-                        {
-                            SessionMap[view.DhtID] = new TtlObj(SessionTimeout);
-                            session.SendData(ComponentID.IM, new IMKeepAlive(), true);
-                        }
+                {
+                    IMStatus status = null;
+
+                    if (IMMap.SafeTryGetValue(view.DhtID, out status))
+                        foreach(ushort client in status.TTL.Keys)
+                            if (status.TTL[client].Value > 0)
+                            {
+                                RudpSession session = Core.RudpControl.GetActiveSession(view.DhtID, client);
+
+                                if (session != null)
+                                {
+                                    status.TTL[client].Value = SessionTimeout * 2;
+                                    session.SendData(ComponentID.IM, new IMKeepAlive(), true);
+                                }
+                            }
+                }
             }
 
             // timeout sessions
-            List<ulong> removeKeys = new List<ulong>();
-
-            foreach (ulong id in SessionMap.Keys)
+            IMMap.LockReading(delegate()
             {
-                if (SessionMap[id].Ttl == 0)
-                    removeKeys.Add(id);
-                else if (SessionMap[id].Ttl > 0)
-                    SessionMap[id].Ttl--;
-            }
-
-            foreach (ulong id in removeKeys)
-                SessionMap.Remove(id);
+                foreach(IMStatus status in IMMap.Values)
+                    foreach (BoxInt ttl in status.TTL.Values)
+                        if (ttl.Value > 0)
+                            ttl.Value--;
+            });
         }
 
         //crit not thread locked/protected
@@ -83,8 +94,8 @@ namespace DeOps.Components.IM
         {
             List<IM_View> views = new List<IM_View>();
 
-            if (IM_Update != null)
-                foreach (Delegate func in IM_Update.GetInvocationList())
+            if (MessageUpdate != null)
+                foreach (Delegate func in MessageUpdate.GetInvocationList())
                     if (func.Target is IM_View)
                         views.Add((IM_View)func.Target);
 
@@ -93,7 +104,7 @@ namespace DeOps.Components.IM
 
         void Core_Exit()
         {
-            if (IM_Update != null)
+            if (MessageUpdate != null)
                 throw new Exception("IM Events not fin'd");
         }
 
@@ -133,22 +144,96 @@ namespace DeOps.Components.IM
             {
                 view = CreateView(node.GetKey());
 
-                Connect(node.GetKey());
+                Core.RunInCoreAsync(delegate() { Connect(node.GetKey()); });
             }
         }
 
         private void Connect(ulong key)
         {
-            if (Core.InvokeRequired)
+            Debug.Assert(!Core.InvokeRequired);
+
+            IMStatus status = null;
+            if(!IMMap.SafeTryGetValue(key, out status))
             {
-                Core.RunInCoreAsync(delegate() { Connect(key); });
-                return;
+                status = new IMStatus(key);
+                IMMap.SafeAdd(key, status);
             }
 
- 
             foreach (LocInfo loc in Core.Locations.GetClients(key))
                 Core.RudpControl.Connect(loc.Location);
-            
+
+            Update(status);
+        }
+
+        private void Update(IMStatus status)
+        {
+            ulong key = status.DhtID;
+
+            // connected to jonn smith @home, @work
+            // connecting to john smith
+            // disconnected from john smith
+
+            string places = "";
+
+
+            status.Connected = false;
+            status.Connecting = false;
+            status.Away = false;
+            string awayMessage = "";
+            int activeCount = 0;
+
+            foreach (RudpSession session in Core.RudpControl.GetActiveSessions(key))
+            {
+                if (session.Status == SessionStatus.Closed)
+                    continue;
+
+                status.Connecting = true;
+
+                if (session.Status == SessionStatus.Active)
+                {
+                    LocInfo info = Locations.GetLocationInfo(key, session.ClientID);
+
+                    awayMessage = "";
+                    if (info != null)
+                        if (info.Location.Away)
+                        {
+                            status.Away = true;
+                            awayMessage = " " + info.Location.AwayMessage;
+                        }
+                        else
+                            status.Connected = true;
+
+                    activeCount++;
+                    places += " @" + Locations.GetLocationName(key, session.ClientID) + awayMessage + ",";
+                }
+            }
+
+            if (status.Connected)
+            {
+                status.Text = "Connected to " + Core.Links.GetName(key);
+
+                if (activeCount > 1)
+                    status.Text += places.TrimEnd(',');
+            }
+
+            else if (status.Away)
+            {
+                status.Text = Core.Links.GetName(key) + " is Away ";
+
+                if (activeCount > 1)
+                    status.Text += places.TrimEnd(',');
+                else
+                    status.Text += awayMessage;
+            }
+
+            else if(status.Connecting)
+                status.Text = "Connecting to " + Core.Links.GetName(key);
+
+            else
+                status.Text = "Disconnected from " + Core.Links.GetName(key);
+
+
+            Core.RunInGuiThread(StatusUpdate, status.DhtID);
         }
 
         private IM_View FindView(ulong key)
@@ -179,7 +264,7 @@ namespace DeOps.Components.IM
             if (FindView(link.DhtID) == null)
                 return;
 
-            Core.RunInGuiThread(IM_Update, link.DhtID, null);
+            Core.RunInGuiThread(StatusUpdate, link.DhtID);
         }
 
         internal void Location_Update(LocationData location)
@@ -187,7 +272,13 @@ namespace DeOps.Components.IM
             if (FindView(location.KeyID) == null)
                 return;
 
+            IMStatus status = null;
+            if (!IMMap.SafeTryGetValue(location.KeyID, out status))
+                return;
+
             Core.RudpControl.Connect(location);
+
+            Update(status);
         }
 
         internal void Session_Update(RudpSession session)
@@ -195,11 +286,20 @@ namespace DeOps.Components.IM
             if (FindView(session.DhtID) == null)
                 return;
 
+            IMStatus status = null;
+            if (!IMMap.SafeTryGetValue(session.DhtID, out status))
+                return;
+
+
             if (session.Status == SessionStatus.Active)
             {
+                // needs to be set here as well be cause we don't receive a keep alive from remote host on connect
+                status.SetTTL(session.ClientID, SessionTimeout * 2);
+
                 session.SendData(ComponentID.IM, new IMKeepAlive(), true);
-                SessionMap[session.DhtID] = new TtlObj(SessionTimeout);
             }
+
+            Update(status);
         }
 
         internal void SendMessage(ulong key, string text)
@@ -210,24 +310,36 @@ namespace DeOps.Components.IM
                 return;
             }
 
-            ProcessMessage(key, new InstantMessage(Core, text, false));
+            IMStatus status = null;
+            if (!IMMap.SafeTryGetValue(key, out status))
+                return;
 
-            if (!Core.RudpControl.SessionMap.ContainsKey(key))
+            ProcessMessage(status, new InstantMessage(Core, text, false));
+
+            if(!Core.RudpControl.IsConnected(key))
             {
                 // run direct, dont log
-                Core.RunInGuiThread(IM_Update, key, new InstantMessage(Core, "Could not send message, client disconnected", true));
+                Core.RunInGuiThread(MessageUpdate, key, new InstantMessage(Core, "Could not send message, client disconnected", true));
                 return;
             }
 
             MessageData message = new MessageData(text);
 
-            if (Core.RudpControl.SessionMap.ContainsKey(key))
-                foreach (RudpSession session in Core.RudpControl.SessionMap[key])
-                    session.SendData(ComponentID.IM, message, true);
+            foreach (RudpSession session in Core.RudpControl.GetActiveSessions(key))
+                session.SendData(ComponentID.IM, message, true);
         }
 
         void Session_Data(RudpSession session, byte[] data)
         {
+            IMStatus status = null;
+            if (!IMMap.SafeTryGetValue(session.DhtID, out status))
+            {
+                status = new IMStatus(session.DhtID);
+                IMMap.SafeAdd(session.DhtID, status);
+            }
+
+            
+
             G2Header root = new G2Header(data);
 
             if (Core.Protocol.ReadPacket(root))
@@ -236,44 +348,46 @@ namespace DeOps.Components.IM
                 {
                     InstantMessage im = new InstantMessage(Core, session, MessageData.Decode(Core.Protocol, root));
 
-                    ProcessMessage(session.DhtID, im);
+                    ProcessMessage(status, im);
                 }
 
                 if (root.Name == IMPacket.Alive)
-                    SessionMap[session.DhtID] = new TtlObj(SessionTimeout * 2);
+                    status.SetTTL(session.ClientID, SessionTimeout * 2);
             }
 
         }
 
-        internal void ProcessMessage(ulong key, InstantMessage message)
+        internal void ProcessMessage(IMStatus status, InstantMessage message)
         {
             // log message - locks both dictionary and embedded list form reading
-            MessageLog.LockWriting(delegate()
-            {
-                if (!MessageLog.SafeContainsKey(key))
-                    MessageLog.SafeAdd(key,  new List<InstantMessage>());
-
-                MessageLog[key].Add(message);
-            });
+            status.MessageLog.SafeAdd(message);
 
             // update interface
             if (Core.GuiMain == null)
                 return;
 
-            IM_View view = FindView(key);
+            Update(status);
+
+            IM_View view = FindView(status.DhtID);
 
             if (view == null)
-                CreateView(key);
+                CreateView(status.DhtID);
             else
-                Core.RunInGuiThread(IM_Update, key, message);
+                Core.RunInGuiThread(MessageUpdate, status.DhtID, message);
         }
 
-        internal override void GetActiveSessions( ActiveSessions active)
+        void Session_KeepActive(Dictionary<ulong, bool> active)
         {
-            foreach(ulong id in SessionMap.Keys)
-                if (Core.RudpControl.SessionMap.ContainsKey(id))
-                    foreach (RudpSession session in Core.RudpControl.SessionMap[id])
-                        active.Add(session);
+            IMMap.LockReading(delegate()
+            {
+                foreach(IMStatus status in IMMap.Values)
+                     foreach(ushort client in status.TTL.Keys)
+                         if (status.TTL[client].Value > 0)
+                         {
+                             active[status.DhtID] = true;
+                             break;
+                         }  
+            });
         }
     }
 
@@ -305,13 +419,34 @@ namespace DeOps.Components.IM
         }
     }
 
-    internal class TtlObj
+    internal class IMStatus
     {
-        internal int Ttl;
+        internal ulong DhtID;
+        internal Dictionary<ushort, BoxInt> TTL = new Dictionary<ushort, BoxInt>();
+  
+        internal string Text = "";
+        internal bool Connected;
+        internal bool Connecting;
+        internal bool Away;
 
-        internal TtlObj(int ttl)
+        internal ThreadedList<InstantMessage> MessageLog = new ThreadedList<InstantMessage>();
+        
+        internal IMStatus(ulong id)
         {
-            Ttl = ttl;
+            DhtID = id;
         }
+
+        internal void SetTTL(ushort client, int ttl)
+        {
+            if (!TTL.ContainsKey(client))
+                TTL[client] = new BoxInt();
+
+            TTL[client].Value = ttl;
+        }
+    }
+
+    internal class BoxInt
+    {
+        internal int Value;
     }
 }

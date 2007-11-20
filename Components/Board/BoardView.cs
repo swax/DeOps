@@ -300,10 +300,6 @@ namespace DeOps.Components.Board
 
                 if (node.Selected)
                     ShowMessage(post, null);
-
-                // if post has replies, add an empty item below so it has an expand option
-                if (node.Nodes.Count == 0 && post.Replies > 0)
-                    node.Nodes.Add(new TreeListNode());
             }
 
             // reply - must be on active threads list to show
@@ -323,9 +319,20 @@ namespace DeOps.Components.Board
 
                 int parentIdent = parentPost.Ident;
 
-                if (!ActiveThreads.ContainsKey(parentIdent) || 
-                    !ThreadMap.ContainsKey(parentIdent))
+                if (!ThreadMap.ContainsKey(parentIdent))
                     return;
+
+                // if post has replies, add an empty item below so it has an expand option
+                if(!ActiveThreads.ContainsKey(parentIdent))
+                {
+                    PostViewNode paretnNode = ThreadMap[parentIdent];
+
+                    if (paretnNode.Nodes.Count == 0)
+                        paretnNode.Nodes.Add(new TreeListNode());
+
+                    PostView.Invalidate();
+                    return;
+                }
 
                 PostViewNode parentNode = ThreadMap[parentIdent];
 

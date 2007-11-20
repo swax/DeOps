@@ -107,11 +107,6 @@ namespace DeOps.Components
         {
             return null;
         }
-
-        internal virtual void GetActiveSessions( ActiveSessions active)
-        {
-
-        }
     }
 
     internal class DataPacket

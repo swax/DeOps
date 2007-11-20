@@ -121,28 +121,40 @@ namespace DeOps.Components.Plan
             // draw higher plans    
             BlockAreas.Clear();
             GoalAreas.Clear();
-            
+
+
+            Uplinks = View.Core.Links.GetUnconfirmedUplinkIDs(DhtID, View.ProjectID);
+
+            // upnodes just used for scope calc now
             List<PlanNode> upnodes = new List<PlanNode>();
             PlanNode nextNode = Node;
 
             while (nextNode.Parent.GetType() == typeof(PlanNode))
             {
                 nextNode = (PlanNode) nextNode.Parent;
-                Uplinks.Add(nextNode.Link.DhtID);
                 upnodes.Add(nextNode);
             }
 
             upnodes.Reverse();
+
+
+            // draw plans for each node above in the current block layered on top of one another
+            // if we want to change to loop doesnt inherit other loop member's plans, replace foreach uplinks with upnodes
+            // not obvious behaviour
+
             int level = 0;
-            
-            foreach (PlanNode upnode in upnodes)
+
+            //foreach (ulong uplink in Uplinks)
+            foreach (PlanNode node in upnodes)
             {
-                foreach (PlanBlock block in GetBlocks(upnode.Link.DhtID))
+                ulong uplink = node.Link.DhtID;
+
+                foreach (PlanBlock block in GetBlocks(uplink))
                     // scope -1 everyone or current level 0 highest + scope is >= than current node
                     if ((block.Scope == -1 || (level + block.Scope >= upnodes.Count))
                         && BlockinRange(block, ref tempRect))
                     {
-                        buffer.FillRectangle(GetMask(upnode.Link.DhtID, true), tempRect);
+                        buffer.FillRectangle(GetMask(uplink, true), tempRect);
                         BlockAreas.Add(new BlockArea(tempRect, block, level, false));
                     }
 
@@ -207,11 +219,14 @@ namespace DeOps.Components.Plan
                 // color goal bars solid red / blue / gray
                 // cache strings, draw after goals
 
-                upnodes.Add(Node); // add self to scan
+                //Uplinks.Add(Node.Link.DhtID); // add self to scan
+                upnodes.Add(Node);
 
-                foreach (PlanNode upnode in upnodes)
+                //foreach (ulong dhtid in Uplinks)
+                foreach (PlanNode node in upnodes)
                 {
-                    OpPlan upPlan = View.Plans.GetPlan(upnode.Link.DhtID, true);
+                    ulong dhtid = node.Link.DhtID;
+                    OpPlan upPlan = View.Plans.GetPlan(dhtid, true);
 
                     if (upPlan != null)
                         if (upPlan.GoalMap.ContainsKey(View.SelectedGoalID))
@@ -631,19 +646,18 @@ namespace DeOps.Components.Plan
                     text.Append(indent);
                     text.Append(area.Block.Title);
 
-                    RichTextBox rich = new RichTextBox();
-                    rich.Rtf = area.Block.Description;
+                    string description = area.Block.Description;
 
-                    if (rich.Text != "")
+                    if (description != "")
                     {
                         text.Append(" - ");
 
-                        rich.Text = rich.Text.Replace('\n', ' ');
+                        description = description.Replace("\r\n", " ");
 
-                        if (rich.Text.Length > 25)
-                            text.Append(rich.Text.Substring(0, 25) + "...");
+                        if (description.Length > 25)
+                            text.Append(description.Substring(0, 25) + "...");
                         else
-                            text.Append(rich.Text);
+                            text.Append(description);
                     }
 
                     text.Append("\n");

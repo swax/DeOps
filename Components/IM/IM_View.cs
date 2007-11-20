@@ -44,8 +44,8 @@ namespace DeOps.Components.IM
             UpdateName();
             
             // do here so window can be found and multiples not created for the same user
-            IM.IM_Update += new IM_UpdateHandler(IM_MessageUpdate);
-            Locations.GuiUpdate += new LocationGuiUpdateHandler(Location_Update);
+            IM.MessageUpdate += new IM_MessageHandler(IM_MessageUpdate);
+            IM.StatusUpdate += new IM_StatusHandler(IM_StatusUpdate);
 
             ContextMenu menu = new ContextMenu();
             TimestampMenu = new MenuItem("Timestamps", new EventHandler(Menu_Timestamps));
@@ -62,33 +62,21 @@ namespace DeOps.Components.IM
 
         internal override void Init()
         {
-            Links.LinkUpdate += new LinkUpdateHandler(Links_LinkUpdate);
             InputControl.SendMessage += new TextInput.SendMessageHandler(InputControl_SendMessage);
 
-            Core.DCClientsUpdate += new DCClientsHandler(Core_DCClientsUpdate);
-            Core.RefreshDCClients(DhtID);
-
-            CheckBackColor();
-
-           
             InputControl.Focus();
             InputControl.InputBox.Focus();
 
-            DisplayLog();
-            
+            IM_StatusUpdate(DhtID);
+            DisplayLog();      
         }
 
         internal override bool Fin()
         {
             InputControl.SendMessage -= new TextInput.SendMessageHandler(InputControl_SendMessage);
 
-
-            IM.IM_Update -= new IM_UpdateHandler(IM_MessageUpdate);
-            Core.DCClientsUpdate -= new DCClientsHandler(Core_DCClientsUpdate);
-
-            Links.LinkUpdate -= new LinkUpdateHandler(Links_LinkUpdate);
-            Locations.GuiUpdate -= new LocationGuiUpdateHandler(Location_Update);
-
+            IM.MessageUpdate -= new IM_MessageHandler(IM_MessageUpdate);
+            IM.StatusUpdate -= new IM_StatusHandler(IM_StatusUpdate);
 
             return true;
         }
@@ -111,28 +99,18 @@ namespace DeOps.Components.IM
             return IMRes.Icon;
         }
 
-        void Links_LinkUpdate(OpLink link)
-        {
-            CheckBackColor();
-            UpdateName();
-        }
-
-        void Location_Update(ulong key)
-        {
-            // away msg etc.. may have been modified
-            if(key == DhtID)
-                Core.RefreshDCClients(key);
-        }
-
         private void DisplayLog()
         {
             MessageTextBox.Clear();
 
-            IM.MessageLog.LockReading(delegate()
+            IMStatus status = null;
+            if (!IM.IMMap.SafeTryGetValue(DhtID, out status))
+                return;
+
+            status.MessageLog.LockReading(delegate()
             {
-                if (IM.MessageLog.ContainsKey(DhtID))
-                    foreach (InstantMessage message in IM.MessageLog[DhtID])
-                        IM_MessageUpdate(DhtID, message);
+                foreach (InstantMessage message in status.MessageLog)
+                    IM_MessageUpdate(DhtID, message);
             });
         }
 
@@ -155,89 +133,39 @@ namespace DeOps.Components.IM
             IM.SendMessage(DhtID, message);
         }
 
-        internal void Core_DCClientsUpdate(ulong id, List<Tuple<ushort, SessionStatus>> clients)
+        void IM_StatusUpdate(ulong id)
         {
             if (id != DhtID)
                 return;
 
-            
-            // connected to jonn smith @home, @work
+            CheckBackColor();
+            UpdateName();
 
-            // connecting to john smith
-
-            // Locations.ClientCount(DhtID) > 1
-
-            // disconnected from john smith
-            if (clients.Count == 0)
-            {
-                StatusImage.Image = IMRes.redled;
-                StatusLabel.Text = "Disconnected from " + Core.Links.GetName(DhtID);
+            IMStatus status = null;
+            if (!IM.IMMap.SafeTryGetValue(id, out status))
                 return;
-            }
 
-            string places = "";
-            
+            // connected to jonn smith @home, @work
+            // connecting to john smith
+            // disconnected from john smith
 
-            bool connected = false;
-            bool away = false;
-            string awayMessage = "";
+            StatusLabel.Text = status.Text;
 
-            foreach (Tuple<ushort, SessionStatus> client in clients)
-                if (client.Second == SessionStatus.Active)
-                {
-                    LocInfo info = Locations.GetLocationInfo(id, client.First);
-
-                    awayMessage = "";
-                    if (info != null)
-                        if (info.Location.Away)
-                        {
-                            away = true;
-                            awayMessage = " " + info.Location.AwayMessage;
-                        }
-                        else
-                            connected = true;
-
-                    places += " @" + Locations.GetLocationName(DhtID, client.First) + awayMessage + ",";
-                }
-
-            if (connected)
-            {
+            if (status.Connected)
                 StatusImage.Image = IMRes.greenled;
-                StatusLabel.Text = "Connected to " + Core.Links.GetName(DhtID);
-
-                if (Locations.ClientCount(DhtID) > 1)
-                    StatusLabel.Text += places.TrimEnd(',');
-            }
-
-            else if (away)
-            {
+            else if (status.Away)
                 StatusImage.Image = IMRes.yellowled;
-                StatusLabel.Text = Core.Links.GetName(DhtID) + " is Away ";
-
-                if (Locations.ClientCount(DhtID) > 1)
-                    StatusLabel.Text += places.TrimEnd(',');
-                else
-                    StatusLabel.Text += awayMessage;
-            }
-
+            else if (status.Connecting)
+                StatusImage.Image = IMRes.yellowled;
             else
-            {
-                StatusImage.Image = IMRes.yellowled;
-                StatusLabel.Text = "Connecting to " + Core.Links.GetName(DhtID);
-            }
+                StatusImage.Image = IMRes.redled;
+
         }
 
         internal void IM_MessageUpdate(ulong dhtid, InstantMessage message)
         {
             if (dhtid != DhtID)
                 return;
-
-            if (message == null)
-            {
-                CheckBackColor();
-                UpdateName();
-                return;
-            }
 
             int oldStart  = MessageTextBox.SelectionStart;
             int oldLength = MessageTextBox.SelectionLength;
@@ -275,8 +203,8 @@ namespace DeOps.Components.IM
             }
 
             string location = "";
-            if (!message.System && Locations.ClientCount(DhtID) > 1)
-                location = " @" + Locations.GetLocationName(DhtID, message.ClientID);
+            if (!message.System && Locations.ClientCount(message.Source) > 1)
+                location = " @" + Locations.GetLocationName(message.Source, message.ClientID);
 
 
             if (!message.System)

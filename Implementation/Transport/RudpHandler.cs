@@ -10,6 +10,7 @@ namespace DeOps.Implementation.Transport
 {
     internal delegate void SessionUpdateHandler(RudpSession session);
     internal delegate void SessionDataHandler(RudpSession session, byte[] data);
+    internal delegate void KeepActiveHandler(Dictionary<ulong, bool> active);
 
 
     internal class RudpHandler
@@ -25,7 +26,7 @@ namespace DeOps.Implementation.Transport
 
         internal SessionUpdateHandler SessionUpdate;
         internal Dictionary<ushort,SessionDataHandler> SessionData = new Dictionary<ushort,SessionDataHandler>();
-
+        internal KeepActiveHandler KeepActive;
 
         internal RudpHandler(OpCore core)
         {
@@ -63,15 +64,17 @@ namespace DeOps.Implementation.Transport
             if (Core.TimeNow.Second % 10 != 0)
                 return;
 
-            ActiveSessions active = new ActiveSessions();
+            Dictionary<ulong, bool> active = new Dictionary<ulong, bool>();
 
-            foreach (OpComponent component in Core.Components.Values)
-                component.GetActiveSessions( active);
+            if (KeepActive != null)
+                foreach (KeepActiveHandler handler in KeepActive.GetInvocationList())
+                    handler.Invoke(active);
 
-            foreach(List<RudpSession> list in SessionMap.Values)
-                foreach(RudpSession session in list)
-                    if(session.Status == SessionStatus.Active && !active.Contains(session))
-                        session.Send_Close("Not Active");
+            foreach(ulong key in SessionMap.Keys)
+                if(!active.ContainsKey(key))
+                    foreach (RudpSession session in SessionMap[key])
+                        if(session.Status == SessionStatus.Active)
+                            session.Send_Close("Not Active");
 
         }
 
@@ -97,37 +100,46 @@ namespace DeOps.Implementation.Transport
             session.Connect(); 
         }
 
-        internal RudpSession GetSession(LocationData location)
+        internal RudpSession GetActiveSession(LocationData location)
         {
-            if (SessionMap.ContainsKey(location.KeyID))
-                foreach (RudpSession session in SessionMap[location.KeyID])
-                    if (session.ClientID == location.Source.ClientID)
-                        return session;
+            return GetActiveSession(location.KeyID, location.Source.ClientID);
+        }
+
+        internal RudpSession GetActiveSession(ulong key, ushort client)
+        {
+            foreach (RudpSession session in GetActiveSessions(key))
+                if (session.ClientID == client)
+                    return session;
 
             return null;
         }
 
+        internal List<RudpSession> GetActiveSessions(ulong key, bool onlyActive)
+        {
+            List<RudpSession> sessions = new List<RudpSession>();
+
+            if (SessionMap.ContainsKey(key))
+                foreach (RudpSession session in SessionMap[key])
+                    if (!onlyActive || session.Status == SessionStatus.Active)
+                        sessions.Add(session);
+
+            return sessions;
+        }
+
+        internal List<RudpSession> GetActiveSessions(ulong key)
+        {
+            return GetActiveSessions(key, true);
+        }
+
         internal bool IsConnected(LocationData location)
         {
-            RudpSession session = GetSession(location);
-
-            if (session != null)
-                if (session.Status == SessionStatus.Active)
-                    return true;
-
-            return false;
+            return ( GetActiveSession(location) != null );
         }
 
         internal bool IsConnected(ulong id)
         {
-            if (SessionMap.ContainsKey(id))
-                foreach (RudpSession session in SessionMap[id])
-                    if (session.Status == SessionStatus.Active)
-                        return true;
-
-            return false;
+            return (GetActiveSessions(id).Count > 0);
         }
-
     }
 
     internal class ActiveSessions

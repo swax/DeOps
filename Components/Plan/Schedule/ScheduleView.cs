@@ -280,6 +280,17 @@ namespace DeOps.Components.Plan
         {
             PlanStructure.BeginUpdate();
 
+
+            // save selected
+            PlanNode selected = GetSelected();
+
+            // save visible while unloading
+            List<ulong> visible = new List<ulong>();
+            foreach (TreeListNode node in PlanStructure.Nodes)
+                if (node.GetType() == typeof(PlanNode))
+                    UnloadNode((PlanNode)node, visible);
+
+
             NodeMap.Clear();
             PlanStructure.Nodes.Clear();
 
@@ -288,6 +299,7 @@ namespace DeOps.Components.Plan
             List<OpLink> roots = null;
             if (Links.ProjectRoots.SafeTryGetValue(ProjectID, out roots))
                 foreach (OpLink root in roots)
+                {
                     if (Uplinks.Contains(root.DhtID))
                     {
                         PlanNode node = CreateNode(root);
@@ -296,10 +308,47 @@ namespace DeOps.Components.Plan
 
                         LoadNode(node);
 
-                        PlanStructure.Nodes.Add(node);
+                        Utilities.InsertSubNode(PlanStructure.virtualParent, node);
 
                         ExpandPath(node, Uplinks);
                     }
+
+                    if (root.IsLoopRoot && 
+                        root.Downlinks.ContainsKey(ProjectID) && 
+                        root.Downlinks[ProjectID].Count > 0 && 
+                        Uplinks.Contains(root.Downlinks[ProjectID][0].DhtID))
+                    {
+                        foreach(OpLink downlink in root.Downlinks[ProjectID])
+                            if (!root.IsLoopedTo(downlink, ProjectID))
+                            {
+                                PlanNode node = CreateNode(downlink);
+
+                                Plans.Research(downlink.DhtID);
+
+                                LoadNode(node);
+
+                                Utilities.InsertSubNode(PlanStructure.virtualParent, node);
+
+                                ExpandPath(node, Uplinks);
+                            }
+                    }
+                }
+
+            // restore visible
+            foreach (ulong id in visible)
+                foreach (TreeListNode node in PlanStructure.Nodes)
+                    if (node.GetType() == typeof(PlanNode))
+                    {
+                        List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(id, ProjectID);
+                        uplinks.Add(id);
+                        VisiblePath((PlanNode)node, uplinks);
+                    }
+
+            // restore selected
+            if (selected != null)
+                if (NodeMap.ContainsKey(selected.Link.DhtID))
+                    PlanStructure.Select(NodeMap[selected.Link.DhtID]);
+
 
             PlanStructure.EndUpdate();
         }
@@ -357,7 +406,7 @@ namespace DeOps.Components.Plan
 
         void Links_Update(ulong key)
         {
-            // must be loaded and pertaining to our current project to display
+            // copied from linkTree's source
             OpLink link = Links.GetLink(key);
 
             if (link == null)
@@ -376,7 +425,40 @@ namespace DeOps.Components.Plan
                 return;
             }
 
+            PlanNode node = null;
 
+            if (NodeMap.ContainsKey(key))
+                node = NodeMap[key];
+
+            TreeListNode parent = null;
+            OpLink uplink = GetTreeHigher(link);
+
+            if (uplink == null)
+                parent = PlanStructure.virtualParent;
+
+            else if (NodeMap.ContainsKey(uplink.DhtID))
+                parent = NodeMap[uplink.DhtID];
+
+            else if (uplink.IsLoopRoot)
+                parent = new TreeListNode(); // ensures that tree is refreshed
+
+            // if nodes status unchanged
+            if (node != null && parent != null && node.Parent == parent)
+            {
+                node.UpdateName();
+                Invalidate();
+                return;
+            }
+
+            // only if parent is visible
+            if (parent != null)
+            {
+                RefreshUplinks();
+                RefreshStructure();
+            }
+            
+            ////////////////////////////////////////////////////////////////////
+            /*
             // update uplinks
             if (key == DhtID || Uplinks.Contains(key))
                 RefreshUplinks();
@@ -485,14 +567,25 @@ namespace DeOps.Components.Plan
             node.UpdateName();
 
 
-            node.Selected = selected;
+            node.Selected = selected;*/
         }
+
+        private OpLink GetTreeHigher(OpLink link)
+        {
+            if (link.LoopRoot.ContainsKey(ProjectID))
+                return link.LoopRoot[ProjectID];
+
+            return link.GetHigher(ProjectID, false);
+        }
+
 
         private void RefreshUplinks()
         {
             Uplinks.Clear();
             Uplinks.Add(DhtID);
-            Uplinks.AddRange(Links.GetUplinkIDs(DhtID, ProjectID));
+            Uplinks.AddRange(Links.GetUnconfirmedUplinkIDs(DhtID, ProjectID));
+
+            // we show unconfirmed highers, but not unconfirmed lowers
         }
 
         private void VisiblePath(PlanNode node, List<ulong> path)

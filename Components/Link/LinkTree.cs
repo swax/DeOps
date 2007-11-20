@@ -70,19 +70,18 @@ namespace DeOps.Components.Link
             Links.GetFocused -= new LinkGetFocusedHandler(Links_GetFocused);
         }
 
-        private void SetupOperationTree()
+        private void RefreshOperationTree()
         {
             BeginUpdate();
-
-            // save visible
-            List<ulong> visible = new List<ulong>();
-            foreach (TreeListNode node in Nodes)
-                if (node.GetType() == typeof(LinkNode))
-                    UnloadNode((LinkNode)node, visible);
 
             // save selected
             LinkNode selected = GetSelected();
 
+            // save visible while unloading
+            List<ulong> visible = new List<ulong>();
+            foreach (TreeListNode node in Nodes)
+                if (node.GetType() == typeof(LinkNode))
+                    UnloadNode((LinkNode)node, visible);
 
             NodeMap.Clear();
             Nodes.Clear();
@@ -151,9 +150,9 @@ namespace DeOps.Components.Link
                     }
             
             // restore selected
-            if(selected != null)
-                if(NodeMap.ContainsKey(selected.Link.DhtID))
-                    NodeMap[selected.Link.DhtID].Selected = true;
+            if (selected != null)
+                if (NodeMap.ContainsKey(selected.Link.DhtID))
+                    Select(NodeMap[selected.Link.DhtID]);
 
             EndUpdate();
         }
@@ -207,7 +206,10 @@ namespace DeOps.Components.Link
                             continue;
                         }
 
-                        Utilities.InsertSubNode(node, CreateNode(link));
+                        //if(node.Link.IsLoopRoot)
+                        //    node.Nodes.Insert(0, CreateNode(link));
+                        //else
+                            Utilities.InsertSubNode(node, CreateNode(link));
                     }
         }
 
@@ -368,18 +370,48 @@ namespace DeOps.Components.Link
 
             LinkNode node = null;
 
-            if (NodeMap.ContainsKey(key))
-                node = NodeMap[key];
-            else
-                node = new LinkNode(link, this, TreeMode);
-
-
             if (TreeMode == CommandTreeMode.Operation)
-                SetupOperationTree();
-                //UpdateOperation(node);
+            {
+                if (NodeMap.ContainsKey(key))
+                    node = NodeMap[key];
+
+                TreeListNode parent = null;
+                OpLink uplink = GetTreeHigher(link);
+
+                if (uplink == null)
+                    parent = virtualParent;
+
+                else if (NodeMap.ContainsKey(uplink.DhtID))
+                    parent = NodeMap[uplink.DhtID];
+
+                else if (uplink.IsLoopRoot)
+                    parent = new TreeListNode(); // ensures that tree is refreshed
+
+                // if nodes status unchanged
+                if (node != null && parent != null && node.Parent == parent)
+                {
+                    node.UpdateName(CommandTreeMode.Operation, Project);
+                    Invalidate();
+                    return;
+                }
+
+                // only if parent is visible
+                if(parent != null)
+                    RefreshOperationTree();
+            }
 
             else if (TreeMode == CommandTreeMode.Online)
+            {
+                
+
+                if (NodeMap.ContainsKey(key))
+                    node = NodeMap[key];
+                else
+                    node = new LinkNode(link, this, TreeMode);
+
+
                 UpdateOnline(node);
+            }
         }
 
         private void UpdateOperation(LinkNode node)
@@ -697,7 +729,7 @@ namespace DeOps.Components.Link
                
             TreeMode = CommandTreeMode.Operation;
             Project = project;
-            SetupOperationTree();
+            RefreshOperationTree();
 
             if (item != null && NodeMap.ContainsKey(item.Link.DhtID))
                 NodeMap[item.Link.DhtID].Selected = true;
@@ -747,7 +779,8 @@ namespace DeOps.Components.Link
 
             foreach (TreeListNode node in SelectedNodes)
                 if (node.GetType() == typeof(LinkNode))
-                    selected.Add(((LinkNode)node).Link.DhtID);
+                    if( !((LinkNode)node).Link.IsLoopRoot )
+                        selected.Add(((LinkNode)node).Link.DhtID);
 
             return selected;
         }
@@ -822,8 +855,12 @@ namespace DeOps.Components.Link
 
                     if (confirmed)
                     { }
+                    else if (requested && parent.DhtID == Links.Core.LocalDhtID)
+                        txt += " (Accept Trust?)";
                     else if (requested)
-                        txt += " (Trust Pending)";
+                        txt += " (Trust Requested)";
+                    else if(parent.DhtID == Links.Core.LocalDhtID)
+                        txt += " (Trust Denied)";
                     else
                         txt += " (Trust Unconfirmed)";
                 }

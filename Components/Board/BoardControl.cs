@@ -1094,22 +1094,32 @@ namespace DeOps.Components.Board
                 return targets;
 
 
-            // get parent and children of parent
+            // higher
             if (scope != ScopeType.Low)
             {
-                OpLink parent = link.GetHigher(project, true);
-
-                if (parent != null)
+                // if we're in loop, get our 'adjacents' who are really uplinks
+                if (link.LoopRoot.ContainsKey(project))
                 {
-                    targets.Add(parent.DhtID);
+                    targets.AddRange( Links.GetUplinkIDs(id, project) );
+                }
 
-                    targets.AddRange(Links.GetDownlinkIDs(parent.DhtID, project, 1));
+                // get parent and children of parent
+                else
+                {
+                    OpLink parent = link.GetHigher(project, true);
 
-                    targets.Remove(id); // remove self
+                    if (parent != null)
+                    {
+                        targets.Add(parent.DhtID);
+
+                        targets.AddRange(Links.GetDownlinkIDs(parent.DhtID, project, 1));
+
+                        targets.Remove(id); // remove self
+                    }
                 }
             }
 
-            // get children of self
+            // lower - get children of self
             if (scope != ScopeType.High)
                 targets.AddRange(Links.GetDownlinkIDs(id, project, 1));
 

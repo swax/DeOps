@@ -80,6 +80,7 @@ namespace DeOps.Components.Plan
             List<ulong> uplinks = Links.GetUplinkIDs(View.DhtID, View.ProjectID);
             uplinks.Add(View.DhtID);
 
+            // show all branches
             if (!MineOnly.Checked)
             {
                 GoalNode root = CreateNode(Head);
@@ -88,7 +89,9 @@ namespace DeOps.Components.Plan
 
                 ExpandPath(root, uplinks);
             }
-            else
+
+            // show only our branch
+            else if(Head != null)
             {
                 foreach (ulong id in uplinks)
                 {

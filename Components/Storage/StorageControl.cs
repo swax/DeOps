@@ -122,7 +122,7 @@ namespace DeOps.Components.Storage
                 Working[project] = new WorkingStorage(this, project);
 
                 bool doSave = false;
-                foreach (ulong higher in Links.GetUplinkIDs(Core.LocalDhtID, project))
+                foreach (ulong higher in Links.GetAutoInheritIDs(Core.LocalDhtID, project))
                     if(Working[project].RefreshHigherChanges(higher))
                         doSave = true ;
 
@@ -626,7 +626,10 @@ namespace DeOps.Components.Storage
                 Links.ProjectRoots.LockReading(delegate()
                 {
                     foreach (uint project in Links.ProjectRoots.Keys)
-                        if (Core.LocalDhtID == newStorage.DhtID || Links.IsHigher(newStorage.DhtID, project))
+                    {
+                        List<ulong> inheritIDs = Links.GetAutoInheritIDs(Core.LocalDhtID, project);
+
+                        if (Core.LocalDhtID == newStorage.DhtID || inheritIDs.Contains(newStorage.DhtID))
                             // doesnt get called on startup because working not initialized before headers are loaded
                             if (Working.ContainsKey(project))
                             {
@@ -635,6 +638,7 @@ namespace DeOps.Components.Storage
                                 if (!Core.Loading && !SavingLocal)
                                     Working[project].AutoIntegrate(doSave);
                             }
+                    }
                 });
 
                 // update subs
@@ -682,7 +686,7 @@ namespace DeOps.Components.Storage
                 {
                     working.RemoveAllHigherChanges();
 
-                    foreach (ulong uplink in Links.GetUplinkIDs(Core.LocalDhtID, working.ProjectID))
+                    foreach (ulong uplink in Links.GetAutoInheritIDs(Core.LocalDhtID, working.ProjectID))
                         working.RefreshHigherChanges(uplink);
                 }
         }
@@ -1675,7 +1679,7 @@ namespace DeOps.Components.Storage
 
         internal List<ulong> GetHigherRegion(ulong id, uint project)
         {
-            List<ulong> highers = Links.GetUplinkIDs(id, project);
+            List<ulong> highers = Links.GetUplinkIDs(id, project); // works for loops
 
             highers.AddRange(Links.GetAdjacentIDs(id, project));
 

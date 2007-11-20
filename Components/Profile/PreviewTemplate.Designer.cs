@@ -44,6 +44,7 @@ namespace DeOps.Components.Profile
             this.Browser.Size = new System.Drawing.Size(427, 466);
             this.Browser.TabIndex = 0;
             this.Browser.WebBrowserShortcutsEnabled = false;
+            this.Browser.ScriptErrorsSuppressed = true;
             // 
             // PreviewTemplate
             // 

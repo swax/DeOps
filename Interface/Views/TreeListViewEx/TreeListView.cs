@@ -714,6 +714,12 @@ namespace DeOps.Interface.TLVex
 			#endregion
 		}
 
+        internal void Select(TreeListNode node)
+        {
+            node.Selected = true;
+            node.Focused = true;
+        }
+
 		protected override void OnKeyUp(KeyEventArgs e)
 		{
 			base.OnKeyUp(e);

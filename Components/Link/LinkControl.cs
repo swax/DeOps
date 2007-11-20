@@ -178,9 +178,15 @@ namespace DeOps.Components.Link
                 if (LocalLink.Uplink.ContainsKey(project) && LocalLink.Uplink[project] == uplink)
                     throw new Exception("Already Trusting " + GetName(key));
 
-                //crit check for loop
-                //if (LocalLink.SearchBranch(proj, uplink))
-                //    throw new Exception("Cannot uplink to a downlinked node");
+                //check for loop
+                if(IsHigher(uplink.DhtID, Core.LocalDhtID, project, false))
+                {
+                    string who = GetName(uplink.DhtID);
+                    string message = "Trusting " + who + " will create a loop. Is this your intention?";
+
+                    if (MessageBox.Show(Core.GuiMain, message, "Loop Warning", MessageBoxButtons.YesNo) == DialogResult.No)
+                        return;
+                }
 
                 LocalLink.AddProject(project);
                 LocalLink.ResetUplink(project);
@@ -1098,7 +1104,7 @@ namespace DeOps.Components.Link
                         catch { }
                 }
 
-                // clean roots, if link has loopID, remove loop node entirely
+                // clean roots, if link has loopID, remove loop node entirely, it will be recreated if needed later
                 ProjectRoots.LockReading(delegate()
                 {
                     foreach (uint project in ProjectRoots.Keys)
@@ -1183,6 +1189,7 @@ namespace DeOps.Components.Link
                             OpLink member = GetLink(uplink);
                             member.LoopRoot[project] = loop;
                             loop.Downlinks[project].Add(member);
+                            loop.Confirmed[project].Add(member.DhtID); //needed for getlowers
                         }
 
                         AddRoot(project, loop);
@@ -1540,20 +1547,10 @@ namespace DeOps.Components.Link
 
         internal bool IsLower(ulong localID, ulong lowerID, uint project)
         {
-            OpLink lower = GetLink(lowerID);
+            List<ulong> uplinks = GetUplinkIDs(lowerID, project, true);
 
-            if (lower == null)
-                return false; 
-
-            OpLink uplink = lower.GetHigher(project, true);
-
-            while (uplink != null)
-            {
-                if (uplink.DhtID == localID)
-                    return true;
-
-                uplink = uplink.GetHigher(project, true);
-            }
+            if (uplinks.Contains(localID))
+                return true;
 
             return false;
         }
@@ -1615,6 +1612,32 @@ namespace DeOps.Components.Link
                 list.Add(uplink.DhtID);
 
                 uplink = uplink.GetHigher(project, confirmed);
+            }
+
+            return list;
+        }
+
+        internal List<ulong> GetAutoInheritIDs(ulong local, uint project)
+        {
+            // get uplinks from local, including first id in loop, but no more
+
+            List<ulong> list = new List<ulong>();
+
+            OpLink link = GetLink(local);
+
+            if (link == null || link.LoopRoot.ContainsKey(project))
+                return list;
+
+            OpLink uplink = link.GetHigher(project, true);
+
+            while (uplink != null)
+            {
+                list.Add(uplink.DhtID);
+
+                uplink = uplink.GetHigher(project, true);
+
+                if (uplink != null && uplink.LoopRoot.ContainsKey(project))
+                    return list;
             }
 
             return list;
@@ -1714,14 +1737,9 @@ namespace DeOps.Components.Link
 
         internal bool IsHigherDirect(ulong id, uint project)
         {
-            OpLink link = GetLink(id);
+            OpLink uplink = LocalLink.GetHigher(project, true);
 
-            if (link == null)
-                return false;
-
-            OpLink uplink = link.GetHigher(project, true);
-
-            if (uplink == null || link.IsLoopedTo(uplink, project))
+            if (uplink == null || LocalLink.IsLoopedTo(uplink, project))
                 return false;
 
             return uplink.DhtID == id;
@@ -1729,7 +1747,8 @@ namespace DeOps.Components.Link
 
         internal bool IsInScope(Dictionary<ulong, short> scope, ulong testID, uint project)
         {
-            List<ulong> uplinks = GetUplinkIDs(testID, project);
+            // get inherit ids because scope ranges dont work in loops
+            List<ulong> uplinks = GetAutoInheritIDs(testID, project);
 
             
             // loop through all the scope permissions
@@ -1767,6 +1786,21 @@ namespace DeOps.Components.Link
         }
 
 
+
+        /*internal OpLink GetRoot(ulong id, uint project)
+        {
+            OpLink uplink = GetLink(id);
+
+            while (uplink != null)
+            {
+                if (uplink.LoopRoot.ContainsKey(project))
+                    return uplink.LoopRoot[project];
+
+                uplink = uplink.GetHigher(project, true);
+            }
+
+            return uplink;
+        }*/
     }
 
 
@@ -1945,7 +1979,7 @@ namespace DeOps.Components.Link
              if (Downlinks.ContainsKey(project))
                  if(!confirmed || Confirmed.ContainsKey(project))
                     foreach (OpLink downlink in Downlinks[project])
-                        if(!IsLoopedTo(downlink, project))
+                        if(IsLoopRoot || !IsLoopedTo(downlink, project)) // chat uses getlowers on looproot
                             if (!confirmed || Confirmed[project].Contains(downlink.DhtID))
                                 lowers.Add(downlink);
 

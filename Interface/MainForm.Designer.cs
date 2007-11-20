@@ -207,6 +207,7 @@ namespace DeOps.Interface
             this.StatusBrowser.Size = new System.Drawing.Size(171, 164);
             this.StatusBrowser.TabIndex = 0;
             this.StatusBrowser.WebBrowserShortcutsEnabled = false;
+            this.StatusBrowser.ScriptErrorsSuppressed = true;
             this.StatusBrowser.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.StatusBrowser_Navigating);
             // 
             // RightClickMenu

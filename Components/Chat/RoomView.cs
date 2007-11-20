@@ -21,7 +21,7 @@ namespace DeOps.Components.Chat
     internal partial class RoomView : UserControl
     {
         internal ChatControl Chat;
-        ChatRoom Room;
+        internal ChatRoom Room;
 
         internal OpCore Core;
         LocationControl Locations;
@@ -69,9 +69,6 @@ namespace DeOps.Components.Chat
             Room.MembersUpdate += new MembersUpdateHandler(Chat_MembersUpdate);
             Room.ChatUpdate    += new ChatUpdateHandler(Chat_Update);
 
-            Core.DCClientsUpdate += new DCClientsHandler(Core_DCClientsUpdate);
-            Locations.GuiUpdate += new LocationGuiUpdateHandler(Location_Update);
-
             Chat_MembersUpdate();
 
             DisplayLog();
@@ -83,9 +80,6 @@ namespace DeOps.Components.Chat
 
             Room.MembersUpdate -= new MembersUpdateHandler(Chat_MembersUpdate);
             Room.ChatUpdate    -= new ChatUpdateHandler(Chat_Update);
-
-            Core.DCClientsUpdate -= new DCClientsHandler(Core_DCClientsUpdate);
-            Locations.GuiUpdate -= new LocationGuiUpdateHandler(Location_Update);
 
             return true;
         }
@@ -106,15 +100,8 @@ namespace DeOps.Components.Chat
             Chat.SendMessage(Room, message);
         }
 
-        void Location_Update(ulong key)
-        {
-            // away msg etc.. may have been modified
-            if (NodeMap.ContainsKey(key))
-                Core.RefreshDCClients(key);
-        }
 
-
-        internal void Core_DCClientsUpdate(ulong id, List<Tuple<ushort, SessionStatus>> clients)
+        /*internal void Core_DCClientsUpdate(ulong id, List<Tuple<ushort, SessionStatus>> clients)
         {
             if (!NodeMap.ContainsKey(id))
                 return;
@@ -134,16 +121,37 @@ namespace DeOps.Components.Chat
                 }
 
             UpdateNodeStatus(NodeMap[id], connected, away);
-        }
+        }*/
 
-        void UpdateNodeStatus(MemberNode node, bool connected, bool away)
+        void UpdateNodeStatus(MemberNode node)
         {
+            
+            ThreadedList<ushort> clients = null;
+            if (!Room.Members.TryGetValue(node.DhtID, out clients))
+                return;
+
+            // get if node is connected
+            bool connected = (clients.SafeCount > 0);
+
+            // get away status
+            bool away = false;
+            clients.LockReading(delegate()
+            {
+                foreach (ushort client in clients)
+                {
+                    LocInfo info = Locations.GetLocationInfo(node.DhtID, client);
+
+                    if (info != null && info.Location.Away)
+                        away = true;
+                }
+            });
 
             node.Text = Links.GetName(node.DhtID);
 
             if (away)
                 node.Text += " (away)";
 
+            // color based on connect status
             Color foreColor = connected ? Color.Black : Color.Gray;
 
             if (node.ForeColor == foreColor)
@@ -180,27 +188,39 @@ namespace DeOps.Components.Chat
 
             Room.Members.LockReading(delegate()
             {
-                if (Room.Members.Count == 0)
+                if (Room.Members.SafeCount == 0)
                 {
                     MemberTree.EndUpdate();
                     return;
                 }
 
-                MemberNode root = new MemberNode(this, Room.Members[0]);
-                Core.RefreshDCClients(root.DhtID);
-                NodeMap[root.DhtID] = root;
+                TreeListNode root = MemberTree.virtualParent;
 
-                foreach (ulong member in Room.Members)
-                    if (member != root.DhtID)
-                    {
-                        MemberNode node = new MemberNode(this, member);
-                        Utilities.InsertSubNode(root, node);
-                        Core.RefreshDCClients(member);
-                        NodeMap[node.DhtID] = node;
-                    }
+                if (Room.Host != 0)
+                {
+                    root = new MemberNode(this, Room.Host);
+                    UpdateNodeStatus(root as MemberNode);
 
-                MemberTree.Nodes.Add(root);
-                root.Expand();
+                    if (Room.IsLoop)
+                        ((MemberNode)root).IsLoopRoot = true;
+                    else
+                        NodeMap[Room.Host] = root as MemberNode;
+                    
+                    MemberTree.Nodes.Add(root);
+                    root.Expand();
+                }
+
+                Room.Members.LockReading(delegate()
+                {
+                    foreach (ulong member in Room.Members.Keys)
+                        if (member != Room.Host)
+                        {
+                            MemberNode node = new MemberNode(this, member);
+                            Utilities.InsertSubNode(root, node);
+                            UpdateNodeStatus(node);
+                            NodeMap[node.DhtID] = node;
+                        }
+                });
             });
 
             MemberTree.EndUpdate();
@@ -371,6 +391,7 @@ namespace DeOps.Components.Chat
         OpCore Core;
         internal ulong DhtID;
         internal bool Unset = true;
+        internal bool IsLoopRoot;
 
         internal MemberNode(RoomView view, ulong id)
         {
@@ -382,7 +403,13 @@ namespace DeOps.Components.Chat
 
         internal void Update()
         {
-            Text = Core.Links.GetName(DhtID);
+            if (IsLoopRoot)
+            {
+                Text = "LoopRoot";
+                return;
+            }
+            else
+                Text = Core.Links.GetName(DhtID);
 
 
             if (DhtID == Core.LocalDhtID)

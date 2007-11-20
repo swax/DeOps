@@ -63,7 +63,7 @@ namespace DeOps.Simulator
         internal bool   Shutdown;
         
         // settings
-        int SleepTime = 100; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
+        int SleepTime = 500; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
 
         bool RandomCache = true;
         internal bool TestEncryption = false;

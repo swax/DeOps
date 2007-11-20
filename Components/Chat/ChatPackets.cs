@@ -10,29 +10,28 @@ namespace DeOps.Components.Chat
     internal class ChatPacket
     {
         internal const byte Data = 0x10;
+        internal const byte Status = 0x20;
     }
 
-    internal enum ChatPacketType { Invite, Join, Leave, Message, Who, Unknown };
+    //internal enum ChatPacketType { Invite, Join, Leave, Message, Who, Unknown };
 
-    internal class ChatData : G2Packet
+    internal class ChatText : G2Packet
     {
         const byte Packet_ID = 0x10;
-        const byte Packet_Type = 0x20;
-        const byte Packet_User = 0x30;
-        const byte Packet_Custom = 0x40;
+        //const byte Packet_Type = 0x20;
+       // const byte Packet_User = 0x30;
         const byte Packet_Text = 0x50;
 
 
-        internal uint ChatID;
-        internal ChatPacketType Type;
-        internal UInt64 UserID;
-        internal List<ulong> UserIDs = new List<ulong>();
+        internal uint RoomID;
+        //internal ChatPacketType Type;
+        //internal UInt64 UserID;
+        //internal List<ulong> UserIDs = new List<ulong>();
         internal string Text = "";
-        internal bool Custom;
 
-        internal ChatData(ChatPacketType type)
+        internal ChatText()
         {
-            Type = type;
+            //Type = type;
         }
 
         internal override byte[] Encode(G2Protocol protocol)
@@ -41,11 +40,10 @@ namespace DeOps.Components.Chat
             {
                 G2Frame chat = protocol.WritePacket(null, ChatPacket.Data, null);
 
-                protocol.WritePacket(chat, Packet_ID, BitConverter.GetBytes(ChatID));
-                protocol.WritePacket(chat, Packet_Custom, BitConverter.GetBytes(Custom));
-                protocol.WritePacket(chat, Packet_Type, protocol.UTF.GetBytes(TypeToString(Type)));
+                protocol.WritePacket(chat, Packet_ID, BitConverter.GetBytes(RoomID));
+                //protocol.WritePacket(chat, Packet_Type, protocol.UTF.GetBytes(TypeToString(Type)));
 
-                if (UserID != 0 && !UserIDs.Contains(UserID))
+                /*if (UserID != 0 && !UserIDs.Contains(UserID))
                     UserIDs.Add(UserID);
 
                 int offset = 0;
@@ -58,17 +56,18 @@ namespace DeOps.Components.Chat
                 }
 
                 protocol.WritePacket(chat, Packet_User, buffer);
-
+*/
                 if (Text.Length > 0)
                     protocol.WritePacket(chat, Packet_Text, protocol.UTF.GetBytes(Text));
+                
 
                 return protocol.WriteFinish();
             }
         }
 
-        internal static ChatData Decode(G2Protocol protocol, G2Header root)
+        internal static ChatText Decode(G2Protocol protocol, G2Header root)
         {
-            ChatData chat = new ChatData(ChatPacketType.Unknown);
+            ChatText chat = new ChatText();
 
             G2Protocol.ResetPacket(root);
 
@@ -82,10 +81,10 @@ namespace DeOps.Components.Chat
                 switch (child.Name)
                 {
                     case Packet_ID:
-                        chat.ChatID = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        chat.RoomID = BitConverter.ToUInt32(child.Data, child.PayloadPos);
                         break;
 
-                    case Packet_Type:
+                    /*case Packet_Type:
                         chat.Type = StringToType(protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize));
                         break;
 
@@ -105,11 +104,7 @@ namespace DeOps.Components.Chat
                             if (chat.UserIDs.Count > 0)
                                 chat.UserID = (UInt64)chat.UserIDs[0];
                         }
-                        break;
-
-                    case Packet_Custom:
-                        chat.Custom = BitConverter.ToBoolean(child.Data, child.PayloadPos);
-                        break;
+                        break;*/
 
                     case Packet_Text:
                         chat.Text = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
@@ -120,7 +115,7 @@ namespace DeOps.Components.Chat
             return chat;
         }
 
-        static string TypeToString(ChatPacketType type)
+        /*static string TypeToString(ChatPacketType type)
         {
             switch (type)
             {
@@ -156,6 +151,71 @@ namespace DeOps.Components.Chat
             }
 
             return ChatPacketType.Unknown;
+        }*/
+    }
+
+    internal class ChatStatus : G2Packet
+    {
+        const byte Packet_Active = 0x10;
+
+        internal List<ulong> ActiveRooms = new List<ulong>();
+
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame status = protocol.WritePacket(null, ChatPacket.Status, null);
+
+                int offset = 0;
+                byte[] buffer = new byte[ActiveRooms.Count * 8];
+
+                foreach (UInt64 id in ActiveRooms)
+                {
+                    BitConverter.GetBytes(id).CopyTo(buffer, offset);
+                    offset += 8;
+                }
+
+                protocol.WritePacket(status, Packet_Active, buffer);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+
+        internal static ChatStatus Decode(G2Protocol protocol, G2Header root)
+        {
+            ChatStatus status = new ChatStatus();
+
+            G2Protocol.ResetPacket(root);
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            { 
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_Active:
+                        if (child.PayloadSize % 8 == 0)
+                        {
+                            int offset = 0;
+
+                            while (offset < child.PayloadSize)
+                            {
+                                UInt64 id = BitConverter.ToUInt64(child.Data, child.PayloadPos + offset);
+                                status.ActiveRooms.Add(id);
+
+                                offset += 8;
+                            }
+                        }
+                        break;
+                }
+            }
+
+            return status;
         }
     }
 }

@@ -41,6 +41,7 @@ namespace DeOps.Components.Storage
             this.InfoDisplay.Name = "InfoDisplay";
             this.InfoDisplay.Size = new System.Drawing.Size(150, 150);
             this.InfoDisplay.TabIndex = 0;
+            this.InfoDisplay.ScriptErrorsSuppressed = true;
             this.InfoDisplay.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.InfoDisplay_Navigating);
             // 
             // InfoPanel

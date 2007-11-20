@@ -49,14 +49,14 @@ namespace DeOps.Components.Profile
             Templates.Clear();
 
             // list chain of command first
-            List<ulong> chainIDs = Links.GetUplinkIDs(Core.LocalDhtID, 0);
-            chainIDs.Reverse();
-            chainIDs.Add(Links.LocalLink.DhtID);
+            List<ulong> highers = Links.GetUplinkIDs(Core.LocalDhtID, 0);
+            highers.Reverse();
+            highers.Add(Links.LocalLink.DhtID);
 
             // list higher level users, indent also
             // dont repeat names using same template+
             int space = 0;
-            foreach (ulong id in chainIDs)
+            foreach (ulong id in highers)
             {
                 ProfileTemplate add = GetTemplate(id);
 

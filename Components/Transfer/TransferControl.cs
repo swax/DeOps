@@ -48,6 +48,7 @@ namespace DeOps.Components.Transfer
 
             Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
             Core.RudpControl.SessionData[ComponentID.Transfer] = new SessionDataHandler(Session_Data);
+            Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
         }
 
         internal void Core_Load()
@@ -257,14 +258,14 @@ namespace DeOps.Components.Transfer
             return null;
         }
 
-        internal override void GetActiveSessions( ActiveSessions active)
+        void Session_KeepActive(Dictionary<ulong, bool> active)
         {
             foreach (FileDownload transfer in DownloadMap.Values)
                 foreach (RudpSession session in transfer.Sessions)
-                    active.Add(session);
+                    active[session.DhtID] = true;
 
             foreach (RudpSession session in UploadMap.Keys)
-                active.Add(session);
+                active[session.DhtID] = true;
         }
 
         List<byte[]> Search_Local(ulong key, byte[] parameters)
@@ -328,7 +329,7 @@ namespace DeOps.Components.Transfer
                 {
                     // if connected to source
                     if(Core.RudpControl.IsConnected(download.Sources[i]))
-                        Send_Request( Core.RudpControl.GetSession(download.Sources[i]), download);
+                        Send_Request(Core.RudpControl.GetActiveSession(download.Sources[i]), download);
                     else
                         Core.RudpControl.Connect(download.Sources[i]);
 

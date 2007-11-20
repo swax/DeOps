@@ -166,6 +166,7 @@ namespace DeOps.Components.Storage
             // research higher / lowers
             List<ulong> ids = new List<ulong>();
             ids.Add(DhtID);
+            ids.AddRange(Links.GetUplinkIDs(DhtID, ProjectID));
             ids.AddRange(Links.GetAdjacentIDs(DhtID, ProjectID));
             ids.AddRange(Links.GetDownlinkIDs(DhtID, ProjectID, 1));
 
@@ -2798,7 +2799,7 @@ namespace DeOps.Components.Storage
 
             FolderNode up = this;
 
-            while (up.Parent.GetType() == typeof(FolderNode))
+            while (up.Parent != null && up.Parent.GetType() == typeof(FolderNode))
             {
                 path = Path.DirectorySeparatorChar + up.Details.Name + path;
                 up = up.Parent as FolderNode;

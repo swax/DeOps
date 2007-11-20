@@ -70,7 +70,11 @@ namespace DeOps.Interface.Views
 
         void Menu_Exit(object sender, EventArgs e)
         {
-            Application.Exit();
+            if (Core.Sim == null)
+                Application.Exit();
+            else
+                Core.Sim.Internet.BringOffline(Core.Sim);
+
         }
     }
 }

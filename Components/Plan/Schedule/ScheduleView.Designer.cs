@@ -113,6 +113,7 @@ namespace DeOps.Components.Plan
             // 
             // GoalCombo
             // 
+            this.GoalCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.GoalCombo.Name = "GoalCombo";
             this.GoalCombo.Size = new System.Drawing.Size(121, 25);
             this.GoalCombo.SelectedIndexChanged += new System.EventHandler(this.GoalCombo_SelectedIndexChanged);
@@ -228,6 +229,7 @@ namespace DeOps.Components.Plan
             // 
             this.ScheduleSlider.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
+            this.ScheduleSlider.BackColor = System.Drawing.SystemColors.ControlLight;
             this.ScheduleSlider.Location = new System.Drawing.Point(180, 23);
             this.ScheduleSlider.Name = "ScheduleSlider";
             this.ScheduleSlider.Size = new System.Drawing.Size(172, 27);
@@ -325,6 +327,7 @@ namespace DeOps.Components.Plan
             this.DetailsBrowser.Location = new System.Drawing.Point(0, 0);
             this.DetailsBrowser.MinimumSize = new System.Drawing.Size(20, 20);
             this.DetailsBrowser.Name = "DetailsBrowser";
+            this.DetailsBrowser.ScriptErrorsSuppressed = true;
             this.DetailsBrowser.Size = new System.Drawing.Size(148, 221);
             this.DetailsBrowser.TabIndex = 0;
             // 

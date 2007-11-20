@@ -110,8 +110,6 @@ namespace DeOps.Implementation.Transport
             }
 
             Core.RudpControl.SessionUpdate.Invoke(this);
-
-            Core.RefreshDCClients(DhtID);
 		}	
 
 		internal bool SendPacket(G2Packet packet, bool expedite)

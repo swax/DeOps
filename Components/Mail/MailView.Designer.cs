@@ -176,6 +176,7 @@ namespace DeOps.Components.Mail
             this.MessageHeader.ScrollBarsEnabled = false;
             this.MessageHeader.Size = new System.Drawing.Size(378, 68);
             this.MessageHeader.TabIndex = 0;
+            this.MessageHeader.ScriptErrorsSuppressed = true;
             this.MessageHeader.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.MessageHeader_Navigating);
             // 
             // MessageBody

@@ -183,13 +183,13 @@
       <DependentUpon>EditPlanItem.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.Designer.cs">
       <DependentUpon>GoalPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalsView.Designer.cs">
       <DependentUpon>GoalsView.cs</DependentUpon>
@@ -206,7 +206,7 @@
       <DependentUpon>PlanRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Schedule\BlockRow.Designer.cs">
       <DependentUpon>BlockRow.cs</DependentUpon>

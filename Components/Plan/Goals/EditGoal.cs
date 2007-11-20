@@ -73,7 +73,11 @@ namespace DeOps.Components.Plan
         private void PickLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             AddLinks add = new AddLinks(Core.Links, Editing.Project);
-            add.PersonTree.ForceRootID = Core.LocalDhtID;
+
+            // force root to self, only if self is not in a loop, in which case anyone in loop can be assigned sub-goals
+            //if(!Core.Links.LocalLink.LoopRoot.ContainsKey(Editing.Project)), assignment loops, not obvious behavior
+                add.PersonTree.ForceRootID = Core.LocalDhtID;
+            
             add.PersonTree.HideUnlinked = true;
             add.ProjectCombo.Visible = false;
 
