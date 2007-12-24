@@ -629,7 +629,8 @@ namespace DeOps.Components.Board
 
         void DownloadPost(SignedData signed, PostHeader header)
         {
-            Utilities.CheckSignedData(header.Source, signed.Data, signed.Signature);
+            if (!Utilities.CheckSignedData(header.Source, signed.Data, signed.Signature))
+                return;
 
             FileDetails details = new FileDetails(ComponentID.Board, header.FileHash, header.FileSize, new PostUID(header).ToBytes());
 

@@ -679,7 +679,8 @@ namespace DeOps.Components.Profile
 
         private void DownloadProfile(SignedData signed, ProfileHeader header)
         {
-            Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature);
+            if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
+                return;
 
             FileDetails details = new FileDetails(ComponentID.Profile, header.FileHash, header.FileSize, null);
 

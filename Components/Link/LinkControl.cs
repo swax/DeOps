@@ -975,7 +975,9 @@ namespace DeOps.Components.Link
         {
             Core.IndexKey(request.KeyID,    ref request.Key);
             Core.IndexKey(request.TargetID, ref request.Target);
-            Utilities.CheckSignedData(request.Key, signed.Data, signed.Signature);
+
+            if (!Utilities.CheckSignedData(request.Key, signed.Data, signed.Signature))
+                return;
 
             OpLink requesterLink = GetLink(request.KeyID);
 
@@ -1043,7 +1045,8 @@ namespace DeOps.Components.Link
 
         private void DownloadLinkFile(SignedData signed, LinkHeader header)
         {
-            Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature);
+            if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
+                return;
 
             FileDetails details = new FileDetails(ComponentID.Link, header.FileHash, header.FileSize, null);
 
@@ -1257,7 +1260,8 @@ namespace DeOps.Components.Link
         
         private void Process_ProjectData(OpLink link, SignedData signed, ProjectData project)
         {
-            Utilities.CheckSignedData(link.Key, signed.Data, signed.Signature);
+            if (!Utilities.CheckSignedData(link.Key, signed.Data, signed.Signature))
+                return;
 
             if (project.ID != 0 && !ProjectNames.SafeContainsKey(project.ID))
                 ProjectNames.SafeAdd(project.ID, project.Name);
@@ -1272,7 +1276,8 @@ namespace DeOps.Components.Link
 
         private void Process_LinkData(OpLink link, SignedData signed, LinkData linkData)
         {
-            Utilities.CheckSignedData(link.Key, signed.Data, signed.Signature);
+            if (!Utilities.CheckSignedData(link.Key, signed.Data, signed.Signature))
+                return;
 
             Core.IndexKey(linkData.TargetID, ref linkData.Target);
 
@@ -1280,7 +1285,7 @@ namespace DeOps.Components.Link
             if (!link.Projects.Contains(id))
                 return;
 
-            OpLink targetLink = GetLink(linkData.TargetID);
+            OpLink targetLink = GetLink(linkData.TargetID, false);
 
             if (targetLink == null)
             {
@@ -1774,15 +1779,20 @@ namespace DeOps.Components.Link
             return false;
         }
 
-        internal OpLink GetLink(ulong id)
+        OpLink GetLink(ulong id, bool loaded)
         {
             OpLink link = null;
 
-            if(LinkMap.SafeTryGetValue(id, out link))
-                if(link.Loaded)
+            if (LinkMap.SafeTryGetValue(id, out link))
+                if (!loaded || link.Loaded)
                     return link;
 
             return null;
+        }
+
+        internal OpLink GetLink(ulong id)
+        {
+            return GetLink(id, true);
         }
 
 
@@ -1803,7 +1813,7 @@ namespace DeOps.Components.Link
         }*/
     }
 
-
+    [DebuggerDisplay("{Name}")]
     internal class OpLink
     {
         internal string   Name;

@@ -4,3 +4,6 @@ Threading
 	Op objects are recreated when loaded so that interface with current handle doesnt get collections modified inbetween
 		dont need to lock inside op stucture if only interface accesses it
 		when someone is editing/wring a new opPlan and a new plan gets loaded there wont be a conflict
+
+chat
+	pure p2p everyone connected to everyone else, rudp should have low overhead 100bytes/min max, 100 users would be 1,000/6 bps

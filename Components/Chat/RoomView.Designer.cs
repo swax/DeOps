@@ -56,9 +56,11 @@ namespace DeOps.Components.Chat
             // 
             // splitContainer1.Panel2
             // 
+            this.splitContainer1.Panel2.BackColor = System.Drawing.Color.White;
             this.splitContainer1.Panel2.Controls.Add(this.MemberTree);
             this.splitContainer1.Size = new System.Drawing.Size(315, 194);
-            this.splitContainer1.SplitterDistance = 168;
+            this.splitContainer1.SplitterDistance = 170;
+            this.splitContainer1.SplitterWidth = 2;
             this.splitContainer1.TabIndex = 0;
             // 
             // splitContainer2
@@ -76,8 +78,9 @@ namespace DeOps.Components.Chat
             // splitContainer2.Panel2
             // 
             this.splitContainer2.Panel2.Controls.Add(this.InputControl);
-            this.splitContainer2.Size = new System.Drawing.Size(168, 194);
-            this.splitContainer2.SplitterDistance = 161;
+            this.splitContainer2.Size = new System.Drawing.Size(170, 194);
+            this.splitContainer2.SplitterDistance = 163;
+            this.splitContainer2.SplitterWidth = 2;
             this.splitContainer2.TabIndex = 0;
             // 
             // MessageTextBox
@@ -89,7 +92,7 @@ namespace DeOps.Components.Chat
             this.MessageTextBox.Location = new System.Drawing.Point(0, 0);
             this.MessageTextBox.Name = "MessageTextBox";
             this.MessageTextBox.ReadOnly = true;
-            this.MessageTextBox.Size = new System.Drawing.Size(168, 161);
+            this.MessageTextBox.Size = new System.Drawing.Size(170, 163);
             this.MessageTextBox.TabIndex = 0;
             this.MessageTextBox.Text = "";
             // 
@@ -104,28 +107,30 @@ namespace DeOps.Components.Chat
             this.InputControl.Name = "InputControl";
             this.InputControl.ReadOnly = false;
             this.InputControl.ShowFontStrip = false;
-            this.InputControl.Size = new System.Drawing.Size(168, 29);
+            this.InputControl.Size = new System.Drawing.Size(170, 29);
             this.InputControl.TabIndex = 0;
             // 
             // MemberTree
             // 
+            this.MemberTree.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+                        | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
             this.MemberTree.BackColor = System.Drawing.SystemColors.Window;
-            this.MemberTree.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.MemberTree.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.MemberTree.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.MemberTree.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.MemberTree.Dock = System.Windows.Forms.DockStyle.Fill;
             this.MemberTree.GridLineColor = System.Drawing.Color.WhiteSmoke;
             this.MemberTree.HeaderMenu = null;
             this.MemberTree.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
             this.MemberTree.ItemHeight = 20;
             this.MemberTree.ItemMenu = null;
             this.MemberTree.LabelEdit = false;
-            this.MemberTree.Location = new System.Drawing.Point(0, 0);
+            this.MemberTree.Location = new System.Drawing.Point(0, 6);
             this.MemberTree.Name = "MemberTree";
             this.MemberTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.MemberTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.MemberTree.ShowPlusMinus = false;
-            this.MemberTree.Size = new System.Drawing.Size(143, 194);
+            this.MemberTree.Size = new System.Drawing.Size(143, 188);
             this.MemberTree.SmallImageList = null;
             this.MemberTree.StateImageList = null;
             this.MemberTree.TabIndex = 0;

@@ -192,7 +192,8 @@ namespace DeOps.Interface
         private void EnterSimLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             Hide();
-            new SimForm().ShowDialog();
+            SimForm sim = new SimForm();
+            sim.ShowDialog();
         }
     }
 }

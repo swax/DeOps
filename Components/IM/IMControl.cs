@@ -136,8 +136,8 @@ namespace DeOps.Components.IM
             // if window already exists to node, show it
             IM_View view = FindView(node.GetKey());
 
-            if(view != null)
-                view.BringToFront();
+            if(view != null && view.External != null)
+                view.External.BringToFront();
 
             // else create new window
             else
@@ -368,12 +368,16 @@ namespace DeOps.Components.IM
 
             Update(status);
 
-            IM_View view = FindView(status.DhtID);
+            Core.RunInGuiThread( (MethodInvoker) delegate()
+            {
+                IM_View view = FindView(status.DhtID);
 
-            if (view == null)
-                CreateView(status.DhtID);
-            else
-                Core.RunInGuiThread(MessageUpdate, status.DhtID, message);
+                if (view == null)
+                    CreateView(status.DhtID);
+                else
+                    MessageUpdate(status.DhtID, message);
+            });
+            
         }
 
         void Session_KeepActive(Dictionary<ulong, bool> active)

@@ -26,6 +26,9 @@ namespace DeOps.Components.IM
 
         MenuItem TimestampMenu;
 
+        bool WindowActivated;
+        bool FlashMe;
+
         Font BoldFont    = new Font("Tahoma", 10, FontStyle.Bold);
         Font RegularFont = new Font("Tahoma", 10, FontStyle.Regular);
         Font TimeFont = new Font("Tahoma", 8, FontStyle.Regular);
@@ -53,7 +56,6 @@ namespace DeOps.Components.IM
             MessageTextBox.ContextMenu = menu;
         }
 
-
         private void UpdateName()
         {
             if(External != null)
@@ -68,7 +70,13 @@ namespace DeOps.Components.IM
             InputControl.InputBox.Focus();
 
             IM_StatusUpdate(DhtID);
-            DisplayLog();      
+            DisplayLog();
+
+            if (External != null)
+            {
+                External.Activated += new EventHandler(External_Activated);
+                External.Deactivate += new EventHandler(External_Deactivate);
+            }
         }
 
         internal override bool Fin()
@@ -77,6 +85,12 @@ namespace DeOps.Components.IM
 
             IM.MessageUpdate -= new IM_MessageHandler(IM_MessageUpdate);
             IM.StatusUpdate -= new IM_StatusHandler(IM_StatusUpdate);
+
+            if (External != null)
+            {
+                External.Activated -= new EventHandler(External_Activated);
+                External.Deactivate -= new EventHandler(External_Deactivate);
+            }
 
             return true;
         }
@@ -239,6 +253,9 @@ namespace DeOps.Components.IM
                 InputControl.Focus();
                 InputControl.InputBox.Focus();
             }
+
+            if (External != null && !WindowActivated)
+                FlashMe = true;
         }
 
         void Menu_Timestamps(object sender, EventArgs e)
@@ -247,5 +264,24 @@ namespace DeOps.Components.IM
 
             DisplayLog();
         }
+
+        private void FlashTimer_Tick(object sender, EventArgs e)
+        {
+            if (External != null && !WindowActivated && FlashMe)
+                Win32.FlashWindow(External.Handle, true);
+        }
+
+        void External_Deactivate(object sender, EventArgs e)
+        {
+            WindowActivated = false;
+        }
+
+        void External_Activated(object sender, EventArgs e)
+        {
+            WindowActivated = true;
+            FlashMe = false;
+        }
+
+
     }
 }

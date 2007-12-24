@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
@@ -12,7 +14,7 @@ using DeOps.Components.Location;
 namespace DeOps.Components.Chat
 {
     internal delegate void RefreshHandler();
-
+    internal delegate void InvitedHandler(ulong inviter, ChatRoom room);
 
     internal class ChatControl : OpComponent
     {
@@ -22,9 +24,10 @@ namespace DeOps.Components.Chat
         //internal ThreadedList<ChatRoom> Rooms = new ThreadedList<ChatRoom>();
         internal ThreadedDictionary<uint, ChatRoom> RoomMap = new ThreadedDictionary<uint, ChatRoom>();
 
-        internal Dictionary<ulong, bool> SendUpdates = new Dictionary<ulong, bool>();
+        internal Dictionary<ulong, bool> StatusUpdate = new Dictionary<ulong, bool>();
 
         internal RefreshHandler Refresh;
+        internal InvitedHandler Invited;
 
 
         internal ChatControl(OpCore core)
@@ -83,7 +86,7 @@ namespace DeOps.Components.Chat
                 return;
 
             // gui creates viewshell, component just passes view object
-            ChatView view = new ChatView(this, node.GetProject(), false);
+            ChatView view = new ChatView(this, node.GetProject(), null);
 
             Core.InvokeView(node.IsExternal(), view);
         }
@@ -93,11 +96,11 @@ namespace DeOps.Components.Chat
             // send status upates once per second so we're not sending multiple updates to the same client more than
             // once per second
 
-            foreach (ulong key in SendUpdates.Keys)
+            foreach (ulong key in StatusUpdate.Keys)
                 foreach (RudpSession session in Core.RudpControl.GetActiveSessions(key))
-                    SendStatusUpdate(session);
+                    SendStatus(session);
 
-            SendUpdates.Clear();
+            StatusUpdate.Clear();
 
         }
 
@@ -117,14 +120,15 @@ namespace DeOps.Components.Chat
                         // if we are in the project
                         if (Links.LocalLink.Projects.Contains(project))
                         {
-                            if (uplink == null && downlinks.Count == 0)
-                                JoinRoom(project, RoomKind.Untrusted);
+                            JoinCommand(project, RoomKind.Command_High);
+                            JoinCommand(project, RoomKind.Command_Low);
+                            JoinCommand(project, RoomKind.Live_High);
+                            JoinCommand(project, RoomKind.Live_Low);
 
-                            JoinRoom(project, RoomKind.Command_High);
-                            JoinRoom(project, RoomKind.Command_Low);
-                            JoinRoom(project, RoomKind.Live_High);
-                            JoinRoom(project, RoomKind.Live_Low);
-
+                            RoomMap.SafeAdd(GetRoomID(project, RoomKind.Untrusted), new ChatRoom(RoomKind.Untrusted, project, ""));
+                            if(uplink == null && downlinks.Count == 0)
+                                JoinCommand(project, RoomKind.Untrusted);
+     
                         }
 
                         // else leave any command/live rooms for this project
@@ -140,91 +144,144 @@ namespace DeOps.Components.Chat
                         if(uplink != null)
                             if (uplink == link || uplink.GetLowers(project, true).Contains(link))
                             {
-                                RefreshRoom(project, RoomKind.Command_High);
-                                RefreshRoom(project, RoomKind.Live_High);
+                                RefreshCommand(project, RoomKind.Command_High);
+                                RefreshCommand(project, RoomKind.Live_High);
                             }
 
                         if (downlinks.Contains(link))
                         {
-                            RefreshRoom(project, RoomKind.Command_Low);
-                            RefreshRoom(project, RoomKind.Live_Low);
+                            RefreshCommand(project, RoomKind.Command_Low);
+                            RefreshCommand(project, RoomKind.Live_Low);
                         }
 
+                        if(link.GetHigher(project, true) == null)
+                            RefreshCommand(project, RoomKind.Untrusted);
                     }
 
                     Core.RunInGuiThread(Refresh);
-
-                    // if us
-                    /*if (link == Links.LocalLink)
-                    {
-                        // if uplink exists, refresh high room, else remove it
-                        if (uplink != null)
-                            RefreshRoom(RoomKind.Command_High, project);
-                        else
-                            RemoveRoom(RoomKind.Command_High, project);
-
-                        // if downlinks exist
-                        if (downlinks.Count > 0)
-                            RefreshRoom(RoomKind.Command_Low, project);
-                        else
-                            RemoveRoom(RoomKind.Command_Low, project);
-                    }
-
-                    // if not us
-                    else
-                    {
-                        // check if room should be removed now
-                        ChatRoom currentRoom = FindRoom(link.DhtID, project);
-
-                        if (currentRoom != null)
-                            RefreshRoom(currentRoom.Kind, project);
-
-                        // check if room should be added now
-                        if (Links.IsHigherDirect(link.DhtID, project) || Links.LocalLink.IsLoopedTo(link, project))
-                            RefreshRoom(RoomKind.Command_High, project);
-
-                        else if (Links.IsLowerDirect(link.DhtID, project))
-                            RefreshRoom(RoomKind.Command_Low, project);
-                    }*/
                 }
             });
 
             // refresh member list of any commmand/live room this person is apart of
             // link would already be added above, this ensures user is removed
             foreach(ChatRoom room in FindRoom(link.DhtID))
-                RefreshRoom(room);
+                if(IsCommandRoom(room.Kind))
+                    RefreshCommand(room);
+                else if(room.Members.SafeContainsKey(link.DhtID))
+                    Core.RunInGuiThread(room.MembersUpdate);
         }
 
-        void JoinRoom(uint project, RoomKind kind)
+        internal ChatRoom CreateRoom(string name, RoomKind kind)
+        {
+            // create room
+            ChatRoom room = new ChatRoom(kind, 0, name);
+
+            uint id = (uint) Core.RndGen.Next();
+
+            room.Active = true;
+            room.AddMember(Core.LocalDhtID, Core.ClientID);
+
+            RoomMap.SafeAdd(id, room);
+            
+            if (kind == RoomKind.Private)
+            {
+                room.Host = Core.LocalDhtID;
+                room.Verified[Core.LocalDhtID] = true;
+                SendInviteRequest(room, Core.LocalDhtID); // send invite to copies of ourself that exist
+            }
+
+            Core.RunInGuiThread(Refresh);
+
+            return room;    
+        }
+
+        internal void ShowRoom(ChatRoom room)
+        {
+            if (room.MembersUpdate != null)
+                foreach (Delegate func in room.MembersUpdate.GetInvocationList())
+                    if (func.Target is RoomView)
+                        if (((RoomView)func.Target).ParentView.External != null)
+                        {
+                            ((RoomView)func.Target).ParentView.External.BringToFront();
+                            return;
+                        }
+
+            Core.InvokeView(true, new ChatView(this, room.ProjectID, room));
+        }
+
+        internal void JoinRoom(ChatRoom room)
+        {
+            if (room.Kind != RoomKind.Public && room.Kind != RoomKind.Private)
+            {
+                JoinCommand(room.ProjectID, room.Kind);
+                return;
+            }
+
+            room.Active = true;
+            room.AddMember(Core.LocalDhtID, Core.ClientID);
+
+            // for private rooms, send proof of invite first
+            if (room.Kind == RoomKind.Private)
+                SendInviteProof(room);
+
+            SendStatus(room);
+
+            SendWhoRequest(room);
+
+            ConnectRoom(room);
+        }
+
+        internal void JoinCommand(uint project, RoomKind kind)
         {
             uint id = GetRoomID(project, kind);
 
             // create if doesnt exist
             ChatRoom room = null;
+
             if (!RoomMap.SafeTryGetValue(id, out room))
                 room = new ChatRoom(kind, project, "");
-            
-            // activate it
+
             room.Active = true;
+            room.AddMember(Core.LocalDhtID, Core.ClientID);
 
             RoomMap.SafeAdd(id, room);
 
-            RefreshRoom(room);
+            RefreshCommand(room);
+
+            SendStatus(room);
+
+            if (kind == RoomKind.Untrusted)
+                SendWhoRequest(room);
+
+            ConnectRoom(room);
         }
 
-        void RefreshRoom(uint project, RoomKind kind)
+        private void ConnectRoom(ChatRoom room)
+        {
+            room.Members.LockReading(delegate()
+            {
+                foreach (ulong key in room.Members.Keys)
+                    foreach (LocInfo info in Core.Locations.GetClients(key))
+                        Core.RudpControl.Connect(info.Location);
+            });
+        }
+
+        void RefreshCommand(uint project, RoomKind kind)
         {
             uint id = GetRoomID(project, kind);
 
             ChatRoom room = null;
             if (RoomMap.SafeTryGetValue(id, out room))
-                RefreshRoom(room);
+                RefreshCommand(room);
         }
 
-        void RefreshRoom(ChatRoom room)
+        internal void RefreshCommand(ChatRoom room) // sends status updates to all members of room
         {
-            if (!room.Active)
+            if (room.Kind == RoomKind.Private || room.Kind == RoomKind.Public)
+            {
+                Debug.Assert(false);
                 return;
+            }
 
             // remember connection status from before
             // nodes we arent connected to do try connect
@@ -236,68 +293,39 @@ namespace DeOps.Components.Chat
 
             if (room.Kind == RoomKind.Command_High)
             {
-                ThreadedDictionary<ulong, ThreadedList<ushort>> members = new ThreadedDictionary<ulong, ThreadedList<ushort>>();
-            
+                ThreadedDictionary<ulong, ThreadedList<ushort>> prevMembers =  room.Members;
+                room.Members = new ThreadedDictionary<ulong,ThreadedList<ushort>>();
+
                 if (uplink != null)
                 {
-                    if (uplink.LoopRoot.ContainsKey(room.ProjectID))
+                    if (Links.LocalLink.LoopRoot.ContainsKey(room.ProjectID))
                     {
-                        uplink = uplink.LoopRoot[room.ProjectID];
-                        room.Host = uplink.DhtID; // 0 reserved for no root
+                        uplink = Links.LocalLink.LoopRoot[room.ProjectID];
+                        room.Host = uplink.DhtID; // use loop id cause 0 is reserved for no root
                         room.IsLoop = true;
                     }
                     else
                     {
                         room.Host = uplink.DhtID;
                         room.IsLoop = false;
-
-                        ThreadedList<ushort> connected = null;
-                        if (!room.Members.SafeTryGetValue(room.Host, out connected))
-                            connected = new ThreadedList<ushort>();
-                
-                        members.SafeAdd(room.Host, connected);
+                        room.AddMember(room.Host, prevMembers);
                     }
 
                     foreach (OpLink downlink in uplink.GetLowers(room.ProjectID, true))
-                    {
-                        ThreadedList<ushort> connected = null;
-                        if (!room.Members.SafeTryGetValue(downlink.DhtID, out connected))
-                            connected = new ThreadedList<ushort>();
-    
-                        if(downlink.DhtID == Core.LocalDhtID && !connected.SafeContains(Core.ClientID))
-                            connected.SafeAdd(Core.ClientID);
-                        
-                        members.SafeAdd(downlink.DhtID, connected);
-                    }
+                        room.AddMember(downlink.DhtID, prevMembers);
                 }
-
-                room.Members = members;
-                room.Active = (members.SafeCount > 1);
             }
 
             else if (room.Kind == RoomKind.Command_Low)
             {
-                ThreadedDictionary<ulong, ThreadedList<ushort>> members = new ThreadedDictionary<ulong, ThreadedList<ushort>>();
-            
-                ThreadedList<ushort> connected = null;
-                if(!room.Members.SafeTryGetValue(Core.LocalDhtID, out connected))
-                    connected = new ThreadedList<ushort>();
-                
-                if (!connected.SafeContains(Core.ClientID))
-                    connected.SafeAdd(Core.ClientID);
+                ThreadedDictionary<ulong, ThreadedList<ushort>> prevMembers = room.Members;
+                room.Members = new ThreadedDictionary<ulong, ThreadedList<ushort>>();
 
-                members.SafeAdd(room.Host, connected);
+                room.Host = Core.LocalDhtID;
+                room.AddMember(room.Host, prevMembers);
 
-                if(uplink != null)
-                    foreach (OpLink downlink in uplink.GetLowers(room.ProjectID, true))
-                    {
-                        connected = new ThreadedList<ushort>();
-                        members.SafeTryGetValue(downlink.DhtID, out connected);
-                        members.SafeAdd(downlink.DhtID, connected);
-                    }
-
-                room.Members = members;
-                room.Active = (members.SafeCount > 1);
+                foreach (OpLink downlink in Links.LocalLink.GetLowers(room.ProjectID, true))
+                    room.AddMember(downlink.DhtID, prevMembers);
             }
 
             else if (room.Kind == RoomKind.Live_High)
@@ -317,18 +345,7 @@ namespace DeOps.Components.Chat
 
             else if (room.Kind == RoomKind.Untrusted)
             {
-                // don't remove previous connections, let that happen on demand
-                // if someone chatting in untrusted and they link up, dont cut their conversation short
-
-                ThreadedList<ushort> connected = null;
-                if(!room.Members.SafeTryGetValue(Core.LocalDhtID, out connected))
-                    connected = new ThreadedList<ushort>();
-                
-                if (connected.SafeCount == 0)
-                    connected.SafeAdd(Core.ClientID);
-    
-                room.Members.SafeAdd(Core.LocalDhtID, connected);
-
+                // don't remove connections that are no longer in untrusted group
 
                 List<OpLink> roots = null;
                 if (Links.ProjectRoots.SafeTryGetValue(room.ProjectID, out roots))
@@ -338,30 +355,7 @@ namespace DeOps.Components.Chat
                         {
                             room.Members.SafeAdd(root.DhtID, new ThreadedList<ushort>());
                         }
-
             }
-
-            else if (room.Kind == RoomKind.Public)
-            {
-
-            }
-
-            else if (room.Kind == RoomKind.Private)
-            {
-
-
-            }
-            // ensure connected or tried connected to members in the room
-            room.Members.LockReading(delegate()
-            {
-                foreach (ulong key in room.Members.Keys)
-                {
-                    foreach (LocInfo info in Core.Locations.GetClients(key))
-                        Core.RudpControl.Connect(info.Location);
-
-                    SendUpdates[key] = true;
-                }
-            });
 
             // update dispaly that members has been refreshed
             Core.RunInGuiThread(room.MembersUpdate);
@@ -376,7 +370,7 @@ namespace DeOps.Components.Chat
             LeaveRoom(project, RoomKind.Live_Low);
         }
 
-        void LeaveRoom(uint project, RoomKind kind)
+        internal void LeaveRoom(uint project, RoomKind kind)
         {
             // deactivates room, let timer remove object is good once we know user no longer wants it
 
@@ -386,20 +380,26 @@ namespace DeOps.Components.Chat
             if (!RoomMap.SafeTryGetValue(id, out room))
                 return;
 
+            LeaveRoom(room);
+        }
+
+        internal void LeaveRoom(ChatRoom room)
+        {
             room.Active = false;
 
-            room.Members.LockReading(delegate()
-            {
-                foreach (ulong key in room.Members.Keys)
-                    SendUpdates[key] = true;
-            });
+            room.RemoveMember(Core.LocalDhtID, Core.ClientID, !IsCommandRoom(room.Kind));
 
-            // if user leaves/rejoins anywhere, previous messages should be saved
+            SendStatus(room);
 
             //update interface
             Core.RunInGuiThread(room.MembersUpdate);
         }
 
+        internal bool IsCommandRoom(RoomKind kind)
+        {
+            return (kind == RoomKind.Command_High || kind == RoomKind.Command_Low ||
+                    kind == RoomKind.Live_High || kind == RoomKind.Live_Low);
+        }
 
         internal uint GetRoomID(uint project, RoomKind kind)
         {
@@ -415,93 +415,6 @@ namespace DeOps.Components.Chat
             return null;
         }
 
-        /*private void RefreshRoom(RoomKind kind, uint project)
-        {
-            // ensure room exists
-            ChatRoom room = FindRoom(kind, project);
-            bool newRoom = false;
-
-            if (room == null)
-            {
-                string name = Links.GetProjectName(project);
-                room = new ChatRoom(kind, project, name);
-                Rooms.SafeAdd(room);
-                newRoom = true;
-            }
-
-            // get root node
-            OpLink highNode = null;
-
-            if (kind == RoomKind.Command_High)
-            {
-                if (Links.LocalLink.LoopRoot.ContainsKey(project))
-                {
-                    highNode = Links.LocalLink.LoopRoot[project];
-                    room.IsLoop = true;
-                }
-                else
-                    highNode = Links.LocalLink.GetHigher(project, true);
-
-                if (highNode == null)
-                {
-                    RemoveRoom(kind, project);
-                    return;
-                }
-            }
-
-            if (kind == RoomKind.Command_Low)
-                highNode = Links.LocalLink;
-
-
-            // refresh members
-            room.Members.SafeClear();
-
-            room.Members.SafeAdd(highNode.DhtID);
-
-            foreach (OpLink downlink in highNode.GetLowers(project, true))
-                room.Members.SafeAdd(downlink.DhtID);
-
-            if(room.Members.SafeCount == 1)
-            {
-                RemoveRoom(kind, project);
-                return;
-            }
-
-            if(newRoom)
-                Core.RunInGuiThread(CreateRoomEvent, room);
-
-            Core.RunInGuiThread(room.MembersUpdate);
-        }*/
-        
-        /*private void RemoveRoom(RoomKind kind, uint id)
-        {
-            ChatRoom room = FindRoom(kind, id);
-
-            if (room == null)
-                return;
-
-            Rooms.SafeRemove(room);
-
-            Core.RunInGuiThread(RemoveRoomEvent, room);
-        }*/
-
-        /*private ChatRoom FindRoom(RoomKind kind, uint project)
-        {
-            ChatRoom result = null;
-
-            Rooms.LockReading(delegate()
-            {
-                foreach (ChatRoom room in Rooms)
-                    if (kind == room.Kind && project == room.ProjectID)
-                    {
-                        result = room;
-                        break;
-                    }
-            });
-
-            return result;
-        }*/
-
         private List<ChatRoom> FindRoom(ulong key)
         {
             List<ChatRoom> results = new List<ChatRoom>();
@@ -515,32 +428,6 @@ namespace DeOps.Components.Chat
 
             return results;
         }
-
-        /*private ChatRoom FindRoom(ulong key, uint project)
-        {
-            ChatRoom result = null;
-
-            Rooms.LockReading(delegate()
-            {
-                foreach (ChatRoom room in Rooms)
-                    if (room.ProjectID == project)
-                    {
-                        room.Members.LockReading(delegate()
-                        {
-                            foreach (ulong member in room.Members)
-                                if (member == key)
-                                {
-                                    result = room;
-                                    break;
-                                }
-                        });
-
-                        break;
-                    }
-            });
-
-            return result;
-        }*/
 
         internal void Location_Update(LocationData location)
         {
@@ -566,9 +453,11 @@ namespace DeOps.Components.Chat
 
             bool sent = false;
 
-            ChatText packet = new ChatText();
-            packet.RoomID = room.RoomID;
-            packet.Text = text;
+            ChatText message = new ChatText();
+            message.ProjectID = room.ProjectID;
+            message.Kind = room.Kind;
+            message.RoomID = room.RoomID;
+            message.Text = text;
 
             room.Members.LockReading(delegate()
             {
@@ -576,7 +465,7 @@ namespace DeOps.Components.Chat
                    foreach (RudpSession session in Core.RudpControl.GetActiveSessions(member))
                    {
                        sent = true;
-                       session.SendData(ComponentID.Chat, packet, true);
+                       session.SendData(ComponentID.Chat, message, true);
                    }
             });
 
@@ -585,39 +474,93 @@ namespace DeOps.Components.Chat
         }
 
 
+        private void ReceiveMessage(ChatText message, RudpSession session)
+        {
+            // remote's command low, is my command high
+            // do here otherwise have to send custom roomID packets to selfs/lowers/highers
+
+            if (session.DhtID != Core.LocalDhtID)
+            {
+                // if check fails then it is loop node sending data, keep it unchanged
+                if (message.Kind == RoomKind.Command_High && Links.IsLowerDirect(session.DhtID, message.ProjectID))
+                    message.Kind = RoomKind.Command_Low;
+
+                else if (message.Kind == RoomKind.Command_Low && Links.IsHigher(session.DhtID, message.ProjectID))
+                    message.Kind = RoomKind.Command_High;
+
+                else if (message.Kind == RoomKind.Live_High)
+                    message.Kind = RoomKind.Live_Low;
+
+                else if (message.Kind == RoomKind.Live_Low)
+                    message.Kind = RoomKind.Live_High;
+            }
+
+            uint id = IsCommandRoom(message.Kind) ? GetRoomID(message.ProjectID, message.Kind) : message.RoomID;
+
+            ChatRoom room = null;
+
+            // if not in room let remote user know
+            if (!RoomMap.TryGetValue(id, out room) ||
+                !room.Active )
+            {
+                SendStatus(session);
+                return;
+            }
+
+            // if sender not in room
+            if(!room.Members.SafeContainsKey(session.DhtID))
+                return;
+
+            ProcessMessage(room, new ChatMessage(Core, session, message.Text));
+        }
+
         internal void Session_Update(RudpSession session)
         {
 
             // send node rooms that we have in common
             if (session.Status == SessionStatus.Active)
-                SendStatusUpdate(session);
+            {
 
-            List<RudpSession> active = Core.RudpControl.GetActiveSessions(session.DhtID);
+                // send invites
+                RoomMap.LockReading(delegate()
+                {
+                    // if we are host of room and connect hasn't been sent invite
+                    foreach (ChatRoom room in RoomMap.Values)
+                    {
+                        if (room.NeedSendInvite(session.DhtID, session.ClientID))
+                            // invite not sent
+                            if (room.Host == Core.LocalDhtID)
+                            {
+                                session.SendData(ComponentID.Chat, room.Invites[session.DhtID].First, true);
+                                room.Invites[session.DhtID].Second.Add(session.ClientID);
+                                AlertInviteSent(room, session);
+                                SendWhoResponse(room, session);
+                            }
+                            // else proof not sent
+                            else
+                            {
+                                SendInviteProof(room, session);
+                            }
+
+                        if ((room.Kind == RoomKind.Public || room.Kind == RoomKind.Private || room.Kind == RoomKind.Untrusted) &&
+                            room.Members.SafeContainsKey(session.DhtID))
+                            SendWhoRequest(room, session);
+                    }
+                });
+
+
+                SendStatus(session);
+            }
 
             // if disconnected
             if (session.Status == SessionStatus.Closed)
                 foreach (ChatRoom room in FindRoom(session.DhtID))
                 {
-                    room.RemoveMember(session.DhtID, session.ClientID);
-                    Core.RunInGuiThread(room.MembersUpdate, room);
+                    room.RemoveMember(session.DhtID, session.ClientID, !IsCommandRoom(room.Kind));
+
+                    Core.RunInGuiThread(room.MembersUpdate);
                 }
         }
-
-        private void SendStatusUpdate(RudpSession session)
-        {
-            // send even if empty so they know to remove us
-
-            List<ChatRoom> rooms = FindRoom(session.DhtID);
-
-            ChatStatus status = new ChatStatus();
-
-            foreach (ChatRoom room in rooms)
-                if (room.Active)
-                    status.ActiveRooms.Add(room.RoomID);
-
-            session.SendData(ComponentID.Chat, status, true);
-        }
-
 
         void Session_Data(RudpSession session, byte[] data)
         {
@@ -627,56 +570,31 @@ namespace DeOps.Components.Chat
             {
                 if (root.Name == ChatPacket.Data)
                 {
-                    ChatText packet = ChatText.Decode(Core.Protocol, root);
+                    ChatText text = ChatText.Decode(Core.Protocol, root);
 
-                    ChatRoom room = null;
-                    if (!RoomMap.TryGetValue(packet.RoomID, out room))
-                        return;
-
-                    ProcessMessage(room, new ChatMessage(Core, session, packet.Text));
-
+                    ReceiveMessage(text, session);
                 }
+
                 else if (root.Name == ChatPacket.Status)
                 {
                     ChatStatus status = ChatStatus.Decode(Core.Protocol, root);
 
-                    List<ChatRoom> rooms = FindRoom(session.DhtID);
+                    ReceiveStatus(status, session);
+                }
 
-                    // update online status for rooms node is in
-                    ThreadedList<ushort> connected = null;
+                else if (root.Name == ChatPacket.Invite)
+                {
+                    ChatInvite invite = ChatInvite.Decode(Core.Protocol, root);
 
-                    foreach (ChatRoom room in rooms)
-                    {
-                        bool update = true;
-                        bool inRoom = status.ActiveRooms.Contains(room.RoomID);
-                        
-                        // member not in room
-                        if(!inRoom)
-                            room.RemoveMember(session.DhtID, session.ClientID);
-                        
-                        // member listed in room
-                        else if (room.Members.SafeTryGetValue(session.DhtID, out connected))
-                        {
-                            if (!connected.SafeContains(session.ClientID))
-                                connected.SafeAdd(session.ClientID);
-                            else
-                                update = false;
+                    ReceiveInvite(invite, session);
+                }
 
-                            room.Members.SafeAdd(session.DhtID, connected); // update list
-                        }
 
-                        // member unlisted in our records for room
-                        // if room is untrusted, or custom/public allow user to enter, send response as well
-                        else if(room.Kind == RoomKind.Untrusted || room.Kind == RoomKind.Public)
-                        {
-                            connected = new ThreadedList<ushort>();
-                            connected.SafeAdd(session.ClientID);
-                            room.Members.SafeAdd(session.DhtID, connected);
-                        }
+                else if (root.Name == ChatPacket.Who)
+                {
+                    ChatWho who = ChatWho.Decode(Core.Protocol, root);
 
-                        if(update)
-                            Core.RunInGuiThread(room.MembersUpdate);
-                    }
+                    ReceiveWho(who, session);
                 }
             }
         }
@@ -705,6 +623,339 @@ namespace DeOps.Components.Chat
             Core.RunInGuiThread(room.ChatUpdate, message);
         }
 
+        void ReceiveStatus(ChatStatus status, RudpSession session)
+        {
+            // status is what nodes send to each other to tell what rooms they are active in
+
+            RoomMap.LockReading(delegate()
+            {
+                foreach (ChatRoom room in RoomMap.Values)
+                {
+                    bool update = false;
+
+                    // remove from room
+                    if (!status.ActiveRooms.Contains(room.RoomID) && room.Members.SafeContainsKey(session.DhtID))
+                    {
+                        room.RemoveMember(session.DhtID, session.ClientID, !IsCommandRoom(room.Kind));
+                        update = true;
+                    }
+
+                    // add member to room
+                    if (IsCommandRoom(room.Kind) && room.Members.SafeContainsKey(session.DhtID))
+                    {
+                        room.AddMember(session.DhtID, session.ClientID);
+                        update = true;
+                    }
+
+                    else if (status.ActiveRooms.Contains(room.RoomID))
+                    {
+                        // if room private check that sender is verified
+                        if (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.DhtID))
+                            continue;
+
+                         room.AddMember(session.DhtID, session.ClientID);
+                         update = true;
+                    }
+
+                    if (update)
+                        Core.RunInGuiThread(room.MembersUpdate);
+                }
+            });
+        }
+
+        void SendStatus(ChatRoom room)
+        {
+            room.Members.LockReading(delegate()
+            {
+                foreach (ulong id in room.Members.Keys)
+                    StatusUpdate[id] = true;
+            });
+        }
+
+        private void SendStatus(RudpSession session)
+        {
+            // send even if empty so they know to remove us
+
+            ChatStatus status = new ChatStatus();
+
+            RoomMap.LockReading(delegate()
+            {
+                foreach (ChatRoom room in RoomMap.Values)
+                    if (room.Active && !IsCommandRoom(room.Kind))
+                    {
+                        if (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.DhtID))
+                            continue;
+
+                        status.ActiveRooms.Add(room.RoomID);
+                    }
+            });
+
+            session.SendData(ComponentID.Chat, status, true);
+        }
+
+        internal void SendInviteRequest(ChatRoom room, ulong id)
+        {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { SendInviteRequest(room, id); });
+                return;
+            }
+
+            ChatInvite invite = null;
+
+            // if user explicitly chooses to invite users, invalidate previous recorded attempts
+            invite = new ChatInvite();
+            invite.RoomID = room.RoomID;
+            invite.Title = room.Title;
+            
+
+            // if private room sign remote users id with our private key
+            if (room.Kind == RoomKind.Private)
+            {
+                invite.Host = Core.KeyMap[Core.LocalDhtID];
+
+                if (!Core.KeyMap.ContainsKey(id))
+                    return;
+
+                invite.SignedInvite = Core.User.Settings.KeyPair.SignData(Core.KeyMap[id], new SHA1CryptoServiceProvider());
+
+                room.Verified[id] = true;
+            }
+
+            room.Invites[id] = new Tuple<ChatInvite, List<ushort>>(invite, new List<ushort>());
+
+            // try to conncet to all of id's locations
+            foreach (LocInfo loc in Core.Locations.GetClients(id))
+                Core.RudpControl.Connect(loc.Location);
+
+            // send invite to already connected locations
+            foreach (RudpSession session in Core.RudpControl.GetActiveSessions(id))
+            {
+                session.SendData(ComponentID.Chat, invite, true);
+                room.Invites[id].Second.Add(session.ClientID);
+                AlertInviteSent(room, session);
+                SendStatus(room); // so we get added as active to new room invitee creates
+                SendWhoResponse(room, session);
+            }
+        }
+
+        private void AlertInviteSent(ChatRoom room, RudpSession session)
+        {
+            // Invite sent to Bob @Home
+
+            ProcessMessage(room, new ChatMessage(Core, "Invite sent to " + Links.GetName(session.DhtID) + LocationSuffix(session.DhtID, session.ClientID), true));
+        }
+
+        void SendInviteProof(ChatRoom room)
+        {
+            room.Members.LockReading(delegate()
+            {
+                foreach (ulong id in room.Members.Keys)
+                    foreach (RudpSession session in Core.RudpControl.GetActiveSessions(id))
+                        if(room.NeedSendInvite(id, session.ClientID))
+                            SendInviteProof(room, session);
+            });
+        }
+
+        void SendInviteProof(ChatRoom room, RudpSession session)
+        {
+            if (!room.Invites.ContainsKey(Core.LocalDhtID))
+                return;
+
+            // if already sent proof to client, return
+            Tuple<ChatInvite, List<ushort>> tried;
+            if (!room.Invites.TryGetValue(session.DhtID, out tried))
+            {
+                tried = new Tuple<ChatInvite, List<ushort>>(null, new List<ushort>());
+                room.Invites[session.DhtID] = tried;
+            }
+
+            if (tried.Second.Contains(session.ClientID))
+                return;
+
+            tried.Second.Add(session.ClientID);
+
+            ChatInvite invite = new ChatInvite();
+            invite.RoomID = room.RoomID;
+            invite.Title = room.Title;
+            invite.SignedInvite = room.Invites[Core.LocalDhtID].First.SignedInvite;
+
+            session.SendData(ComponentID.Chat, invite, true);
+        }
+
+        void ReceiveInvite(ChatInvite invite, RudpSession session)
+        {
+             
+             bool showInvite = false;
+
+             ChatRoom room;
+
+             if (!RoomMap.TryGetValue(invite.RoomID, out room))
+             {
+                 RoomKind kind = invite.SignedInvite != null ? RoomKind.Private : RoomKind.Public;
+                 room = new ChatRoom(kind, 0, invite.Title);
+                 room.RoomID = invite.RoomID;
+                 room.Kind = kind;
+                 room.Members.SafeAdd(session.DhtID, new ThreadedList<ushort>());
+
+                 if (invite.Host != null)
+                 {
+                     room.Host = Utilities.KeytoID(invite.Host);
+                     Core.IndexKey(room.Host, ref invite.Host);
+                 }
+
+                 RoomMap.SafeAdd(room.RoomID, room);
+
+                 showInvite = true;
+             }
+
+            // private room
+            if (room.Kind == RoomKind.Private)
+            {
+                if(!Core.KeyMap.ContainsKey(room.Host))
+                    return;
+
+                byte[] hostKey = Core.KeyMap[room.Host];
+
+
+                // if this is host sending us our verification
+                if (session.DhtID == room.Host)
+                {
+                    // check that host signed our public key with his private
+                    if (!Utilities.CheckSignedData(hostKey, Core.KeyMap[Core.LocalDhtID], invite.SignedInvite))
+                        return;
+
+                    if(!room.Invites.ContainsKey(Core.LocalDhtID)) // would fail if a node's dupe on network sends invite back to itself
+                        room.Invites.Add(Core.LocalDhtID, new Tuple<ChatInvite, List<ushort>>(invite, new List<ushort>()));
+                }
+
+                // else this is node in room sending us proof of being invited
+                else
+                {
+                    if (!Core.KeyMap.ContainsKey(session.DhtID))
+                        return; // key should def be in map, it was added when session was made to sender
+
+                    // check that host signed remote's key with host's private
+                    if (!Utilities.CheckSignedData(hostKey, Core.KeyMap[session.DhtID], invite.SignedInvite))
+                        return;
+                }
+
+                // if not verified yet, add them and send back our own verification
+                if (!room.Verified.ContainsKey(session.DhtID))
+                {
+                    room.Verified[session.DhtID] = true;
+
+                    if (room.Active)
+                    {
+                        SendInviteProof(room, session); // someone sends us their proof, we send it back in return
+                        SendStatus(session); // send status here because now it will include private rooms
+                    }
+                }
+            }
+
+            if (!Core.Links.LinkMap.SafeContainsKey(session.DhtID))
+                Links.Research(session.DhtID, 0, false);
+
+            if(showInvite)
+                Core.RunInGuiThread(Invited, session.DhtID, room);
+        }
+
+        void SendWhoRequest(ChatRoom room)
+        {
+            Debug.Assert(!IsCommandRoom(room.Kind));
+
+            room.Members.LockReading(delegate()
+           {
+               foreach (ulong id in room.Members.Keys)
+                   foreach (RudpSession session in Core.RudpControl.GetActiveSessions(id))
+                        SendWhoRequest(room, session);
+           });
+        }
+
+        void SendWhoRequest(ChatRoom room, RudpSession session)
+        {
+
+            ChatWho whoReq = new ChatWho();
+            whoReq.Request = true;
+            whoReq.RoomID = room.RoomID;
+            session.SendData(ComponentID.Chat, whoReq, true);
+        }
+
+        void SendWhoResponse(ChatRoom room, RudpSession session)
+        {
+            Debug.Assert(!IsCommandRoom(room.Kind));
+
+
+            List<ChatWho> whoPackets = new List<ChatWho>();
+
+            ChatWho who = new ChatWho();
+            who.RoomID = room.RoomID;
+            whoPackets.Add(who);
+
+            room.Members.LockReading(delegate()
+            {
+                foreach (ulong id in room.Members.Keys)
+                {
+                    who.Members.Add(id);
+
+                    if (who.Members.Count > 40) // 40 * 8 = 320 bytes
+                    {
+                        who = new ChatWho();
+                        who.RoomID = room.RoomID;
+                        whoPackets.Add(who);
+                    }
+                }
+            });
+
+            // send who to already connected locations
+            foreach(ChatWho packet in whoPackets)
+                session.SendData(ComponentID.Chat, packet, true);
+        }
+
+
+        void ReceiveWho(ChatWho who, RudpSession session)
+        {
+            // if in room 
+            ChatRoom room;
+
+            // if not in room, send status
+            if (!RoomMap.TryGetValue(who.RoomID, out room))
+            {
+                SendStatus(session);
+                return;
+            }
+
+            // if room not public, not untrusted, and not from verified private room member or host, igonre
+            if (IsCommandRoom(room.Kind) || (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.DhtID)))
+                return;
+
+                
+            // if requset
+            if(who.Request)
+                SendWhoResponse(room, session);
+            
+            // if reply
+            else
+            {
+                // add members to our own list
+                foreach(ulong id in who.Members)
+                    if(!room.Members.SafeContainsKey(id))
+                        room.Members.SafeAdd(id, new ThreadedList<ushort>());
+                    
+                // connect to new members
+                ConnectRoom(room); 
+            }
+        }
+
+        internal string LocationSuffix(ulong dhtID, ushort clientID)
+        {
+            // only show user's location if more than one are active
+
+            if (Core.Locations.ClientCount(dhtID) > 1)
+                return " @" + Core.Locations.GetLocationName(dhtID, clientID);
+
+            return "";
+        }
     }
 
 
@@ -718,13 +969,18 @@ namespace DeOps.Components.Chat
     {
         internal uint     RoomID;
         internal uint     ProjectID;
-        internal string   Name;
+        internal string   Title;
         internal RoomKind Kind;
         internal bool     IsLoop;
         internal bool     Active;
 
         internal ulong Host;
         internal ThreadedDictionary<ulong, ThreadedList<ushort>> Members = new ThreadedDictionary<ulong, ThreadedList<ushort>>();
+        
+        // for host this is a map of clients who have been sent invitations
+        // for invitee this is a map of clients who have been sent proof that we are part of the room
+        internal Dictionary<ulong, Tuple<ChatInvite, List<ushort>>> Invites;
+        internal Dictionary<ulong, bool> Verified;
 
         internal ThreadedList<ChatMessage> Log = new ThreadedList<ChatMessage>();
 
@@ -734,15 +990,42 @@ namespace DeOps.Components.Chat
         // per channel polling needs to be done because client may be still connected, leaving one channel, joining another
 
 
-        internal ChatRoom(RoomKind kind, uint project, string name)
+        internal ChatRoom(RoomKind kind, uint project, string title)
         {
             RoomID = project + (uint)kind;
             Kind = kind;
             ProjectID   = project;
-            Name = name;
+            Title = title;
+
+            if (Kind == RoomKind.Private || kind == RoomKind.Public)
+                Invites = new Dictionary<ulong, Tuple<ChatInvite, List<ushort>>>();
+
+            if (Kind == RoomKind.Private)
+                Verified = new Dictionary<ulong, bool>();
         }
 
-        internal void RemoveMember(ulong dhtid, ushort client)
+        internal void AddMember(ulong dhtid, ThreadedDictionary<ulong, ThreadedList<ushort>> prev)
+        {
+            ThreadedList<ushort> connected = null;
+            if (!prev.SafeTryGetValue(dhtid, out connected))
+                connected = new ThreadedList<ushort>();
+
+            Members.SafeAdd(dhtid, connected);
+        }
+
+        internal void AddMember(ulong dhtid, ushort client)
+        {
+            ThreadedList<ushort> connected = null;
+            if (!Members.SafeTryGetValue(dhtid, out connected))
+                connected = new ThreadedList<ushort>();
+
+            if (client != 0 && !connected.SafeContains(client))
+                connected.SafeAdd(client);
+
+            Members.SafeAdd(dhtid, connected);
+        }
+
+        internal void RemoveMember(ulong dhtid, ushort client, bool delete)
         {
             ThreadedList<ushort> connected = null;
 
@@ -752,11 +1035,30 @@ namespace DeOps.Components.Chat
             if (connected.SafeContains(client))
                 connected.SafeRemove(client);
 
-            Members.SafeAdd(dhtid, connected); // update list
-
             // remove member himself if no connections, and not a command room 
-            if (connected.SafeCount == 0 && (Kind == RoomKind.Untrusted || Kind == RoomKind.Public || Kind == RoomKind.Private))
+            if (delete && connected.SafeCount == 0 && (Kind == RoomKind.Untrusted || Kind == RoomKind.Public || Kind == RoomKind.Private))
                 Members.SafeRemove(dhtid);
+        }
+
+        internal int GetActiveMembers()
+        {
+            int count = 0;
+
+            Members.LockReading(delegate()
+            {
+                foreach (ThreadedList<ushort> clients in Members.Values)
+                    if (clients.SafeCount > 0)
+                        count++;
+            });
+
+            return count;
+        }
+
+        internal bool NeedSendInvite(ulong id, ushort client)
+        {
+            return  Invites != null &&
+                    Invites.ContainsKey(id) &&
+                    !Invites[id].Second.Contains(client);
         }
     }
 

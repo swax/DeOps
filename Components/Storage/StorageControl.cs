@@ -548,7 +548,8 @@ namespace DeOps.Components.Storage
 
         private void DownloadStorage(SignedData signed, StorageHeader header)
         {
-            Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature);
+            if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
+                return;
 
             FileDetails details = new FileDetails(ComponentID.Storage, header.FileHash, header.FileSize, BitConverter.GetBytes(StoragePacket.Header));
 

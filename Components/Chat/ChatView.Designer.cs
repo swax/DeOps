@@ -28,15 +28,19 @@ namespace DeOps.Components.Chat
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ChatView));
             this.ViewContainer = new System.Windows.Forms.SplitContainer();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
-            this.CreateButton = new System.Windows.Forms.ToolStripButton();
-            this.ToolSeparator = new System.Windows.Forms.ToolStripSeparator();
+            this.InviteButton = new System.Windows.Forms.ToolStripButton();
             this.LocalButton = new System.Windows.Forms.ToolStripButton();
             this.LiveButton = new System.Windows.Forms.ToolStripButton();
-            this.JoinButton = new System.Windows.Forms.ToolStripButton();
             this.UntrustedButton = new System.Windows.Forms.ToolStripButton();
+            this.LeaveButton = new System.Windows.Forms.ToolStripButton();
+            this.JoinButton = new System.Windows.Forms.ToolStripButton();
+            this.RoomSeparator = new System.Windows.Forms.ToolStripSeparator();
+            this.RoomsButton = new System.Windows.Forms.ToolStripDropDownButton();
+            this.FlashTimer = new System.Windows.Forms.Timer(this.components);
             this.ViewContainer.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -49,38 +53,36 @@ namespace DeOps.Components.Chat
             this.ViewContainer.Location = new System.Drawing.Point(0, 25);
             this.ViewContainer.Name = "ViewContainer";
             this.ViewContainer.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            this.ViewContainer.Size = new System.Drawing.Size(397, 298);
-            this.ViewContainer.SplitterDistance = 142;
+            this.ViewContainer.Size = new System.Drawing.Size(420, 280);
+            this.ViewContainer.SplitterDistance = 133;
             this.ViewContainer.TabIndex = 0;
             // 
             // toolStrip1
             // 
             this.toolStrip1.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.CreateButton,
-            this.ToolSeparator,
+            this.InviteButton,
             this.LocalButton,
             this.LiveButton,
+            this.UntrustedButton,
+            this.LeaveButton,
             this.JoinButton,
-            this.UntrustedButton});
+            this.RoomSeparator,
+            this.RoomsButton});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(397, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(420, 25);
             this.toolStrip1.TabIndex = 1;
             this.toolStrip1.Text = "toolStrip1";
             // 
-            // CreateButton
+            // InviteButton
             // 
-            this.CreateButton.Image = ((System.Drawing.Image)(resources.GetObject("CreateButton.Image")));
-            this.CreateButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.CreateButton.Name = "CreateButton";
-            this.CreateButton.Size = new System.Drawing.Size(90, 22);
-            this.CreateButton.Text = "Create Room";
-            // 
-            // ToolSeparator
-            // 
-            this.ToolSeparator.Name = "ToolSeparator";
-            this.ToolSeparator.Size = new System.Drawing.Size(6, 25);
+            this.InviteButton.Image = ((System.Drawing.Image)(resources.GetObject("InviteButton.Image")));
+            this.InviteButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.InviteButton.Name = "InviteButton";
+            this.InviteButton.Size = new System.Drawing.Size(55, 22);
+            this.InviteButton.Text = "Invite";
+            this.InviteButton.Click += new System.EventHandler(this.InviteButton_Click);
             // 
             // LocalButton
             // 
@@ -102,6 +104,27 @@ namespace DeOps.Components.Chat
             this.LiveButton.Text = "Live";
             this.LiveButton.Click += new System.EventHandler(this.LiveButton_Click);
             // 
+            // UntrustedButton
+            // 
+            this.UntrustedButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.UntrustedButton.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.UntrustedButton.Image = ((System.Drawing.Image)(resources.GetObject("UntrustedButton.Image")));
+            this.UntrustedButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.UntrustedButton.Name = "UntrustedButton";
+            this.UntrustedButton.Size = new System.Drawing.Size(59, 22);
+            this.UntrustedButton.Text = "Untrusted";
+            this.UntrustedButton.Click += new System.EventHandler(this.UntrustedButton_Click);
+            // 
+            // LeaveButton
+            // 
+            this.LeaveButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.LeaveButton.Image = ((System.Drawing.Image)(resources.GetObject("LeaveButton.Image")));
+            this.LeaveButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.LeaveButton.Name = "LeaveButton";
+            this.LeaveButton.Size = new System.Drawing.Size(56, 22);
+            this.LeaveButton.Text = "Leave";
+            this.LeaveButton.Click += new System.EventHandler(this.LeaveButton_Click);
+            // 
             // JoinButton
             // 
             this.JoinButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
@@ -110,16 +133,27 @@ namespace DeOps.Components.Chat
             this.JoinButton.Name = "JoinButton";
             this.JoinButton.Size = new System.Drawing.Size(46, 22);
             this.JoinButton.Text = "Join";
+            this.JoinButton.Click += new System.EventHandler(this.JoinButton_Click);
             // 
-            // UntrustedButton
+            // RoomSeparator
             // 
-            this.UntrustedButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.UntrustedButton.Image = ((System.Drawing.Image)(resources.GetObject("UntrustedButton.Image")));
-            this.UntrustedButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.UntrustedButton.Name = "UntrustedButton";
-            this.UntrustedButton.Size = new System.Drawing.Size(59, 22);
-            this.UntrustedButton.Text = "Untrusted";
-            this.UntrustedButton.Click += new System.EventHandler(this.UntrustedButton_Click);
+            this.RoomSeparator.Name = "RoomSeparator";
+            this.RoomSeparator.Size = new System.Drawing.Size(6, 25);
+            // 
+            // RoomsButton
+            // 
+            this.RoomsButton.Image = ((System.Drawing.Image)(resources.GetObject("RoomsButton.Image")));
+            this.RoomsButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.RoomsButton.Name = "RoomsButton";
+            this.RoomsButton.Size = new System.Drawing.Size(68, 22);
+            this.RoomsButton.Text = "Rooms";
+            this.RoomsButton.DropDownOpening += new System.EventHandler(this.RoomsButton_DropDownOpening);
+            // 
+            // FlashTimer
+            // 
+            this.FlashTimer.Enabled = true;
+            this.FlashTimer.Interval = 500;
+            this.FlashTimer.Tick += new System.EventHandler(this.FlashTimer_Tick);
             // 
             // ChatView
             // 
@@ -129,7 +163,7 @@ namespace DeOps.Components.Chat
             this.Controls.Add(this.toolStrip1);
             this.Controls.Add(this.ViewContainer);
             this.Name = "ChatView";
-            this.Size = new System.Drawing.Size(397, 323);
+            this.Size = new System.Drawing.Size(420, 305);
             this.ViewContainer.ResumeLayout(false);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
@@ -142,12 +176,15 @@ namespace DeOps.Components.Chat
 
         private System.Windows.Forms.SplitContainer ViewContainer;
         private System.Windows.Forms.ToolStrip toolStrip1;
-        private System.Windows.Forms.ToolStripButton CreateButton;
         private System.Windows.Forms.ToolStripButton LocalButton;
         private System.Windows.Forms.ToolStripButton LiveButton;
-        private System.Windows.Forms.ToolStripButton JoinButton;
-        private System.Windows.Forms.ToolStripSeparator ToolSeparator;
+        private System.Windows.Forms.ToolStripButton InviteButton;
         private System.Windows.Forms.ToolStripButton UntrustedButton;
+        private System.Windows.Forms.ToolStripButton LeaveButton;
+        private System.Windows.Forms.ToolStripButton JoinButton;
+        private System.Windows.Forms.ToolStripSeparator RoomSeparator;
+        private System.Windows.Forms.ToolStripDropDownButton RoomsButton;
+        private System.Windows.Forms.Timer FlashTimer;
 
     }
 }

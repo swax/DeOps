@@ -8,7 +8,8 @@ using System.Windows.Forms;
 
 using DeOps.Interface;
 using DeOps.Interface.Views;
-
+using DeOps.Implementation;
+using DeOps.Components.Link;
 
 namespace DeOps.Components.Chat
 {
@@ -16,12 +17,16 @@ namespace DeOps.Components.Chat
     {
         ChatControl Chat;
         uint ProjectID;
-        bool Custom;
+        ChatRoom Custom;
 
         RoomView ViewHigh;
         RoomView ViewLow;
 
-        internal ChatView(ChatControl chat, uint project, bool custom)
+        bool WindowActivated;
+        bool FlashMe;
+
+
+        internal ChatView(ChatControl chat, uint project, ChatRoom custom)
         {
             InitializeComponent();
 
@@ -30,59 +35,53 @@ namespace DeOps.Components.Chat
             Custom = custom;
 
             Chat.Refresh += new RefreshHandler(Chat_Refresh);
+            Chat.Invited += new InvitedHandler(Chat_Invited);
 
             toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
 
-            ToolSeparator.Visible = false;
-            LocalButton.Visible = false;
-            LiveButton.Visible = false;
-            UntrustedButton.Visible = false;
-            JoinButton.Visible = false;
+            bool isCustom = (custom != null);
+            
+            LocalButton.Checked = !isCustom;
 
-            LocalButton.Checked = true;
+            LocalButton.Visible     = !isCustom;
+            LiveButton.Visible      = !isCustom;
+            UntrustedButton.Visible = !isCustom;
+            RoomSeparator.Visible = !isCustom;
+            RoomsButton.Visible = !isCustom;
+
+            JoinButton.Visible   = false;
+            LeaveButton.Visible  = isCustom;
+            InviteButton.Visible = isCustom && (Custom.Kind == RoomKind.Public || Custom.Host == Chat.Core.LocalDhtID);
         }
 
         internal override void Init()
         {
-            /*Chat.Rooms.LockReading(delegate()
-            {
-                foreach (ChatRoom room in Chat.Rooms)
-                    if (room.ProjectID == ProjectID)
-                        OnCreateRoom(room);
-            });*/
-
             Chat_Refresh();
+
+            if (ViewHigh == null && ViewLow == null)
+                UntrustedButton_Click(null, null);
+
+            if (External != null)
+            {
+                External.Activated += new EventHandler(External_Activated);
+                External.Deactivate += new EventHandler(External_Deactivate);
+            }
         }
 
         internal override bool Fin()
         {
             Chat.Refresh -= new RefreshHandler(Chat_Refresh);
 
-            ClearRoom(ViewHigh);
-            ClearRoom(ViewLow);
+            SetTopView(null, false);
+            SetBottomView(null);
+
+            if (External != null)
+            {
+                External.Activated -= new EventHandler(External_Activated);
+                External.Deactivate -= new EventHandler(External_Deactivate);
+            }
 
             return true;
-        }
-
-        private void ClearRoom(RoomView room)
-        {
-            if (room == null)
-                return;
-
-            if (room == ViewHigh)
-            {
-                ViewHigh.Fin();
-                ViewContainer.Panel1.Controls.Clear();
-                ViewHigh = null;
-            }
-
-            if (room == ViewLow)
-            {
-                ViewLow.Fin();
-                ViewContainer.Panel2.Controls.Clear();
-                ViewLow = null;
-            }
-
         }
 
         internal override string GetTitle(bool small)
@@ -90,12 +89,21 @@ namespace DeOps.Components.Chat
             if (small)
                 return "Chat";
 
-            string title = "My ";
+            string title = "";
 
-            if (ProjectID != 0)
-                title += Chat.Core.Links.GetProjectName(ProjectID) + " ";
+            if (Custom == null)
+            {
+                title = "My ";
 
-            title += " Chat";
+                if (ProjectID != 0)
+                    title += Chat.Core.Links.GetProjectName(ProjectID) + " ";
+
+                title += " Chat";
+            }
+            else
+            {
+                title = Custom.Title;
+            }
 
             return title;
         }
@@ -112,52 +120,53 @@ namespace DeOps.Components.Chat
 
         void Chat_Refresh()
         {
-            if (Custom)
-                return;
 
-            // startup in chat mode
+            // set which buttons are visible/checked
 
-            // set default checked in init
-
-            // determine if buttons should be removed
-
-            if (LocalButton.Checked)
+            if (Custom != null)
             {
-                AddView(ViewHigh, RoomKind.Command_High);
-                AddView(ViewLow, RoomKind.Command_Low);
+                SetTopView(Custom, true);
+                SetBottomView(null);
+
+                JoinButton.Visible = !Custom.Active;
+                LeaveButton.Visible = Custom.Active;
             }
 
-            if (LiveButton.Checked)
+            else if (LocalButton.Checked)
             {
-                AddView(ViewHigh, RoomKind.Live_High);
-                AddView(ViewLow, RoomKind.Live_Low);
+                SetTopView( Chat.GetRoom(ProjectID, RoomKind.Command_High), false);
+                SetBottomView( Chat.GetRoom(ProjectID, RoomKind.Command_Low));
+
+                JoinButton.Visible = false;
+                LeaveButton.Visible = false;
             }
 
-            // if local doesnt exist, remove local/live, and check untrusted
-            if (ViewHigh == null && ViewLow == null)
+            else if (LiveButton.Checked)
             {
-                LocalButton.Visible = false;
-                LiveButton.Visible = false;
-                UntrustedButton.Checked = true;
+                SetTopView(Chat.GetRoom(ProjectID, RoomKind.Live_High), false);
+                SetBottomView(Chat.GetRoom(ProjectID, RoomKind.Live_Low));
+               
+                JoinButton.Visible = false;
+                LeaveButton.Visible = false;
             }
 
-            if (UntrustedButton.Checked)
+            else if (UntrustedButton.Checked)
             {
                 ChatRoom room = Chat.GetRoom(ProjectID, RoomKind.Untrusted);
 
+                SetTopView(room, true);
+                SetBottomView(null);
+
                 if (room != null)
                 {
-                    if (ViewHigh == null || ViewHigh.Room.RoomID != room.RoomID)
-                        AddRoom(ViewHigh, room);
+                    JoinButton.Visible = !room.Active;
+                    LeaveButton.Visible = room.Active;
                 }
-                else
-                    ClearRoom(ViewHigh);
-
-                ClearRoom(ViewLow);
-
-                JoinButton.Visible = true;
-                JoinButton.Text = room.Active ? "Leave Room" : "Join Room";
             }
+
+            LocalButton.ForeColor = RoomsActive(RoomKind.Command_High, RoomKind.Command_Low) ? Color.Black : Color.DimGray;
+            LiveButton.ForeColor = RoomsActive(RoomKind.Live_High, RoomKind.Live_Low) ? Color.Black : Color.DimGray;
+            UntrustedButton.ForeColor = RoomsActive(RoomKind.Untrusted) ? Color.Black : Color.DimGray;
 
             // collapse unused panels
             if (ViewContainer.Panel1.Controls.Count == 0)
@@ -167,116 +176,244 @@ namespace DeOps.Components.Chat
                 ViewContainer.Panel2Collapsed = true;
         }
 
-        private void AddView(RoomView view, RoomKind kind)
+        private bool RoomsActive(params RoomKind[] kinds)
         {
-            ChatRoom room = Chat.GetRoom(ProjectID, kind);
+            foreach (RoomKind kind in kinds)
+            {
+                ChatRoom room = Chat.GetRoom(ProjectID, kind);
 
-            bool show = false;
-            if (room != null && room.Active)
-                show = true;
+                if (room != null)
+                {
+                    if (Chat.IsCommandRoom(room.Kind ))
+                    {
+                        if (room.Members.SafeCount > 1)
+                            return true;
+                    }
+                    else if (room.Active)
+                        return true;
+                }
+            }
 
-            if (!show)
-                ClearRoom(view);
-
-            else if (view == null || view.Room.RoomID != room.RoomID)
-                AddRoom(view, room);
+            return false;
         }
 
-        private void AddRoom(RoomView view, ChatRoom room)
+        void SetTopView(ChatRoom room, bool force)
         {
-            ClearRoom(view);
-
-            if (view == ViewHigh)
+            if (ViewHigh != null)
             {
-                ViewHigh = new RoomView(Chat, room);
-                ViewHigh.Dock = DockStyle.Fill;
-                ViewContainer.Panel1.Controls.Add(ViewHigh);
+                if (ViewHigh.Room == room && (force || room.Members.SafeCount > 1))
+                    return;
 
-                ViewHigh.Init();
-                ViewContainer.Panel1Collapsed = false;
+                ViewHigh.Fin();
+                ViewContainer.Panel1.Controls.Clear();
+                ViewHigh = null;
             }
 
-            // low room
-            if(view == ViewLow)
-            {
-                ViewLow = new RoomView(Chat, room);
-                ViewLow.Dock = DockStyle.Fill;
-                ViewContainer.Panel2.Controls.Add(ViewLow);
+            if (room == null || (!force && room.Members.SafeCount <= 1))
+                return;
 
-                ViewLow.Init();
-                ViewContainer.Panel2Collapsed = false;
-            }
+            ViewHigh = new RoomView(this, Chat, room);
+            ViewHigh.Dock = DockStyle.Fill;
+            ViewContainer.Panel1.Controls.Add(ViewHigh);
+
+            ViewHigh.Init();
+            ViewContainer.Panel1Collapsed = false;
         }
 
-
-
-        private void OnCreateRoom(ChatRoom room)
+        void SetBottomView(ChatRoom room)
         {
-            // high room
-            if (room.Kind != RoomKind.Command_Low)
+            if (ViewLow != null)
             {
-                ClearRoom(ViewHigh);
+                if (ViewLow.Room == room && room.Members.SafeCount > 1)
+                    return;
 
-                ViewHigh = new RoomView(Chat, room);
-                ViewHigh.Dock = DockStyle.Fill;
-                ViewContainer.Panel1.Controls.Add(ViewHigh);
-
-                ViewHigh.Init();
-                ViewContainer.Panel1Collapsed = false;
+                ViewLow.Fin();
+                ViewContainer.Panel2.Controls.Clear();
+                ViewLow = null;
             }
 
-            // low room
-            else
-            {
-                ClearRoom(ViewLow);
+            if (room == null || room.Members.SafeCount <= 1)
+                return;
 
-                ViewLow = new RoomView(Chat, room);
-                ViewLow.Dock = DockStyle.Fill;
-                ViewContainer.Panel2.Controls.Add(ViewLow);
+            ViewLow = new RoomView(this, Chat, room);
+            ViewLow.Dock = DockStyle.Fill;
+            ViewContainer.Panel2.Controls.Add(ViewLow);
 
-                ViewLow.Init();
-                ViewContainer.Panel2Collapsed = false;
-            }
-
-            // collapse unused panels
-            if (ViewContainer.Panel1.Controls.Count == 0)
-                ViewContainer.Panel1Collapsed = true;
-
-            if (ViewContainer.Panel2.Controls.Count == 0)
-                ViewContainer.Panel2Collapsed = true;
-        }
-
-        private void OnRemoveRoom(ChatRoom room)
-        {
-
-            // high room
-            if (room.Kind != RoomKind.Command_Low)
-            {
-                ClearRoom(ViewHigh);
-                ViewContainer.Panel1Collapsed = true;
-            }
-
-            // low room
-            else
-            {
-                ClearRoom(ViewLow);
-                ViewContainer.Panel2Collapsed = true;
-            }
+            ViewLow.Init();
+            ViewContainer.Panel2Collapsed = false;
         }
 
         private void LocalButton_Click(object sender, EventArgs e)
         {
+            LocalButton.Checked = true;
+            LiveButton.Checked = false;
+            UntrustedButton.Checked = false;
+
             Chat_Refresh();
         }
 
         private void LiveButton_Click(object sender, EventArgs e)
         {
+            LocalButton.Checked = false;
+            LiveButton.Checked = true;
+            UntrustedButton.Checked = false;
+
             Chat_Refresh();
         }
 
         private void UntrustedButton_Click(object sender, EventArgs e)
         {
+            LocalButton.Checked = false;
+            LiveButton.Checked = false;
+            UntrustedButton.Checked = true;
+
             Chat_Refresh();
+        }
+
+        private void JoinButton_Click(object sender, EventArgs e)
+        {
+            Chat.Core.RunInCoreBlocked(delegate()
+            {
+                if (Custom != null)
+                    Chat.JoinRoom(Custom);
+
+                if (UntrustedButton.Checked)
+                    Chat.JoinCommand(ProjectID, RoomKind.Untrusted);
+            });
+
+            Chat.Refresh.Invoke(); // all interfaces need to reflect this
+        }
+
+        private void LeaveButton_Click(object sender, EventArgs e)
+        {
+
+            if (UntrustedButton.Checked)
+                Chat.LeaveRoom(ProjectID, RoomKind.Untrusted);
+
+            if (Custom != null)
+                Chat.LeaveRoom(Custom);
+
+            Chat.Refresh.Invoke(); // all interfaces need to reflect this
+        }
+
+
+        private void RoomsButton_DropDownOpening(object sender, EventArgs e)
+        {
+            RoomsButton.DropDownItems.Clear();
+
+            Chat.RoomMap.LockReading(delegate()
+            {
+                foreach (ChatRoom room in Chat.RoomMap.Values)
+                    if (room.Kind == RoomKind.Public || room.Kind == RoomKind.Private)
+                    {
+                        RoomsButton.DropDownItems.Add(new RoomItem(room, RoomMenu_Click));
+                    }
+            });
+
+            if(RoomsButton.DropDownItems.Count > 0)
+                RoomsButton.DropDownItems.Add(new ToolStripSeparator());
+            
+            RoomsButton.DropDownItems.Add(new ToolStripMenuItem("Create", null, RoomMenu_Create));
+        }
+
+        private void RoomMenu_Click(object sender, EventArgs e)
+        {
+            RoomItem item = sender as RoomItem;
+
+            if (item == null)
+                return;
+
+            Chat.ShowRoom(item.Room);
+        }
+
+        private void RoomMenu_Create(object sender, EventArgs e)
+        {
+            CreateRoom form = new CreateRoom();
+
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                string name = form.TitleBox.Text.Trim(' ');
+
+                if (name == "")
+                    return;
+
+                RoomKind kind = form.PublicButton.Checked ? RoomKind.Public : RoomKind.Private;
+
+                ChatRoom room = Chat.CreateRoom(name, kind);
+                Chat.ShowRoom(room);
+            }
+        }
+
+        private void InviteButton_Click(object sender, EventArgs e)
+        {
+            if(Custom == null)
+                return;
+
+            AddLinks add = new AddLinks(Chat.Core.Links, ProjectID);
+            add.Text = "Invite People";
+            add.AddButton.Text = "Invite";
+
+            if (add.ShowDialog(this) == DialogResult.OK)
+                foreach (ulong id in add.People)
+                {
+                    if (!Custom.Members.SafeContainsKey(id))
+                        Custom.Members.SafeAdd(id, new ThreadedList<ushort>());
+
+                    Chat.SendInviteRequest(Custom, id);
+                }
+        }
+
+
+        void Chat_Invited(ulong inviter, ChatRoom room)
+        {
+            if (MessageBox.Show("You have been invited by " + Chat.Core.Links.GetName(inviter) + " to the room\r\n" + room.Title + "\r\nJoin now?", "Invite", MessageBoxButtons.YesNo) != DialogResult.Yes)
+                return;
+
+            Chat.Core.RunInCoreBlocked(delegate()
+            {
+                Chat.JoinRoom(room);
+            });
+            
+            Chat.ShowRoom(room);
+        }
+
+        internal void MessageFlash()
+        {
+            if (External != null && !WindowActivated)
+                FlashMe = true;
+        }
+
+        void External_Deactivate(object sender, EventArgs e)
+        {
+            WindowActivated = false;
+        }
+
+        void External_Activated(object sender, EventArgs e)
+        {
+            WindowActivated = true;
+            FlashMe = false;
+        }
+
+        private void FlashTimer_Tick(object sender, EventArgs e)
+        {
+            if (External != null && !WindowActivated && FlashMe)
+                Win32.FlashWindow(External.Handle, true);
+        }
+    }
+
+
+    class RoomItem : ToolStripMenuItem
+    {
+        internal ChatRoom Room;
+
+
+        internal RoomItem(ChatRoom room, EventHandler onClick)
+            : base(room.Title + " (" + room.GetActiveMembers().ToString() + ")", null, onClick)
+        {
+            Room = room;
+
+            if (!room.Active)
+                ForeColor = Color.DimGray;
         }
     }
 }

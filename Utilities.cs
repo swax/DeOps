@@ -294,13 +294,12 @@ namespace DeOps
             throw new Exception("Unknown Encryption Type");
         }
 
-        internal static void CheckSignedData(byte[] key, byte[] data, byte[] sig)
+        internal static bool CheckSignedData(byte[] key, byte[] data, byte[] sig)
         {
             // check signature
             RSACryptoServiceProvider rsa = Utilities.KeytoRsa(key);
 
-            if (!rsa.VerifyData(data, new SHA1CryptoServiceProvider(), sig))
-                throw new Exception("Signature check failed");
+            return rsa.VerifyData(data, new SHA1CryptoServiceProvider(), sig);
         }
 
         internal static RSACryptoServiceProvider KeytoRsa(byte[] key)

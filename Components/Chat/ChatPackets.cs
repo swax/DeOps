@@ -11,27 +11,25 @@ namespace DeOps.Components.Chat
     {
         internal const byte Data = 0x10;
         internal const byte Status = 0x20;
+        internal const byte Invite = 0x30;
+        internal const byte Who = 0x40;
     }
-
-    //internal enum ChatPacketType { Invite, Join, Leave, Message, Who, Unknown };
 
     internal class ChatText : G2Packet
     {
         const byte Packet_ID = 0x10;
-        //const byte Packet_Type = 0x20;
-       // const byte Packet_User = 0x30;
-        const byte Packet_Text = 0x50;
+        const byte Packet_Kind = 0x20;
+        const byte Packet_Text = 0x30;
+        const byte Packet_RoomID = 0x40;
 
-
-        internal uint RoomID;
-        //internal ChatPacketType Type;
-        //internal UInt64 UserID;
-        //internal List<ulong> UserIDs = new List<ulong>();
+        internal uint ProjectID;
+        internal RoomKind Kind;
         internal string Text = "";
+        internal uint RoomID;
+
 
         internal ChatText()
         {
-            //Type = type;
         }
 
         internal override byte[] Encode(G2Protocol protocol)
@@ -40,23 +38,10 @@ namespace DeOps.Components.Chat
             {
                 G2Frame chat = protocol.WritePacket(null, ChatPacket.Data, null);
 
-                protocol.WritePacket(chat, Packet_ID, BitConverter.GetBytes(RoomID));
-                //protocol.WritePacket(chat, Packet_Type, protocol.UTF.GetBytes(TypeToString(Type)));
+                protocol.WritePacket(chat, Packet_ID, BitConverter.GetBytes(ProjectID));
+                protocol.WritePacket(chat, Packet_Kind, BitConverter.GetBytes((int)Kind));
+                protocol.WritePacket(chat, Packet_RoomID, BitConverter.GetBytes(RoomID));
 
-                /*if (UserID != 0 && !UserIDs.Contains(UserID))
-                    UserIDs.Add(UserID);
-
-                int offset = 0;
-                byte[] buffer = new byte[UserIDs.Count * 8];
-
-                foreach (UInt64 id in UserIDs)
-                {
-                    BitConverter.GetBytes(id).CopyTo(buffer, offset);
-                    offset += 8;
-                }
-
-                protocol.WritePacket(chat, Packet_User, buffer);
-*/
                 if (Text.Length > 0)
                     protocol.WritePacket(chat, Packet_Text, protocol.UTF.GetBytes(Text));
                 
@@ -81,77 +66,25 @@ namespace DeOps.Components.Chat
                 switch (child.Name)
                 {
                     case Packet_ID:
-                        chat.RoomID = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        chat.ProjectID = BitConverter.ToUInt32(child.Data, child.PayloadPos);
                         break;
 
-                    /*case Packet_Type:
-                        chat.Type = StringToType(protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize));
+                    case Packet_Kind:
+                        chat.Kind = (RoomKind) BitConverter.ToUInt32(child.Data, child.PayloadPos);
                         break;
-
-                    case Packet_User:
-                        if (child.PayloadSize % 8 == 0)
-                        {
-                            int offset = 0;
-
-                            while (offset < child.PayloadSize)
-                            {
-                                UInt64 id = BitConverter.ToUInt64(child.Data, child.PayloadPos + offset);
-                                chat.UserIDs.Add(id);
-
-                                offset += 8;
-                            }
-
-                            if (chat.UserIDs.Count > 0)
-                                chat.UserID = (UInt64)chat.UserIDs[0];
-                        }
-                        break;*/
 
                     case Packet_Text:
                         chat.Text = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_RoomID:
+                        chat.RoomID = BitConverter.ToUInt32(child.Data, child.PayloadPos);
                         break;
                 }
             }
 
             return chat;
         }
-
-        /*static string TypeToString(ChatPacketType type)
-        {
-            switch (type)
-            {
-                case ChatPacketType.Invite:
-                    return "INV";
-                case ChatPacketType.Join:
-                    return "JOIN";
-                case ChatPacketType.Leave:
-                    return "LEAVE";
-                case ChatPacketType.Message:
-                    return "MSG";
-                case ChatPacketType.Who:
-                    return "WHO";
-            }
-
-            return "UNKN";
-        }
-
-        static ChatPacketType StringToType(string type)
-        {
-            switch (type)
-            {
-                case "INV":
-                    return ChatPacketType.Invite;
-                case "JOIN":
-                    return ChatPacketType.Join;
-                case "LEAVE":
-                    return ChatPacketType.Leave;
-                case "MSG":
-                    return ChatPacketType.Message;
-                case "WHO":
-                    return ChatPacketType.Who;
-            }
-
-            return ChatPacketType.Unknown;
-        }*/
     }
 
     internal class ChatStatus : G2Packet
@@ -216,6 +149,166 @@ namespace DeOps.Components.Chat
             }
 
             return status;
+        }
+    }
+
+
+
+    internal class ChatInvite : G2Packet
+    {
+        const byte Packet_RoomID = 0x10;
+        const byte Packet_Title = 0x20;
+        const byte Packet_SignedInvite = 0x30;
+        const byte Packet_Host = 0x40;
+
+
+        internal uint RoomID;
+        internal string Title;
+        internal byte[] Host;
+        internal byte[] SignedInvite;
+
+        internal ChatInvite()
+        {
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame invite = protocol.WritePacket(null, ChatPacket.Invite , null);
+
+                protocol.WritePacket(invite, Packet_RoomID, BitConverter.GetBytes(RoomID));
+
+                if (Host != null)
+                    protocol.WritePacket(invite, Packet_Host, Host);
+
+                if(SignedInvite != null)
+                    protocol.WritePacket(invite, Packet_SignedInvite, SignedInvite);
+
+                if (Title.Length > 0)
+                    protocol.WritePacket(invite, Packet_Title, protocol.UTF.GetBytes(Title));
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static ChatInvite Decode(G2Protocol protocol, G2Header root)
+        {
+            ChatInvite invite = new ChatInvite();
+
+            G2Protocol.ResetPacket(root);
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_RoomID:
+                        invite.RoomID = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Title:
+                        invite.Title = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_Host:
+                        invite.Host = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_SignedInvite:
+                        invite.SignedInvite = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+                }
+            }
+
+            return invite;
+        }
+    }
+
+
+    internal class ChatWho : G2Packet
+    {
+        const byte Packet_Request = 0x10;
+        const byte Packet_RoomID  = 0x20;
+        const byte Packet_Members = 0x30;
+
+
+        internal bool Request;
+        internal uint RoomID;
+        internal List<ulong> Members = new List<ulong>();
+
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame who = protocol.WritePacket(null, ChatPacket.Who, null);
+
+                protocol.WritePacket(who, Packet_Request, BitConverter.GetBytes(Request));
+                protocol.WritePacket(who, Packet_RoomID, BitConverter.GetBytes(RoomID));
+
+
+                int offset = 0;
+                byte[] buffer = new byte[Members.Count * 8];
+
+                foreach (UInt64 id in Members)
+                {
+                    BitConverter.GetBytes(id).CopyTo(buffer, offset);
+                    offset += 8;
+                }
+
+                protocol.WritePacket(who, Packet_Members, buffer);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+
+        internal static ChatWho Decode(G2Protocol protocol, G2Header root)
+        {
+            ChatWho who = new ChatWho();
+
+            G2Protocol.ResetPacket(root);
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_Request:
+                        who.Request = BitConverter.ToBoolean(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_RoomID:
+                        who.RoomID = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Members:
+                        if (child.PayloadSize % 8 == 0)
+                        {
+                            int offset = 0;
+
+                            while (offset < child.PayloadSize)
+                            {
+                                UInt64 id = BitConverter.ToUInt64(child.Data, child.PayloadPos + offset);
+                                who.Members.Add(id);
+
+                                offset += 8;
+                            }
+                        }
+                        break;
+                }
+            }
+
+            return who;
         }
     }
 }

@@ -124,6 +124,7 @@ namespace DeOps.Components.Link
             this.Name = "AddLinks";
             this.ShowInTaskbar = false;
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Add People";
             this.Load += new System.EventHandler(this.LinkChooser_Load);
             this.ResumeLayout(false);
@@ -134,9 +135,9 @@ namespace DeOps.Components.Link
         #endregion
 
         private System.Windows.Forms.Button TheCancelButton;
-        private System.Windows.Forms.Button AddButton;
         internal LinkTree PersonTree;
         private System.Windows.Forms.Label label2;
         internal System.Windows.Forms.ComboBox ProjectCombo;
+        internal System.Windows.Forms.Button AddButton;
     }
 }

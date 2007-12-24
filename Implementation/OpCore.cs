@@ -59,6 +59,7 @@ namespace DeOps.Implementation
     internal delegate void TimerHandler();
     internal delegate void NewsUpdateHandler(NewsItemInfo info);
 
+    [DebuggerDisplay("{User.Settings.ScreenName}")]
 	internal class OpCore
 	{
         // super-classes
@@ -545,10 +546,17 @@ namespace DeOps.Implementation
             }
         }
 
+        Queue<Delegate> LastEvents = new Queue<Delegate>();
+
         internal void RunInGuiThread(Delegate method, params object[] args)
         {
             if (method == null || GuiMain == null)
                 return;
+
+            LastEvents.Enqueue(method);
+            while (LastEvents.Count > 10)
+                LastEvents.Dequeue();
+
 
             GuiMain.BeginInvoke(method, args);
         }

@@ -1174,7 +1174,8 @@ namespace DeOps.Components.Mail
 
         private void Download_Mail(SignedData signed, MailHeader header)
         {
-            Utilities.CheckSignedData(header.Source, signed.Data, signed.Signature);
+            if (!Utilities.CheckSignedData(header.Source, signed.Data, signed.Signature))
+                return;
 
             FileDetails details = new FileDetails(ComponentID.Mail, header.FileHash, header.FileSize, null);
 
@@ -1399,8 +1400,9 @@ namespace DeOps.Components.Mail
             Core.IndexKey(ack.SourceID, ref ack.Source);
             Core.IndexKey(ack.TargetID, ref ack.Target);
 
-            if(!verified)
-                Utilities.CheckSignedData(ack.Source, signed.Data, signed.Signature);
+            if (!verified)
+                if (!Utilities.CheckSignedData(ack.Source, signed.Data, signed.Signature))
+                    return;
 
             // check if local
             if(ack.TargetID == Core.LocalDhtID)
@@ -1519,7 +1521,8 @@ namespace DeOps.Components.Mail
 
         private void Download_Pending(SignedData signed, PendingHeader header)
         {
-            Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature);
+            if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
+                return;
 
             FileDetails details = new FileDetails(ComponentID.Mail, header.FileHash, header.FileSize, null);
 

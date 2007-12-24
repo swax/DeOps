@@ -1,10 +1,11 @@
 
 now
-	38 crits
-	focus on starting up new networks
-	refactor components, get ready for visual/database plus think about 3rd party components
-	network demo, customization, performance tuning
-
+	refactor components
+	3rd party ease of component creation
+	design visualizatoin
+	implement visualizatoin
+	
+	
 Testing
 	more accurate replication - link/location/profile/mail
 	check that data is cachced 8 closest to ID, record cached link files in sim interface
@@ -12,7 +13,8 @@ Testing
 	maxes / focus purging for all components - links/locs/profiles/mail
 	link.getlocs / getlocsbelow
 	link/plan research timer
-	
+	38 crits
+
 
 Interface
 	General
@@ -20,7 +22,9 @@ Interface
 		status panel needs to update as network connects network_statusupdate, trigger news as well
 		test gmt visible in status panel
 		unload tray icon on exit?
-		
+		alphabetizize component menus
+		dont allow nav bar person switch on mail/chat components
+
 	Internal 
 		expand a little more (names associated with sessions/transfers/searches/publish)
 		browsing using nav bar needs to trigger searches and let link control know of whats focused
@@ -45,10 +49,10 @@ Interface
 		storage - restore
 		mail	- forward, reply
 		board   - high, low, all
-		plans   - new, edit, now
+		plans   - edit
 		goals	- edit
 		tray	- restore, exit
-		chat	- new room
+		chat	- 
 	
 Components
 	General
@@ -73,6 +77,7 @@ Components
 		components
 			links   - getlocs .. check cache functions
 			chat    - high level chat is others in loop,
+		New function to 'find in link map' so that mail,board,chat can provide the user with an option to 'find' a user
 
 	Location 
 		global replication
@@ -96,133 +101,21 @@ Components
 		Crash on close IM, fin being called? unhooking from IMcontrol events? 
 		
 	Chat 
-		Custom rooms - 
-			live high/low, command high/low rooms are persistant
-			control can query interface for active rooms
-				periodically ping members in active rooms
-			if in loop, show other members in loop, only connect to those we trust
-
-			
-				
-			link update
-				if trusting someone
-					join command/live channel
-				else
-					join untrusted channel, leave command
-					
-				if self
-					update members of all command/live
-				else
-					find command/live rooms member is part of and refresh member list
-					if link is an uplink of us or visa versa, refresh member list of those rooms
-
-			refresh room
-				updates member list
-
-			location update
-				if in channel, but not connected, connect
-
-			
-				
-			leave room
-				status received with leave status
-				disconnected from member
-			
-			invitation
-				keep track of processed invites list<room id>
-				once user decides what to do remove from list
-				ignore invite if in list
-			
-			timer
-				if room custom and no members, kill
-			
-			rooms map<uint, room> key is either unique or project ID, or untrusted ID
-				room
-					host - means invite only
-					ID
-					type high/low/untrusted/custom
-					title
-					invite contains version/room ID
-					list<ulong> members
-					ttl map<ulong, int> ttl till next ping
-					
-					active - means continually ping members
-
-			on connect 
-				send host what channels both local and host are apart of (send status)
-
-			join/leave room
-				send status update to nodes who are in the channel as well, channels must be actvie
-				if custom channel add member to channel
-				
-			
-			on session update
-				disconnected, signal leave from rooms, if no more clients connected from id
-				
-			on keep active
-				add members we're connected to
-			
-			location update
-				try re-connecting
-				
-			packets
-				invitation
-					title
-					room ID
-					invite
-					members[]
-			
-				status request
-					room type/ID
-					want member list
-					want invite
-					
-				status
-					room type/ID
-					status - joined/left
-					~members[]
-					~invite
-					recently added verified members that didnt exist in our own member list before
-					
-				message
-					room type/ID
-					string message
-					
-			interface
-				room should tell chat control what ID messages it wants
-				
-				messages
-					chat_member
-						refresh members
-						host set to higher id, if no host, then no subs
-					chat_room 
-						check which rooms exists in map for project
-						if there are more than 0 members in the rooms, show
-						update accordingly
-					chat_message
-			
-				toolbar
-					New Room
-					Send Invite
-					
-					
-					
-				
-			public room, unique ID, anyone can invite anyone else
-			pure p2p everyone connected to everyone else, rudp should have low overhead 100bytes/min max, 100 users would be 1,000/6 bps
-			use chat pings to ensure connections are in same room
-				if chat ping received and not in room respond with leave msg
-				if ping received without signed invite, ask for it
-			works same as other chats, people we're connected to are black, join/parts shown the same way
-			invite contains ids of other users in chat, when leaving ids and all that saved in id list
-			private requires signed key in invitation that members can verify with each other
-			put invitations in toolbar, show messagebox for first invitation, afterwards ignore if already in toolbar
-			if no room exists create untrusted room, max 100
-			connected / disconnected status based on chat ping, not simply direct connect
-				broken trust loops can result in leave/join repeats
-						
-		startup client in chat view		
-		if chat not visible alert user in news of project chat activity
+		show unfocused label as red on new messages
+		only send full status on connect, otherwise send mini status updates for join/leaves
+		figure out why invites don't work a lot, ensure that on connect invites are sent
+		host going offline and coming back causes room members to not be synchronized
+		double click member - IM, right click  - views, single click - send status, who
+		room option - show locations, also for IM, make location font smaller
+		check size of signed invite field
+		handle get link/location/profile focus calls
+		link name change should change name in chat logs as well for chat/IM/window title
+		implement live rooms / network
+		set default cursor in input box
+		test that our own link changes are reflected in link changes
+		if room custom and no members, kill
+		
+		in future nodes marked as server can have rooms registered there so only one node to query for full room list
 		log does chat/im - setup like yahoo chat log
 		on join chat, node asks other nodes for previous singed messages before specified time
 		
@@ -496,16 +389,78 @@ Future
 				dated, details, image
 			good canidate for an opensource plugin
 				
+		devices
+			access to facilities on local device
+				camera, certain applications, controls of sorts, etc...
+			access can be granted to certain people / levels
+			if mobile user had a camera phone then highers could see what the user sees - live reporting
+			pipes - user could temporarily grant access to others devices
+				ex. higher views camera of lower, and gives access to all his lowers so everyone can see
 		
 		security
 			keeps dns resolved list of online contacts
 			can crawl network, list all dns
+
+		credits / Resources
+			user decides to be the 'banker' publishes x # of signed credits say 1,000,000
+			users can trade credits arbitrarily, credits signed over and re-signed as passes through system
+				prevents forge, on forge instant conflict, to diagnose, go to the fork in the road
+			if new 'banker' comes in he can re-initialize the credits with his own signature, starting a new round
+			advantages - keeper of currency in system is trusted independently
+				issuers of currency can change over time
+				inflation proof? currency can not be created (pirated), and it is, instant inflation, credits should never lose value
+				everyone always knows what a credit is worth, auto-adjusts, no fear of inflation
+			initial collection of credits can be held by the banker or given all to the top leader, whatever, options open for custom systems
+			larger systems could benefit from using credits to motivate subs
+			
+			idea for going open source ? 
+				start personally with 500,000 credits thinking this year im going to make $500,000.
+				Give them out during the year to people who contribute with them knowing each credit if worth $1 if the product makes $500,000
+				personally motivated to not give out so much to leave me with less than $60,000
+				
+			meshes well with trust tree, if me the issuer of 500,000 doesnt do a good job (hoarding money to myself)
+				people replace my credit system with someother bankers, who will fairly cash in the old credits
+				
+			closed source (invite only) though invites don't need to be protected that highly, just want to prevent quick rip-off jobs
+				and end of year credits are cashed in and payouts made
+				
+			in this system (everyone) would be motivated optimally to create the greatest growth
+			
+			great thing is if $$$ isnt given out fairly new banker can be created
+			**demo banking system
+				banker chosen to be one experience, has own banking project
+				subs in banker project are allocated funds to distribute on inititalization
+				because credits have to be signed to pass on, its easy to find conflict and who the duplicator was 
+				
+			if SA used this system who knows what credits would do to it, how it would motivate people to create!!!
+			
+			charities operation differntly
+				the total credit pool could represent total put into system by donors
+				#of credits subs have represent how much they would be compenstated at the end of the cycle
+				say system setup where 1 credit = 1$
+				
+			interseting artifact
+				companies generate value to up the credit/$ ratio as more business is done over the period
+				charties people work their hardest to be more investment to give their credits more value
+
+			in gicantic 6 billion person de-ops
+				command is the trust structure
+				the projects/companies/charities work to distribute the $$$
+				our complex society system completely simplified
+			
+			unit generic as representing resources
+				i can create 6 cows and be my own banker for them, give them out
+				give them their own unit type, same with land
+				exchanges can be made between units with third parties (trusted higher)
+				
+				
 
 		time
 			uses samples of UTC time from nodes on network to determine mean time, with certian confidence
 			alerts user if local time looks like its an outlier from the network
 			posts, changes, etc.. uses this time to tag packets instead of computers own time
 			trial versions, invite expirations, etc.. can also use network time as opposed to system time
+
 
 	Compartmentalization
 		sign with level key, mark with level version of key signed

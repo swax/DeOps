@@ -30,8 +30,8 @@ namespace DeOps.Components.Plan
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ScheduleView));
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader4 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             this.HoverTimer = new System.Windows.Forms.Timer(this.components);
             this.TopStrip = new System.Windows.Forms.ToolStrip();
             this.NewButton = new System.Windows.Forms.ToolStripButton();
@@ -277,29 +277,29 @@ namespace DeOps.Components.Plan
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.PlanStructure.BackColor = System.Drawing.SystemColors.Window;
             this.PlanStructure.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            toggleColumnHeader1.Hovered = false;
-            toggleColumnHeader1.Image = null;
-            toggleColumnHeader1.Index = 0;
-            toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
-            toggleColumnHeader1.Selected = false;
-            toggleColumnHeader1.Text = "Structure";
-            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 180;
-            toggleColumnHeader2.Hovered = false;
-            toggleColumnHeader2.Image = null;
-            toggleColumnHeader2.Index = 0;
-            toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader2.Selected = false;
-            toggleColumnHeader2.Text = "Items";
-            toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader2.Visible = true;
-            toggleColumnHeader2.Width = 171;
+            toggleColumnHeader3.Hovered = false;
+            toggleColumnHeader3.Image = null;
+            toggleColumnHeader3.Index = 0;
+            toggleColumnHeader3.Pressed = false;
+            toggleColumnHeader3.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader3.Selected = false;
+            toggleColumnHeader3.Text = "Structure";
+            toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader3.Visible = true;
+            toggleColumnHeader3.Width = 180;
+            toggleColumnHeader4.Hovered = false;
+            toggleColumnHeader4.Image = null;
+            toggleColumnHeader4.Index = 0;
+            toggleColumnHeader4.Pressed = false;
+            toggleColumnHeader4.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader4.Selected = false;
+            toggleColumnHeader4.Text = "Items";
+            toggleColumnHeader4.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader4.Visible = true;
+            toggleColumnHeader4.Width = 171;
             this.PlanStructure.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
-            toggleColumnHeader1,
-            toggleColumnHeader2});
+            toggleColumnHeader3,
+            toggleColumnHeader4});
             this.PlanStructure.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.PlanStructure.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.PlanStructure.DisableHorizontalScroll = true;

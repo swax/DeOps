@@ -2,7 +2,7 @@
 problems solving
     end to end (user to user) security within organization
     IT management of networks, firewalls, setups, VPNs
-    massive scale coordination
+    massive scale coordination, get MORE done FASTER - build people sims, create benchmarks, continually improve this
     auto quality control / responsibility / accountibility
 	rapid / dynamic project growth, put de-ops link on dev site, let people immediately join project
 
@@ -12,7 +12,8 @@ motivation
 	change how people work together 
 	repay loans / parents
 	working on dream project, no one else involved, doing my own thing
-    
+    emergent behavior arises for tightly connected, communicating objects in a space
+		how tight, how connected do people need to be before something really cool emerges?
 
 
 selling points

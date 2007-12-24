@@ -126,7 +126,7 @@
       <DependentUpon>BoardRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Components\Board\BoardView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Board\BoardView.Designer.cs">
       <DependentUpon>BoardView.cs</DependentUpon>
@@ -139,6 +139,12 @@
     </Compile>
     <Compile Include="Components\Chat\ChatControl.cs" />
     <Compile Include="Components\Chat\ChatPackets.cs" />
+    <Compile Include="Components\Chat\CreateRoom.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Components\Chat\CreateRoom.Designer.cs">
+      <DependentUpon>CreateRoom.cs</DependentUpon>
+    </Compile>
     <Compile Include="Components\Chat\Res\ChatRes.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -183,7 +189,7 @@
       <DependentUpon>EditPlanItem.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Components\Plan\Goals\GoalPanel.Designer.cs">
       <DependentUpon>GoalPanel.cs</DependentUpon>
@@ -394,7 +400,7 @@
       <DependentUpon>ChatSplit.cs</DependentUpon>
     </Compile>
     <Compile Include="Components\Chat\ChatView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Chat\ChatView.Designer.cs">
       <DependentUpon>ChatView.cs</DependentUpon>
@@ -674,6 +680,10 @@
     <EmbeddedResource Include="Components\Board\PostMessage.resx">
       <SubType>Designer</SubType>
       <DependentUpon>PostMessage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Components\Chat\CreateRoom.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>CreateRoom.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Components\Chat\Res\ChatRes.resx">
       <SubType>Designer</SubType>

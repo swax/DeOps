@@ -378,7 +378,9 @@ namespace DeOps.Components.Location
             LocationData location = LocationData.Decode(Core.Protocol, signed.Data);
 
             Core.IndexKey(location.KeyID, ref location.Key);
-            Utilities.CheckSignedData(location.Key, signed.Data, signed.Signature);
+
+            if (!Utilities.CheckSignedData(location.Key, signed.Data, signed.Signature))
+                return;
 
             LocInfo current = GetLocationInfo(location.KeyID, location.Source.ClientID);
 

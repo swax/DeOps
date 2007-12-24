@@ -461,7 +461,8 @@ namespace DeOps.Components.Plan
 
         private void DownloadPlan(SignedData signed, PlanHeader header)
         {
-            Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature);
+            if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
+                return;
 
             FileDetails details = new FileDetails(ComponentID.Plan, header.FileHash, header.FileSize, null);
 

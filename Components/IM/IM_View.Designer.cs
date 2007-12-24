@@ -30,12 +30,14 @@ namespace DeOps.Components.IM
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.panel1 = new System.Windows.Forms.Panel();
             this.StatusImage = new System.Windows.Forms.PictureBox();
             this.StatusLabel = new System.Windows.Forms.Label();
             this.MessageTextBox = new System.Windows.Forms.RichTextBox();
             this.InputControl = new DeOps.Interface.TextInput();
+            this.FlashTimer = new System.Windows.Forms.Timer(this.components);
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
@@ -117,6 +119,12 @@ namespace DeOps.Components.IM
             this.InputControl.Size = new System.Drawing.Size(301, 62);
             this.InputControl.TabIndex = 0;
             // 
+            // FlashTimer
+            // 
+            this.FlashTimer.Enabled = true;
+            this.FlashTimer.Interval = 500;
+            this.FlashTimer.Tick += new System.EventHandler(this.FlashTimer_Tick);
+            // 
             // IM_View
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -143,6 +151,7 @@ namespace DeOps.Components.IM
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.PictureBox StatusImage;
         private System.Windows.Forms.Label StatusLabel;
+        private System.Windows.Forms.Timer FlashTimer;
 
     }
 }

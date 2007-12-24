@@ -62,5 +62,8 @@ namespace DeOps
 
             return img;
         }
+
+        [DllImport("user32.dll")]
+        public static extern int FlashWindow(IntPtr Hwnd, bool Revert);   
     }
 }
