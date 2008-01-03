@@ -817,7 +817,7 @@ namespace DeOps.Simulator
 
             StringBuilder summary = new StringBuilder();
 
-            summary.Append(core.Links.LinkMap.SafeCount.ToString() + " links, ");
+            summary.Append(core.Links.TrustMap.SafeCount.ToString() + " links, ");
 
             summary.Append(core.Locations.LocationMap.SafeCount.ToString() + " locs, ");
 

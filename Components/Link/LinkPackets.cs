@@ -8,15 +8,15 @@ using DeOps.Implementation.Protocol;
 
 namespace DeOps.Components.Link
 {
-    internal class LinkPacket
+    internal class TrustPacket
     {
-        internal const byte LinkHeader = 0x10;
+        internal const byte TrustHeader = 0x10;
         internal const byte ProjectData = 0x20;
         internal const byte LinkData = 0x30;
         internal const byte UplinkReq = 0x40;
     }
 
-    internal class LinkHeader : G2Packet
+    internal class TrustHeader : G2Packet
     {
         const byte Packet_Key = 0x10;
         const byte Packet_Version = 0x20;
@@ -38,7 +38,7 @@ namespace DeOps.Components.Link
         {
             lock (protocol.WriteSection)
             {
-                G2Frame header = protocol.WritePacket(null, LinkPacket.LinkHeader, null);
+                G2Frame header = protocol.WritePacket(null, TrustPacket.TrustHeader, null);
 
                 protocol.WritePacket(header, Packet_Key, Key);
                 protocol.WritePacket(header, Packet_Version, BitConverter.GetBytes(Version));
@@ -50,9 +50,9 @@ namespace DeOps.Components.Link
             }
         }
 
-        internal static LinkHeader Decode(G2Protocol protocol, G2Header root)
+        internal static TrustHeader Decode(G2Protocol protocol, G2Header root)
         {
-            LinkHeader header = new LinkHeader();
+            TrustHeader header = new TrustHeader();
             G2Header child = new G2Header(root.Data);
 
             while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
@@ -115,7 +115,7 @@ namespace DeOps.Components.Link
         {
             lock (protocol.WriteSection)
             {
-                G2Frame request = protocol.WritePacket(null, LinkPacket.UplinkReq, null);
+                G2Frame request = protocol.WritePacket(null, TrustPacket.UplinkReq, null);
 
                 protocol.WritePacket(request, Packet_ProjectID, BitConverter.GetBytes(ProjectID));
                 protocol.WritePacket(request, Packet_LinkVersion, BitConverter.GetBytes(LinkVersion));
@@ -185,7 +185,7 @@ namespace DeOps.Components.Link
         {
             lock (protocol.WriteSection)
             {
-                G2Frame project = protocol.WritePacket(null, LinkPacket.ProjectData, null);
+                G2Frame project = protocol.WritePacket(null, TrustPacket.ProjectData, null);
 
                 protocol.WritePacket(project, Packet_ID, BitConverter.GetBytes(ID));
                 protocol.WritePacket(project, Packet_Name, protocol.UTF.GetBytes(Name));
@@ -257,7 +257,7 @@ namespace DeOps.Components.Link
         {
             lock (protocol.WriteSection)
             {
-                G2Frame link = protocol.WritePacket(null, LinkPacket.LinkData, null);
+                G2Frame link = protocol.WritePacket(null, TrustPacket.LinkData, null);
 
                 protocol.WritePacket(link, Packet_Project, BitConverter.GetBytes(Project));
                 protocol.WritePacket(link, Packet_Target, Target);

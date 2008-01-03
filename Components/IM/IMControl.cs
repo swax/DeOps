@@ -259,12 +259,12 @@ namespace DeOps.Components.IM
             return view;
         }
 
-        internal void Link_Update(OpLink link)
+        internal void Link_Update(OpTrust trust)
         {
-            if (FindView(link.DhtID) == null)
+            if (FindView(trust.DhtID) == null)
                 return;
 
-            Core.RunInGuiThread(StatusUpdate, link.DhtID);
+            Core.RunInGuiThread(StatusUpdate, trust.DhtID);
         }
 
         internal void Location_Update(LocationData location)

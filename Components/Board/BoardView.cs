@@ -154,13 +154,13 @@ namespace DeOps.Components.Board
             return BoardRes.Icon;
         }
 
-        private void ProjectButton_DropDownOpening(object sender, EventArgs e)
+        /*private void ProjectButton_DropDownOpening(object sender, EventArgs e)
         {
             ProjectButton.DropDownItems.Clear();
 
             ProjectButton.DropDownItems.Add(new ProjectItem("Main", 0, new EventHandler(ProjectMenu_Click)));
 
-            OpLink link = Links.GetLink(DhtID);
+            OpTrustOld link = Links.GetTrustOld(DhtID);
 
             if(link != null)
                 Links.ProjectNames.LockReading(delegate()
@@ -169,7 +169,7 @@ namespace DeOps.Components.Board
                         if (id != 0 && link.Projects.Contains(id) && id != ProjectID)
                             ProjectButton.DropDownItems.Add(new ProjectItem(Links.ProjectNames[id], id, new EventHandler(ProjectMenu_Click)));
                 });
-        }
+        }*/
 
         private void ProjectMenu_Click(object sender, EventArgs e)
         {

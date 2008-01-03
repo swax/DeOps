@@ -49,7 +49,7 @@ namespace DeOps.Components.Chat
             Links.LinkUpdate += new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate += new LocationUpdateHandler(Location_Update);
 
-            Link_Update(Links.LocalLink);
+            Link_Update(Links.LocalTrust);
         }
 
         void Core_Exit()
@@ -104,21 +104,28 @@ namespace DeOps.Components.Chat
 
         }
 
-        internal void Link_Update(OpLink link)
+        internal void Link_Update(OpTrust trust)
         {
+
             // update command/live rooms
             Links.ProjectRoots.LockReading(delegate()
             {
                 foreach (uint project in Links.ProjectRoots.Keys)
                 {
-                    OpLink uplink = Links.LocalLink.GetHigher(project, true);
-                    List<OpLink> downlinks = Links.LocalLink.GetLowers(project, true);
+                    OpLink localLink = Links.LocalTrust.GetLink(project);
+                    OpLink remoteLink = trust.GetLink(project);
+
+                    if (localLink == null || remoteLink == null)
+                        continue;
+
+                    OpLink uplink = localLink.GetHigher(true);
+                    List<OpLink> downlinks = localLink.GetLowers(true);
                     
                     // if local link updating
-                    if (link == Links.LocalLink)
+                    if (trust == Links.LocalTrust)
                     {
                         // if we are in the project
-                        if (Links.LocalLink.Projects.Contains(project))
+                        if (localLink.Active)
                         {
                             JoinCommand(project, RoomKind.Command_High);
                             JoinCommand(project, RoomKind.Command_Low);
@@ -142,19 +149,19 @@ namespace DeOps.Components.Chat
                     else
                     {
                         if(uplink != null)
-                            if (uplink == link || uplink.GetLowers(project, true).Contains(link))
+                            if (uplink.Trust == trust || uplink.GetLowers(true).Contains(remoteLink))
                             {
                                 RefreshCommand(project, RoomKind.Command_High);
                                 RefreshCommand(project, RoomKind.Live_High);
                             }
 
-                        if (downlinks.Contains(link))
+                        if (downlinks.Contains(remoteLink))
                         {
                             RefreshCommand(project, RoomKind.Command_Low);
                             RefreshCommand(project, RoomKind.Live_Low);
                         }
 
-                        if(link.GetHigher(project, true) == null)
+                        if (remoteLink.GetHigher(true) == null)
                             RefreshCommand(project, RoomKind.Untrusted);
                     }
 
@@ -164,10 +171,10 @@ namespace DeOps.Components.Chat
 
             // refresh member list of any commmand/live room this person is apart of
             // link would already be added above, this ensures user is removed
-            foreach(ChatRoom room in FindRoom(link.DhtID))
+            foreach(ChatRoom room in FindRoom(trust.DhtID))
                 if(IsCommandRoom(room.Kind))
                     RefreshCommand(room);
-                else if(room.Members.SafeContainsKey(link.DhtID))
+                else if(room.Members.SafeContainsKey(trust.DhtID))
                     Core.RunInGuiThread(room.MembersUpdate);
         }
 
@@ -287,7 +294,12 @@ namespace DeOps.Components.Chat
             // nodes we arent connected to do try connect
             // if socket already active send status request
 
-            OpLink uplink = Links.LocalLink.GetHigher(room.ProjectID, true);
+            OpLink localLink = Links.LocalTrust.GetLink(room.ProjectID);
+
+            if (localLink == null)
+                return;
+
+            OpLink uplink = localLink.GetHigher(true);
             
             // updates room's member list
 
@@ -298,9 +310,9 @@ namespace DeOps.Components.Chat
 
                 if (uplink != null)
                 {
-                    if (Links.LocalLink.LoopRoot.ContainsKey(room.ProjectID))
+                    if (localLink.LoopRoot != null)
                     {
-                        uplink = Links.LocalLink.LoopRoot[room.ProjectID];
+                        uplink = localLink.LoopRoot;
                         room.Host = uplink.DhtID; // use loop id cause 0 is reserved for no root
                         room.IsLoop = true;
                     }
@@ -311,7 +323,7 @@ namespace DeOps.Components.Chat
                         room.AddMember(room.Host, prevMembers);
                     }
 
-                    foreach (OpLink downlink in uplink.GetLowers(room.ProjectID, true))
+                    foreach (OpLink downlink in uplink.GetLowers(true))
                         room.AddMember(downlink.DhtID, prevMembers);
                 }
             }
@@ -324,7 +336,7 @@ namespace DeOps.Components.Chat
                 room.Host = Core.LocalDhtID;
                 room.AddMember(room.Host, prevMembers);
 
-                foreach (OpLink downlink in Links.LocalLink.GetLowers(room.ProjectID, true))
+                foreach (OpLink downlink in localLink.GetLowers(true))
                     room.AddMember(downlink.DhtID, prevMembers);
             }
 
@@ -350,7 +362,7 @@ namespace DeOps.Components.Chat
                 List<OpLink> roots = null;
                 if (Links.ProjectRoots.SafeTryGetValue(room.ProjectID, out roots))
                     foreach (OpLink root in roots)
-                        if (root.GetLowers(room.ProjectID, true).Count == 0 &&
+                        if (root.GetLowers(true).Count == 0 &&
                             !room.Members.SafeContainsKey(root.DhtID))
                         {
                             room.Members.SafeAdd(root.DhtID, new ThreadedList<ushort>());
@@ -853,7 +865,7 @@ namespace DeOps.Components.Chat
                 }
             }
 
-            if (!Core.Links.LinkMap.SafeContainsKey(session.DhtID))
+            if (!Core.Links.TrustMap.SafeContainsKey(session.DhtID))
                 Links.Research(session.DhtID, 0, false);
 
             if(showInvite)

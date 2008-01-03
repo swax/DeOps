@@ -143,7 +143,7 @@ namespace DeOps.Components.Board
                 if (BoardMap.Count > PruneSize)
                 {
                     List<ulong> localRegion = new List<ulong>();
-                    foreach (uint project in Core.Links.LocalLink.Projects)
+                    foreach (uint project in Core.Links.LocalTrust.Links.Keys )
                         localRegion.AddRange(GetBoardRegion(Core.LocalDhtID, project, ScopeType.All));
 
                     foreach (OpBoard board in BoardMap.Values)
@@ -1089,7 +1089,7 @@ namespace DeOps.Components.Board
 
             targets.Add(id); // need to include self in high and low scopes, for re-searching, onlinkupdate purposes
 
-            OpLink link = Links.GetLink(id);
+            OpLink link = Links.GetLink(id, project);
 
             if (link == null)
                 return targets;
@@ -1099,7 +1099,7 @@ namespace DeOps.Components.Board
             if (scope != ScopeType.Low)
             {
                 // if we're in loop, get our 'adjacents' who are really uplinks
-                if (link.LoopRoot.ContainsKey(project))
+                if (link.LoopRoot != null)
                 {
                     targets.AddRange( Links.GetUplinkIDs(id, project) );
                 }
@@ -1107,7 +1107,7 @@ namespace DeOps.Components.Board
                 // get parent and children of parent
                 else
                 {
-                    OpLink parent = link.GetHigher(project, true);
+                    OpLink parent = link.GetHigher(true);
 
                     if (parent != null)
                     {

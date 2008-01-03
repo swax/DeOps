@@ -113,7 +113,7 @@ namespace DeOps.Interface.Tools
             {
                 switch (id)
                 {
-                    case ComponentID.Link:
+                    case ComponentID.Trust:
                         StructureNode linkNode = new StructureNode("Links", new ShowDelegate(ShowLinks), null);
                         linkNode.Nodes.Add(new StructureNode("Index", new ShowDelegate(ShowLinkMap), null));
                         linkNode.Nodes.Add(new StructureNode("Roots", new ShowDelegate(ShowLinkRoots), null));
@@ -809,8 +809,8 @@ namespace DeOps.Interface.Tools
 
             listValues.Items.Add(new ListViewItem(new string[] { "LocalLink",       xStr(Core.Links.GetName(Core.LocalDhtID)) }));
 
-            listValues.Items.Add(new ListViewItem(new string[] { "ProjectRoots",    xStr(Core.Links.ProjectRoots.SafeCount) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "LinkMap",         xStr(Core.Links.LinkMap.SafeCount) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "ProjectRoots", xStr(Core.Links.ProjectRoots.SafeCount) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "LinkMap",         xStr(Core.Links.TrustMap.SafeCount) }));
             listValues.Items.Add(new ListViewItem(new string[] { "ProjectNames",    xStr(Core.Links.ProjectNames.SafeCount) }));
 
             listValues.Items.Add(new ListViewItem(new string[] { "LinkPath",        xStr(Core.Links.LinkPath) }));
@@ -841,9 +841,9 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("Path", 100, HorizontalAlignment.Left);
 
 
-            Core.Links.LinkMap.LockReading(delegate()
+            Core.Links.TrustMap.LockReading(delegate()
             {
-                foreach (OpLink link in Core.Links.LinkMap.Values)
+                foreach (OpTrust trust in Core.Links.TrustMap.Values)
                 {
                     string projects = "";
                     string titles = "";
@@ -852,52 +852,49 @@ namespace DeOps.Interface.Tools
                     string confirmed = "";
                     string requests = "";
 
-                    foreach (uint id in link.Projects)
+                    foreach (OpLink link in trust.Links.Values)
                     {
-                        string projectName = GetProjectName(id);
+                        string projectName = GetProjectName(link.Project);
 
                         projects += projectName + ", ";
 
-                        if (link.Title.ContainsKey(id) && link.Title[id] != "")
-                            titles += projectName + ": " + link.Title[id] + ", ";
+                        titles += projectName + ": " + link.Title + ", ";
 
-                        if (link.Uplink.ContainsKey(id))
-                            uplinks += projectName + ": " + GetLinkName(link.Uplink[id].DhtID) + ", ";
+                        if (link.Uplink != null)
+                            uplinks += projectName + ": " + GetLinkName(link.Uplink.DhtID) + ", ";
 
-                        if (link.Confirmed.ContainsKey(id) && link.Confirmed[id].Count > 0)
+                        if (link.Confirmed.Count > 0)
                         {
                             confirmed += projectName + ": ";
 
-                            foreach (ulong key in link.Confirmed[id])
+                            foreach (ulong key in link.Confirmed)
                                 confirmed += GetLinkName(key) + ", ";
                         }
-                    }
 
-                    foreach (uint id in link.Downlinks.Keys)
-                        if (link.Downlinks[id].Count > 0)
+                        if (link.Downlinks.Count > 0)
                         {
-                            downlinks += GetProjectName(id) + ": ";
+                            downlinks += GetProjectName(link.Project) + ": ";
 
-                            foreach (OpLink downlink in link.Downlinks[id])
+                            foreach (OpLink downlink in link.Downlinks)
                                 downlinks += GetLinkName(downlink.DhtID) + ", ";
                         }
 
-                    foreach (uint id in link.Requests.Keys)
-                        if (link.Requests[id].Count > 0)
+                        if (link.Requests.Count > 0)
                         {
-                            requests += GetProjectName(id) + ": ";
+                            requests += GetProjectName(link.Project) + ": ";
 
-                            foreach (UplinkRequest request in link.Requests[id])
+                            foreach (UplinkRequest request in link.Requests)
                                 requests += GetLinkName(request.KeyID) + ", ";
                         }
+                    }
 
                     ListViewItem item = new ListViewItem(new string[]
 					{
-						xStr(Core.Links.GetName(link.DhtID)),		
-						IDtoStr(link.DhtID),
-                        xStr(link.Loaded),	
-						xStr(link.InLocalLinkTree),
-						xStr(link.Searched),	
+						xStr(Core.Links.GetName(trust.DhtID)),		
+						IDtoStr(trust.DhtID),
+                        xStr(trust.Loaded),	
+						xStr(trust.InLocalLinkTree),
+						xStr(trust.Searched),	
 
                         xStr(projects),
                         xStr(titles),
@@ -912,12 +909,12 @@ namespace DeOps.Interface.Tools
 						""
                     });
 
-                    if (link.Header != null)
+                    if (trust.Header != null)
                     {
-                        item.SubItems[12] = new ListViewItem.ListViewSubItem(item, xStr(link.Header.Version));
-                        item.SubItems[13] = new ListViewItem.ListViewSubItem(item, Utilities.BytestoHex(link.Header.FileHash));
-                        item.SubItems[14] = new ListViewItem.ListViewSubItem(item, xStr(link.Header.FileSize));
-                        item.SubItems[15] = new ListViewItem.ListViewSubItem(item, xStr(Core.Links.GetFilePath(link.Header)));
+                        item.SubItems[12] = new ListViewItem.ListViewSubItem(item, xStr(trust.Header.Version));
+                        item.SubItems[13] = new ListViewItem.ListViewSubItem(item, Utilities.BytestoHex(trust.Header.FileHash));
+                        item.SubItems[14] = new ListViewItem.ListViewSubItem(item, xStr(trust.Header.FileSize));
+                        item.SubItems[15] = new ListViewItem.ListViewSubItem(item, xStr(Core.Links.GetFilePath(trust.Header)));
                     }
 
                     listValues.Items.Add(item);

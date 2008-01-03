@@ -116,7 +116,7 @@ namespace DeOps.Components.Storage
 
   
             // load working headers
-            foreach (uint project in Links.LocalLink.Projects)
+            foreach (uint project in Links.LocalTrust.Links.Keys)
             {
                 LoadHeaderFile(GetWorkingPath(project), LocalStorage, false, true);
                 Working[project] = new WorkingStorage(this, project);
@@ -235,7 +235,7 @@ namespace DeOps.Components.Storage
                 if (StorageMap.Count > PruneSize)
                     foreach (OpStorage storage in StorageMap.Values)
                         if (storage.DhtID != Core.LocalDhtID &&
-                            !Core.Links.LinkMap.SafeContainsKey(storage.DhtID) && // dont remove nodes in our local hierarchy
+                            !Core.Links.TrustMap.SafeContainsKey(storage.DhtID) && // dont remove nodes in our local hierarchy
                             !focused.Contains(storage.DhtID) &&
                             !Utilities.InBounds(storage.DhtID, storage.DhtBounds, Core.LocalDhtID))
                             removeIDs.Add(storage.DhtID);
@@ -669,11 +669,11 @@ namespace DeOps.Components.Storage
             }
         }
 
-        void Links_LinkUpdate(OpLink link)
+        void Links_LinkUpdate(OpTrust trust)
         {
             // update working projects (add)
-            if (link.DhtID == Core.LocalDhtID)
-                foreach (uint project in Links.LocalLink.Projects)
+            if (trust.DhtID == Core.LocalDhtID)
+                foreach (uint project in Links.LocalTrust.Links.Keys)
                     if (!Working.ContainsKey(project))
                     {
                         LoadHeaderFile(GetWorkingPath(project), LocalStorage, false, true);
@@ -683,7 +683,7 @@ namespace DeOps.Components.Storage
 
             // remove all higher changes, reload with new highers (cause link changed
             foreach (WorkingStorage working in Working.Values )
-                if (Core.LocalDhtID == link.DhtID || Links.IsHigher(link.DhtID, working.ProjectID))
+                if (Core.LocalDhtID == trust.DhtID || Links.IsHigher(trust.DhtID, working.ProjectID))
                 {
                     working.RemoveAllHigherChanges();
 

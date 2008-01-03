@@ -17,35 +17,35 @@ using DeOps.Components.Transfer;
 
 namespace DeOps.Components.Link
 {
-    internal delegate void LinkUpdateHandler(OpLink link);
+    internal delegate void LinkUpdateHandler(OpTrust trust);
     internal delegate void LinkGuiUpdateHandler(ulong key);
     internal delegate List<ulong> LinkGetFocusedHandler();
 
 
     class LinkControl : OpComponent
     {
-        internal OpCore   Core;
+        internal OpCore Core;
         internal DhtStore Store;
         internal DhtNetwork Network;
 
-        internal OpLink LocalLink;
+        internal OpTrust LocalTrust;
 
-        internal ThreadedDictionary<ulong, OpLink> LinkMap = new ThreadedDictionary<ulong, OpLink>();
+        internal ThreadedDictionary<ulong, OpTrust> TrustMap = new ThreadedDictionary<ulong, OpTrust>();
         internal ThreadedDictionary<uint, string> ProjectNames = new ThreadedDictionary<uint, string>();
         internal ThreadedDictionary<uint, List<OpLink>> ProjectRoots = new ThreadedDictionary<uint, List<OpLink>>();
-        
+
         Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
         Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
 
         internal string LinkPath;
-        internal bool   StructureKnown;
-        internal int    PruneSize = 100;
+        internal bool StructureKnown;
+        internal int PruneSize = 100;
 
         bool RunSaveHeaders;
         RijndaelManaged LocalFileKey;
 
-        internal LinkUpdateHandler     LinkUpdate;
-        internal LinkGuiUpdateHandler  GuiUpdate;
+        internal LinkUpdateHandler LinkUpdate;
+        internal LinkGuiUpdateHandler GuiUpdate;
         internal event LinkGetFocusedHandler GetFocused;
 
 
@@ -53,34 +53,34 @@ namespace DeOps.Components.Link
         {
             Core = core;
             Core.Links = this;
-            
+
             Store = Core.OperationNet.Store;
             Network = Core.OperationNet;
 
             Core.TimerEvent += new TimerHandler(Core_Timer);
-            Core.LoadEvent  += new LoadHandler(Core_Load);
+            Core.LoadEvent += new LoadHandler(Core_Load);
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ComponentID.Link]     = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ComponentID.Link] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ComponentID.Link]     = new PatchHandler(Store_Patch);
+            Store.StoreEvent[ComponentID.Trust] = new StoreHandler(Store_Local);
+            Store.ReplicateEvent[ComponentID.Trust] = new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[ComponentID.Trust] = new PatchHandler(Store_Patch);
 
-            Network.Searches.SearchEvent[ComponentID.Link] = new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[ComponentID.Trust] = new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
-                PruneSize = 25;     
+                PruneSize = 25;
         }
 
         void Core_Load()
         {
-            Core.Transfers.FileSearch[ComponentID.Link] = new FileSearchHandler(Transfers_FileSearch);
-            Core.Transfers.FileRequest[ComponentID.Link] = new FileRequestHandler(Transfers_FileRequest);
+            Core.Transfers.FileSearch[ComponentID.Trust] = new FileSearchHandler(Transfers_FileSearch);
+            Core.Transfers.FileRequest[ComponentID.Trust] = new FileRequestHandler(Transfers_FileRequest);
 
 
             ProjectNames.SafeAdd(0, Core.User.Settings.Operation);
 
-            LinkPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Link.ToString();    
+            LinkPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Trust.ToString();
             Directory.CreateDirectory(LinkPath);
 
             LocalFileKey = Core.User.Settings.FileKey;
@@ -88,26 +88,26 @@ namespace DeOps.Components.Link
             LoadHeaders();
 
 
-            LocalLink = GetLink(Core.LocalDhtID);
+            LocalTrust = GetTrust(Core.LocalDhtID);
 
 
-            if (LocalLink == null)
+            if (LocalTrust == null)
             {
-                LocalLink = new OpLink(Core.User.Settings.KeyPublic);
-                LinkMap.SafeAdd(Core.LocalDhtID, LocalLink);
+                LocalTrust = new OpTrust(Core.User.Settings.KeyPublic);
+                TrustMap.SafeAdd(Core.LocalDhtID, LocalTrust);
             }
 
-            if (!LocalLink.Loaded)
+            if (!LocalTrust.Loaded)
             {
-                LocalLink.Name = Core.User.Settings.ScreenName;
-                LocalLink.AddProject(0); // operation
+                LocalTrust.Name = Core.User.Settings.ScreenName;
+                LocalTrust.AddProject(0, true); // operation
 
                 SaveLocal();
-            } 
-            
+            }
+
         }
 
-        internal override List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
+        internal override List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong remoteKey, uint project)
         {
             if (menuType != InterfaceMenuType.Quick)
                 return null;
@@ -116,28 +116,29 @@ namespace DeOps.Components.Link
 
             bool unlink = false;
 
-            OpLink link = GetLink(key);
+            OpLink remoteLink = GetLink(remoteKey, project);
+            OpLink localLink = LocalTrust.GetLink(project);
 
-            if (link == null)
+            if (remoteLink == null || localLink == null)
                 return menus;
 
             // linkup
-            if (Core.LocalDhtID != key &&
-                (!LocalLink.Uplink.ContainsKey(proj) || LocalLink.Uplink[proj].DhtID != key) ) // not already linked to
-                menus.Add( new MenuItemInfo("Trust", LinkRes.link, new EventHandler(Menu_Linkup)));
+            if (Core.LocalDhtID != remoteKey &&
+                (localLink.Uplink == null || localLink.Uplink.DhtID != remoteKey)) // not already linked to
+                menus.Add(new MenuItemInfo("Trust", LinkRes.link, new EventHandler(Menu_Linkup)));
 
             // confirm
-            if (LocalLink.Downlinks.ContainsKey(proj) && LocalLink.Downlinks[proj].Contains(link))
+            if (localLink.Downlinks.Contains(remoteLink))
             {
                 unlink = true;
 
-                if (!LocalLink.Confirmed.ContainsKey(proj) || !LocalLink.Confirmed[proj].Contains(key)) // not already confirmed
+                if (!localLink.Confirmed.Contains(remoteKey)) // not already confirmed
                     menus.Add(new MenuItemInfo("Accept Trust", LinkRes.confirmlink, new EventHandler(Menu_ConfirmLink)));
             }
 
             // unlink
-            if ((unlink && LocalLink.Confirmed.ContainsKey(proj) && LocalLink.Confirmed[proj].Contains(key)) || 
-                (LocalLink.Uplink.ContainsKey(proj) && LocalLink.Uplink[proj].DhtID == key))
+            if ((unlink && localLink.Confirmed.Contains(remoteKey)) ||
+                (localLink.Uplink != null && localLink.Uplink.DhtID == remoteKey))
                 menus.Add(new MenuItemInfo("Revoke Trust", LinkRes.unlink, new EventHandler(Menu_Unlink)));
 
 
@@ -149,15 +150,19 @@ namespace DeOps.Components.Link
             if (!(sender is IViewParams) || Core.GuiMain == null)
                 return;
 
-            ulong key = ((IViewParams)sender).GetKey();
+            ulong remoteKey = ((IViewParams)sender).GetKey();
             uint project = ((IViewParams)sender).GetProject();
 
+            OpLink localLink = LocalTrust.GetLink(project);
+
+            if (localLink == null)
+                return;
 
             // get user confirmation if nullifying previous uplink
-            if (LocalLink.Uplink.ContainsKey(project))
+            if (localLink.Uplink != null)
             {
-                string who = GetName(LocalLink.Uplink[project].DhtID);
-                string message = "Transfer trust from " + who + " to " + GetName(key) + "?";
+                string who = GetName(localLink.Uplink.DhtID);
+                string message = "Transfer trust from " + who + " to " + GetName(remoteKey) + "?";
 
                 if (MessageBox.Show(Core.GuiMain, message, "Confirm Trust", MessageBoxButtons.YesNo) == DialogResult.No)
                     return;
@@ -165,40 +170,40 @@ namespace DeOps.Components.Link
 
             try
             {
-                OpLink uplink = GetLink(key);
+                OpLink remoteLink = GetLink(remoteKey, project);
 
-                if (uplink == null)
+                if (remoteLink == null)
                     throw new Exception("Could not find Person");
 
                 // check if self
-                if (uplink == LocalLink)
+                if (remoteLink == localLink)
                     throw new Exception("Cannot Trust in your Self");
 
                 // check if already linked
-                if (LocalLink.Uplink.ContainsKey(project) && LocalLink.Uplink[project] == uplink)
-                    throw new Exception("Already Trusting " + GetName(key));
+                if (localLink.Uplink != null && localLink.Uplink == remoteLink)
+                    throw new Exception("Already Trusting " + GetName(remoteKey));
 
                 //check for loop
-                if(IsHigher(uplink.DhtID, Core.LocalDhtID, project, false))
+                if (IsHigher(remoteLink.DhtID, Core.LocalDhtID, project, false))
                 {
-                    string who = GetName(uplink.DhtID);
+                    string who = GetName(remoteLink.DhtID);
                     string message = "Trusting " + who + " will create a loop. Is this your intention?";
 
                     if (MessageBox.Show(Core.GuiMain, message, "Loop Warning", MessageBoxButtons.YesNo) == DialogResult.No)
                         return;
                 }
 
-                LocalLink.AddProject(project);
-                LocalLink.ResetUplink(project);
-                LocalLink.Uplink[project] = uplink;
+                LocalTrust.AddProject(project, true);
+                localLink.ResetUplink();
+                localLink.Uplink = remoteLink;
 
                 SaveLocal();
 
                 Core.RunInCoreAsync(delegate()
                 {
-                    LinkupRequest(uplink, project);
+                    LinkupRequest(remoteLink);
                 });
-               
+
             }
             catch (Exception ex)
             {
@@ -206,30 +211,29 @@ namespace DeOps.Components.Link
             }
         }
 
-        private void LinkupRequest(OpLink uplink, uint project)
+        private void LinkupRequest(OpLink remoteLink)
         {
-            
-
             // create uplink request, publish
             UplinkRequest request = new UplinkRequest();
-            request.LinkVersion = LocalLink.Header.Version;
-            request.TargetVersion = uplink.Header.Version;
-            request.Key = LocalLink.Key;
-            request.KeyID = LocalLink.DhtID;
-            request.Target = uplink.Key;
-            request.TargetID = uplink.DhtID;
+            request.ProjectID = remoteLink.Project;
+            request.LinkVersion = LocalTrust.Header.Version;
+            request.TargetVersion = remoteLink.Trust.Header.Version;
+            request.Key = LocalTrust.Key;
+            request.KeyID = LocalTrust.DhtID;
+            request.Target = remoteLink.Trust.Key;
+            request.TargetID = remoteLink.DhtID;
 
             byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, request);
-            Store.PublishNetwork(request.TargetID, ComponentID.Link, signed);
+            Store.PublishNetwork(request.TargetID, ComponentID.Trust, signed);
 
             // store locally
             Process_UplinkReq(null, new SignedData(Core.Protocol, Core.User.Settings.KeyPair, request), request);
 
             // publish at neighbors so they are aware of request status
             List<LocationData> locations = new List<LocationData>();
-            GetLocs(Core.LocalDhtID, project, 1, 1, locations);
-            GetLocsBelow(Core.LocalDhtID, project, locations);
-            Store.PublishDirect(locations, request.TargetID, ComponentID.Link, signed);
+            GetLocs(Core.LocalDhtID, remoteLink.Project, 1, 1, locations);
+            GetLocsBelow(Core.LocalDhtID, remoteLink.Project, locations);
+            Store.PublishDirect(locations, request.TargetID, ComponentID.Trust, signed);
         }
 
         private void Menu_ConfirmLink(object sender, EventArgs e)
@@ -238,23 +242,21 @@ namespace DeOps.Components.Link
                 return;
 
             ulong key = ((IViewParams)sender).GetKey();
-            uint proj = ((IViewParams)sender).GetProject();
+            uint project = ((IViewParams)sender).GetProject();
 
             try
             {
-                OpLink link = GetLink(key);
+                OpLink remoteLink = GetLink(key, project);
+                OpLink localLink = LocalTrust.GetLink(project);
 
-                if(link == null)
+                if (remoteLink == null || localLink == null)
                     throw new Exception("Could not find Person");
 
-                if (!LocalLink.Downlinks.ContainsKey(proj) || !LocalLink.Downlinks[proj].Contains(link))
+                if (!localLink.Downlinks.Contains(remoteLink))
                     throw new Exception(GetName(key) + " does not trust you");
 
-                if (!LocalLink.Confirmed.ContainsKey(proj))
-                    LocalLink.Confirmed[proj] = new List<ulong>();
-
-                if (!LocalLink.Confirmed[proj].Contains(link.DhtID))
-                    LocalLink.Confirmed[proj].Add(link.DhtID);
+                if (!localLink.Confirmed.Contains(remoteLink.DhtID))
+                    localLink.Confirmed.Add(remoteLink.DhtID);
 
                 SaveLocal();
             }
@@ -271,22 +273,23 @@ namespace DeOps.Components.Link
                 return;
 
             ulong key = ((IViewParams)sender).GetKey();
-            uint proj = ((IViewParams)sender).GetProject();
+            uint project = ((IViewParams)sender).GetProject();
 
             try
             {
-                OpLink link = GetLink(key);
-
                 bool unlinkUp = false;
                 bool unlinkDown = false;
 
-                if(link == null)
+                OpLink remoteLink = GetLink(key, project);
+                OpLink localLink = LocalTrust.GetLink(project);
+
+                if (remoteLink == null || localLink == null)
                     throw new Exception("Could not find Person");
 
-                if (LocalLink.Uplink.ContainsKey(proj) && LocalLink.Uplink[proj] == link)
+                if (localLink.Uplink != null && localLink.Uplink == remoteLink)
                     unlinkUp = true;
 
-                if (LocalLink.Downlinks.ContainsKey(proj) && LocalLink.Confirmed.ContainsKey(proj))
+                if (localLink.Confirmed.Contains(remoteLink.DhtID))
                     unlinkDown = true;
 
                 if (!unlinkUp && !unlinkDown)
@@ -294,23 +297,23 @@ namespace DeOps.Components.Link
 
                 // make sure old links are notified of change
                 List<LocationData> locations = new List<LocationData>();
-                
+
                 // remove node as an uplink
                 OpLink parent = null;
 
                 if (unlinkUp)
                 {
-                    GetLocs(Core.LocalDhtID, proj, 1, 1, locations);
+                    GetLocs(Core.LocalDhtID, project, 1, 1, locations);
 
-                    parent = LocalLink.Uplink[proj];
-                    LocalLink.ResetUplink(proj);
-                    LocalLink.Uplink.Remove(proj);
+                    parent = localLink.Uplink;
+                    localLink.ResetUplink();
+                    localLink.Uplink = null;
                 }
 
                 // remove node from downlinks
                 if (unlinkDown)
                 {
-                    LocalLink.Confirmed[proj].Remove(link.DhtID);
+                    localLink.Confirmed.Remove(remoteLink.DhtID);
 
                     // removal of uplink requests done when version is updated by updatelocal
                 }
@@ -321,17 +324,17 @@ namespace DeOps.Components.Link
                 // notify old links of change
                 Core.RunInCoreAsync(delegate()
                 {
-                    Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Link, LocalLink.SignedHeader);
+                    Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Trust, LocalTrust.SignedHeader);
                 });
             }
             catch (Exception ex)
             {
                 MessageBox.Show(Core.GuiMain, ex.Message);
-            }  
+            }
         }
 
         void Core_Timer()
-        { 
+        {
             //crit remove projects no longer referenced, call for projects refresh
             // location updates are done for nodes in link map that are focused or linked
             // node comes online how to know to search for it, every 10 mins?
@@ -347,36 +350,36 @@ namespace DeOps.Components.Link
             // clean download later map
             if (!Network.Established)
                 Utilities.PruneMap(DownloadLater, Core.LocalDhtID, PruneSize);
-            
+
 
             // do below once per minute
-            if(Core.TimeNow.Second != 0)
+            if (Core.TimeNow.Second != 0)
                 return;
 
             List<ulong> removeLinks = new List<ulong>();
 
-            LinkMap.LockReading(delegate()
+            TrustMap.LockReading(delegate()
             {
-               if (LinkMap.Count > PruneSize && StructureKnown)
-               {
-                   List<ulong> focused = GetFocusedLinks();
+                if (TrustMap.Count > PruneSize && StructureKnown)
+                {
+                    List<ulong> focused = GetFocusedLinks();
 
-                   foreach (OpLink link in LinkMap.Values)
-                       // if not focused, linked, or cached - remove
-                       if (!link.InLocalLinkTree &&
-                           link.DhtID != Core.LocalDhtID &&
-                           !focused.Contains(link.DhtID) &&
-                           !Utilities.InBounds(link.DhtID, link.DhtBounds, Core.LocalDhtID))
-                       {
-                           removeLinks.Add(link.DhtID);
-                       }
-               }
+                    foreach (OpTrust trust in TrustMap.Values)
+                        // if not focused, linked, or cached - remove
+                        if (!trust.InLocalLinkTree &&
+                            trust.DhtID != Core.LocalDhtID &&
+                            !focused.Contains(trust.DhtID) &&
+                            !Utilities.InBounds(trust.DhtID, trust.DhtBounds, Core.LocalDhtID))
+                        {
+                            removeLinks.Add(trust.DhtID);
+                        }
+                }
             });
 
             if (removeLinks.Count > 0)
-                LinkMap.LockWriting(delegate()
+                TrustMap.LockWriting(delegate()
                 {
-                    while (removeLinks.Count > 0 && LinkMap.Count > PruneSize / 2)
+                    while (removeLinks.Count > 0 && TrustMap.Count > PruneSize / 2)
                     {
                         // find furthest id
                         ulong furthest = Core.LocalDhtID;
@@ -386,21 +389,23 @@ namespace DeOps.Components.Link
                                 furthest = id;
 
                         // remove
-                        OpLink link = LinkMap[furthest];
-                        link.Reset();
+                        OpTrust trust = TrustMap[furthest];
 
-                        foreach (uint proj in link.Projects)
+                        trust.Reset();
+
+                        /*foreach (uint project in link.Projects)
                             if (link.Downlinks.ContainsKey(proj))
-                                foreach (OpLink downlink in link.Downlinks[proj])
+                                foreach (OpTrustOld downlink in link.Downlinks[proj])
                                     if (downlink.Uplink.ContainsKey(proj))
                                         if (downlink.Uplink[proj] == link)
-                                            downlink.Uplink[proj] = new OpLink(link.Key); // place holder
-
-                        if (link.Header != null)
-                            try { File.Delete(GetFilePath(link.Header)); }
+                                            downlink.Uplink[proj] = new OpTrustOld(link.Key); // place holder
+                        */
+                        if (trust.Header != null)
+                            try { File.Delete(GetFilePath(trust.Header)); }
                             catch { }
 
-                        LinkMap.Remove(furthest);
+                        trust.Loaded = false;
+                        TrustMap.Remove(furthest);
                         removeLinks.Remove(furthest);
                         RunSaveHeaders = true;
                     }
@@ -416,12 +421,12 @@ namespace DeOps.Components.Link
                             removeList.Add(project);
                 });
 
-            if(removeList.Count > 0)
+            if (removeList.Count > 0)
                 ProjectRoots.LockWriting(delegate()
                {
                    foreach (uint project in removeList)
-                        ProjectRoots.Remove(project);
-                        //ProjectNames.Remove(id); // if we are only root, and leave project, but have downlinks, still need the name
+                       ProjectRoots.Remove(project);
+                   //ProjectNames.Remove(id); // if we are only root, and leave project, but have downlinks, still need the name
                });
 
             // clean research map
@@ -433,7 +438,7 @@ namespace DeOps.Components.Link
 
             if (removeLinks.Count > 0)
                 foreach (ulong id in removeLinks)
-                   NextResearch.Remove(id);
+                    NextResearch.Remove(id);
         }
 
         void Network_Established()
@@ -441,15 +446,15 @@ namespace DeOps.Components.Link
             ulong localBounds = Store.RecalcBounds(Core.LocalDhtID);
 
             // set bounds for objects
-            LinkMap.LockReading(delegate()
+            TrustMap.LockReading(delegate()
             {
-                foreach (OpLink link in LinkMap.Values)
+                foreach (OpTrust trust in TrustMap.Values)
                 {
-                    link.DhtBounds = Store.RecalcBounds(link.DhtID);
+                    trust.DhtBounds = Store.RecalcBounds(trust.DhtID);
 
                     // republish objects that were not seen on the network during startup
-                    if (link.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, link.DhtID))
-                        Store.PublishNetwork(link.DhtID, ComponentID.Link, link.SignedHeader);
+                    if (trust.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, trust.DhtID))
+                        Store.PublishNetwork(trust.DhtID, ComponentID.Trust, trust.SignedHeader);
                 }
             });
 
@@ -464,68 +469,70 @@ namespace DeOps.Components.Link
         void RefreshLinked()
         {
             StructureKnown = false;
-            
+
             // unmark all nodes
 
-            LinkMap.LockReading(delegate()
+            TrustMap.LockReading(delegate()
             {
-                foreach (OpLink link in LinkMap.Values)
-                    link.InLocalLinkTree = false;
+                foreach (OpTrust trust in TrustMap.Values)
+                    trust.InLocalLinkTree = false;
 
 
                 // TraverseDown 2 from self
-                foreach (uint project in LocalLink.Projects)
+                foreach (OpLink link in LocalTrust.Links.Values)
                 {
-                    MarkBranchLinked(LocalLink, project, 2);
+                    uint project = link.Project;
+
+                    MarkBranchLinked(link, 2);
 
                     // TraverseDown 1 from all parents above self
-                    List<ulong> uplinks = GetUplinkIDs(LocalLink.DhtID, project, false);
+                    List<ulong> uplinks = GetUplinkIDs(LocalTrust.DhtID, project, false);
 
                     foreach (ulong id in uplinks)
                     {
-                        OpLink uplink = GetLink(id);
+                        OpLink uplink = GetLink(id, project);
 
-                        if(uplink != null)
-                            MarkBranchLinked(uplink, project, 1);
+                        if (uplink != null)
+                            MarkBranchLinked(uplink, 1);
                     }
 
                     // TraverseDown 2 from Roots
                     List<OpLink> roots = null;
                     if (ProjectRoots.SafeTryGetValue(project, out roots))
-                        foreach (OpLink link in roots)
+                        foreach (OpLink root in roots)
                         {
                             // structure known if node found with no uplinks, and a number of downlinks
-                            if (project == 0 && link.Loaded && !link.Uplink.ContainsKey(0))
-                                if (link.Downlinks.ContainsKey(project) && link.Downlinks[project].Count > 0 && LinkMap.Count > 8)
+                            if (project == 0 && root.Trust.Loaded && root.Uplink == null)
+                                if (root.Downlinks.Count > 0 && TrustMap.Count > 8)
                                     StructureKnown = true;
 
-                            MarkBranchLinked(link, project, 2);
+                            MarkBranchLinked(root, 2);
                         }
                 }
             });
         }
 
-        void MarkBranchLinked(OpLink link, uint id, int depth)
+        void MarkBranchLinked(OpLink link, int depth)
         {
-            link.InLocalLinkTree = true;
+            link.Trust.InLocalLinkTree = true;
 
-            if ( !link.Searched )
+            if (!link.Trust.Searched)
             {
                 Core.Locations.StartSearch(link.DhtID, 0, false);
 
-                link.Searched = true;
+                link.Trust.Searched = true;
             }
 
-            if (depth > 0 && link.Downlinks.ContainsKey(id))
-                foreach (OpLink downlink in link.Downlinks[id])
-                    MarkBranchLinked(downlink, id, depth - 1);
+            if (depth > 0)
+                foreach (OpLink downlink in link.Downlinks)
+                    MarkBranchLinked(downlink, depth - 1);
         }
 
-        internal void Research(ulong key, uint proj, bool searchDownlinks)
+        internal void Research(ulong key, uint project, bool searchDownlinks)
         {
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreAsync(delegate() { Research(key, proj, searchDownlinks); });
+                Core.RunInCoreAsync(delegate() { Research(key, project, searchDownlinks); });
                 return;
             }
 
@@ -533,10 +540,10 @@ namespace DeOps.Components.Link
                 return;
 
             List<ulong> searchList = new List<ulong>();
-            
+
             searchList.Add(key);
 
-            OpLink link = GetLink(key);
+            OpLink link = GetLink(key, project);
 
             if (link != null)
             {
@@ -544,29 +551,26 @@ namespace DeOps.Components.Link
                 // unless the file is loaded (only links that specify their uplink as node x are in node x's downlink list
 
                 // searchDownlinks - true re-search downlinks, false only search ids that are NOT in downlinks or linkmap
-       
+
                 List<ulong> downlinks = new List<ulong>();
-                
-                if (link.Downlinks.ContainsKey(proj))
-                    foreach (OpLink downlink in link.Downlinks[proj])
-                    {
-                        if (searchDownlinks)
-                            searchList.Add(downlink.DhtID);
 
-                        downlinks.Add(downlink.DhtID);
-                    }
+                foreach (OpLink downlink in link.Downlinks)
+                {
+                    if (searchDownlinks)
+                        searchList.Add(downlink.DhtID);
 
-                if (link.Confirmed.ContainsKey(proj))
-                    foreach (ulong id in link.Confirmed[proj])
-                        if(!searchList.Contains(id))
-                            if(searchDownlinks || (!LinkMap.SafeContainsKey(id) && !downlinks.Contains(id)))
-                                searchList.Add(id);
+                    downlinks.Add(downlink.DhtID);
+                }
 
-                if (link.Requests.ContainsKey(proj))
-                    foreach (UplinkRequest request in link.Requests[proj])
-                        if (!searchList.Contains(request.KeyID))
-                            if (searchDownlinks || (!LinkMap.SafeContainsKey(request.KeyID) && !downlinks.Contains(request.KeyID)))
-                                searchList.Add(request.KeyID);
+                foreach (ulong id in link.Confirmed)
+                    if (!searchList.Contains(id))
+                        if (searchDownlinks || (!TrustMap.SafeContainsKey(id) && !downlinks.Contains(id)))
+                            searchList.Add(id);
+
+                foreach (UplinkRequest request in link.Requests)
+                    if (!searchList.Contains(request.KeyID))
+                        if (searchDownlinks || (!TrustMap.SafeContainsKey(request.KeyID) && !downlinks.Contains(request.KeyID)))
+                            searchList.Add(request.KeyID);
             }
 
 
@@ -574,7 +578,7 @@ namespace DeOps.Components.Link
             {
                 uint version = 0;
                 if (link != null)
-                    version = link.Header.Version + 1;
+                    version = link.Trust.Header.Version + 1;
 
                 // limit re-search to once per 30 secs
                 DateTime timeout = default(DateTime);
@@ -597,7 +601,7 @@ namespace DeOps.Components.Link
 
             byte[] parameters = BitConverter.GetBytes(version);
 
-            DhtSearch search = Network.Searches.Start(key, "Link", ComponentID.Link, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Network.Searches.Start(key, "Link", ComponentID.Trust, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -606,7 +610,7 @@ namespace DeOps.Components.Link
         void EndSearch(DhtSearch search)
         {
             foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Link, found.Value));
+                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Trust, found.Value));
         }
 
         List<byte[]> Search_Local(ulong key, byte[] parameters)
@@ -615,15 +619,15 @@ namespace DeOps.Components.Link
 
             uint minVersion = BitConverter.ToUInt32(parameters, 0);
 
-            OpLink link = GetLink(key);
+            OpTrust trust = GetTrust(key);
 
-            if (link != null)
+            if (trust != null)
             {
-                if (link.Loaded && link.Header.Version >= minVersion)
-                    results.Add(link.SignedHeader);
+                if (trust.Loaded && trust.Header.Version >= minVersion)
+                    results.Add(trust.SignedHeader);
 
-                foreach (uint id in link.Requests.Keys)
-                    foreach (UplinkRequest request in link.Requests[id])
+                foreach (OpLink link in trust.Links.Values)
+                    foreach (UplinkRequest request in link.Requests)
                         if (request.TargetVersion > minVersion)
                             results.Add(request.Signed);
             }
@@ -633,10 +637,10 @@ namespace DeOps.Components.Link
 
         bool Transfers_FileSearch(ulong key, FileDetails details)
         {
-            OpLink link = GetLink(key);
+            OpTrust trust = GetTrust(key);
 
-            if (link != null)
-                if (link.Loaded && details.Size == link.Header.FileSize && Utilities.MemCompare(details.Hash, link.Header.FileHash))
+            if (trust != null)
+                if (trust.Loaded && details.Size == trust.Header.FileSize && Utilities.MemCompare(details.Hash, trust.Header.FileHash))
                     return true;
 
             return false;
@@ -644,11 +648,11 @@ namespace DeOps.Components.Link
 
         string Transfers_FileRequest(ulong key, FileDetails details)
         {
-            OpLink link = GetLink(key);
+            OpTrust trust = GetTrust(key);
 
-            if (link != null)
-                if (link.Loaded && details.Size == link.Header.FileSize && Utilities.MemCompare(details.Hash, link.Header.FileHash))
-                    return GetFilePath(link.Header);
+            if (trust != null)
+                if (trust.Loaded && details.Size == trust.Header.FileSize && Utilities.MemCompare(details.Hash, trust.Header.FileHash))
+                    return GetFilePath(trust.Header);
 
             return null;
         }
@@ -659,9 +663,9 @@ namespace DeOps.Components.Link
             if (StructureKnown)
                 return;
 
-            OpLink link = GetLink(contact.DhtID);
+            OpTrust trust = GetTrust(contact.DhtID);
 
-            if(link == null)
+            if (trust == null)
                 StartSearch(contact.DhtID, 0);
         }
 
@@ -679,10 +683,10 @@ namespace DeOps.Components.Link
             // figure out data contained
             if (Core.Protocol.ReadPacket(embedded))
             {
-                if (embedded.Name == LinkPacket.LinkHeader)
-                    Process_LinkHeader(store, signed, LinkHeader.Decode(Core.Protocol, embedded));
+                if (embedded.Name == TrustPacket.TrustHeader)
+                    Process_LinkHeader(store, signed, TrustHeader.Decode(Core.Protocol, embedded));
 
-                else if (embedded.Name == LinkPacket.UplinkReq)
+                else if (embedded.Name == TrustPacket.UplinkReq)
                     Process_UplinkReq(store, signed, UplinkRequest.Decode(Core.Protocol, embedded));
             }
         }
@@ -695,23 +699,23 @@ namespace DeOps.Components.Link
                 return null;
 
 
-            ReplicateData data = new ReplicateData(ComponentID.Link, PatchEntrySize);
-            
+            ReplicateData data = new ReplicateData(ComponentID.Trust, PatchEntrySize);
+
             byte[] patch = new byte[PatchEntrySize];
 
-            LinkMap.LockReading(delegate()
+            TrustMap.LockReading(delegate()
             {
-                foreach (OpLink link in LinkMap.Values)
-                    if (link.Loaded && Utilities.InBounds(link.DhtID, link.DhtBounds, contact.DhtID))
+                foreach (OpTrust trust in TrustMap.Values)
+                    if (trust.Loaded && Utilities.InBounds(trust.DhtID, trust.DhtBounds, contact.DhtID))
                     {
                         // bounds is a distance value
                         DhtContact target = contact;
-                        link.DhtBounds = Store.RecalcBounds(link.DhtID, add, ref target);
+                        trust.DhtBounds = Store.RecalcBounds(trust.DhtID, add, ref target);
 
                         if (target != null)
                         {
-                            BitConverter.GetBytes(link.DhtID).CopyTo(patch, 0);
-                            BitConverter.GetBytes(link.Header.Version).CopyTo(patch, 8);
+                            BitConverter.GetBytes(trust.DhtID).CopyTo(patch, 0);
+                            BitConverter.GetBytes(trust.Header.Version).CopyTo(patch, 8);
 
                             data.Add(target, patch);
                         }
@@ -738,27 +742,27 @@ namespace DeOps.Components.Link
                 if (!Utilities.InBounds(Core.LocalDhtID, distance, dhtid))
                     continue;
 
-                OpLink link = GetLink(dhtid);
+                OpTrust trust = GetTrust(dhtid);
 
-                if (link != null)
-                    if(link.Loaded && link.Header != null)
+                if (trust != null)
+                    if (trust.Loaded && trust.Header != null)
                     {
-                        if(link.Header.Version > version)
+                        if (trust.Header.Version > version)
                         {
-                            Store.Send_StoreReq(source, 0, new DataReq(null, link.DhtID, ComponentID.Link, link.SignedHeader));
+                            Store.Send_StoreReq(source, 0, new DataReq(null, trust.DhtID, ComponentID.Trust, trust.SignedHeader));
                             continue;
                         }
 
-                        link.Unique = false; // network has current or newer version
+                        trust.Unique = false; // network has current or newer version
 
-                        if (link.Header.Version == version)
+                        if (trust.Header.Version == version)
                             continue;
 
                         // else our version is old, download below
                     }
-                
+
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Link, BitConverter.GetBytes(version));
+                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Trust, BitConverter.GetBytes(version));
                 else
                     DownloadLater[dhtid] = version;
             }
@@ -774,15 +778,15 @@ namespace DeOps.Components.Link
 
             try
             {
-                LinkHeader header = LocalLink.Header;
+                TrustHeader header = LocalTrust.Header;
 
                 string oldFile = null;
 
-                if(header != null)
+                if (header != null)
                     oldFile = GetFilePath(header);
                 else
-                    header = new LinkHeader();
-                    
+                    header = new TrustHeader();
+
 
                 header.Key = Core.User.Settings.KeyPublic;
                 header.KeyID = Core.LocalDhtID; // set so keycheck works
@@ -797,39 +801,39 @@ namespace DeOps.Components.Link
 
 
                 // project packets
-                foreach (uint id in LocalLink.Projects)
-                {
-                    ProjectData project = new ProjectData();
-                    project.ID = id;
-                    project.Name = GetProjectName(id);
-
-                    if (id == 0)
-                        project.UserName = LocalLink.Name;
-
-                    project.UserTitle = LocalLink.Title[id];
-
-                    byte[] packet = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, project);
-                    stream.Write(packet, 0, packet.Length);
-
-
-                    // uplinks
-                    if (LocalLink.Uplink.ContainsKey(id))
+                foreach (OpLink link in LocalTrust.Links.Values)
+                    if (link.Active)
                     {
-                        LinkData link = new LinkData(id, LocalLink.Uplink[id].Key, true);
-                        packet = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, link);
-                        stream.Write(packet, 0, packet.Length);
-                    }
+                        ProjectData project = new ProjectData();
+                        project.ID = link.Project;
+                        project.Name = GetProjectName(link.Project);
 
-                    // downlinks
-                    if (LocalLink.Confirmed.ContainsKey(id))
-                        foreach (OpLink downlink in LocalLink.Downlinks[id])
-                            if (LocalLink.Confirmed[id].Contains(downlink.DhtID))
+                        if (link.Project == 0)
+                            project.UserName = LocalTrust.Name;
+
+                        project.UserTitle = link.Title;
+
+                        byte[] packet = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, project);
+                        stream.Write(packet, 0, packet.Length);
+
+
+                        // uplinks
+                        if (link.Uplink != null)
+                        {
+                            LinkData data = new LinkData(link.Project, link.Uplink.Trust.Key, true);
+                            packet = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, data);
+                            stream.Write(packet, 0, packet.Length);
+                        }
+
+                        // downlinks
+                        foreach (OpLink downlink in link.Downlinks)
+                            if (link.Confirmed.Contains(downlink.DhtID))
                             {
-                                LinkData link = new LinkData(id, downlink.Key, false);
-                                packet = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, link);
+                                LinkData data = new LinkData(link.Project, downlink.Trust.Key, false);
+                                packet = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, data);
                                 stream.Write(packet, 0, packet.Length);
                             }
-                }
+                    }
 
                 stream.FlushFinalBlock();
                 stream.Close();
@@ -847,14 +851,14 @@ namespace DeOps.Components.Link
 
                 SaveHeaders();
 
-                if(oldFile != null && File.Exists(oldFile)) // delete after move to ensure a copy always exists (names different)
+                if (oldFile != null && File.Exists(oldFile)) // delete after move to ensure a copy always exists (names different)
                     try { File.Delete(oldFile); }
                     catch { }
 
                 // publish header
-                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Link, LocalLink.SignedHeader);
+                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Trust, LocalTrust.SignedHeader);
 
-                Store.PublishDirect(GetLocsAbove(), Core.LocalDhtID, ComponentID.Link, LocalLink.SignedHeader);
+                Store.PublishDirect(GetLocsAbove(), Core.LocalDhtID, ComponentID.Trust, LocalTrust.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -865,22 +869,22 @@ namespace DeOps.Components.Link
         void SaveHeaders()
         {
             RunSaveHeaders = false;
-                
+
             try
             {
                 string tempPath = Core.GetTempPath();
                 FileStream file = new FileStream(tempPath, FileMode.Create);
                 CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
 
-                LinkMap.LockReading(delegate()
+                TrustMap.LockReading(delegate()
                 {
-                    foreach (OpLink link in LinkMap.Values)
-                        if (link.SignedHeader != null)
+                    foreach (OpTrust trust in TrustMap.Values)
+                        if (trust.SignedHeader != null)
                         {
-                            stream.Write(link.SignedHeader, 0, link.SignedHeader.Length);
+                            stream.Write(trust.SignedHeader, 0, trust.SignedHeader.Length);
 
-                            foreach (uint id in link.Requests.Keys)
-                                foreach (UplinkRequest request in link.Requests[id])
+                            foreach (OpLink link in trust.Links.Values)
+                                foreach (UplinkRequest request in link.Requests)
                                     stream.Write(request.Signed, 0, request.Signed.Length);
                         }
                 });
@@ -893,7 +897,7 @@ namespace DeOps.Components.Link
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Network.UpdateLog("LinkControl", "Error saving links " + ex.Message);
             }
@@ -914,7 +918,7 @@ namespace DeOps.Components.Link
 
                 G2Header root = null;
 
-                while( stream.ReadPacket(ref root) )
+                while (stream.ReadPacket(ref root))
                     if (root.Name == DataPacket.SignedData)
                     {
                         SignedData signed = SignedData.Decode(Core.Protocol, root);
@@ -923,28 +927,28 @@ namespace DeOps.Components.Link
                         // figure out data contained
                         if (Core.Protocol.ReadPacket(embedded))
                         {
-                            if (embedded.Name == LinkPacket.LinkHeader)
-                                Process_LinkHeader(null, signed, LinkHeader.Decode(Core.Protocol, embedded));
+                            if (embedded.Name == TrustPacket.TrustHeader)
+                                Process_LinkHeader(null, signed, TrustHeader.Decode(Core.Protocol, embedded));
 
-                            else if (embedded.Name == LinkPacket.UplinkReq)
+                            else if (embedded.Name == TrustPacket.UplinkReq)
                                 Process_UplinkReq(null, signed, UplinkRequest.Decode(Core.Protocol, embedded));
                         }
                     }
 
                 stream.Close();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Network.UpdateLog("Link", "Error loading links " + ex.Message);
             }
         }
 
-        private void Process_LinkHeader(DataReq data, SignedData signed, LinkHeader header)
+        private void Process_LinkHeader(DataReq data, SignedData signed, TrustHeader header)
         {
             Core.IndexKey(header.KeyID, ref header.Key);
 
 
-            OpLink current = GetLink(header.KeyID);
+            OpTrust current = GetTrust(header.KeyID);
 
             // if link loaded
             if (current != null)
@@ -953,8 +957,8 @@ namespace DeOps.Components.Link
                 if (header.Version < current.Header.Version)
                 {
                     if (data != null && data.Sources != null)
-                        foreach(DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ComponentID.Link, current.SignedHeader));
+                        foreach (DhtAddress source in data.Sources)
+                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ComponentID.Trust, current.SignedHeader));
 
                     return;
                 }
@@ -968,65 +972,70 @@ namespace DeOps.Components.Link
 
             // else load file, set new header after file loaded
             else
-                CacheLinkFile(signed, header);       
+                CacheLinkFile(signed, header);
         }
 
         private void Process_UplinkReq(DataReq data, SignedData signed, UplinkRequest request)
         {
-            Core.IndexKey(request.KeyID,    ref request.Key);
+            Core.IndexKey(request.KeyID, ref request.Key);
             Core.IndexKey(request.TargetID, ref request.Target);
 
             if (!Utilities.CheckSignedData(request.Key, signed.Data, signed.Signature))
                 return;
 
-            OpLink requesterLink = GetLink(request.KeyID);
+            OpTrust requesterTrust = GetTrust(request.KeyID);
 
-            if (requesterLink != null && requesterLink.Loaded && requesterLink.Header.Version > request.LinkVersion)
+            if (requesterTrust != null && requesterTrust.Loaded && requesterTrust.Header.Version > request.LinkVersion)
                 return;
 
             // check if target in linkmap, if not add
-            OpLink targetLink = GetLink(request.TargetID);
+            OpTrust targetTrust = GetTrust(request.TargetID);
 
-            if (targetLink == null)
+            if (targetTrust == null)
             {
-                targetLink = new OpLink(request.Target);
-                LinkMap.SafeAdd(request.TargetID, targetLink);
+                targetTrust = new OpTrust(request.Target);
+                TrustMap.SafeAdd(request.TargetID, targetTrust);
             }
 
-            if (targetLink.Loaded && targetLink.Header.Version > request.TargetVersion)
+            if (targetTrust.Loaded && targetTrust.Header.Version > request.TargetVersion)
                 return;
 
             request.Signed = signed.Encode(Core.Protocol); // so we can send it in results / save, later on
 
             // check for duplicate requests
-            if (targetLink.Requests.ContainsKey(request.ProjectID))
+            OpLink targetLink = targetTrust.GetLink(request.ProjectID);
+
+            if (targetLink != null)
             {
-                foreach(UplinkRequest compare in targetLink.Requests[request.ProjectID])
-                    if( Utilities.MemCompare(compare.Signed, request.Signed))
+                foreach (UplinkRequest compare in targetLink.Requests)
+                    if (Utilities.MemCompare(compare.Signed, request.Signed))
                         return;
             }
             else
-                targetLink.AddProject(request.ProjectID);
+            {
+                targetTrust.AddProject(request.ProjectID, true);
+                targetLink = targetTrust.GetLink(request.ProjectID);
+            }
 
             // add
-            targetLink.Requests[request.ProjectID].Add(request);
+            targetLink.Requests.Add(request);
 
 
             // if target is marked as linked or focused, update link of target and sender
-            if (targetLink.Loaded && (targetLink.InLocalLinkTree || GetFocusedLinks().Contains(targetLink.DhtID)))
+            if (targetTrust.Loaded && (targetTrust.InLocalLinkTree || GetFocusedLinks().Contains(targetTrust.DhtID)))
             {
-                if (targetLink.Header.Version < request.TargetVersion)
-                    StartSearch(targetLink.DhtID, request.TargetVersion);
+                if (targetTrust.Header.Version < request.TargetVersion)
+                    StartSearch(targetTrust.DhtID, request.TargetVersion);
 
-                if (requesterLink == null)
+                if (requesterTrust == null)
                 {
-                    requesterLink = new OpLink(request.Key);
-                    LinkMap.SafeAdd(request.KeyID, requesterLink); 
+                    requesterTrust = new OpTrust(request.Key);
+                    TrustMap.SafeAdd(request.KeyID, requesterTrust);
                 }
 
                 // once new version of requester's link file has been downloaded, interface will be updated
-                if (!requesterLink.Loaded || (requesterLink.Header.Version < request.LinkVersion))
-                    StartSearch(requesterLink.DhtID, request.LinkVersion);
+                if (!requesterTrust.Loaded || (requesterTrust.Header.Version < request.LinkVersion))
+                    StartSearch(requesterTrust.DhtID, request.LinkVersion);
             }
         }
 
@@ -1043,20 +1052,20 @@ namespace DeOps.Components.Link
             return focused;
         }
 
-        private void DownloadLinkFile(SignedData signed, LinkHeader header)
+        private void DownloadLinkFile(SignedData signed, TrustHeader header)
         {
             if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
                 return;
 
-            FileDetails details = new FileDetails(ComponentID.Link, header.FileHash, header.FileSize, null);
+            FileDetails details = new FileDetails(ComponentID.Trust, header.FileHash, header.FileSize, null);
 
             Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
         }
 
         private void EndDownload(string path, object[] args)
         {
-            SignedData signedHeader = (SignedData) args[0];
-            LinkHeader header       = (LinkHeader) args[1];
+            SignedData signedHeader = (SignedData)args[0];
+            TrustHeader header = (TrustHeader)args[1];
 
             string finalpath = GetFilePath(header);
 
@@ -1068,7 +1077,7 @@ namespace DeOps.Components.Link
             CacheLinkFile(signedHeader, header);
         }
 
-        private void CacheLinkFile(SignedData signedHeader, LinkHeader header)
+        private void CacheLinkFile(SignedData signedHeader, TrustHeader header)
         {
             if (Core.InvokeRequired)
                 Debug.Assert(false);
@@ -1085,23 +1094,23 @@ namespace DeOps.Components.Link
                 }
 
                 // get link directly, even if in unloaded state we need the same reference
-                OpLink link = null;
-                LinkMap.SafeTryGetValue(header.KeyID, out link);
+                OpTrust trust = null;
+                TrustMap.SafeTryGetValue(header.KeyID, out trust);
 
-                if (link == null)
+                if (trust == null)
                 {
-                    link = new OpLink(header.Key);
-                    LinkMap.SafeAdd(header.KeyID, link);
+                    trust = new OpTrust(header.Key);
+                    TrustMap.SafeAdd(header.KeyID, trust);
                 }
 
 
                 // delete old file
-                if (link.Header != null)
+                if (trust.Header != null)
                 {
-                    if (header.Version < link.Header.Version)
+                    if (header.Version < trust.Header.Version)
                         return; // dont update with older version
 
-                    string oldPath = GetFilePath(link.Header);
+                    string oldPath = GetFilePath(trust.Header);
                     if (path != oldPath && File.Exists(oldPath))
                         try { File.Delete(oldPath); }
                         catch { }
@@ -1112,28 +1121,30 @@ namespace DeOps.Components.Link
                 {
                     foreach (uint project in ProjectRoots.Keys)
                     {
+                        OpLink link = trust.GetLink(project);
+
+                        if (link == null)
+                            continue;
+
                         ProjectRoots[project].Remove(link);
 
                         // remove loop node
-                        OpLink loop = null;
-                        if (link.LoopRoot.TryGetValue(project, out loop))
-                            foreach(OpLink root in ProjectRoots[project])
-                                if (root.DhtID == loop.DhtID)
+                        if (link.LoopRoot != null)
+                            foreach (OpLink root in ProjectRoots[project])
+                                if (root.DhtID == link.LoopRoot.DhtID)
                                 {
                                     ProjectRoots[project].Remove(root); // root is a loop node
 
                                     // remove associations with loop node
-                                    if(root.Downlinks.ContainsKey(project))
-                                        foreach(OpLink downlink in root.Downlinks[project])
-                                            if(downlink.LoopRoot.ContainsKey(project))
-                                                downlink.LoopRoot.Remove(project);
+                                    foreach (OpLink downlink in root.Downlinks)
+                                        downlink.LoopRoot = null;
 
                                     break;
                                 }
                     }
                 });
 
-                link.Reset();
+                trust.Reset();
 
 
                 // load data from link file
@@ -1152,63 +1163,71 @@ namespace DeOps.Components.Link
                         // figure out data contained
                         if (Core.Protocol.ReadPacket(embedded))
                         {
-                            if (embedded.Name == LinkPacket.ProjectData)
-                                Process_ProjectData(link, signed, ProjectData.Decode(Core.Protocol, embedded));
+                            if (embedded.Name == TrustPacket.ProjectData)
+                                Process_ProjectData(trust, signed, ProjectData.Decode(Core.Protocol, embedded));
 
-                            else if (embedded.Name == LinkPacket.LinkData)
-                                Process_LinkData(link, signed, LinkData.Decode(Core.Protocol, embedded));
+                            else if (embedded.Name == TrustPacket.LinkData)
+                                Process_LinkData(trust, signed, LinkData.Decode(Core.Protocol, embedded));
                         }
                     }
 
                 stream.Close();
 
                 // set new header
-                link.Header = header;
-                link.SignedHeader = signedHeader.Encode(Core.Protocol);
-                link.Loaded = true;
-                link.Unique = Core.Loading;
-                
-                // set as root if node has no uplinks
-                foreach (uint project in link.Projects)
-                    if (!link.Uplink.ContainsKey(project))
-                        AddRoot(project, link);
+                trust.Header = header;
+                trust.SignedHeader = signedHeader.Encode(Core.Protocol);
+                trust.Loaded = true;
+                trust.Unique = Core.Loading;
 
-                // add root for projects this node is not apart of
-                foreach (uint project in link.Downlinks.Keys) 
-                    if (!link.Projects.Contains(project) && !link.Uplink.ContainsKey(project))
-                        AddRoot(project, link);
+                // set as root if node has no uplinks
+                foreach (OpLink link in trust.Links.Values)
+                    if (link.Uplink == null)
+                        AddRoot(link);
+
+                // add root for projects this node is not apart of - above code should do this fine
+                /* foreach (uint project in trust.Downlinks.Keys)
+                    if (!trust.Projects.Contains(project) && !trust.Uplink.ContainsKey(project))
+                        AddRoot(project, trust);*/
 
                 // if loop created, create new loop node with unique ID, assign all nodes in loop the ID and add as downlinks
-                foreach(uint project in link.Uplink.Keys)
-                    if (IsLooped(link, project))
+                foreach (OpLink link in trust.Links.Values)
+                    if (IsLooped(link))
                     {
-                        OpLink loop = new OpLink(project, (ulong) Core.RndGen.Next());
+                        uint project = link.Project;
 
-                        List<ulong> uplinks = GetUnconfirmedUplinkIDs(link.DhtID, project);
-                        uplinks.Add(link.DhtID);
+                        OpLink loop = new OpTrust(project, (ulong)Core.RndGen.Next()).GetLink(project);
+                        loop.IsLoopRoot = true;
+
+                        List<ulong> uplinks = GetUnconfirmedUplinkIDs(trust.DhtID, project);
+                        uplinks.Add(trust.DhtID);
 
                         foreach (ulong uplink in uplinks)
                         {
-                            OpLink member = GetLink(uplink);
-                            member.LoopRoot[project] = loop;
-                            loop.Downlinks[project].Add(member);
-                            loop.Confirmed[project].Add(member.DhtID); //needed for getlowers
+                            OpLink member = GetLink(uplink, project);
+
+                            if (member == null)
+                                continue;
+
+                            member.LoopRoot = loop;
+
+                            loop.Downlinks.Add(member);
+                            loop.Confirmed.Add(member.DhtID); //needed for getlowers
                         }
 
-                        AddRoot(project, loop);
+                        AddRoot(loop);
                     }
 
-                
-                link.CheckRequestVersions();
+
+                trust.CheckRequestVersions();
 
                 RunSaveHeaders = true;
 
-                if(LinkUpdate != null)
-                    LinkUpdate.Invoke(link);
+                if (LinkUpdate != null)
+                    LinkUpdate.Invoke(trust);
 
-                if (Core.NewsWorthy(link.DhtID, 0, false))
-                    Core.MakeNews("Trust updated by " + GetName(link.DhtID), link.DhtID, 0, true, LinkRes.link, null);
-            
+                if (Core.NewsWorthy(trust.DhtID, 0, false))
+                    Core.MakeNews("Trust updated by " + GetName(trust.DhtID), trust.DhtID, 0, true, LinkRes.link, null);
+
 
                 // update subs
                 if (Network.Established)
@@ -1218,18 +1237,18 @@ namespace DeOps.Components.Link
                     ProjectRoots.LockReading(delegate()
                     {
                         foreach (uint project in ProjectRoots.Keys)
-                            if (Core.LocalDhtID == link.DhtID || IsHigher(link.DhtID, project))
+                            if (Core.LocalDhtID == trust.DhtID || IsHigher(trust.DhtID, project))
                                 GetLocsBelow(Core.LocalDhtID, project, locations);
                     });
 
-                    Store.PublishDirect(locations, link.DhtID, ComponentID.Link, link.SignedHeader);
+                    Store.PublishDirect(locations, trust.DhtID, ComponentID.Trust, trust.SignedHeader);
                 }
 
                 // update interface node
-                Core.RunInGuiThread(GuiUpdate, link.DhtID);
+                Core.RunInGuiThread(GuiUpdate, trust.DhtID);
 
-                foreach (uint id in link.Downlinks.Keys)
-                    foreach (OpLink downlink in link.Downlinks[id])
+                foreach (OpLink link in trust.Links.Values)
+                    foreach (OpLink downlink in link.Downlinks)
                         Core.RunInGuiThread(GuiUpdate, downlink.DhtID);
 
             }
@@ -1239,94 +1258,93 @@ namespace DeOps.Components.Link
             }
         }
 
-        private void AddRoot(uint project, OpLink link)
+        private void AddRoot(OpLink link)
         {
             List<OpLink> roots = null;
 
-            if (!ProjectRoots.SafeTryGetValue(project, out roots))
+            if (!ProjectRoots.SafeTryGetValue(link.Project, out roots))
             {
                 roots = new List<OpLink>();
-                ProjectRoots.SafeAdd(project, roots);
+                ProjectRoots.SafeAdd(link.Project, roots);
             }
 
             if (!roots.Contains(link)) // possible it wasnt removed above because link might not be part of project locally but others think it does (uplink)
                 roots.Add(link);
         }
 
-        internal string GetFilePath(LinkHeader header)
+        internal string GetFilePath(TrustHeader header)
         {
             return LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
         }
-        
-        private void Process_ProjectData(OpLink link, SignedData signed, ProjectData project)
+
+        private void Process_ProjectData(OpTrust trust, SignedData signed, ProjectData project)
         {
-            if (!Utilities.CheckSignedData(link.Key, signed.Data, signed.Signature))
+            if (!Utilities.CheckSignedData(trust.Key, signed.Data, signed.Signature))
                 return;
 
             if (project.ID != 0 && !ProjectNames.SafeContainsKey(project.ID))
                 ProjectNames.SafeAdd(project.ID, project.Name);
 
-            link.AddProject(project.ID);
+            trust.AddProject(project.ID, true);
 
-            if(project.ID == 0)
-                link.Name = project.UserName;
+            if (project.ID == 0)
+                trust.Name = project.UserName;
 
-            link.Title[project.ID] = project.UserTitle;            
+            OpLink link = trust.GetLink(project.ID);
+
+            link.Title = project.UserTitle;
         }
 
-        private void Process_LinkData(OpLink link, SignedData signed, LinkData linkData)
+        private void Process_LinkData(OpTrust trust, SignedData signed, LinkData linkData)
         {
-            if (!Utilities.CheckSignedData(link.Key, signed.Data, signed.Signature))
+            if (!Utilities.CheckSignedData(trust.Key, signed.Data, signed.Signature))
                 return;
 
             Core.IndexKey(linkData.TargetID, ref linkData.Target);
 
-            uint id = linkData.Project;
-            if (!link.Projects.Contains(id))
+            uint project = linkData.Project;
+
+            OpLink localLink = trust.GetLink(project);
+
+            if (localLink == null)
                 return;
 
-            OpLink targetLink = GetLink(linkData.TargetID, false);
+            OpTrust targetTrust = GetTrust(linkData.TargetID, false);
 
-            if (targetLink == null)
+            if (targetTrust == null)
             {
-                targetLink = new OpLink(linkData.Target);
-                LinkMap.SafeAdd(linkData.TargetID, targetLink);
+                targetTrust = new OpTrust(linkData.Target);
+                TrustMap.SafeAdd(linkData.TargetID, targetTrust);
             }
+
+            targetTrust.AddProject(project, false);
+            OpLink targetLink = targetTrust.GetLink(project);
 
             if (linkData.Uplink)
             {
-                /*if (link.SearchBranch(id, targetLink))
-                {
-                    link.Error = "Uplink contained in local branch";
-                    return;
-                }*/
+                localLink.Uplink = targetLink;
 
-                link.Uplink[id] = targetLink;
+                targetLink.Downlinks.Add(localLink);
 
-                if (!targetLink.Downlinks.ContainsKey(id))
-                    targetLink.Downlinks[id] = new List<OpLink>();
+                if (!targetTrust.Loaded && !StructureKnown)
+                    StartSearch(targetTrust.DhtID, 0);
 
-                targetLink.Downlinks[id].Add(link);
-
-                if (!targetLink.Loaded && !StructureKnown)
-                    StartSearch(targetLink.DhtID, 0);
-
-                if (!targetLink.Uplink.ContainsKey(id))
-                    AddRoot(id, targetLink);
+                if (targetLink.Uplink == null)
+                    AddRoot(targetLink);
             }
 
             else
             {
-                link.Confirmed[id].Add(targetLink.DhtID);
+                localLink.Confirmed.Add(targetLink.DhtID);
             }
         }
 
         internal void CheckVersion(ulong key, uint version)
         {
-            OpLink link = GetLink(key);
+            OpTrust trust = GetTrust(key);
 
-            if (link != null && link.Header != null)
-                if (link.Header.Version < version)
+            if (trust != null && trust.Header != null)
+                if (trust.Header.Version < version)
                     StartSearch(key, version);
         }
 
@@ -1335,12 +1353,12 @@ namespace DeOps.Components.Link
             uint id = (uint)Core.RndGen.Next();
 
             ProjectNames.SafeAdd(id, name);
-            LocalLink.AddProject(id);
+            LocalTrust.AddProject(id, true);
 
             List<OpLink> roots = new List<OpLink>();
-            roots.Add(LocalLink);
+            roots.Add(LocalTrust.GetLink(id));
             ProjectRoots.SafeAdd(id, roots);
-            
+
             SaveLocal();
 
             return id;
@@ -1351,11 +1369,11 @@ namespace DeOps.Components.Link
             if (project == 0)
                 return;
 
-            LocalLink.AddProject(project);
+            LocalTrust.AddProject(project, true);
 
             SaveLocal();
         }
-        
+
         internal void LeaveProject(uint project)
         {
             if (project == 0)
@@ -1366,23 +1384,23 @@ namespace DeOps.Components.Link
             GetLocs(Core.LocalDhtID, project, 1, 1, locations);
             GetLocsBelow(Core.LocalDhtID, project, locations);
 
-            LocalLink.Projects.Remove(project);
+            LocalTrust.RemoveProject(project);
 
             SaveLocal();
 
             // update links in old project of update
             Core.RunInCoreAsync(delegate()
             {
-                Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Link, LocalLink.SignedHeader);
+                Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Trust, LocalTrust.SignedHeader);
             });
         }
 
         internal string GetName(ulong id)
         {
-            OpLink link = GetLink(id);
-            
-            if(link != null && link.Name.Trim() != "")
-               return link.Name;
+            OpTrust trust = GetTrust(id);
+
+            if (trust != null && trust.Name.Trim() != "")
+                return trust.Name;
 
             string name = id.ToString();
             return (name.Length > 5) ? name.Substring(0, 5) : name;
@@ -1391,8 +1409,8 @@ namespace DeOps.Components.Link
         internal string GetProjectName(uint id)
         {
             string name = null;
-            if(ProjectNames.SafeTryGetValue(id, out name))
-                if(name.Trim() != "")
+            if (ProjectNames.SafeTryGetValue(id, out name))
+                if (name.Trim() != "")
                     return name;
 
             name = id.ToString();
@@ -1401,15 +1419,15 @@ namespace DeOps.Components.Link
 
         internal void GetLocs(ulong id, uint project, int up, int depth, List<LocationData> locations)
         {
-            OpLink link = GetLink(id);
+            OpLink link = GetLink(id, project);
 
             if (link == null)
                 return;
 
-            OpLink uplink = TraverseUp(link, project, up);
+            OpLink uplink = TraverseUp(link, up);
 
             if (uplink != null)
-                GetLinkLocs(uplink, project, depth, locations);
+                GetLinkLocs(uplink, depth, locations);
 
             // if at top, get nodes around roots
             else
@@ -1417,7 +1435,7 @@ namespace DeOps.Components.Link
                 List<OpLink> roots = null;
                 if (ProjectRoots.SafeTryGetValue(project, out roots))
                     foreach (OpLink root in roots)
-                        GetLinkLocs(root, project, 1, locations);
+                        GetLinkLocs(root, 1, locations);
             }
         }
 
@@ -1428,22 +1446,21 @@ namespace DeOps.Components.Link
             // the online node will call this function to continue traversing data down the network
             // upon being updated with the data object sent by whoever is calling this function
 
-            OpLink link = GetLink(id);
+            OpLink link = GetLink(id, project);
 
             if (link != null)
-                if (link.Downlinks.ContainsKey(project))
-                    foreach (OpLink child in link.Downlinks[project])
-                        if( !AddLinkLocations(child, locations)) 
-                            GetLocsBelow(child.DhtID, project,  locations);
+                foreach (OpLink child in link.Downlinks)
+                    if (!AddLinkLocations(child, locations))
+                        GetLocsBelow(child.DhtID, project, locations);
         }
-        private void GetLinkLocs(OpLink parent, uint project, int depth, List<LocationData> locations)
+        private void GetLinkLocs(OpLink parent, int depth, List<LocationData> locations)
         {
             AddLinkLocations(parent, locations);
 
-            if (depth > 0 && parent.Downlinks.ContainsKey(project))
-                foreach (OpLink child in parent.Downlinks[project])
-                    if (!parent.IsLoopedTo(child, project))
-                        GetLinkLocs(child, project, depth - 1, locations);
+            if (depth > 0)
+                foreach (OpLink child in parent.Downlinks)
+                    if (!parent.IsLoopedTo(child))
+                        GetLinkLocs(child, depth - 1, locations);
         }
 
         private bool AddLinkLocations(OpLink link, List<LocationData> locations)
@@ -1481,7 +1498,7 @@ namespace DeOps.Components.Link
             return locations;
         }
 
-        private OpLink TraverseUp(OpLink link, uint project, int distance)
+        private OpLink TraverseUp(OpLink link, int distance)
         {
             // needs to get unconfiremd ids so unconfirmed above / below are updated with link status
 
@@ -1490,7 +1507,7 @@ namespace DeOps.Components.Link
 
             int traverse = 0;
 
-            OpLink uplink = link.GetHigher(project, false);
+            OpLink uplink = link.GetHigher(false);
 
             while (uplink != null)
             {
@@ -1498,7 +1515,7 @@ namespace DeOps.Components.Link
                 if (traverse == distance)
                     return uplink;
 
-                uplink = uplink.GetHigher(project, false);
+                uplink = uplink.GetHigher(false);
             }
 
             return null;
@@ -1514,7 +1531,7 @@ namespace DeOps.Components.Link
         {
             return IsHigher(Core.LocalDhtID, key, project, false);
         }
-        
+
         internal bool IsHigher(ulong localID, ulong key, uint project)
         {
             return IsHigher(localID, key, project, true);
@@ -1527,7 +1544,7 @@ namespace DeOps.Components.Link
 
         private bool IsHigher(ulong localID, ulong higherID, uint project, bool confirmed)
         {
-            OpLink local = GetLink(localID);
+            OpTrust local = GetTrust(localID);
 
             if (local == null)
                 return false;
@@ -1537,13 +1554,15 @@ namespace DeOps.Components.Link
             if (uplinks.Count == 0)
                 return false;
 
-            if(uplinks.Contains(higherID))
+            if (uplinks.Contains(higherID))
                 return true;
 
-            // check if id we're looping for is the loop node's id
-            OpLink highest = GetLink(uplinks[uplinks.Count - 1]);
+            // check if higher ID being checked is the loop root ID
+            OpLink highest = GetLink(uplinks[uplinks.Count - 1], project);
 
-            if(highest.LoopRoot.ContainsKey(project) && highest.LoopRoot[project].DhtID == higherID)
+            if (highest != null && 
+                highest.LoopRoot != null && 
+                highest.LoopRoot.DhtID == higherID)
                 return true;
 
             return false;
@@ -1560,26 +1579,26 @@ namespace DeOps.Components.Link
             return false;
         }
 
-        internal bool IsLooped(OpLink local, uint project)
+        internal bool IsLooped(OpLink local)
         {
             // this function is the same as getUplinkIDs with minor mods
             List<ulong> list = new List<ulong>();
 
-            OpLink uplink = local.GetHigher(project, false);
+            OpLink uplink = local.GetHigher(false);
 
             while (uplink != null)
             {
                 // if loop lead back to self, link is in loop
                 if (uplink == local)
                     return true;
-                
+
                 // if there is a loop higher up, but link is not in it, return
-                if(list.Contains(uplink.DhtID))
+                if (list.Contains(uplink.DhtID))
                     return false;
 
                 list.Add(uplink.DhtID);
 
-                uplink = uplink.GetHigher(project, false);
+                uplink = uplink.GetHigher(false);
             }
 
             return false;
@@ -1601,22 +1620,22 @@ namespace DeOps.Components.Link
 
             List<ulong> list = new List<ulong>();
 
-            OpLink link = GetLink(local);
+            OpLink link = GetLink(local, project);
 
             if (link == null)
                 return list;
 
-            OpLink uplink = link.GetHigher(project, confirmed);
+            OpLink uplink = link.GetHigher(confirmed);
 
             while (uplink != null)
-            {       
+            {
                 // if looping, return
                 if (uplink.DhtID == local || list.Contains(uplink.DhtID))
-                    return list;       
-                
+                    return list;
+
                 list.Add(uplink.DhtID);
 
-                uplink = uplink.GetHigher(project, confirmed);
+                uplink = uplink.GetHigher(confirmed);
             }
 
             return list;
@@ -1628,20 +1647,20 @@ namespace DeOps.Components.Link
 
             List<ulong> list = new List<ulong>();
 
-            OpLink link = GetLink(local);
+            OpLink link = GetLink(local, project);
 
-            if (link == null || link.LoopRoot.ContainsKey(project))
+            if (link == null || link.LoopRoot != null)
                 return list;
 
-            OpLink uplink = link.GetHigher(project, true);
+            OpLink uplink = link.GetHigher(true);
 
             while (uplink != null)
             {
                 list.Add(uplink.DhtID);
 
-                uplink = uplink.GetHigher(project, true);
+                uplink = uplink.GetHigher(true);
 
-                if (uplink != null && uplink.LoopRoot.ContainsKey(project))
+                if (uplink != null && uplink.LoopRoot != null)
                     return list;
             }
 
@@ -1652,17 +1671,17 @@ namespace DeOps.Components.Link
         {
             List<ulong> list = new List<ulong>();
 
-            OpLink link = GetLink(id);
+            OpLink link = GetLink(id, project);
 
             if (link == null)
                 return list;
 
-            OpLink uplink = link.GetHigher(project, true);
+            OpLink uplink = link.GetHigher(true);
 
-            if (uplink == null || link.IsLoopedTo(uplink, project))
+            if (uplink == null || link.IsLoopedTo(uplink))
                 return list;
 
-            foreach(OpLink sub in uplink.GetLowers(project, true))
+            foreach (OpLink sub in uplink.GetLowers(true))
                 list.Add(sub.DhtID);
 
             list.Remove(id);
@@ -1674,23 +1693,22 @@ namespace DeOps.Components.Link
         {
             List<ulong> list = new List<ulong>();
 
-            OpLink link = GetLink(id);
+            OpLink link = GetLink(id, project);
 
             if (link == null)
                 return list;
 
             levels--;
 
-            if (link.Confirmed.ContainsKey(project) && link.Downlinks.ContainsKey(project))
-                foreach (OpLink downlink in link.Downlinks[project])
-                    if(!link.IsLoopedTo(downlink, project))
-                        if (link.Confirmed[project].Contains(downlink.DhtID))
-                        {
-                            list.Add(downlink.DhtID);
+            foreach (OpLink downlink in link.Downlinks)
+                if (!link.IsLoopedTo(downlink))
+                    if (link.Confirmed.Contains(downlink.DhtID))
+                    {
+                        list.Add(downlink.DhtID);
 
-                            if (levels > 0)
-                                list.AddRange(GetDownlinkIDs(downlink.DhtID, project, levels));
-                        }
+                        if (levels > 0)
+                            list.AddRange(GetDownlinkIDs(downlink.DhtID, project, levels));
+                    }
 
             return list;
         }
@@ -1699,28 +1717,29 @@ namespace DeOps.Components.Link
         {
             int count = 0;
 
-           OpLink link = GetLink(id);
+            OpLink link = GetLink(id, project);
 
             if (link != null)
-                if (link.Confirmed.ContainsKey(project) && link.Downlinks.ContainsKey(project))
-                    foreach (OpLink downlink in link.Downlinks[project])
-                        if(!link.IsLoopedTo(downlink, project))
-                            if (link.Confirmed[project].Contains(downlink.DhtID))
-                                count++;
+                foreach (OpLink downlink in link.Downlinks)
+                    if (!link.IsLoopedTo(downlink))
+                        if (link.Confirmed.Contains(downlink.DhtID))
+                            count++;
 
             return count > 0;
         }
 
         internal bool IsAdjacent(ulong id, uint project)
         {
-            OpLink higher = LocalLink.GetHigher(project, true);
+            OpLink link = LocalTrust.GetLink(project);
 
-            if (higher != null &&
-                higher.Confirmed.ContainsKey(project) &&
-                higher.Confirmed[project].Contains(id) &&
-                higher.Downlinks.ContainsKey(project))
-                foreach (OpLink downlink in higher.Downlinks[project])
-                    if(!higher.IsLoopedTo(downlink, project))
+            if (link == null)
+                return false;
+
+            OpLink higher = link.GetHigher(true);
+
+            if (higher != null && higher.Confirmed.Contains(id))
+                foreach (OpLink downlink in higher.Downlinks)
+                    if (!higher.IsLoopedTo(downlink))
                         if (downlink.DhtID == id)
                             return true;
 
@@ -1729,11 +1748,11 @@ namespace DeOps.Components.Link
 
         internal bool IsLowerDirect(ulong id, uint project)
         {
-            if (LocalLink.Confirmed.ContainsKey(project) &&
-                LocalLink.Confirmed[project].Contains(id) &&
-                LocalLink.Downlinks.ContainsKey(project))
-                foreach (OpLink downlink in LocalLink.Downlinks[project])
-                    if(!LocalLink.IsLoopedTo(downlink, project))
+            OpLink link = LocalTrust.GetLink(project);
+
+            if (link != null && link.Confirmed.Contains(id))
+                foreach (OpLink downlink in link.Downlinks)
+                    if (!link.IsLoopedTo(downlink))
                         if (downlink.DhtID == id)
                             return true;
 
@@ -1742,9 +1761,14 @@ namespace DeOps.Components.Link
 
         internal bool IsHigherDirect(ulong id, uint project)
         {
-            OpLink uplink = LocalLink.GetHigher(project, true);
+            OpLink link = LocalTrust.GetLink(project);
 
-            if (uplink == null || LocalLink.IsLoopedTo(uplink, project))
+            if (link == null)
+                return false;
+
+            OpLink uplink = link.GetHigher(true);
+
+            if (uplink == null || link.IsLoopedTo(uplink))
                 return false;
 
             return uplink.DhtID == id;
@@ -1755,7 +1779,7 @@ namespace DeOps.Components.Link
             // get inherit ids because scope ranges dont work in loops
             List<ulong> uplinks = GetAutoInheritIDs(testID, project);
 
-            
+
             // loop through all the scope permissions
             foreach (ulong id in scope.Keys)
             {
@@ -1779,23 +1803,31 @@ namespace DeOps.Components.Link
             return false;
         }
 
-        OpLink GetLink(ulong id, bool loaded)
+        OpTrust GetTrust(ulong id, bool loaded)
         {
-            OpLink link = null;
+            OpTrust trust = null;
 
-            if (LinkMap.SafeTryGetValue(id, out link))
-                if (!loaded || link.Loaded)
-                    return link;
+            if (TrustMap.SafeTryGetValue(id, out trust))
+                if (!loaded || trust.Loaded)
+                    return trust;
 
             return null;
         }
 
-        internal OpLink GetLink(ulong id)
+        internal OpTrust GetTrust(ulong id)
         {
-            return GetLink(id, true);
+            return GetTrust(id, true);
         }
 
+        internal OpLink GetLink(ulong id, uint project)
+        {
+            OpTrust trust = GetTrust(id, true);
 
+            if (trust == null)
+                return null;
+
+            return trust.GetLink(project);
+        }
 
         /*internal OpLink GetRoot(ulong id, uint project)
         {
@@ -1814,134 +1846,90 @@ namespace DeOps.Components.Link
     }
 
     [DebuggerDisplay("{Name}")]
-    internal class OpLink
+    internal class OpTrust
     {
-        internal string   Name;
-        internal ulong    DhtID;
-        internal ulong    DhtBounds = ulong.MaxValue;
-        internal byte[]   Key;    // make sure reference is the same as main key list
-        internal bool     Loaded;
-        internal bool     Unique; 
-        internal bool     InLocalLinkTree;
-        internal bool     Searched;
+        internal string Name = "Unknown";
+        internal ulong DhtID;
+        internal ulong DhtBounds = ulong.MaxValue;
+        internal byte[] Key;    // make sure reference is the same as main key list
+        internal bool Loaded;
+        internal bool Unique;
 
-        internal bool IsLoopRoot;
-        
-        internal Dictionary<uint, OpLink> LoopRoot = new Dictionary<uint, OpLink>();
+        internal bool InLocalLinkTree;
+        internal bool Searched;
 
-        internal List<uint> Projects = new List<uint>();
-        internal Dictionary<uint, string> Title = new Dictionary<uint, string>();
-
-        internal Dictionary<uint, OpLink>       Uplink    = new Dictionary<uint, OpLink>();
-        internal Dictionary<uint, List<OpLink>> Downlinks = new Dictionary<uint, List<OpLink>>();
-        internal Dictionary<uint, List<ulong>>  Confirmed = new Dictionary<uint, List<ulong>>();
-        internal Dictionary<uint, List<UplinkRequest>> Requests = new Dictionary<uint, List<UplinkRequest>>();
-
-        internal LinkHeader Header;
+        internal TrustHeader Header;
         internal byte[] SignedHeader;
 
-
-        internal OpLink(byte[] key)
+        internal Dictionary<uint, OpLink> Links = new Dictionary<uint, OpLink>();
+        
+   
+        internal OpTrust(byte[] key)
         {
             Key = key;
             DhtID = Utilities.KeytoID(key);
         }
 
-        internal OpLink(uint project, ulong loopID)
+        // loop root object should now be OpLink
+        internal OpTrust(uint project, ulong loopID)
         {
-            IsLoopRoot = true;
             Loaded = true;
             Name = "Trust Loop";
             DhtID = loopID;
-            AddProject(project);
+            AddProject(project, true);
         }
 
 
-        internal void AddProject(uint id)
+        internal void AddProject(uint project, bool active)
         {
-            if (!Projects.Contains(id))
-            {
-                Projects.Add(id);
-                Title[id] = "";
-                Confirmed[id] = new List<ulong>();
-                Requests[id] = new List<UplinkRequest>();
-            }
-            
-            // nodes can have downlinks in projects they themselves are not part of
+            OpLink link = GetLink(project);
 
-            if (!Downlinks.ContainsKey(id))
-                Downlinks[id] = new List<OpLink>();
+            if (link == null)
+            {
+                link = new OpLink(this, project);
+                Links.Add(project, link);
+            }
+
+            // setting project to non-active has to be done manually
+            if (!link.Active) 
+                link.Active = active;
+        }
+
+        internal void RemoveProject(uint project)
+        {
+            OpLink link = GetLink(project);
+
+            if (link == null)
+                link.Active = false;
+
+            link.Uplink = null;
+            link.Title = "";
+            link.Confirmed.Clear();
+        }
+
+        internal OpLink GetLink(uint project)
+        {
+            OpLink link = null;
+
+            Links.TryGetValue(project, out link);
+
+            return link;
         }
 
         internal void Reset()
         {
-            // find nodes we're uplinked to and remove ourselves from their downlink list
-            foreach (uint id in Uplink.Keys)
-                ResetUplink(id);
+            List<uint> remove = new List<uint>();
 
-
-            // only clear downlinks that are no longer uplinked to us
-            List<uint> removeIDs = new List<uint>();
-
-            foreach (uint id in Downlinks.Keys)
+            foreach (OpLink link in Links.Values)
             {
-                List<OpLink> list = Downlinks[id];
-                List<OpLink> remove = new List<OpLink>();
+                link.Reset();
 
-                foreach (OpLink downlink in Downlinks[id])
-                    if (downlink.Uplink.ContainsKey(id))
-                        if (downlink.Uplink[id] != this)
-                            remove.Add(downlink);
-
-                foreach (OpLink downlink in remove)
-                    list.Remove(downlink);
-
-                if (list.Count == 0)
-                    removeIDs.Add(id);
+                if(link.Downlinks.Count == 0)
+                    remove.Add(link.Project);
             }
 
-            foreach (uint id in removeIDs)
-                Downlinks.Remove(id);
- 
-            Projects.Clear();
-            Title.Clear();
-
-            Uplink.Clear();
-            Confirmed.Clear();
-        }
-
-        internal void ResetUplink(uint id)
-        {
-            if (!Uplink.ContainsKey(id))
-                return;
-
-            if (Uplink[id].Downlinks.ContainsKey(id))
-                Uplink[id].Downlinks[id].Remove(this);
-
-            // uplink requests are invalidated on verion update also
-            // not the local ones, but the ones this link issued to previous uplink
-            if (Uplink[id].Requests.ContainsKey(id))
-                foreach (UplinkRequest request in Uplink[id].Requests[id])
-                    if (request.KeyID == DhtID)
-                    {
-                        Uplink[id].Requests[id].Remove(request);
-                        break;
-                    }
-        }
-
-        internal bool SearchBranch(uint proj, OpLink find)
-        {
-            if (Downlinks.ContainsKey(proj))
-                foreach (OpLink link in Downlinks[proj])
-                {
-                    if (link == find)
-                        return true;
-
-                    if (link.SearchBranch(proj, find))
-                        return true;
-                }
-
-            return false;
+            foreach (uint project in remove)
+                Links.Remove(project);
         }
 
         internal void CheckRequestVersions()
@@ -1949,64 +1937,129 @@ namespace DeOps.Components.Link
             List<UplinkRequest> removeList = new List<UplinkRequest>();
 
             // check target
-            foreach (uint id in Requests.Keys)
+            foreach (OpLink link in Links.Values)
             {
                 removeList.Clear();
 
-                foreach (UplinkRequest request in Requests[id])
+                foreach (UplinkRequest request in link.Requests)
                     if (request.TargetVersion < Header.Version)
                         removeList.Add(request);
 
                 foreach (UplinkRequest request in removeList)
-                    Requests[id].Remove(request);
+                    link.Requests.Remove(request);
             }
         }
 
-        internal OpLink GetHigher(uint project, bool confirmed)
+
+    }
+
+    [DebuggerDisplay("{Trust.Name}")]
+    internal class OpLink
+    {
+        internal OpTrust Trust;
+        internal uint Project;
+        internal bool Active;
+        internal string Title = "";
+
+        internal bool IsLoopRoot;
+        internal OpLink LoopRoot;
+
+        internal OpLink Uplink;
+        internal List<OpLink> Downlinks = new List<OpLink>();
+        internal List<ulong> Confirmed = new List<ulong>();
+        internal List<UplinkRequest> Requests = new List<UplinkRequest>();
+
+        internal ulong DhtID
         {
-            if (!Uplink.ContainsKey(project))
-                return null;
-
-            if (!confirmed)
-                return Uplink[project];
-
-            OpLink uplink = Uplink[project];
-
-             if (!uplink.Confirmed.ContainsKey(project))
-                return null;
-
-            // if we are one of the uplinks confirmed downlinks then return trusted uplink
-            if (uplink.Confirmed[project].Contains(DhtID)) 
-                return uplink;
-             
-            return null;
+            get
+            {
+                return Trust.DhtID;
+            }
         }
 
-        internal List<OpLink> GetLowers(uint project, bool confirmed)
+        internal OpLink(OpTrust trust, uint project)
         {
-            List<OpLink> lowers = new List<OpLink>();
-
-             if (Downlinks.ContainsKey(project))
-                 if(!confirmed || Confirmed.ContainsKey(project))
-                    foreach (OpLink downlink in Downlinks[project])
-                        if(IsLoopRoot || !IsLoopedTo(downlink, project)) // chat uses getlowers on looproot
-                            if (!confirmed || Confirmed[project].Contains(downlink.DhtID))
-                                lowers.Add(downlink);
-
-            return lowers;
+            Trust = trust;
+            Project = project;
         }
 
-        internal bool IsLoopedTo(OpLink test, uint Project)
+        internal void Reset()
         {
-            if(!LoopRoot.ContainsKey(Project))
-                return false;
+            // find nodes we're uplinked to and remove ourselves from their downlink list
+            ResetUplink();
 
-            ulong loopID = LoopRoot[Project].DhtID;
+            // only clear downlinks that are no longer uplinked to us
+            List<OpLink> remove = new List<OpLink>();
 
-            if (test.LoopRoot.ContainsKey(Project) && test.LoopRoot[Project].DhtID == loopID)
+            foreach (OpLink downlink in Downlinks)
+                if (downlink.Uplink == null || downlink.Uplink != this)
+                    remove.Add(downlink);
+
+            foreach (OpLink downlink in remove)
+                Downlinks.Remove(downlink);
+
+            Active = false;
+            Title = "";
+
+            Uplink = null;
+            Confirmed.Clear();
+        }
+
+        internal bool IsLoopedTo(OpLink test)
+        {
+            if (test.LoopRoot != null && test.LoopRoot == LoopRoot)
                 return true;
 
             return false;
         }
+
+        internal OpLink GetHigher(bool confirmed)
+        {
+            if (Uplink == null)
+                return null;
+
+            if (!confirmed)
+                return Uplink;
+
+            // if we are one of the uplinks confirmed downlinks then return trusted uplink
+            if (Uplink.Confirmed.Contains(DhtID))
+                return Uplink;
+
+            return null;
+        }
+
+        internal List<OpLink> GetLowers(bool confirmed)
+        {
+            List<OpLink> lowers = new List<OpLink>();
+
+            foreach (OpLink downlink in Downlinks)
+                if (IsLoopRoot || !IsLoopedTo(downlink)) // chat uses getlowers on looproot
+                    if (!confirmed || Confirmed.Contains(downlink.DhtID))
+                        lowers.Add(downlink);
+
+            return lowers;
+        }
+
+        internal void ResetUplink()
+        {
+            if (Uplink != null)
+                Uplink.RemoveDownlink(this);
+        }
+
+        private void RemoveDownlink(OpLink downlink)
+        {
+            if (Downlinks.Contains(downlink))
+                Downlinks.Remove(downlink);
+
+            // uplink requests are invalidated on verion update also
+            // not the local ones, but the ones this link issued to previous uplink
+            foreach (UplinkRequest request in Requests)
+                if (request.KeyID == downlink.DhtID)
+                {
+                    Requests.Remove(request);
+                    break;
+                }
+        }
+
     }
 }

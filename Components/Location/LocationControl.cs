@@ -207,7 +207,7 @@ namespace DeOps.Components.Location
                                      //crit hack - last 30 and 15 secs before loc destroyed do searches (working pretty good through...)
                                      if (clients[id].TTL == 1 &&
                                          (second == 15 || second == 30))
-                                         if (Core.Links.LinkMap.SafeContainsKey(key))
+                                         if (Core.Links.TrustMap.SafeContainsKey(key))
                                              StartSearch(key, 0, false);
                                  }
                              });
@@ -272,7 +272,7 @@ namespace DeOps.Components.Location
             location.Version  = LocationVersion++;
             if( Core.Profiles != null)
                 location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
-            location.LinkVersion = Core.Links.LocalLink.Header.Version;
+            location.LinkVersion = Core.Links.LocalTrust.Header.Version;
 
 
             byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, location);
@@ -483,7 +483,7 @@ namespace DeOps.Components.Location
 
             location.Place = Core.User.Settings.Location;
             location.Version = LocationVersion++;
-            location.LinkVersion = Core.Links.LocalLink.Header.Version;
+            location.LinkVersion = Core.Links.LocalTrust.Header.Version;
 
             if(Core.Profiles != null)
                 location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;

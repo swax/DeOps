@@ -1,4 +1,10 @@
 
+change over namespaces
+board - All/Higher/Lower Posts, New Post
+commit to cvs
+start component code
+
+
 now
 	refactor components
 	3rd party ease of component creation

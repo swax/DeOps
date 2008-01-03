@@ -314,12 +314,11 @@ namespace DeOps.Components.Plan
                     }
 
                     if (root.IsLoopRoot && 
-                        root.Downlinks.ContainsKey(ProjectID) && 
-                        root.Downlinks[ProjectID].Count > 0 && 
-                        Uplinks.Contains(root.Downlinks[ProjectID][0].DhtID))
+                        root.Downlinks.Count > 0 && 
+                        Uplinks.Contains(root.Downlinks[0].DhtID))
                     {
-                        foreach(OpLink downlink in root.Downlinks[ProjectID])
-                            if (!root.IsLoopedTo(downlink, ProjectID))
+                        foreach(OpLink downlink in root.Downlinks)
+                            if (!root.IsLoopedTo(downlink))
                             {
                                 PlanNode node = CreateNode(downlink);
 
@@ -365,13 +364,13 @@ namespace DeOps.Components.Plan
             // go through downlinks
             foreach (ulong id in Links.GetDownlinkIDs(node.Link.DhtID, ProjectID, 1))
             {
-                OpLink link = Links.GetLink(id);
+                OpLink link = Links.GetLink(id, ProjectID);
 
                 if (link == null)
                     continue;
 
                 // if doesnt exist search for it
-                if (!link.Loaded)
+                if (!link.Trust.Loaded)
                 {
                     Links.Research(link.DhtID, ProjectID, false);
                     continue;
@@ -407,7 +406,7 @@ namespace DeOps.Components.Plan
         void Links_Update(ulong key)
         {
             // copied from linkTree's source
-            OpLink link = Links.GetLink(key);
+            OpLink link = Links.GetLink(key, ProjectID);
 
             if (link == null)
             {
@@ -417,13 +416,14 @@ namespace DeOps.Components.Plan
                 return;
             }
 
-            if (!link.Projects.Contains(ProjectID) && !link.Downlinks.ContainsKey(ProjectID))
+            /*above should do this now
+             * if (!link.Projects.Contains(ProjectID) && !link.Downlinks.ContainsKey(ProjectID))
             {
                 if (NodeMap.ContainsKey(key))
                     RemoveNode(NodeMap[key]);
 
                 return;
-            }
+            }*/
 
             PlanNode node = null;
 
@@ -572,10 +572,10 @@ namespace DeOps.Components.Plan
 
         private OpLink GetTreeHigher(OpLink link)
         {
-            if (link.LoopRoot.ContainsKey(ProjectID))
-                return link.LoopRoot[ProjectID];
+            if (link.LoopRoot != null)
+                return link.LoopRoot;
 
-            return link.GetHigher(ProjectID, false);
+            return link.GetHigher(false);
         }
 
 
@@ -1057,8 +1057,8 @@ namespace DeOps.Components.Plan
 
         internal void UpdateName()
         {
-            if (Link.Title.ContainsKey(View.ProjectID) && Link.Title[View.ProjectID] != "")
-                Text = View.Core.Links.GetName(Link.DhtID) + "\n" + Link.Title[View.ProjectID];
+            if (Link.Title != "")
+                Text = View.Core.Links.GetName(Link.DhtID) + "\n" + Link.Title;
             else
                 Text = View.Core.Links.GetName(Link.DhtID);
         }

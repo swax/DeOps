@@ -217,10 +217,10 @@ namespace DeOps.Simulator
 
             // link
             if(!found)
-                core.Links.LinkMap.LockReading(delegate()
+                core.Links.TrustMap.LockReading(delegate()
                 {
-                    foreach (OpLink link in core.Links.LinkMap.Values)
-                        if (link.Loaded && Utilities.MemCompare(link.Header.FileHash, TrackHash))
+                    foreach (OpTrust trust in core.Links.TrustMap.Values)
+                        if (trust.Loaded && Utilities.MemCompare(trust.Header.FileHash, TrackHash))
                             found = true;
                 });
 
@@ -521,7 +521,7 @@ namespace DeOps.Simulator
             {
                 case ComponentID.Node:
                     return Legend.PicNode.BackColor;
-                case ComponentID.Link:
+                case ComponentID.Trust:
                     return Legend.PicLink.BackColor;
                 case ComponentID.Location:
                     return Legend.PicLoc.BackColor;

@@ -187,7 +187,7 @@ namespace DeOps.Components.Plan
                 if (PlanMap.Count > PruneSize)
                     foreach (OpPlan plan in PlanMap.Values)
                         if (plan.DhtID != Core.LocalDhtID &&
-                            !Core.Links.LinkMap.SafeContainsKey(plan.DhtID) && // dont remove nodes in our local hierarchy
+                            !Core.Links.TrustMap.SafeContainsKey(plan.DhtID) && // dont remove nodes in our local hierarchy
                             !focused.Contains(plan.DhtID) &&
                             !Utilities.InBounds(plan.DhtID, plan.DhtBounds, Core.LocalDhtID))
                             removeIDs.Add(plan.DhtID);
@@ -887,7 +887,7 @@ namespace DeOps.Components.Plan
                 foreach (PlanGoal sub in plan.GoalMap[goal.Ident])
                     if (goal.BranchDown == sub.BranchUp && sub.BranchDown != 0)
                     {
-                        if (Links.LinkMap.SafeContainsKey(sub.Person) && !Links.IsLower(goal.Person, sub.Person, goal.Project))
+                        if (Links.TrustMap.SafeContainsKey(sub.Person) && !Links.IsLower(goal.Person, sub.Person, goal.Project))
                             continue; // only pass if link file for sub is loaded, else assume linked so whole net can be reported
 
                         GetEstimate(sub, ref completed, ref total);

@@ -170,7 +170,7 @@ namespace DeOps.Implementation
                 GlobalNet = new DhtNetwork(this, true);
 
 
-            Components[ComponentID.Link]     = new LinkControl(this);
+            Components[ComponentID.Trust]     = new LinkControl(this);
             Components[ComponentID.Location] = new LocationControl(this);
             Components[ComponentID.Transfer] = new TransferControl(this);
             Components[ComponentID.Profile]  = new ProfileControl(this);

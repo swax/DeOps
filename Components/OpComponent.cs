@@ -58,7 +58,7 @@ namespace DeOps.Components
     internal class ComponentID
     {
         internal const ushort Node     =  0;
-        internal const ushort Link     =  1;
+        internal const ushort Trust     =  1;
         internal const ushort Location =  2;
         internal const ushort Transfer =  3;
         internal const ushort Profile  =  4;
@@ -75,8 +75,8 @@ namespace DeOps.Components
             {
                 case Node:
                     return "Node";
-                case Link:
-                    return "Link";
+                case Trust:
+                    return "Trust";
                 case Location:
                     return "Location";
                 case Transfer:

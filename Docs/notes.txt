@@ -1,4 +1,12 @@
 
+debugging
+	finding an error
+		start removing code
+	chaning an implementation / structure
+		re-name old strucutures to *old
+		create mirror stuctures
+		start moving old implementation over to the new 
+		
 
 Threading
 	Op objects are recreated when loaded so that interface with current handle doesnt get collections modified inbetween

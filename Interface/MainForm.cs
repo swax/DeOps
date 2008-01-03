@@ -284,9 +284,9 @@ namespace DeOps.Interface
 
         void Links_Update(ulong key)
         {
-            OpLink link = Links.GetLink(key);
+            OpTrust trust = Links.GetTrust(key);
 
-            if (link == null)
+            if (trust == null)
                 return;
 
             
@@ -416,14 +416,15 @@ namespace DeOps.Interface
                             <p><b>Order:</b><br>";
 
                 string order = "";
-                List<OpLink> downlinks = null;
-                if (link.Downlinks.TryGetValue(CommandTree.Project, out downlinks))
-                {
-                    string confirmed = "";
+                
 
-                    foreach (OpLink downlink in downlinks)
+                string confirmed = "";
+
+                if (link.Downlinks.Count > 0)
+                {
+                    foreach (OpLink downlink in link.Downlinks)
                     {
-                        confirmed = downlink.GetHigher(CommandTree.Project, true) == null ? "(unconfirmed)" : "";
+                        confirmed = downlink.GetHigher(true) == null ? "(unconfirmed)" : "";
 
                         if (downlink.DhtID == Core.LocalDhtID)
                             order += " &nbsp&nbsp&nbsp <b>" + Links.GetName(downlink.DhtID) + "</b> <i>trusts ";
@@ -433,8 +434,9 @@ namespace DeOps.Interface
                         order += confirmed + "</i><br>";
                     }
 
-                    order += " &nbsp&nbsp&nbsp " + Links.GetName(downlinks[0].DhtID) + "<br>";
+                    order += " &nbsp&nbsp&nbsp " + Links.GetName(link.Downlinks[0].DhtID) + "<br>";
                 }
+
                 content += order + 
                             @"</p>
                             </tr></td>
@@ -449,17 +451,14 @@ namespace DeOps.Interface
                     name += "  &nbsp&nbsp  (<a href='edit:local'><font color=white>edit</font></a>)";
 
                 // title
-                string title = "";
-                if (link.Title.ContainsKey(CommandTree.Project))
-                    if (link.Title[CommandTree.Project] != "")
-                        title = link.Title[CommandTree.Project];
+                string title = link.Title;
 
                 if (title != "")
                     tuples.Add(new Tuple<string, string>("Title: ", title));
 
                 // projects
                 string projects = "";
-                foreach (uint id in link.Projects)
+                foreach (uint id in link.Trust.Links.Keys)
                     if (id != 0)
                         projects += "<a href='project:" + id.ToString() + "'>" + Links.GetProjectName(id) + "</a>, ";
                 projects = projects.TrimEnd(new char[] { ' ', ',' });
@@ -714,15 +713,15 @@ namespace DeOps.Interface
         {
             SuspendLayout();
 
-            OpLink link = Links.GetLink(id);
+            OpTrust trust = Links.GetTrust(id);
 
-            if (link == null)
+            if (trust == null)
             {
-                link = Links.LocalLink;
+                trust = Links.LocalTrust;
                 id = Core.LocalDhtID;
             }
 
-            if (!link.Projects.Contains(project))
+            if (!trust.Links.ContainsKey(project))
                 project = 0;
 
             // bold new and set
@@ -795,7 +794,7 @@ namespace DeOps.Interface
             ProjectNavButton.DropDownItems.Clear();
             ComponentNavButton.DropDownItems.Clear();
 
-            OpLink link = Links.GetLink(CommandTree.SelectedLink);
+            OpLink link = Links.GetLink(CommandTree.SelectedLink, SelectedProject);
 
             if (link != null)
             {
@@ -807,7 +806,7 @@ namespace DeOps.Interface
                 PersonNavItem self = null;
                 
                 // add higher and subs of higher
-                OpLink higher = link.GetHigher(SelectedProject, false);
+                OpLink higher = link.GetHigher(false);
                 if (higher != null)
                 {
                     PersonNavButton.DropDownItems.Add(new PersonNavItem(Links.GetName(higher.DhtID), higher.DhtID, this, PersonNav_Clicked));
@@ -860,7 +859,7 @@ namespace DeOps.Interface
             ProjectNavButton.Text = Links.GetProjectName(SelectedProject);
 
             if (link != null)
-                foreach (uint project in link.Projects)
+                foreach (uint project in link.Trust.Links.Keys)
                 {
                     string name = Links.GetProjectName(project);
 
@@ -1429,10 +1428,10 @@ namespace DeOps.Interface
             AddSideViewMenus(SideViewsButton.DropDownItems, 0);
 
             // add project views
-            if(Links.LocalLink.Projects.Count > 1)
+            if(Links.LocalTrust.Links.Count > 1)
                 SideViewsButton.DropDownItems.Add("-");
 
-            foreach(uint id in Links.LocalLink.Projects)
+            foreach(uint id in Links.LocalTrust.Links.Keys )
                 if(id != 0 && Links.ProjectNames.SafeContainsKey(id))
                 {
                     ToolStripMenuItem projectItem = new ToolStripMenuItem(Links.GetProjectName(id));

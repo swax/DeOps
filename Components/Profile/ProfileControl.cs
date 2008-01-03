@@ -173,7 +173,7 @@ namespace DeOps.Components.Profile
                 if (ProfileMap.Count > PruneSize)
                     foreach (OpProfile profile in ProfileMap.Values)
                         if (profile.DhtID != Core.LocalDhtID &&
-                            !Core.Links.LinkMap.ContainsKey(profile.DhtID) &&
+                            !Core.Links.TrustMap.ContainsKey(profile.DhtID) &&
                             !Utilities.InBounds(profile.DhtID, profile.DhtBounds, Core.LocalDhtID))
                             removeIDs.Add(profile.DhtID);
             });

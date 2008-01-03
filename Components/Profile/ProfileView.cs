@@ -323,7 +323,7 @@ namespace DeOps.Components.Profile
             string final = template;
 
             // get link
-            OpLink link = core.Links.GetLink(id) ;
+            OpLink link = core.Links.GetLink(id, project) ;
 
             if (link == null)
                 return "";
@@ -396,8 +396,8 @@ namespace DeOps.Components.Profile
                         if (parts[1] == "name")
                             final = final.Replace(fulltag, core.Links.GetName(id));
 
-                        else if (parts[1] == "title" && link.Title.ContainsKey(0))
-                            final = final.Replace(fulltag, link.Title[0]);
+                        else if (parts[1] == "title")
+                            final = final.Replace(fulltag, link.Title);
 
                         else
                             tagfilled = false;

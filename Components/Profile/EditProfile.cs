@@ -51,7 +51,7 @@ namespace DeOps.Components.Profile
             // list chain of command first
             List<ulong> highers = Links.GetUplinkIDs(Core.LocalDhtID, 0);
             highers.Reverse();
-            highers.Add(Links.LocalLink.DhtID);
+            highers.Add(Links.LocalTrust.DhtID);
 
             // list higher level users, indent also
             // dont repeat names using same template+

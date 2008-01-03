@@ -604,7 +604,7 @@ namespace DeOps.Components.Storage
 
         private void Links_Update(ulong key)
         {
-            OpLink link = Links.GetLink(key);
+            OpLink link = Links.GetLink(key, ProjectID);
 
             if (link == null)
                 return;

@@ -205,7 +205,6 @@ namespace DeOps.Components.Board
             this.ProjectButton.Size = new System.Drawing.Size(54, 22);
             this.ProjectButton.Text = "Project";
             this.ProjectButton.Visible = false;
-            this.ProjectButton.DropDownOpening += new System.EventHandler(this.ProjectButton_DropDownOpening);
             // 
             // mainToolStripMenuItem
             // 

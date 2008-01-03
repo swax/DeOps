@@ -188,6 +188,12 @@ namespace DeOps.Components.Chat
             if (away)
                 node.Text += " (away)";
 
+
+            // bold if local
+            if (node.DhtID == Core.LocalDhtID)
+                node.Font = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+
+
             // color based on connect status
             Color foreColor = connected ? Color.Black : Color.Gray;
 

@@ -40,8 +40,10 @@ namespace DeOps.Components.Link
             NameBox.Text = Links.GetName(Core.LocalDhtID);
             LocationBox.Text = Links.Core.User.Settings.Location;
 
-            if (Links.LocalLink.Title.ContainsKey(ProjectID))
-                TitleBox.Text = Links.LocalLink.Title[ProjectID];
+            OpLink link = Links.GetLink(Core.LocalDhtID, ProjectID);
+
+            if (link != null)
+                TitleBox.Text = link.Title;
         }  
         
         private void ButtonOK_Click(object sender, EventArgs e)
@@ -51,8 +53,13 @@ namespace DeOps.Components.Link
             if (name == "")
                 return;
 
-            Links.LocalLink.Name = NameBox.Text;
-            Links.LocalLink.Title[ProjectID] = TitleBox.Text;
+            Links.LocalTrust.Name = NameBox.Text;
+
+            OpLink link = Links.GetLink(Core.LocalDhtID, ProjectID);
+
+            if (link != null)
+                link.Title = TitleBox.Text;
+
             Links.SaveLocal();
 
             Core.Away = AwayCheckBox.Checked;

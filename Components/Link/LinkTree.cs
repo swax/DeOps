@@ -118,7 +118,7 @@ namespace DeOps.Components.Link
             // if forced, load specific node as root
             if (ForceRootID != 0)
             {
-                OpLink root = Links.GetLink(ForceRootID);
+                OpLink root = Links.GetLink(ForceRootID, Project);
 
                 if (root != null)
                     SetupRoot(root);
@@ -195,22 +195,21 @@ namespace DeOps.Components.Link
             node.AddSubs = true;
 
             // go through downlinks
-            if (node.Link.Downlinks.ContainsKey(Project))
-                foreach (OpLink link in node.Link.Downlinks[Project])
-                    if (!node.Link.IsLoopedTo(link, Project))
+            foreach (OpLink link in node.Link.Downlinks)
+                if (!node.Link.IsLoopedTo(link))
+                {
+                    // if doesnt exist search for it
+                    if (!link.Trust.Loaded)
                     {
-                        // if doesnt exist search for it
-                        if (!link.Loaded)
-                        {
-                            Links.Research(link.DhtID, Project, false);
-                            continue;
-                        }
-
-                        //if(node.Link.IsLoopRoot)
-                        //    node.Nodes.Insert(0, CreateNode(link));
-                        //else
-                            Utilities.InsertSubNode(node, CreateNode(link));
+                        Links.Research(link.DhtID, Project, false);
+                        continue;
                     }
+
+                    //if(node.Link.IsLoopRoot)
+                    //    node.Nodes.Insert(0, CreateNode(link));
+                    //else
+                    Utilities.InsertSubNode(node, CreateNode(link));
+                }
         }
 
         internal void InsertRootNode(LabelNode start, LinkNode node)
@@ -298,9 +297,9 @@ namespace DeOps.Components.Link
             Nodes.Add(OnlineNode);
 
             // add nodes
-            Links.LinkMap.LockReading(delegate()
+            Links.TrustMap.LockReading(delegate()
             {
-                foreach (ulong key in Links.LinkMap.Keys)
+                foreach (ulong key in Links.TrustMap.Keys)
                     OnUpdateLink(key);
             });
 
@@ -343,7 +342,7 @@ namespace DeOps.Components.Link
         void OnUpdateLink(ulong key)
         {
             // update
-            OpLink link = Links.GetLink(key);
+            OpLink link = Links.GetLink(key, Project);
 
             if (link == null)
             {
@@ -353,13 +352,14 @@ namespace DeOps.Components.Link
                 return;
             }
 
-            if (!link.Projects.Contains(Project) && !link.Downlinks.ContainsKey(Project))
+            /* taken care of above
+             * if (!link.Projects.Contains(Project) && !link.Downlinks.ContainsKey(Project))
             {
                 if (NodeMap.ContainsKey(key))
                     RemoveNode(NodeMap[key]);
 
                 return;
-            }
+            }*/
 
             if (ForceRootID != 0)
             {
@@ -390,7 +390,7 @@ namespace DeOps.Components.Link
                 // if nodes status unchanged
                 if (node != null && parent != null && node.Parent == parent)
                 {
-                    node.UpdateName(CommandTreeMode.Operation, Project);
+                    node.UpdateName(CommandTreeMode.Operation);
                     Invalidate();
                     return;
                 }
@@ -544,7 +544,7 @@ namespace DeOps.Components.Link
             }
 
             node.UpdateColor();
-            node.UpdateName(CommandTreeMode.Operation, Project);
+            node.UpdateName(CommandTreeMode.Operation);
 
             if (selected)
                 node.Selected = true;
@@ -554,10 +554,10 @@ namespace DeOps.Components.Link
 
         private OpLink GetTreeHigher(OpLink link)
         {
-            if (link.LoopRoot.ContainsKey(Project))
-                return link.LoopRoot[Project];
+            if (link.LoopRoot != null)
+                return link.LoopRoot;
 
-            return link.GetHigher(Project, false);
+            return link.GetHigher(false);
         }
 
         private void ArrangeRoots()
@@ -565,9 +565,9 @@ namespace DeOps.Components.Link
             List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(Core.LocalDhtID, Project);
             uplinks.Add(Core.LocalDhtID);
 
-            OpLink highest = Links.GetLink(uplinks[uplinks.Count - 1]);
-            if (highest.LoopRoot.ContainsKey(Project))
-                uplinks.Add(highest.LoopRoot[Project].DhtID);
+            OpLink highest = Links.GetLink(uplinks[uplinks.Count - 1], Project);
+            if (highest.LoopRoot != null)
+                uplinks.Add(highest.LoopRoot.DhtID);
 
             List<LinkNode> makeUntrusted = new List<LinkNode>();
             List<LinkNode> makeProject = new List<LinkNode>();
@@ -647,7 +647,7 @@ namespace DeOps.Components.Link
                     OnlineNode.Expand();
                 }
 
-                node.UpdateName(CommandTreeMode.Online, Project);
+                node.UpdateName(CommandTreeMode.Online);
             }
         }
 
@@ -703,7 +703,7 @@ namespace DeOps.Components.Link
 
         internal void SelectLink(ulong id, uint project)
         {
-            if (!Links.LinkMap.SafeContainsKey(id))
+            if (!Links.TrustMap.SafeContainsKey(id))
                 id = Core.LocalDhtID;
 
             // unbold current
@@ -813,19 +813,17 @@ namespace DeOps.Components.Link
             Links = main.Links;
             Locations = main.Core.Locations;
 
-            UpdateName(mode, main.Project);
+            UpdateName(mode);
 
             if (main.SelectedLink == Link.DhtID && main.Project == main.SelectedProject)
                 Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
         }
 
-        internal void UpdateName(CommandTreeMode mode, uint proj)
+        internal void UpdateName(CommandTreeMode mode)
         {
             string txt = "";
 
-            string title = "";
-            if (Link.Title.ContainsKey(proj) && Link.Title[proj] != "")
-                title = Link.Title[proj];
+            string title = Link.Title;
 
             if (mode == CommandTreeMode.Operation)
             {
@@ -837,21 +835,19 @@ namespace DeOps.Components.Link
                 if (Link.IsLoopRoot)
                     txt = "Trust Loop";
 
-                OpLink parent = Link.GetHigher(proj, false);
+                OpLink parent = Link.GetHigher(false);
 
                 if (parent != null)
                 {
                     bool confirmed = false;
                     bool requested = false;
 
-                    if (parent.Confirmed.ContainsKey(proj))
-                        if (parent.Confirmed[proj].Contains(Link.DhtID))
-                            confirmed = true;
+                    if (parent.Confirmed.Contains(Link.DhtID))
+                        confirmed = true;
 
-                    if (parent.Requests.ContainsKey(proj))
-                        foreach (UplinkRequest request in parent.Requests[proj])
-                            if (request.KeyID == Link.DhtID)
-                                requested = true;
+                    foreach (UplinkRequest request in parent.Requests)
+                        if (request.KeyID == Link.DhtID)
+                            requested = true;
 
                     if (confirmed)
                     { }
@@ -865,7 +861,7 @@ namespace DeOps.Components.Link
                         txt += " (Trust Unconfirmed)";
                 }
 
-                else if (!Link.Projects.Contains(proj))
+                else if (!Link.Active)
                 {
                     txt += " (Left Project)";
                 }
@@ -888,7 +884,7 @@ namespace DeOps.Components.Link
         {
             Color newColor = Color.Black;
 
-            if (Link == Links.LocalLink || Locations.LocationMap.SafeContainsKey(Link.DhtID))
+            if (Link.DhtID == Links.Core.LocalDhtID || Locations.LocationMap.SafeContainsKey(Link.DhtID))
                 newColor = Color.Black;
             else
                 newColor = Color.DarkGray;
