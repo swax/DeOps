@@ -1828,21 +1828,6 @@ namespace DeOps.Components.Link
 
             return trust.GetLink(project);
         }
-
-        /*internal OpLink GetRoot(ulong id, uint project)
-        {
-            OpLink uplink = GetLink(id);
-
-            while (uplink != null)
-            {
-                if (uplink.LoopRoot.ContainsKey(project))
-                    return uplink.LoopRoot[project];
-
-                uplink = uplink.GetHigher(project, true);
-            }
-
-            return uplink;
-        }*/
     }
 
     [DebuggerDisplay("{Name}")]

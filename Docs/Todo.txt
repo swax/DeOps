@@ -1,17 +1,36 @@
 
+component
+	register with store control
+		gets back handle to settings object
+	publish(header, file)
+		store control handles searching, replicating, 
+		transfers, downloads, caching
+	common way of managing quotas
+		investigating total allocations on disk and in memory
+		
+	also look at removing unused event hooks?
+	
+	board, link, location, mail, plan, profile, storage
+		try to make common storage only way to store shit on network, so safer for 3rd parties
+	
 change over namespaces
 board - All/Higher/Lower Posts, New Post
-commit to cvs
-start component code
+live command tree/chat
 
 
-now
-	refactor components
-	3rd party ease of component creation
-	design visualizatoin
-	implement visualizatoin
-	
-	
+spring release
+	crits
+	multisource downloading - use torrent
+	store caching
+	invitations
+	website
+	licensing, installer
+	compartmentalization
+	modifyable encryption
+	mobile - proxy mode can be set and tested in normal version
+	mono
+	open source compensation model using credits
+
 Testing
 	more accurate replication - link/location/profile/mail
 	check that data is cachced 8 closest to ID, record cached link files in sim interface
