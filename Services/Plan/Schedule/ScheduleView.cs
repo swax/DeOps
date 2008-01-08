@@ -7,14 +7,14 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Components.Link;
+using DeOps.Services.Link;
 using DeOps.Implementation;
 using DeOps.Interface;
 using DeOps.Interface.TLVex;
 using DeOps.Interface.Views;
 
 
-namespace DeOps.Components.Plan
+namespace DeOps.Services.Plan
 {
     internal partial class ScheduleView : ViewShell
     {

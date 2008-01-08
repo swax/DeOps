@@ -1,4 +1,4 @@
-namespace DeOps.Components.Mail
+namespace DeOps.Services.Mail
 {
     partial class MailView
     {

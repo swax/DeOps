@@ -9,7 +9,7 @@ using System.Windows.Forms;
 using DeOps.Implementation;
 using DeOps.Interface;
 
-namespace DeOps.Components.Board
+namespace DeOps.Services.Board
 {
     internal partial class PostMessage : ViewShell
     {

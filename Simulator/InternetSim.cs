@@ -67,10 +67,10 @@ namespace DeOps.Simulator
 
         bool RandomCache = true;
         internal bool TestEncryption = false;
-        internal bool FreshStart = false;
+        internal bool FreshStart = true;
         internal bool TestTcpFullBuffer = false;
         internal bool UseTimeFile = true;
-        internal bool TestCoreThread = true; // sleepTime needs to be set with this so packets have time to process ayncronously
+        internal bool TestCoreThread = false; // sleepTime needs to be set with this so packets have time to process ayncronously
 
         bool Flux        = false;
         int  FluxIn      = 1;

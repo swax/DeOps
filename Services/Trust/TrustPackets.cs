@@ -6,7 +6,7 @@ using System.Text;
 using DeOps.Implementation.Protocol;
 
 
-namespace DeOps.Components.Link
+namespace DeOps.Services.Link
 {
     internal class TrustPacket
     {

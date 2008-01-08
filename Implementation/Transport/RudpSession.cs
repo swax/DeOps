@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Diagnostics;
 
-using DeOps.Components.Location;
+using DeOps.Services.Location;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Comm;
 

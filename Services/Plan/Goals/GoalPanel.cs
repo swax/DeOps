@@ -11,10 +11,10 @@ using DeOps.Implementation;
 using DeOps.Interface;
 using DeOps.Interface.Views;
 using DeOps.Interface.TLVex;
-using DeOps.Components.Link;
+using DeOps.Services.Link;
 
 
-namespace DeOps.Components.Plan
+namespace DeOps.Services.Plan
 {
     internal partial class GoalPanel : UserControl
     {

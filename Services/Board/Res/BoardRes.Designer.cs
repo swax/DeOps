@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DeOps.Components.Board {
+namespace DeOps.Services.Board {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace DeOps.Components.Board {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Components.Board.Res.BoardRes", typeof(BoardRes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Services.Board.Res.BoardRes", typeof(BoardRes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

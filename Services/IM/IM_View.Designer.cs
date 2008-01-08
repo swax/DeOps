@@ -1,6 +1,6 @@
 using DeOps.Interface;
 
-namespace DeOps.Components.IM
+namespace DeOps.Services.IM
 {
     partial class IM_View
     {

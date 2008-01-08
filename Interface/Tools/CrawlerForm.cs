@@ -18,7 +18,7 @@ using System.ComponentModel;
 using System.Windows.Forms;
 
 using DeOps.Implementation;
-using DeOps.Components;
+using DeOps.Services;
 using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;

@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 using DeOps.Implementation;
 
-namespace DeOps.Components.Storage
+namespace DeOps.Services.Storage
 {
     internal partial class DiffForm : Form
     {

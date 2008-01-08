@@ -5,10 +5,10 @@ using System.Drawing;
 using System.Text;
 
 using DeOps.Implementation;
-using DeOps.Components.Location;
+using DeOps.Services.Location;
 using DeOps.Interface.TLVex;
 
-namespace DeOps.Components.Link
+namespace DeOps.Services.Link
 {
     internal enum CommandTreeMode { Operation, Online };
 

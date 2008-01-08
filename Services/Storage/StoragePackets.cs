@@ -6,7 +6,7 @@ using System.Text;
 using DeOps.Implementation.Protocol;
 
 
-namespace DeOps.Components.Storage
+namespace DeOps.Services.Storage
 {
     internal class StoragePacket
     {

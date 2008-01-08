@@ -1,6 +1,6 @@
 using DeOps.Interface;
 
-namespace DeOps.Components.Chat
+namespace DeOps.Services.Chat
 {
     partial class RoomView
     {

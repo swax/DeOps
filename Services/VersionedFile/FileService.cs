@@ -1,0 +1,702 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+
+using DeOps.Services;
+using DeOps.Services.Transfer;
+
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+
+
+namespace DeOps.Services.VersionedFile
+{
+    internal delegate void FileAquiredHandler(OpVersionedFile file);
+
+    class VersionedFileService
+    {
+        OpCore Core;
+        DhtNetwork Network;
+        internal DhtStore Store;
+
+        internal ushort Service;
+        internal ushort DataType;
+
+        RijndaelManaged LocalFileKey;
+        string VersionedFilePath;
+
+        internal ThreadedDictionary<ulong, OpVersionedFile> FileMap = new ThreadedDictionary<ulong, OpVersionedFile>();
+       
+        bool RunSaveHeaders;
+        int PruneSize = 100;
+        Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
+        Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
+
+
+        internal FileAquiredHandler FileAquired;
+
+        internal VersionedFileService(DhtNetwork network, ushort service, ushort type)
+        {
+            Core    = network.Core;
+            Network = network;
+            Store   = network.Store;
+
+            Service = service;
+            DataType = type;
+
+            VersionedFilePath = Core.User.RootPath + Path.DirectorySeparatorChar +
+                        "Data" + Path.DirectorySeparatorChar +
+                        Service.ToString() + Path.DirectorySeparatorChar +
+                        DataType.ToString();
+
+            Directory.CreateDirectory(VersionedFilePath);
+
+            LocalFileKey = Core.User.Settings.FileKey;
+
+            Core.LoadEvent += new LoadHandler(Core_Load);
+            Core.TimerEvent += new TimerHandler(Core_Timer);
+
+            Network.EstablishedEvent += new EstablishedHandler(Network_Established);
+
+            Store.StoreEvent[Service] = new StoreHandler(Store_Local);
+            Store.ReplicateEvent[Service] = new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[Service] = new PatchHandler(Store_Patch);
+
+            Network.Searches.SearchEvent[Service] = new SearchRequestHandler(Search_Local);
+
+            if (Core.Sim != null)
+                PruneSize = 25;
+        }
+        
+        void Core_Load()
+        {
+            Core.Transfers.FileSearch[Service] = new FileSearchHandler(Transfers_FileSearch);
+            Core.Transfers.FileRequest[Service] = new FileRequestHandler(Transfers_FileRequest);
+
+            LoadHeaders();   
+        }
+
+        void Core_Timer()
+        {
+            // clean download later map
+            if (!Network.Established)
+                Utilities.PruneMap(DownloadLater, Core.LocalDhtID, PruneSize);
+
+            // save headers
+            if (RunSaveHeaders)
+                SaveHeaders();
+
+            // do below once per minute
+            if (Core.TimeNow.Second != 0)
+                return;
+
+            List<ulong> focused = new List<ulong>();
+
+            //crit
+            /*
+            if (GetFocused != null)
+                foreach (PlanGetFocusedHandler handler in GetFocused.GetInvocationList())
+                    foreach (ulong id in handler.Invoke())
+                        if (!focused.Contains(id))
+                            focused.Add(id);*/
+
+            // prune
+            List<ulong> removeIDs = new List<ulong>();
+
+            FileMap.LockReading(delegate()
+            {
+                if (FileMap.Count > PruneSize)
+                    foreach (OpVersionedFile vfile in FileMap.Values)
+                        if (vfile.DhtID != Core.LocalDhtID &&
+                            !Core.Links.TrustMap.SafeContainsKey(vfile.DhtID) && // dont remove nodes in our local hierarchy
+                            !focused.Contains(vfile.DhtID) &&
+                            !Utilities.InBounds(vfile.DhtID, vfile.DhtBounds, Core.LocalDhtID))
+                            removeIDs.Add(vfile.DhtID);
+            });
+
+            if (removeIDs.Count > 0)
+                FileMap.LockWriting(delegate()
+                {
+                    while (removeIDs.Count > 0 && FileMap.Count > PruneSize / 2)
+                    {
+                        ulong furthest = Core.LocalDhtID;
+                        OpVersionedFile vfile = FileMap[furthest];
+
+                        foreach (ulong id in removeIDs)
+                            if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                                furthest = id;
+
+                        if (vfile.Header != null)
+                            try { File.Delete(GetFilePath(vfile.Header)); }
+                            catch { }
+
+                        FileMap.Remove(furthest);
+                        removeIDs.Remove(furthest);
+                        RunSaveHeaders = true;
+                    }
+                });
+
+            // clean research map
+            removeIDs.Clear();
+
+            foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
+                if (Core.TimeNow > pair.Value)
+                    removeIDs.Add(pair.Key);
+
+            if (removeIDs.Count > 0)
+                foreach (ulong id in removeIDs)
+                    NextResearch.Remove(id);
+        }
+
+        void Network_Established()
+        {
+            ulong localBounds = Store.RecalcBounds(Core.LocalDhtID);
+
+            // set bounds for objects
+            FileMap.LockReading(delegate()
+            {
+                foreach (OpVersionedFile vfile in FileMap.Values)
+                {
+                    vfile.DhtBounds = Store.RecalcBounds(vfile.DhtID);
+
+                    // republish objects that were not seen on the network during startup
+                    if (vfile.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, vfile.DhtID))
+                        Store.PublishNetwork(vfile.DhtID, Service, vfile.SignedHeader);
+                }
+            });
+
+            // only download those objects in our local area
+            foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
+                if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
+                    StartSearch(pair.Key, pair.Value);
+
+            DownloadLater.Clear();
+        }
+
+        internal void LoadHeaders()
+        {
+            try
+            {
+                string path = VersionedFilePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "VersionedFileHeaders");
+
+                if (!File.Exists(path))
+                    return;
+
+                FileStream file = new FileStream(path, FileMode.Open);
+                CryptoStream crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+
+                G2Header root = null;
+
+                while (stream.ReadPacket(ref root))
+                    if (root.Name == DataPacket.SignedData)
+                    {
+                        SignedData signed = SignedData.Decode(Core.Protocol, root);
+                        G2Header embedded = new G2Header(signed.Data);
+
+
+                        // figure out data contained
+                        if (Core.Protocol.ReadPacket(embedded))
+                            if (embedded.Name == DataPacket.VersionedFile)
+                                Process_VersionedFile(null, signed, VersionedFileHeader.Decode(Core.Protocol, embedded));
+                    }
+
+                stream.Close();
+            }
+            catch (Exception ex)
+            {
+                Core.OperationNet.UpdateLog("VersionedFile", "Error loading data " + ex.Message);
+            }
+        }
+
+        private void SaveHeaders()
+        {
+            RunSaveHeaders = false;
+
+            try
+            {
+                string tempPath = Core.GetTempPath();
+                FileStream file = new FileStream(tempPath, FileMode.Create);
+                CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
+
+                FileMap.LockReading(delegate()
+                {
+                    foreach (OpVersionedFile vfile in FileMap.Values)
+                        if (vfile.SignedHeader != null)
+                            stream.Write(vfile.SignedHeader, 0, vfile.SignedHeader.Length);
+                });
+
+                stream.FlushFinalBlock();
+                stream.Close();
+
+
+                string finalPath = VersionedFilePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "VersionedFileHeaders");
+                File.Delete(finalPath);
+                File.Move(tempPath, finalPath);
+            }
+            catch (Exception ex)
+            {
+                Core.OperationNet.UpdateLog("VersionedFile", "Error saving data " + ex.Message);
+            }
+        }
+
+        internal OpVersionedFile UpdateLocal(string tempPath, RijndaelManaged key)
+        {
+            OpVersionedFile vfile = null;
+
+            if (Core.InvokeRequired)
+            {
+                // block until completed
+                Core.RunInCoreBlocked(delegate() { vfile = UpdateLocal(tempPath, key); });
+                return vfile;
+            }
+
+            vfile = GetFile(Core.LocalDhtID);
+            VersionedFileHeader header = null;
+
+            if (vfile != null)
+                header = vfile.Header;
+
+            string oldFile = null;
+
+            if (header != null)
+                oldFile = GetFilePath(header);
+            else
+                header = new VersionedFileHeader();
+
+
+            header.Key = Core.User.Settings.KeyPublic;
+            header.KeyID = Core.LocalDhtID; // set so keycheck works
+            header.Version++;
+            header.FileKey = key;
+
+
+            // finish building header
+            Utilities.ShaHashFile(tempPath, ref header.FileHash, ref header.FileSize);
+
+            // move file, overwrite if need be
+            string finalPath = GetFilePath(header);
+            File.Move(tempPath, finalPath);
+
+            CacheFile(new SignedData(Core.Protocol, Core.User.Settings.KeyPair, header), header);
+
+            SaveHeaders();
+
+            if (oldFile != null && File.Exists(oldFile)) // delete after move to ensure a copy always exists (names different)
+                try { File.Delete(oldFile); }
+                catch { }
+
+            // publish header
+            vfile = GetFile(Core.LocalDhtID); // get newly loaded object
+
+            if (vfile == null)
+                return null;
+
+            Store.PublishNetwork(Core.LocalDhtID, Service, vfile.SignedHeader);
+
+            return vfile;
+        }
+
+        private void Process_VersionedFile(DataReq data, SignedData signed, VersionedFileHeader header)
+        {
+            Core.IndexKey(header.KeyID, ref header.Key);
+
+            OpVersionedFile current = GetFile(header.KeyID);
+
+            // if link loaded
+            if (current != null)
+            {
+                // lower version
+                if (header.Version < current.Header.Version)
+                {
+                    if (data != null && data.Sources != null)
+                        foreach (DhtAddress source in data.Sources)
+                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, Service, current.SignedHeader));
+
+                    return;
+                }
+
+                // higher version
+                else if (header.Version > current.Header.Version)
+                {
+                    CacheFile(signed, header);
+                }
+            }
+
+            // else load file, set new header after file loaded
+            else
+                CacheFile(signed, header);
+        }
+
+        internal OpVersionedFile GetFile(ulong id)
+        {
+            OpVersionedFile vfile = null;
+
+            FileMap.SafeTryGetValue(id, out vfile);
+
+            return vfile;
+        }
+
+        private void CacheFile(SignedData signedHeader, VersionedFileHeader header)
+        {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
+            try
+            {
+                // check if file exists           
+                string path = GetFilePath(header);
+                if (!File.Exists(path))
+                {
+                    Download(signedHeader, header);
+                    return;
+                }
+
+                // get file
+                OpVersionedFile prevFile = GetFile(header.KeyID);
+
+                OpVersionedFile newFile = new OpVersionedFile(header.Key);
+
+
+                // delete old file
+                if (prevFile != null)
+                {
+                    if (header.Version < prevFile.Header.Version)
+                        return; // dont update with older version
+
+                    string oldPath = GetFilePath(prevFile.Header);
+                    if (path != oldPath && File.Exists(oldPath))
+                        try { File.Delete(oldPath); }
+                        catch { }
+                }
+
+                // set new header
+                newFile.Header = header;
+                newFile.SignedHeader = signedHeader.Encode(Core.Protocol);
+                newFile.Unique = Core.Loading;
+
+                FileMap.SafeAdd(header.KeyID, newFile);
+
+                RunSaveHeaders = true;
+
+                FileAquired.Invoke(newFile);
+            }
+            catch (Exception ex)
+            {
+                Core.OperationNet.UpdateLog("VersionedFile", "Error caching data " + ex.Message);
+            }
+        }
+
+
+        internal string GetFilePath(VersionedFileHeader header)
+        {
+            return VersionedFilePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
+        }
+
+        private void Download(SignedData signed, VersionedFileHeader header)
+        {
+            if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
+                return;
+
+            FileDetails details = new FileDetails(Service, header.FileHash, header.FileSize, null);
+
+            Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
+        }
+
+        bool Transfers_FileSearch(ulong key, FileDetails details)
+        {
+            OpVersionedFile vfile = GetFile(key);
+
+            if (vfile != null)
+                if (details.Size == vfile.Header.FileSize && Utilities.MemCompare(details.Hash, vfile.Header.FileHash))
+                    return true;
+
+            return false;
+        }
+
+        string Transfers_FileRequest(ulong key, FileDetails details)
+        {
+            OpVersionedFile vfile = GetFile(key);
+
+            if (vfile != null)
+                if (details.Size == vfile.Header.FileSize && Utilities.MemCompare(details.Hash, vfile.Header.FileHash))
+                    return GetFilePath(vfile.Header);
+
+
+            return null;
+        }
+
+        private void EndDownload(string path, object[] args)
+        {
+            SignedData signedHeader = (SignedData)args[0];
+            VersionedFileHeader header = (VersionedFileHeader)args[1];
+
+            try
+            {
+                File.Move(path, GetFilePath(header));
+            }
+            catch { return; }
+
+            CacheFile(signedHeader, header);
+        }
+
+        void Store_Local(DataReq store)
+        {
+            // getting published to - search results - patch
+
+            SignedData signed = SignedData.Decode(Core.Protocol, store.Data);
+            VersionedFileHeader header = VersionedFileHeader.Decode(Core.Protocol, signed.Data);
+
+            Process_VersionedFile(null, signed, header);
+        }
+
+        const int PatchEntrySize = 12;
+
+        ReplicateData Store_Replicate(DhtContact contact, bool add)
+        {
+            if (!Network.Established)
+                return null;
+
+            ReplicateData data = new ReplicateData(Service, PatchEntrySize);
+
+            byte[] patch = new byte[PatchEntrySize];
+
+            FileMap.LockReading(delegate()
+            {
+                foreach (OpVersionedFile vfile in FileMap.Values)
+                    if (Utilities.InBounds(vfile.DhtID, vfile.DhtBounds, contact.DhtID))
+                    {
+                        DhtContact target = contact;
+                        vfile.DhtBounds = Store.RecalcBounds(vfile.DhtID, add, ref target);
+
+                        if (target != null)
+                        {
+                            BitConverter.GetBytes(vfile.DhtID).CopyTo(patch, 0);
+                            BitConverter.GetBytes(vfile.Header.Version).CopyTo(patch, 8);
+
+                            data.Add(target, patch);
+                        }
+                    }
+            });
+
+            return data;
+        }
+
+        void Store_Patch(DhtAddress source, ulong distance, byte[] data)
+        {
+            if (data.Length % PatchEntrySize != 0)
+                return;
+
+            int offset = 0;
+
+            for (int i = 0; i < data.Length; i += PatchEntrySize)
+            {
+                ulong dhtid = BitConverter.ToUInt64(data, i);
+                uint version = BitConverter.ToUInt32(data, i + 8);
+
+                offset += PatchEntrySize;
+
+                if (!Utilities.InBounds(Core.LocalDhtID, distance, dhtid))
+                    continue;
+
+                OpVersionedFile vfile = GetFile(dhtid);
+
+                if (vfile != null && vfile.Header != null)
+                {
+                    if (vfile.Header.Version > version)
+                    {
+                        Store.Send_StoreReq(source, 0, new DataReq(null, vfile.DhtID, Service, vfile.SignedHeader));
+                        continue;
+                    }
+
+                    vfile.Unique = false; // network has current or newer version
+
+                    if (vfile.Header.Version == version)
+                        continue;
+
+                    // else our version is old, download below
+                }
+
+
+                if (Network.Established)
+                    Network.Searches.SendDirectRequest(source, dhtid, Service, BitConverter.GetBytes(version));
+                else
+                    DownloadLater[dhtid] = version;
+            }
+        }
+
+        internal void Research(ulong key)
+        {
+            if (!Network.Routing.Responsive())
+                return;
+
+            // limit re-search to once per 30 secs
+            DateTime timeout = default(DateTime);
+
+            if (NextResearch.TryGetValue(key, out timeout))
+                if (Core.TimeNow < timeout)
+                    return;
+
+            uint version = 0;
+            OpVersionedFile file = GetFile(key);
+            if (file != null)
+                version = file.Header.Version + 1;
+
+            StartSearch(key, version);
+
+            NextResearch[key] = Core.TimeNow.AddSeconds(30);
+        }
+
+        private void StartSearch(ulong key, uint version)
+        {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { StartSearch(key, version); });
+                return;
+            }
+
+            byte[] parameters = BitConverter.GetBytes(version);
+            DhtSearch search = Core.OperationNet.Searches.Start(key, "VersionedFile", Service, parameters, new EndSearchHandler(EndSearch));
+
+            if (search != null)
+                search.TargetResults = 2;
+        }
+
+        List<byte[]> Search_Local(ulong key, byte[] parameters)
+        {
+            List<Byte[]> results = new List<byte[]>();
+
+            uint minVersion = BitConverter.ToUInt32(parameters, 0);
+
+            OpVersionedFile vfile = GetFile(key);
+
+            if (vfile != null)
+                if (vfile.Header.Version >= minVersion)
+                    results.Add(vfile.SignedHeader);
+
+            return results;
+        }
+
+        void EndSearch(DhtSearch search)
+        {
+            foreach (SearchValue found in search.FoundValues)
+                Store_Local(new DataReq(found.Sources, search.TargetID, Service, found.Value));
+        }
+    }
+
+    internal class OpVersionedFile
+    {
+        internal ulong    DhtID;
+        internal ulong    DhtBounds = ulong.MaxValue;
+        internal byte[]   Key;    // make sure reference is the same as main key list
+        internal bool     Unique;
+
+        internal VersionedFileHeader Header;
+        internal byte[] SignedHeader;
+
+        internal OpVersionedFile(byte[] key)
+        {
+            Key = key;
+            DhtID = Utilities.KeytoID(key);
+        }
+    }
+
+    internal class VersionedFileHeader : G2Packet
+    {
+        const byte Packet_Key = 0x10;
+        const byte Packet_Version = 0x20;
+        const byte Packet_FileHash = 0x30;
+        const byte Packet_FileSize = 0x40;
+        const byte Packet_FileKey = 0x50;
+        const byte Packet_Data = 0x60;
+
+
+        internal byte[] Key;
+        internal uint Version;
+        internal byte[] FileHash;
+        internal long FileSize;
+        internal RijndaelManaged FileKey = new RijndaelManaged();
+        internal byte[] Data;
+        
+        internal ulong KeyID;
+
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame header = protocol.WritePacket(null, DataPacket.VersionedFile, null);
+
+                protocol.WritePacket(header, Packet_Key, Key);
+                protocol.WritePacket(header, Packet_Version, BitConverter.GetBytes(Version));
+                protocol.WritePacket(header, Packet_FileHash, FileHash);
+                protocol.WritePacket(header, Packet_FileSize, BitConverter.GetBytes(FileSize));
+                protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
+                protocol.WritePacket(header, Packet_Data, Data);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static VersionedFileHeader Decode(G2Protocol protocol, byte[] data)
+        {
+            G2Header root = new G2Header(data);
+
+            if (!protocol.ReadPacket(root))
+                return null;
+
+            if (root.Name != DataPacket.VersionedFile)
+                return null;
+
+            return VersionedFileHeader.Decode(protocol, root);
+        }
+
+        internal static VersionedFileHeader Decode(G2Protocol protocol, G2Header root)
+        {
+            VersionedFileHeader header = new VersionedFileHeader();
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_Key:
+                        header.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        header.KeyID = Utilities.KeytoID(header.Key);
+                        break;
+
+                    case Packet_Version:
+                        header.Version = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_FileHash:
+                        header.FileHash = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_FileSize:
+                        header.FileSize = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_FileKey:
+                        header.FileKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        header.FileKey.IV = new byte[header.FileKey.IV.Length];
+                        break;
+
+                    case Packet_Data:
+                        header.Data = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+                }
+            }
+
+            return header;
+        }
+    }
+}

@@ -9,11 +9,11 @@ using System.Windows.Forms;
 using DeOps.Implementation;
 using DeOps.Implementation.Transport;
 using DeOps.Interface;
-using DeOps.Components.Link;
-using DeOps.Components.Location;
+using DeOps.Services.Link;
+using DeOps.Services.Location;
 
 
-namespace DeOps.Components.IM
+namespace DeOps.Services.IM
 {
 
     internal partial class IM_View : ViewShell

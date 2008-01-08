@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace DeOps.Components.Link
+namespace DeOps.Services.Link
 {
     internal partial class RemoveLinks : Form
     {

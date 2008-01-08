@@ -1,4 +1,4 @@
-namespace DeOps.Components.Storage
+namespace DeOps.Services.Storage
 {
     partial class LockMessage
     {

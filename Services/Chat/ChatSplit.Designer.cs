@@ -1,4 +1,4 @@
-namespace DeOps.Components.Chat
+namespace DeOps.Services.Chat
 {
     partial class ChatSplit
     {

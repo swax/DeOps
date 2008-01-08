@@ -1,4 +1,4 @@
-namespace DeOps.Components.Transfer
+namespace DeOps.Services.Transfer
 {
     partial class TransferView
     {

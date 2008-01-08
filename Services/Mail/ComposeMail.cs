@@ -9,10 +9,10 @@ using System.Windows.Forms;
 
 using DeOps.Implementation;
 using DeOps.Interface;
-using DeOps.Components.Link;
+using DeOps.Services.Link;
 
 
-namespace DeOps.Components.Mail
+namespace DeOps.Services.Mail
 {
     internal partial class ComposeMail : ViewShell
     {

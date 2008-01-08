@@ -5,7 +5,7 @@ using System.Text;
 using DeOps.Implementation.Protocol;
 
 
-namespace DeOps.Components.IM
+namespace DeOps.Services.IM
 {
     internal class IMPacket
     {

@@ -1,4 +1,4 @@
-namespace DeOps.Components.Board
+namespace DeOps.Services.Board
 {
     partial class BoardView
     {

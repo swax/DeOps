@@ -11,12 +11,12 @@ using DeOps.Implementation;
 using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
-using DeOps.Components.Link;
-using DeOps.Components.Location;
-using DeOps.Components.Transfer;
+using DeOps.Services.Link;
+using DeOps.Services.Location;
+using DeOps.Services.Transfer;
 
 
-namespace DeOps.Components.Storage
+namespace DeOps.Services.Storage
 {
     internal delegate List<ulong> StorageGetFocusedHandler();
     internal delegate void StorageUpdateHandler(OpStorage storage);

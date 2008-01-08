@@ -9,9 +9,9 @@ using System.Windows.Forms;
 using DeOps.Interface;
 using DeOps.Interface.Views;
 using DeOps.Implementation;
-using DeOps.Components.Link;
+using DeOps.Services.Link;
 
-namespace DeOps.Components.Chat
+namespace DeOps.Services.Chat
 {
     internal partial class ChatView : ViewShell
     {

@@ -11,11 +11,11 @@ using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 
-using DeOps.Components.Location;
-using DeOps.Components.Transfer;
+using DeOps.Services.Location;
+using DeOps.Services.Transfer;
 
 
-namespace DeOps.Components.Link
+namespace DeOps.Services.Link
 {
     internal delegate void LinkUpdateHandler(OpTrust trust);
     internal delegate void LinkGuiUpdateHandler(ulong key);

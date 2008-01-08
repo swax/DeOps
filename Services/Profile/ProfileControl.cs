@@ -10,12 +10,12 @@ using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 
-using DeOps.Components.Link;
-using DeOps.Components.Location;
-using DeOps.Components.Transfer;
+using DeOps.Services.Link;
+using DeOps.Services.Location;
+using DeOps.Services.Transfer;
 
 
-namespace DeOps.Components.Profile
+namespace DeOps.Services.Profile
 {
     internal delegate void ProfileUpdateHandler(OpProfile profile);
     
@@ -251,10 +251,10 @@ namespace DeOps.Components.Profile
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
 
             if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Data/Profile", ProfileRes.Icon, new EventHandler(Menu_View)));
+                menus.Add(new MenuItemInfo("Data/Profile", ProfileRes.IconX, new EventHandler(Menu_View)));
 
             if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Profile", ProfileRes.Icon, new EventHandler(Menu_View)));
+                menus.Add(new MenuItemInfo("Profile", ProfileRes.IconX, new EventHandler(Menu_View)));
 
 
             return menus;
@@ -771,7 +771,7 @@ namespace DeOps.Components.Profile
                     Core.RunInGuiThread(ProfileUpdate, newProfile);
 
                 if (Core.NewsWorthy(newProfile.DhtID, 0, false))
-                    Core.MakeNews("Profile updated by " + Links.GetName(newProfile.DhtID), newProfile.DhtID, 0, true, ProfileRes.Icon, Menu_View);
+                    Core.MakeNews("Profile updated by " + Links.GetName(newProfile.DhtID), newProfile.DhtID, 0, true, ProfileRes.IconX, Menu_View);
          
             }
             catch (Exception ex)

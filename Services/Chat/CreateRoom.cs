@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace DeOps.Components.Chat
+namespace DeOps.Services.Chat
 {
     public partial class CreateRoom : Form
     {

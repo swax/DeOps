@@ -1,4 +1,4 @@
-namespace DeOps.Components.Plan
+namespace DeOps.Services.Plan
 {
     partial class EditBlock
     {

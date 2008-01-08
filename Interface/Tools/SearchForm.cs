@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Components;
+using DeOps.Services;
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol.Net;

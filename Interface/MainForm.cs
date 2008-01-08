@@ -12,10 +12,10 @@ using System.Runtime.InteropServices;
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;
 
-using DeOps.Components;
-using DeOps.Components.Link;
-using DeOps.Components.IM;
-using DeOps.Components.Location;
+using DeOps.Services;
+using DeOps.Services.Link;
+using DeOps.Services.IM;
+using DeOps.Services.Location;
 
 using DeOps.Interface.TLVex;
 using DeOps.Interface.Views;

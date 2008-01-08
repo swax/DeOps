@@ -21,12 +21,12 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 
-using DeOps.Components;
+using DeOps.Services;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Comm;
 using DeOps.Implementation.Protocol.Net;
 using DeOps.Implementation.Transport;
-using DeOps.Components.Location;
+using DeOps.Services.Location;
 using DeOps.Interface.Tools;
 
 

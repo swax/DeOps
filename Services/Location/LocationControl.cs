@@ -8,10 +8,10 @@ using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 using DeOps.Implementation.Transport;
-using DeOps.Components.Link;
+using DeOps.Services.Link;
 
 
-namespace DeOps.Components.Location
+namespace DeOps.Services.Location
 {
     internal delegate void LocationUpdateHandler(LocationData location);
     internal delegate void LocationGuiUpdateHandler(ulong key);

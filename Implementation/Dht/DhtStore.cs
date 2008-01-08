@@ -10,8 +10,8 @@ using DeOps.Implementation.Transport;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 
-using DeOps.Components;
-using DeOps.Components.Location;
+using DeOps.Services;
+using DeOps.Services.Location;
 
 
 namespace DeOps.Implementation.Dht
@@ -66,7 +66,13 @@ namespace DeOps.Implementation.Dht
         internal void PublishDirect(List<LocationData> locations, ulong target, ushort component, byte[] data)
         {
             if (Core.InvokeRequired)
-                Debug.Assert(false);
+            {
+                Core.RunInCoreAsync(delegate()
+                {
+                    PublishDirect(locations, target, component, data);
+                });
+                return;
+            }
 
             DataReq req = new DataReq(null, target, component, data);
             

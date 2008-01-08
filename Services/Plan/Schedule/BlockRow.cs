@@ -8,14 +8,14 @@ using System.Text;
 using System.Windows.Forms;
 
 using DeOps.Implementation;
-using DeOps.Components.Link;
-using DeOps.Components.Plan;
+using DeOps.Services.Link;
+using DeOps.Services.Plan;
 using DeOps.Interface;
 using DeOps.Interface.Views;
 using DeOps.Interface.TLVex;
 
 
-namespace DeOps.Components.Plan
+namespace DeOps.Services.Plan
 {
     internal partial class BlockRow : UserControl
     {

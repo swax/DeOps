@@ -9,7 +9,7 @@ using System.Threading;
 using DeOps.Implementation;
 using DeOps.Implementation.Protocol;
 
-namespace DeOps.Components.Storage
+namespace DeOps.Services.Storage
 {
     enum WorkingChange { Created, Updated, Removed };
 

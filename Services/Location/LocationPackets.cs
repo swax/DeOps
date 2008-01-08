@@ -6,7 +6,7 @@ using System.Text;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 
-namespace DeOps.Components.Location
+namespace DeOps.Services.Location
 {
     internal class LocPacket
     {

@@ -9,7 +9,7 @@ using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Transport;
 
 
-namespace DeOps.Components
+namespace DeOps.Services
 {
     internal enum InterfaceMenuType { Internal, External, Settings, Quick };
 
@@ -112,6 +112,7 @@ namespace DeOps.Components
     internal class DataPacket
     {
         internal const byte SignedData = 0x10;
+        internal const byte VersionedFile = 0x20;
     }
 
     internal class SignedData : G2Packet

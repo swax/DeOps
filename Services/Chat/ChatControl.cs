@@ -8,10 +8,10 @@ using System.Windows.Forms;
 using DeOps.Implementation;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Transport;
-using DeOps.Components.Link;
-using DeOps.Components.Location;
+using DeOps.Services.Link;
+using DeOps.Services.Location;
 
-namespace DeOps.Components.Chat
+namespace DeOps.Services.Chat
 {
     internal delegate void RefreshHandler();
     internal delegate void InvitedHandler(ulong inviter, ChatRoom room);

@@ -7,103 +7,14 @@ using System.Text;
 using DeOps.Implementation.Protocol;
 
 
-namespace DeOps.Components.Plan
+namespace DeOps.Services.Plan
 {
     internal class PlanPacket
     {
-        internal const byte Header = 0x10;
         internal const byte Block  = 0x20;
         internal const byte Goal   = 0x30;
         internal const byte Item   = 0x40;
     }
-
-    internal class PlanHeader : G2Packet
-    {
-        const byte Packet_Key = 0x10;
-        const byte Packet_Version = 0x20;
-        const byte Packet_FileHash = 0x30;
-        const byte Packet_FileSize = 0x40;
-        const byte Packet_FileKey = 0x50;
-
-
-        internal byte[] Key;
-        internal uint Version;
-        internal byte[] FileHash;
-        internal long FileSize;
-        internal RijndaelManaged FileKey = new RijndaelManaged();
-
-        internal ulong KeyID;
-
-
-        internal override byte[] Encode(G2Protocol protocol)
-        {
-            lock (protocol.WriteSection)
-            {
-                G2Frame header = protocol.WritePacket(null, PlanPacket.Header, null);
-
-                protocol.WritePacket(header, Packet_Key, Key);
-                protocol.WritePacket(header, Packet_Version, BitConverter.GetBytes(Version));
-                protocol.WritePacket(header, Packet_FileHash, FileHash);
-                protocol.WritePacket(header, Packet_FileSize, BitConverter.GetBytes(FileSize));
-                protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
-
-                return protocol.WriteFinish();
-            }
-        }
-
-        internal static PlanHeader Decode(G2Protocol protocol, byte[] data)
-        {
-            G2Header root = new G2Header(data);
-
-            if (!protocol.ReadPacket(root))
-                return null;
-
-            if (root.Name != PlanPacket.Header)
-                return null;
-
-            return PlanHeader.Decode(protocol, root);
-        }
-
-        internal static PlanHeader Decode(G2Protocol protocol, G2Header root)
-        {
-            PlanHeader header = new PlanHeader();
-            G2Header child = new G2Header(root.Data);
-
-            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                switch (child.Name)
-                {
-                    case Packet_Key:
-                        header.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        header.KeyID = Utilities.KeytoID(header.Key);
-                        break;
-
-                    case Packet_Version:
-                        header.Version = BitConverter.ToUInt32(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_FileHash:
-                        header.FileHash = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-
-                    case Packet_FileSize:
-                        header.FileSize = BitConverter.ToInt64(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_FileKey:
-                        header.FileKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        header.FileKey.IV = new byte[header.FileKey.IV.Length];
-                        break;
-                }
-            }
-
-            return header;
-        }
-    }
-
 
     internal class PlanBlock : G2Packet
     {

@@ -1,4 +1,4 @@
-namespace DeOps.Components.Profile
+namespace DeOps.Services.Profile
 {
     partial class EditTemplate
     {

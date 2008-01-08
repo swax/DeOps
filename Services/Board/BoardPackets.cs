@@ -6,7 +6,7 @@ using System.Text;
 using DeOps.Implementation.Protocol;
 
 
-namespace DeOps.Components.Board
+namespace DeOps.Services.Board
 {
     internal class BoardPacket
     {

@@ -10,7 +10,7 @@ using DeOps.Interface;
 using DeOps.Implementation;
 
 
-namespace DeOps.Components.Plan
+namespace DeOps.Services.Plan
 {
     internal enum BlockViewMode { New, Edit, Show };
 

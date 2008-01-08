@@ -11,7 +11,7 @@ using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol.Net;
 
 
-namespace DeOps.Components.Link
+namespace DeOps.Services.Link
 {
     internal partial class EditLink : Form
     {

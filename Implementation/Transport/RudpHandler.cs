@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-using DeOps.Components;
-using DeOps.Components.Location;
+using DeOps.Services;
+using DeOps.Services.Location;
 using DeOps.Implementation.Protocol.Net;
 
 namespace DeOps.Implementation.Transport

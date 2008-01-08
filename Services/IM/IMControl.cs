@@ -7,11 +7,11 @@ using System.Windows.Forms;
 using DeOps.Implementation;
 using DeOps.Implementation.Transport;
 using DeOps.Implementation.Protocol;
-using DeOps.Components.Link;
-using DeOps.Components.Location;
+using DeOps.Services.Link;
+using DeOps.Services.Location;
 
 
-namespace DeOps.Components.IM
+namespace DeOps.Services.IM
 {
     internal delegate void IM_MessageHandler(ulong dhtid, InstantMessage message);
     internal delegate void IM_StatusHandler(ulong dhtid);

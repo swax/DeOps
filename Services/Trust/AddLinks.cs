@@ -7,10 +7,10 @@ using System.Text;
 using System.Windows.Forms;
 
 using DeOps.Interface.TLVex;
-using DeOps.Components.Link;
+using DeOps.Services.Link;
 
 
-namespace DeOps.Components.Link
+namespace DeOps.Services.Link
 {
     internal partial class AddLinks : Form
     {

@@ -8,10 +8,10 @@ using System.Windows.Forms;
 
 using DeOps.Interface;
 using DeOps.Interface.TLVex;
-using DeOps.Components.Link;
+using DeOps.Services.Link;
 
 
-namespace DeOps.Components.Storage
+namespace DeOps.Services.Storage
 {
     internal partial class DetailsForm : Form
     {

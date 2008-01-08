@@ -8,13 +8,13 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Components.Link;
+using DeOps.Services.Link;
 using DeOps.Implementation;
 using DeOps.Implementation.Protocol;
 using DeOps.Interface;
 
 
-namespace DeOps.Components.Profile
+namespace DeOps.Services.Profile
 {
     internal partial class ProfileView : ViewShell
     {
@@ -111,7 +111,7 @@ namespace DeOps.Components.Profile
 
         internal override Icon GetIcon()
         {
-            return ProfileRes.Icon;
+            return ProfileRes.IconX;
         }
 
         void Links_Update(ulong key)

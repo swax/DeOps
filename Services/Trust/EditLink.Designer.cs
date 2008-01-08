@@ -1,4 +1,4 @@
-namespace DeOps.Components.Link
+namespace DeOps.Services.Link
 {
     partial class EditLink
     {

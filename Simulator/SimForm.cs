@@ -27,7 +27,7 @@ using DeOps.Implementation;
 using DeOps.Implementation.Dht;
 using DeOps.Implementation.Transport;
 using DeOps.Implementation.Protocol.Net;
-using DeOps.Components.Transfer;
+using DeOps.Services.Transfer;
 
 using DeOps.Interface;
 using DeOps.Interface.Tools;

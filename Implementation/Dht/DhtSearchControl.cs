@@ -7,7 +7,7 @@ using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 using DeOps.Implementation.Transport;
 
-using DeOps.Components.Location;
+using DeOps.Services.Location;
 
 
 namespace DeOps.Implementation.Dht
@@ -28,7 +28,7 @@ namespace DeOps.Implementation.Dht
         internal List<DhtSearch> Active = new List<DhtSearch>();
 
         internal Dictionary<ulong, SearchRequestHandler> SearchEvent = new Dictionary<ulong, SearchRequestHandler>();
-        
+        internal Dictionary<Tuple<ulong, ulong>, SearchRequestHandler> SearchEventX = new Dictionary<Tuple<ulong, ulong>, SearchRequestHandler>();
 
         internal DhtSearchControl(DhtNetwork network)
         {
@@ -108,7 +108,7 @@ namespace DeOps.Implementation.Dht
             // transfer componenent does its own duplicate checks
             // also there can exist multiple transfers with with same trar
 
-            if (component != Components.ComponentID.Transfer) 
+            if (component != Services.ComponentID.Transfer) 
             {
                 foreach (DhtSearch pending in Pending)
                     if (pending.TargetID == key && pending.Component == component && Utilities.MemCompare(parameters, pending.Parameters))

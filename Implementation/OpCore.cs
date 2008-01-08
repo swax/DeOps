@@ -23,17 +23,17 @@ using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
 
-using DeOps.Components;
-using DeOps.Components.Chat;
-using DeOps.Components.IM;
-using DeOps.Components.Link;
-using DeOps.Components.Location;
-using DeOps.Components.Mail;
-using DeOps.Components.Profile;
-using DeOps.Components.Transfer;
-using DeOps.Components.Board;
-using DeOps.Components.Plan;
-using DeOps.Components.Storage;
+using DeOps.Services;
+using DeOps.Services.Chat;
+using DeOps.Services.IM;
+using DeOps.Services.Link;
+using DeOps.Services.Location;
+using DeOps.Services.Mail;
+using DeOps.Services.Profile;
+using DeOps.Services.Transfer;
+using DeOps.Services.Board;
+using DeOps.Services.Plan;
+using DeOps.Services.Storage;
 
 using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
@@ -170,6 +170,15 @@ namespace DeOps.Implementation
                 GlobalNet = new DhtNetwork(this, true);
 
 
+            // delete data dirs if frsh start indicated
+            if (Sim != null && Sim.Internet.FreshStart)
+                foreach (ushort id in Components.Keys)
+                {
+                    string dirpath = User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + id.ToString();
+                    if (Directory.Exists(dirpath))
+                        Directory.Delete(dirpath, true);
+                }
+
             Components[ComponentID.Trust]     = new LinkControl(this);
             Components[ComponentID.Location] = new LocationControl(this);
             Components[ComponentID.Transfer] = new TransferControl(this);
@@ -183,13 +192,6 @@ namespace DeOps.Implementation
 
             User.Load(LoadModeType.Cache);
 
-            if (Sim != null && Sim.Internet.FreshStart)
-                foreach (ushort id in Components.Keys)
-                {
-                    string dirpath = User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + id.ToString();
-                    if (Directory.Exists(dirpath))
-                        Directory.Delete(dirpath, true);
-                }
 
             // trigger components to load
             Loading = true;

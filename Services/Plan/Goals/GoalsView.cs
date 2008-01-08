@@ -9,12 +9,12 @@ using System.Windows.Forms;
 
 using DeOps.Interface;
 using DeOps.Implementation;
-using DeOps.Components.Link;
+using DeOps.Services.Link;
 using DeOps.Interface.TLVex;
 using DeOps.Interface.Views;
 
 
-namespace DeOps.Components.Plan
+namespace DeOps.Services.Plan
 {
     internal partial class GoalsView : ViewShell
     {

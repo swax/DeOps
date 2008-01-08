@@ -11,12 +11,12 @@ using DeOps.Interface.TLVex;
 using DeOps.Interface.Views;
 using DeOps.Implementation;
 using DeOps.Implementation.Transport;
-using DeOps.Components.Link;
-using DeOps.Components.IM;
-using DeOps.Components.Location;
+using DeOps.Services.Link;
+using DeOps.Services.IM;
+using DeOps.Services.Location;
 
 
-namespace DeOps.Components.Chat
+namespace DeOps.Services.Chat
 {
     internal partial class RoomView : UserControl
     {

@@ -9,7 +9,7 @@ using System.Windows.Forms;
 using DeOps.Implementation;
 
 
-namespace DeOps.Components.Profile
+namespace DeOps.Services.Profile
 {
     internal partial class PreviewTemplate : Form
     {

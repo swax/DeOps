@@ -20,7 +20,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Windows.Forms;
 
-using DeOps.Components;
+using DeOps.Services;
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;

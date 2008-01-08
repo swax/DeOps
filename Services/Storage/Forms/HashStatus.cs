@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 
 
-namespace DeOps.Components.Storage
+namespace DeOps.Services.Storage
 {
     internal partial class HashStatus : Form
     {

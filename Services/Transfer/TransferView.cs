@@ -9,7 +9,7 @@ using System.Windows.Forms;
 using DeOps.Interface.TLVex;
 using DeOps.Implementation.Transport;
 
-namespace DeOps.Components.Transfer
+namespace DeOps.Services.Transfer
 {
     internal partial class TransferView : Form
     {

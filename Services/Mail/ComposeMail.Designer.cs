@@ -1,6 +1,6 @@
 using DeOps.Interface;
 
-namespace DeOps.Components.Mail
+namespace DeOps.Services.Mail
 {
     partial class ComposeMail
     {

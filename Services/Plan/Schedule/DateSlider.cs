@@ -7,9 +7,9 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Components.Plan.Schedule;
+using DeOps.Services.Plan.Schedule;
 
-namespace DeOps.Components.Plan
+namespace DeOps.Services.Plan
 {
 
     public partial class DateSlider : UserControl

@@ -18,7 +18,7 @@ using System.Diagnostics;
 using System.Net;
 
 using DeOps.Simulator;
-using DeOps.Components;
+using DeOps.Services;
 using DeOps.Implementation.Protocol.Net;
 
 namespace DeOps.Implementation.Dht

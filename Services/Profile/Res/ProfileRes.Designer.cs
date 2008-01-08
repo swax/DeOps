@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DeOps.Components.Profile {
+namespace DeOps.Services.Profile {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace DeOps.Components.Profile {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Components.Profile.ProfileRes", typeof(ProfileRes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Services.Profile.Res.ProfileRes", typeof(ProfileRes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -67,9 +67,9 @@ namespace DeOps.Components.Profile {
             }
         }
         
-        internal static System.Drawing.Icon Icon {
+        internal static System.Drawing.Icon IconX {
             get {
-                object obj = ResourceManager.GetObject("Icon", resourceCulture);
+                object obj = ResourceManager.GetObject("IconX", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
             }
         }

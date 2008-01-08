@@ -19,7 +19,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Security.Cryptography;
 
-using DeOps.Components.Storage;
+using DeOps.Services.Storage;
 using DeOps.Implementation;
 using DeOps.Implementation.Protocol;
 
@@ -38,7 +38,15 @@ namespace DeOps
 	{
 		internal Test()
         {
+            int x = 1;
+            int y = 0;
 
+            int z = x.GetHashCode() ^ y.GetHashCode();
+
+            int i = 0;
+            int j = 1;
+
+            int k = i.GetHashCode() ^ j.GetHashCode();
 		}
 
         /*void TestSigning()

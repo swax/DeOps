@@ -5,7 +5,7 @@ using System.Text;
 using DeOps.Implementation.Protocol;
 
 
-namespace DeOps.Components.Transfer
+namespace DeOps.Services.Transfer
 {
     internal class TransferPacket
     {

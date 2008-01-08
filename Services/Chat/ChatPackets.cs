@@ -5,7 +5,7 @@ using System.Text;
 using DeOps.Implementation.Protocol;
 
 
-namespace DeOps.Components.Chat
+namespace DeOps.Services.Chat
 {
     internal class ChatPacket
     {

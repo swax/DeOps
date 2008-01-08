@@ -10,12 +10,12 @@ using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 
-using DeOps.Components.Link;
-using DeOps.Components.Transfer;
-using DeOps.Components.Location;
+using DeOps.Services.Link;
+using DeOps.Services.Transfer;
+using DeOps.Services.Location;
 
 
-namespace DeOps.Components.Board
+namespace DeOps.Services.Board
 {
     internal enum ScopeType {All, High, Low };
     internal enum BoardSearch { Threads, Time, Post };

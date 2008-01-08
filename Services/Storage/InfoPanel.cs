@@ -14,7 +14,7 @@ using DeOps.Implementation;
 using DeOps.Interface;
 
 
-namespace DeOps.Components.Storage
+namespace DeOps.Services.Storage
 {
     [ComVisible(true)]
     public partial class InfoPanel : UserControl

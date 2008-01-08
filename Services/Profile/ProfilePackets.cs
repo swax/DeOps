@@ -6,7 +6,7 @@ using System.Text;
 using DeOps.Implementation.Protocol;
 
 
-namespace DeOps.Components.Profile
+namespace DeOps.Services.Profile
 {
     internal class ProfilePacket
     {

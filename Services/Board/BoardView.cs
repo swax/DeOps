@@ -14,9 +14,9 @@ using DeOps.Interface;
 using DeOps.Interface.TLVex;
 using DeOps.Interface.Views;
 
-using DeOps.Components.Link;
+using DeOps.Services.Link;
 
-namespace DeOps.Components.Board
+namespace DeOps.Services.Board
 {
     internal partial class BoardView : ViewShell
     {

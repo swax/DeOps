@@ -9,9 +9,9 @@ using System.Text;
 using System.Windows.Forms;
 
 using DeOps.Implementation;
-using DeOps.Components.Link;
+using DeOps.Services.Link;
 
-namespace DeOps.Components.Profile
+namespace DeOps.Services.Profile
 {
     internal partial class EditProfile : Form
     {

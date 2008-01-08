@@ -11,7 +11,7 @@ using System.Windows.Forms;
 using DeOps.Interface.TLVex;
 
 
-namespace DeOps.Components.Storage
+namespace DeOps.Services.Storage
 {
     internal partial class LockMessage : Form
     {

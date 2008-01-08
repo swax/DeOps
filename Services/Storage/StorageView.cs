@@ -16,10 +16,10 @@ using DeOps.Interface.Views;
 
 using DeOps.Implementation;
 using DeOps.Implementation.Protocol;
-using DeOps.Components.Link;
+using DeOps.Services.Link;
 
 
-namespace DeOps.Components.Storage
+namespace DeOps.Services.Storage
 {
     internal partial class StorageView : ViewShell
     {

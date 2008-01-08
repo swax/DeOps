@@ -68,7 +68,7 @@ namespace DeOps.Interface
             this.LockButton = new System.Windows.Forms.ToolStripButton();
             this.TreeImageList = new System.Windows.Forms.ImageList(this.components);
             this.NewsTimer = new System.Windows.Forms.Timer(this.components);
-            CommandTree = new DeOps.Components.Link.LinkTree();
+            CommandTree = new DeOps.Services.Link.LinkTree();
             this.MainSplit.Panel1.SuspendLayout();
             this.MainSplit.Panel2.SuspendLayout();
             this.MainSplit.SuspendLayout();
@@ -606,7 +606,7 @@ namespace DeOps.Interface
         private System.Windows.Forms.ToolStripDropDownButton DataButton;
         private System.Windows.Forms.ToolStripMenuItem commonToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem personalToolStripMenuItem2;
-        private DeOps.Components.Link.LinkTree CommandTree;
+        private DeOps.Services.Link.LinkTree CommandTree;
         private System.Windows.Forms.ToolStrip NavStrip;
         private System.Windows.Forms.ToolStripDropDownButton PersonNavButton;
         private System.Windows.Forms.ToolStripDropDownButton ProjectNavButton;

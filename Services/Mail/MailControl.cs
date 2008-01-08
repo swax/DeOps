@@ -10,7 +10,7 @@ using DeOps.Implementation.Dht;
 using DeOps.Implementation.Transport;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
-using DeOps.Components.Transfer;
+using DeOps.Services.Transfer;
 
 /* files
  *      mail folder
@@ -47,7 +47,7 @@ using DeOps.Components.Transfer;
  * */
 
 
-namespace DeOps.Components.Mail
+namespace DeOps.Services.Mail
 {
     internal delegate void MailUpdateHandler(bool inbox, LocalMail message);
 

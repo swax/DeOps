@@ -24,15 +24,15 @@ using DeOps.Implementation.Dht;
 using DeOps.Implementation.Transport;
 using DeOps.Implementation.Protocol.Net;
 
-using DeOps.Components;
-using DeOps.Components.Board;
-using DeOps.Components.Chat;
-using DeOps.Components.IM;
-using DeOps.Components.Link;
-using DeOps.Components.Location;
-using DeOps.Components.Mail;
-using DeOps.Components.Profile;
-using DeOps.Components.Transfer;
+using DeOps.Services;
+using DeOps.Services.Board;
+using DeOps.Services.Chat;
+using DeOps.Services.IM;
+using DeOps.Services.Link;
+using DeOps.Services.Location;
+using DeOps.Services.Mail;
+using DeOps.Services.Profile;
+using DeOps.Services.Transfer;
 
 
 namespace DeOps.Interface.Tools

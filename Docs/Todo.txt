@@ -1,5 +1,12 @@
 
+investigate flexible 'smart byte'
+multi data per service types
+focus
+
+
 component
+	**dont enforce default published empty files for storage, plan, mail boxes
+
 	register with store control
 		gets back handle to settings object
 	publish(header, file)
@@ -13,7 +20,7 @@ component
 	board, link, location, mail, plan, profile, storage
 		try to make common storage only way to store shit on network, so safer for 3rd parties
 	
-change over namespaces
+change over classnamtes conttrol -> service
 board - All/Higher/Lower Posts, New Post
 live command tree/chat
 
@@ -23,7 +30,7 @@ spring release
 	multisource downloading - use torrent
 	store caching
 	invitations
-	website
+	website, auto-update
 	licensing, installer
 	compartmentalization
 	modifyable encryption
@@ -349,6 +356,8 @@ Future
 		subs auto inherit purchased apps, never be anywhere without apps, look at encryption techniques to make this work
 
 	components
+		auto component distribution to lowers if they dont have it
+		
 		visual 
 			user can inherit or create new canvases
 			default background is transparent so overlays easy

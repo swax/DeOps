@@ -1,4 +1,4 @@
-namespace DeOps.Components.Plan
+namespace DeOps.Services.Plan
 {
     partial class ScheduleView
     {
@@ -46,7 +46,7 @@ namespace DeOps.Components.Plan
             this.SaveLink = new System.Windows.Forms.LinkLabel();
             this.LabelMinus = new System.Windows.Forms.Label();
             this.LabelPlus = new System.Windows.Forms.Label();
-            this.ScheduleSlider = new DeOps.Components.Plan.DateSlider();
+            this.ScheduleSlider = new DeOps.Services.Plan.DateSlider();
             this.ExtendedLabel = new System.Windows.Forms.Label();
             this.RangeLabel = new System.Windows.Forms.Label();
             this.DateRange = new System.Windows.Forms.TrackBar();

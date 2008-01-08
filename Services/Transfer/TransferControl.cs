@@ -9,9 +9,9 @@ using DeOps.Implementation;
 using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Transport;
-using DeOps.Components.Location;
+using DeOps.Services.Location;
 
-namespace DeOps.Components.Transfer
+namespace DeOps.Services.Transfer
 {
     internal delegate void EndDownloadHandler(string path, object[] args);
     internal delegate bool FileSearchHandler(ulong key, FileDetails details);

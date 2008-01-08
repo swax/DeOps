@@ -6,7 +6,7 @@ using System.Text;
 using DeOps.Implementation.Protocol;
 
 
-namespace DeOps.Components.Mail
+namespace DeOps.Services.Mail
 {
     internal class MailPacket
     {

@@ -17,7 +17,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 
-using DeOps.Components;
+using DeOps.Services;
 using DeOps.Implementation.Transport;
 using DeOps.Implementation.Protocol.Net;
 

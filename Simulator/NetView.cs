@@ -7,12 +7,12 @@ using System.Drawing.Drawing2D;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Components;
-using DeOps.Components.Link;
-using DeOps.Components.Profile;
-using DeOps.Components.Mail;
-using DeOps.Components.Board;
-using DeOps.Components.Transfer;
+using DeOps.Services;
+using DeOps.Services.Link;
+using DeOps.Services.Profile;
+using DeOps.Services.Mail;
+using DeOps.Services.Board;
+using DeOps.Services.Transfer;
 
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;

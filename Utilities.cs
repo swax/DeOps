@@ -1344,5 +1344,10 @@ namespace DeOps.Implementation
             First = first;
             Second = second;
         }
+
+        public override int GetHashCode()
+        {
+            return First.GetHashCode() ^ Second.GetHashCode();
+        }
     }
 }
