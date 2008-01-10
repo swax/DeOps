@@ -353,7 +353,7 @@ namespace DeOps.Interface.Tools
                             if (internalRoot.Name == NetworkPacket.SearchRequest)
                             {
                                 SearchReq req = SearchReq.Decode(Protocol, wrap);
-                                id = req.Component;
+                                id = req.Service;
                             }
 
                             if (internalRoot.Name == NetworkPacket.SearchAck)
@@ -365,7 +365,7 @@ namespace DeOps.Interface.Tools
                             if (internalRoot.Name == NetworkPacket.StoreRequest)
                             {
                                 StoreReq store = StoreReq.Decode(Protocol, wrap);
-                                id = store.Component;
+                                id = store.Service;
                             }
 
                             if(id != 0)

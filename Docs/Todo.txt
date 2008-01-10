@@ -1,6 +1,5 @@
 
 investigate flexible 'smart byte'
-multi data per service types
 focus
 
 
@@ -20,7 +19,7 @@ component
 	board, link, location, mail, plan, profile, storage
 		try to make common storage only way to store shit on network, so safer for 3rd parties
 	
-change over classnamtes conttrol -> service
+change over class names control -> service
 board - All/Higher/Lower Posts, New Post
 live command tree/chat
 

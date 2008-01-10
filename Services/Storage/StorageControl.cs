@@ -78,11 +78,11 @@ namespace DeOps.Services.Storage
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ComponentID.Storage] = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ComponentID.Storage] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ComponentID.Storage] = new PatchHandler(Store_Patch);
+            Store.StoreEvent[ComponentID.Storage, 0] = new StoreHandler(Store_Local);
+            Store.ReplicateEvent[ComponentID.Storage, 0] = new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[ComponentID.Storage, 0] = new PatchHandler(Store_Patch);
 
-            Network.Searches.SearchEvent[ComponentID.Storage] = new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[ComponentID.Storage, 0] = new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
                 PruneSize = 25;  
@@ -503,9 +503,9 @@ namespace DeOps.Services.Storage
                     return;
 
                 // publish header
-                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Storage, storage.SignedHeader);
+                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Storage, 0, storage.SignedHeader);
 
-                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ComponentID.Storage, storage.SignedHeader);
+                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ComponentID.Storage, 0, storage.SignedHeader);
 
             }
             catch (Exception ex)
@@ -529,7 +529,7 @@ namespace DeOps.Services.Storage
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ComponentID.Storage, current.SignedHeader));
+                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ComponentID.Storage, 0, current.SignedHeader));
 
                     return;
                 }
@@ -653,7 +653,7 @@ namespace DeOps.Services.Storage
                             if (newStorage.DhtID == Core.LocalDhtID || Links.IsHigher(newStorage.DhtID, project))
                                 Links.GetLocsBelow(Core.LocalDhtID, project, locations);
                     });
-                    Store.PublishDirect(locations, newStorage.DhtID, ComponentID.Storage, newStorage.SignedHeader);
+                    Store.PublishDirect(locations, newStorage.DhtID, ComponentID.Storage, 0, newStorage.SignedHeader);
                 }
 
                 if (StorageUpdate != null)
@@ -764,7 +764,7 @@ namespace DeOps.Services.Storage
             if (!Network.Established)
                 return null;
 
-            ReplicateData data = new ReplicateData(ComponentID.Storage, PatchEntrySize);
+            ReplicateData data = new ReplicateData(PatchEntrySize);
 
             byte[] patch = new byte[PatchEntrySize];
 
@@ -812,7 +812,7 @@ namespace DeOps.Services.Storage
                 {
                     if (storage.Header.Version > version)
                     {
-                        Store.Send_StoreReq(source, 0, new DataReq(null, storage.DhtID, ComponentID.Storage, storage.SignedHeader));
+                        Store.Send_StoreReq(source, 0, new DataReq(null, storage.DhtID, ComponentID.Storage, 0, storage.SignedHeader));
                         continue;
                     }
 
@@ -826,7 +826,7 @@ namespace DeOps.Services.Storage
                 
 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Storage, BitConverter.GetBytes(version));
+                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Storage, 0, BitConverter.GetBytes(version));
                 else
                     DownloadLater[dhtid] = version;
             }
@@ -841,7 +841,7 @@ namespace DeOps.Services.Storage
             }
 
             byte[] parameters = BitConverter.GetBytes(version);
-            DhtSearch search = Core.OperationNet.Searches.Start(key, "Storage", ComponentID.Storage, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Core.OperationNet.Searches.Start(key, "Storage", ComponentID.Storage, 0, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -850,7 +850,7 @@ namespace DeOps.Services.Storage
         void EndSearch(DhtSearch search)
         {
             foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Storage, found.Value));
+                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Storage, 0, found.Value));
         }
 
         List<byte[]> Search_Local(ulong key, byte[] parameters)
@@ -884,7 +884,7 @@ namespace DeOps.Services.Storage
                     {
                         // republish objects that were not seen on the network during startup
                         if (storage.Unique)
-                            Store.PublishNetwork(storage.DhtID, ComponentID.Storage, storage.SignedHeader);
+                            Store.PublishNetwork(storage.DhtID, ComponentID.Storage, 0, storage.SignedHeader);
 
                         // trigger download of files now in cache range
                         LoadHeaderFile(GetFilePath(storage.Header), storage, true, false);

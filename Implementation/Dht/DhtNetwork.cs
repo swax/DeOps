@@ -647,7 +647,7 @@ namespace DeOps.Implementation.Dht
 
                 // send bootstrap if Dht cache dead
                 if (!Routing.Responsive())
-                    Searches.SendUdpRequest(packet.Source, Core.LocalDhtID, 0, ComponentID.Node, null);
+                    Searches.SendUdpRequest(packet.Source, Core.LocalDhtID, 0, ComponentID.Node, 0, null);
 
                 // add to routing
                 // on startup, especially in sim everyone starts blocked so pong source firewall is not set right, but still needs to go into routing

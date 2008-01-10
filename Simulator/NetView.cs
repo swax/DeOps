@@ -437,7 +437,7 @@ namespace DeOps.Simulator
                                     TrafficPen.Color = Legend.PicSrchReq.BackColor;
                                     buffer.DrawLine(TrafficPen, group.GetPoint(pos + controlLen), group.GetPoint(pos + controlLen + internalRoot.PacketSize - paramLen));
 
-                                    TrafficPen.Color = GetComponentColor(req.Component);
+                                    TrafficPen.Color = GetComponentColor(req.Service);
                                     buffer.DrawLine(TrafficPen, group.GetPoint(pos + controlLen + internalRoot.PacketSize - paramLen), group.GetPoint(pos + controlLen + internalRoot.PacketSize));
                                 }
 
@@ -470,7 +470,7 @@ namespace DeOps.Simulator
                                     TrafficPen.Color = Legend.PicStore.BackColor;
                                     buffer.DrawLine(TrafficPen, group.GetPoint(pos + controlLen), group.GetPoint(pos + controlLen + internalRoot.PacketSize - dataLen));
 
-                                    TrafficPen.Color = GetComponentColor(req.Component);
+                                    TrafficPen.Color = GetComponentColor(req.Service);
                                     buffer.DrawLine(TrafficPen, group.GetPoint(pos + controlLen + internalRoot.PacketSize - dataLen), group.GetPoint(pos + controlLen + internalRoot.PacketSize));
                                 }
 

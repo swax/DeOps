@@ -27,8 +27,8 @@ namespace DeOps.Implementation.Dht
         internal List<DhtSearch> Pending = new List<DhtSearch>();
         internal List<DhtSearch> Active = new List<DhtSearch>();
 
-        internal Dictionary<ulong, SearchRequestHandler> SearchEvent = new Dictionary<ulong, SearchRequestHandler>();
-        internal Dictionary<Tuple<ulong, ulong>, SearchRequestHandler> SearchEventX = new Dictionary<Tuple<ulong, ulong>, SearchRequestHandler>();
+        internal ServiceEvent<SearchRequestHandler> SearchEvent = new ServiceEvent<SearchRequestHandler>();
+
 
         internal DhtSearchControl(DhtNetwork network)
         {
@@ -100,7 +100,7 @@ namespace DeOps.Implementation.Dht
         delegate DhtSearch StartHandler(ulong key, string name, ushort component, byte[] parameters, EndSearchHandler endSearch); 
 
 
-        internal DhtSearch Start(ulong key, string name, ushort component, byte[] parameters, EndSearchHandler endSearch)
+        internal DhtSearch Start(ulong key, string name, ushort service, ushort datatype, byte[] parameters, EndSearchHandler endSearch)
         {
             if (Core.InvokeRequired)
                 Debug.Assert(false);
@@ -108,18 +108,18 @@ namespace DeOps.Implementation.Dht
             // transfer componenent does its own duplicate checks
             // also there can exist multiple transfers with with same trar
 
-            if (component != Services.ComponentID.Transfer) 
+            if (service != Services.ComponentID.Transfer) 
             {
                 foreach (DhtSearch pending in Pending)
-                    if (pending.TargetID == key && pending.Component == component && Utilities.MemCompare(parameters, pending.Parameters))
+                    if (pending.TargetID == key && pending.Service == service && Utilities.MemCompare(parameters, pending.Parameters))
                         return null;
 
                 foreach (DhtSearch active in Active)
-                    if (active.TargetID == key && active.Component == component && Utilities.MemCompare(parameters, active.Parameters))
+                    if (active.TargetID == key && active.Service == service && Utilities.MemCompare(parameters, active.Parameters))
                         return null;
             }
 
-            DhtSearch search = new DhtSearch(this, key, name, component, endSearch);
+            DhtSearch search = new DhtSearch(this, key, name, service, datatype, endSearch);
             search.Parameters = parameters;
 
             search.Log("Pending");
@@ -129,14 +129,15 @@ namespace DeOps.Implementation.Dht
             return search;
         }
 
-        internal void SendUdpRequest(DhtAddress address, UInt64 targetID, uint searchID, ushort component, byte[] parameters)
+        internal void SendUdpRequest(DhtAddress address, UInt64 targetID, uint searchID, ushort service, ushort datatype, byte[] parameters)
         {
             SearchReq request = new SearchReq();
 
             request.Source     = Network.GetLocalSource();
             request.SearchID   = searchID;
             request.TargetID   = targetID;
-            request.Component  = component;
+            request.Service  = service;
+            request.DataType = datatype;
             request.Parameters = parameters;
 
             Network.UdpControl.SendTo(address, request);
@@ -172,7 +173,7 @@ namespace DeOps.Implementation.Dht
 
                     if (proxySearches < MAX_SEARCHES)
                     {
-                        DhtSearch search = new DhtSearch(this, request.TargetID, "Proxy", request.Component, null);
+                        DhtSearch search = new DhtSearch(this, request.TargetID, "Proxy", request.Service, request.DataType, null);
 
                         search.Parameters = request.Parameters;
                         search.ProxyTcp = packet.Tcp;
@@ -218,7 +219,7 @@ namespace DeOps.Implementation.Dht
             SearchAck ack = new SearchAck();
             ack.Source = Network.GetLocalSource();
             ack.SearchID = request.SearchID;
-            ack.Component = request.Component;
+            ack.Component = request.Service;
 
             // search for connected proxy
             if (Network.TcpControl.ConnectionMap.ContainsKey(request.TargetID))
@@ -233,14 +234,14 @@ namespace DeOps.Implementation.Dht
                 ack.ContactList = Routing.Find(request.TargetID, 8);
 
 
-            if (!SearchEvent.ContainsKey(request.Component))
+            if (!SearchEvent.Contains(request.Service, request.DataType))
             {
                 SendAck(packet, request, ack);
             }
 
             else
             {
-                List<byte[]> values = SearchEvent[request.Component].Invoke(request.TargetID, request.Parameters);
+                List<byte[]> values = SearchEvent[request.Service, request.DataType].Invoke(request.TargetID, request.Parameters);
 
                 if (values == null)
                     return;
@@ -251,7 +252,7 @@ namespace DeOps.Implementation.Dht
                     ulong proxyID = packet.Tcp != null ? packet.Tcp.DhtID : 0;
 
                     foreach(byte[] value in values)
-                        Network.Store.Send_StoreReq(packet.Source, proxyID, new DataReq(null, request.Source.DhtID, request.Component, value));
+                        Network.Store.Send_StoreReq(packet.Source, proxyID, new DataReq(null, request.Source.DhtID, request.Service, request.DataType, value));
                     
                     return;
                 }
@@ -365,15 +366,16 @@ namespace DeOps.Implementation.Dht
         }
 
 
-        internal void SendDirectRequest(DhtAddress dest, ulong target, ushort component, byte[] parameters)
+        internal void SendDirectRequest(DhtAddress dest, ulong target, ushort service, ushort datatype, byte[] parameters)
         {
             SearchReq request = new SearchReq();
 
-            request.Source = Network.GetLocalSource();
-            request.TargetID = target;
-            request.Component = component;
-            request.Parameters = parameters;
-            request.Nodes = false;
+            request.Source      = Network.GetLocalSource();
+            request.TargetID    = target;
+            request.Service     = service;
+            request.DataType    = datatype;
+            request.Parameters  = parameters;
+            request.Nodes       = false;
 
             //crit doesnt work with multiple nodes of the same id
 

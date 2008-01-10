@@ -711,6 +711,38 @@ namespace DeOps.Implementation
         }
     }
 
+    internal class ServiceEvent<TDelegate>
+    {
+        internal Dictionary<ushort, Dictionary<ushort, TDelegate>> HandlerMap = new Dictionary<ushort, Dictionary<ushort, TDelegate>>();
+
+        internal TDelegate this[ushort service, ushort type]
+        {
+            get
+            {
+                return HandlerMap[service][type];
+            }
+            set
+            {
+                if (!HandlerMap.ContainsKey(service))
+                    HandlerMap[service] = new Dictionary<ushort, TDelegate>();
+
+                HandlerMap[service][type] = value;
+            }
+        }
+
+        internal bool Contains(ushort service, ushort type)
+        {
+            return HandlerMap.ContainsKey(service) && HandlerMap[service].ContainsKey(type);
+        }
+
+        internal IEnumerable Handlers()
+        {
+            foreach (Dictionary<ushort, TDelegate> map in HandlerMap.Values)
+                foreach (TDelegate handler in map.Values)
+                    yield return handler;
+        }
+    }
+
     internal class ThreadedDictionary<TKey, TValue> : Dictionary<TKey, TValue>
     {
         // default functions accessible but lock checked when accessed

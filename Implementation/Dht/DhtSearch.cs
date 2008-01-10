@@ -43,7 +43,8 @@ namespace DeOps.Implementation.Dht
 		internal UInt64    TargetID;
 		internal uint      SearchID;
         internal string    Name;
-        internal ushort    Component;
+        internal ushort    Service;
+        internal ushort    DataType;
         EndSearchHandler   EndSearch;
         internal int       TargetResults = 10;
 
@@ -61,14 +62,15 @@ namespace DeOps.Implementation.Dht
         internal object Carry;
 
 
-        internal DhtSearch(DhtSearchControl control, UInt64 targetID, string name, ushort component, EndSearchHandler endSearch)
+        internal DhtSearch(DhtSearchControl control, UInt64 targetID, string name, ushort service, ushort datatype, EndSearchHandler endSearch)
 		{
             Core      = control.Core;
             Network   = control.Network ;
             Searches  = control;
 			TargetID  = targetID;
 			Name      = name;
-            Component = component;
+            Service   = service;
+            DataType  = datatype;
             EndSearch = endSearch;
 
             SearchID = (uint) Core.RndGen.Next(1, int.MaxValue);
@@ -77,7 +79,7 @@ namespace DeOps.Implementation.Dht
 		internal bool Activate()
 		{
 			// check if node tcp connected
-            if (Component == ComponentID.Node && Network.TcpControl.ConnectionMap.ContainsKey(TargetID))
+            if (Service == ComponentID.Node && Network.TcpControl.ConnectionMap.ContainsKey(TargetID))
             {
                 TcpConnect connection = Network.TcpControl.ConnectionMap[TargetID];
 
@@ -97,7 +99,7 @@ namespace DeOps.Implementation.Dht
                     foreach (TcpConnect connection in Network.TcpControl.Connections)
                     {
                         DhtAddress address = new DhtAddress(connection.DhtID, connection.RemoteIP, connection.UdpPort);
-                        Searches.SendUdpRequest(address, TargetID, SearchID, Component, Parameters);
+                        Searches.SendUdpRequest(address, TargetID, SearchID, Service, DataType, Parameters);
                     }			
 
 			// if blocked send proxy search request to 1 proxy, record and wait
@@ -128,7 +130,8 @@ namespace DeOps.Implementation.Dht
             request.Source    = Network.GetLocalSource();
             request.SearchID  = SearchID;
             request.TargetID  = TargetID;
-            request.Component = Component;
+            request.Service   = Service;
+            request.DataType  = DataType;
             request.Parameters = Parameters;
 
             ProxyTcp.SendPacket(request);
@@ -169,7 +172,7 @@ namespace DeOps.Implementation.Dht
 			
 
 			// at end so we ensure this node is put into list and sent with proxy results
-			if(Component == ComponentID.Node && contact.DhtID == TargetID)
+			if(Service == ComponentID.Node && contact.DhtID == TargetID)
 			{
 				Found(contact, false);
 				return;
@@ -209,7 +212,7 @@ namespace DeOps.Implementation.Dht
                         if (lookup.Age == 3)
                         {
                             //Log("Sending Request to " + lookup.Contact.Address.ToString() + " (" + Utilities.IDtoBin(lookup.Contact.DhtID) + ")");
-                            Network.Searches.SendUdpRequest(lookup.Contact.ToDhtAddress(), TargetID, SearchID, Component, Parameters);
+                            Network.Searches.SendUdpRequest(lookup.Contact.ToDhtAddress(), TargetID, SearchID, Service, DataType, Parameters);
                         }
 
                         // drop after 6
@@ -221,7 +224,7 @@ namespace DeOps.Implementation.Dht
                     if (lookup.Status == LookupStatus.None && searching < SEARCH_ALPHA)
                     {
                         //Log("Sending Request to " + lookup.Contact.Address.ToString() + " (" + Utilities.IDtoBin(lookup.Contact.DhtID) + ")");
-                        Network.Searches.SendUdpRequest(lookup.Contact.ToDhtAddress(), TargetID, SearchID, Component, Parameters);
+                        Network.Searches.SendUdpRequest(lookup.Contact.ToDhtAddress(), TargetID, SearchID, Service, DataType, Parameters);
 
                         lookup.Status = LookupStatus.Searching;
                     }

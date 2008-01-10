@@ -444,6 +444,9 @@ namespace DeOps.Simulator
             {
                 OpCore core = item.Instance.Core;
 
+                if (core == null)
+                    return;
+
                 if (core.GuiMain == null)
                     core.GuiMain = new MainForm(core);
 

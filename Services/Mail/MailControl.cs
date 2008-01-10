@@ -101,11 +101,11 @@ namespace DeOps.Services.Mail
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ComponentID.Mail]     = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ComponentID.Mail] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ComponentID.Mail]     = new PatchHandler(Store_Patch);
+            Store.StoreEvent[ComponentID.Mail, 0]     = new StoreHandler(Store_Local);
+            Store.ReplicateEvent[ComponentID.Mail, 0] = new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[ComponentID.Mail, 0] = new PatchHandler(Store_Patch);
             
-            Network.Searches.SearchEvent[ComponentID.Mail] = new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[ComponentID.Mail, 0] = new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
                 PruneSize = 25;
@@ -303,7 +303,7 @@ namespace DeOps.Services.Mail
 
                 // republish objects that were not seen on the network during startup
                 if (pending.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, key))
-                    Store.PublishNetwork(key, ComponentID.Mail, pending.SignedHeader);
+                    Store.PublishNetwork(key, ComponentID.Mail, 0, pending.SignedHeader);
             }
 
             // set bounds for acks
@@ -316,7 +316,7 @@ namespace DeOps.Services.Mail
                     ack.DhtBounds = bounds;
 
                     if (ack.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, key))
-                        Store.PublishNetwork(key, ComponentID.Mail, ack.SignedAck);
+                        Store.PublishNetwork(key, ComponentID.Mail, 0, ack.SignedAck);
                 }
             }
 
@@ -330,7 +330,7 @@ namespace DeOps.Services.Mail
                     mail.DhtBounds = bounds;
 
                     if (mail.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, key))
-                        Store.PublishNetwork(key, ComponentID.Mail, mail.SignedHeader);
+                        Store.PublishNetwork(key, ComponentID.Mail, 0, mail.SignedHeader);
                 }
             }
 
@@ -758,9 +758,9 @@ namespace DeOps.Services.Mail
 
                 byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, header.Encode(Core.Protocol, false) );
 
-                Core.OperationNet.Store.PublishNetwork(id, ComponentID.Mail, signed);
+                Core.OperationNet.Store.PublishNetwork(id, ComponentID.Mail, 0, signed);
 
-                Store_Local(new DataReq(null, id, ComponentID.Mail, signed)); // cant direct process_header, because header var is being modified
+                Store_Local(new DataReq(null, id, ComponentID.Mail, 0, signed)); // cant direct process_header, because header var is being modified
             }
 
             SaveHeaders();
@@ -812,7 +812,7 @@ namespace DeOps.Services.Mail
 
         private void StartSearch(ulong key, byte[] parameters)
         {
-            DhtSearch search = Core.OperationNet.Searches.Start(key, "Mail", ComponentID.Mail, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Core.OperationNet.Searches.Start(key, "Mail", ComponentID.Mail, 0, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -821,7 +821,7 @@ namespace DeOps.Services.Mail
         void EndSearch(DhtSearch search)
         {
             foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Mail, found.Value));
+                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Mail, 0, found.Value));
         }
 
         List<byte[]> Search_Local(ulong key, byte[] parameters)
@@ -954,7 +954,7 @@ namespace DeOps.Services.Mail
                 return null;
 
 
-            ReplicateData data = new ReplicateData(ComponentID.Profile, MailIdent.SIZE);
+            ReplicateData data = new ReplicateData(MailIdent.SIZE);
 
             byte[] patch = new byte[MailIdent.SIZE];
 
@@ -1027,7 +1027,7 @@ namespace DeOps.Services.Mail
 
                         if (pending.Header.Version > version) // we have new version
                         {
-                            Store.Send_StoreReq(source, 0, new DataReq(null, ident.DhtID, ComponentID.Mail, pending.SignedHeader));
+                            Store.Send_StoreReq(source, 0, new DataReq(null, ident.DhtID, ComponentID.Mail, 0, pending.SignedHeader));
                             continue;
                         }
 
@@ -1067,7 +1067,7 @@ namespace DeOps.Services.Mail
                     return;
 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, ident.DhtID, ComponentID.Mail, ident.Encode());
+                    Network.Searches.SendDirectRequest(source, ident.DhtID, ComponentID.Mail, 0, ident.Encode());
                 else
                 {
                     if (!DownloadLater.ContainsKey(ident.DhtID))
@@ -1300,8 +1300,8 @@ namespace DeOps.Services.Mail
 
             // send 
             byte[] signedAck = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, ack.Encode(Core.Protocol));
-            Core.OperationNet.Store.PublishNetwork(header.SourceID, ComponentID.Mail, signedAck);
-            Store_Local(new DataReq(null, header.SourceID, ComponentID.Mail, signedAck)); // cant direct process_header, because header var is being modified
+            Core.OperationNet.Store.PublishNetwork(header.SourceID, ComponentID.Mail, 0, signedAck);
+            Store_Local(new DataReq(null, header.SourceID, ComponentID.Mail, 0, signedAck)); // cant direct process_header, because header var is being modified
             RunSaveHeaders = true;
 
             Core.MakeNews("Mail Received from " + Core.Links.GetName(message.From), message.From, 0, false, MailRes.Icon, Menu_View);
@@ -1502,7 +1502,7 @@ namespace DeOps.Services.Mail
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Header.KeyID, ComponentID.Mail, current.SignedHeader));
+                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Header.KeyID, ComponentID.Mail, 0, current.SignedHeader));
 
                     return;
                 }
@@ -1955,7 +1955,7 @@ namespace DeOps.Services.Mail
                 CachePending(new SignedData(Core.Protocol, Core.User.Settings.KeyPair, header), header);
 
                 // publish header
-                Core.OperationNet.Store.PublishNetwork(Core.LocalDhtID, ComponentID.Mail, LocalPending.SignedHeader);
+                Core.OperationNet.Store.PublishNetwork(Core.LocalDhtID, ComponentID.Mail, 0, LocalPending.SignedHeader);
 
             }
             catch (Exception ex)

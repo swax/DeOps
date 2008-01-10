@@ -44,7 +44,7 @@ namespace DeOps.Services.Transfer
             Core.LoadEvent += new LoadHandler(Core_Load);
             Core.TimerEvent += new TimerHandler(Core_Timer);
 
-            Core.OperationNet.Searches.SearchEvent[ComponentID.Transfer] = new SearchRequestHandler(Search_Local);
+            Core.OperationNet.Searches.SearchEvent[ComponentID.Transfer, 0] = new SearchRequestHandler(Search_Local);
 
             Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
             Core.RudpControl.SessionData[ComponentID.Transfer] = new SessionDataHandler(Session_Data);
@@ -137,7 +137,7 @@ namespace DeOps.Services.Transfer
 
                 byte[] parameters = transfer.Details.Encode(Core.Protocol);
 
-                DhtSearch search = Core.OperationNet.Searches.Start(transfer.Target, "Transfer", ComponentID.Transfer, parameters, new EndSearchHandler(EndSearch));
+                DhtSearch search = Core.OperationNet.Searches.Start(transfer.Target, "Transfer", ComponentID.Transfer, 0, parameters, new EndSearchHandler(EndSearch));
 
                 if (search != null)
                 {

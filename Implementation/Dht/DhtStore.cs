@@ -27,11 +27,11 @@ namespace DeOps.Implementation.Dht
         DhtNetwork Network; 
         
         //crit - if middle bucket had one entry would it still be replicated to? maybe should not use maxdistance
-        internal ulong MaxDistance = ulong.MaxValue; 
+        internal ulong MaxDistance = ulong.MaxValue;
 
-        internal Dictionary<ushort, StoreHandler> StoreEvent = new Dictionary<ushort, StoreHandler>();
-        internal Dictionary<ushort, ReplicateHandler> ReplicateEvent = new Dictionary<ushort, ReplicateHandler>();
-        internal Dictionary<ushort, PatchHandler> PatchEvent = new Dictionary<ushort, PatchHandler>();
+        internal ServiceEvent<StoreHandler> StoreEvent = new ServiceEvent<StoreHandler>();
+        internal ServiceEvent<ReplicateHandler> ReplicateEvent = new ServiceEvent<ReplicateHandler>();
+        internal ServiceEvent<PatchHandler> PatchEvent = new ServiceEvent<PatchHandler>();
 
 
         internal DhtStore(DhtNetwork network)
@@ -40,17 +40,17 @@ namespace DeOps.Implementation.Dht
             Core = Network.Core;
         }
 
-        internal void PublishNetwork(ulong target, ushort component, byte[] data)
+        internal void PublishNetwork(ulong target, ushort service, ushort datatype, byte[] data)
         {
             if (Core.InvokeRequired)
                 Debug.Assert(false);
 
-            string type = "Publish " + component.ToString();
+            string type = "Publish " + service.ToString();
 
-            DhtSearch search = Network.Searches.Start(target, type, ComponentID.Node, null, new EndSearchHandler(EndPublishSearch));
+            DhtSearch search = Network.Searches.Start(target, type, ComponentID.Node, 0, null, new EndSearchHandler(EndPublishSearch));
             
             if(search != null)
-                search.Carry = new DataReq(null, target, component, data);
+                search.Carry = new DataReq(null, target, service, datatype, data);
         }
 
         void EndPublishSearch(DhtSearch search)
@@ -63,18 +63,18 @@ namespace DeOps.Implementation.Dht
                 Send_StoreReq(node.Contact.ToDhtAddress(), 0, publish);
         }
 
-        internal void PublishDirect(List<LocationData> locations, ulong target, ushort component, byte[] data)
+        internal void PublishDirect(List<LocationData> locations, ulong target, ushort service, ushort datatype, byte[] data)
         {
             if (Core.InvokeRequired)
             {
                 Core.RunInCoreAsync(delegate()
                 {
-                    PublishDirect(locations, target, component, data);
+                    PublishDirect(locations, target, service, datatype, data);
                 });
                 return;
             }
 
-            DataReq req = new DataReq(null, target, component, data);
+            DataReq req = new DataReq(null, target, service, datatype, data);
             
             foreach (LocationData location in locations)
             {
@@ -93,7 +93,8 @@ namespace DeOps.Implementation.Dht
             StoreReq store = new StoreReq();
             store.Source    = Network.GetLocalSource();
             store.Key       = publish.Target;
-            store.Component = publish.Component;
+            store.Service   = publish.Service;
+            store.DataType  = publish.DataType;
             store.Data      = publish.Data;
 
             // if blocked send tcp with to tag
@@ -144,17 +145,17 @@ namespace DeOps.Implementation.Dht
             //        Core.Links.StartSearch(store.Source.DhtID, 0);
 
             // pass to components
-            DataReq data = new DataReq(new List<DhtAddress>(), store.Key, store.Component, store.Data); //crit need to pass which tcp proxy received through
+            DataReq data = new DataReq(new List<DhtAddress>(), store.Key, store.Service, store.DataType, store.Data); //crit need to pass which tcp proxy received through
             data.Sources.Add( packet.Source);
             
             if(packet.Tcp != null)
                 data.LocalProxy = packet.Tcp.DhtID;
 
-            if(data.Component == 0)
+            if(data.Service == 0)
                 Receive_Patch(packet.Source, store.Data);
 
-            else if (StoreEvent.ContainsKey(store.Component))
-                StoreEvent[store.Component].Invoke(data);
+            else if (StoreEvent.Contains(store.Service, store.DataType))
+                StoreEvent[store.Service, store.DataType].Invoke(data);
         }
 
         internal bool IsCached(ulong id)
@@ -224,29 +225,32 @@ namespace DeOps.Implementation.Dht
              */
 
             Dictionary<ulong, DhtContact> ContactMap = new Dictionary<ulong, DhtContact>();
-            Dictionary<ulong, Dictionary<ushort, List<byte[]>>> DataMap = new Dictionary<ulong, Dictionary<ushort, List<byte[]>>>();
+            Dictionary<ulong, Dictionary<uint, List<byte[]>>> DataMap = new Dictionary<ulong, Dictionary<uint, List<byte[]>>>();
 
             // get data that needs to be replicated from components
             // structure as so
             //      contact
-            //          component [] 
-            //              patch data []
-            foreach (ushort component in ReplicateEvent.Keys)
-            {
-                ReplicateData data = ReplicateEvent[component].Invoke(contact, false);
+            //          service [] 
+            //              datatype []
+            //                  patch data []
 
-                if(data != null)
-                    foreach (DhtContact target in data.TargetMap.Values)
-                    {
-                        if (!ContactMap.ContainsKey(target.DhtID))
-                            ContactMap[target.DhtID] = target;
+            foreach(ushort service in ReplicateEvent.HandlerMap.Keys)
+                foreach (ushort datatype in ReplicateEvent.HandlerMap[service].Keys)
+                {
+                    ReplicateData data = ReplicateEvent.HandlerMap[service][datatype].Invoke(contact, false);
 
-                        if (!DataMap.ContainsKey(target.DhtID))
-                            DataMap[target.DhtID] = new Dictionary<ushort, List<byte[]>>();
+                    if (data != null)
+                        foreach (DhtContact target in data.TargetMap.Values)
+                        {
+                            if (!ContactMap.ContainsKey(target.DhtID))
+                                ContactMap[target.DhtID] = target;
 
-                        DataMap[target.DhtID][component] = data.GetTargetData(target.DhtID);
-                    }
-            }
+                            if (!DataMap.ContainsKey(target.DhtID))
+                                DataMap[target.DhtID] = new Dictionary<uint, List<byte[]>>();
+
+                            DataMap[target.DhtID][(uint)((service << 16) + datatype) ] = data.GetTargetData(target.DhtID);
+                        }
+                }
 
             ulong proxyID = 0;
             if (Network.TcpControl.ConnectionMap.ContainsKey(contact.DhtID))
@@ -258,29 +262,29 @@ namespace DeOps.Implementation.Dht
                 PatchPacket packet = new PatchPacket();
 
                 int totalSize = 0;
-                
-                foreach(ushort component in DataMap[id].Keys)
+
+                foreach (uint serviceData in DataMap[id].Keys)
                 {
-                    List<byte[]> list = DataMap[id][component];
+                    List<byte[]> list = DataMap[id][serviceData];
 
                     foreach (byte[] data in list)
+                    {
+                        if (data.Length + totalSize > 1200)
                         {
-                            if (data.Length + totalSize > 1200)
-                            {
-                                if (packet.PatchData.Count > 0)
-                                    Send_StoreReq(ContactMap[id].ToDhtAddress(), proxyID, new DataReq(null, id, 0, packet.Encode(Core.Protocol)));
+                            if (packet.PatchData.Count > 0)
+                                Send_StoreReq(ContactMap[id].ToDhtAddress(), proxyID, new DataReq(null, id, 0, 0, packet.Encode(Core.Protocol)));
 
-                                packet.PatchData.Clear();
-                                totalSize = 0;
-                            }
-
-                            packet.PatchData.Add(new KeyValuePair<ushort, byte[]>(component, data));
-                            totalSize += data.Length;
+                            packet.PatchData.Clear();
+                            totalSize = 0;
                         }
+
+                        packet.PatchData.Add(new Tuple<uint, byte[]>(serviceData, data));
+                        totalSize += data.Length;
+                    }
                 }
 
                 if (packet.PatchData.Count > 0)
-                    Send_StoreReq(ContactMap[id].ToDhtAddress(), proxyID, new DataReq(null, id, 0, packet.Encode(Core.Protocol)));
+                    Send_StoreReq(ContactMap[id].ToDhtAddress(), proxyID, new DataReq(null, id, 0, 0, packet.Encode(Core.Protocol)));
             }
         }
 
@@ -300,9 +304,14 @@ namespace DeOps.Implementation.Dht
                     if (packet == null)
                         return;
 
-                    foreach (KeyValuePair<ushort, byte[]> pair in packet.PatchData)
-                        if (PatchEvent.ContainsKey(pair.Key))
-                            PatchEvent[pair.Key].Invoke(source, localBounds, pair.Value);
+                    foreach (Tuple<uint, byte[]> pair in packet.PatchData)
+                    {
+                        ushort service = (ushort) (pair.First >> 16);
+                        ushort datatype = (ushort) (pair.First & 0x00FF);
+
+                        if (PatchEvent.Contains(service, datatype))
+                            PatchEvent[service, datatype].Invoke(source, localBounds, pair.Second);
+                    }
                 }
         }
 
@@ -339,8 +348,6 @@ namespace DeOps.Implementation.Dht
 
     internal class ReplicateData
     {
-        ushort Component;
-
         int MaxSize = 1024;
         int EntrySize;
 
@@ -349,10 +356,8 @@ namespace DeOps.Implementation.Dht
         internal Dictionary<ulong, int> Offsets = new Dictionary<ulong, int>();
 
 
-        internal ReplicateData(ushort component, int entrySize)
+        internal ReplicateData(int entrySize)
         {
-            Component = component;
-
             MaxSize = MaxSize - (MaxSize % entrySize);
             EntrySize = entrySize;
         }
@@ -419,14 +424,16 @@ namespace DeOps.Implementation.Dht
         internal ulong LocalProxy;
 
         internal ulong  Target;
-        internal ushort Component;
+        internal ushort Service;
+        internal ushort DataType;
         internal byte[] Data;
 
-        internal DataReq(List<DhtAddress> sources, ulong target, ushort component, byte[] data)
+        internal DataReq(List<DhtAddress> sources, ulong target, ushort service, ushort datatype, byte[] data)
         {
             Sources   = sources;
             Target    = target;
-            Component = component;
+            Service   = service;
+            DataType  = datatype;
             Data      = data;
         }
     }
@@ -438,10 +445,10 @@ namespace DeOps.Implementation.Dht
 
     internal class PatchPacket : G2Packet
     {
-        const byte Packet_Component = 0x10;
+        const byte Packet_ServiceType = 0x10;
         const byte Packet_Data = 0x20;
 
-        internal List<KeyValuePair<ushort, byte[]>> PatchData = new List<KeyValuePair<ushort,byte[]>>();
+        internal List<Tuple<uint, byte[]>> PatchData = new List<Tuple<uint, byte[]>>();
 
         internal PatchPacket()
         {
@@ -454,11 +461,11 @@ namespace DeOps.Implementation.Dht
             {
                 G2Frame patch = protocol.WritePacket(null, StorePacket.Patch, null);
 
-                foreach (KeyValuePair<ushort, byte[]> pair in PatchData)
+                foreach (Tuple<uint, byte[]> pair in PatchData)
                 {
-                    G2Frame data = protocol.WritePacket(patch, Packet_Component, BitConverter.GetBytes(pair.Key));
+                    G2Frame data = protocol.WritePacket(patch, Packet_ServiceType, BitConverter.GetBytes(pair.First));
 
-                    protocol.WritePacket(data, Packet_Data, pair.Value);
+                    protocol.WritePacket(data, Packet_Data, pair.Second);
                 }
 
                 return protocol.WriteFinish();
@@ -472,9 +479,9 @@ namespace DeOps.Implementation.Dht
 
             while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                if (child.Name == Packet_Component && G2Protocol.ReadPayload(child))
+                if (child.Name == Packet_ServiceType && G2Protocol.ReadPayload(child))
                 {
-                    ushort component = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                    uint serviceType = BitConverter.ToUInt32(child.Data, child.PayloadPos);
                     byte[] data = null;
 
                     G2Protocol.ResetPacket(child);
@@ -485,7 +492,7 @@ namespace DeOps.Implementation.Dht
                             data = Utilities.ExtractBytes(embedded.Data, embedded.PayloadPos, embedded.PayloadSize);
 
                     if(data != null)
-                        patch.PatchData.Add(new KeyValuePair<ushort, byte[]>(component, data));
+                        patch.PatchData.Add(new Tuple<uint, byte[]>(serviceType, data));
                 }
             }
 

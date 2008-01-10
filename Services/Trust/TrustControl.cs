@@ -62,11 +62,11 @@ namespace DeOps.Services.Link
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ComponentID.Trust] = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ComponentID.Trust] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ComponentID.Trust] = new PatchHandler(Store_Patch);
+            Store.StoreEvent[ComponentID.Trust, 0] = new StoreHandler(Store_Local);
+            Store.ReplicateEvent[ComponentID.Trust, 0] = new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[ComponentID.Trust, 0] = new PatchHandler(Store_Patch);
 
-            Network.Searches.SearchEvent[ComponentID.Trust] = new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[ComponentID.Trust, 0] = new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
                 PruneSize = 25;
@@ -224,7 +224,7 @@ namespace DeOps.Services.Link
             request.TargetID = remoteLink.DhtID;
 
             byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, request);
-            Store.PublishNetwork(request.TargetID, ComponentID.Trust, signed);
+            Store.PublishNetwork(request.TargetID, ComponentID.Trust, 0, signed);
 
             // store locally
             Process_UplinkReq(null, new SignedData(Core.Protocol, Core.User.Settings.KeyPair, request), request);
@@ -233,7 +233,7 @@ namespace DeOps.Services.Link
             List<LocationData> locations = new List<LocationData>();
             GetLocs(Core.LocalDhtID, remoteLink.Project, 1, 1, locations);
             GetLocsBelow(Core.LocalDhtID, remoteLink.Project, locations);
-            Store.PublishDirect(locations, request.TargetID, ComponentID.Trust, signed);
+            Store.PublishDirect(locations, request.TargetID, ComponentID.Trust, 0, signed);
         }
 
         private void Menu_ConfirmLink(object sender, EventArgs e)
@@ -324,7 +324,7 @@ namespace DeOps.Services.Link
                 // notify old links of change
                 Core.RunInCoreAsync(delegate()
                 {
-                    Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Trust, LocalTrust.SignedHeader);
+                    Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Trust, 0, LocalTrust.SignedHeader);
                 });
             }
             catch (Exception ex)
@@ -454,7 +454,7 @@ namespace DeOps.Services.Link
 
                     // republish objects that were not seen on the network during startup
                     if (trust.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, trust.DhtID))
-                        Store.PublishNetwork(trust.DhtID, ComponentID.Trust, trust.SignedHeader);
+                        Store.PublishNetwork(trust.DhtID, ComponentID.Trust, 0, trust.SignedHeader);
                 }
             });
 
@@ -601,7 +601,7 @@ namespace DeOps.Services.Link
 
             byte[] parameters = BitConverter.GetBytes(version);
 
-            DhtSearch search = Network.Searches.Start(key, "Link", ComponentID.Trust, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Network.Searches.Start(key, "Link", ComponentID.Trust, 0, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -610,7 +610,7 @@ namespace DeOps.Services.Link
         void EndSearch(DhtSearch search)
         {
             foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Trust, found.Value));
+                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Trust, 0, found.Value));
         }
 
         List<byte[]> Search_Local(ulong key, byte[] parameters)
@@ -699,7 +699,7 @@ namespace DeOps.Services.Link
                 return null;
 
 
-            ReplicateData data = new ReplicateData(ComponentID.Trust, PatchEntrySize);
+            ReplicateData data = new ReplicateData(PatchEntrySize);
 
             byte[] patch = new byte[PatchEntrySize];
 
@@ -749,7 +749,7 @@ namespace DeOps.Services.Link
                     {
                         if (trust.Header.Version > version)
                         {
-                            Store.Send_StoreReq(source, 0, new DataReq(null, trust.DhtID, ComponentID.Trust, trust.SignedHeader));
+                            Store.Send_StoreReq(source, 0, new DataReq(null, trust.DhtID, ComponentID.Trust, 0, trust.SignedHeader));
                             continue;
                         }
 
@@ -762,7 +762,7 @@ namespace DeOps.Services.Link
                     }
 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Trust, BitConverter.GetBytes(version));
+                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Trust, 0, BitConverter.GetBytes(version));
                 else
                     DownloadLater[dhtid] = version;
             }
@@ -856,9 +856,9 @@ namespace DeOps.Services.Link
                     catch { }
 
                 // publish header
-                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Trust, LocalTrust.SignedHeader);
+                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Trust, 0, LocalTrust.SignedHeader);
 
-                Store.PublishDirect(GetLocsAbove(), Core.LocalDhtID, ComponentID.Trust, LocalTrust.SignedHeader);
+                Store.PublishDirect(GetLocsAbove(), Core.LocalDhtID, ComponentID.Trust, 0, LocalTrust.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -958,7 +958,7 @@ namespace DeOps.Services.Link
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ComponentID.Trust, current.SignedHeader));
+                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ComponentID.Trust, 0, current.SignedHeader));
 
                     return;
                 }
@@ -1241,7 +1241,7 @@ namespace DeOps.Services.Link
                                 GetLocsBelow(Core.LocalDhtID, project, locations);
                     });
 
-                    Store.PublishDirect(locations, trust.DhtID, ComponentID.Trust, trust.SignedHeader);
+                    Store.PublishDirect(locations, trust.DhtID, ComponentID.Trust, 0, trust.SignedHeader);
                 }
 
                 // update interface node
@@ -1391,7 +1391,7 @@ namespace DeOps.Services.Link
             // update links in old project of update
             Core.RunInCoreAsync(delegate()
             {
-                Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Trust, LocalTrust.SignedHeader);
+                Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Trust, 0, LocalTrust.SignedHeader);
             });
         }
 

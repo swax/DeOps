@@ -46,13 +46,13 @@ namespace DeOps.Services.Location
 
             Core.TimerEvent += new TimerHandler(Core_Timer);
             
-            Core.GlobalNet.Store.StoreEvent[ComponentID.Location] = new StoreHandler(GlobalStore_Local);
-            Core.GlobalNet.Store.ReplicateEvent[ComponentID.Location] = new ReplicateHandler(GlobalStore_Replicate);
-            Core.GlobalNet.Store.PatchEvent[ComponentID.Location] = new PatchHandler(GlobalStore_Patch);
-            Core.GlobalNet.Searches.SearchEvent[ComponentID.Location] = new SearchRequestHandler(GlobalSearch_Local);
+            Core.GlobalNet.Store.StoreEvent[ComponentID.Location, 0] = new StoreHandler(GlobalStore_Local);
+            Core.GlobalNet.Store.ReplicateEvent[ComponentID.Location, 0] = new ReplicateHandler(GlobalStore_Replicate);
+            Core.GlobalNet.Store.PatchEvent[ComponentID.Location, 0] = new PatchHandler(GlobalStore_Patch);
+            Core.GlobalNet.Searches.SearchEvent[ComponentID.Location, 0] = new SearchRequestHandler(GlobalSearch_Local);
 
-            Core.OperationNet.Store.StoreEvent[ComponentID.Location] = new StoreHandler(OperationStore_Local);
-            Core.OperationNet.Searches.SearchEvent[ComponentID.Location] = new SearchRequestHandler(OperationSearch_Local);
+            Core.OperationNet.Store.StoreEvent[ComponentID.Location, 0] = new StoreHandler(OperationStore_Local);
+            Core.OperationNet.Searches.SearchEvent[ComponentID.Location, 0] = new SearchRequestHandler(OperationSearch_Local);
 
             // should be published auto anyways, on bootstrap, or firewall/proxy update
             NextGlobalPublish = Core.TimeNow.AddMinutes(1);
@@ -277,18 +277,18 @@ namespace DeOps.Services.Location
 
             byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, location);
 
-            Core.OperationNet.Store.PublishNetwork(Core.LocalDhtID, ComponentID.Location, signed);
+            Core.OperationNet.Store.PublishNetwork(Core.LocalDhtID, ComponentID.Location, 0, signed);
 
-            OperationStore_Local(new DataReq(null, Core.LocalDhtID, ComponentID.Location, signed));
+            OperationStore_Local(new DataReq(null, Core.LocalDhtID, ComponentID.Location, 0, signed));
         }
 
         internal void StartSearch(ulong id, uint version, bool global)
         {
             DhtNetwork network = global ? Core.GlobalNet : Core.OperationNet;
 
-            byte[] parameters = BitConverter.GetBytes(version); 
+            byte[] parameters = BitConverter.GetBytes(version);
 
-            DhtSearch search = network.Searches.Start(id, "Location", ComponentID.Location, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = network.Searches.Start(id, "Location", ComponentID.Location, 0, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -298,7 +298,7 @@ namespace DeOps.Services.Location
         {
             foreach (SearchValue found in search.FoundValues)
             {
-                DataReq location = new DataReq(found.Sources, search.TargetID, ComponentID.Location, found.Value);
+                DataReq location = new DataReq(found.Sources, search.TargetID, ComponentID.Location, 0, found.Value);
 
                 if (search.Network == Core.GlobalNet)
                 {
@@ -394,7 +394,7 @@ namespace DeOps.Services.Location
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Core.OperationNet.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Location.KeyID, ComponentID.Location, current.SignedData));
+                            Core.OperationNet.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Location.KeyID, ComponentID.Location, 0, current.SignedData));
 
                     return;
                 }
@@ -497,9 +497,9 @@ namespace DeOps.Services.Location
 
             data = new CryptLoc(60 * 60, data).Encode(Core.Protocol);
 
-            Core.GlobalNet.Store.PublishNetwork(Core.OpID, ComponentID.Location, data);
+            Core.GlobalNet.Store.PublishNetwork(Core.OpID, ComponentID.Location, 0, data);
 
-            GlobalStore_Local(new DataReq(null, Core.OpID, ComponentID.Location, data));
+            GlobalStore_Local(new DataReq(null, Core.OpID, ComponentID.Location, 0, data));
         }
 
 

@@ -59,11 +59,11 @@ namespace DeOps.Services.Profile
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ComponentID.Profile] = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ComponentID.Profile] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ComponentID.Profile] = new PatchHandler(Store_Patch);
+            Store.StoreEvent[ComponentID.Profile, 0] = new StoreHandler(Store_Local);
+            Store.ReplicateEvent[ComponentID.Profile, 0] = new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[ComponentID.Profile, 0] = new PatchHandler(Store_Patch);
 
-            Network.Searches.SearchEvent[ComponentID.Profile] = new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[ComponentID.Profile, 0] = new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
                 PruneSize = 25;
@@ -225,7 +225,7 @@ namespace DeOps.Services.Profile
 
                     // republish objects that were not seen on the network during startup
                     if (profile.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, profile.DhtID))
-                        Store.PublishNetwork(profile.DhtID, ComponentID.Profile, profile.SignedHeader);
+                        Store.PublishNetwork(profile.DhtID, ComponentID.Profile, 0, profile.SignedHeader);
                 }
             });
 
@@ -281,7 +281,7 @@ namespace DeOps.Services.Profile
         private void StartSearch(ulong key, uint version)
         {
             byte[] parameters = BitConverter.GetBytes(version);
-            DhtSearch search = Network.Searches.Start(key, "Profile", ComponentID.Profile, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Network.Searches.Start(key, "Profile", ComponentID.Profile, 0, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -290,7 +290,7 @@ namespace DeOps.Services.Profile
         void EndSearch(DhtSearch search)
         {
             foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Profile, found.Value));
+                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Profile, 0, found.Value));
         }
 
         List<byte[]> Search_Local(ulong key, byte[] parameters)
@@ -349,7 +349,7 @@ namespace DeOps.Services.Profile
                 return null;
 
 
-            ReplicateData data = new ReplicateData(ComponentID.Profile, PatchEntrySize);
+            ReplicateData data = new ReplicateData(PatchEntrySize);
 
             byte[] patch = new byte[PatchEntrySize];
 
@@ -399,7 +399,7 @@ namespace DeOps.Services.Profile
                     {
                         if (profile.Header.Version > version)
                         {
-                            Store.Send_StoreReq(source, 0, new DataReq(null, profile.DhtID, ComponentID.Profile, profile.SignedHeader));
+                            Store.Send_StoreReq(source, 0, new DataReq(null, profile.DhtID, ComponentID.Profile, 0, profile.SignedHeader));
                             continue;
                         }
 
@@ -413,7 +413,7 @@ namespace DeOps.Services.Profile
                 }
 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Profile, BitConverter.GetBytes(version));
+                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Profile, 0, BitConverter.GetBytes(version));
                 else
                     DownloadLater[dhtid] = version;
             }
@@ -568,9 +568,9 @@ namespace DeOps.Services.Profile
                 if (profile == null)
                     return;
 
-                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Profile, profile.SignedHeader);
+                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Profile, 0, profile.SignedHeader);
 
-                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ComponentID.Profile, profile.SignedHeader);
+                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ComponentID.Profile, 0, profile.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -660,7 +660,7 @@ namespace DeOps.Services.Profile
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ComponentID.Profile, current.SignedHeader));
+                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ComponentID.Profile, 0, current.SignedHeader));
 
                     return;
                 }
@@ -764,7 +764,7 @@ namespace DeOps.Services.Profile
                                 Links.GetLocsBelow(Core.LocalDhtID, project, locations);
                     });
 
-                    Store.PublishDirect(locations, newProfile.DhtID, ComponentID.Profile, newProfile.SignedHeader);
+                    Store.PublishDirect(locations, newProfile.DhtID, ComponentID.Profile, 0, newProfile.SignedHeader);
                 }
 
                 if (ProfileUpdate != null)

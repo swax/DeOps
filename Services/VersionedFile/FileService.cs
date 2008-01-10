@@ -18,7 +18,7 @@ namespace DeOps.Services.VersionedFile
 {
     internal delegate void FileAquiredHandler(OpVersionedFile file);
 
-    class VersionedFileService
+    class VersionedFileAssist
     {
         OpCore Core;
         DhtNetwork Network;
@@ -40,7 +40,7 @@ namespace DeOps.Services.VersionedFile
 
         internal FileAquiredHandler FileAquired;
 
-        internal VersionedFileService(DhtNetwork network, ushort service, ushort type)
+        internal VersionedFileAssist(DhtNetwork network, ushort service, ushort type)
         {
             Core    = network.Core;
             Network = network;
@@ -63,11 +63,11 @@ namespace DeOps.Services.VersionedFile
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[Service] = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[Service] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[Service] = new PatchHandler(Store_Patch);
+            Store.StoreEvent[Service, DataType] = new StoreHandler(Store_Local);
+            Store.ReplicateEvent[Service, DataType] = new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[Service, DataType] = new PatchHandler(Store_Patch);
 
-            Network.Searches.SearchEvent[Service] = new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[Service, DataType] = new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
                 PruneSize = 25;
@@ -166,7 +166,7 @@ namespace DeOps.Services.VersionedFile
 
                     // republish objects that were not seen on the network during startup
                     if (vfile.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, vfile.DhtID))
-                        Store.PublishNetwork(vfile.DhtID, Service, vfile.SignedHeader);
+                        Store.PublishNetwork(vfile.DhtID, Service, DataType, vfile.SignedHeader);
                 }
             });
 
@@ -297,7 +297,7 @@ namespace DeOps.Services.VersionedFile
             if (vfile == null)
                 return null;
 
-            Store.PublishNetwork(Core.LocalDhtID, Service, vfile.SignedHeader);
+            Store.PublishNetwork(Core.LocalDhtID, Service, DataType, vfile.SignedHeader);
 
             return vfile;
         }
@@ -316,7 +316,7 @@ namespace DeOps.Services.VersionedFile
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, Service, current.SignedHeader));
+                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, Service, DataType, current.SignedHeader));
 
                     return;
                 }
@@ -462,7 +462,7 @@ namespace DeOps.Services.VersionedFile
             if (!Network.Established)
                 return null;
 
-            ReplicateData data = new ReplicateData(Service, PatchEntrySize);
+            ReplicateData data = new ReplicateData(PatchEntrySize);
 
             byte[] patch = new byte[PatchEntrySize];
 
@@ -510,7 +510,7 @@ namespace DeOps.Services.VersionedFile
                 {
                     if (vfile.Header.Version > version)
                     {
-                        Store.Send_StoreReq(source, 0, new DataReq(null, vfile.DhtID, Service, vfile.SignedHeader));
+                        Store.Send_StoreReq(source, 0, new DataReq(null, vfile.DhtID, Service, DataType, vfile.SignedHeader));
                         continue;
                     }
 
@@ -524,7 +524,7 @@ namespace DeOps.Services.VersionedFile
 
 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, Service, BitConverter.GetBytes(version));
+                    Network.Searches.SendDirectRequest(source, dhtid, Service, DataType, BitConverter.GetBytes(version));
                 else
                     DownloadLater[dhtid] = version;
             }
@@ -561,7 +561,7 @@ namespace DeOps.Services.VersionedFile
             }
 
             byte[] parameters = BitConverter.GetBytes(version);
-            DhtSearch search = Core.OperationNet.Searches.Start(key, "VersionedFile", Service, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Core.OperationNet.Searches.Start(key, "VersionedFile", Service, DataType, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -585,7 +585,7 @@ namespace DeOps.Services.VersionedFile
         void EndSearch(DhtSearch search)
         {
             foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, Service, found.Value));
+                Store_Local(new DataReq(found.Sources, search.TargetID, Service, DataType, found.Value));
         }
     }
 
@@ -593,7 +593,7 @@ namespace DeOps.Services.VersionedFile
     {
         internal ulong    DhtID;
         internal ulong    DhtBounds = ulong.MaxValue;
-        internal byte[]   Key;    // make sure reference is the same as main key list
+        internal byte[]   Key;    // make sure reference is the same as main key list (saves memory)
         internal bool     Unique;
 
         internal VersionedFileHeader Header;

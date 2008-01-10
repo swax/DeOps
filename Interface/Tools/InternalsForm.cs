@@ -412,7 +412,7 @@ namespace DeOps.Interface.Tools
 				    listValues.Items.Add( new ListViewItem( new string[]
 				    {
                         xStr(search.Name),		
-					    xStr(search.Component),
+					    xStr(search.Service),
 					    IDtoStr(search.TargetID),		
 					    xStr(search.SearchID),
 					    xStr(search.LookupList.Count),

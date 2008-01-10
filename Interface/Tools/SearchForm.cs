@@ -66,7 +66,7 @@ namespace DeOps.Interface.Tools
             ListResults.Items.Clear();
             LabelResults.Text = "";
 
-            Network.Searches.Start(TargetID, "MANUAL", ComponentID.Node, null, new DeOps.Implementation.Dht.EndSearchHandler(EndManualSearch));
+            Network.Searches.Start(TargetID, "MANUAL", ComponentID.Node, 0, null, new DeOps.Implementation.Dht.EndSearchHandler(EndManualSearch));
         }
 
         void EndManualSearch(DhtSearch search)

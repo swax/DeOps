@@ -269,16 +269,18 @@ namespace DeOps.Implementation.Protocol.Net
         const byte Packet_Nodes      = 0x20;
         const byte Packet_SearchID   = 0x30;
         const byte Packet_Target     = 0x40;
-        const byte Packet_Component  = 0x50;
-        const byte Packet_Parameters = 0x60;
-        const byte Packet_EndSearch  = 0x70;
+        const byte Packet_Service    = 0x50;
+        const byte Packet_DataType   = 0x60;
+        const byte Packet_Parameters = 0x70;
+        const byte Packet_EndSearch  = 0x80;
 
 
 		internal DhtSource Source = new DhtSource();
 		internal bool      Nodes  = true;
         internal uint      SearchID;
 		internal UInt64    TargetID;
-        internal ushort    Component;
+        internal ushort    Service;
+        internal ushort    DataType;
         internal byte[]    Parameters;
         internal bool      EndProxySearch;
 
@@ -292,7 +294,8 @@ namespace DeOps.Implementation.Protocol.Net
                 protocol.WritePacket(req, Packet_Nodes, BitConverter.GetBytes(Nodes));
                 protocol.WritePacket(req, Packet_SearchID,  BitConverter.GetBytes(SearchID));
                 protocol.WritePacket(req, Packet_Target,    BitConverter.GetBytes(TargetID));
-                protocol.WritePacket(req, Packet_Component, BitConverter.GetBytes(Component));
+                protocol.WritePacket(req, Packet_Service, BitConverter.GetBytes(Service));
+                protocol.WritePacket(req, Packet_DataType, BitConverter.GetBytes(DataType));
                 protocol.WritePacket(req, Packet_Parameters, Parameters);
 
                 if (EndProxySearch)
@@ -329,8 +332,12 @@ namespace DeOps.Implementation.Protocol.Net
                         req.TargetID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
                         break;
 
-                    case Packet_Component:
-                        req.Component = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                    case Packet_Service:
+                        req.Service = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_DataType:
+                        req.DataType = BitConverter.ToUInt16(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Parameters:
@@ -443,14 +450,16 @@ namespace DeOps.Implementation.Protocol.Net
     {
         const byte Packet_Source = 0x10;
         const byte Packet_Key = 0x20;
-        const byte Packet_Component = 0x30;
-        const byte Packet_Data = 0x40;
-        const byte Packet_TTL = 0x50;
+        const byte Packet_Service = 0x30;
+        const byte Packet_DataType = 0x40;
+        const byte Packet_Data = 0x50;
+        const byte Packet_TTL = 0x60;
 
 
         internal DhtSource  Source = new DhtSource();
         internal UInt64 Key;
-        internal ushort Component;
+        internal ushort Service;
+        internal ushort DataType;
         internal byte[] Data;
         internal ushort TTL = ushort.MaxValue;
 
@@ -459,15 +468,16 @@ namespace DeOps.Implementation.Protocol.Net
         {
             lock (protocol.WriteSection)
             {
-                G2Frame str = protocol.WritePacket(null, NetworkPacket.StoreRequest, null);
+                G2Frame req = protocol.WritePacket(null, NetworkPacket.StoreRequest, null);
 
-                protocol.WritePacket(str, Packet_Source, Source.ToBytes());
+                protocol.WritePacket(req, Packet_Source, Source.ToBytes());
 
-                protocol.WritePacket(str, Packet_Key, BitConverter.GetBytes(Key));
-                protocol.WritePacket(str, Packet_Component, BitConverter.GetBytes(Component));
-                protocol.WritePacket(str, Packet_Data, Data);
+                protocol.WritePacket(req, Packet_Key, BitConverter.GetBytes(Key));
+                protocol.WritePacket(req, Packet_Service, BitConverter.GetBytes(Service));
+                protocol.WritePacket(req, Packet_DataType, BitConverter.GetBytes(DataType));
+                protocol.WritePacket(req, Packet_Data, Data);
 
-                protocol.WritePacket(str, Packet_TTL, BitConverter.GetBytes(TTL));
+                protocol.WritePacket(req, Packet_TTL, BitConverter.GetBytes(TTL));
 
                 InternalData = protocol.WriteFinish();
 
@@ -477,7 +487,7 @@ namespace DeOps.Implementation.Protocol.Net
 
         internal static StoreReq Decode(G2Protocol protocol, G2ReceivedPacket packet)
         {
-            StoreReq str = new StoreReq();
+            StoreReq req = new StoreReq();
 
             G2Header child = new G2Header(packet.Root.Data);
 
@@ -489,28 +499,32 @@ namespace DeOps.Implementation.Protocol.Net
                 switch (child.Name)
                 {
                     case Packet_Source:
-                        str.Source = DhtSource.FromBytes(child.Data, child.PayloadPos);
+                        req.Source = DhtSource.FromBytes(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Key:
-                        str.Key = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        req.Key = BitConverter.ToUInt64(child.Data, child.PayloadPos);
                         break;
 
-                    case Packet_Component:
-                        str.Component = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                    case Packet_Service:
+                        req.Service = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_DataType:
+                        req.DataType = BitConverter.ToUInt16(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Data:
-                        str.Data = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        req.Data = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_TTL:
-                        str.TTL = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        req.TTL = BitConverter.ToUInt16(child.Data, child.PayloadPos);
                         break;
                 }
             }
 
-            return str;
+            return req;
         }
     }
 

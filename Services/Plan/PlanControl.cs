@@ -40,9 +40,9 @@ namespace DeOps.Services.Plan
         internal event PlanGetFocusedHandler GetFocused;
 
 
-        enum DataType { Main = 0x01 };
+        enum DataType { File = 0x01 };
 
-        VersionedFileService PlanFiles;
+        VersionedFileAssist PlanFiles;
 
 
         internal PlanControl(OpCore core)
@@ -53,13 +53,15 @@ namespace DeOps.Services.Plan
             Network = core.OperationNet;
             Store = Network.Store;
 
-            Core.LoadEvent += new LoadHandler(Core_Load);
-            Core.TimerEvent += new TimerHandler(Core_Timer);
-
             if (Core.Sim != null)
                 SaveInterval = 30;
+            
+            Core.LoadEvent += new LoadHandler(Core_Load);
+            Core.TimerEvent += new TimerHandler(Core_Timer);
+            
 
-            PlanFiles = new VersionedFileService(Network, ComponentID.Plan, (ushort)DataType.Main);
+            PlanFiles = new VersionedFileAssist(Network, ComponentID.Plan, (ushort)DataType.File);
+            
             PlanFiles.FileAquired += new FileAquiredHandler(PlanFiles_FileAquired);
         }
 
@@ -185,7 +187,7 @@ namespace DeOps.Services.Plan
                             Links.GetLocsBelow(Core.LocalDhtID, project, locations);
                 });
 
-                Store.PublishDirect(locations, newPlan.DhtID, ComponentID.Plan, newPlan.File.SignedHeader);
+                Store.PublishDirect(locations, newPlan.DhtID, ComponentID.Plan, (ushort)DataType.File, newPlan.File.SignedHeader);
             }
 
 
@@ -273,7 +275,7 @@ namespace DeOps.Services.Plan
 
                 OpVersionedFile file = PlanFiles.UpdateLocal(tempPath, key);
 
-                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.LocalDhtID, ComponentID.Plan, file.SignedHeader);
+                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.LocalDhtID, ComponentID.Plan, (ushort) DataType.File, file.SignedHeader);
 
             }
             catch (Exception ex)

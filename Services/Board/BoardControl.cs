@@ -61,11 +61,11 @@ namespace DeOps.Services.Board
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ComponentID.Board] = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ComponentID.Board] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ComponentID.Board] = new PatchHandler(Store_Patch);
+            Store.StoreEvent[ComponentID.Board, 0] = new StoreHandler(Store_Local);
+            Store.ReplicateEvent[ComponentID.Board, 0] = new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[ComponentID.Board, 0] = new PatchHandler(Store_Patch);
 
-            Network.Searches.SearchEvent[ComponentID.Board] = new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[ComponentID.Board, 0] = new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
                 PruneSize = 32;
@@ -229,7 +229,7 @@ namespace DeOps.Services.Board
                     {
                        foreach (OpPost post in board.Posts.Values)
                            if (post.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, board.DhtID))
-                               Store.PublishNetwork(board.DhtID, ComponentID.Board, post.SignedHeader);
+                               Store.PublishNetwork(board.DhtID, ComponentID.Board, 0, post.SignedHeader);
                     });
                 }
             });
@@ -452,13 +452,13 @@ namespace DeOps.Services.Board
             CachePost(new SignedData(Protocol, Core.User.Settings.KeyPair, header), header);
 
             // publish to network and local region of target
-            Network.Store.PublishNetwork(header.TargetID, ComponentID.Board, GetPost(header).SignedHeader);
+            Network.Store.PublishNetwork(header.TargetID, ComponentID.Board, 0, GetPost(header).SignedHeader);
 
             List<LocationData> locations = new List<LocationData>();
             Links.GetLocs(header.TargetID, header.ProjectID, 1, 1, locations);
             Links.GetLocs(header.TargetID, header.ProjectID, 0, 1, locations);
 
-            Store.PublishDirect(locations, header.TargetID, ComponentID.Board, GetPost(header).SignedHeader);
+            Store.PublishDirect(locations, header.TargetID, ComponentID.Board, 0, GetPost(header).SignedHeader);
 
 
             // save right off, dont wait for timer, or sim to be on
@@ -521,7 +521,7 @@ namespace DeOps.Services.Board
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, header.TargetID, ComponentID.Board, current.SignedHeader));
+                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, header.TargetID, ComponentID.Board, 0, current.SignedHeader));
 
                     return;
                 }
@@ -701,7 +701,7 @@ namespace DeOps.Services.Board
                 return null;
             
 
-            ReplicateData data = new ReplicateData(ComponentID.Board, PatchEntrySize);
+            ReplicateData data = new ReplicateData(PatchEntrySize);
 
             byte[] patch = new byte[PatchEntrySize];
 
@@ -760,7 +760,7 @@ namespace DeOps.Services.Board
                     // remote version is lower, send update
                     if (post.Header.Version > version)
                     {
-                        Store.Send_StoreReq(source, 0, new DataReq(null, dhtid, ComponentID.Board, post.SignedHeader));
+                        Store.Send_StoreReq(source, 0, new DataReq(null, dhtid, ComponentID.Board, 0, post.SignedHeader));
                         continue;
                     }
                         
@@ -775,7 +775,7 @@ namespace DeOps.Services.Board
 
                 // download cause we dont have it or its a higher version 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Board, uid.ToBytes());
+                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Board, 0, uid.ToBytes());
                 else
                 {
                     List<PostUID> list = null;
@@ -809,8 +809,8 @@ namespace DeOps.Services.Board
             parameters[0] = (byte) BoardSearch.Threads;
             BitConverter.GetBytes(project).CopyTo(parameters, 1);
             BitConverter.GetBytes(parent).CopyTo(parameters, 5);
-            
-            DhtSearch search = Network.Searches.Start(target, "Board:Thread", ComponentID.Board, parameters, new EndSearchHandler(EndThreadSearch));
+
+            DhtSearch search = Network.Searches.Start(target, "Board:Thread", ComponentID.Board, 0, parameters, new EndSearchHandler(EndThreadSearch));
 
             if (search == null)
                 return;
@@ -876,7 +876,7 @@ namespace DeOps.Services.Board
             BitConverter.GetBytes(project).CopyTo(parameters, 1);
             BitConverter.GetBytes(time.ToBinary()).CopyTo(parameters, 5);
 
-            DhtSearch search = Network.Searches.Start(target, "Board:Time", ComponentID.Board, parameters, new EndSearchHandler(EndTimeSearch));
+            DhtSearch search = Network.Searches.Start(target, "Board:Time", ComponentID.Board, 0, parameters, new EndSearchHandler(EndTimeSearch));
 
             if (search == null)
                 return;
@@ -920,8 +920,8 @@ namespace DeOps.Services.Board
             parameters[0] = (byte)BoardSearch.Post;
             uid.ToBytes().CopyTo(parameters, 1);
             BitConverter.GetBytes(version).CopyTo(parameters, 17);
-            
-            DhtSearch search = Core.OperationNet.Searches.Start(target, "Board:Post", ComponentID.Board, parameters, new EndSearchHandler(EndPostSearch));
+
+            DhtSearch search = Core.OperationNet.Searches.Start(target, "Board:Post", ComponentID.Board, 0, parameters, new EndSearchHandler(EndPostSearch));
 
             if (search == null)
                 return;
@@ -932,7 +932,7 @@ namespace DeOps.Services.Board
         void EndPostSearch(DhtSearch search)
         {
             foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Board, found.Value));
+                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Board, 0, found.Value));
         }
 
         List<byte[]> Search_Local(ulong key, byte[] parameters)
