@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace DeOps.Interface
+namespace RiseOp.Interface
 {
     internal partial class GetTextDialog : Form
     {

@@ -6,12 +6,12 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Protocol.Net;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Protocol.Net;
 
 
-namespace DeOps.Services.Trust
+namespace RiseOp.Services.Trust
 {
     internal partial class EditLink : Form
     {

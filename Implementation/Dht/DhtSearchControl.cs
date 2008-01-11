@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Net;
-using DeOps.Implementation.Transport;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Implementation.Transport;
 
-using DeOps.Services.Location;
+using RiseOp.Services.Location;
 
 
-namespace DeOps.Implementation.Dht
+namespace RiseOp.Implementation.Dht
 {
     internal delegate List<byte[]> SearchRequestHandler(ulong key, byte[] parameters);
 
@@ -219,7 +219,7 @@ namespace DeOps.Implementation.Dht
             SearchAck ack = new SearchAck();
             ack.Source = Network.GetLocalSource();
             ack.SearchID = request.SearchID;
-            ack.Component = request.Service;
+            ack.Service = request.Service;
 
             // search for connected proxy
             if (Network.TcpControl.ConnectionMap.ContainsKey(request.TargetID))

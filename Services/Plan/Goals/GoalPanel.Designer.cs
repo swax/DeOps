@@ -1,4 +1,4 @@
-namespace DeOps.Services.Plan
+namespace RiseOp.Services.Plan
 {
     partial class GoalPanel
     {
@@ -28,19 +28,19 @@ namespace DeOps.Services.Plan
         /// </summary>
         private void InitializeComponent()
         {
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader4 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader5 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader6 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader7 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader4 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader5 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader6 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader7 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.MineOnly = new System.Windows.Forms.CheckBox();
             this.DelegateLink = new System.Windows.Forms.LinkLabel();
-            this.GoalTree = new DeOps.Interface.TLVex.TreeListViewEx();
+            this.GoalTree = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.AddItemLink = new System.Windows.Forms.LinkLabel();
-            this.PlanList = new DeOps.Interface.TLVex.ContainerListViewEx();
+            this.PlanList = new RiseOp.Interface.TLVex.ContainerListViewEx();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
@@ -104,7 +104,7 @@ namespace DeOps.Services.Plan
             toggleColumnHeader1.Image = null;
             toggleColumnHeader1.Index = 0;
             toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
             toggleColumnHeader1.Selected = false;
             toggleColumnHeader1.Text = "Goal";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -114,7 +114,7 @@ namespace DeOps.Services.Plan
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
             toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader2.Selected = false;
             toggleColumnHeader2.Text = "Person";
             toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -124,7 +124,7 @@ namespace DeOps.Services.Plan
             toggleColumnHeader3.Image = null;
             toggleColumnHeader3.Index = 0;
             toggleColumnHeader3.Pressed = false;
-            toggleColumnHeader3.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader3.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader3.Selected = false;
             toggleColumnHeader3.Text = "All Progress";
             toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -134,12 +134,12 @@ namespace DeOps.Services.Plan
             toggleColumnHeader4.Image = null;
             toggleColumnHeader4.Index = 0;
             toggleColumnHeader4.Pressed = false;
-            toggleColumnHeader4.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader4.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader4.Selected = false;
             toggleColumnHeader4.Text = "Deadline";
             toggleColumnHeader4.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader4.Visible = true;
-            this.GoalTree.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
+            this.GoalTree.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader1,
             toggleColumnHeader2,
             toggleColumnHeader3,
@@ -188,7 +188,7 @@ namespace DeOps.Services.Plan
             toggleColumnHeader5.Image = null;
             toggleColumnHeader5.Index = 0;
             toggleColumnHeader5.Pressed = false;
-            toggleColumnHeader5.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader5.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
             toggleColumnHeader5.Selected = false;
             toggleColumnHeader5.Text = "Plan";
             toggleColumnHeader5.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -198,7 +198,7 @@ namespace DeOps.Services.Plan
             toggleColumnHeader6.Image = null;
             toggleColumnHeader6.Index = 0;
             toggleColumnHeader6.Pressed = false;
-            toggleColumnHeader6.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader6.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader6.Selected = false;
             toggleColumnHeader6.Text = "Time Estimate";
             toggleColumnHeader6.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -207,13 +207,13 @@ namespace DeOps.Services.Plan
             toggleColumnHeader7.Image = null;
             toggleColumnHeader7.Index = 0;
             toggleColumnHeader7.Pressed = false;
-            toggleColumnHeader7.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader7.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader7.Selected = false;
             toggleColumnHeader7.Text = "Progress";
             toggleColumnHeader7.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader7.Visible = true;
             toggleColumnHeader7.Width = 170;
-            this.PlanList.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
+            this.PlanList.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader5,
             toggleColumnHeader6,
             toggleColumnHeader7});
@@ -257,9 +257,9 @@ namespace DeOps.Services.Plan
 
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.LinkLabel DelegateLink;
-        private DeOps.Interface.TLVex.TreeListViewEx GoalTree;
+        private RiseOp.Interface.TLVex.TreeListViewEx GoalTree;
         private System.Windows.Forms.CheckBox MineOnly;
         private System.Windows.Forms.LinkLabel AddItemLink;
-        private DeOps.Interface.TLVex.ContainerListViewEx PlanList;
+        private RiseOp.Interface.TLVex.ContainerListViewEx PlanList;
     }
 }

@@ -7,9 +7,9 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
+using RiseOp.Implementation;
 
-namespace DeOps.Interface
+namespace RiseOp.Interface
 {
     internal partial class InviteForm : Form
     {

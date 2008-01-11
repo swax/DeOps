@@ -1,4 +1,4 @@
-namespace DeOps.Interface
+namespace RiseOp.Interface
 {
     partial class LoaderForm
     {
@@ -195,7 +195,7 @@ namespace DeOps.Interface
             this.MinimizeBox = false;
             this.Name = "LoaderForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "De-Ops";
+            this.Text = "RiseOp";
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

@@ -6,10 +6,10 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
-using DeOps.Services.Trust;
+using RiseOp.Implementation;
+using RiseOp.Services.Trust;
 
-namespace DeOps.Services.Plan
+namespace RiseOp.Services.Plan
 {
     enum EditGoalMode { New, Delgate, Edit, View };
 

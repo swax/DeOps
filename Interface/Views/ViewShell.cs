@@ -6,7 +6,7 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 
-namespace DeOps.Interface
+namespace RiseOp.Interface
 {
     public partial class ViewShell : UserControl
     {

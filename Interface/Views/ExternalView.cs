@@ -8,7 +8,7 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using System.Threading;
 
-namespace DeOps.Interface
+namespace RiseOp.Interface
 {
     internal partial class ExternalView : Form
     {

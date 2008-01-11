@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace DeOps
+namespace RiseOp
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct SHFILEINFO

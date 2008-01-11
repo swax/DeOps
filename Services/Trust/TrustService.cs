@@ -6,16 +6,16 @@ using System.Text;
 using System.Security.Cryptography;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Net;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
 
-using DeOps.Services.Location;
-using DeOps.Services.Transfer;
+using RiseOp.Services.Location;
+using RiseOp.Services.Transfer;
 
 
-namespace DeOps.Services.Trust
+namespace RiseOp.Services.Trust
 {
     internal delegate void LinkUpdateHandler(OpTrust trust);
     internal delegate void LinkGuiUpdateHandler(ulong key);

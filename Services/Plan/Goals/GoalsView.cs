@@ -7,14 +7,14 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Interface;
-using DeOps.Implementation;
-using DeOps.Services.Trust;
-using DeOps.Interface.TLVex;
-using DeOps.Interface.Views;
+using RiseOp.Interface;
+using RiseOp.Implementation;
+using RiseOp.Services.Trust;
+using RiseOp.Interface.TLVex;
+using RiseOp.Interface.Views;
 
 
-namespace DeOps.Services.Plan
+namespace RiseOp.Services.Plan
 {
     internal partial class GoalsView : ViewShell
     {
@@ -207,7 +207,7 @@ namespace DeOps.Services.Plan
         {
             if (SaveLink.Visible)
             {
-                DialogResult result = MessageBox.Show(this, "Save Chages to Goals?", "De-Ops", MessageBoxButtons.YesNoCancel);
+                DialogResult result = MessageBox.Show(this, "Save Chages to Goals?", "RiseOp", MessageBoxButtons.YesNoCancel);
 
                 if (result == DialogResult.OK)
                     Plans.SaveLocal();
@@ -433,7 +433,7 @@ namespace DeOps.Services.Plan
             if (item == null)
                 return;
 
-            DialogResult result = MessageBox.Show(this, "Are you sure you want to unarchive:\n" + item.Goal.Title + "?", "De-Ops", MessageBoxButtons.YesNo);
+            DialogResult result = MessageBox.Show(this, "Are you sure you want to unarchive:\n" + item.Goal.Title + "?", "RiseOp", MessageBoxButtons.YesNo);
 
             if (result == DialogResult.No)
                 return;
@@ -468,7 +468,7 @@ namespace DeOps.Services.Plan
             if (item == null)
                 return;
 
-            DialogResult result = MessageBox.Show(this, "Are you sure you want to delete:\n" + item.Goal.Title + "?", "De-Ops", MessageBoxButtons.YesNo);
+            DialogResult result = MessageBox.Show(this, "Are you sure you want to delete:\n" + item.Goal.Title + "?", "RiseOp", MessageBoxButtons.YesNo);
 
             if (result == DialogResult.No)
                 return;

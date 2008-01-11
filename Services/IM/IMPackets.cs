@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-using DeOps.Implementation.Protocol;
+using RiseOp.Implementation.Protocol;
 
 
-namespace DeOps.Services.IM
+namespace RiseOp.Services.IM
 {
     internal class IMPacket
     {

@@ -1,6 +1,6 @@
-using DeOps.Interface;
+using RiseOp.Interface;
 
-namespace DeOps.Services.IM
+namespace RiseOp.Services.IM
 {
     partial class IM_View
     {
@@ -36,7 +36,7 @@ namespace DeOps.Services.IM
             this.StatusImage = new System.Windows.Forms.PictureBox();
             this.StatusLabel = new System.Windows.Forms.Label();
             this.MessageTextBox = new System.Windows.Forms.RichTextBox();
-            this.InputControl = new DeOps.Interface.TextInput();
+            this.InputControl = new RiseOp.Interface.TextInput();
             this.FlashTimer = new System.Windows.Forms.Timer(this.components);
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();

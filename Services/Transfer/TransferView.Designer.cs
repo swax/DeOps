@@ -1,4 +1,4 @@
-namespace DeOps.Services.Transfer
+namespace RiseOp.Services.Transfer
 {
     partial class TransferView
     {
@@ -31,9 +31,9 @@ namespace DeOps.Services.Transfer
             this.components = new System.ComponentModel.Container();
             this.UploadTab = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.DownloadList = new DeOps.Interface.TLVex.TreeListViewEx();
+            this.DownloadList = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.UploadList = new DeOps.Interface.TLVex.TreeListViewEx();
+            this.UploadList = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.FastTimer = new System.Windows.Forms.Timer(this.components);
             this.UploadTab.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -144,9 +144,9 @@ namespace DeOps.Services.Transfer
 
         private System.Windows.Forms.TabControl UploadTab;
         private System.Windows.Forms.TabPage tabPage1;
-        private DeOps.Interface.TLVex.TreeListViewEx DownloadList;
+        private RiseOp.Interface.TLVex.TreeListViewEx DownloadList;
         private System.Windows.Forms.TabPage tabPage2;
-        private DeOps.Interface.TLVex.TreeListViewEx UploadList;
+        private RiseOp.Interface.TLVex.TreeListViewEx UploadList;
         private System.Windows.Forms.Timer FastTimer;
     }
 }

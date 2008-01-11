@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DeOps.Interface {
+namespace RiseOp.Interface {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace DeOps.Interface {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Interface.Res.InterfaceRes", typeof(InterfaceRes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("RiseOp.Interface.Res.InterfaceRes", typeof(InterfaceRes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

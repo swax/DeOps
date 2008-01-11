@@ -8,9 +8,9 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
+using RiseOp.Implementation;
 
-namespace DeOps.Services.Storage
+namespace RiseOp.Services.Storage
 {
     internal partial class DiffForm : Form
     {

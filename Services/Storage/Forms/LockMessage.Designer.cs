@@ -1,4 +1,4 @@
-namespace DeOps.Services.Storage
+namespace RiseOp.Services.Storage
 {
     partial class LockMessage
     {
@@ -28,13 +28,13 @@ namespace DeOps.Services.Storage
         /// </summary>
         private void InitializeComponent()
         {
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LockMessage));
             this.Note = new System.Windows.Forms.Label();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
-            this.ErrorList = new DeOps.Interface.TLVex.ContainerListViewEx();
+            this.ErrorList = new RiseOp.Interface.TLVex.ContainerListViewEx();
             this.SuspendLayout();
             // 
             // Note
@@ -92,13 +92,13 @@ namespace DeOps.Services.Storage
             toggleColumnHeader1.Image = null;
             toggleColumnHeader1.Index = 0;
             toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
             toggleColumnHeader1.Selected = false;
             toggleColumnHeader1.Text = null;
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader1.Visible = true;
             toggleColumnHeader1.Width = 346;
-            this.ErrorList.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
+            this.ErrorList.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader1});
             this.ErrorList.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.ErrorList.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
@@ -139,7 +139,7 @@ namespace DeOps.Services.Storage
 
         #endregion
 
-        private DeOps.Interface.TLVex.ContainerListViewEx ErrorList;
+        private RiseOp.Interface.TLVex.ContainerListViewEx ErrorList;
         private System.Windows.Forms.Label Note;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Button button2;

@@ -6,14 +6,14 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Transport;
-using DeOps.Interface;
-using DeOps.Services.Trust;
-using DeOps.Services.Location;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Transport;
+using RiseOp.Interface;
+using RiseOp.Services.Trust;
+using RiseOp.Services.Location;
 
 
-namespace DeOps.Services.IM
+namespace RiseOp.Services.IM
 {
 
     internal partial class IM_View : ViewShell

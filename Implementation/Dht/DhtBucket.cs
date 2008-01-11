@@ -1,16 +1,3 @@
-/********************************************************************************
-
-	De-Ops: Decentralized Operations
-	Copyright (C) 2006 John Marshall Group, Inc.
-
-	By contributing code you grant John Marshall Group an unlimited, non-exclusive
-	license to your contribution.
-
-	For support, questions, commercial use, etc...
-	E-Mail: swabby@c0re.net
-
-********************************************************************************/
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -18,9 +5,9 @@ using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography;
 
-using DeOps.Implementation.Protocol.Net;
+using RiseOp.Implementation.Protocol.Net;
 
-namespace DeOps.Implementation.Dht
+namespace RiseOp.Implementation.Dht
 {
 	/// <summary>
 	/// Summary description for DhtBucket.

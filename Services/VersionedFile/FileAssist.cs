@@ -5,16 +5,16 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-using DeOps.Services;
-using DeOps.Services.Transfer;
+using RiseOp.Services;
+using RiseOp.Services.Transfer;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Net;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
 
 
-namespace DeOps.Services.VersionedFile
+namespace RiseOp.Services.VersionedFile
 {
     internal delegate void FileAquiredHandler(OpVersionedFile file);
 

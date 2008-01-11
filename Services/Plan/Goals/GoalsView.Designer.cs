@@ -1,4 +1,4 @@
-namespace DeOps.Services.Plan
+namespace RiseOp.Services.Plan
 {
     partial class GoalsView
     {

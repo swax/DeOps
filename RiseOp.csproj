@@ -19,7 +19,7 @@
     <ApplicationIcon>rank.ico</ApplicationIcon>
     <AssemblyKeyContainerName>
     </AssemblyKeyContainerName>
-    <AssemblyName>De-Ops</AssemblyName>
+    <AssemblyName>RiseOp</AssemblyName>
     <AssemblyOriginatorKeyFile>
     </AssemblyOriginatorKeyFile>
     <DefaultClientScript>JScript</DefaultClientScript>
@@ -27,9 +27,9 @@
     <DefaultTargetSchema>IE50</DefaultTargetSchema>
     <DelaySign>false</DelaySign>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>DeOps</RootNamespace>
+    <RootNamespace>RiseOp</RootNamespace>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
-    <StartupObject>DeOps.Startup</StartupObject>
+    <StartupObject>RiseOp.Startup</StartupObject>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
     <UpgradeBackupLocation>
@@ -739,7 +739,7 @@
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>LinkRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>DeOps.Services.Link</CustomToolNamespace>
+      <CustomToolNamespace>DeOps.Services.Trust</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Mail\ComposeMail.resx">
       <SubType>Designer</SubType>

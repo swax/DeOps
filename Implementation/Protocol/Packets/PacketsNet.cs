@@ -1,16 +1,3 @@
-/********************************************************************************
-
-	De-Ops: Decentralized Operations
-	Copyright (C) 2006 John Marshall Group, Inc.
-
-	By contributing code you grant John Marshall Group an unlimited, non-exclusive
-	license to your contribution.
-
-	For support, questions, commercial use, etc...
-	E-Mail: swabby@c0re.net
-
-********************************************************************************/
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -21,12 +8,12 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Transport;
-using DeOps.Implementation.Protocol;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Transport;
+using RiseOp.Implementation.Protocol;
 
 
-namespace DeOps.Implementation.Protocol.Net
+namespace RiseOp.Implementation.Protocol.Net
 {
 	internal class DhtSource
 	{
@@ -365,13 +352,13 @@ namespace DeOps.Implementation.Protocol.Net
         const byte Packet_Proxied  = 0x30;
         const byte Packet_Contacts = 0x40;
         const byte Packet_Values   = 0x50;
-        const byte Packet_Component = 0x60;
+        const byte Packet_Service = 0x60;
 
 
 		internal DhtSource Source = new DhtSource();
 		internal uint SearchID;
 		internal bool Proxied;
-        internal ushort Component;
+        internal ushort Service;
         internal List<DhtContact> ContactList = new List<DhtContact>();
         internal List<byte[]> ValueList = new List<byte[]>();
 
@@ -384,7 +371,7 @@ namespace DeOps.Implementation.Protocol.Net
                 protocol.WritePacket(ack, Packet_Source, Source.ToBytes());
 
                 protocol.WritePacket(ack, Packet_SearchID, BitConverter.GetBytes(SearchID));
-                protocol.WritePacket(ack, Packet_Component, BitConverter.GetBytes(Component));
+                protocol.WritePacket(ack, Packet_Service, BitConverter.GetBytes(Service));
 
                 if (Proxied)
                     protocol.WritePacket(ack, Packet_Proxied, null);
@@ -432,8 +419,8 @@ namespace DeOps.Implementation.Protocol.Net
                         ack.ContactList = DhtContact.FromByteList(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
-                    case Packet_Component:
-                        ack.Component = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                    case Packet_Service:
+                        ack.Service = BitConverter.ToUInt16(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Values:

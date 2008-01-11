@@ -1,4 +1,4 @@
-namespace DeOps.Services.Profile
+namespace RiseOp.Services.Profile
 {
     partial class ProfileView
     {

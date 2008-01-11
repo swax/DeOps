@@ -5,11 +5,11 @@ using System.Text;
 using System.Security.Cryptography;
 using System.Net;
 
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Transport;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Transport;
 
 
-namespace DeOps.Services
+namespace RiseOp.Services
 {
     public enum InterfaceMenuType { Internal, External, Settings, Quick };
 

@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
-using DeOps.Implementation.Protocol;
+using RiseOp.Implementation.Protocol;
 
 
-namespace DeOps.Services.Plan
+namespace RiseOp.Services.Plan
 {
     internal class PlanPacket
     {

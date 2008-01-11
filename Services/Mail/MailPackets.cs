@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
-using DeOps.Implementation.Protocol;
+using RiseOp.Implementation.Protocol;
 
 
-namespace DeOps.Services.Mail
+namespace RiseOp.Services.Mail
 {
     internal class MailPacket
     {

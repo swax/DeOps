@@ -4,10 +4,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
+using RiseOp.Implementation;
 
 
-namespace DeOps.Interface.Views
+namespace RiseOp.Interface.Views
 {
     
     internal class TrayLock
@@ -65,7 +65,7 @@ namespace DeOps.Interface.Views
                 Core.GuiTray = null;
             }
             else
-                MessageBox.Show("Wrong Passphrase", "De-Ops");
+                MessageBox.Show("Wrong Passphrase", "RiseOp");
         }
 
         void Menu_Exit(object sender, EventArgs e)

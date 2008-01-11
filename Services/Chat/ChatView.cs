@@ -6,12 +6,12 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Interface;
-using DeOps.Interface.Views;
-using DeOps.Implementation;
-using DeOps.Services.Trust;
+using RiseOp.Interface;
+using RiseOp.Interface.Views;
+using RiseOp.Implementation;
+using RiseOp.Services.Trust;
 
-namespace DeOps.Services.Chat
+namespace RiseOp.Services.Chat
 {
     internal partial class ChatView : ViewShell
     {

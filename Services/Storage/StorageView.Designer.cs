@@ -1,4 +1,4 @@
-namespace DeOps.Services.Storage
+namespace RiseOp.Services.Storage
 {
     partial class StorageView
     {
@@ -30,9 +30,9 @@ namespace DeOps.Services.Storage
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(StorageView));
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.FoldersButton = new System.Windows.Forms.ToolStripButton();
@@ -41,9 +41,9 @@ namespace DeOps.Services.Storage
             this.DiffCombo = new System.Windows.Forms.ToolStripComboBox();
             this.GhostsButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.FolderTreeView = new DeOps.Interface.TLVex.TreeListViewEx();
+            this.FolderTreeView = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.FileListView = new DeOps.Interface.TLVex.ContainerListViewEx();
+            this.FileListView = new RiseOp.Interface.TLVex.ContainerListViewEx();
             this.ChangesLabel = new System.Windows.Forms.Label();
             this.DiscardLink = new System.Windows.Forms.LinkLabel();
             this.SaveLink = new System.Windows.Forms.LinkLabel();
@@ -84,7 +84,7 @@ namespace DeOps.Services.Storage
             // FoldersButton
             // 
             this.FoldersButton.CheckOnClick = true;
-            this.FoldersButton.Image = global::DeOps.Properties.Resources.folder;
+            this.FoldersButton.Image = global::RiseOp.Properties.Resources.folder;
             this.FoldersButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.FoldersButton.Name = "FoldersButton";
             this.FoldersButton.Size = new System.Drawing.Size(62, 22);
@@ -203,7 +203,7 @@ namespace DeOps.Services.Storage
             toggleColumnHeader1.Image = null;
             toggleColumnHeader1.Index = 0;
             toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
             toggleColumnHeader1.Selected = false;
             toggleColumnHeader1.Text = "Name";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -213,7 +213,7 @@ namespace DeOps.Services.Storage
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
             toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader2.Selected = false;
             toggleColumnHeader2.Text = "Size";
             toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
@@ -223,13 +223,13 @@ namespace DeOps.Services.Storage
             toggleColumnHeader3.Image = null;
             toggleColumnHeader3.Index = 0;
             toggleColumnHeader3.Pressed = false;
-            toggleColumnHeader3.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader3.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader3.Selected = false;
             toggleColumnHeader3.Text = "Date Modified";
             toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader3.Visible = true;
             toggleColumnHeader3.Width = 120;
-            this.FileListView.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
+            this.FileListView.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader1,
             toggleColumnHeader2,
             toggleColumnHeader3});
@@ -370,9 +370,9 @@ namespace DeOps.Services.Storage
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.ToolStripLabel divLabel;
         private System.Windows.Forms.SplitContainer splitContainer1;
-        private DeOps.Interface.TLVex.TreeListViewEx FolderTreeView;
+        private RiseOp.Interface.TLVex.TreeListViewEx FolderTreeView;
         private System.Windows.Forms.SplitContainer splitContainer2;
-        private DeOps.Interface.TLVex.ContainerListViewEx FileListView;
+        private RiseOp.Interface.TLVex.ContainerListViewEx FileListView;
         private System.Windows.Forms.ToolStripLabel toolStripLabel2;
         private System.Windows.Forms.ToolStripComboBox DiffCombo;
         internal System.Windows.Forms.ToolStripButton GhostsButton;

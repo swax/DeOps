@@ -13,7 +13,7 @@
 
 using System;
 
-namespace DeOps.Interface.TLVex
+namespace RiseOp.Interface.TLVex
 {
 	/// <summary>
 	/// IParentChildList provides functions to navigate a mutliply-linked

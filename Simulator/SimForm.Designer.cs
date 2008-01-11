@@ -1,4 +1,4 @@
-namespace DeOps.Simulator
+namespace RiseOp.Simulator
 {
     partial class SimForm
     {
@@ -363,7 +363,7 @@ namespace DeOps.Simulator
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "SimForm";
-            this.Text = "De-Ops Internet Simulator";
+            this.Text = "RiseOp Internet Simulator";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ControlForm_FormClosing);
             this.Load += new System.EventHandler(this.ControlForm_Load);
             this.menuStrip1.ResumeLayout(false);

@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace DeOps.Services.Profile
+namespace RiseOp.Services.Profile
 {
     internal partial class EditTemplate : Form
     {

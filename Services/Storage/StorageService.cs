@@ -7,16 +7,16 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Net;
-using DeOps.Services.Trust;
-using DeOps.Services.Location;
-using DeOps.Services.Transfer;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Services.Trust;
+using RiseOp.Services.Location;
+using RiseOp.Services.Transfer;
 
 
-namespace DeOps.Services.Storage
+namespace RiseOp.Services.Storage
 {
     internal delegate List<ulong> StorageGetFocusedHandler();
     internal delegate void StorageUpdateHandler(OpStorage storage);
@@ -184,7 +184,7 @@ namespace DeOps.Services.Storage
                     if (error.Type == LockErrorType.Blocked)
                         message += error.Path;
 
-                MessageBox.Show(message, "De-Ops");
+                MessageBox.Show(message, "RiseOp");
             }
 
             // kill events

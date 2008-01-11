@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace DeOps.Services.Plan
+namespace RiseOp.Services.Plan
 {
     enum EditItemMode { New, Edit, View };
 

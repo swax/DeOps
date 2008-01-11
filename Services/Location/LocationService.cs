@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Net;
-using DeOps.Implementation.Transport;
-using DeOps.Services.Trust;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Implementation.Transport;
+using RiseOp.Services.Trust;
 
 
-namespace DeOps.Services.Location
+namespace RiseOp.Services.Location
 {
     internal delegate void LocationUpdateHandler(LocationData location);
     internal delegate void LocationGuiUpdateHandler(ulong key);

@@ -5,12 +5,12 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Transport;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Net;
-using DeOps.Services.Transfer;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Transport;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Services.Transfer;
 
 /* files
  *      mail folder
@@ -47,7 +47,7 @@ using DeOps.Services.Transfer;
  * */
 
 
-namespace DeOps.Services.Mail
+namespace RiseOp.Services.Mail
 {
     internal delegate void MailUpdateHandler(bool inbox, LocalMail message);
 

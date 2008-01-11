@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "De-Ops", "De-Ops.csproj", "{83CFFBE4-8EB9-446D-851A-3874799F3172}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RiseOp", "RiseOp.csproj", "{83CFFBE4-8EB9-446D-851A-3874799F3172}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

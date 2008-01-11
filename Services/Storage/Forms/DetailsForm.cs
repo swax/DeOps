@@ -6,12 +6,12 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Interface;
-using DeOps.Interface.TLVex;
-using DeOps.Services.Trust;
+using RiseOp.Interface;
+using RiseOp.Interface.TLVex;
+using RiseOp.Services.Trust;
 
 
-namespace DeOps.Services.Storage
+namespace RiseOp.Services.Storage
 {
     internal partial class DetailsForm : Form
     {

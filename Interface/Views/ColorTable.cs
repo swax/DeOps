@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace DeOps.Interface.Views
+namespace RiseOp.Interface.Views
 {
     class OpusColorTable : ProfessionalColorTable
     {

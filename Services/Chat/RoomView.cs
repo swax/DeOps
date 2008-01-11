@@ -6,18 +6,18 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Interface;
-using DeOps.Interface.TLVex;
-using DeOps.Interface.Views;
-using DeOps.Implementation;
-using DeOps.Implementation.Transport;
-using DeOps.Services.Trust;
-using DeOps.Services.IM;
-using DeOps.Services.Mail;
-using DeOps.Services.Location;
+using RiseOp.Interface;
+using RiseOp.Interface.TLVex;
+using RiseOp.Interface.Views;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Transport;
+using RiseOp.Services.Trust;
+using RiseOp.Services.IM;
+using RiseOp.Services.Mail;
+using RiseOp.Services.Location;
 
 
-namespace DeOps.Services.Chat
+namespace RiseOp.Services.Chat
 {
     internal partial class RoomView : UserControl
     {

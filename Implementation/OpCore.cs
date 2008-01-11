@@ -1,16 +1,3 @@
-/********************************************************************************
-
-	De-Ops: Decentralized Operations
-	Copyright (C) 2006 John Marshall Group, Inc.
-
-	By contributing code you grant John Marshall Group an unlimited, non-exclusive
-	license to your contribution.
-
-	For support, questions, commercial use, etc...
-	E-Mail: swabby@c0re.net
-
-********************************************************************************/
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -23,32 +10,32 @@ using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
 
-using DeOps.Services;
-using DeOps.Services.Chat;
-using DeOps.Services.IM;
-using DeOps.Services.Trust;
-using DeOps.Services.Location;
-using DeOps.Services.Mail;
-using DeOps.Services.Profile;
-using DeOps.Services.Transfer;
-using DeOps.Services.Board;
-using DeOps.Services.Plan;
-using DeOps.Services.Storage;
+using RiseOp.Services;
+using RiseOp.Services.Chat;
+using RiseOp.Services.IM;
+using RiseOp.Services.Trust;
+using RiseOp.Services.Location;
+using RiseOp.Services.Mail;
+using RiseOp.Services.Profile;
+using RiseOp.Services.Transfer;
+using RiseOp.Services.Board;
+using RiseOp.Services.Plan;
+using RiseOp.Services.Storage;
 
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Comm;
-using DeOps.Implementation.Protocol.Net;
-using DeOps.Implementation.Transport;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Comm;
+using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Implementation.Transport;
 
-using DeOps.Interface;
-using DeOps.Interface.Tools;
-using DeOps.Interface.Views;
+using RiseOp.Interface;
+using RiseOp.Interface.Tools;
+using RiseOp.Interface.Views;
 
-using DeOps.Simulator;
+using RiseOp.Simulator;
 
 
-namespace DeOps.Implementation
+namespace RiseOp.Implementation
 {
 	internal enum FirewallType { Blocked, NAT, Open };
     internal enum TransportProtocol { Tcp, Udp, Rudp };
@@ -151,7 +138,7 @@ namespace DeOps.Implementation
             StartTime = TimeNow;
             NextSaveCache = TimeNow.AddMinutes(1);
 
-            ConsoleLog("De-Ops " + Application.ProductVersion);
+            ConsoleLog("RiseOp " + Application.ProductVersion);
 
             Protocol = new G2Protocol();
             RudpControl = new RudpHandler(this);

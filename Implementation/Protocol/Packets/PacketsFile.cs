@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace DeOps.Implementation.Protocol.File
+namespace RiseOp.Implementation.Protocol.File
 {
     internal class FilePacket : G2Packet
     {

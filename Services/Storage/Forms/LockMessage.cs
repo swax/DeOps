@@ -8,10 +8,10 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Interface.TLVex;
+using RiseOp.Interface.TLVex;
 
 
-namespace DeOps.Services.Storage
+namespace RiseOp.Services.Storage
 {
     internal partial class LockMessage : Form
     {

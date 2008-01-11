@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
-using DeOps.Implementation.Protocol;
+using RiseOp.Implementation.Protocol;
 
 
-namespace DeOps.Services.Storage
+namespace RiseOp.Services.Storage
 {
     internal class StoragePacket
     {

@@ -4,14 +4,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
-using DeOps.Services.Location;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Comm;
-using DeOps.Implementation.Protocol.Net;
+using RiseOp.Services.Location;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Comm;
+using RiseOp.Implementation.Protocol.Net;
 
 
-namespace DeOps.Implementation.Transport
+namespace RiseOp.Implementation.Transport
 {
     internal enum RudpState {Connecting, Connected, Closed};
 	

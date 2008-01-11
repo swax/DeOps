@@ -6,7 +6,7 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 
-namespace DeOps.Services.Plan
+namespace RiseOp.Services.Plan
 {
     internal partial class ProgressText : UserControl
     {

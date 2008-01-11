@@ -1,6 +1,6 @@
-using DeOps.Interface;
+using RiseOp.Interface;
 
-namespace DeOps.Services.Chat
+namespace RiseOp.Services.Chat
 {
     partial class RoomView
     {
@@ -33,8 +33,8 @@ namespace DeOps.Services.Chat
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.MessageTextBox = new System.Windows.Forms.RichTextBox();
-            this.InputControl = new DeOps.Interface.TextInput();
-            this.MemberTree = new DeOps.Interface.TLVex.TreeListViewEx();
+            this.InputControl = new RiseOp.Interface.TextInput();
+            this.MemberTree = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
@@ -161,7 +161,7 @@ namespace DeOps.Services.Chat
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.RichTextBox MessageTextBox;
         private TextInput InputControl;
-        private DeOps.Interface.TLVex.TreeListViewEx MemberTree;
+        private RiseOp.Interface.TLVex.TreeListViewEx MemberTree;
 
     }
 }

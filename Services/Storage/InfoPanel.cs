@@ -10,11 +10,11 @@ using System.Text;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
-using DeOps.Implementation;
-using DeOps.Interface;
+using RiseOp.Implementation;
+using RiseOp.Interface;
 
 
-namespace DeOps.Services.Storage
+namespace RiseOp.Services.Storage
 {
     [ComVisible(true)]
     public partial class InfoPanel : UserControl

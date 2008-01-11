@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DeOps.Services.Profile {
+namespace RiseOp.Services.Profile {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace DeOps.Services.Profile {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Services.Profile.Res.ProfileRes", typeof(ProfileRes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("RiseOp.Services.Profile.Res.ProfileRes", typeof(ProfileRes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

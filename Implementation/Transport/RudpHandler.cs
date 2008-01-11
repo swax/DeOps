@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-using DeOps.Services;
-using DeOps.Services.Location;
-using DeOps.Implementation.Protocol.Net;
+using RiseOp.Services;
+using RiseOp.Services.Location;
+using RiseOp.Implementation.Protocol.Net;
 
-namespace DeOps.Implementation.Transport
+namespace RiseOp.Implementation.Transport
 {
     internal delegate void SessionUpdateHandler(RudpSession session);
     internal delegate void SessionDataHandler(RudpSession session, byte[] data);

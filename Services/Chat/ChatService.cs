@@ -5,13 +5,13 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Transport;
-using DeOps.Services.Trust;
-using DeOps.Services.Location;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Transport;
+using RiseOp.Services.Trust;
+using RiseOp.Services.Location;
 
-namespace DeOps.Services.Chat
+namespace RiseOp.Services.Chat
 {
     internal delegate void RefreshHandler();
     internal delegate void InvitedHandler(ulong inviter, ChatRoom room);

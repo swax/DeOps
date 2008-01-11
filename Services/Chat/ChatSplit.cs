@@ -6,7 +6,7 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 
-namespace DeOps.Services.Chat
+namespace RiseOp.Services.Chat
 {
     internal partial class ChatSplit : UserControl
     {

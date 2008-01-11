@@ -1,29 +1,16 @@
-/********************************************************************************
-
-	De-Ops: Decentralized Operations
-	Copyright (C) 2006 John Marshall Group, Inc.
-
-	By contributing code you grant John Marshall Group an unlimited, non-exclusive
-	license to your contribution.
-
-	For support, questions, commercial use, etc...
-	E-Mail: swabby@c0re.net
-
-********************************************************************************/
-
 using System;
 using System.Drawing;
 using System.Collections;
 using System.ComponentModel;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
-using DeOps.Services;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Net;
+using RiseOp.Implementation;
+using RiseOp.Services;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
 
-namespace DeOps.Interface.Tools
+namespace RiseOp.Interface.Tools
 {
 	internal enum CrawlStatus {Active, Paused};
 

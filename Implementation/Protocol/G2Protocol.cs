@@ -1,16 +1,3 @@
-/********************************************************************************
-
-	De-Ops: Decentralized Operations
-	Copyright (C) 2006 John Marshall Group
-
-	By contributing code you grant John Marshall Group an unlimited, non-exclusive
-	license to your contribution.
-
-	For support, questions, commercial use, etc...
-	E-Mail: swabby@c0re.net
-
-********************************************************************************/
-
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -18,7 +5,7 @@ using System.IO;
 using System.Text;
 
 
-namespace DeOps.Implementation.Protocol
+namespace RiseOp.Implementation.Protocol
 {
 	internal enum G2ReadResult { PACKET_GOOD, PACKET_INCOMPLETE, PACKET_ERROR, STREAM_END };
 

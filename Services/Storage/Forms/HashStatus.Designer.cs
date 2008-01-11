@@ -1,4 +1,4 @@
-namespace DeOps.Services.Storage
+namespace RiseOp.Services.Storage
 {
     partial class HashStatus
     {

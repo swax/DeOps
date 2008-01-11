@@ -7,14 +7,14 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Services.Trust;
-using DeOps.Implementation;
-using DeOps.Interface;
-using DeOps.Interface.TLVex;
-using DeOps.Interface.Views;
+using RiseOp.Services.Trust;
+using RiseOp.Implementation;
+using RiseOp.Interface;
+using RiseOp.Interface.TLVex;
+using RiseOp.Interface.Views;
 
 
-namespace DeOps.Services.Plan
+namespace RiseOp.Services.Plan
 {
     internal partial class ScheduleView : ViewShell
     {
@@ -196,7 +196,7 @@ namespace DeOps.Services.Plan
         {
             if (SaveLink.Visible)
             {
-                DialogResult result = MessageBox.Show(this, "Save Chages to Schedule?", "De-Ops", MessageBoxButtons.YesNoCancel);
+                DialogResult result = MessageBox.Show(this, "Save Chages to Schedule?", "RiseOp", MessageBoxButtons.YesNoCancel);
 
                 if (result == DialogResult.OK)
                     Plans.SaveLocal();

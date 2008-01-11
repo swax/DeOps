@@ -1,4 +1,4 @@
-namespace DeOps.Services.Plan
+namespace RiseOp.Services.Plan
 {
     partial class EditPlanItem
     {
@@ -35,7 +35,7 @@ namespace DeOps.Services.Plan
             this.ProgressLabel = new System.Windows.Forms.Label();
             this.ExitButton = new System.Windows.Forms.Button();
             this.OkButton = new System.Windows.Forms.Button();
-            this.DescriptionInput = new DeOps.Interface.TextInput();
+            this.DescriptionInput = new RiseOp.Interface.TextInput();
             this.label5 = new System.Windows.Forms.Label();
             this.TitleBox = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
@@ -196,7 +196,7 @@ namespace DeOps.Services.Plan
         private System.Windows.Forms.Label ProgressLabel;
         private System.Windows.Forms.Button ExitButton;
         private System.Windows.Forms.Button OkButton;
-        private DeOps.Interface.TextInput DescriptionInput;
+        private RiseOp.Interface.TextInput DescriptionInput;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.TextBox TitleBox;
         private System.Windows.Forms.Label label1;

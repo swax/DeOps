@@ -9,11 +9,11 @@ using System.IO;
 
 using Microsoft.Win32;
 
-using DeOps.Implementation;
-using DeOps.Simulator;
+using RiseOp.Implementation;
+using RiseOp.Simulator;
 
 
-namespace DeOps.Interface
+namespace RiseOp.Interface
 {
     internal partial class LoaderForm : Form
     {
@@ -51,7 +51,7 @@ namespace DeOps.Interface
                 type.SetValue("", "dop");
 
                 RegistryKey root = Registry.ClassesRoot.CreateSubKey("dop");
-                root.SetValue("", "De-Ops Identity");
+                root.SetValue("", "RiseOp Identity");
 
                 RegistryKey icon = root.CreateSubKey("DefaultIcon");
                 icon.SetValue("", Application.ExecutablePath + ",0");
@@ -74,7 +74,7 @@ namespace DeOps.Interface
                 OpenFileDialog OpenProfile = new OpenFileDialog();
 
                 OpenProfile.InitialDirectory = LinkIdentity.Text;
-                OpenProfile.Filter = "De-Ops Identity (*.dop)|*.dop";
+                OpenProfile.Filter = "RiseOp Identity (*.dop)|*.dop";
 
                 if (OpenProfile.ShowDialog() == DialogResult.OK)
                 {

@@ -6,10 +6,10 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
+using RiseOp.Implementation;
 
 
-namespace DeOps.Services.Profile
+namespace RiseOp.Services.Profile
 {
     internal partial class PreviewTemplate : Form
     {

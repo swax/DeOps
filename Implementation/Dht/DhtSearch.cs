@@ -1,27 +1,14 @@
-/********************************************************************************
-
-	De-Ops: Decentralized Operations
-	Copyright (C) 2006 John Marshall Group, Inc.
-
-	By contributing code you grant John Marshall Group an unlimited, non-exclusive
-	license to your contribution.
-
-	For support, questions, commercial use, etc...
-	E-Mail: swabby@c0re.net
-
-********************************************************************************/
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 
-using DeOps.Services;
-using DeOps.Implementation.Transport;
-using DeOps.Implementation.Protocol.Net;
+using RiseOp.Services;
+using RiseOp.Implementation.Transport;
+using RiseOp.Implementation.Protocol.Net;
 
-namespace DeOps.Implementation.Dht
+namespace RiseOp.Implementation.Dht
 {
     internal delegate void EndSearchHandler(DhtSearch search);
 

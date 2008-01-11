@@ -1,16 +1,3 @@
-/********************************************************************************
-
-	De-Ops: Decentralized Operations
-	Copyright (C) 2006 John Marshall Group, Inc.
-
-	By contributing code you grant John Marshall Group an unlimited, non-exclusive
-	license to your contribution.
-
-	For support, questions, commercial use, etc...
-	E-Mail: swabby@c0re.net
-
-********************************************************************************/
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -23,18 +10,18 @@ using System.Windows.Forms;
 using System.IO;
 using System.Security.Cryptography;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Transport;
-using DeOps.Implementation.Protocol.Net;
-using DeOps.Services.Transfer;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Transport;
+using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Services.Transfer;
 
-using DeOps.Interface;
-using DeOps.Interface.Tools;
-using DeOps.Implementation.Protocol;
+using RiseOp.Interface;
+using RiseOp.Interface.Tools;
+using RiseOp.Implementation.Protocol;
 
 
-namespace DeOps.Simulator
+namespace RiseOp.Simulator
 {
     internal enum InstanceChangeType { Add, Remove, Update, Refresh};
 

@@ -1,4 +1,4 @@
-namespace DeOps.Interface
+namespace RiseOp.Interface
 {
     partial class MainForm
     {
@@ -68,7 +68,7 @@ namespace DeOps.Interface
             this.LockButton = new System.Windows.Forms.ToolStripButton();
             this.TreeImageList = new System.Windows.Forms.ImageList(this.components);
             this.NewsTimer = new System.Windows.Forms.Timer(this.components);
-            CommandTree = new DeOps.Services.Trust.LinkTree();
+            CommandTree = new RiseOp.Services.Trust.LinkTree();
             this.MainSplit.Panel1.SuspendLayout();
             this.MainSplit.Panel2.SuspendLayout();
             this.MainSplit.SuspendLayout();
@@ -552,7 +552,7 @@ namespace DeOps.Interface
             this.DoubleBuffered = true;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MainForm";
-            this.Text = "De-Ops";
+            this.Text = "RiseOp";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.MainSplit.Panel1.ResumeLayout(false);
@@ -606,7 +606,7 @@ namespace DeOps.Interface
         private System.Windows.Forms.ToolStripDropDownButton DataButton;
         private System.Windows.Forms.ToolStripMenuItem commonToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem personalToolStripMenuItem2;
-        private DeOps.Services.Trust.LinkTree CommandTree;
+        private RiseOp.Services.Trust.LinkTree CommandTree;
         private System.Windows.Forms.ToolStrip NavStrip;
         private System.Windows.Forms.ToolStripDropDownButton PersonNavButton;
         private System.Windows.Forms.ToolStripDropDownButton ProjectNavButton;

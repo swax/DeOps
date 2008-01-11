@@ -7,7 +7,7 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
-namespace DeOps.Services.Storage
+namespace RiseOp.Services.Storage
 {
     internal partial class UnlockForm : Form
     {

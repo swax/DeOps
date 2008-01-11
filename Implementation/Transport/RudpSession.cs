@@ -5,12 +5,12 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Diagnostics;
 
-using DeOps.Services.Location;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Comm;
+using RiseOp.Services.Location;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Comm;
 
 
-namespace DeOps.Implementation.Transport
+namespace RiseOp.Implementation.Transport
 {
     internal enum SessionStatus { Connecting, Active, Closed };
 

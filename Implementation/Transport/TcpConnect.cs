@@ -1,16 +1,3 @@
-/********************************************************************************
-
-	De-Ops: Decentralized Operations
-	Copyright (C) 2006 John Marshall Group, Inc.
-
-	By contributing code you grant John Marshall Group an unlimited, non-exclusive
-	license to your contribution.
-
-	For support, questions, commercial use, etc...
-	E-Mail: swabby@c0re.net
-
-********************************************************************************/
-
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -18,14 +5,14 @@ using System.Collections;
 using System.Security.Cryptography;
 using System.Diagnostics;
 
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Net;
-using DeOps.Implementation.Dht;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Implementation.Dht;
 
-using DeOps.Simulator;
+using RiseOp.Simulator;
 
 
-namespace DeOps.Implementation.Transport
+namespace RiseOp.Implementation.Transport
 {
 	internal enum ProxyType { Unset, Server, ClientBlocked, ClientNAT };
     internal enum TcpState { Connecting, Connected, Closed };

@@ -1,16 +1,3 @@
-/********************************************************************************
-
-	De-Ops: Decentralized Operations
-	Copyright (C) 2006 John Marshall Group, Inc.
-
-	By contributing code you grant John Marshall Group an unlimited, non-exclusive
-	license to your contribution.
-
-	For support, questions, commercial use, etc...
-	E-Mail: swabby@c0re.net
-
-********************************************************************************/
-
 using System;
 using System.Drawing;
 using System.Collections;
@@ -19,23 +6,23 @@ using System.ComponentModel;
 using System.Windows.Forms;
 using System.Net;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Transport;
-using DeOps.Implementation.Protocol.Net;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Transport;
+using RiseOp.Implementation.Protocol.Net;
 
-using DeOps.Services;
-using DeOps.Services.Board;
-using DeOps.Services.Chat;
-using DeOps.Services.IM;
-using DeOps.Services.Trust;
-using DeOps.Services.Location;
-using DeOps.Services.Mail;
-using DeOps.Services.Profile;
-using DeOps.Services.Transfer;
+using RiseOp.Services;
+using RiseOp.Services.Board;
+using RiseOp.Services.Chat;
+using RiseOp.Services.IM;
+using RiseOp.Services.Trust;
+using RiseOp.Services.Location;
+using RiseOp.Services.Mail;
+using RiseOp.Services.Profile;
+using RiseOp.Services.Transfer;
 
 
-namespace DeOps.Interface.Tools
+namespace RiseOp.Interface.Tools
 {
 	internal delegate void ShowDelegate(object pass);
 

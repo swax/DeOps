@@ -9,19 +9,19 @@ using System.Diagnostics;
 using System.Threading;
 using System.Runtime.InteropServices;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
 
-using DeOps.Services;
-using DeOps.Services.Trust;
-using DeOps.Services.IM;
-using DeOps.Services.Mail;
-using DeOps.Services.Location;
+using RiseOp.Services;
+using RiseOp.Services.Trust;
+using RiseOp.Services.IM;
+using RiseOp.Services.Mail;
+using RiseOp.Services.Location;
 
-using DeOps.Interface.TLVex;
-using DeOps.Interface.Views;
+using RiseOp.Interface.TLVex;
+using RiseOp.Interface.Views;
 
-namespace DeOps.Interface
+namespace RiseOp.Interface
 {
     internal delegate void ShowExternalHandler(ViewShell view);
     internal delegate void ShowInternalHandler(ViewShell view);
@@ -605,20 +605,20 @@ namespace DeOps.Interface
             List<ToolStripMenuItem> quickMenus = new List<ToolStripMenuItem>();
             List<ToolStripMenuItem> extMenus = new List<ToolStripMenuItem>();
 
-            foreach (OpService component in Core.ServiceMap.Values)
+            foreach (OpService service in Core.ServiceMap.Values)
             {
-                if (component is TrustService)
+                if (service is TrustService)
                     continue;
 
                 // quick
-                List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, CommandTree.Project);
+                List<MenuItemInfo> menuList = service.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, CommandTree.Project);
 
                 if (menuList != null && menuList.Count > 0)
                     foreach (MenuItemInfo info in menuList)
                         quickMenus.Add(new OpMenuItem(item.Link.DhtID, CommandTree.Project, info.Path, info));
 
                 // external
-                menuList = component.GetMenuInfo(InterfaceMenuType.External, item.Link.DhtID, CommandTree.Project);
+                menuList = service.GetMenuInfo(InterfaceMenuType.External, item.Link.DhtID, CommandTree.Project);
 
                 if (menuList != null && menuList.Count > 0)
                     foreach (MenuItemInfo info in menuList)
@@ -749,9 +749,9 @@ namespace DeOps.Interface
             CommButton.DropDownItems.Clear();
             DataButton.DropDownItems.Clear();
 
-            foreach (OpService component in Core.ServiceMap.Values)
+            foreach (OpService service in Core.ServiceMap.Values)
             {
-                List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Internal, id, project);
+                List<MenuItemInfo> menuList = service.GetMenuInfo(InterfaceMenuType.Internal, id, project);
 
                 if (menuList == null || menuList.Count == 0)
                     continue;
@@ -781,16 +781,16 @@ namespace DeOps.Interface
             // find previous component in drop down, activate click on it
             string previous = InternalView != null? InternalView.GetTitle(true) : "Chat";
 
-            if (!SelectComponent(previous))
-                SelectComponent("Chat");
+            if (!SelectService(previous))
+                SelectService("Chat");
 
             ResumeLayout();
         }
 
-        private bool SelectComponent(string component)
+        private bool SelectService(string service)
         {
             foreach (ToolStripMenuItem item in ComponentNavButton.DropDownItems)
-                if (item.Text == component)
+                if (item.Text == service)
                 {
                     item.PerformClick();
                     return true;
@@ -884,15 +884,15 @@ namespace DeOps.Interface
             if (InternalView != null)
                 ComponentNavButton.Text = InternalView.GetTitle(true);
 
-            foreach (OpService component in Core.ServiceMap.Values)
+            foreach (OpService service in Core.ServiceMap.Values)
             {
-                List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Internal, CommandTree.SelectedLink, SelectedProject);
+                List<MenuItemInfo> menuList = service.GetMenuInfo(InterfaceMenuType.Internal, CommandTree.SelectedLink, SelectedProject);
 
                 if (menuList == null || menuList.Count == 0)
                     continue;
 
                 foreach (MenuItemInfo info in menuList)
-                    ComponentNavButton.DropDownItems.Add(new ComponentNavItem(info, CommandTree.SelectedLink, SelectedProject, info.ClickEvent));
+                    ComponentNavButton.DropDownItems.Add(new ServiceNavItem(info, CommandTree.SelectedLink, SelectedProject, info.ClickEvent));
             }
             
         }
@@ -1458,9 +1458,9 @@ namespace DeOps.Interface
             ToolStripMenuItem dataItem = new ToolStripMenuItem("Data", InterfaceRes.data);
 
 
-            foreach (OpService component in Core.ServiceMap.Values)
+            foreach (OpService service in Core.ServiceMap.Values)
             {
-                List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Internal, Core.LocalDhtID, project);
+                List<MenuItemInfo> menuList = service.GetMenuInfo(InterfaceMenuType.Internal, Core.LocalDhtID, project);
 
                 if (menuList == null || menuList.Count == 0)
                     continue;
@@ -1635,12 +1635,12 @@ namespace DeOps.Interface
         }
     }
 
-    class ComponentNavItem : ToolStripMenuItem, IViewParams
+    class ServiceNavItem : ToolStripMenuItem, IViewParams
     {
         ulong DhtID;
         uint ProjectID;
 
-        internal ComponentNavItem(MenuItemInfo info, ulong id, uint project, EventHandler onClick)
+        internal ServiceNavItem(MenuItemInfo info, ulong id, uint project, EventHandler onClick)
             : base("", null, onClick)
         {
 

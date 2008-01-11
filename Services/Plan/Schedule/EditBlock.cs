@@ -6,11 +6,11 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Interface;
-using DeOps.Implementation;
+using RiseOp.Interface;
+using RiseOp.Implementation;
 
 
-namespace DeOps.Services.Plan
+namespace RiseOp.Services.Plan
 {
     internal enum BlockViewMode { New, Edit, Show };
 

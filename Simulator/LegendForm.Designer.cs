@@ -1,4 +1,4 @@
-namespace DeOps.Simulator
+namespace RiseOp.Simulator
 {
     partial class LegendForm
     {

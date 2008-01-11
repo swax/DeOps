@@ -9,14 +9,14 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
-using DeOps.Interface;
-using DeOps.Interface.TLVex;
-using DeOps.Interface.Views;
+using RiseOp.Implementation;
+using RiseOp.Interface;
+using RiseOp.Interface.TLVex;
+using RiseOp.Interface.Views;
 
-using DeOps.Services.Trust;
+using RiseOp.Services.Trust;
 
-namespace DeOps.Services.Board
+namespace RiseOp.Services.Board
 {
     internal partial class BoardView : ViewShell
     {

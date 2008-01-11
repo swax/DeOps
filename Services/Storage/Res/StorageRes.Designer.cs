@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DeOps.Services.Storage {
+namespace RiseOp.Services.Storage {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace DeOps.Services.Storage {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Services.Storage.Res.StorageRes", typeof(StorageRes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("RiseOp.Services.Storage.Res.StorageRes", typeof(StorageRes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

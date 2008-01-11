@@ -1,6 +1,6 @@
-using DeOps.Interface;
+using RiseOp.Interface;
 
-namespace DeOps.Services.Mail
+namespace RiseOp.Services.Mail
 {
     partial class ComposeMail
     {
@@ -34,7 +34,7 @@ namespace DeOps.Services.Mail
             this.ToTextBox = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.SubjectTextBox = new System.Windows.Forms.TextBox();
-            this.MessageBody = new DeOps.Interface.TextInput();
+            this.MessageBody = new RiseOp.Interface.TextInput();
             this.SendButton = new System.Windows.Forms.Button();
             this.ExitButton = new System.Windows.Forms.Button();
             this.label4 = new System.Windows.Forms.Label();

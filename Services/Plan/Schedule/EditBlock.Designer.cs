@@ -1,4 +1,4 @@
-namespace DeOps.Services.Plan
+namespace RiseOp.Services.Plan
 {
     partial class EditBlock
     {
@@ -38,7 +38,7 @@ namespace DeOps.Services.Plan
             this.label5 = new System.Windows.Forms.Label();
             this.OkButton = new System.Windows.Forms.Button();
             this.ExitButton = new System.Windows.Forms.Button();
-            this.DescriptionInput = new DeOps.Interface.TextInput();
+            this.DescriptionInput = new RiseOp.Interface.TextInput();
             this.ScopeLink = new System.Windows.Forms.LinkLabel();
             this.SuspendLayout();
             // 
@@ -202,7 +202,7 @@ namespace DeOps.Services.Plan
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label5;
-        private DeOps.Interface.TextInput DescriptionInput;
+        private RiseOp.Interface.TextInput DescriptionInput;
         private System.Windows.Forms.Button OkButton;
         private System.Windows.Forms.Button ExitButton;
         private System.Windows.Forms.LinkLabel ScopeLink;

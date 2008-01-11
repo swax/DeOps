@@ -1,16 +1,3 @@
-/********************************************************************************
-
-	De-Ops: Decentralized Operations
-	Copyright (C) 2006 John Marshall Group, Inc.
-
-	By contributing code you grant John Marshall Group an unlimited, non-exclusive
-	license to your contribution.
-
-	For support, questions, commercial use, etc...
-	E-Mail: swabby@c0re.net
-
-********************************************************************************/
-
 using System;
 using System.Security.Cryptography;
 using System.Drawing;
@@ -20,15 +7,15 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Windows.Forms;
 
-using DeOps.Services;
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Comm;
-using DeOps.Implementation.Protocol.Net;
+using RiseOp.Services;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Comm;
+using RiseOp.Implementation.Protocol.Net;
 
 
-namespace DeOps.Interface.Tools
+namespace RiseOp.Interface.Tools
 {
 	/// <summary>
 	/// Summary description for PacketsForm.
@@ -359,7 +346,7 @@ namespace DeOps.Interface.Tools
                             if (internalRoot.Name == NetworkPacket.SearchAck)
                             {
                                 SearchAck ack = SearchAck.Decode(Protocol, wrap);
-                                id = ack.Component;
+                                id = ack.Service;
                             }
 
                             if (internalRoot.Name == NetworkPacket.StoreRequest)

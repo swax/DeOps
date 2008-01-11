@@ -7,21 +7,21 @@ using System.Drawing.Drawing2D;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Services;
-using DeOps.Services.Trust;
-using DeOps.Services.Profile;
-using DeOps.Services.Mail;
-using DeOps.Services.Board;
-using DeOps.Services.Transfer;
+using RiseOp.Services;
+using RiseOp.Services.Trust;
+using RiseOp.Services.Profile;
+using RiseOp.Services.Mail;
+using RiseOp.Services.Board;
+using RiseOp.Services.Transfer;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Net;
-using DeOps.Implementation.Transport;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Implementation.Transport;
 
 
-namespace DeOps.Simulator
+namespace RiseOp.Simulator
 {
     internal partial class NetView : Form
     {
@@ -464,7 +464,7 @@ namespace DeOps.Simulator
                                     TrafficPen.Color = Legend.PicSrchAck.BackColor;
                                     buffer.DrawLine(TrafficPen, group.GetPoint(pos + controlLen), group.GetPoint(pos + controlLen + internalRoot.PacketSize - valLen));
 
-                                    TrafficPen.Color = GetComponentColor(ack.Component);
+                                    TrafficPen.Color = GetComponentColor(ack.Service);
                                     buffer.DrawLine(TrafficPen, group.GetPoint(pos + controlLen + internalRoot.PacketSize - valLen), group.GetPoint(pos + controlLen + internalRoot.PacketSize));
                                 }
 

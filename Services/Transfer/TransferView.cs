@@ -6,10 +6,10 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Interface.TLVex;
-using DeOps.Implementation.Transport;
+using RiseOp.Interface.TLVex;
+using RiseOp.Implementation.Transport;
 
-namespace DeOps.Services.Transfer
+namespace RiseOp.Services.Transfer
 {
     internal partial class TransferView : Form
     {

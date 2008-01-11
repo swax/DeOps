@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DeOps.Services.Plan.Schedule {
+namespace RiseOp.Services.Plan.Schedule {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace DeOps.Services.Plan.Schedule {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Services.Plan.Schedule.DateArrows", typeof(DateArrows).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("RiseOp.Services.Plan.Schedule.DateArrows", typeof(DateArrows).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

@@ -4,14 +4,14 @@ using System.Diagnostics;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Transport;
-using DeOps.Implementation.Protocol;
-using DeOps.Services.Trust;
-using DeOps.Services.Location;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Transport;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Services.Trust;
+using RiseOp.Services.Location;
 
 
-namespace DeOps.Services.IM
+namespace RiseOp.Services.IM
 {
     internal delegate void IM_MessageHandler(ulong dhtid, InstantMessage message);
     internal delegate void IM_StatusHandler(ulong dhtid);

@@ -1,4 +1,4 @@
-namespace DeOps.Interface
+namespace RiseOp.Interface
 {
     partial class ViewShell
     {

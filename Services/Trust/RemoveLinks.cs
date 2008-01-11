@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace DeOps.Services.Trust
+namespace RiseOp.Services.Trust
 {
     internal partial class RemoveLinks : Form
     {

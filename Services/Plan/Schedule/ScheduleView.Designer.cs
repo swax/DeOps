@@ -1,4 +1,4 @@
-namespace DeOps.Services.Plan
+namespace RiseOp.Services.Plan
 {
     partial class ScheduleView
     {
@@ -30,8 +30,8 @@ namespace DeOps.Services.Plan
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ScheduleView));
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new DeOps.Interface.TLVex.ToggleColumnHeader();
-            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader4 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader4 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             this.HoverTimer = new System.Windows.Forms.Timer(this.components);
             this.TopStrip = new System.Windows.Forms.ToolStrip();
             this.NewButton = new System.Windows.Forms.ToolStripButton();
@@ -46,11 +46,11 @@ namespace DeOps.Services.Plan
             this.SaveLink = new System.Windows.Forms.LinkLabel();
             this.LabelMinus = new System.Windows.Forms.Label();
             this.LabelPlus = new System.Windows.Forms.Label();
-            this.ScheduleSlider = new DeOps.Services.Plan.DateSlider();
+            this.ScheduleSlider = new RiseOp.Services.Plan.DateSlider();
             this.ExtendedLabel = new System.Windows.Forms.Label();
             this.RangeLabel = new System.Windows.Forms.Label();
             this.DateRange = new System.Windows.Forms.TrackBar();
-            this.PlanStructure = new DeOps.Interface.TLVex.TreeListViewEx();
+            this.PlanStructure = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.DetailsBrowser = new System.Windows.Forms.WebBrowser();
             this.TopStrip.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -281,7 +281,7 @@ namespace DeOps.Services.Plan
             toggleColumnHeader3.Image = null;
             toggleColumnHeader3.Index = 0;
             toggleColumnHeader3.Pressed = false;
-            toggleColumnHeader3.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader3.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader3.Selected = false;
             toggleColumnHeader3.Text = "Structure";
             toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -291,13 +291,13 @@ namespace DeOps.Services.Plan
             toggleColumnHeader4.Image = null;
             toggleColumnHeader4.Index = 0;
             toggleColumnHeader4.Pressed = false;
-            toggleColumnHeader4.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader4.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
             toggleColumnHeader4.Selected = false;
             toggleColumnHeader4.Text = "Items";
             toggleColumnHeader4.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader4.Visible = true;
             toggleColumnHeader4.Width = 171;
-            this.PlanStructure.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
+            this.PlanStructure.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader3,
             toggleColumnHeader4});
             this.PlanStructure.ColumnSortColor = System.Drawing.Color.Gainsboro;
@@ -374,7 +374,7 @@ namespace DeOps.Services.Plan
         internal System.Windows.Forms.Label ExtendedLabel;
         private System.Windows.Forms.Label RangeLabel;
         private System.Windows.Forms.TrackBar DateRange;
-        internal DeOps.Interface.TLVex.TreeListViewEx PlanStructure;
+        internal RiseOp.Interface.TLVex.TreeListViewEx PlanStructure;
         private System.Windows.Forms.WebBrowser DetailsBrowser;
     }
 }

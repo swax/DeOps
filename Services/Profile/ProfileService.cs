@@ -5,17 +5,17 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Net;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
 
-using DeOps.Services.Trust;
-using DeOps.Services.Location;
-using DeOps.Services.Transfer;
+using RiseOp.Services.Trust;
+using RiseOp.Services.Location;
+using RiseOp.Services.Transfer;
 
 
-namespace DeOps.Services.Profile
+namespace RiseOp.Services.Profile
 {
     internal delegate void ProfileUpdateHandler(OpProfile profile);
     

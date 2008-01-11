@@ -1,16 +1,3 @@
-/********************************************************************************
-
-	De-Ops: Decentralized Operations
-	Copyright (C) 2006 John Marshall Group, Inc.
-
-	By contributing code you grant John Marshall Group an unlimited, non-exclusive
-	license to your contribution.
-
-	For support, questions, commercial use, etc...
-	E-Mail: swabby@c0re.net
-
-********************************************************************************/
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -18,12 +5,12 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Net;
-using DeOps.Implementation.Dht;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Implementation.Dht;
 
 
-namespace DeOps.Implementation.Transport
+namespace RiseOp.Implementation.Transport
 {
 	/// <summary>
 	/// Summary description for TcpHandler.

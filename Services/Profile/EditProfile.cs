@@ -8,10 +8,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
-using DeOps.Services.Trust;
+using RiseOp.Implementation;
+using RiseOp.Services.Trust;
 
-namespace DeOps.Services.Profile
+namespace RiseOp.Services.Profile
 {
     internal partial class EditProfile : Form
     {

@@ -4,11 +4,11 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Text;
 
-using DeOps.Implementation;
-using DeOps.Services.Location;
-using DeOps.Interface.TLVex;
+using RiseOp.Implementation;
+using RiseOp.Services.Location;
+using RiseOp.Interface.TLVex;
 
-namespace DeOps.Services.Trust
+namespace RiseOp.Services.Trust
 {
     internal enum CommandTreeMode { Operation, Online };
 

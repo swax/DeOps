@@ -1,4 +1,4 @@
-namespace DeOps.Services.Plan
+namespace RiseOp.Services.Plan
 {
     partial class EditGoal
     {
@@ -33,7 +33,7 @@ namespace DeOps.Services.Plan
             this.PersonLabel = new System.Windows.Forms.Label();
             this.ExitButton = new System.Windows.Forms.Button();
             this.OkButton = new System.Windows.Forms.Button();
-            this.NotesInput = new DeOps.Interface.TextInput();
+            this.NotesInput = new RiseOp.Interface.TextInput();
             this.label5 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.Deadline = new System.Windows.Forms.DateTimePicker();
@@ -185,7 +185,7 @@ namespace DeOps.Services.Plan
         private System.Windows.Forms.Label PersonLabel;
         private System.Windows.Forms.Button ExitButton;
         private System.Windows.Forms.Button OkButton;
-        private DeOps.Interface.TextInput NotesInput;
+        private RiseOp.Interface.TextInput NotesInput;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.DateTimePicker Deadline;

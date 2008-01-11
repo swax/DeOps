@@ -5,10 +5,10 @@ using System.Windows.Forms;
 
 using Microsoft.Win32;
 
-using DeOps.Interface;
-using DeOps.Simulator;
+using RiseOp.Interface;
+using RiseOp.Simulator;
 
-namespace DeOps
+namespace RiseOp
 {
     class Startup
     {

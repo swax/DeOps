@@ -9,9 +9,9 @@ using System.Windows.Forms;
 using System.Security.Cryptography;
 using System.Xml;
 
-using DeOps.Implementation.Protocol;
+using RiseOp.Implementation.Protocol;
 
-namespace DeOps.Interface
+namespace RiseOp.Interface
 {
     internal partial class NewOpForm : Form
     {

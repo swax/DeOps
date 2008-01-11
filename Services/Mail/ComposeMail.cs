@@ -7,12 +7,12 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Implementation;
-using DeOps.Interface;
-using DeOps.Services.Trust;
+using RiseOp.Implementation;
+using RiseOp.Interface;
+using RiseOp.Services.Trust;
 
 
-namespace DeOps.Services.Mail
+namespace RiseOp.Services.Mail
 {
     internal partial class ComposeMail : ViewShell
     {

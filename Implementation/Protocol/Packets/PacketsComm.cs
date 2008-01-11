@@ -1,16 +1,3 @@
-/********************************************************************************
-
-	De-Ops: Decentralized Operations
-	Copyright (C) 2006 John Marshall Group, Inc.
-
-	By contributing code you grant John Marshall Group an unlimited, non-exclusive
-	license to your contribution.
-
-	For support, questions, commercial use, etc...
-	E-Mail: swabby@c0re.net
-
-********************************************************************************/
-
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -20,12 +7,12 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 
-using DeOps.Implementation.Transport;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Net;
+using RiseOp.Implementation.Transport;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
 
 
-namespace DeOps.Implementation.Protocol.Comm
+namespace RiseOp.Implementation.Protocol.Comm
 {
     internal class CommPacket
     {

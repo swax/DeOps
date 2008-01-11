@@ -1,4 +1,4 @@
-namespace DeOps.Services.Mail
+namespace RiseOp.Services.Mail
 {
     partial class MailView
     {
@@ -36,7 +36,7 @@ namespace DeOps.Services.Mail
             this.OutboxButton = new System.Windows.Forms.ToolStripButton();
             this.ComposeButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.MessageList = new DeOps.Interface.TLVex.ContainerListViewEx();
+            this.MessageList = new RiseOp.Interface.TLVex.ContainerListViewEx();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.MessageHeader = new System.Windows.Forms.WebBrowser();
             this.MessageBody = new System.Windows.Forms.RichTextBox();
@@ -231,7 +231,7 @@ namespace DeOps.Services.Mail
         private System.Windows.Forms.RichTextBox MessageBody;
         private System.Windows.Forms.WebBrowser MessageHeader;
         private System.Windows.Forms.ImageList ListImages;
-        private DeOps.Interface.TLVex.ContainerListViewEx MessageList;
+        private RiseOp.Interface.TLVex.ContainerListViewEx MessageList;
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;
     }
 }

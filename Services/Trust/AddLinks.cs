@@ -6,11 +6,11 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Interface.TLVex;
-using DeOps.Services.Trust;
+using RiseOp.Interface.TLVex;
+using RiseOp.Services.Trust;
 
 
-namespace DeOps.Services.Trust
+namespace RiseOp.Services.Trust
 {
     internal partial class AddLinks : Form
     {

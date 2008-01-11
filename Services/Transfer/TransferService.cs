@@ -5,13 +5,13 @@ using System.IO;
 using System.Text;
 using System.Security.Cryptography;
 
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Transport;
-using DeOps.Services.Location;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Transport;
+using RiseOp.Services.Location;
 
-namespace DeOps.Services.Transfer
+namespace RiseOp.Services.Transfer
 {
     internal delegate void EndDownloadHandler(string path, object[] args);
     internal delegate bool FileSearchHandler(ulong key, FileDetails details);

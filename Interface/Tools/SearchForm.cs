@@ -6,13 +6,13 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Services;
-using DeOps.Implementation;
-using DeOps.Implementation.Dht;
-using DeOps.Implementation.Protocol.Net;
-using DeOps.Simulator;
+using RiseOp.Services;
+using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
+using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Simulator;
 
-namespace DeOps.Interface.Tools
+namespace RiseOp.Interface.Tools
 {
     internal partial class SearchForm : Form
     {
@@ -66,7 +66,7 @@ namespace DeOps.Interface.Tools
             ListResults.Items.Clear();
             LabelResults.Text = "";
 
-            Network.Searches.Start(TargetID, "MANUAL", Network.Core.DhtServiceID, 0, null, new DeOps.Implementation.Dht.EndSearchHandler(EndManualSearch));
+            Network.Searches.Start(TargetID, "MANUAL", Network.Core.DhtServiceID, 0, null, new RiseOp.Implementation.Dht.EndSearchHandler(EndManualSearch));
         }
 
         void EndManualSearch(DhtSearch search)
