@@ -11,9 +11,9 @@ using DeOps.Implementation.Transport;
 
 namespace DeOps.Services
 {
-    internal enum InterfaceMenuType { Internal, External, Settings, Quick };
+    public enum InterfaceMenuType { Internal, External, Settings, Quick };
 
-    internal class MenuItemInfo
+    public class MenuItemInfo
     {
         internal string Path;
         internal Icon Symbol;
@@ -54,59 +54,12 @@ namespace DeOps.Services
         bool  IsExternal();
     }
 
-
-    internal class ComponentID
+     public interface OpService : IDisposable 
     {
-        internal const ushort Node     =  0;
-        internal const ushort Trust     =  1;
-        internal const ushort Location =  2;
-        internal const ushort Transfer =  3;
-        internal const ushort Profile  =  4;
-        internal const ushort IM       =  5;
-        internal const ushort Chat     =  6;
-        internal const ushort Mail     =  7;
-        internal const ushort Board    =  8;
-        internal const ushort Plan     =  9;
-        internal const ushort Storage  = 10;
+         List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project);
 
-        internal static string GetName(ushort id)
-        {
-            switch (id)
-            {
-                case Node:
-                    return "Node";
-                case Trust:
-                    return "Trust";
-                case Location:
-                    return "Location";
-                case Transfer:
-                    return "Transfer";
-                case Profile:
-                    return "Profile";
-                case IM:
-                    return "IM";
-                case Chat:
-                    return "Chat";
-                case Mail:
-                    return "Mail";
-                case Board:
-                    return "Board";
-                case Plan:
-                    return "Plan";
-                case Storage:
-                    return "Storage";
-            }
-
-            return "Unknown";
-        }
-    }
-
-    internal abstract class OpComponent
-    {
-        internal virtual List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
-        {
-            return null;
-        }
+         string Name { get; }
+         ushort ServiceID { get; }
     }
 
     internal class DataPacket

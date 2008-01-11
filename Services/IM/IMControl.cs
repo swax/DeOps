@@ -7,7 +7,7 @@ using System.Windows.Forms;
 using DeOps.Implementation;
 using DeOps.Implementation.Transport;
 using DeOps.Implementation.Protocol;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Services.Location;
 
 
@@ -16,13 +16,16 @@ namespace DeOps.Services.IM
     internal delegate void IM_MessageHandler(ulong dhtid, InstantMessage message);
     internal delegate void IM_StatusHandler(ulong dhtid);
 
-    internal class IMControl : OpComponent
+    internal class IMService : OpService
     {
+        public string Name { get { return "IM"; } }
+        public ushort ServiceID { get { return 5; } }
+
         const int SessionTimeout = 10;
 
         internal OpCore Core;
-        internal LinkControl Links;
-        internal LocationControl Locations;
+        internal TrustService Links;
+        internal LocationService Locations;
 
         internal ThreadedDictionary<ulong, IMStatus> IMMap = new ThreadedDictionary<ulong, IMStatus>();
 
@@ -30,18 +33,17 @@ namespace DeOps.Services.IM
         internal IM_StatusHandler StatusUpdate;
 
 
-        internal IMControl(OpCore core)
+        internal IMService(OpCore core)
         {
             Core = core;
             Links = core.Links;
             Locations = core.Locations;
 
             Core.LoadEvent  += new LoadHandler(Core_Load);
-            Core.ExitEvent += new ExitHandler(Core_Exit);
             Core.TimerEvent += new TimerHandler(Core_Timer);
-            
+
             Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData[ComponentID.IM] = new SessionDataHandler(Session_Data);
+            Core.RudpControl.SessionData[ServiceID, 0] = new SessionDataHandler(Session_Data);
             Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
         }
 
@@ -49,6 +51,22 @@ namespace DeOps.Services.IM
         {
             Core.Links.LinkUpdate += new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate += new LocationUpdateHandler(Location_Update);
+        }
+
+        public void Dispose()
+        {
+            if (MessageUpdate != null)
+                throw new Exception("IM Events not fin'd");
+
+            Core.LoadEvent -= new LoadHandler(Core_Load);
+            Core.TimerEvent -= new TimerHandler(Core_Timer);
+
+            Core.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
+            Core.RudpControl.SessionData.Remove(ServiceID, 0);
+            Core.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
+
+            Core.Links.LinkUpdate -= new LinkUpdateHandler(Link_Update);
+            Core.Locations.LocationUpdate -= new LocationUpdateHandler(Location_Update);
         }
 
         void Core_Timer()
@@ -73,7 +91,7 @@ namespace DeOps.Services.IM
                                 if (session != null)
                                 {
                                     status.TTL[client].Value = SessionTimeout * 2;
-                                    session.SendData(ComponentID.IM, new IMKeepAlive(), true);
+                                    session.SendData(ServiceID, 0, new IMKeepAlive(), true);
                                 }
                             }
                 }
@@ -102,22 +120,16 @@ namespace DeOps.Services.IM
             return views;
         }
 
-        void Core_Exit()
-        {
-            if (MessageUpdate != null)
-                throw new Exception("IM Events not fin'd");
-        }
-
-        internal override List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
+        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
         {
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
 
             if (menuType == InterfaceMenuType.Quick)
             {
-                if (key == Core.LocalDhtID)
+                if (user == Core.LocalDhtID)
                     return null;
 
-                if (!Core.Locations.LocationMap.SafeContainsKey(key))
+                if (!Core.Locations.LocationMap.SafeContainsKey(user))
                     return null;
 
                 menus.Add(new MenuItemInfo("Send IM", IMRes.Icon, new EventHandler(QuickMenu_View)));
@@ -296,7 +308,7 @@ namespace DeOps.Services.IM
                 // needs to be set here as well be cause we don't receive a keep alive from remote host on connect
                 status.SetTTL(session.ClientID, SessionTimeout * 2);
 
-                session.SendData(ComponentID.IM, new IMKeepAlive(), true);
+                session.SendData(ServiceID, 0, new IMKeepAlive(), true);
             }
 
             Update(status);
@@ -326,7 +338,7 @@ namespace DeOps.Services.IM
             MessageData message = new MessageData(text);
 
             foreach (RudpSession session in Core.RudpControl.GetActiveSessions(key))
-                session.SendData(ComponentID.IM, message, true);
+                session.SendData(ServiceID, 0, message, true);
         }
 
         void Session_Data(RudpSession session, byte[] data)

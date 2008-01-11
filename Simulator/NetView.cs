@@ -8,7 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 
 using DeOps.Services;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Services.Profile;
 using DeOps.Services.Mail;
 using DeOps.Services.Board;
@@ -215,6 +215,10 @@ namespace DeOps.Simulator
         {
             bool found = false;
 
+            BoardService boards = core.GetService("Board") as BoardService;
+            MailService mail = core.GetService("Mail") as MailService;
+            ProfileService profiles = core.GetService("Profile") as ProfileService;
+
             // link
             if(!found)
                 core.Links.TrustMap.LockReading(delegate()
@@ -225,29 +229,32 @@ namespace DeOps.Simulator
                 });
 
             // profile
-            if (!found)
-                core.Profiles.ProfileMap.LockReading(delegate()
+            if (!found && profiles != null)
+                profiles.ProfileMap.LockReading(delegate()
                 {
-                    foreach (OpProfile profile in core.Profiles.ProfileMap.Values)
+                    foreach (OpProfile profile in profiles.ProfileMap.Values)
                         if (Utilities.MemCompare(profile.Header.FileHash, TrackHash))
                             found = true ;
                 });
 
             // mail
-            foreach (CachedPending pending in core.Mail.PendingMap.Values)
-                if (Utilities.MemCompare(pending.Header.FileHash, TrackHash))
-                    return true;
-
-            foreach(List<CachedMail> list in core.Mail.MailMap.Values)
-                foreach(CachedMail mail in list)
-                    if (Utilities.MemCompare(mail.Header.FileHash, TrackHash))
+            if (mail != null)
+            {
+                foreach (CachedPending pending in mail.PendingMap.Values)
+                    if (Utilities.MemCompare(pending.Header.FileHash, TrackHash))
                         return true;
 
+                foreach (List<CachedMail> list in mail.MailMap.Values)
+                    foreach (CachedMail cached in list)
+                        if (Utilities.MemCompare(cached.Header.FileHash, TrackHash))
+                            return true;
+            }
+
             // board
-            if (!found)
-                core.Board.BoardMap.LockReading(delegate()
+            if (!found && boards != null)
+                boards.BoardMap.LockReading(delegate()
                 {
-                    foreach (OpBoard board in core.Board.BoardMap.Values)
+                    foreach (OpBoard board in boards.BoardMap.Values)
                         board.Posts.LockReading(delegate()
                         {
                             foreach (OpPost post in board.Posts.Values)
@@ -519,19 +526,19 @@ namespace DeOps.Simulator
         {
             switch (id)
             {
-                case ComponentID.Node:
+                case 0://ServiceID.DHT:
                     return Legend.PicNode.BackColor;
-                case ComponentID.Trust:
+                case 1://ServiceID.Trust:
                     return Legend.PicLink.BackColor;
-                case ComponentID.Location:
+                case 2://ServiceID.Location:
                     return Legend.PicLoc.BackColor;
-                case ComponentID.Transfer:
+                case 3://ServiceID.Transfer:
                     return Legend.PicTransfer.BackColor;
-                case ComponentID.Profile:
+                case 4://ServiceID.Profile:
                     return Legend.PicProfile.BackColor;
-                case ComponentID.Board:
+                case 8://ServiceID.Board:
                     return Legend.PicBoard.BackColor;
-                case ComponentID.Mail:
+                case 7: //ServiceID.Mail:
                     return Legend.PicMail.BackColor;
             }
 

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DeOps.Services.Link {
+namespace DeOps.Services.Trust {
     using System;
     
     

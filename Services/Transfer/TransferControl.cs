@@ -18,8 +18,11 @@ namespace DeOps.Services.Transfer
     internal delegate string FileRequestHandler(ulong key, FileDetails details);
 
 
-    internal class TransferControl : OpComponent
+    internal class TransferService : OpService
     {
+        public string Name { get { return "Transfer"; } }
+        public ushort ServiceID { get { return 3; } }
+
         internal OpCore Core;
 
         int ConcurrentDownloads = 5;
@@ -29,14 +32,14 @@ namespace DeOps.Services.Transfer
 
         internal Dictionary<int, FileDownload> DownloadMap = new Dictionary<int, FileDownload>();
         internal Dictionary<RudpSession, List<FileUpload>> UploadMap = new Dictionary<RudpSession, List<FileUpload>>();
-         
-        internal Dictionary<ushort, FileSearchHandler>   FileSearch  = new Dictionary<ushort, FileSearchHandler>();
-        internal Dictionary<ushort, FileRequestHandler>  FileRequest = new Dictionary<ushort, FileRequestHandler>();
+
+        internal ServiceEvent<FileSearchHandler> FileSearch = new ServiceEvent<FileSearchHandler>();
+        internal ServiceEvent<FileRequestHandler> FileRequest = new ServiceEvent<FileRequestHandler>();
 
         internal string TransferPath;
 
 
-        internal TransferControl(OpCore core)
+        internal TransferService(OpCore core)
         {
             Core = core;
             Core.Transfers = this;
@@ -44,10 +47,10 @@ namespace DeOps.Services.Transfer
             Core.LoadEvent += new LoadHandler(Core_Load);
             Core.TimerEvent += new TimerHandler(Core_Timer);
 
-            Core.OperationNet.Searches.SearchEvent[ComponentID.Transfer, 0] = new SearchRequestHandler(Search_Local);
+            Core.OperationNet.Searches.SearchEvent[ServiceID, 0] = new SearchRequestHandler(Search_Local);
 
             Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData[ComponentID.Transfer] = new SessionDataHandler(Session_Data);
+            Core.RudpControl.SessionData[ServiceID, 0] = new SessionDataHandler(Session_Data);
             Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
         }
 
@@ -56,7 +59,7 @@ namespace DeOps.Services.Transfer
             // create and clear transfer dir
             try
             {
-                TransferPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Transfer.ToString();
+                TransferPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
                 Directory.CreateDirectory(TransferPath);
 
                 string[] files = Directory.GetFiles(TransferPath);
@@ -66,6 +69,18 @@ namespace DeOps.Services.Transfer
                     catch { }
             }
             catch { }
+        }
+
+        public void Dispose()
+        {
+            Core.LoadEvent -= new LoadHandler(Core_Load);
+            Core.TimerEvent -= new TimerHandler(Core_Timer);
+
+            Core.OperationNet.Searches.SearchEvent.Remove(ServiceID, 0);
+
+            Core.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
+            Core.RudpControl.SessionData.Remove(ServiceID, 0);
+            Core.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
         }
 
         internal int StartDownload( ulong target, FileDetails details, object[] args, EndDownloadHandler endEvent)
@@ -104,7 +119,7 @@ namespace DeOps.Services.Transfer
             FileDownload target = null;
 
             foreach (FileDownload download in DownloadMap.Values)
-                if (download.Details.Component == id &&
+                if (download.Details.Service == id &&
                    download.Details.Size == size &&
                    Utilities.MemCompare(download.Details.Hash, hash))
                 {
@@ -137,7 +152,7 @@ namespace DeOps.Services.Transfer
 
                 byte[] parameters = transfer.Details.Encode(Core.Protocol);
 
-                DhtSearch search = Core.OperationNet.Searches.Start(transfer.Target, "Transfer", ComponentID.Transfer, 0, parameters, new EndSearchHandler(EndSearch));
+                DhtSearch search = Core.OperationNet.Searches.Start(transfer.Target, "Transfer", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
 
                 if (search != null)
                 {
@@ -217,13 +232,17 @@ namespace DeOps.Services.Transfer
             }
         }
 
+        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
+        {
+            return null;
+        }
 
         internal string GetStatus(ushort id, byte[] hash, long size)
         {
             FileDownload target = null;
 
             foreach (FileDownload download in DownloadMap.Values)
-                if (download.Details.Component == id &&
+                if (download.Details.Service == id &&
                    download.Details.Size == size &&
                    Utilities.MemCompare(download.Details.Hash, hash))
                 {
@@ -282,8 +301,8 @@ namespace DeOps.Services.Transfer
                 return null;
 
             // reply with loc info if a component has the file
-            if(FileSearch.ContainsKey(details.Component))
-                if (FileSearch[details.Component].Invoke(key, details))
+            if(FileSearch.Contains(details.Service, details.DataType))
+                if (FileSearch[details.Service, details.DataType].Invoke(key, details))
                 {
                     List<Byte[]> results = new List<byte[]>();
                     results.Add(Core.Locations.LocalLocation.Location.Encode(Core.Protocol));
@@ -385,7 +404,7 @@ namespace DeOps.Services.Transfer
                 download.Sessions.Add(session);
 
             TransferRequest request = new TransferRequest(download, Core.Protocol);
-            session.SendData(ComponentID.Transfer, request, true);
+            session.SendData(ServiceID, 0, request, true);
         }
 
         void Session_Data(RudpSession session, byte[] data)
@@ -418,8 +437,8 @@ namespace DeOps.Services.Transfer
             // ask component for path to file
             string path = null;
 
-            if (FileRequest.ContainsKey(details.Component))
-                path = FileRequest[details.Component].Invoke(request.Target, details);
+            if (FileRequest.Contains(details.Service, details.DataType))
+                path = FileRequest[details.Service, details.DataType].Invoke(request.Target, details);
 
 
             // build ack
@@ -451,7 +470,7 @@ namespace DeOps.Services.Transfer
             }
             
             // send ack
-            session.SendData(ComponentID.Transfer, ack, true);
+            session.SendData(ServiceID, 0, ack, true);
 
 
             OnMoreData(session);
@@ -491,7 +510,7 @@ namespace DeOps.Services.Transfer
 
                         upload.CheckDone();
 
-                        if (!session.SendData(ComponentID.Transfer, data, false))
+                        if (!session.SendData(ServiceID, 0, data, false))
                             return; // no room in comm buffer for more sends
                     }
                 }

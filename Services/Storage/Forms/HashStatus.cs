@@ -12,9 +12,9 @@ namespace DeOps.Services.Storage
 {
     internal partial class HashStatus : Form
     {
-        StorageControl Storages;
+        StorageService Storages;
 
-        internal HashStatus(StorageControl storages)
+        internal HashStatus(StorageService storages)
         {
             InitializeComponent();
 

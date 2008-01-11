@@ -17,12 +17,14 @@ namespace DeOps.Services.Transfer
 
     internal class FileDetails : G2Packet
     {
-        const byte Packet_Component = 0x10;
-        const byte Packet_Hash  = 0x20;
-        const byte Packet_Size  = 0x30;
-        const byte Packet_Extra = 0x40;
+        const byte Packet_Service = 0x10;
+        const byte Packet_DataType = 0x20;
+        const byte Packet_Hash  = 0x30;
+        const byte Packet_Size  = 0x40;
+        const byte Packet_Extra = 0x50;
 
-        internal ushort Component;
+        internal ushort Service;
+        internal ushort DataType;
         internal byte[] Hash;
         internal long   Size;
         internal byte[] Extra;
@@ -32,9 +34,10 @@ namespace DeOps.Services.Transfer
         {
         }
 
-        internal FileDetails(ushort component, byte[] hash, long size, byte[] extra)
+        internal FileDetails(ushort service, ushort datatype, byte[] hash, long size, byte[] extra)
         {
-            Component = component;
+            Service = service;
+            DataType = datatype;
             Hash = hash;
             Size = size;
             Extra = extra;
@@ -47,7 +50,8 @@ namespace DeOps.Services.Transfer
             if (obj == null)
                 return false;
 
-            if (compare.Component == Component &&
+            if (compare.Service == Service &&
+                compare.DataType == DataType &&
                 Utilities.MemCompare(compare.Hash, Hash) &&
                 compare.Size == Size &&
                 Utilities.MemCompare(compare.Extra, Extra))
@@ -67,7 +71,8 @@ namespace DeOps.Services.Transfer
             {
                 G2Frame packet = protocol.WritePacket(null, TransferPacket.Params, null);
 
-                protocol.WritePacket(packet, Packet_Component, BitConverter.GetBytes(Component));
+                protocol.WritePacket(packet, Packet_Service, BitConverter.GetBytes(Service));
+                protocol.WritePacket(packet, Packet_DataType, BitConverter.GetBytes(DataType));
                 protocol.WritePacket(packet, Packet_Hash, Hash);
                 protocol.WritePacket(packet, Packet_Size, BitConverter.GetBytes(Size));
                 protocol.WritePacket(packet, Packet_Extra, Extra);
@@ -101,8 +106,12 @@ namespace DeOps.Services.Transfer
 
                 switch (child.Name)
                 {
-                    case Packet_Component:
-                        packet.Component = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                    case Packet_Service:
+                        packet.Service = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_DataType:
+                        packet.DataType = BitConverter.ToUInt16(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Hash:

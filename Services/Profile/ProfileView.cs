@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Implementation;
 using DeOps.Implementation.Protocol;
 using DeOps.Interface;
@@ -19,8 +19,8 @@ namespace DeOps.Services.Profile
     internal partial class ProfileView : ViewShell
     {
         OpCore Core;
-        ProfileControl Profiles;
-        LinkControl Links;
+        ProfileService Profiles;
+        TrustService Links;
 
         ulong CurrentDhtID;
         internal uint ProjectID;
@@ -30,7 +30,7 @@ namespace DeOps.Services.Profile
 
 
 
-        internal ProfileView(ProfileControl profile, ulong id, uint project)
+        internal ProfileView(ProfileService profile, ulong id, uint project)
         {
             InitializeComponent();
 
@@ -172,7 +172,7 @@ namespace DeOps.Services.Profile
                     File.Delete(path);
             }
 
-            string template = LoadProfile(Core, profile, tempPath, TextFields, FileFields);
+            string template = LoadProfile(Profiles, profile, tempPath, TextFields, FileFields);
 
             if (template == null)
             {
@@ -189,7 +189,7 @@ namespace DeOps.Services.Profile
                         </html>";
             }
 
-            string html = FleshTemplate(Core, profile.DhtID, ProjectID, template, TextFields, FileFields);
+            string html = FleshTemplate(Profiles, profile.DhtID, ProjectID, template, TextFields, FileFields);
 
             // prevents clicking sound when browser navigates
             if (!Browser.DocumentText.Equals(html))
@@ -200,7 +200,7 @@ namespace DeOps.Services.Profile
             }
         }
 
-        private static string LoadProfile(OpCore core, OpProfile profile, string tempPath, Dictionary<string, string> textFields, Dictionary<string, string> fileFields)
+        private static string LoadProfile(ProfileService service, OpProfile profile, string tempPath, Dictionary<string, string> textFields, Dictionary<string, string> fileFields)
         {
             string template = null;
 
@@ -210,11 +210,11 @@ namespace DeOps.Services.Profile
                 fileFields.Clear();
            
             if (!profile.Loaded)
-                core.Profiles.LoadProfile(profile.DhtID);
+                service.LoadProfile(profile.DhtID);
             
             try
-            { 
-                FileStream stream = new FileStream(core.Profiles.GetFilePath(profile.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
+            {
+                FileStream stream = new FileStream(service.GetFilePath(profile.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
                 CryptoStream crypto = new CryptoStream(stream, profile.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                 int buffSize = 4096;
@@ -259,15 +259,15 @@ namespace DeOps.Services.Profile
 
                             if (packet.Root.Name == ProfilePacket.Field)
                             {
-                                ProfileField field = ProfileField.Decode(core.Protocol, packet.Root);
+                                ProfileField field = ProfileField.Decode(service.Core.Protocol, packet.Root);
 
                                 if (field.Value == null)
                                     continue;
 
                                 if (field.FieldType == ProfileFieldType.Text)
-                                    textFields[field.Name] = core.Protocol.UTF.GetString(field.Value);
+                                    textFields[field.Name] = service.Core.Protocol.UTF.GetString(field.Value);
                                 else if (field.FieldType == ProfileFieldType.File && fileFields != null)
-                                    fileFields[field.Name] = core.Protocol.UTF.GetString(field.Value);
+                                    fileFields[field.Name] = service.Core.Protocol.UTF.GetString(field.Value);
                             }
                         }
                     }
@@ -318,12 +318,12 @@ namespace DeOps.Services.Profile
             return template;
         }
 
-        internal static string FleshTemplate(OpCore core, ulong id, uint project, string template, Dictionary<string, string> textFields, Dictionary<string, string> fileFields)
+        internal static string FleshTemplate(ProfileService service, ulong id, uint project, string template, Dictionary<string, string> textFields, Dictionary<string, string> fileFields)
         {
             string final = template;
 
             // get link
-            OpLink link = core.Links.GetLink(id, project) ;
+            OpLink link = service.Core.Links.GetLink(id, project);
 
             if (link == null)
                 return "";
@@ -371,7 +371,7 @@ namespace DeOps.Services.Profile
                     // load default photo if none in file
                     else if (parts[0] == "file" && fileFields != null && parts[1] == "Photo")
                     {
-                        string path = core.Profiles.ProfilePath + Path.DirectorySeparatorChar + "0";
+                        string path = service.ProfilePath + Path.DirectorySeparatorChar + "0";
 
                         // create if needed, clear of pre-existing data
                         if (!Directory.Exists(path))
@@ -394,7 +394,7 @@ namespace DeOps.Services.Profile
                         tagfilled = true;
 
                         if (parts[1] == "name")
-                            final = final.Replace(fulltag, core.Links.GetName(id));
+                            final = final.Replace(fulltag, service.Core.Links.GetName(id));
 
                         else if (parts[1] == "title")
                             final = final.Replace(fulltag, link.Title);
@@ -407,7 +407,7 @@ namespace DeOps.Services.Profile
                     {
                         if (parts[1] == "start")
                         {
-                            string motd = FleshMotd(core, template, link.DhtID, project);
+                            string motd = FleshMotd(service, template, link.DhtID, project);
 
                             int startMotd = final.IndexOf("<?motd:start?>");
                             int endMotd = final.IndexOf("<?motd:end?>");
@@ -434,7 +434,7 @@ namespace DeOps.Services.Profile
             return final;
         }
 
-        private static string FleshMotd(OpCore core, string template, ulong id, uint project)
+        private static string FleshMotd(ProfileService service, string template, ulong id, uint project)
         {
             // extract motd template
             string startTag = "<?motd:start?>";
@@ -451,7 +451,7 @@ namespace DeOps.Services.Profile
             // get links in chain up
             List<ulong> uplinks = new List<ulong>();
             uplinks.Add(id);
-            uplinks.AddRange( core.Links.GetUplinkIDs(id, project));     
+            uplinks.AddRange(service.Core.Links.GetUplinkIDs(id, project));     
             uplinks.Reverse();
 
             // build cascading motds
@@ -459,13 +459,13 @@ namespace DeOps.Services.Profile
 
             foreach (ulong uplink in uplinks)
             {
-                OpProfile upperProfile = core.Profiles.GetProfile(uplink);
+                OpProfile upperProfile = service.GetProfile(uplink);
 
                 if (upperProfile != null)
                 {
                     Dictionary<string, string> textFields = new Dictionary<string, string>();
 
-                    LoadProfile(core, upperProfile, null, textFields, null);
+                    LoadProfile(service, upperProfile, null, textFields, null);
 
                     string motdTag = "MOTD-" + project.ToString();
                     if(!textFields.ContainsKey(motdTag))
@@ -474,7 +474,7 @@ namespace DeOps.Services.Profile
                     textFields["MOTD"] = textFields[motdTag];
 
                     string currentMotd = motdTemplate;
-                    currentMotd = FleshTemplate(core, uplink, project, currentMotd, textFields, null);
+                    currentMotd = FleshTemplate(service, uplink, project, currentMotd, textFields, null);
 
                     if (finalMotd == "")
                         finalMotd = currentMotd;

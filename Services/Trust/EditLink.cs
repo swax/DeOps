@@ -11,12 +11,12 @@ using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol.Net;
 
 
-namespace DeOps.Services.Link
+namespace DeOps.Services.Trust
 {
     internal partial class EditLink : Form
     {
         OpCore Core;
-        LinkControl Links;
+        TrustService Links;
 
         uint ProjectID;
 
@@ -30,8 +30,8 @@ namespace DeOps.Services.Link
 
             ProjectID = id;
 
-            AwayCheckBox.Checked = Core.Away;
-            AwayMessage.Enabled = Core.Away;
+            AwayCheckBox.Checked = Core.Locations.LocalAway;
+            AwayMessage.Enabled = Core.Locations.LocalAway;
             AwayMessage.Text = Core.User.Settings.AwayMessage;
         }
 
@@ -62,7 +62,7 @@ namespace DeOps.Services.Link
 
             Links.SaveLocal();
 
-            Core.Away = AwayCheckBox.Checked;
+            Core.Locations.LocalAway = AwayCheckBox.Checked;
 
             if (LocationBox.Text != Core.User.Settings.Location || AwayMessage.Text != Core.User.Settings.AwayMessage)
             {

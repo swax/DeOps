@@ -21,7 +21,7 @@ namespace DeOps.Services.Storage
         internal List<LockError> NewErrors = new List<LockError>();
 
         StorageView ParentView;
-        internal StorageControl Storages;
+        internal StorageService Storages;
 
         Dictionary<string, int> IconMap = new Dictionary<string, int>();
 

@@ -8,14 +8,14 @@ using DeOps.Implementation;
 using DeOps.Services.Location;
 using DeOps.Interface.TLVex;
 
-namespace DeOps.Services.Link
+namespace DeOps.Services.Trust
 {
     internal enum CommandTreeMode { Operation, Online };
 
     class LinkTree : TreeListViewEx 
     {
         internal OpCore Core;
-        internal LinkControl Links;
+        internal TrustService Links;
 
         internal LabelNode ProjectNode;
         internal LabelNode UnlinkedNode;
@@ -41,7 +41,7 @@ namespace DeOps.Services.Link
             HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
         }
 
-        internal void Init(LinkControl links)
+        internal void Init(TrustService links)
         {
             FullRowSelect = false;
 
@@ -798,8 +798,8 @@ namespace DeOps.Services.Link
     internal class LinkNode : TreeListNode
     {
         internal OpLink Link;
-        internal LinkControl Links;
-        internal LocationControl Locations;
+        internal TrustService Links;
+        internal LocationService Locations;
 
         internal bool AddSubs;
         internal LabelNode Section;

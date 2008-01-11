@@ -11,7 +11,7 @@ using DeOps.Implementation;
 using DeOps.Interface;
 using DeOps.Interface.Views;
 using DeOps.Interface.TLVex;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 
 
 namespace DeOps.Services.Plan
@@ -20,8 +20,8 @@ namespace DeOps.Services.Plan
     {
         internal GoalsView View;
         internal OpCore Core;
-        internal PlanControl Plans;
-        internal LinkControl Links;
+        internal PlanService Plans;
+        internal TrustService Links;
 
         PlanGoal Head;
         PlanGoal Selected;
@@ -37,7 +37,7 @@ namespace DeOps.Services.Plan
         {
             View = view;
             Core = View.Core;
-            Plans = Core.Plans;
+            Plans = view.Plans;
             Links = Core.Links;
             
             GoalTree.NodeExpanding += new EventHandler(GoalTree_NodeExpanding);
@@ -296,7 +296,7 @@ namespace DeOps.Services.Plan
             goal.BranchUp = Selected.BranchDown;
             goal.BranchDown = Core.RndGen.Next();
 
-            EditGoal form = new EditGoal(EditGoalMode.Delgate, Core, goal);
+            EditGoal form = new EditGoal(EditGoalMode.Delgate, View, goal);
 
             if (form.ShowDialog(this) == DialogResult.OK)
                 View.ChangesMade();
@@ -452,7 +452,7 @@ namespace DeOps.Services.Plan
             if (item == null)
                 return;
 
-            EditGoal form = new EditGoal(EditGoalMode.Edit, Core, item.Goal);
+            EditGoal form = new EditGoal(EditGoalMode.Edit, View, item.Goal);
 
             if (form.ShowDialog(this) == DialogResult.OK)
                 View.ChangesMade();
@@ -510,7 +510,7 @@ namespace DeOps.Services.Plan
             if (item == null)
                 return;
 
-            EditGoal form = new EditGoal(EditGoalMode.View, Core, item.Goal);
+            EditGoal form = new EditGoal(EditGoalMode.View, View, item.Goal);
             form.ShowDialog(this);
         }
 
@@ -909,7 +909,7 @@ namespace DeOps.Services.Plan
             bool owned  = IsOwned(node);
             EditGoalMode editMode = owned ? EditGoalMode.Edit : EditGoalMode.View;
 
-            EditGoal form = new EditGoal(editMode, Core, node.Goal);
+            EditGoal form = new EditGoal(editMode, View, node.Goal);
 
             if (form.ShowDialog(this) == DialogResult.OK)
                 if (owned)

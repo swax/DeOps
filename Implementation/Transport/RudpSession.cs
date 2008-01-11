@@ -449,9 +449,9 @@ namespace DeOps.Implementation.Transport
             UpdateStatus(SessionStatus.Active);
 		}
 
-        internal bool SendData(ushort component, G2Packet packet, bool expedite)
+        internal bool SendData(ushort service, ushort datatype, G2Packet packet, bool expedite)
         {
-            CommData data = new CommData(component, packet.Encode(Core.Protocol));
+            CommData data = new CommData(service, datatype, packet.Encode(Core.Protocol));
 
             return SendPacket(data, expedite);
         }
@@ -463,8 +463,8 @@ namespace DeOps.Implementation.Transport
             CommData data = CommData.Decode(Core.Protocol, embeddedPacket);
 
             if (data != null)
-                if (Core.RudpControl.SessionData.ContainsKey(data.Component))
-                    Core.RudpControl.SessionData[data.Component].Invoke(this, data.Data);
+                if (Core.RudpControl.SessionData.Contains(data.Service, data.DataType))
+                    Core.RudpControl.SessionData[data.Service, data.DataType].Invoke(this, data.Data);
         }
 
 		internal void Send_Close(string reason)

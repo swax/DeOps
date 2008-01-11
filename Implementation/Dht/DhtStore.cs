@@ -47,7 +47,7 @@ namespace DeOps.Implementation.Dht
 
             string type = "Publish " + service.ToString();
 
-            DhtSearch search = Network.Searches.Start(target, type, ComponentID.Node, 0, null, new EndSearchHandler(EndPublishSearch));
+            DhtSearch search = Network.Searches.Start(target, type, service, datatype, data, new EndSearchHandler(EndPublishSearch));
             
             if(search != null)
                 search.Carry = new DataReq(null, target, service, datatype, data);

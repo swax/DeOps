@@ -13,7 +13,7 @@ namespace DeOps.Services.Profile
 {
     internal partial class PreviewTemplate : Form
     {
-        OpCore Core;
+        ProfileService Profiles;
         EditProfile EditForm;
         string Html;
 
@@ -21,14 +21,14 @@ namespace DeOps.Services.Profile
         {
             InitializeComponent();
 
-            Core = edit.Core;
+            Profiles = edit.Profiles;
             EditForm = edit;
             Html = html;
         }
 
         private void PreviewTemplate_Load(object sender, EventArgs e)
         {
-            Browser.DocumentText = ProfileView.FleshTemplate(Core, Core.LocalDhtID, 0, Html, EditForm.TextFields, EditForm.FileFields);
+            Browser.DocumentText = ProfileView.FleshTemplate(Profiles, Profiles.Core.LocalDhtID, 0, Html, EditForm.TextFields, EditForm.FileFields);
         }
     }
 }

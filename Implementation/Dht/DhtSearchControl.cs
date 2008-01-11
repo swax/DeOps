@@ -108,7 +108,7 @@ namespace DeOps.Implementation.Dht
             // transfer componenent does its own duplicate checks
             // also there can exist multiple transfers with with same trar
 
-            if (service != Services.ComponentID.Transfer) 
+            if (service != Core.Transfers.ServiceID) 
             {
                 foreach (DhtSearch pending in Pending)
                     if (pending.TargetID == key && pending.Service == service && Utilities.MemCompare(parameters, pending.Parameters))

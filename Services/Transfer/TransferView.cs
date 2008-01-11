@@ -13,10 +13,10 @@ namespace DeOps.Services.Transfer
 {
     internal partial class TransferView : Form
     {
-        TransferControl Transfers;
+        TransferService Transfers;
 
 
-        internal TransferView(TransferControl transfers)
+        internal TransferView(TransferService transfers)
         {
             InitializeComponent();
 
@@ -124,7 +124,7 @@ namespace DeOps.Services.Transfer
         {
             // who component  hash  completed/total sources searching
             string status = Who + ",  " +
-                ComponentID.GetName(Download.Details.Component) + ",  " +
+                Download.Details.Service.ToString() + ",  " +
                 Utilities.BytestoHex(Download.Details.Hash).Substring(0, 6).ToUpper() + ",  " +
                 Utilities.CommaIze(Download.FilePos.ToString()) + " / " + Utilities.CommaIze(Download.Details.Size.ToString()) + "   ";
 
@@ -202,7 +202,7 @@ namespace DeOps.Services.Transfer
         {
             // who  component  hash  completed/total  session.status 
             string status = Upload.Session.Name + ",  " +
-                ComponentID.GetName(Upload.Details.Component) + ",  " +
+                Upload.Details.Service.ToString() + ",  " +
                 Utilities.BytestoHex(Upload.Details.Hash).Substring(0, 6).ToUpper() + ",  " +
                 Utilities.CommaIze(Upload.FilePos.ToString()) + " / " + Utilities.CommaIze(Upload.Details.Size.ToString()) + "   " +
                 Upload.Session.Status.ToString() + "   ";

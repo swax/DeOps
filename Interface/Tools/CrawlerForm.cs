@@ -312,7 +312,7 @@ namespace DeOps.Interface.Tools
 
 				if(node.LookupContacts && !node.Searched)
 				{
-                    Network.Searches.SendUdpRequest(node.Contact.ToDhtAddress(), node.Contact.DhtID + 1, 0, ComponentID.Node, 0, null);
+                    Network.Searches.SendUdpRequest(node.Contact.ToDhtAddress(), node.Contact.DhtID + 1, 0, Network.Core.DhtServiceID, 0, null);
 
 					node.Searched = true;
 					sendPackets--;

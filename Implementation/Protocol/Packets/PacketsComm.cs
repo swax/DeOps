@@ -462,10 +462,12 @@ namespace DeOps.Implementation.Protocol.Comm
 
     internal class CommData : G2Packet
     {
-        const byte Packet_Component = 0x10;
-        const byte Packet_Data = 0x20;
+        const byte Packet_Service = 0x10;
+        const byte Packet_DataType = 0x20;
+        const byte Packet_Data = 0x30;
 
-        internal ushort Component;
+        internal ushort Service;
+        internal ushort DataType;
         internal byte[] Data;
 
 
@@ -473,9 +475,10 @@ namespace DeOps.Implementation.Protocol.Comm
         {
         }
 
-        internal CommData(ushort id, byte[] data)
+        internal CommData(ushort id, ushort type, byte[] data)
         {
-            Component = id;
+            Service = id;
+            DataType = type;
             Data = data;
         }
 
@@ -485,7 +488,8 @@ namespace DeOps.Implementation.Protocol.Comm
             {
                 G2Frame packet = protocol.WritePacket(null, CommPacket.Data, null);
 
-                protocol.WritePacket(packet, Packet_Component, BitConverter.GetBytes(Component));
+                protocol.WritePacket(packet, Packet_Service, BitConverter.GetBytes(Service));
+                protocol.WritePacket(packet, Packet_DataType, BitConverter.GetBytes(DataType)); 
                 protocol.WritePacket(packet, Packet_Data, Data);
 
                 return protocol.WriteFinish();
@@ -510,8 +514,12 @@ namespace DeOps.Implementation.Protocol.Comm
 
                 switch (child.Name)
                 {
-                    case Packet_Component:
-                        data.Component = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                    case Packet_Service:
+                        data.Service = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_DataType:
+                        data.DataType = BitConverter.ToUInt16(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Data:

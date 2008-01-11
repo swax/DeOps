@@ -17,7 +17,7 @@ namespace DeOps.Services.Storage
     {
         OpCore Core;
         G2Protocol Protocol;
-        StorageControl Storages;
+        StorageService Storages;
 
         internal uint ProjectID;
 
@@ -31,7 +31,7 @@ namespace DeOps.Services.Storage
         internal string RootPath;
 
 
-        internal WorkingStorage(StorageControl storages, uint project)
+        internal WorkingStorage(StorageService storages, uint project)
         {
             Storages = storages;
             Core = Storages.Core;

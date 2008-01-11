@@ -16,7 +16,7 @@ using DeOps.Interface.Views;
 
 using DeOps.Implementation;
 using DeOps.Implementation.Protocol;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 
 
 namespace DeOps.Services.Storage
@@ -24,8 +24,8 @@ namespace DeOps.Services.Storage
     internal partial class StorageView : ViewShell
     {
         internal OpCore Core;
-        internal StorageControl Storages;
-        internal LinkControl Links;
+        internal StorageService Storages;
+        internal TrustService Links;
 
         internal ulong DhtID;
         internal uint ProjectID;
@@ -63,7 +63,7 @@ namespace DeOps.Services.Storage
         ContainerListViewEx LastSelectedView;
 
 
-        internal StorageView(StorageControl storages, ulong id, uint project)
+        internal StorageView(StorageService storages, ulong id, uint project)
         {
             InitializeComponent();
             

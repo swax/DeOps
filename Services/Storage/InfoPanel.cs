@@ -20,7 +20,7 @@ namespace DeOps.Services.Storage
     public partial class InfoPanel : UserControl
     {
         internal StorageView ParentView;
-        internal StorageControl Storages;
+        internal StorageService Storages;
 
         internal bool DisplayActivated;
 
@@ -1296,7 +1296,7 @@ namespace DeOps.Services.Storage
 
             if (parts[1] == "dlcancel")
             {
-                ParentView.Core.Transfers.CancelDownload(ComponentID.Storage, file.Hash, file.Size);
+                ParentView.Core.Transfers.CancelDownload(Storages.ServiceID, file.Hash, file.Size);
                 transferChange = true;
             }
 

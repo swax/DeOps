@@ -14,7 +14,7 @@ namespace DeOps.Services.Board
     internal partial class PostMessage : ViewShell
     {
         OpCore Core;
-        BoardControl Board;
+        BoardService Board;
 
         ulong DhtID;
         uint ProjectID;
@@ -28,7 +28,7 @@ namespace DeOps.Services.Board
         bool MessagePosted;
 
 
-        internal PostMessage(BoardControl board, ulong id, uint project)
+        internal PostMessage(BoardService board, ulong id, uint project)
         {
             InitializeComponent();
 

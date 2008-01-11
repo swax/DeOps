@@ -26,7 +26,7 @@ using System.Runtime.InteropServices;
 using DeOps.Services;
 using DeOps.Services.Chat;
 using DeOps.Services.IM;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Services.Location;
 using DeOps.Services.Mail;
 using DeOps.Services.Profile;
@@ -59,6 +59,9 @@ namespace DeOps.Implementation
     internal delegate void TimerHandler();
     internal delegate void NewsUpdateHandler(NewsItemInfo info);
 
+    internal delegate List<MenuItemInfo> MenuRequestHandler(InterfaceMenuType menuType, ulong key, uint proj);
+    
+
     [DebuggerDisplay("{User.Settings.ScreenName}")]
 	internal class OpCore
 	{
@@ -73,17 +76,14 @@ namespace DeOps.Implementation
         internal DhtNetwork  OperationNet;
         internal RudpHandler RudpControl;
 
-        // components
-        internal LinkControl     Links;
-        internal LocationControl Locations;
-        internal ProfileControl  Profiles;
-        internal TransferControl Transfers;
-        internal MailControl     Mail;
-        internal BoardControl    Board;
-        internal PlanControl     Plans;
-        internal StorageControl  Storages;
+        // services
+        internal TrustService     Links;
+        internal LocationService Locations;
+        internal TransferService Transfers; 
 
-        internal Dictionary<ushort, OpComponent> Components = new Dictionary<ushort, OpComponent>();
+
+        internal ushort DhtServiceID = 0;
+        internal Dictionary<ushort, OpService> ServiceMap = new Dictionary<ushort, OpService>();
 
 
 		// properties
@@ -95,25 +95,24 @@ namespace DeOps.Implementation
         internal DateTime     NextSaveCache;
         internal ulong        OpID;
         internal bool         Loading;
-        internal bool         Away;
 
         internal Dictionary<ulong, byte[]> KeyMap = new Dictionary<ulong, byte[]>();
 
         internal Dictionary<ushort, RudpSocket> CommMap = new Dictionary<ushort, RudpSocket>();
 
+
+        // events
         internal event LoadHandler  LoadEvent;
-        internal event ExitHandler  ExitEvent;
         internal event TimerHandler TimerEvent;
         internal event NewsUpdateHandler NewsUpdate;
 
-		//[DllImport("USER32.DLL", SetLastError=true)]
-		//private static extern bool GetLastInputInfo(ref LastInputInfo ii);
 
         // interfaces
         internal MainForm      GuiMain;
         internal TrayLock      GuiTray;
         internal ConsoleForm   GuiConsole;
         internal InternalsForm GuiInternal;
+
 
         // logs
         internal bool PauseLog;
@@ -172,23 +171,27 @@ namespace DeOps.Implementation
 
             // delete data dirs if frsh start indicated
             if (Sim != null && Sim.Internet.FreshStart)
-                foreach (ushort id in Components.Keys)
+                foreach (ushort id in ServiceMap.Keys)
                 {
                     string dirpath = User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + id.ToString();
                     if (Directory.Exists(dirpath))
                         Directory.Delete(dirpath, true);
                 }
+            
+            // permanent
+            AddService(new TrustService(this));
+            AddService(new LocationService(this));
+            AddService(new TransferService(this));
 
-            Components[ComponentID.Trust]     = new LinkControl(this);
-            Components[ComponentID.Location] = new LocationControl(this);
-            Components[ComponentID.Transfer] = new TransferControl(this);
-            Components[ComponentID.Profile]  = new ProfileControl(this);
-            Components[ComponentID.IM]       = new IMControl(this);
-            Components[ComponentID.Chat]     = new ChatControl(this);
-            Components[ComponentID.Mail]     = new MailControl(this);
-            Components[ComponentID.Board]    = new BoardControl(this);
-            Components[ComponentID.Plan]     = new PlanControl(this);
-            Components[ComponentID.Storage]  = new StorageControl(this);
+            // optional
+            AddService(new ProfileService(this));
+            AddService(new IMService(this));
+            AddService(new ChatService(this));
+            AddService(new MailService(this));
+            AddService(new BoardService(this));
+            AddService(new PlanService(this));
+            AddService(new StorageService(this));
+
 
             User.Load(LoadModeType.Cache);
 
@@ -205,6 +208,44 @@ namespace DeOps.Implementation
             
             if (Sim == null || Sim.Internet.TestCoreThread)
                 CoreThread.Start();
+        }
+
+        private void AddService(OpService service)
+        {
+            if (ServiceMap.ContainsKey(service.ServiceID))
+                throw new Exception("Duplicate Service Added");
+
+            ServiceMap[service.ServiceID] = service;
+        }
+
+        private void RemoveService(ushort id)
+        {
+            if (!ServiceMap.ContainsKey(id))
+                return;
+
+            ServiceMap[id].Dispose();
+
+            ServiceMap.Remove(id);
+        }
+
+        internal string GetServiceName(ushort id)
+        {
+            if (id == 0)
+                return "DHT";
+
+            if (ServiceMap.ContainsKey(id))
+                return ServiceMap[id].Name;
+
+            return "Unknown";
+        }
+
+        internal OpService GetService(string name)
+        {
+            foreach (OpService service in ServiceMap.Values)
+                if (service.Name == name)
+                    return service;
+
+            return null;
         }
 
         void RunCore()
@@ -635,8 +676,10 @@ namespace DeOps.Implementation
                 CoreThread = null;
             }
 
-            if(ExitEvent != null)
-                ExitEvent.Invoke();
+            foreach (OpService service in ServiceMap.Values)
+                service.Dispose();
+
+            ServiceMap.Clear();
         }
 
 
@@ -652,9 +695,14 @@ namespace DeOps.Implementation
                     return false;
 
                 // in sim if not using core thread, then core thread is the sim thread
-                if(Sim != null && !Sim.Internet.TestCoreThread)
-                    return Sim.Internet.RunThread.ManagedThreadId != Thread.CurrentThread.ManagedThreadId;
+                if (Sim != null)
+                {
+                    if (Sim.Internet.RunThread == null) // core thread not started, run funtinos directly through
+                        return false;
 
+                    if (!Sim.Internet.TestCoreThread)
+                        return Sim.Internet.RunThread.ManagedThreadId != Thread.CurrentThread.ManagedThreadId;
+                }
 
                 return CoreThread.ManagedThreadId != Thread.CurrentThread.ManagedThreadId ;
             }
@@ -697,6 +745,8 @@ namespace DeOps.Implementation
 
             return function;
         }
+
+
     }
 
     internal class AsyncCoreFunction

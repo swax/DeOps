@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace DeOps.Services.Link
+namespace DeOps.Services.Trust
 {
     internal partial class RemoveLinks : Form
     {
@@ -14,7 +14,7 @@ namespace DeOps.Services.Link
 
         internal List<ulong> RemoveIDs = new List<ulong>();
 
-        internal RemoveLinks(LinkControl links, List<ulong> ids)
+        internal RemoveLinks(TrustService links, List<ulong> ids)
         {
             InitializeComponent();
 

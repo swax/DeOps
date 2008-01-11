@@ -1,7 +1,14 @@
 
+rename files
+change name to RiseOp
+test
+
+
+move profile, storage, trust, mail pending over to fileAssist
 investigate flexible 'smart byte'
 focus
-
+allow all components to put a little 'lastest version' tag in location posts, hook into events, if focused then d/l
+	link / profile
 
 component
 	**dont enforce default published empty files for storage, plan, mail boxes
@@ -19,23 +26,9 @@ component
 	board, link, location, mail, plan, profile, storage
 		try to make common storage only way to store shit on network, so safer for 3rd parties
 	
-change over class names control -> service
+
 board - All/Higher/Lower Posts, New Post
 live command tree/chat
-
-
-spring release
-	crits
-	multisource downloading - use torrent
-	store caching
-	invitations
-	website, auto-update
-	licensing, installer
-	compartmentalization
-	modifyable encryption
-	mobile - proxy mode can be set and tested in normal version
-	mono
-	open source compensation model using credits
 
 Testing
 	more accurate replication - link/location/profile/mail
@@ -45,6 +38,21 @@ Testing
 	link.getlocs / getlocsbelow
 	link/plan research timer
 	38 crits
+
+
+spring release
+	crits
+	multisource downloading - use torrent
+	store caching
+	proxying
+	invitations
+	website, auto-update
+	licensing, installer
+	compartmentalization
+	modifyable encryption
+	mobile - proxy mode can be set and tested in normal version
+	mono
+	open source compensation model using credits
 
 
 Interface
@@ -104,7 +112,10 @@ Components
 		profile?
 		ensure name resoluton works, chat/IM updated when link loaded
 		
-	Link
+	Trust
+		Higher determines lower's title/Name upon trust?
+		Show that name/title so that can't be forged by someone changing their name and re-linking
+		
 		components
 			links   - getlocs .. check cache functions
 			chat    - high level chat is others in loop,
@@ -513,7 +524,15 @@ Future
 			branch version same as level?
 			
 		'set permissions dialog' that all components can implement, user can click 'permissions..' button to set
-		
+	
+	licensing
+		deops looks for signed license file for proof
+		passes license file to others on network as proof that local node is licensed
+		license itself is signed data like name, address, phone, date, customer ID, signed by swax
+		if people using bad license they'll know it because their name isnt in it
+		bad license can be copied, shared with warez whatever, the point is license accountability and proving bad licenses, creating incentive to get 'own' license	
+		how to people protect their own licenses from being copied unwillfully?
+	
 Release security
     throwing load exception in obfuscated code?
 	Ensure unnessesary strings arent exposed

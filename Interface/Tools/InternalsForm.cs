@@ -28,7 +28,7 @@ using DeOps.Services;
 using DeOps.Services.Board;
 using DeOps.Services.Chat;
 using DeOps.Services.IM;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Services.Location;
 using DeOps.Services.Mail;
 using DeOps.Services.Profile;
@@ -45,6 +45,9 @@ namespace DeOps.Interface.Tools
 	internal class InternalsForm : System.Windows.Forms.Form
 	{
 		OpCore Core;
+        BoardService Boards;
+        MailService Mail;
+        ProfileService Profiles;
 
 		private System.Windows.Forms.Splitter splitter1;
 		private System.Windows.Forms.TreeView treeStructure;
@@ -63,6 +66,10 @@ namespace DeOps.Interface.Tools
 			InitializeComponent();
 
 			Core    = core;
+
+            Boards = core.GetService("Board") as BoardService;
+            Mail = core.GetService("Mail") as MailService;
+            Profiles = core.GetService("Profile") as ProfileService;
 
 			Text = "Internal (" + Core.User.Settings.ScreenName + ")";
 			
@@ -109,11 +116,11 @@ namespace DeOps.Interface.Tools
 
         private void LoadComponents(StructureNode componentsNode)
         {
-            foreach (ushort id in Core.Components.Keys)
+            foreach (ushort id in Core.ServiceMap.Keys)
             {
                 switch (id)
                 {
-                    case ComponentID.Trust:
+                    case 1://ServiceID.Trust:
                         StructureNode linkNode = new StructureNode("Links", new ShowDelegate(ShowLinks), null);
                         linkNode.Nodes.Add(new StructureNode("Index", new ShowDelegate(ShowLinkMap), null));
                         linkNode.Nodes.Add(new StructureNode("Roots", new ShowDelegate(ShowLinkRoots), null));
@@ -121,26 +128,26 @@ namespace DeOps.Interface.Tools
                         componentsNode.Nodes.Add(linkNode);
                         break;
 
-                    case ComponentID.Location:  
+                    case 2://ServiceID.Location:  
                         StructureNode locNode = new StructureNode("Locations", new ShowDelegate(ShowLocations), null);
                         locNode.Nodes.Add(new StructureNode("Global", new ShowDelegate(ShowLocGlobal), null)); 
                         locNode.Nodes.Add(new StructureNode("Operation", new ShowDelegate(ShowLocOperation), null));
                         componentsNode.Nodes.Add(locNode);
                         break;
 
-                    case ComponentID.Transfer:
+                    case 3://ServiceID.Transfer:
                         StructureNode transNode = new StructureNode("Transfers", new ShowDelegate(ShowTransfers), null);
                         transNode.Nodes.Add(new StructureNode("Uploads", new ShowDelegate(ShowUploads), null));
                         transNode.Nodes.Add(new StructureNode("Downloads", new ShowDelegate(ShowDownloads), null));
                         componentsNode.Nodes.Add(transNode);
                         break;
 
-                    case ComponentID.Profile:                       
+                    case 4://ServiceID.Profile:                       
                         StructureNode profileNode = new StructureNode("Profiles", new ShowDelegate(ShowProfiles), null);
                         componentsNode.Nodes.Add(profileNode);
                         break;
 
-                    case ComponentID.Mail:
+                    case 7://ServiceID.Mail:
                         StructureNode mailNode = new StructureNode("Mail", new ShowDelegate(ShowMail), null);
                         mailNode.Nodes.Add(new StructureNode("Mail", new ShowDelegate(ShowMailMap), null));
                         mailNode.Nodes.Add(new StructureNode("Acks", new ShowDelegate(ShowAckMap), null));
@@ -150,7 +157,7 @@ namespace DeOps.Interface.Tools
                         componentsNode.Nodes.Add(mailNode);
                         break;
 
-                    case ComponentID.Board:
+                    case 8://ServiceID.Board:
                         StructureNode boardNode = new StructureNode("Board", new ShowDelegate(ShowBoard), null);
                         componentsNode.Nodes.Add(boardNode);
                         break;
@@ -753,7 +760,7 @@ namespace DeOps.Interface.Tools
 						xStr(upload.Session.ClientID),
 						xStr(upload.Done),
 						xStr(upload.Request.TransferID),
-	                    ComponentID.GetName(upload.Details.Component),
+	                    Core.GetServiceName(upload.Details.Service),
 						xStr(upload.Details.Size),		
 						Utilities.BytestoHex(upload.Details.Hash),
 						xStr(upload.FilePos),
@@ -786,7 +793,7 @@ namespace DeOps.Interface.Tools
 						IDtoStr(download.Target),		
 						xStr(download.Status),
 						xStr(download.ID),	
-                        ComponentID.GetName(download.Details.Component),
+                        Core.GetServiceName(download.Details.Service),
 						xStr(download.Details.Size),		
 						Utilities.BytestoHex(download.Details.Hash),
 						xStr(download.FilePos),	
@@ -931,12 +938,12 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("Property", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
-            listValues.Items.Add(new ListViewItem(new string[] { "MailMap",    xStr(Core.Mail.MailMap.Count) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "AckMap",     xStr(Core.Mail.AckMap.Count) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "PendingMap", xStr(Core.Mail.PendingMap.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "MailMap",    xStr(Mail.MailMap.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "AckMap",     xStr(Mail.AckMap.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "PendingMap", xStr(Mail.PendingMap.Count) }));
 
-            listValues.Items.Add(new ListViewItem(new string[] { "PendingMail", xStr(Core.Mail.PendingMail.Count) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "PendingAcks", xStr(Core.Mail.PendingAcks.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "PendingMail", xStr(Mail.PendingMail.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "PendingAcks", xStr(Mail.PendingAcks.Count) }));
         }
 
         internal void ShowMailMap(object pass)
@@ -953,7 +960,7 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("MailID", 100, HorizontalAlignment.Left);
 
 
-            foreach (List<CachedMail> list in Core.Mail.MailMap.Values)
+            foreach (List<CachedMail> list in Mail.MailMap.Values)
                 foreach (CachedMail mail in list)
                     listValues.Items.Add(new ListViewItem(new string[]
 					{
@@ -979,7 +986,7 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("MailID", 100, HorizontalAlignment.Left);
 
 
-            foreach (List<CachedAck> list in Core.Mail.AckMap.Values)
+            foreach (List<CachedAck> list in Mail.AckMap.Values)
                 foreach (CachedAck cached in list)
                     listValues.Items.Add(new ListViewItem(new string[]
 					{
@@ -1001,7 +1008,7 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("FileSize", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("FileHash", 100, HorizontalAlignment.Left);
             
-            foreach (CachedPending pending in Core.Mail.PendingMap.Values)
+            foreach (CachedPending pending in Mail.PendingMap.Values)
                 listValues.Items.Add(new ListViewItem(new string[]
 					{
 						GetLinkName(pending.Header.KeyID),
@@ -1020,13 +1027,13 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("HashID", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("MailID", 100, HorizontalAlignment.Left);
 
-            foreach(ulong hashID in Core.Mail.PendingMail.Keys)
-                foreach(ulong target in Core.Mail.PendingMail[hashID])
+            foreach(ulong hashID in Mail.PendingMail.Keys)
+                foreach(ulong target in Mail.PendingMail[hashID])
                     listValues.Items.Add(new ListViewItem(new string[]
 					{
 						GetLinkName(target),
                         Utilities.BytestoHex(BitConverter.GetBytes(hashID)),
-                        Utilities.BytestoHex(Core.Mail.GetMailID(hashID, target))
+                        Utilities.BytestoHex(Mail.GetMailID(hashID, target))
 					}));
         }
 
@@ -1038,8 +1045,8 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("Target", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("MailID", 100, HorizontalAlignment.Left);
 
-            foreach (ulong target in Core.Mail.PendingAcks.Keys)
-                foreach (byte[] mailID in Core.Mail.PendingAcks[target])
+            foreach (ulong target in Mail.PendingAcks.Keys)
+                foreach (byte[] mailID in Mail.PendingAcks[target])
                     listValues.Items.Add(new ListViewItem(new string[]
 					{
 						GetLinkName(target),
@@ -1052,15 +1059,17 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Clear();
             listValues.Items.Clear();
 
+            if (Boards == null)
+                return;
 
             // Target, Posts
 
             listValues.Columns.Add("Target", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Posts", 100, HorizontalAlignment.Left);
 
-            Core.Board.BoardMap.LockReading(delegate()
+            Boards.BoardMap.LockReading(delegate()
             {
-                foreach (OpBoard board in Core.Board.BoardMap.Values)
+                foreach (OpBoard board in Boards.BoardMap.Values)
                 {
                     listValues.Items.Add(new ListViewItem(new string[]
 					{
@@ -1076,9 +1085,9 @@ namespace DeOps.Interface.Tools
         {
             parentNode.Nodes.Clear();
 
-            Core.Board.BoardMap.LockReading(delegate()
+            Boards.BoardMap.LockReading(delegate()
             {
-                foreach (OpBoard board in Core.Board.BoardMap.Values)
+                foreach (OpBoard board in Boards.BoardMap.Values)
                     parentNode.Nodes.Add(new StructureNode(GetLinkName(board.DhtID), new ShowDelegate(ShowTargetBoard), board));
             });
         }
@@ -1198,12 +1207,12 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("Embedded", 100, HorizontalAlignment.Left);
 
 
-            Core.Profiles.ProfileMap.LockReading(delegate()
+            Profiles.ProfileMap.LockReading(delegate()
             {
-                foreach (OpProfile profile in Core.Profiles.ProfileMap.Values)
+                foreach (OpProfile profile in Profiles.ProfileMap.Values)
                 {
                     if (!profile.Loaded)
-                        Core.Profiles.LoadProfile(profile.DhtID);
+                        Profiles.LoadProfile(profile.DhtID);
 
                     string embedded = "";
                     foreach (ProfileFile file in profile.Files)
@@ -1227,7 +1236,7 @@ namespace DeOps.Interface.Tools
                         item.SubItems[3] = new ListViewItem.ListViewSubItem(item, Utilities.BytestoHex(profile.Header.FileHash));
                         item.SubItems[4] = new ListViewItem.ListViewSubItem(item, xStr(profile.Header.FileSize));
                         item.SubItems[5] = new ListViewItem.ListViewSubItem(item, xStr(profile.Header.EmbeddedStart));
-                        item.SubItems[6] = new ListViewItem.ListViewSubItem(item, xStr(Core.Profiles.GetFilePath(profile.Header)));
+                        item.SubItems[6] = new ListViewItem.ListViewSubItem(item, xStr(Profiles.GetFilePath(profile.Header)));
                     }
 
                     listValues.Items.Add(item);

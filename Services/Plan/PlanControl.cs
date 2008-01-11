@@ -11,7 +11,7 @@ using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 
 using DeOps.Services.Transfer;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Services.Location;
 using DeOps.Services.VersionedFile;
 
@@ -21,17 +21,20 @@ namespace DeOps.Services.Plan
     internal delegate void PlanUpdateHandler(OpPlan plan);
     internal delegate List<ulong> PlanGetFocusedHandler();
 
-    internal class PlanControl : OpComponent
+    internal class PlanService : OpService
     {
-        internal OpCore Core;
-        internal G2Protocol Protocol;
-        internal DhtNetwork Network;
-        internal DhtStore Store;
-        internal LinkControl Links;
+        public string Name { get { return "Plan"; } }
+        public ushort ServiceID { get { return 9; } }
+
+        internal OpCore      Core;
+        internal G2Protocol  Protocol;
+        internal DhtNetwork  Network;
+        internal DhtStore    Store;
+        internal TrustService Links;
 
         internal OpPlan LocalPlan;
 
-        int  RunSaveLocal;
+        int RunSaveLocal;
         int SaveInterval = 60*10; // 10 min stagger, prevent cascade up
 
         internal ThreadedDictionary<ulong, OpPlan> PlanMap = new ThreadedDictionary<ulong, OpPlan>();
@@ -39,16 +42,14 @@ namespace DeOps.Services.Plan
         internal event PlanUpdateHandler PlanUpdate;
         internal event PlanGetFocusedHandler GetFocused;
 
-
         enum DataType { File = 0x01 };
 
         VersionedFileAssist PlanFiles;
 
 
-        internal PlanControl(OpCore core)
+        internal PlanService(OpCore core)
         {
             Core = core;
-            Core.Plans = this;
             Protocol = core.Protocol;
             Network = core.OperationNet;
             Store = Network.Store;
@@ -58,14 +59,35 @@ namespace DeOps.Services.Plan
             
             Core.LoadEvent += new LoadHandler(Core_Load);
             Core.TimerEvent += new TimerHandler(Core_Timer);
-            
 
-            PlanFiles = new VersionedFileAssist(Network, ComponentID.Plan, (ushort)DataType.File);
+            PlanFiles = new VersionedFileAssist(Network, ServiceID, (ushort)DataType.File);
             
             PlanFiles.FileAquired += new FileAquiredHandler(PlanFiles_FileAquired);
         }
 
-        internal override List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
+        void Core_Load()
+        {
+            Links = Core.Links;
+
+            // try not to auto-publish empty file
+            if (!PlanMap.SafeContainsKey(Core.LocalDhtID))
+            {
+                LocalPlan = new OpPlan(new OpVersionedFile(Core.User.Settings.KeyPublic));
+                LocalPlan.Init();
+                LocalPlan.Loaded = true;
+                PlanMap.SafeAdd(Core.LocalDhtID, LocalPlan);
+            }
+        }
+
+        public void Dispose()
+        {
+            Core.LoadEvent -= new LoadHandler(Core_Load);
+            Core.TimerEvent -= new TimerHandler(Core_Timer);
+
+            PlanFiles.FileAquired -= new FileAquiredHandler(PlanFiles_FileAquired);
+        }
+
+        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
         {
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
 
@@ -106,20 +128,6 @@ namespace DeOps.Services.Plan
             GoalsView view = new GoalsView(this, node.GetKey(), node.GetProject());
 
             Core.InvokeView(node.IsExternal(), view);
-        }
-
-        void Core_Load()
-        {
-            Links = Core.Links;
-
-            // try not to auto-publish empty file
-            if (!PlanMap.SafeContainsKey(Core.LocalDhtID))
-            {
-                LocalPlan = new OpPlan(new OpVersionedFile(Core.User.Settings.KeyPublic));
-                LocalPlan.Init();
-                LocalPlan.Loaded = true;
-                PlanMap.SafeAdd(Core.LocalDhtID, LocalPlan);
-            }
         }
 
         void Core_Timer()
@@ -187,7 +195,7 @@ namespace DeOps.Services.Plan
                             Links.GetLocsBelow(Core.LocalDhtID, project, locations);
                 });
 
-                Store.PublishDirect(locations, newPlan.DhtID, ComponentID.Plan, (ushort)DataType.File, newPlan.File.SignedHeader);
+                Store.PublishDirect(locations, newPlan.DhtID, ServiceID, (ushort)DataType.File, newPlan.File.SignedHeader);
             }
 
 
@@ -275,7 +283,7 @@ namespace DeOps.Services.Plan
 
                 OpVersionedFile file = PlanFiles.UpdateLocal(tempPath, key);
 
-                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.LocalDhtID, ComponentID.Plan, (ushort) DataType.File, file.SignedHeader);
+                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, (ushort) DataType.File, file.SignedHeader);
 
             }
             catch (Exception ex)

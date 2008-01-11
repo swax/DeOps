@@ -15,15 +15,19 @@ using DeOps.Services.Location;
 using DeOps.Services.Transfer;
 
 
-namespace DeOps.Services.Link
+namespace DeOps.Services.Trust
 {
     internal delegate void LinkUpdateHandler(OpTrust trust);
     internal delegate void LinkGuiUpdateHandler(ulong key);
     internal delegate List<ulong> LinkGetFocusedHandler();
 
 
-    class LinkControl : OpComponent
+    class TrustService : OpService
     {
+        public string Name { get { return "Trust"; } }
+        public ushort ServiceID { get { return 1; } }
+
+
         internal OpCore Core;
         internal DhtStore Store;
         internal DhtNetwork Network;
@@ -49,7 +53,7 @@ namespace DeOps.Services.Link
         internal event LinkGetFocusedHandler GetFocused;
 
 
-        internal LinkControl(OpCore core)
+        internal TrustService(OpCore core)
         {
             Core = core;
             Core.Links = this;
@@ -62,11 +66,11 @@ namespace DeOps.Services.Link
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ComponentID.Trust, 0] = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ComponentID.Trust, 0] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ComponentID.Trust, 0] = new PatchHandler(Store_Patch);
+            Store.StoreEvent[ServiceID, 0] = new StoreHandler(Store_Local);
+            Store.ReplicateEvent[ServiceID, 0] = new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[ServiceID, 0] = new PatchHandler(Store_Patch);
 
-            Network.Searches.SearchEvent[ComponentID.Trust, 0] = new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[ServiceID, 0] = new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
                 PruneSize = 25;
@@ -74,13 +78,13 @@ namespace DeOps.Services.Link
 
         void Core_Load()
         {
-            Core.Transfers.FileSearch[ComponentID.Trust] = new FileSearchHandler(Transfers_FileSearch);
-            Core.Transfers.FileRequest[ComponentID.Trust] = new FileRequestHandler(Transfers_FileRequest);
+            Core.Transfers.FileSearch[ServiceID, 0] = new FileSearchHandler(Transfers_FileSearch);
+            Core.Transfers.FileRequest[ServiceID, 0] = new FileRequestHandler(Transfers_FileRequest);
 
 
             ProjectNames.SafeAdd(0, Core.User.Settings.Operation);
 
-            LinkPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Trust.ToString();
+            LinkPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
             Directory.CreateDirectory(LinkPath);
 
             LocalFileKey = Core.User.Settings.FileKey;
@@ -107,7 +111,24 @@ namespace DeOps.Services.Link
 
         }
 
-        internal override List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong remoteKey, uint project)
+        public void Dispose()
+        {
+            Core.TimerEvent -= new TimerHandler(Core_Timer);
+            Core.LoadEvent -= new LoadHandler(Core_Load);
+
+            Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
+
+            Store.StoreEvent.Remove(ServiceID, 0);
+            Store.ReplicateEvent.Remove(ServiceID, 0);
+            Store.PatchEvent.Remove(ServiceID, 0);
+
+            Network.Searches.SearchEvent.Remove(ServiceID, 0);
+
+            Core.Transfers.FileSearch.Remove(ServiceID, 0);
+            Core.Transfers.FileRequest.Remove(ServiceID, 0);
+        }
+
+        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
         {
             if (menuType != InterfaceMenuType.Quick)
                 return null;
@@ -116,15 +137,15 @@ namespace DeOps.Services.Link
 
             bool unlink = false;
 
-            OpLink remoteLink = GetLink(remoteKey, project);
+            OpLink remoteLink = GetLink(user, project);
             OpLink localLink = LocalTrust.GetLink(project);
 
             if (remoteLink == null || localLink == null)
                 return menus;
 
             // linkup
-            if (Core.LocalDhtID != remoteKey &&
-                (localLink.Uplink == null || localLink.Uplink.DhtID != remoteKey)) // not already linked to
+            if (Core.LocalDhtID != user &&
+                (localLink.Uplink == null || localLink.Uplink.DhtID != user)) // not already linked to
                 menus.Add(new MenuItemInfo("Trust", LinkRes.link, new EventHandler(Menu_Linkup)));
 
             // confirm
@@ -132,13 +153,13 @@ namespace DeOps.Services.Link
             {
                 unlink = true;
 
-                if (!localLink.Confirmed.Contains(remoteKey)) // not already confirmed
+                if (!localLink.Confirmed.Contains(user)) // not already confirmed
                     menus.Add(new MenuItemInfo("Accept Trust", LinkRes.confirmlink, new EventHandler(Menu_ConfirmLink)));
             }
 
             // unlink
-            if ((unlink && localLink.Confirmed.Contains(remoteKey)) ||
-                (localLink.Uplink != null && localLink.Uplink.DhtID == remoteKey))
+            if ((unlink && localLink.Confirmed.Contains(user)) ||
+                (localLink.Uplink != null && localLink.Uplink.DhtID == user))
                 menus.Add(new MenuItemInfo("Revoke Trust", LinkRes.unlink, new EventHandler(Menu_Unlink)));
 
 
@@ -224,7 +245,7 @@ namespace DeOps.Services.Link
             request.TargetID = remoteLink.DhtID;
 
             byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, request);
-            Store.PublishNetwork(request.TargetID, ComponentID.Trust, 0, signed);
+            Store.PublishNetwork(request.TargetID, ServiceID, 0, signed);
 
             // store locally
             Process_UplinkReq(null, new SignedData(Core.Protocol, Core.User.Settings.KeyPair, request), request);
@@ -233,7 +254,7 @@ namespace DeOps.Services.Link
             List<LocationData> locations = new List<LocationData>();
             GetLocs(Core.LocalDhtID, remoteLink.Project, 1, 1, locations);
             GetLocsBelow(Core.LocalDhtID, remoteLink.Project, locations);
-            Store.PublishDirect(locations, request.TargetID, ComponentID.Trust, 0, signed);
+            Store.PublishDirect(locations, request.TargetID, ServiceID, 0, signed);
         }
 
         private void Menu_ConfirmLink(object sender, EventArgs e)
@@ -324,7 +345,7 @@ namespace DeOps.Services.Link
                 // notify old links of change
                 Core.RunInCoreAsync(delegate()
                 {
-                    Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Trust, 0, LocalTrust.SignedHeader);
+                    Store.PublishDirect(locations, Core.LocalDhtID, ServiceID, 0, LocalTrust.SignedHeader);
                 });
             }
             catch (Exception ex)
@@ -454,7 +475,7 @@ namespace DeOps.Services.Link
 
                     // republish objects that were not seen on the network during startup
                     if (trust.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, trust.DhtID))
-                        Store.PublishNetwork(trust.DhtID, ComponentID.Trust, 0, trust.SignedHeader);
+                        Store.PublishNetwork(trust.DhtID, ServiceID, 0, trust.SignedHeader);
                 }
             });
 
@@ -601,7 +622,7 @@ namespace DeOps.Services.Link
 
             byte[] parameters = BitConverter.GetBytes(version);
 
-            DhtSearch search = Network.Searches.Start(key, "Link", ComponentID.Trust, 0, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Network.Searches.Start(key, "Link", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -610,7 +631,7 @@ namespace DeOps.Services.Link
         void EndSearch(DhtSearch search)
         {
             foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Trust, 0, found.Value));
+                Store_Local(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
         }
 
         List<byte[]> Search_Local(ulong key, byte[] parameters)
@@ -749,7 +770,7 @@ namespace DeOps.Services.Link
                     {
                         if (trust.Header.Version > version)
                         {
-                            Store.Send_StoreReq(source, 0, new DataReq(null, trust.DhtID, ComponentID.Trust, 0, trust.SignedHeader));
+                            Store.Send_StoreReq(source, 0, new DataReq(null, trust.DhtID, ServiceID, 0, trust.SignedHeader));
                             continue;
                         }
 
@@ -762,7 +783,7 @@ namespace DeOps.Services.Link
                     }
 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Trust, 0, BitConverter.GetBytes(version));
+                    Network.Searches.SendDirectRequest(source, dhtid, ServiceID, 0, BitConverter.GetBytes(version));
                 else
                     DownloadLater[dhtid] = version;
             }
@@ -856,9 +877,9 @@ namespace DeOps.Services.Link
                     catch { }
 
                 // publish header
-                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Trust, 0, LocalTrust.SignedHeader);
+                Store.PublishNetwork(Core.LocalDhtID, ServiceID, 0, LocalTrust.SignedHeader);
 
-                Store.PublishDirect(GetLocsAbove(), Core.LocalDhtID, ComponentID.Trust, 0, LocalTrust.SignedHeader);
+                Store.PublishDirect(GetLocsAbove(), Core.LocalDhtID, ServiceID, 0, LocalTrust.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -958,7 +979,7 @@ namespace DeOps.Services.Link
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ComponentID.Trust, 0, current.SignedHeader));
+                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ServiceID, 0, current.SignedHeader));
 
                     return;
                 }
@@ -1057,7 +1078,7 @@ namespace DeOps.Services.Link
             if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
                 return;
 
-            FileDetails details = new FileDetails(ComponentID.Trust, header.FileHash, header.FileSize, null);
+            FileDetails details = new FileDetails(ServiceID, 0, header.FileHash, header.FileSize, null);
 
             Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
         }
@@ -1241,7 +1262,7 @@ namespace DeOps.Services.Link
                                 GetLocsBelow(Core.LocalDhtID, project, locations);
                     });
 
-                    Store.PublishDirect(locations, trust.DhtID, ComponentID.Trust, 0, trust.SignedHeader);
+                    Store.PublishDirect(locations, trust.DhtID, ServiceID, 0, trust.SignedHeader);
                 }
 
                 // update interface node
@@ -1391,7 +1412,7 @@ namespace DeOps.Services.Link
             // update links in old project of update
             Core.RunInCoreAsync(delegate()
             {
-                Store.PublishDirect(locations, Core.LocalDhtID, ComponentID.Trust, 0, LocalTrust.SignedHeader);
+                Store.PublishDirect(locations, Core.LocalDhtID, ServiceID, 0, LocalTrust.SignedHeader);
             });
         }
 

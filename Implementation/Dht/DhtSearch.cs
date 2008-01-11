@@ -79,7 +79,7 @@ namespace DeOps.Implementation.Dht
 		internal bool Activate()
 		{
 			// check if node tcp connected
-            if (Service == ComponentID.Node && Network.TcpControl.ConnectionMap.ContainsKey(TargetID))
+            if (Service == Core.DhtServiceID && Network.TcpControl.ConnectionMap.ContainsKey(TargetID))
             {
                 TcpConnect connection = Network.TcpControl.ConnectionMap[TargetID];
 
@@ -172,7 +172,7 @@ namespace DeOps.Implementation.Dht
 			
 
 			// at end so we ensure this node is put into list and sent with proxy results
-			if(Service == ComponentID.Node && contact.DhtID == TargetID)
+            if (Service == Core.DhtServiceID && contact.DhtID == TargetID)
 			{
 				Found(contact, false);
 				return;

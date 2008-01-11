@@ -10,7 +10,7 @@ using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Services.Transfer;
 using DeOps.Services.Location;
 
@@ -23,13 +23,16 @@ namespace DeOps.Services.Board
     internal delegate void PostUpdateHandler(OpPost post);
 
 
-    internal class BoardControl : OpComponent
+    internal class BoardService : OpService
     {
+        public string Name { get { return "Board"; } }
+        public ushort ServiceID { get { return 8; } }
+
         internal OpCore Core;
         internal G2Protocol Protocol;
         internal DhtNetwork Network;
         internal DhtStore Store;
-        LinkControl Links;
+        TrustService Links;
 
         internal string BoardPath;
         RijndaelManaged LocalFileKey;
@@ -47,10 +50,9 @@ namespace DeOps.Services.Board
         internal PostUpdateHandler PostUpdate;
 
 
-        internal BoardControl(OpCore core )
+        internal BoardService(OpCore core )
         {
             Core       = core;
-            Core.Board = this;
 
             Protocol = Core.Protocol;
             Network  = Core.OperationNet;
@@ -61,11 +63,11 @@ namespace DeOps.Services.Board
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ComponentID.Board, 0] = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ComponentID.Board, 0] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ComponentID.Board, 0] = new PatchHandler(Store_Patch);
+            Store.StoreEvent[ServiceID, 0] = new StoreHandler(Store_Local);
+            Store.ReplicateEvent[ServiceID, 0] = new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[ServiceID, 0] = new PatchHandler(Store_Patch);
 
-            Network.Searches.SearchEvent[ComponentID.Board, 0] = new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[ServiceID, 0] = new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
                 PruneSize = 32;
@@ -76,12 +78,12 @@ namespace DeOps.Services.Board
         void Core_Load()
         {
             Links = Core.Links;
-            Core.Transfers.FileSearch[ComponentID.Board] = new FileSearchHandler(Transfers_FileSearch);
-            Core.Transfers.FileRequest[ComponentID.Board] = new FileRequestHandler(Transfers_FileRequest);
+            Core.Transfers.FileSearch[ServiceID, 0] = new FileSearchHandler(Transfers_FileSearch);
+            Core.Transfers.FileRequest[ServiceID, 0] = new FileRequestHandler(Transfers_FileRequest);
 
             LocalFileKey = Core.User.Settings.FileKey;
 
-            BoardPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Board.ToString();
+            BoardPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
 
             if(!Directory.Exists(BoardPath))
                 Directory.CreateDirectory(BoardPath);
@@ -111,6 +113,24 @@ namespace DeOps.Services.Board
                 if (loaded == PruneSize)
                     break;
             }
+        }
+
+
+        public void Dispose()
+        {
+            Core.LoadEvent -= new LoadHandler(Core_Load);
+            Core.TimerEvent -= new TimerHandler(Core_Timer);
+
+            Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
+
+            Store.StoreEvent.Remove(ServiceID, 0);
+            Store.ReplicateEvent.Remove(ServiceID, 0);
+            Store.PatchEvent.Remove(ServiceID, 0);;
+
+            Network.Searches.SearchEvent.Remove(ServiceID, 0);
+
+            Core.Transfers.FileSearch.Remove(ServiceID, 0);
+            Core.Transfers.FileRequest.Remove(ServiceID, 0);
         }
 
         void Core_Timer()
@@ -229,7 +249,7 @@ namespace DeOps.Services.Board
                     {
                        foreach (OpPost post in board.Posts.Values)
                            if (post.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, board.DhtID))
-                               Store.PublishNetwork(board.DhtID, ComponentID.Board, 0, post.SignedHeader);
+                               Store.PublishNetwork(board.DhtID, ServiceID, 0, post.SignedHeader);
                     });
                 }
             });
@@ -314,7 +334,7 @@ namespace DeOps.Services.Board
             }
         }
 
-        internal override List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
+        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
         {
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
 
@@ -452,13 +472,13 @@ namespace DeOps.Services.Board
             CachePost(new SignedData(Protocol, Core.User.Settings.KeyPair, header), header);
 
             // publish to network and local region of target
-            Network.Store.PublishNetwork(header.TargetID, ComponentID.Board, 0, GetPost(header).SignedHeader);
+            Network.Store.PublishNetwork(header.TargetID, ServiceID, 0, GetPost(header).SignedHeader);
 
             List<LocationData> locations = new List<LocationData>();
             Links.GetLocs(header.TargetID, header.ProjectID, 1, 1, locations);
             Links.GetLocs(header.TargetID, header.ProjectID, 0, 1, locations);
 
-            Store.PublishDirect(locations, header.TargetID, ComponentID.Board, 0, GetPost(header).SignedHeader);
+            Store.PublishDirect(locations, header.TargetID, ServiceID, 0, GetPost(header).SignedHeader);
 
 
             // save right off, dont wait for timer, or sim to be on
@@ -521,7 +541,7 @@ namespace DeOps.Services.Board
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, header.TargetID, ComponentID.Board, 0, current.SignedHeader));
+                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, header.TargetID, ServiceID, 0, current.SignedHeader));
 
                     return;
                 }
@@ -632,7 +652,7 @@ namespace DeOps.Services.Board
             if (!Utilities.CheckSignedData(header.Source, signed.Data, signed.Signature))
                 return;
 
-            FileDetails details = new FileDetails(ComponentID.Board, header.FileHash, header.FileSize, new PostUID(header).ToBytes());
+            FileDetails details = new FileDetails(ServiceID, 0, header.FileHash, header.FileSize, new PostUID(header).ToBytes());
 
             Core.Transfers.StartDownload(header.TargetID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
         }
@@ -760,7 +780,7 @@ namespace DeOps.Services.Board
                     // remote version is lower, send update
                     if (post.Header.Version > version)
                     {
-                        Store.Send_StoreReq(source, 0, new DataReq(null, dhtid, ComponentID.Board, 0, post.SignedHeader));
+                        Store.Send_StoreReq(source, 0, new DataReq(null, dhtid, ServiceID, 0, post.SignedHeader));
                         continue;
                     }
                         
@@ -775,7 +795,7 @@ namespace DeOps.Services.Board
 
                 // download cause we dont have it or its a higher version 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Board, 0, uid.ToBytes());
+                    Network.Searches.SendDirectRequest(source, dhtid, ServiceID, 0, uid.ToBytes());
                 else
                 {
                     List<PostUID> list = null;
@@ -810,7 +830,7 @@ namespace DeOps.Services.Board
             BitConverter.GetBytes(project).CopyTo(parameters, 1);
             BitConverter.GetBytes(parent).CopyTo(parameters, 5);
 
-            DhtSearch search = Network.Searches.Start(target, "Board:Thread", ComponentID.Board, 0, parameters, new EndSearchHandler(EndThreadSearch));
+            DhtSearch search = Network.Searches.Start(target, "Board:Thread", ServiceID, 0, parameters, new EndSearchHandler(EndThreadSearch));
 
             if (search == null)
                 return;
@@ -876,7 +896,7 @@ namespace DeOps.Services.Board
             BitConverter.GetBytes(project).CopyTo(parameters, 1);
             BitConverter.GetBytes(time.ToBinary()).CopyTo(parameters, 5);
 
-            DhtSearch search = Network.Searches.Start(target, "Board:Time", ComponentID.Board, 0, parameters, new EndSearchHandler(EndTimeSearch));
+            DhtSearch search = Network.Searches.Start(target, "Board:Time", ServiceID, 0, parameters, new EndSearchHandler(EndTimeSearch));
 
             if (search == null)
                 return;
@@ -921,7 +941,7 @@ namespace DeOps.Services.Board
             uid.ToBytes().CopyTo(parameters, 1);
             BitConverter.GetBytes(version).CopyTo(parameters, 17);
 
-            DhtSearch search = Core.OperationNet.Searches.Start(target, "Board:Post", ComponentID.Board, 0, parameters, new EndSearchHandler(EndPostSearch));
+            DhtSearch search = Core.OperationNet.Searches.Start(target, "Board:Post", ServiceID, 0, parameters, new EndSearchHandler(EndPostSearch));
 
             if (search == null)
                 return;
@@ -932,7 +952,7 @@ namespace DeOps.Services.Board
         void EndPostSearch(DhtSearch search)
         {
             foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Board, 0, found.Value));
+                Store_Local(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
         }
 
         List<byte[]> Search_Local(ulong key, byte[] parameters)

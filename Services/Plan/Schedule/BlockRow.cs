@@ -8,7 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 
 using DeOps.Implementation;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Services.Plan;
 using DeOps.Interface;
 using DeOps.Interface.Views;

@@ -7,7 +7,7 @@ using System.Text;
 using System.Windows.Forms;
 
 using DeOps.Implementation;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 
 namespace DeOps.Services.Plan
 {
@@ -17,18 +17,20 @@ namespace DeOps.Services.Plan
     {
         EditGoalMode Mode;
         OpCore Core;
+        GoalsView View;
 
         ulong PersonID;
 
         PlanGoal Editing;
 
 
-        internal EditGoal(EditGoalMode mode, OpCore core, PlanGoal editing)
+        internal EditGoal(EditGoalMode mode, GoalsView view, PlanGoal editing)
         {
             InitializeComponent();
 
             Mode = mode;
-            Core = core;
+            View = view;
+            Core = View.Core;
             Editing = editing;
 
             if (Mode == EditGoalMode.New)
@@ -117,7 +119,7 @@ namespace DeOps.Services.Plan
 
 
                 if (Mode == EditGoalMode.New || Mode == EditGoalMode.Delgate)
-                    Core.Plans.LocalPlan.AddGoal(Editing);
+                    View.Plans.LocalPlan.AddGoal(Editing);
 
 
                 DialogResult = DialogResult.OK;

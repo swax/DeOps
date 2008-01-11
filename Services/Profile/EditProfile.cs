@@ -9,15 +9,15 @@ using System.Text;
 using System.Windows.Forms;
 
 using DeOps.Implementation;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 
 namespace DeOps.Services.Profile
 {
     internal partial class EditProfile : Form
     {
         internal OpCore Core;
-        LinkControl     Links;
-        ProfileControl  Profiles;
+        TrustService     Links;
+        internal ProfileService Profiles;
         internal ProfileView MainView;
 
         List<ProfileTemplate> Templates = new List<ProfileTemplate>();
@@ -26,13 +26,13 @@ namespace DeOps.Services.Profile
         internal Dictionary<string, string> FileFields = new Dictionary<string, string>();
 
 
-        internal EditProfile(ProfileControl control, ProfileView view)
+        internal EditProfile(ProfileService control, ProfileView view)
         {
             InitializeComponent();
 
             Core     = control.Core;
             Links    = Core.Links;
-            Profiles = Core.Profiles;
+            Profiles = control;
             MainView = view;
 
             TextFields = new Dictionary<string, string>(view.TextFields);

@@ -10,7 +10,7 @@ using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Services.Location;
 using DeOps.Services.Transfer;
 
@@ -20,13 +20,16 @@ namespace DeOps.Services.Profile
     internal delegate void ProfileUpdateHandler(OpProfile profile);
     
 
-    class ProfileControl : OpComponent
+     class ProfileService : OpService
     {
+        public string Name { get { return "Profile"; } }
+        public ushort ServiceID { get { return 4; } }
+
         internal OpCore     Core;
         internal G2Protocol Protocol;
         internal DhtNetwork Network;
         internal DhtStore   Store;
-        LinkControl Links;
+        TrustService Links;
 
         internal string ProfilePath;
         
@@ -46,11 +49,10 @@ namespace DeOps.Services.Profile
         Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
         
 
-        internal ProfileControl(OpCore core)
+        internal ProfileService(OpCore core)
         {
             Core = core;
             Protocol = core.Protocol;
-            Core.Profiles = this;
             Network = core.OperationNet;
             Store = Network.Store;
 
@@ -59,11 +61,11 @@ namespace DeOps.Services.Profile
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ComponentID.Profile, 0] = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ComponentID.Profile, 0] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ComponentID.Profile, 0] = new PatchHandler(Store_Patch);
+            Store.StoreEvent[ServiceID, 0] = new StoreHandler(Store_Local);
+            Store.ReplicateEvent[ServiceID, 0] = new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[ServiceID, 0] = new PatchHandler(Store_Patch);
 
-            Network.Searches.SearchEvent[ComponentID.Profile, 0] = new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[ServiceID, 0] = new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
                 PruneSize = 25;
@@ -129,10 +131,10 @@ namespace DeOps.Services.Profile
         {
             Links = Core.Links;
 
-            Core.Transfers.FileSearch[ComponentID.Profile] = new FileSearchHandler(Transfers_FileSearch);
-            Core.Transfers.FileRequest[ComponentID.Profile] = new FileRequestHandler(Transfers_FileRequest);
+            Core.Transfers.FileSearch[ServiceID, 0] = new FileSearchHandler(Transfers_FileSearch);
+            Core.Transfers.FileRequest[ServiceID, 0] = new FileRequestHandler(Transfers_FileRequest);
 
-            ProfilePath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Profile.ToString();
+            ProfilePath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
             Directory.CreateDirectory(ProfilePath);
 
             LocalFileKey = Core.User.Settings.FileKey;
@@ -147,6 +149,23 @@ namespace DeOps.Services.Profile
             //Dictionary<string, string> test = new Dictionary<string, string>();
             //test["Photo"] = @"C:\Dev\De-Ops\Graphics\guy.jpg";
             //SaveLocal(DefaultTemplate, null, test);
+        }
+
+        public void Dispose()
+        {
+            Core.LoadEvent -= new LoadHandler(Core_Load);
+            Core.TimerEvent -= new TimerHandler(Core_Timer);
+
+            Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
+
+            Store.StoreEvent.Remove(ServiceID, 0);
+            Store.ReplicateEvent.Remove(ServiceID, 0);
+            Store.PatchEvent.Remove(ServiceID, 0);
+
+            Network.Searches.SearchEvent.Remove(ServiceID, 0);
+
+            Core.Transfers.FileSearch.Remove(ServiceID, 0);
+            Core.Transfers.FileRequest.Remove(ServiceID, 0);
         }
 
         void Core_Timer()
@@ -225,7 +244,7 @@ namespace DeOps.Services.Profile
 
                     // republish objects that were not seen on the network during startup
                     if (profile.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, profile.DhtID))
-                        Store.PublishNetwork(profile.DhtID, ComponentID.Profile, 0, profile.SignedHeader);
+                        Store.PublishNetwork(profile.DhtID, ServiceID, 0, profile.SignedHeader);
                 }
             });
 
@@ -246,7 +265,7 @@ namespace DeOps.Services.Profile
             return profile;
         }
 
-        internal override List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
+        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
         {
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
 
@@ -281,7 +300,7 @@ namespace DeOps.Services.Profile
         private void StartSearch(ulong key, uint version)
         {
             byte[] parameters = BitConverter.GetBytes(version);
-            DhtSearch search = Network.Searches.Start(key, "Profile", ComponentID.Profile, 0, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Network.Searches.Start(key, "Profile", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -290,7 +309,7 @@ namespace DeOps.Services.Profile
         void EndSearch(DhtSearch search)
         {
             foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Profile, 0, found.Value));
+                Store_Local(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
         }
 
         List<byte[]> Search_Local(ulong key, byte[] parameters)
@@ -399,7 +418,7 @@ namespace DeOps.Services.Profile
                     {
                         if (profile.Header.Version > version)
                         {
-                            Store.Send_StoreReq(source, 0, new DataReq(null, profile.DhtID, ComponentID.Profile, 0, profile.SignedHeader));
+                            Store.Send_StoreReq(source, 0, new DataReq(null, profile.DhtID, ServiceID, 0, profile.SignedHeader));
                             continue;
                         }
 
@@ -413,7 +432,7 @@ namespace DeOps.Services.Profile
                 }
 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Profile, 0, BitConverter.GetBytes(version));
+                    Network.Searches.SendDirectRequest(source, dhtid, ServiceID, 0, BitConverter.GetBytes(version));
                 else
                     DownloadLater[dhtid] = version;
             }
@@ -568,9 +587,9 @@ namespace DeOps.Services.Profile
                 if (profile == null)
                     return;
 
-                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Profile, 0, profile.SignedHeader);
+                Store.PublishNetwork(Core.LocalDhtID, ServiceID, 0, profile.SignedHeader);
 
-                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ComponentID.Profile, 0, profile.SignedHeader);
+                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, 0, profile.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -660,7 +679,7 @@ namespace DeOps.Services.Profile
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ComponentID.Profile, 0, current.SignedHeader));
+                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ServiceID, 0, current.SignedHeader));
 
                     return;
                 }
@@ -682,7 +701,7 @@ namespace DeOps.Services.Profile
             if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
                 return;
 
-            FileDetails details = new FileDetails(ComponentID.Profile, header.FileHash, header.FileSize, null);
+            FileDetails details = new FileDetails(ServiceID, 0, header.FileHash, header.FileSize, null);
 
             Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
         }
@@ -764,7 +783,7 @@ namespace DeOps.Services.Profile
                                 Links.GetLocsBelow(Core.LocalDhtID, project, locations);
                     });
 
-                    Store.PublishDirect(locations, newProfile.DhtID, ComponentID.Profile, 0, newProfile.SignedHeader);
+                    Store.PublishDirect(locations, newProfile.DhtID, ServiceID, 0, newProfile.SignedHeader);
                 }
 
                 if (ProfileUpdate != null)

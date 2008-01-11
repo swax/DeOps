@@ -741,6 +741,12 @@ namespace DeOps.Implementation
                 foreach (TDelegate handler in map.Values)
                     yield return handler;
         }
+
+        internal void Remove(ushort service, ushort type)
+        {
+            if (Contains(service, type))
+                HandlerMap[service].Remove(type);
+        }
     }
 
     internal class ThreadedDictionary<TKey, TValue> : Dictionary<TKey, TValue>

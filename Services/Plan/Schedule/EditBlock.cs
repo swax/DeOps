@@ -19,7 +19,7 @@ namespace DeOps.Services.Plan
         BlockViewMode Mode;
 
         OpCore Core;
-        PlanControl Plans;
+        PlanService Plans;
         ScheduleView View;
 
         PlanBlock Block;

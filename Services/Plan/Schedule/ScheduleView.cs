@@ -7,7 +7,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Implementation;
 using DeOps.Interface;
 using DeOps.Interface.TLVex;
@@ -19,8 +19,8 @@ namespace DeOps.Services.Plan
     internal partial class ScheduleView : ViewShell
     {
         internal OpCore Core;
-        internal PlanControl Plans;
-        LinkControl Links;
+        internal PlanService Plans;
+        TrustService Links;
 
         internal ulong DhtID;
         internal uint  ProjectID;
@@ -92,7 +92,7 @@ namespace DeOps.Services.Plan
                                     </body>
                                     </html>";
 
-        internal ScheduleView(PlanControl plans, ulong id, uint project)
+        internal ScheduleView(PlanService plans, ulong id, uint project)
         {
             InitializeComponent();
 

@@ -9,7 +9,7 @@ using System.Windows.Forms;
 using DeOps.Implementation;
 using DeOps.Implementation.Transport;
 using DeOps.Interface;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Services.Location;
 
 
@@ -18,10 +18,10 @@ namespace DeOps.Services.IM
 
     internal partial class IM_View : ViewShell
     {        
-        IMControl       IM;
-        LinkControl     Links;
+        IMService       IM;
+        TrustService     Links;
         OpCore          Core;
-        LocationControl Locations;
+        LocationService Locations;
         internal ulong  DhtID;
 
         MenuItem TimestampMenu;
@@ -34,7 +34,7 @@ namespace DeOps.Services.IM
         Font TimeFont = new Font("Tahoma", 8, FontStyle.Regular);
         Font SystemFont = new Font("Tahoma", 8, FontStyle.Bold);
 
-        internal IM_View(IMControl im, ulong key)
+        internal IM_View(IMService im, ulong key)
         {
             InitializeComponent();
 

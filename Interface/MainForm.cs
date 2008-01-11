@@ -13,8 +13,9 @@ using DeOps.Implementation;
 using DeOps.Implementation.Dht;
 
 using DeOps.Services;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Services.IM;
+using DeOps.Services.Mail;
 using DeOps.Services.Location;
 
 using DeOps.Interface.TLVex;
@@ -29,7 +30,7 @@ namespace DeOps.Interface
     internal partial class MainForm : Form
     {
         internal OpCore Core;
-        internal LinkControl Links;
+        internal TrustService Links;
 
         internal ShowExternalHandler ShowExternal;
         internal ShowInternalHandler ShowInternal;
@@ -604,9 +605,9 @@ namespace DeOps.Interface
             List<ToolStripMenuItem> quickMenus = new List<ToolStripMenuItem>();
             List<ToolStripMenuItem> extMenus = new List<ToolStripMenuItem>();
 
-            foreach (OpComponent component in Core.Components.Values)
+            foreach (OpService component in Core.ServiceMap.Values)
             {
-                if (component is LinkControl)
+                if (component is TrustService)
                     continue;
 
                 // quick
@@ -688,9 +689,19 @@ namespace DeOps.Interface
             OpMenuItem info = new OpMenuItem(item.Link.DhtID, 0);
 
             if (Core.Locations.LocationMap.SafeContainsKey(info.DhtID))
-                ((IMControl)Core.Components[ComponentID.IM]).QuickMenu_View(info, null);
+            {
+                IMService IM = Core.GetService("IM") as IMService;
+
+                if (IM != null)
+                    IM.QuickMenu_View(info, null);
+            }
             else
-                Core.Mail.QuickMenu_View(info, null);
+            {
+                MailService Mail = Core.GetService("Mail") as MailService;
+
+                if (Mail != null)
+                    Mail.QuickMenu_View(info, null);
+            }
         }
 
         [DllImport("user32.dll")]
@@ -738,7 +749,7 @@ namespace DeOps.Interface
             CommButton.DropDownItems.Clear();
             DataButton.DropDownItems.Clear();
 
-            foreach (OpComponent component in Core.Components.Values)
+            foreach (OpService component in Core.ServiceMap.Values)
             {
                 List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Internal, id, project);
 
@@ -873,7 +884,7 @@ namespace DeOps.Interface
             if (InternalView != null)
                 ComponentNavButton.Text = InternalView.GetTitle(true);
 
-            foreach (OpComponent component in Core.Components.Values)
+            foreach (OpService component in Core.ServiceMap.Values)
             {
                 List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Internal, CommandTree.SelectedLink, SelectedProject);
 
@@ -1447,7 +1458,7 @@ namespace DeOps.Interface
             ToolStripMenuItem dataItem = new ToolStripMenuItem("Data", InterfaceRes.data);
 
 
-            foreach (OpComponent component in Core.Components.Values)
+            foreach (OpService component in Core.ServiceMap.Values)
             {
                 List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Internal, Core.LocalDhtID, project);
 

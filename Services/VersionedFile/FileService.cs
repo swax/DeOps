@@ -75,8 +75,8 @@ namespace DeOps.Services.VersionedFile
         
         void Core_Load()
         {
-            Core.Transfers.FileSearch[Service] = new FileSearchHandler(Transfers_FileSearch);
-            Core.Transfers.FileRequest[Service] = new FileRequestHandler(Transfers_FileRequest);
+            Core.Transfers.FileSearch[Service, DataType] = new FileSearchHandler(Transfers_FileSearch);
+            Core.Transfers.FileRequest[Service, DataType] = new FileRequestHandler(Transfers_FileRequest);
 
             LoadHeaders();   
         }
@@ -403,7 +403,7 @@ namespace DeOps.Services.VersionedFile
             if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
                 return;
 
-            FileDetails details = new FileDetails(Service, header.FileHash, header.FileSize, null);
+            FileDetails details = new FileDetails(Service, DataType, header.FileHash, header.FileSize, null);
 
             Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
         }

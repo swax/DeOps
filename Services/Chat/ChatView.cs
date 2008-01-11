@@ -9,13 +9,13 @@ using System.Windows.Forms;
 using DeOps.Interface;
 using DeOps.Interface.Views;
 using DeOps.Implementation;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 
 namespace DeOps.Services.Chat
 {
     internal partial class ChatView : ViewShell
     {
-        ChatControl Chat;
+        ChatService Chat;
         uint ProjectID;
         ChatRoom Custom;
 
@@ -26,7 +26,7 @@ namespace DeOps.Services.Chat
         bool FlashMe;
 
 
-        internal ChatView(ChatControl chat, uint project, ChatRoom custom)
+        internal ChatView(ChatService chat, uint project, ChatRoom custom)
         {
             InitializeComponent();
 

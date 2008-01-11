@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 using DeOps.Interface;
 using DeOps.Interface.TLVex;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 
 
 namespace DeOps.Services.Storage
@@ -16,7 +16,7 @@ namespace DeOps.Services.Storage
     internal partial class DetailsForm : Form
     {
         StorageView View;
-        LinkControl Links;
+        TrustService Links;
 
         FolderNode TargetFolder;
         FileItem TargetFile;

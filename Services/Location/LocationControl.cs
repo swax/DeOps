@@ -8,7 +8,7 @@ using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 using DeOps.Implementation.Transport;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 
 
 namespace DeOps.Services.Location
@@ -17,8 +17,11 @@ namespace DeOps.Services.Location
     internal delegate void LocationGuiUpdateHandler(ulong key);
 
     
-    internal class LocationControl : OpComponent
+    internal class LocationService : OpService
     {
+        public string Name { get { return "Location"; } }
+        public ushort ServiceID { get { return 2; } }
+
         OpCore Core;
 
         internal uint LocationVersion = 1;
@@ -36,23 +39,25 @@ namespace DeOps.Services.Location
 
         int PruneGlobalKeys    = 100;
         int PruneGlobalEntries = 20;
-       // int PruneLocations     = 100;
+        // int PruneLocations     = 100;
+
+        internal bool LocalAway;
 
 
-        internal LocationControl(OpCore core)
+        internal LocationService(OpCore core)
         {
             Core = core;
             Core.Locations = this;
 
             Core.TimerEvent += new TimerHandler(Core_Timer);
             
-            Core.GlobalNet.Store.StoreEvent[ComponentID.Location, 0] = new StoreHandler(GlobalStore_Local);
-            Core.GlobalNet.Store.ReplicateEvent[ComponentID.Location, 0] = new ReplicateHandler(GlobalStore_Replicate);
-            Core.GlobalNet.Store.PatchEvent[ComponentID.Location, 0] = new PatchHandler(GlobalStore_Patch);
-            Core.GlobalNet.Searches.SearchEvent[ComponentID.Location, 0] = new SearchRequestHandler(GlobalSearch_Local);
+            Core.GlobalNet.Store.StoreEvent[ServiceID, 0] = new StoreHandler(GlobalStore_Local);
+            Core.GlobalNet.Store.ReplicateEvent[ServiceID, 0] = new ReplicateHandler(GlobalStore_Replicate);
+            Core.GlobalNet.Store.PatchEvent[ServiceID, 0] = new PatchHandler(GlobalStore_Patch);
+            Core.GlobalNet.Searches.SearchEvent[ServiceID, 0] = new SearchRequestHandler(GlobalSearch_Local);
 
-            Core.OperationNet.Store.StoreEvent[ComponentID.Location, 0] = new StoreHandler(OperationStore_Local);
-            Core.OperationNet.Searches.SearchEvent[ComponentID.Location, 0] = new SearchRequestHandler(OperationSearch_Local);
+            Core.OperationNet.Store.StoreEvent[ServiceID, 0] = new StoreHandler(OperationStore_Local);
+            Core.OperationNet.Searches.SearchEvent[ServiceID, 0] = new SearchRequestHandler(OperationSearch_Local);
 
             // should be published auto anyways, on bootstrap, or firewall/proxy update
             NextGlobalPublish = Core.TimeNow.AddMinutes(1);
@@ -63,6 +68,19 @@ namespace DeOps.Services.Location
                 PruneGlobalEntries = 10;
                 //PruneLocations     = 25;
             }
+        }
+
+        public void Dispose()
+        {
+            Core.TimerEvent -= new TimerHandler(Core_Timer);
+
+            Core.GlobalNet.Store.StoreEvent.Remove(ServiceID, 0);
+            Core.GlobalNet.Store.ReplicateEvent.Remove(ServiceID, 0);
+            Core.GlobalNet.Store.PatchEvent.Remove(ServiceID, 0);
+            Core.GlobalNet.Searches.SearchEvent.Remove(ServiceID, 0);
+
+            Core.OperationNet.Store.StoreEvent.Remove(ServiceID, 0);
+            Core.OperationNet.Searches.SearchEvent.Remove(ServiceID, 0);
         }
 
         void Core_Timer()
@@ -243,6 +261,11 @@ namespace DeOps.Services.Location
             }
         }
 
+        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
+        {
+            return null;
+        }
+
         internal void UpdateLocation()
         {
             if (Core.InvokeRequired)
@@ -266,20 +289,19 @@ namespace DeOps.Services.Location
 
             location.Place = Core.User.Settings.Location;
             location.GmtOffset = System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes;
-            location.Away = Core.Away;
-            location.AwayMessage = Core.Away ? Core.User.Settings.AwayMessage : "";
+            location.Away = LocalAway;
+            location.AwayMessage = LocalAway ? Core.User.Settings.AwayMessage : "";
 
             location.Version  = LocationVersion++;
-            if( Core.Profiles != null)
-                location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
+            //location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
             location.LinkVersion = Core.Links.LocalTrust.Header.Version;
 
 
             byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, location);
 
-            Core.OperationNet.Store.PublishNetwork(Core.LocalDhtID, ComponentID.Location, 0, signed);
+            Core.OperationNet.Store.PublishNetwork(Core.LocalDhtID, ServiceID, 0, signed);
 
-            OperationStore_Local(new DataReq(null, Core.LocalDhtID, ComponentID.Location, 0, signed));
+            OperationStore_Local(new DataReq(null, Core.LocalDhtID, ServiceID, 0, signed));
         }
 
         internal void StartSearch(ulong id, uint version, bool global)
@@ -288,7 +310,7 @@ namespace DeOps.Services.Location
 
             byte[] parameters = BitConverter.GetBytes(version);
 
-            DhtSearch search = network.Searches.Start(id, "Location", ComponentID.Location, 0, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = network.Searches.Start(id, "Location", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -298,7 +320,7 @@ namespace DeOps.Services.Location
         {
             foreach (SearchValue found in search.FoundValues)
             {
-                DataReq location = new DataReq(found.Sources, search.TargetID, ComponentID.Location, 0, found.Value);
+                DataReq location = new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value);
 
                 if (search.Network == Core.GlobalNet)
                 {
@@ -394,16 +416,14 @@ namespace DeOps.Services.Location
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Core.OperationNet.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Location.KeyID, ComponentID.Location, 0, current.SignedData));
+                            Core.OperationNet.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Location.KeyID, ServiceID, 0, current.SignedData));
 
                     return;
                 }
             }
 
             // version checks
-            if(Core.Profiles != null)
-                Core.Profiles.CheckVersion(location.KeyID, location.ProfileVersion);
-
+            //Core.Profiles.CheckVersion(location.KeyID, location.ProfileVersion);
             Core.Links.CheckVersion(location.KeyID, location.LinkVersion);
 
 
@@ -484,9 +504,7 @@ namespace DeOps.Services.Location
             location.Place = Core.User.Settings.Location;
             location.Version = LocationVersion++;
             location.LinkVersion = Core.Links.LocalTrust.Header.Version;
-
-            if(Core.Profiles != null)
-                location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
+            //location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
 
             location.TTL = LocationData.GLOBAL_TTL; // set expire 1 hour
 
@@ -497,9 +515,9 @@ namespace DeOps.Services.Location
 
             data = new CryptLoc(60 * 60, data).Encode(Core.Protocol);
 
-            Core.GlobalNet.Store.PublishNetwork(Core.OpID, ComponentID.Location, 0, data);
+            Core.GlobalNet.Store.PublishNetwork(Core.OpID, ServiceID, 0, data);
 
-            GlobalStore_Local(new DataReq(null, Core.OpID, ComponentID.Location, 0, data));
+            GlobalStore_Local(new DataReq(null, Core.OpID, ServiceID, 0, data));
         }
 
 

@@ -9,7 +9,7 @@ using System.Windows.Forms;
 
 using DeOps.Interface;
 using DeOps.Implementation;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Interface.TLVex;
 using DeOps.Interface.Views;
 
@@ -19,8 +19,8 @@ namespace DeOps.Services.Plan
     internal partial class GoalsView : ViewShell
     {
         internal OpCore Core;
-        internal PlanControl Plans;
-        internal LinkControl Links;
+        internal PlanService Plans;
+        internal TrustService Links;
 
         internal ulong DhtID;
         internal uint ProjectID;
@@ -115,7 +115,7 @@ namespace DeOps.Services.Plan
                                     </html>";
 
 
-        internal GoalsView(PlanControl plans, ulong id, uint project)
+        internal GoalsView(PlanService plans, ulong id, uint project)
         {
             InitializeComponent();
 
@@ -342,7 +342,7 @@ namespace DeOps.Services.Plan
             goal.Person = Core.LocalDhtID;
             goal.End = Core.TimeNow.AddDays(30).ToUniversalTime();
 
-            EditGoal form = new EditGoal(EditGoalMode.New, Core, goal);
+            EditGoal form = new EditGoal(EditGoalMode.New, this, goal);
 
             if (form.ShowDialog(this) == DialogResult.OK)
             {

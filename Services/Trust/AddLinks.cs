@@ -7,20 +7,20 @@ using System.Text;
 using System.Windows.Forms;
 
 using DeOps.Interface.TLVex;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 
 
-namespace DeOps.Services.Link
+namespace DeOps.Services.Trust
 {
     internal partial class AddLinks : Form
     {
-        LinkControl Links;
+        TrustService Links;
         uint ProjectID;
 
         internal List<ulong> People = new List<ulong>();
 
 
-        internal AddLinks(LinkControl links, uint project)
+        internal AddLinks(TrustService links, uint project)
         {
             InitializeComponent();
 

@@ -321,7 +321,7 @@ namespace DeOps.Interface.Tools
                     {
                         CommData data = CommData.Decode(Protocol, root);
 
-                        name += " - " + GetVariableName(typeof(ComponentID), data.Component);
+                        name += " - " + data.Service.ToString(); // GetVariableName(typeof(ServiceID), data.Service);
                     }
 
                 }
@@ -369,7 +369,7 @@ namespace DeOps.Interface.Tools
                             }
 
                             if(id != 0)
-                                name += " - " + GetVariableName(typeof(ComponentID), id);
+                                name += " - " + id.ToString(); // GetVariableName(typeof(ServiceID), id);
                         }
                     }
                 }

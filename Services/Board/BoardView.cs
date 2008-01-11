@@ -14,15 +14,15 @@ using DeOps.Interface;
 using DeOps.Interface.TLVex;
 using DeOps.Interface.Views;
 
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 
 namespace DeOps.Services.Board
 {
     internal partial class BoardView : ViewShell
     {
         OpCore Core;
-        BoardControl Boards;
-        LinkControl Links;
+        BoardService Boards;
+        TrustService Links;
 
         ulong DhtID;
         uint ProjectID;
@@ -64,7 +64,7 @@ namespace DeOps.Services.Board
                 </body>
             </html>";
 
-        internal BoardView(BoardControl boards, ulong id, uint project)
+        internal BoardView(BoardService boards, ulong id, uint project)
         {
             InitializeComponent();
 
@@ -287,7 +287,7 @@ namespace DeOps.Services.Board
 
                 if (!ThreadMap.ContainsKey(post.Ident))
                 {
-                    node = new PostViewNode(Core, post, level, post.Header.Scope);
+                    node = new PostViewNode(Boards, post, level, post.Header.Scope);
                     ThreadMap[post.Ident] = node;
 
                     PostView.Nodes.Add(node);
@@ -295,7 +295,7 @@ namespace DeOps.Services.Board
                 else
                 {
                     node = ThreadMap[post.Ident];
-                    node.Update(Core, post);
+                    node.Update(Boards, post);
                 }
 
                 if (node.Selected)
@@ -340,7 +340,7 @@ namespace DeOps.Services.Board
 
                 if (!ActiveThreads[parentIdent].ContainsKey(post.Ident))
                 {
-                    replyNode = new PostViewNode(Core, post, ScopeType.All, ScopeType.All);
+                    replyNode = new PostViewNode(Boards, post, ScopeType.All, ScopeType.All);
 
                     ActiveThreads[parentIdent][post.Ident] = replyNode;
                     parentNode.Nodes.Add(replyNode);
@@ -348,7 +348,7 @@ namespace DeOps.Services.Board
                 else
                 {
                     replyNode = ActiveThreads[parentIdent][post.Ident];
-                    replyNode.Update(Core, post);
+                    replyNode.Update(Boards, post);
                 }
 
                 if (replyNode.Selected)
@@ -713,7 +713,7 @@ namespace DeOps.Services.Board
         ScopeType Position;
         ScopeType Scope;
 
-        internal PostViewNode(OpCore core, OpPost post, ScopeType position, ScopeType scope)
+        internal PostViewNode(BoardService boards, OpPost post, ScopeType position, ScopeType scope)
         {
             Post = post;
             Position = position;
@@ -723,16 +723,16 @@ namespace DeOps.Services.Board
             SubItems.Add(new ContainerSubListViewItem());
             SubItems.Add(new ContainerSubListViewItem());
 
-            Update(core, post);
+            Update(boards, post);
         }
 
 
-        internal void Update(OpCore Core, OpPost post)
+        internal void Update(BoardService boards, OpPost post)
         {
             Post = post; // editing a post will build a new header, create a new object
 
-            Text = Core.Board.GetPostInfo(post);
-            SubItems[0].Text = Core.Links.GetName(post.Header.SourceID);
+            Text = boards.GetPostInfo(post);
+            SubItems[0].Text = boards.Core.Links.GetName(post.Header.SourceID);
             SubItems[1].Text = Utilities.FormatTime(post.Header.Time);
 
             if (post.Header.ParentID == 0 && post.Replies > 0)

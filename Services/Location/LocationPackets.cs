@@ -42,7 +42,6 @@ namespace DeOps.Services.Location
         internal string Place = "";
         internal uint TTL;
         internal uint Version;
-        internal uint ProfileVersion;
         internal uint LinkVersion;
 
         internal int GmtOffset;
@@ -66,7 +65,6 @@ namespace DeOps.Services.Location
                 protocol.WritePacket(loc, Packet_Place, protocol.UTF.GetBytes(Place));
                 protocol.WritePacket(loc, Packet_TTL, BitConverter.GetBytes(TTL));
                 protocol.WritePacket(loc, Packet_Version, BitConverter.GetBytes(Version));
-                protocol.WritePacket(loc, Packet_ProfileVersion, BitConverter.GetBytes(ProfileVersion));
                 protocol.WritePacket(loc, Packet_LinkVersion, BitConverter.GetBytes(LinkVersion));
                 protocol.WritePacket(loc, Packet_GMTOffset, BitConverter.GetBytes(GmtOffset));
                 protocol.WritePacket(loc, Packet_Away, BitConverter.GetBytes(Away));
@@ -126,10 +124,6 @@ namespace DeOps.Services.Location
 
                     case Packet_Version:
                         loc.Version = BitConverter.ToUInt32(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_ProfileVersion:
-                        loc.ProfileVersion = BitConverter.ToUInt32(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_LinkVersion:

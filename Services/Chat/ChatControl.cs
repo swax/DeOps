@@ -8,7 +8,7 @@ using System.Windows.Forms;
 using DeOps.Implementation;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Transport;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Services.Location;
 
 namespace DeOps.Services.Chat
@@ -16,10 +16,13 @@ namespace DeOps.Services.Chat
     internal delegate void RefreshHandler();
     internal delegate void InvitedHandler(ulong inviter, ChatRoom room);
 
-    internal class ChatControl : OpComponent
+    internal class ChatService : OpService
     {
+        public string Name { get { return "Chat"; } }
+        public ushort ServiceID { get { return 6; } }
+
         internal OpCore Core;
-        internal LinkControl Links;
+        internal TrustService Links;
 
         //internal ThreadedList<ChatRoom> Rooms = new ThreadedList<ChatRoom>();
         internal ThreadedDictionary<uint, ChatRoom> RoomMap = new ThreadedDictionary<uint, ChatRoom>();
@@ -30,18 +33,17 @@ namespace DeOps.Services.Chat
         internal InvitedHandler Invited;
 
 
-        internal ChatControl(OpCore core)
+        internal ChatService(OpCore core)
         {
             Core = core;
             Links = core.Links;
 
             Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData[ComponentID.Chat] = new SessionDataHandler(Session_Data);
+            Core.RudpControl.SessionData[ServiceID, 0] = new SessionDataHandler(Session_Data);
             Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
 
             Core.LoadEvent += new LoadHandler(Core_Load);
             Core.TimerEvent += new TimerHandler(Core_Timer);
-            Core.ExitEvent += new ExitHandler(Core_Exit);
         }
 
         void Core_Load()
@@ -52,13 +54,23 @@ namespace DeOps.Services.Chat
             Link_Update(Links.LocalTrust);
         }
 
-        void Core_Exit()
+        public void Dispose()
         {
             if (Refresh != null)
                 throw new Exception("Chat Events not fin'd");
+
+            Core.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
+            Core.RudpControl.SessionData.Remove(ServiceID, 0);
+            Core.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
+
+            Core.LoadEvent -= new LoadHandler(Core_Load);
+            Core.TimerEvent -= new TimerHandler(Core_Timer);
+
+            Links.LinkUpdate -= new LinkUpdateHandler(Link_Update);
+            Core.Locations.LocationUpdate -= new LocationUpdateHandler(Location_Update);
         }
 
-        internal override List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
+        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
         {
             if (key != Core.LocalDhtID)
                 return null;
@@ -477,7 +489,7 @@ namespace DeOps.Services.Chat
                    foreach (RudpSession session in Core.RudpControl.GetActiveSessions(member))
                    {
                        sent = true;
-                       session.SendData(ComponentID.Chat, message, true);
+                       session.SendData(ServiceID, 0, message, true);
                    }
             });
 
@@ -543,7 +555,7 @@ namespace DeOps.Services.Chat
                             // invite not sent
                             if (room.Host == Core.LocalDhtID)
                             {
-                                session.SendData(ComponentID.Chat, room.Invites[session.DhtID].First, true);
+                                session.SendData(ServiceID, 0, room.Invites[session.DhtID].First, true);
                                 room.Invites[session.DhtID].Second.Add(session.ClientID);
                                 AlertInviteSent(room, session);
                                 SendWhoResponse(room, session);
@@ -702,7 +714,7 @@ namespace DeOps.Services.Chat
                     }
             });
 
-            session.SendData(ComponentID.Chat, status, true);
+            session.SendData(ServiceID, 0, status, true);
         }
 
         internal void SendInviteRequest(ChatRoom room, ulong id)
@@ -743,7 +755,7 @@ namespace DeOps.Services.Chat
             // send invite to already connected locations
             foreach (RudpSession session in Core.RudpControl.GetActiveSessions(id))
             {
-                session.SendData(ComponentID.Chat, invite, true);
+                session.SendData(ServiceID, 0, invite, true);
                 room.Invites[id].Second.Add(session.ClientID);
                 AlertInviteSent(room, session);
                 SendStatus(room); // so we get added as active to new room invitee creates
@@ -792,7 +804,7 @@ namespace DeOps.Services.Chat
             invite.Title = room.Title;
             invite.SignedInvite = room.Invites[Core.LocalDhtID].First.SignedInvite;
 
-            session.SendData(ComponentID.Chat, invite, true);
+            session.SendData(ServiceID, 0, invite, true);
         }
 
         void ReceiveInvite(ChatInvite invite, RudpSession session)
@@ -890,7 +902,7 @@ namespace DeOps.Services.Chat
             ChatWho whoReq = new ChatWho();
             whoReq.Request = true;
             whoReq.RoomID = room.RoomID;
-            session.SendData(ComponentID.Chat, whoReq, true);
+            session.SendData(ServiceID, 0, whoReq, true);
         }
 
         void SendWhoResponse(ChatRoom room, RudpSession session)
@@ -921,7 +933,7 @@ namespace DeOps.Services.Chat
 
             // send who to already connected locations
             foreach(ChatWho packet in whoPackets)
-                session.SendData(ComponentID.Chat, packet, true);
+                session.SendData(ServiceID, 0, packet, true);
         }
 
 

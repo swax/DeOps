@@ -1,4 +1,4 @@
-namespace DeOps.Services.Link
+namespace DeOps.Services.Trust
 {
     partial class EditLink
     {

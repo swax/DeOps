@@ -11,7 +11,7 @@ using DeOps.Implementation;
 using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Services.Location;
 using DeOps.Services.Transfer;
 
@@ -23,13 +23,16 @@ namespace DeOps.Services.Storage
     internal delegate void WorkingUpdateHandler(uint project, string dir, ulong uid, WorkingChange action);
 
 
-    class StorageControl : OpComponent
+    class StorageService : OpService
     {
+        public string Name { get { return "Storage"; } }
+        public ushort ServiceID { get { return 10; } }
+
         internal OpCore Core;
         internal G2Protocol Protocol;
         internal DhtNetwork Network;
         internal DhtStore Store;
-        internal LinkControl Links;
+        internal TrustService Links;
 
         internal string StoragePath;
         internal OpStorage LocalStorage;
@@ -64,25 +67,23 @@ namespace DeOps.Services.Storage
         internal Queue<HashPack> HashQueue = new Queue<HashPack>();
 
 
-        internal StorageControl(OpCore core)
+        internal StorageService(OpCore core)
         {
             Core = core;
             Protocol = core.Protocol;
-            Core.Storages = this;
             Network = core.OperationNet;
             Store = Network.Store;
 
             Core.LoadEvent += new LoadHandler(Core_Load);
-            Core.ExitEvent += new ExitHandler(Core_Exit);
             Core.TimerEvent += new TimerHandler(Core_Timer);
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ComponentID.Storage, 0] = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ComponentID.Storage, 0] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ComponentID.Storage, 0] = new PatchHandler(Store_Patch);
+            Store.StoreEvent[ServiceID, 0] = new StoreHandler(Store_Local);
+            Store.ReplicateEvent[ServiceID, 0] = new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[ServiceID, 0] = new PatchHandler(Store_Patch);
 
-            Network.Searches.SearchEvent[ComponentID.Storage, 0] = new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[ServiceID, 0] = new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
                 PruneSize = 25;  
@@ -92,12 +93,12 @@ namespace DeOps.Services.Storage
         {
             Links = Core.Links;
 
-            Core.Transfers.FileSearch[ComponentID.Storage] = new FileSearchHandler(Transfers_FileSearch);
-            Core.Transfers.FileRequest[ComponentID.Storage] = new FileRequestHandler(Transfers_FileRequest);
+            Core.Transfers.FileSearch[ServiceID, 0] = new FileSearchHandler(Transfers_FileSearch);
+            Core.Transfers.FileRequest[ServiceID, 0] = new FileRequestHandler(Transfers_FileRequest);
 
             Core.Links.LinkUpdate += new LinkUpdateHandler(Links_LinkUpdate);
 
-            StoragePath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ComponentID.Storage.ToString();
+            StoragePath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
             Directory.CreateDirectory(StoragePath);
             Directory.CreateDirectory(StoragePath + Path.DirectorySeparatorChar + "0");
             Directory.CreateDirectory(StoragePath + Path.DirectorySeparatorChar + "1");
@@ -130,9 +131,8 @@ namespace DeOps.Services.Storage
             }
         }
 
-        void Core_Exit()
+        public void Dispose()
         {
-      
             if(HashingActive())
             {
                 HashStatus status = new HashStatus(this);
@@ -174,6 +174,7 @@ namespace DeOps.Services.Storage
                             }
                 }
             });
+
             // security warning: could not secure these files
             if (errors.Count > 0)
             {
@@ -185,6 +186,23 @@ namespace DeOps.Services.Storage
 
                 MessageBox.Show(message, "De-Ops");
             }
+
+            // kill events
+            Core.LoadEvent -= new LoadHandler(Core_Load);
+            Core.TimerEvent -= new TimerHandler(Core_Timer);
+
+            Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
+
+            Store.StoreEvent.Remove(ServiceID, 0);
+            Store.ReplicateEvent.Remove(ServiceID, 0);
+            Store.PatchEvent.Remove(ServiceID, 0);
+
+            Network.Searches.SearchEvent.Remove(ServiceID, 0);
+
+            Core.Transfers.FileSearch.Remove(ServiceID, 0);
+            Core.Transfers.FileRequest.Remove(ServiceID, 0);
+
+            Core.Links.LinkUpdate -= new LinkUpdateHandler(Links_LinkUpdate);
         }
 
         void Core_Timer()
@@ -285,7 +303,7 @@ namespace DeOps.Services.Storage
             });
         }
 
-        internal override List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
+        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
         {
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
 
@@ -503,9 +521,9 @@ namespace DeOps.Services.Storage
                     return;
 
                 // publish header
-                Store.PublishNetwork(Core.LocalDhtID, ComponentID.Storage, 0, storage.SignedHeader);
+                Store.PublishNetwork(Core.LocalDhtID, ServiceID, 0, storage.SignedHeader);
 
-                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ComponentID.Storage, 0, storage.SignedHeader);
+                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, 0, storage.SignedHeader);
 
             }
             catch (Exception ex)
@@ -529,7 +547,7 @@ namespace DeOps.Services.Storage
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ComponentID.Storage, 0, current.SignedHeader));
+                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ServiceID, 0, current.SignedHeader));
 
                     return;
                 }
@@ -551,7 +569,7 @@ namespace DeOps.Services.Storage
             if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
                 return;
 
-            FileDetails details = new FileDetails(ComponentID.Storage, header.FileHash, header.FileSize, BitConverter.GetBytes(StoragePacket.Header));
+            FileDetails details = new FileDetails(ServiceID, 0, header.FileHash, header.FileSize, BitConverter.GetBytes(StoragePacket.Header));
 
             Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
         }
@@ -653,7 +671,7 @@ namespace DeOps.Services.Storage
                             if (newStorage.DhtID == Core.LocalDhtID || Links.IsHigher(newStorage.DhtID, project))
                                 Links.GetLocsBelow(Core.LocalDhtID, project, locations);
                     });
-                    Store.PublishDirect(locations, newStorage.DhtID, ComponentID.Storage, 0, newStorage.SignedHeader);
+                    Store.PublishDirect(locations, newStorage.DhtID, ServiceID, 0, newStorage.SignedHeader);
                 }
 
                 if (StorageUpdate != null)
@@ -812,7 +830,7 @@ namespace DeOps.Services.Storage
                 {
                     if (storage.Header.Version > version)
                     {
-                        Store.Send_StoreReq(source, 0, new DataReq(null, storage.DhtID, ComponentID.Storage, 0, storage.SignedHeader));
+                        Store.Send_StoreReq(source, 0, new DataReq(null, storage.DhtID, ServiceID, 0, storage.SignedHeader));
                         continue;
                     }
 
@@ -826,7 +844,7 @@ namespace DeOps.Services.Storage
                 
 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, ComponentID.Storage, 0, BitConverter.GetBytes(version));
+                    Network.Searches.SendDirectRequest(source, dhtid, ServiceID, 0, BitConverter.GetBytes(version));
                 else
                     DownloadLater[dhtid] = version;
             }
@@ -841,7 +859,7 @@ namespace DeOps.Services.Storage
             }
 
             byte[] parameters = BitConverter.GetBytes(version);
-            DhtSearch search = Core.OperationNet.Searches.Start(key, "Storage", ComponentID.Storage, 0, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Core.OperationNet.Searches.Start(key, "Storage", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -850,7 +868,7 @@ namespace DeOps.Services.Storage
         void EndSearch(DhtSearch search)
         {
             foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ComponentID.Storage, 0, found.Value));
+                Store_Local(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
         }
 
         List<byte[]> Search_Local(ulong key, byte[] parameters)
@@ -884,7 +902,7 @@ namespace DeOps.Services.Storage
                     {
                         // republish objects that were not seen on the network during startup
                         if (storage.Unique)
-                            Store.PublishNetwork(storage.DhtID, ComponentID.Storage, 0, storage.SignedHeader);
+                            Store.PublishNetwork(storage.DhtID, ServiceID, 0, storage.SignedHeader);
 
                         // trigger download of files now in cache range
                         LoadHeaderFile(GetFilePath(storage.Header), storage, true, false);
@@ -1071,7 +1089,7 @@ namespace DeOps.Services.Storage
             if (file.Hash == null)
                 return;
 
-            FileDetails details = new FileDetails(ComponentID.Storage, file.Hash, file.Size, BitConverter.GetBytes(StoragePacket.File));
+            FileDetails details = new FileDetails(ServiceID, 0, file.Hash, file.Size, BitConverter.GetBytes(StoragePacket.File));
 
             Core.Transfers.StartDownload(id, details, new object[] { file }, new EndDownloadHandler(EndDownloadFile));
         }
@@ -1349,7 +1367,7 @@ namespace DeOps.Services.Storage
         {
             // returns null if file not being handled by transfer component
 
-            return Core.Transfers.GetStatus(ComponentID.Storage, file.Hash, file.Size);
+            return Core.Transfers.GetStatus(ServiceID, file.Hash, file.Size);
         }
 
         internal bool IsFileUnlocked(ulong dht, uint project, string path, StorageFile file, bool history)

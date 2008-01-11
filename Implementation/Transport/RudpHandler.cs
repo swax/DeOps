@@ -25,7 +25,7 @@ namespace DeOps.Implementation.Transport
         internal Dictionary<ulong, List<RudpSession>> SessionMap = new Dictionary<ulong, List<RudpSession>>();
 
         internal SessionUpdateHandler SessionUpdate;
-        internal Dictionary<ushort,SessionDataHandler> SessionData = new Dictionary<ushort,SessionDataHandler>();
+        internal ServiceEvent<SessionDataHandler> SessionData = new ServiceEvent<SessionDataHandler>();
         internal KeepActiveHandler KeepActive;
 
         internal RudpHandler(OpCore core)

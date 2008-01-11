@@ -55,7 +55,7 @@ namespace DeOps.Implementation.Dht
 			{
 				// if behind nat this is how we ensure we are at closest proxy
 				// slightly off to avoid proxy host from returning with a found
-                Network.Searches.Start(Core.LocalDhtID + 1, "Self", ComponentID.Node, 0, null, new EndSearchHandler(EndSelfSearch));
+                Network.Searches.Start(Core.LocalDhtID + 1, "Self", Core.DhtServiceID, 0, null, new EndSearchHandler(EndSelfSearch));
                 NextSelfSearch = Core.TimeNow.AddHours(1);
 			}
 
@@ -83,7 +83,7 @@ namespace DeOps.Implementation.Dht
                 Core.TimeNow > bucket.NextRefresh)
 			{
 				// get random id in bucket
-                Network.Searches.Start(bucket.GetRandomBucketID(), "Low Bucket", ComponentID.Node, 0, null, null);
+                Network.Searches.Start(bucket.GetRandomBucketID(), "Low Bucket", Core.DhtServiceID, 0, null, null);
                 bucket.NextRefresh = Core.TimeNow.AddMinutes(15);
 			}
 

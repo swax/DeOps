@@ -11,7 +11,7 @@ using System.Windows.Forms;
 
 using DeOps.Interface;
 using DeOps.Implementation;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Interface.TLVex;
 using DeOps.Interface.Views;
 
@@ -21,8 +21,8 @@ namespace DeOps.Services.Mail
     internal partial class MailView : ViewShell
     {
         OpCore Core;
-        MailControl Mail;
-        LinkControl Links;
+        MailService Mail;
+        TrustService Links;
 
         private ListViewColumnSorter lvwColumnSorter = new ListViewColumnSorter();
 
@@ -65,7 +65,7 @@ namespace DeOps.Services.Mail
             </html>";
 
 
-        internal MailView(MailControl mail)
+        internal MailView(MailService mail)
         {
             InitializeComponent();
 

@@ -11,8 +11,9 @@ using DeOps.Interface.TLVex;
 using DeOps.Interface.Views;
 using DeOps.Implementation;
 using DeOps.Implementation.Transport;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 using DeOps.Services.IM;
+using DeOps.Services.Mail;
 using DeOps.Services.Location;
 
 
@@ -21,12 +22,12 @@ namespace DeOps.Services.Chat
     internal partial class RoomView : UserControl
     {
         internal ChatView ParentView;
-        internal ChatControl Chat;
+        internal ChatService Chat;
         internal ChatRoom Room;
 
         internal OpCore Core;
-        LocationControl Locations;
-        LinkControl Links;
+        LocationService Locations;
+        TrustService Links;
 
         MenuItem TimestampMenu;
 
@@ -38,7 +39,7 @@ namespace DeOps.Services.Chat
         Dictionary<ulong, MemberNode> NodeMap = new Dictionary<ulong, MemberNode>();
 
 
-        internal RoomView(ChatView parent, ChatControl chat, ChatRoom room)
+        internal RoomView(ChatView parent, ChatService chat, ChatRoom room)
         {
             InitializeComponent();
 
@@ -314,9 +315,9 @@ namespace DeOps.Services.Chat
             List<ToolStripMenuItem> quickMenus = new List<ToolStripMenuItem>();
             List<ToolStripMenuItem> extMenus = new List<ToolStripMenuItem>();
 
-            foreach (OpComponent component in Core.Components.Values)
+            foreach (OpService component in Core.ServiceMap.Values)
             {
-                if (component is LinkControl)
+                if (component is TrustService)
                     continue;
 
                 // quick
@@ -366,9 +367,19 @@ namespace DeOps.Services.Chat
             OpMenuItem info = new OpMenuItem(node.DhtID, 0);
 
             if (Locations.LocationMap.SafeContainsKey(node.DhtID))
-                ((IMControl)Core.Components[ComponentID.IM]).QuickMenu_View(info, null);
+            {
+                IMService IM = Core.GetService("IM") as IMService;
+
+                if (IM != null)
+                    IM.QuickMenu_View(info, null);
+            }
             else
-                Core.Mail.QuickMenu_View(info, null);
+            {
+                MailService Mail = Core.GetService("Mail") as MailService;
+
+                if (Mail != null)
+                    Mail.QuickMenu_View(info, null);
+            }
         }
 
         void Menu_Timestamps(object sender, EventArgs e)

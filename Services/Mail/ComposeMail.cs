@@ -9,15 +9,15 @@ using System.Windows.Forms;
 
 using DeOps.Implementation;
 using DeOps.Interface;
-using DeOps.Services.Link;
+using DeOps.Services.Trust;
 
 
 namespace DeOps.Services.Mail
 {
     internal partial class ComposeMail : ViewShell
     {
-        MailControl Mail;
-        LinkControl Links;
+        MailService Mail;
+        TrustService Links;
 
         ulong DefaultID;
         bool MessageSent;
@@ -25,7 +25,7 @@ namespace DeOps.Services.Mail
         List<ulong> ToIDs = new List<ulong>();
 
 
-        internal ComposeMail(MailControl mail, ulong id)
+        internal ComposeMail(MailService mail, ulong id)
         {
             InitializeComponent();
 
