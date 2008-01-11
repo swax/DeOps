@@ -134,8 +134,18 @@
     <Compile Include="AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Services\VersionedFile\FileService.cs" />
-    <Compile Include="Services\Board\BoardControl.cs" />
+    <Compile Include="Services\Board\BoardService.cs" />
+    <Compile Include="Services\Chat\ChatService.cs" />
+    <Compile Include="Services\IM\IMService.cs" />
+    <Compile Include="Services\Location\LocationService.cs" />
+    <Compile Include="Services\Mail\MailService.cs" />
+    <Compile Include="Services\OpService.cs" />
+    <Compile Include="Services\Plan\PlanService.cs" />
+    <Compile Include="Services\Profile\ProfileService.cs" />
+    <Compile Include="Services\Storage\StorageService.cs" />
+    <Compile Include="Services\Transfer\TransferService.cs" />
+    <Compile Include="Services\Trust\TrustService.cs" />
+    <Compile Include="Services\VersionedFile\FileAssist.cs" />
     <Compile Include="Services\Board\BoardPackets.cs" />
     <Compile Include="Services\Board\Res\BoardRes.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -154,7 +164,6 @@
     <Compile Include="Services\Board\PostMessage.Designer.cs">
       <DependentUpon>PostMessage.cs</DependentUpon>
     </Compile>
-    <Compile Include="Services\Chat\ChatControl.cs" />
     <Compile Include="Services\Chat\ChatPackets.cs" />
     <Compile Include="Services\Chat\CreateRoom.cs">
       <SubType>Form</SubType>
@@ -167,7 +176,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>ChatRes.resx</DependentUpon>
     </Compile>
-    <Compile Include="Services\IM\IMControl.cs" />
     <Compile Include="Services\IM\IMPackets.cs" />
     <Compile Include="Services\IM\Res\IMRes.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -257,7 +265,6 @@
     <Compile Include="Services\Plan\Schedule\ScheduleView.Designer.cs">
       <DependentUpon>ScheduleView.cs</DependentUpon>
     </Compile>
-    <Compile Include="Services\Plan\PlanControl.cs" />
     <Compile Include="Services\Plan\PlanPackets.cs" />
     <Compile Include="Services\Trust\AddLinks.cs">
       <SubType>Form</SubType>
@@ -271,11 +278,8 @@
     <Compile Include="Services\Profile\EditTemplate.Designer.cs">
       <DependentUpon>EditTemplate.cs</DependentUpon>
     </Compile>
-    <Compile Include="Services\Location\LocationControl.cs" />
     <Compile Include="Services\Location\LocationPackets.cs" />
-    <Compile Include="Services\Mail\MailControl.cs" />
     <Compile Include="Services\Mail\MailPackets.cs" />
-    <Compile Include="Services\OpComponent.cs" />
     <Compile Include="Services\Profile\EditProfile.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -288,7 +292,6 @@
     <Compile Include="Services\Profile\PreviewTemplate.Designer.cs">
       <DependentUpon>PreviewTemplate.cs</DependentUpon>
     </Compile>
-    <Compile Include="Services\Profile\ProfileControl.cs" />
     <Compile Include="Services\Profile\ProfilePackets.cs" />
     <Compile Include="Services\Profile\Res\ProfileRes.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -331,7 +334,6 @@
     <Compile Include="Services\Storage\Forms\LockMessage.Designer.cs">
       <DependentUpon>LockMessage.cs</DependentUpon>
     </Compile>
-    <Compile Include="Services\Storage\StorageControl.cs" />
     <Compile Include="Services\Storage\StoragePackets.cs" />
     <Compile Include="Services\Storage\StorageView.cs">
       <SubType>UserControl</SubType>
@@ -351,7 +353,6 @@
       <DependentUpon>UnlockForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Services\Storage\WorkingStorage.cs" />
-    <Compile Include="Services\Transfer\TransferControl.cs" />
     <Compile Include="Services\Transfer\TransferPackets.cs" />
     <Compile Include="Services\Transfer\TransferView.cs">
       <SubType>Form</SubType>
@@ -553,7 +554,6 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="Services\Trust\TrustControl.cs" />
     <Compile Include="Services\Trust\TrustPackets.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Simulator\LegendForm.cs">
