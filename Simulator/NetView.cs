@@ -233,7 +233,7 @@ namespace RiseOp.Simulator
                 profiles.ProfileMap.LockReading(delegate()
                 {
                     foreach (OpProfile profile in profiles.ProfileMap.Values)
-                        if (Utilities.MemCompare(profile.Header.FileHash, TrackHash))
+                        if (Utilities.MemCompare(profile.File.Header.FileHash, TrackHash))
                             found = true ;
                 });
 

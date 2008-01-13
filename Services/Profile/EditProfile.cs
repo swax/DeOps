@@ -133,8 +133,8 @@ namespace RiseOp.Services.Profile
             ProfileTemplate template = new ProfileTemplate(false, true);
 
             template.User = Links.GetName(id); ;
-            template.FilePath = Profiles.GetFilePath(profile.Header);
-            template.FileKey  = profile.Header.FileKey;
+            template.FilePath = Profiles.Cache.GetFilePath(profile.File.Header);
+            template.FileKey  = profile.File.Header.FileKey;
 
             if (!profile.Loaded)
                 Profiles.LoadProfile(profile.DhtID);
@@ -146,7 +146,7 @@ namespace RiseOp.Services.Profile
 
                 int buffSize = 4096;
                 byte[] buffer = new byte[4096];
-                long bytesLeft = profile.Header.EmbeddedStart;
+                long bytesLeft = profile.EmbeddedStart;
                 while (bytesLeft > 0)
                 {
                     int readSize = (bytesLeft > (long)buffSize) ? buffSize : (int)bytesLeft;
@@ -154,11 +154,11 @@ namespace RiseOp.Services.Profile
                     bytesLeft -= (long)read;
                 }
 
-                foreach (ProfileFile file in profile.Files)
-                    if (file.Name.StartsWith("template"))
+                foreach (ProfileAttachment attach in profile.Attached)
+                    if (attach.Name.StartsWith("template"))
                     {
-                        byte[] html = new byte[file.Size];
-                        crypto.Read(html, 0, (int)file.Size);
+                        byte[] html = new byte[attach.Size];
+                        crypto.Read(html, 0, (int)attach.Size);
 
                         template.Html = Core.Protocol.UTF.GetString(html);
                         SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider();

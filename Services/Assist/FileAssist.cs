@@ -14,11 +14,11 @@ using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
 
 
-namespace RiseOp.Services.VersionedFile
+namespace RiseOp.Services.Assist
 {
     internal delegate void FileAquiredHandler(OpVersionedFile file);
 
-    class VersionedFileAssist
+    class VersionedCache
     {
         OpCore Core;
         DhtNetwork Network;
@@ -27,8 +27,8 @@ namespace RiseOp.Services.VersionedFile
         internal ushort Service;
         internal ushort DataType;
 
-        RijndaelManaged LocalFileKey;
-        string VersionedFilePath;
+        RijndaelManaged LocalKey;
+        string CachePath;
 
         internal ThreadedDictionary<ulong, OpVersionedFile> FileMap = new ThreadedDictionary<ulong, OpVersionedFile>();
        
@@ -40,7 +40,7 @@ namespace RiseOp.Services.VersionedFile
 
         internal FileAquiredHandler FileAquired;
 
-        internal VersionedFileAssist(DhtNetwork network, ushort service, ushort type)
+        internal VersionedCache(DhtNetwork network, ushort service, ushort type)
         {
             Core    = network.Core;
             Network = network;
@@ -49,14 +49,14 @@ namespace RiseOp.Services.VersionedFile
             Service = service;
             DataType = type;
 
-            VersionedFilePath = Core.User.RootPath + Path.DirectorySeparatorChar +
+            CachePath = Core.User.RootPath + Path.DirectorySeparatorChar +
                         "Data" + Path.DirectorySeparatorChar +
                         Service.ToString() + Path.DirectorySeparatorChar +
                         DataType.ToString();
 
-            Directory.CreateDirectory(VersionedFilePath);
+            Directory.CreateDirectory(CachePath);
 
-            LocalFileKey = Core.User.Settings.FileKey;
+            LocalKey = Core.User.Settings.FileKey;
 
             Core.LoadEvent += new LoadHandler(Core_Load);
             Core.TimerEvent += new TimerHandler(Core_Timer);
@@ -182,13 +182,13 @@ namespace RiseOp.Services.VersionedFile
         {
             try
             {
-                string path = VersionedFilePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "VersionedFileHeaders");
+                string path = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalKey, "VersionedFileHeaders");
 
                 if (!File.Exists(path))
                     return;
 
                 FileStream file = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = new CryptoStream(file, LocalKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 
                 G2Header root = null;
@@ -222,7 +222,7 @@ namespace RiseOp.Services.VersionedFile
             {
                 string tempPath = Core.GetTempPath();
                 FileStream file = new FileStream(tempPath, FileMode.Create);
-                CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
+                CryptoStream stream = new CryptoStream(file, LocalKey.CreateEncryptor(), CryptoStreamMode.Write);
 
                 FileMap.LockReading(delegate()
                 {
@@ -235,7 +235,7 @@ namespace RiseOp.Services.VersionedFile
                 stream.Close();
 
 
-                string finalPath = VersionedFilePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "VersionedFileHeaders");
+                string finalPath = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalKey, "VersionedFileHeaders");
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -245,14 +245,14 @@ namespace RiseOp.Services.VersionedFile
             }
         }
 
-        internal OpVersionedFile UpdateLocal(string tempPath, RijndaelManaged key)
+        internal OpVersionedFile UpdateLocal(string tempPath, RijndaelManaged key, byte[] extra)
         {
             OpVersionedFile vfile = null;
 
             if (Core.InvokeRequired)
             {
                 // block until completed
-                Core.RunInCoreBlocked(delegate() { vfile = UpdateLocal(tempPath, key); });
+                Core.RunInCoreBlocked(delegate() { vfile = UpdateLocal(tempPath, key, extra); });
                 return vfile;
             }
 
@@ -274,6 +274,7 @@ namespace RiseOp.Services.VersionedFile
             header.KeyID = Core.LocalDhtID; // set so keycheck works
             header.Version++;
             header.FileKey = key;
+            header.Extra = extra;
 
 
             // finish building header
@@ -395,7 +396,7 @@ namespace RiseOp.Services.VersionedFile
 
         internal string GetFilePath(VersionedFileHeader header)
         {
-            return VersionedFilePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
+            return CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalKey, header.KeyID, header.FileHash);
         }
 
         private void Download(SignedData signed, VersionedFileHeader header)
@@ -613,7 +614,7 @@ namespace RiseOp.Services.VersionedFile
         const byte Packet_FileHash = 0x30;
         const byte Packet_FileSize = 0x40;
         const byte Packet_FileKey = 0x50;
-        const byte Packet_Data = 0x60;
+        const byte Packet_Extra = 0x60;
 
 
         internal byte[] Key;
@@ -621,7 +622,7 @@ namespace RiseOp.Services.VersionedFile
         internal byte[] FileHash;
         internal long FileSize;
         internal RijndaelManaged FileKey = new RijndaelManaged();
-        internal byte[] Data;
+        internal byte[] Extra;
         
         internal ulong KeyID;
 
@@ -637,7 +638,7 @@ namespace RiseOp.Services.VersionedFile
                 protocol.WritePacket(header, Packet_FileHash, FileHash);
                 protocol.WritePacket(header, Packet_FileSize, BitConverter.GetBytes(FileSize));
                 protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
-                protocol.WritePacket(header, Packet_Data, Data);
+                protocol.WritePacket(header, Packet_Extra, Extra);
 
                 return protocol.WriteFinish();
             }
@@ -690,8 +691,8 @@ namespace RiseOp.Services.VersionedFile
                         header.FileKey.IV = new byte[header.FileKey.IV.Length];
                         break;
 
-                    case Packet_Data:
-                        header.Data = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                    case Packet_Extra:
+                        header.Extra = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }

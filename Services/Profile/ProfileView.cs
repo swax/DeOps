@@ -150,7 +150,7 @@ namespace RiseOp.Services.Profile
 
             // display
 
-            string tempPath = Profiles.ProfilePath + Path.DirectorySeparatorChar + "0";
+            string tempPath = Profiles.ExtractPath + Path.DirectorySeparatorChar + "0";
 
 
             // create if needed, clear of pre-existing data
@@ -214,12 +214,12 @@ namespace RiseOp.Services.Profile
             
             try
             {
-                FileStream stream = new FileStream(service.GetFilePath(profile.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
-                CryptoStream crypto = new CryptoStream(stream, profile.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                FileStream stream = new FileStream(service.Cache.GetFilePath(profile.File.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
+                CryptoStream crypto = new CryptoStream(stream, profile.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                 int buffSize = 4096;
                 byte[] buffer = new byte[4096];
-                long bytesLeft = profile.Header.EmbeddedStart;
+                long bytesLeft = profile.EmbeddedStart;
                 while (bytesLeft > 0)
                 {
                     int readSize = (bytesLeft > (long)buffSize) ? buffSize : (int)bytesLeft;
@@ -228,21 +228,21 @@ namespace RiseOp.Services.Profile
                 }
 
                 // load file
-                foreach (ProfileFile file in profile.Files)
+                foreach (ProfileAttachment attached in profile.Attached)
                 {
-                    if (file.Name.StartsWith("template"))
+                    if (attached.Name.StartsWith("template"))
                     {
-                        byte[] html = new byte[file.Size];
-                        crypto.Read(html, 0, (int)file.Size);
+                        byte[] html = new byte[attached.Size];
+                        crypto.Read(html, 0, (int)attached.Size);
 
                         UTF8Encoding utf = new UTF8Encoding();
                         template = utf.GetString(html);
                     }
 
-                    else if (file.Name.StartsWith("fields"))
+                    else if (attached.Name.StartsWith("fields"))
                     {
-                        byte[] data = new byte[file.Size];
-                        crypto.Read(data, 0, (int)file.Size);
+                        byte[] data = new byte[attached.Size];
+                        crypto.Read(data, 0, (int)attached.Size);
 
                         int start = 0, length = data.Length;
                         G2ReadResult streamStatus = G2ReadResult.PACKET_GOOD;
@@ -272,9 +272,9 @@ namespace RiseOp.Services.Profile
                         }
                     }
 
-                    else if (file.Name.StartsWith("file=") && fileFields != null)
+                    else if (attached.Name.StartsWith("file=") && fileFields != null)
                     {
-                        string name = file.Name.Substring(5);
+                        string name = attached.Name.Substring(5);
 
                         try
                         {
@@ -289,7 +289,7 @@ namespace RiseOp.Services.Profile
                             fileFields[fileKey] = tempPath + Path.DirectorySeparatorChar + name;
                             FileStream extract = new FileStream(fileFields[fileKey], FileMode.CreateNew, FileAccess.Write);
 
-                            long remaining = file.Size;
+                            long remaining = attached.Size;
                             byte[] buff = new byte[2096];
 
                             while (remaining > 0)
@@ -371,7 +371,7 @@ namespace RiseOp.Services.Profile
                     // load default photo if none in file
                     else if (parts[0] == "file" && fileFields != null && parts[1] == "Photo")
                     {
-                        string path = service.ProfilePath + Path.DirectorySeparatorChar + "0";
+                        string path = service.ExtractPath + Path.DirectorySeparatorChar + "0";
 
                         // create if needed, clear of pre-existing data
                         if (!Directory.Exists(path))

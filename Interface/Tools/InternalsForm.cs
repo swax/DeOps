@@ -1202,8 +1202,8 @@ namespace RiseOp.Interface.Tools
                         Profiles.LoadProfile(profile.DhtID);
 
                     string embedded = "";
-                    foreach (ProfileFile file in profile.Files)
-                        embedded += file.Name + ": " + file.Size.ToString() + "bytes, ";
+                    foreach (ProfileAttachment attach in profile.Attached)
+                        embedded += attach.Name + ": " + attach.Size.ToString() + "bytes, ";
 
                     ListViewItem item = new ListViewItem(new string[]
 				{
@@ -1217,13 +1217,13 @@ namespace RiseOp.Interface.Tools
 					embedded
 				});
 
-                    if (profile.Header != null)
+                    if (profile.File.Header != null)
                     {
-                        item.SubItems[2] = new ListViewItem.ListViewSubItem(item, xStr(profile.Header.Version));
-                        item.SubItems[3] = new ListViewItem.ListViewSubItem(item, Utilities.BytestoHex(profile.Header.FileHash));
-                        item.SubItems[4] = new ListViewItem.ListViewSubItem(item, xStr(profile.Header.FileSize));
-                        item.SubItems[5] = new ListViewItem.ListViewSubItem(item, xStr(profile.Header.EmbeddedStart));
-                        item.SubItems[6] = new ListViewItem.ListViewSubItem(item, xStr(Profiles.GetFilePath(profile.Header)));
+                        item.SubItems[2] = new ListViewItem.ListViewSubItem(item, xStr(profile.File.Header.Version));
+                        item.SubItems[3] = new ListViewItem.ListViewSubItem(item, Utilities.BytestoHex(profile.File.Header.FileHash));
+                        item.SubItems[4] = new ListViewItem.ListViewSubItem(item, xStr(profile.File.Header.FileSize));
+                        //item.SubItems[5] = new ListViewItem.ListViewSubItem(item, xStr(profile.Header.EmbeddedStart));
+                        item.SubItems[6] = new ListViewItem.ListViewSubItem(item, xStr(Profiles.Cache.GetFilePath(profile.File.Header)));
                     }
 
                     listValues.Items.Add(item);

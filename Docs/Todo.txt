@@ -1,13 +1,12 @@
 
-change name to RiseOp
-test
-
-
 move profile, storage, trust, mail pending over to fileAssist
+look at removing core_load event so components can be loaded dynamically
 investigate flexible 'smart byte'
 focus
 allow all components to put a little 'lastest version' tag in location posts, hook into events, if focused then d/l
 	link / profile
+
+
 
 component
 	**dont enforce default published empty files for storage, plan, mail boxes
@@ -63,6 +62,8 @@ Interface
 		alphabetizize component menus
 		dont allow nav bar person switch on mail/chat components
 
+		animate loader - fade in gradient, logo rises from offscreen into position, rise and op bob indepenently
+		
 	Internal 
 		expand a little more (names associated with sessions/transfers/searches/publish)
 		browsing using nav bar needs to trigger searches and let link control know of whats focused

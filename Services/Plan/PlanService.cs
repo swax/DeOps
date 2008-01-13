@@ -13,7 +13,7 @@ using RiseOp.Implementation.Protocol.Net;
 using RiseOp.Services.Transfer;
 using RiseOp.Services.Trust;
 using RiseOp.Services.Location;
-using RiseOp.Services.VersionedFile;
+using RiseOp.Services.Assist;
 
 
 namespace RiseOp.Services.Plan
@@ -44,7 +44,7 @@ namespace RiseOp.Services.Plan
 
         enum DataType { File = 0x01 };
 
-        VersionedFileAssist PlanFiles;
+        VersionedCache Cache;
 
 
         internal PlanService(OpCore core)
@@ -60,9 +60,9 @@ namespace RiseOp.Services.Plan
             Core.LoadEvent += new LoadHandler(Core_Load);
             Core.TimerEvent += new TimerHandler(Core_Timer);
 
-            PlanFiles = new VersionedFileAssist(Network, ServiceID, (ushort)DataType.File);
+            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File);
             
-            PlanFiles.FileAquired += new FileAquiredHandler(PlanFiles_FileAquired);
+            Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
         }
 
         void Core_Load()
@@ -84,7 +84,7 @@ namespace RiseOp.Services.Plan
             Core.LoadEvent -= new LoadHandler(Core_Load);
             Core.TimerEvent -= new TimerHandler(Core_Timer);
 
-            PlanFiles.FileAquired -= new FileAquiredHandler(PlanFiles_FileAquired);
+            Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
         }
 
         public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
@@ -169,14 +169,14 @@ namespace RiseOp.Services.Plan
             });
         }
 
-        private void PlanFiles_FileAquired(OpVersionedFile file)
+        private void Cache_FileAquired(OpVersionedFile file)
         {
-            OpPlan prevPlan = GetPlan(file.Header.KeyID, false);
+            OpPlan prevPlan = GetPlan(file.DhtID, false);
 
             OpPlan newPlan = new OpPlan(file);
             PlanMap.SafeAdd(newPlan.DhtID, newPlan);
 
-            if (file.Header.KeyID == Core.LocalDhtID)
+            if (file.DhtID == Core.LocalDhtID)
                 LocalPlan = newPlan;
 
             if ((newPlan == LocalPlan) || (prevPlan != null && prevPlan.Loaded)) // if loaded, reload
@@ -281,7 +281,7 @@ namespace RiseOp.Services.Plan
                 stream.FlushFinalBlock();
                 stream.Close();
 
-                OpVersionedFile file = PlanFiles.UpdateLocal(tempPath, key);
+                OpVersionedFile file = Cache.UpdateLocal(tempPath, key, null);
 
                 Store.PublishDirect(Core.Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, (ushort) DataType.File, file.SignedHeader);
 
@@ -316,7 +316,7 @@ namespace RiseOp.Services.Plan
 
             try
             {
-                string path = PlanFiles.GetFilePath(plan.File.Header);
+                string path = Cache.GetFilePath(plan.File.Header);
 
                 if (!File.Exists(path))
                     return;
@@ -492,7 +492,7 @@ namespace RiseOp.Services.Plan
 
         internal void Research(ulong id)
         {
-            PlanFiles.Research(id);
+            Cache.Research(id);
         }
     }
 

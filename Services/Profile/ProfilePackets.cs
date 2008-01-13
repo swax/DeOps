@@ -10,106 +10,11 @@ namespace RiseOp.Services.Profile
 {
     internal class ProfilePacket
     {
-        internal const byte Header = 0x10;
-        internal const byte File = 0x20;
+        internal const byte Attachment = 0x20;
         internal const byte Field = 0x30;
     }
 
-    internal class ProfileHeader : G2Packet
-    {
-        const byte Packet_Key = 0x10;
-        const byte Packet_Version = 0x20;
-        const byte Packet_FileHash = 0x30;
-        const byte Packet_FileSize = 0x40;
-        const byte Packet_FileKey = 0x50;
-        const byte Packet_EmbeddedStart = 0x60;
-
-
-        internal byte[] Key;
-        internal uint Version;
-        internal byte[] FileHash;
-        internal long FileSize;
-        internal long EmbeddedStart;
-        internal RijndaelManaged FileKey = new RijndaelManaged();
-
-        internal ulong KeyID;
-
-
-        internal override byte[] Encode(G2Protocol protocol)
-        {
-            lock (protocol.WriteSection)
-            {
-                G2Frame header = protocol.WritePacket(null, ProfilePacket.Header, null);
-
-                protocol.WritePacket(header, Packet_Key, Key);
-                protocol.WritePacket(header, Packet_Version, BitConverter.GetBytes(Version));
-                protocol.WritePacket(header, Packet_FileHash, FileHash);
-                protocol.WritePacket(header, Packet_FileSize, BitConverter.GetBytes(FileSize));
-                protocol.WritePacket(header, Packet_EmbeddedStart, BitConverter.GetBytes(EmbeddedStart));
-                protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
-
-                return protocol.WriteFinish();
-            }
-        }
-
-        internal static ProfileHeader Decode(G2Protocol protocol, byte[] data)
-        {
-            G2Header root = new G2Header(data);
-
-            if (!protocol.ReadPacket(root))
-                return null;
-
-            if (root.Name != ProfilePacket.Header)
-                return null;
-
-            return ProfileHeader.Decode(protocol, root);
-        }
-
-        internal static ProfileHeader Decode(G2Protocol protocol, G2Header root)
-        {
-            ProfileHeader header = new ProfileHeader();
-            G2Header child = new G2Header(root.Data);
-
-            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                switch (child.Name)
-                {
-                    case Packet_Key:
-                        header.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        header.KeyID = Utilities.KeytoID(header.Key);
-                        break;
-
-                    case Packet_Version:
-                        header.Version = BitConverter.ToUInt32(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_FileHash:
-                        header.FileHash = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-
-                    case Packet_FileSize:
-                        header.FileSize = BitConverter.ToInt64(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_EmbeddedStart:
-                        header.EmbeddedStart = BitConverter.ToInt64(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_FileKey:
-                        header.FileKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        header.FileKey.IV = new byte[header.FileKey.IV.Length];
-                        break;
-                }
-            }
-
-            return header;
-        }
-    }
-
-    internal class ProfileFile : G2Packet
+    internal class ProfileAttachment : G2Packet
     {
         const byte Packet_Name = 0x10;
         const byte Packet_Size = 0x20;
@@ -118,11 +23,11 @@ namespace RiseOp.Services.Profile
         internal long Size;
 
 
-        internal ProfileFile()
+        internal ProfileAttachment()
         {
         }
 
-        internal ProfileFile(string name, long size)
+        internal ProfileAttachment(string name, long size)
         {
             Name = name;
             Size = size;
@@ -132,7 +37,7 @@ namespace RiseOp.Services.Profile
         {
             lock (protocol.WriteSection)
             {
-                G2Frame header = protocol.WritePacket(null, ProfilePacket.File, null);
+                G2Frame header = protocol.WritePacket(null, ProfilePacket.Attachment, null);
 
                 protocol.WritePacket(header, Packet_Name, protocol.UTF.GetBytes(Name));
                 protocol.WritePacket(header, Packet_Size, BitConverter.GetBytes(Size));
@@ -141,9 +46,9 @@ namespace RiseOp.Services.Profile
             }
         }
 
-        internal static ProfileFile Decode(G2Protocol protocol, G2Header root)
+        internal static ProfileAttachment Decode(G2Protocol protocol, G2Header root)
         {
-            ProfileFile file = new ProfileFile();
+            ProfileAttachment file = new ProfileAttachment();
             G2Header child = new G2Header(root.Data);
 
             while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
