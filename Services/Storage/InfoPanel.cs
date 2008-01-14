@@ -348,7 +348,7 @@ namespace RiseOp.Services.Storage
             ParentView = parent;
             Storages = parent.Storages;
 
-            ResPath = Storages.StoragePath + Path.DirectorySeparatorChar + "2";
+            ResPath = Storages.ResourcePath;
             Directory.CreateDirectory(ResPath);
 
             ImgLocked   = ExtractImage("Locked");
@@ -1391,7 +1391,7 @@ namespace RiseOp.Services.Storage
 
                 else
                 {
-                    status = " at " + storage.Header.Date.ToLocalTime().ToString();
+                    status = " at " + storage.Date.ToLocalTime().ToString();
 
                     if (ParentView.ChangeCount.ContainsKey(id) && ParentView.ChangeCount[id] > 0)
                     {

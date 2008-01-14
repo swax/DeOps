@@ -903,12 +903,12 @@ namespace RiseOp.Interface.Tools
 						""
                     });
 
-                    if (trust.Header != null)
+                    if (trust.File.Header != null)
                     {
-                        item.SubItems[12] = new ListViewItem.ListViewSubItem(item, xStr(trust.Header.Version));
-                        item.SubItems[13] = new ListViewItem.ListViewSubItem(item, Utilities.BytestoHex(trust.Header.FileHash));
-                        item.SubItems[14] = new ListViewItem.ListViewSubItem(item, xStr(trust.Header.FileSize));
-                        item.SubItems[15] = new ListViewItem.ListViewSubItem(item, xStr(Core.Links.GetFilePath(trust.Header)));
+                        item.SubItems[12] = new ListViewItem.ListViewSubItem(item, xStr(trust.File.Header.Version));
+                        item.SubItems[13] = new ListViewItem.ListViewSubItem(item, Utilities.BytestoHex(trust.File.Header.FileHash));
+                        item.SubItems[14] = new ListViewItem.ListViewSubItem(item, xStr(trust.File.Header.FileSize));
+                        item.SubItems[15] = new ListViewItem.ListViewSubItem(item, xStr(Core.Links.Cache.GetFilePath(trust.File.Header)));
                     }
 
                     listValues.Items.Add(item);
@@ -1223,7 +1223,7 @@ namespace RiseOp.Interface.Tools
                         item.SubItems[3] = new ListViewItem.ListViewSubItem(item, Utilities.BytestoHex(profile.File.Header.FileHash));
                         item.SubItems[4] = new ListViewItem.ListViewSubItem(item, xStr(profile.File.Header.FileSize));
                         //item.SubItems[5] = new ListViewItem.ListViewSubItem(item, xStr(profile.Header.EmbeddedStart));
-                        item.SubItems[6] = new ListViewItem.ListViewSubItem(item, xStr(Profiles.Cache.GetFilePath(profile.File.Header)));
+                        item.SubItems[6] = new ListViewItem.ListViewSubItem(item, xStr(Profiles.GetFilePath(profile)));
                     }
 
                     listValues.Items.Add(item);

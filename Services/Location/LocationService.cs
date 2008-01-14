@@ -51,13 +51,13 @@ namespace RiseOp.Services.Location
 
             Core.TimerEvent += new TimerHandler(Core_Timer);
             
-            Core.GlobalNet.Store.StoreEvent[ServiceID, 0] = new StoreHandler(GlobalStore_Local);
-            Core.GlobalNet.Store.ReplicateEvent[ServiceID, 0] = new ReplicateHandler(GlobalStore_Replicate);
-            Core.GlobalNet.Store.PatchEvent[ServiceID, 0] = new PatchHandler(GlobalStore_Patch);
-            Core.GlobalNet.Searches.SearchEvent[ServiceID, 0] = new SearchRequestHandler(GlobalSearch_Local);
+            Core.GlobalNet.Store.StoreEvent[ServiceID, 0] += new StoreHandler(GlobalStore_Local);
+            Core.GlobalNet.Store.ReplicateEvent[ServiceID, 0] += new ReplicateHandler(GlobalStore_Replicate);
+            Core.GlobalNet.Store.PatchEvent[ServiceID, 0] += new PatchHandler(GlobalStore_Patch);
+            Core.GlobalNet.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(GlobalSearch_Local);
 
-            Core.OperationNet.Store.StoreEvent[ServiceID, 0] = new StoreHandler(OperationStore_Local);
-            Core.OperationNet.Searches.SearchEvent[ServiceID, 0] = new SearchRequestHandler(OperationSearch_Local);
+            Core.OperationNet.Store.StoreEvent[ServiceID, 0] += new StoreHandler(OperationStore_Local);
+            Core.OperationNet.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(OperationSearch_Local);
 
             // should be published auto anyways, on bootstrap, or firewall/proxy update
             NextGlobalPublish = Core.TimeNow.AddMinutes(1);
@@ -74,13 +74,14 @@ namespace RiseOp.Services.Location
         {
             Core.TimerEvent -= new TimerHandler(Core_Timer);
 
-            Core.GlobalNet.Store.StoreEvent.Remove(ServiceID, 0);
-            Core.GlobalNet.Store.ReplicateEvent.Remove(ServiceID, 0);
-            Core.GlobalNet.Store.PatchEvent.Remove(ServiceID, 0);
-            Core.GlobalNet.Searches.SearchEvent.Remove(ServiceID, 0);
+            Core.GlobalNet.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(GlobalStore_Local);
+            Core.GlobalNet.Store.ReplicateEvent[ServiceID, 0] -= new ReplicateHandler(GlobalStore_Replicate);
+            Core.GlobalNet.Store.PatchEvent[ServiceID, 0] -= new PatchHandler(GlobalStore_Patch);
+            Core.GlobalNet.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(GlobalSearch_Local);
 
-            Core.OperationNet.Store.StoreEvent.Remove(ServiceID, 0);
-            Core.OperationNet.Searches.SearchEvent.Remove(ServiceID, 0);
+            Core.OperationNet.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(OperationStore_Local);
+            Core.OperationNet.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(OperationSearch_Local);
+
         }
 
         void Core_Timer()
@@ -294,7 +295,7 @@ namespace RiseOp.Services.Location
 
             location.Version  = LocationVersion++;
             //location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
-            location.LinkVersion = Core.Links.LocalTrust.Header.Version;
+            location.LinkVersion = Core.Links.LocalTrust.File.Header.Version;
 
 
             byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, location);
@@ -503,7 +504,7 @@ namespace RiseOp.Services.Location
 
             location.Place = Core.User.Settings.Location;
             location.Version = LocationVersion++;
-            location.LinkVersion = Core.Links.LocalTrust.Header.Version;
+            location.LinkVersion = Core.Links.LocalTrust.File.Header.Version;
             //location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
 
             location.TTL = LocationData.GLOBAL_TTL; // set expire 1 hour

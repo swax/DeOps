@@ -17,8 +17,9 @@ using RiseOp.Implementation.Protocol.Net;
 namespace RiseOp.Services.Assist
 {
     internal delegate void FileAquiredHandler(OpVersionedFile file);
+    internal delegate void FileRemovedHandler(OpVersionedFile file);
 
-    class VersionedCache
+    class VersionedCache : IDisposable
     {
         OpCore Core;
         DhtNetwork Network;
@@ -39,6 +40,8 @@ namespace RiseOp.Services.Assist
 
 
         internal FileAquiredHandler FileAquired;
+        internal FileRemovedHandler FileRemoved;
+        
 
         internal VersionedCache(DhtNetwork network, ushort service, ushort type)
         {
@@ -63,11 +66,11 @@ namespace RiseOp.Services.Assist
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[Service, DataType] = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[Service, DataType] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[Service, DataType] = new PatchHandler(Store_Patch);
+            Store.StoreEvent[Service, DataType] += new StoreHandler(Store_Local);
+            Store.ReplicateEvent[Service, DataType] += new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[Service, DataType] += new PatchHandler(Store_Patch);
 
-            Network.Searches.SearchEvent[Service, DataType] = new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[Service, DataType] += new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
                 PruneSize = 25;
@@ -79,6 +82,20 @@ namespace RiseOp.Services.Assist
             Core.Transfers.FileRequest[Service, DataType] = new FileRequestHandler(Transfers_FileRequest);
 
             LoadHeaders();   
+        }
+
+        public void Dispose()
+        {
+            Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
+
+            Store.StoreEvent[Service, DataType] -= new StoreHandler(Store_Local);
+            Store.ReplicateEvent[Service, DataType] -= new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[Service, DataType] -= new PatchHandler(Store_Patch);
+
+            Network.Searches.SearchEvent[Service, DataType] -= new SearchRequestHandler(Search_Local);
+
+            Core.Transfers.FileSearch[Service, DataType] -= new FileSearchHandler(Transfers_FileSearch);
+            Core.Transfers.FileRequest[Service, DataType] -= new FileRequestHandler(Transfers_FileRequest);
         }
 
         void Core_Timer()
@@ -130,6 +147,8 @@ namespace RiseOp.Services.Assist
                         foreach (ulong id in removeIDs)
                             if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
                                 furthest = id;
+
+                        FileRemoved.Invoke(vfile);
 
                         if (vfile.Header != null)
                             try { File.Delete(GetFilePath(vfile.Header)); }
@@ -214,7 +233,7 @@ namespace RiseOp.Services.Assist
             }
         }
 
-        private void SaveHeaders()
+        internal void SaveHeaders()
         {
             RunSaveHeaders = false;
 
@@ -364,18 +383,6 @@ namespace RiseOp.Services.Assist
                 OpVersionedFile newFile = new OpVersionedFile(header.Key);
 
 
-                // delete old file
-                if (prevFile != null)
-                {
-                    if (header.Version < prevFile.Header.Version)
-                        return; // dont update with older version
-
-                    string oldPath = GetFilePath(prevFile.Header);
-                    if (path != oldPath && File.Exists(oldPath))
-                        try { File.Delete(oldPath); }
-                        catch { }
-                }
-
                 // set new header
                 newFile.Header = header;
                 newFile.SignedHeader = signedHeader.Encode(Core.Protocol);
@@ -386,6 +393,19 @@ namespace RiseOp.Services.Assist
                 RunSaveHeaders = true;
 
                 FileAquired.Invoke(newFile);
+
+
+                // delete old file - do after aquired event so invoked (storage) can perform clean up operation
+                if (prevFile != null)
+                {
+                    if (header.Version < prevFile.Header.Version)
+                        return; // dont update with older version
+
+                    string oldPath = GetFilePath(prevFile.Header);
+                    if (path != oldPath && File.Exists(oldPath))
+                        try { File.Delete(oldPath); }
+                        catch { }
+                }
             }
             catch (Exception ex)
             {
@@ -451,9 +471,16 @@ namespace RiseOp.Services.Assist
             // getting published to - search results - patch
 
             SignedData signed = SignedData.Decode(Core.Protocol, store.Data);
-            VersionedFileHeader header = VersionedFileHeader.Decode(Core.Protocol, signed.Data);
 
-            Process_VersionedFile(null, signed, header);
+            if (signed == null)
+                return;
+
+            G2Header embedded = new G2Header(signed.Data);
+
+            // figure out data contained
+            if (Core.Protocol.ReadPacket(embedded))
+                if (embedded.Name == DataPacket.VersionedFile)
+                    Process_VersionedFile(null, signed, VersionedFileHeader.Decode(Core.Protocol, signed.Data));
         }
 
         const int PatchEntrySize = 12;

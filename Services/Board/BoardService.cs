@@ -63,11 +63,11 @@ namespace RiseOp.Services.Board
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ServiceID, 0] = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ServiceID, 0] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ServiceID, 0] = new PatchHandler(Store_Patch);
+            Store.StoreEvent[ServiceID, 0] += new StoreHandler(Store_Local);
+            Store.ReplicateEvent[ServiceID, 0] += new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[ServiceID, 0] += new PatchHandler(Store_Patch);
 
-            Network.Searches.SearchEvent[ServiceID, 0] = new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(Search_Local);
 
             if (Core.Sim != null)
                 PruneSize = 32;
@@ -78,8 +78,8 @@ namespace RiseOp.Services.Board
         void Core_Load()
         {
             Links = Core.Links;
-            Core.Transfers.FileSearch[ServiceID, 0] = new FileSearchHandler(Transfers_FileSearch);
-            Core.Transfers.FileRequest[ServiceID, 0] = new FileRequestHandler(Transfers_FileRequest);
+            Core.Transfers.FileSearch[ServiceID, 0] += new FileSearchHandler(Transfers_FileSearch);
+            Core.Transfers.FileRequest[ServiceID, 0] += new FileRequestHandler(Transfers_FileRequest);
 
             LocalFileKey = Core.User.Settings.FileKey;
 
@@ -123,14 +123,15 @@ namespace RiseOp.Services.Board
 
             Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent.Remove(ServiceID, 0);
-            Store.ReplicateEvent.Remove(ServiceID, 0);
-            Store.PatchEvent.Remove(ServiceID, 0);;
+            Store.StoreEvent[ServiceID, 0] -= new StoreHandler(Store_Local);
+            Store.ReplicateEvent[ServiceID, 0] -= new ReplicateHandler(Store_Replicate);
+            Store.PatchEvent[ServiceID, 0] -= new PatchHandler(Store_Patch);
 
-            Network.Searches.SearchEvent.Remove(ServiceID, 0);
+            Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(Search_Local);
 
-            Core.Transfers.FileSearch.Remove(ServiceID, 0);
-            Core.Transfers.FileRequest.Remove(ServiceID, 0);
+            Core.Transfers.FileSearch[ServiceID, 0] -= new FileSearchHandler(Transfers_FileSearch);
+            Core.Transfers.FileRequest[ServiceID, 0] -= new FileRequestHandler(Transfers_FileRequest);
+
         }
 
         void Core_Timer()

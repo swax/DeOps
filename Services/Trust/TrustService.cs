@@ -11,6 +11,7 @@ using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
 
+using RiseOp.Services.Assist;
 using RiseOp.Services.Location;
 using RiseOp.Services.Transfer;
 
@@ -38,14 +39,14 @@ namespace RiseOp.Services.Trust
         internal ThreadedDictionary<uint, string> ProjectNames = new ThreadedDictionary<uint, string>();
         internal ThreadedDictionary<uint, List<OpLink>> ProjectRoots = new ThreadedDictionary<uint, List<OpLink>>();
 
-        Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
-        Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
+        enum DataType { File = 1 };
+
+        internal VersionedCache Cache;
 
         internal string LinkPath;
         internal bool StructureKnown;
-        internal int PruneSize = 100;
 
-        bool RunSaveHeaders;
+        bool RunSaveUplinks;
         RijndaelManaged LocalFileKey;
 
         internal LinkUpdateHandler LinkUpdate;
@@ -64,24 +65,18 @@ namespace RiseOp.Services.Trust
             Core.TimerEvent += new TimerHandler(Core_Timer);
             Core.LoadEvent += new LoadHandler(Core_Load);
 
-            Network.EstablishedEvent += new EstablishedHandler(Network_Established);
+            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File);
 
-            Store.StoreEvent[ServiceID, 0] = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ServiceID, 0] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ServiceID, 0] = new PatchHandler(Store_Patch);
+            // piggyback searching for uplink requests on cache file data
+            Store.StoreEvent[ServiceID, (ushort)DataType.File] += new StoreHandler(Store_Local);
+            Network.Searches.SearchEvent[ServiceID, (ushort)DataType.File] += new SearchRequestHandler(Search_Local);
 
-            Network.Searches.SearchEvent[ServiceID, 0] = new SearchRequestHandler(Search_Local);
-
-            if (Core.Sim != null)
-                PruneSize = 25;
+            Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
+            Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
         }
 
         void Core_Load()
         {
-            Core.Transfers.FileSearch[ServiceID, 0] = new FileSearchHandler(Transfers_FileSearch);
-            Core.Transfers.FileRequest[ServiceID, 0] = new FileRequestHandler(Transfers_FileRequest);
-
-
             ProjectNames.SafeAdd(0, Core.User.Settings.Operation);
 
             LinkPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
@@ -89,7 +84,7 @@ namespace RiseOp.Services.Trust
 
             LocalFileKey = Core.User.Settings.FileKey;
 
-            LoadHeaders();
+            LoadUplinkReqs();
 
 
             LocalTrust = GetTrust(Core.LocalDhtID);
@@ -97,7 +92,7 @@ namespace RiseOp.Services.Trust
 
             if (LocalTrust == null)
             {
-                LocalTrust = new OpTrust(Core.User.Settings.KeyPublic);
+                LocalTrust = new OpTrust(new OpVersionedFile(Core.User.Settings.KeyPublic));
                 TrustMap.SafeAdd(Core.LocalDhtID, LocalTrust);
             }
 
@@ -116,16 +111,11 @@ namespace RiseOp.Services.Trust
             Core.TimerEvent -= new TimerHandler(Core_Timer);
             Core.LoadEvent -= new LoadHandler(Core_Load);
 
-            Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
+            Network.Searches.SearchEvent[ServiceID, (ushort)DataType.File] -= new SearchRequestHandler(Search_Local);
 
-            Store.StoreEvent.Remove(ServiceID, 0);
-            Store.ReplicateEvent.Remove(ServiceID, 0);
-            Store.PatchEvent.Remove(ServiceID, 0);
-
-            Network.Searches.SearchEvent.Remove(ServiceID, 0);
-
-            Core.Transfers.FileSearch.Remove(ServiceID, 0);
-            Core.Transfers.FileRequest.Remove(ServiceID, 0);
+            Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
+            Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);
+            Cache.Dispose();
         }
 
         public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
@@ -237,15 +227,15 @@ namespace RiseOp.Services.Trust
             // create uplink request, publish
             UplinkRequest request = new UplinkRequest();
             request.ProjectID = remoteLink.Project;
-            request.LinkVersion = LocalTrust.Header.Version;
-            request.TargetVersion = remoteLink.Trust.Header.Version;
-            request.Key = LocalTrust.Key;
+            request.LinkVersion = LocalTrust.File.Header.Version;
+            request.TargetVersion = remoteLink.Trust.File.Header.Version;
+            request.Key = LocalTrust.File.Key;
             request.KeyID = LocalTrust.DhtID;
-            request.Target = remoteLink.Trust.Key;
+            request.Target = remoteLink.Trust.File.Key;
             request.TargetID = remoteLink.DhtID;
 
             byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, request);
-            Store.PublishNetwork(request.TargetID, ServiceID, 0, signed);
+            Store.PublishNetwork(request.TargetID, ServiceID, (ushort) DataType.File, signed);
 
             // store locally
             Process_UplinkReq(null, new SignedData(Core.Protocol, Core.User.Settings.KeyPair, request), request);
@@ -254,7 +244,7 @@ namespace RiseOp.Services.Trust
             List<LocationData> locations = new List<LocationData>();
             GetLocs(Core.LocalDhtID, remoteLink.Project, 1, 1, locations);
             GetLocsBelow(Core.LocalDhtID, remoteLink.Project, locations);
-            Store.PublishDirect(locations, request.TargetID, ServiceID, 0, signed);
+            Store.PublishDirect(locations, request.TargetID, ServiceID, (ushort) DataType.File, signed);
         }
 
         private void Menu_ConfirmLink(object sender, EventArgs e)
@@ -345,7 +335,9 @@ namespace RiseOp.Services.Trust
                 // notify old links of change
                 Core.RunInCoreAsync(delegate()
                 {
-                    Store.PublishDirect(locations, Core.LocalDhtID, ServiceID, 0, LocalTrust.SignedHeader);
+                    OpVersionedFile file = Cache.GetFile(Core.LocalDhtID);
+
+                    Store.PublishDirect(locations, Core.LocalDhtID, ServiceID, 0, file.SignedHeader);
                 });
             }
             catch (Exception ex)
@@ -362,75 +354,18 @@ namespace RiseOp.Services.Trust
 
             // do only once per second if needed
             // branches only change when a profile is updated
-            if (RunSaveHeaders)
+            if (RunSaveUplinks)
             {
                 RefreshLinked();
-                SaveHeaders();
+                SaveUplinkReqs();
             }
-
-            // clean download later map
-            if (!Network.Established)
-                Utilities.PruneMap(DownloadLater, Core.LocalDhtID, PruneSize);
-
 
             // do below once per minute
             if (Core.TimeNow.Second != 0)
                 return;
 
-            List<ulong> removeLinks = new List<ulong>();
+            //crit List<ulong> focused = GetFocusedLinks();
 
-            TrustMap.LockReading(delegate()
-            {
-                if (TrustMap.Count > PruneSize && StructureKnown)
-                {
-                    List<ulong> focused = GetFocusedLinks();
-
-                    foreach (OpTrust trust in TrustMap.Values)
-                        // if not focused, linked, or cached - remove
-                        if (!trust.InLocalLinkTree &&
-                            trust.DhtID != Core.LocalDhtID &&
-                            !focused.Contains(trust.DhtID) &&
-                            !Utilities.InBounds(trust.DhtID, trust.DhtBounds, Core.LocalDhtID))
-                        {
-                            removeLinks.Add(trust.DhtID);
-                        }
-                }
-            });
-
-            if (removeLinks.Count > 0)
-                TrustMap.LockWriting(delegate()
-                {
-                    while (removeLinks.Count > 0 && TrustMap.Count > PruneSize / 2)
-                    {
-                        // find furthest id
-                        ulong furthest = Core.LocalDhtID;
-
-                        foreach (ulong id in removeLinks)
-                            if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
-                                furthest = id;
-
-                        // remove
-                        OpTrust trust = TrustMap[furthest];
-
-                        trust.Reset();
-
-                        /*foreach (uint project in link.Projects)
-                            if (link.Downlinks.ContainsKey(proj))
-                                foreach (OpTrustOld downlink in link.Downlinks[proj])
-                                    if (downlink.Uplink.ContainsKey(proj))
-                                        if (downlink.Uplink[proj] == link)
-                                            downlink.Uplink[proj] = new OpTrustOld(link.Key); // place holder
-                        */
-                        if (trust.Header != null)
-                            try { File.Delete(GetFilePath(trust.Header)); }
-                            catch { }
-
-                        trust.Loaded = false;
-                        TrustMap.Remove(furthest);
-                        removeLinks.Remove(furthest);
-                        RunSaveHeaders = true;
-                    }
-                });
 
             // clean roots
             List<uint> removeList = new List<uint>();
@@ -449,42 +384,19 @@ namespace RiseOp.Services.Trust
                        ProjectRoots.Remove(project);
                    //ProjectNames.Remove(id); // if we are only root, and leave project, but have downlinks, still need the name
                });
-
-            // clean research map
-            removeLinks.Clear();
-
-            foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
-                if (Core.TimeNow > pair.Value)
-                    removeLinks.Add(pair.Key);
-
-            if (removeLinks.Count > 0)
-                foreach (ulong id in removeLinks)
-                    NextResearch.Remove(id);
         }
 
-        void Network_Established()
+        void Cache_FileRemoved(OpVersionedFile file)
         {
-            ulong localBounds = Store.RecalcBounds(Core.LocalDhtID);
+            OpTrust trust = GetTrust(file.DhtID);
 
-            // set bounds for objects
-            TrustMap.LockReading(delegate()
+            if (trust != null)
             {
-                foreach (OpTrust trust in TrustMap.Values)
-                {
-                    trust.DhtBounds = Store.RecalcBounds(trust.DhtID);
+                trust.Reset();
+                trust.Loaded = false;
 
-                    // republish objects that were not seen on the network during startup
-                    if (trust.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, trust.DhtID))
-                        Store.PublishNetwork(trust.DhtID, ServiceID, 0, trust.SignedHeader);
-                }
-            });
-
-            // only download those objects in our local area
-            foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
-                if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
-                    StartSearch(pair.Key, pair.Value);
-
-            DownloadLater.Clear();
+                TrustMap.SafeRemove(file.DhtID);
+            }
         }
 
         void RefreshLinked()
@@ -596,42 +508,7 @@ namespace RiseOp.Services.Trust
 
 
             foreach (ulong id in searchList)
-            {
-                uint version = 0;
-                if (link != null)
-                    version = link.Trust.Header.Version + 1;
-
-                // limit re-search to once per 30 secs
-                DateTime timeout = default(DateTime);
-
-                if (NextResearch.TryGetValue(key, out timeout))
-                    if (Core.TimeNow < timeout)
-                        return;
-
-                StartSearch(id, version);
-                NextResearch[id] = Core.TimeNow.AddSeconds(30);
-            }
-
-            NextResearch[key] = Core.TimeNow.AddSeconds(30);
-        }
-
-        internal void StartSearch(ulong key, uint version)
-        {
-            if (Core.Loading) // prevents routingupdate, or loadheaders from triggering search on startup
-                return;
-
-            byte[] parameters = BitConverter.GetBytes(version);
-
-            DhtSearch search = Network.Searches.Start(key, "Link", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
-
-            if (search != null)
-                search.TargetResults = 2;
-        }
-
-        void EndSearch(DhtSearch search)
-        {
-            foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
+                Cache.Research(id);
         }
 
         List<byte[]> Search_Local(ulong key, byte[] parameters)
@@ -643,39 +520,12 @@ namespace RiseOp.Services.Trust
             OpTrust trust = GetTrust(key);
 
             if (trust != null)
-            {
-                if (trust.Loaded && trust.Header.Version >= minVersion)
-                    results.Add(trust.SignedHeader);
-
                 foreach (OpLink link in trust.Links.Values)
                     foreach (UplinkRequest request in link.Requests)
                         if (request.TargetVersion > minVersion)
                             results.Add(request.Signed);
-            }
 
             return results;
-        }
-
-        bool Transfers_FileSearch(ulong key, FileDetails details)
-        {
-            OpTrust trust = GetTrust(key);
-
-            if (trust != null)
-                if (trust.Loaded && details.Size == trust.Header.FileSize && Utilities.MemCompare(details.Hash, trust.Header.FileHash))
-                    return true;
-
-            return false;
-        }
-
-        string Transfers_FileRequest(ulong key, FileDetails details)
-        {
-            OpTrust trust = GetTrust(key);
-
-            if (trust != null)
-                if (trust.Loaded && details.Size == trust.Header.FileSize && Utilities.MemCompare(details.Hash, trust.Header.FileHash))
-                    return GetFilePath(trust.Header);
-
-            return null;
         }
 
         internal void RoutingUpdate(DhtContact contact)
@@ -687,7 +537,7 @@ namespace RiseOp.Services.Trust
             OpTrust trust = GetTrust(contact.DhtID);
 
             if (trust == null)
-                StartSearch(contact.DhtID, 0);
+                Cache.Research(contact.DhtID);
         }
 
         void Store_Local(DataReq store)
@@ -703,122 +553,22 @@ namespace RiseOp.Services.Trust
 
             // figure out data contained
             if (Core.Protocol.ReadPacket(embedded))
-            {
-                if (embedded.Name == TrustPacket.TrustHeader)
-                    Process_LinkHeader(store, signed, TrustHeader.Decode(Core.Protocol, embedded));
-
-                else if (embedded.Name == TrustPacket.UplinkReq)
+                if (embedded.Name == TrustPacket.UplinkReq)
                     Process_UplinkReq(store, signed, UplinkRequest.Decode(Core.Protocol, embedded));
-            }
-        }
-
-        const int PatchEntrySize = 12;
-
-        ReplicateData Store_Replicate(DhtContact contact, bool add)
-        {
-            if (!Network.Established)
-                return null;
-
-
-            ReplicateData data = new ReplicateData(PatchEntrySize);
-
-            byte[] patch = new byte[PatchEntrySize];
-
-            TrustMap.LockReading(delegate()
-            {
-                foreach (OpTrust trust in TrustMap.Values)
-                    if (trust.Loaded && Utilities.InBounds(trust.DhtID, trust.DhtBounds, contact.DhtID))
-                    {
-                        // bounds is a distance value
-                        DhtContact target = contact;
-                        trust.DhtBounds = Store.RecalcBounds(trust.DhtID, add, ref target);
-
-                        if (target != null)
-                        {
-                            BitConverter.GetBytes(trust.DhtID).CopyTo(patch, 0);
-                            BitConverter.GetBytes(trust.Header.Version).CopyTo(patch, 8);
-
-                            data.Add(target, patch);
-                        }
-                    }
-            });
-
-            return data;
-        }
-
-        void Store_Patch(DhtAddress source, ulong distance, byte[] data)
-        {
-            if (data.Length % PatchEntrySize != 0)
-                return;
-
-            int offset = 0;
-
-            for (int i = 0; i < data.Length; i += PatchEntrySize)
-            {
-                ulong dhtid = BitConverter.ToUInt64(data, i);
-                uint version = BitConverter.ToUInt32(data, i + 8);
-
-                offset += PatchEntrySize;
-
-                if (!Utilities.InBounds(Core.LocalDhtID, distance, dhtid))
-                    continue;
-
-                OpTrust trust = GetTrust(dhtid);
-
-                if (trust != null)
-                    if (trust.Loaded && trust.Header != null)
-                    {
-                        if (trust.Header.Version > version)
-                        {
-                            Store.Send_StoreReq(source, 0, new DataReq(null, trust.DhtID, ServiceID, 0, trust.SignedHeader));
-                            continue;
-                        }
-
-                        trust.Unique = false; // network has current or newer version
-
-                        if (trust.Header.Version == version)
-                            continue;
-
-                        // else our version is old, download below
-                    }
-
-                if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, ServiceID, 0, BitConverter.GetBytes(version));
-                else
-                    DownloadLater[dhtid] = version;
-            }
         }
 
         internal void SaveLocal()
         {
-            if (Core.InvokeRequired)
-            {
-                Core.RunInCoreBlocked(delegate() { SaveLocal(); });
-                return;
-            }
-
             try
             {
-                TrustHeader header = LocalTrust.Header;
-
-                string oldFile = null;
-
-                if (header != null)
-                    oldFile = GetFilePath(header);
-                else
-                    header = new TrustHeader();
-
-
-                header.Key = Core.User.Settings.KeyPublic;
-                header.KeyID = Core.LocalDhtID; // set so keycheck works
-                header.Version++;
-                header.FileKey.GenerateKey();
-                header.FileKey.IV = new byte[header.FileKey.IV.Length];
+                RijndaelManaged key = new RijndaelManaged();
+                key.GenerateKey();
+                key.IV = new byte[key.IV.Length]; 
 
                 // create new link file in temp dir
                 string tempPath = Core.GetTempPath();
                 FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
-                CryptoStream stream = new CryptoStream(tempFile, header.FileKey.CreateEncryptor(), CryptoStreamMode.Write);
+                CryptoStream stream = new CryptoStream(tempFile, key.CreateEncryptor(), CryptoStreamMode.Write);
 
 
                 // project packets
@@ -841,7 +591,7 @@ namespace RiseOp.Services.Trust
                         // uplinks
                         if (link.Uplink != null)
                         {
-                            LinkData data = new LinkData(link.Project, link.Uplink.Trust.Key, true);
+                            LinkData data = new LinkData(link.Project, link.Uplink.Trust.File.Key, true);
                             packet = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, data);
                             stream.Write(packet, 0, packet.Length);
                         }
@@ -850,7 +600,7 @@ namespace RiseOp.Services.Trust
                         foreach (OpLink downlink in link.Downlinks)
                             if (link.Confirmed.Contains(downlink.DhtID))
                             {
-                                LinkData data = new LinkData(link.Project, downlink.Trust.Key, false);
+                                LinkData data = new LinkData(link.Project, downlink.Trust.File.Key, false);
                                 packet = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, data);
                                 stream.Write(packet, 0, packet.Length);
                             }
@@ -859,27 +609,11 @@ namespace RiseOp.Services.Trust
                 stream.FlushFinalBlock();
                 stream.Close();
 
+                OpVersionedFile file = Cache.UpdateLocal(tempPath, key, null);
 
-                // finish building header
-                Utilities.ShaHashFile(tempPath, ref header.FileHash, ref header.FileSize);
+                Store.PublishDirect(GetLocsAbove(), Core.LocalDhtID, ServiceID, (ushort) DataType.File, file.SignedHeader);
 
-
-                // move file, overwrite if need be
-                string finalPath = GetFilePath(header);
-                File.Move(tempPath, finalPath);
-
-                CacheLinkFile(new SignedData(Core.Protocol, Core.User.Settings.KeyPair, header), header);
-
-                SaveHeaders();
-
-                if (oldFile != null && File.Exists(oldFile)) // delete after move to ensure a copy always exists (names different)
-                    try { File.Delete(oldFile); }
-                    catch { }
-
-                // publish header
-                Store.PublishNetwork(Core.LocalDhtID, ServiceID, 0, LocalTrust.SignedHeader);
-
-                Store.PublishDirect(GetLocsAbove(), Core.LocalDhtID, ServiceID, 0, LocalTrust.SignedHeader);
+                SaveUplinkReqs();
             }
             catch (Exception ex)
             {
@@ -887,9 +621,9 @@ namespace RiseOp.Services.Trust
             }
         }
 
-        void SaveHeaders()
+        void SaveUplinkReqs()
         {
-            RunSaveHeaders = false;
+            RunSaveUplinks = false;
 
             try
             {
@@ -900,21 +634,16 @@ namespace RiseOp.Services.Trust
                 TrustMap.LockReading(delegate()
                 {
                     foreach (OpTrust trust in TrustMap.Values)
-                        if (trust.SignedHeader != null)
-                        {
-                            stream.Write(trust.SignedHeader, 0, trust.SignedHeader.Length);
-
-                            foreach (OpLink link in trust.Links.Values)
-                                foreach (UplinkRequest request in link.Requests)
-                                    stream.Write(request.Signed, 0, request.Signed.Length);
-                        }
+                        foreach (OpLink link in trust.Links.Values)
+                            foreach (UplinkRequest request in link.Requests)
+                                stream.Write(request.Signed, 0, request.Signed.Length);
                 });
 
                 stream.FlushFinalBlock();
                 stream.Close();
 
 
-                string finalPath = LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
+                string finalPath = LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "uplinks");
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -924,11 +653,11 @@ namespace RiseOp.Services.Trust
             }
         }
 
-        private void LoadHeaders()
+        private void LoadUplinkReqs()
         {
             try
             {
-                string path = LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
+                string path = LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "uplinks");
 
                 if (!File.Exists(path))
                     return;
@@ -947,13 +676,8 @@ namespace RiseOp.Services.Trust
 
                         // figure out data contained
                         if (Core.Protocol.ReadPacket(embedded))
-                        {
-                            if (embedded.Name == TrustPacket.TrustHeader)
-                                Process_LinkHeader(null, signed, TrustHeader.Decode(Core.Protocol, embedded));
-
-                            else if (embedded.Name == TrustPacket.UplinkReq)
+                            if (embedded.Name == TrustPacket.UplinkReq)
                                 Process_UplinkReq(null, signed, UplinkRequest.Decode(Core.Protocol, embedded));
-                        }
                     }
 
                 stream.Close();
@@ -962,38 +686,6 @@ namespace RiseOp.Services.Trust
             {
                 Network.UpdateLog("Link", "Error loading links " + ex.Message);
             }
-        }
-
-        private void Process_LinkHeader(DataReq data, SignedData signed, TrustHeader header)
-        {
-            Core.IndexKey(header.KeyID, ref header.Key);
-
-
-            OpTrust current = GetTrust(header.KeyID);
-
-            // if link loaded
-            if (current != null)
-            {
-                // lower version
-                if (header.Version < current.Header.Version)
-                {
-                    if (data != null && data.Sources != null)
-                        foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ServiceID, 0, current.SignedHeader));
-
-                    return;
-                }
-
-                // higher version
-                else if (header.Version > current.Header.Version)
-                {
-                    CacheLinkFile(signed, header);
-                }
-            }
-
-            // else load file, set new header after file loaded
-            else
-                CacheLinkFile(signed, header);
         }
 
         private void Process_UplinkReq(DataReq data, SignedData signed, UplinkRequest request)
@@ -1006,7 +698,7 @@ namespace RiseOp.Services.Trust
 
             OpTrust requesterTrust = GetTrust(request.KeyID);
 
-            if (requesterTrust != null && requesterTrust.Loaded && requesterTrust.Header.Version > request.LinkVersion)
+            if (requesterTrust != null && requesterTrust.Loaded && requesterTrust.File.Header.Version > request.LinkVersion)
                 return;
 
             // check if target in linkmap, if not add
@@ -1014,11 +706,11 @@ namespace RiseOp.Services.Trust
 
             if (targetTrust == null)
             {
-                targetTrust = new OpTrust(request.Target);
+                targetTrust = new OpTrust(new OpVersionedFile(request.Target) );
                 TrustMap.SafeAdd(request.TargetID, targetTrust);
             }
 
-            if (targetTrust.Loaded && targetTrust.Header.Version > request.TargetVersion)
+            if (targetTrust.Loaded && targetTrust.File.Header.Version > request.TargetVersion)
                 return;
 
             request.Signed = signed.Encode(Core.Protocol); // so we can send it in results / save, later on
@@ -1045,19 +737,21 @@ namespace RiseOp.Services.Trust
             // if target is marked as linked or focused, update link of target and sender
             if (targetTrust.Loaded && (targetTrust.InLocalLinkTree || GetFocusedLinks().Contains(targetTrust.DhtID)))
             {
-                if (targetTrust.Header.Version < request.TargetVersion)
-                    StartSearch(targetTrust.DhtID, request.TargetVersion);
+                if (targetTrust.File.Header.Version < request.TargetVersion)
+                    Cache.Research(targetTrust.DhtID);
 
                 if (requesterTrust == null)
                 {
-                    requesterTrust = new OpTrust(request.Key);
+                    requesterTrust = new OpTrust(new OpVersionedFile(request.Key));
                     TrustMap.SafeAdd(request.KeyID, requesterTrust);
                 }
 
                 // once new version of requester's link file has been downloaded, interface will be updated
-                if (!requesterTrust.Loaded || (requesterTrust.Header.Version < request.LinkVersion))
-                    StartSearch(requesterTrust.DhtID, request.LinkVersion);
+                if (!requesterTrust.Loaded || (requesterTrust.File.Header.Version < request.LinkVersion))
+                    Cache.Research(requesterTrust.DhtID);
             }
+
+            RunSaveUplinks = true;
         }
 
         private List<ulong> GetFocusedLinks()
@@ -1073,69 +767,23 @@ namespace RiseOp.Services.Trust
             return focused;
         }
 
-        private void DownloadLinkFile(SignedData signed, TrustHeader header)
+        private void Cache_FileAquired(OpVersionedFile cachefile)
         {
-            if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
-                return;
-
-            FileDetails details = new FileDetails(ServiceID, 0, header.FileHash, header.FileSize, null);
-
-            Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
-        }
-
-        private void EndDownload(string path, object[] args)
-        {
-            SignedData signedHeader = (SignedData)args[0];
-            TrustHeader header = (TrustHeader)args[1];
-
-            string finalpath = GetFilePath(header);
-
-            if (File.Exists(finalpath))
-                return;
-
-            File.Move(path, finalpath);
-
-            CacheLinkFile(signedHeader, header);
-        }
-
-        private void CacheLinkFile(SignedData signedHeader, TrustHeader header)
-        {
-            if (Core.InvokeRequired)
-                Debug.Assert(false);
 
             try
             {
-                // check if file exists           
-                string path = GetFilePath(header);
-
-                if (!File.Exists(path))
-                {
-                    DownloadLinkFile(signedHeader, header);
-                    return;
-                }
 
                 // get link directly, even if in unloaded state we need the same reference
                 OpTrust trust = null;
-                TrustMap.SafeTryGetValue(header.KeyID, out trust);
+                TrustMap.SafeTryGetValue(cachefile.DhtID, out trust);
 
                 if (trust == null)
                 {
-                    trust = new OpTrust(header.Key);
-                    TrustMap.SafeAdd(header.KeyID, trust);
+                    trust = new OpTrust(cachefile);
+                    TrustMap.SafeAdd(cachefile.DhtID, trust);
                 }
-
-
-                // delete old file
-                if (trust.Header != null)
-                {
-                    if (header.Version < trust.Header.Version)
-                        return; // dont update with older version
-
-                    string oldPath = GetFilePath(trust.Header);
-                    if (path != oldPath && File.Exists(oldPath))
-                        try { File.Delete(oldPath); }
-                        catch { }
-                }
+                else
+                    trust.File = cachefile;
 
                 // clean roots, if link has loopID, remove loop node entirely, it will be recreated if needed later
                 ProjectRoots.LockReading(delegate()
@@ -1169,8 +817,8 @@ namespace RiseOp.Services.Trust
 
 
                 // load data from link file
-                FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                CryptoStream crypto = new CryptoStream(file, header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                FileStream file = new FileStream(Cache.GetFilePath(cachefile.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
+                CryptoStream crypto = new CryptoStream(file, cachefile.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 
                 G2Header packetRoot = null;
@@ -1195,10 +843,7 @@ namespace RiseOp.Services.Trust
                 stream.Close();
 
                 // set new header
-                trust.Header = header;
-                trust.SignedHeader = signedHeader.Encode(Core.Protocol);
                 trust.Loaded = true;
-                trust.Unique = Core.Loading;
 
                 // set as root if node has no uplinks
                 foreach (OpLink link in trust.Links.Values)
@@ -1241,7 +886,6 @@ namespace RiseOp.Services.Trust
 
                 trust.CheckRequestVersions();
 
-                RunSaveHeaders = true;
 
                 if (LinkUpdate != null)
                     LinkUpdate.Invoke(trust);
@@ -1262,7 +906,7 @@ namespace RiseOp.Services.Trust
                                 GetLocsBelow(Core.LocalDhtID, project, locations);
                     });
 
-                    Store.PublishDirect(locations, trust.DhtID, ServiceID, 0, trust.SignedHeader);
+                    Store.PublishDirect(locations, trust.DhtID, ServiceID, 0, cachefile.SignedHeader);
                 }
 
                 // update interface node
@@ -1293,14 +937,9 @@ namespace RiseOp.Services.Trust
                 roots.Add(link);
         }
 
-        internal string GetFilePath(TrustHeader header)
-        {
-            return LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
-        }
-
         private void Process_ProjectData(OpTrust trust, SignedData signed, ProjectData project)
         {
-            if (!Utilities.CheckSignedData(trust.Key, signed.Data, signed.Signature))
+            if (!Utilities.CheckSignedData(trust.File.Key, signed.Data, signed.Signature))
                 return;
 
             if (project.ID != 0 && !ProjectNames.SafeContainsKey(project.ID))
@@ -1318,7 +957,7 @@ namespace RiseOp.Services.Trust
 
         private void Process_LinkData(OpTrust trust, SignedData signed, LinkData linkData)
         {
-            if (!Utilities.CheckSignedData(trust.Key, signed.Data, signed.Signature))
+            if (!Utilities.CheckSignedData(trust.File.Key, signed.Data, signed.Signature))
                 return;
 
             Core.IndexKey(linkData.TargetID, ref linkData.Target);
@@ -1334,7 +973,7 @@ namespace RiseOp.Services.Trust
 
             if (targetTrust == null)
             {
-                targetTrust = new OpTrust(linkData.Target);
+                targetTrust = new OpTrust(new OpVersionedFile(linkData.Target));
                 TrustMap.SafeAdd(linkData.TargetID, targetTrust);
             }
 
@@ -1348,7 +987,7 @@ namespace RiseOp.Services.Trust
                 targetLink.Downlinks.Add(localLink);
 
                 if (!targetTrust.Loaded && !StructureKnown)
-                    StartSearch(targetTrust.DhtID, 0);
+                    Cache.Research(targetTrust.DhtID);
 
                 if (targetLink.Uplink == null)
                     AddRoot(targetLink);
@@ -1364,9 +1003,9 @@ namespace RiseOp.Services.Trust
         {
             OpTrust trust = GetTrust(key);
 
-            if (trust != null && trust.Header != null)
-                if (trust.Header.Version < version)
-                    StartSearch(key, version);
+            if (trust != null && trust.File.Header != null)
+                if (trust.File.Header.Version < version)
+                    Cache.Research(key);
         }
 
         internal uint CreateProject(string name)
@@ -1412,7 +1051,8 @@ namespace RiseOp.Services.Trust
             // update links in old project of update
             Core.RunInCoreAsync(delegate()
             {
-                Store.PublishDirect(locations, Core.LocalDhtID, ServiceID, 0, LocalTrust.SignedHeader);
+                OpVersionedFile file = Cache.GetFile(Core.LocalDhtID);
+                Store.PublishDirect(locations, Core.LocalDhtID, ServiceID, 0, file.SignedHeader);
             });
         }
 
@@ -1855,25 +1495,29 @@ namespace RiseOp.Services.Trust
     internal class OpTrust
     {
         internal string Name = "Unknown";
-        internal ulong DhtID;
-        internal ulong DhtBounds = ulong.MaxValue;
-        internal byte[] Key;    // make sure reference is the same as main key list
+        
         internal bool Loaded;
-        internal bool Unique;
+        internal ulong LoopID;
 
         internal bool InLocalLinkTree;
         internal bool Searched;
 
-        internal TrustHeader Header;
-        internal byte[] SignedHeader;
-
         internal Dictionary<uint, OpLink> Links = new Dictionary<uint, OpLink>();
-        
-   
-        internal OpTrust(byte[] key)
+
+        internal OpVersionedFile File;
+
+
+        internal OpTrust(OpVersionedFile file)
         {
-            Key = key;
-            DhtID = Utilities.KeytoID(key);
+            File = file;
+        }
+
+        internal ulong DhtID
+        {
+            get
+            {
+                return (File == null) ? LoopID : File.DhtID;
+            }
         }
 
         // loop root object should now be OpLink
@@ -1881,7 +1525,7 @@ namespace RiseOp.Services.Trust
         {
             Loaded = true;
             Name = "Trust Loop";
-            DhtID = loopID;
+            LoopID = loopID;
             AddProject(project, true);
         }
 
@@ -1948,7 +1592,7 @@ namespace RiseOp.Services.Trust
                 removeList.Clear();
 
                 foreach (UplinkRequest request in link.Requests)
-                    if (request.TargetVersion < Header.Version)
+                    if (request.TargetVersion < link.Trust.File.Header.Version)
                         removeList.Add(request);
 
                 foreach (UplinkRequest request in removeList)

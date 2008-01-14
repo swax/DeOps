@@ -1,8 +1,8 @@
 
-move profile, storage, trust, mail pending over to fileAssist
 look at removing core_load event so components can be loaded dynamically
 investigate flexible 'smart byte'
-focus
+focus - plan, profile, storage
+	profile - get focused queries open windows gets back currently viewed ids
 allow all components to put a little 'lastest version' tag in location posts, hook into events, if focused then d/l
 	link / profile
 
@@ -11,22 +11,13 @@ allow all components to put a little 'lastest version' tag in location posts, ho
 component
 	**dont enforce default published empty files for storage, plan, mail boxes
 
-	register with store control
-		gets back handle to settings object
-	publish(header, file)
-		store control handles searching, replicating, 
-		transfers, downloads, caching
 	common way of managing quotas
 		investigating total allocations on disk and in memory
 		
-	also look at removing unused event hooks?
 	
-	board, link, location, mail, plan, profile, storage
-		try to make common storage only way to store shit on network, so safer for 3rd parties
-	
-
 board - All/Higher/Lower Posts, New Post
 live command tree/chat
+do full test once again
 
 Testing
 	more accurate replication - link/location/profile/mail
@@ -41,6 +32,8 @@ Testing
 spring release
 	crits
 	multisource downloading - use torrent
+		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
+		right click to cancel, increase/decrease priority
 	store caching
 	proxying
 	invitations

@@ -78,6 +78,11 @@ namespace RiseOp.Services.Storage
 
         private void LoadWorking()
         {
+            OpStorage local = Storages.GetStorage(Core.LocalDhtID);
+
+            if (local == null)
+                return;
+
             // load working
             try
             {
@@ -86,8 +91,8 @@ namespace RiseOp.Services.Storage
 
                 if (!File.Exists(path))
                 {
-                    path = Storages.GetFilePath(Storages.LocalStorage.Header);
-                    key = Storages.LocalStorage.Header.FileKey;
+                    path = Storages.GetFilePath(local);
+                    key = local.File.Header.FileKey;
                 }
                 else
                     Modified = true; // working file present on startup, meaning there are changes lingering to be committed
@@ -1120,7 +1125,7 @@ namespace RiseOp.Services.Storage
 
             // this is the first step in auto-integration
             // go through this id's storage file, and add any changes or updates to our own system
-            string path = Storages.GetFilePath(storage.Header);
+            string path = Storages.GetFilePath(storage);
 
             if (!File.Exists(path))
                 return save;
@@ -1128,7 +1133,7 @@ namespace RiseOp.Services.Storage
             try
             {
                 FileStream filex = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(filex, storage.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = new CryptoStream(filex, storage.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 
                 ulong currentUID = 0;

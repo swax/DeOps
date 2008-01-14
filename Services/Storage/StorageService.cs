@@ -11,9 +11,11 @@ using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Services.Trust;
+
+using RiseOp.Services.Assist;
 using RiseOp.Services.Location;
 using RiseOp.Services.Transfer;
+using RiseOp.Services.Trust;
 
 
 namespace RiseOp.Services.Storage
@@ -34,27 +36,25 @@ namespace RiseOp.Services.Storage
         internal DhtStore Store;
         internal TrustService Links;
 
-        internal string StoragePath;
-        internal OpStorage LocalStorage;
+        internal string DataPath;
+        internal string WorkingPath;
+        internal string ResourcePath;
+
         internal RijndaelManaged LocalFileKey;
 
-        bool RunSaveHeaders;
         bool SavingLocal;
         internal StorageUpdateHandler StorageUpdate;
-        internal event StorageGetFocusedHandler GetFocused;
 
         internal ThreadedDictionary<ulong, OpStorage> StorageMap = new ThreadedDictionary<ulong, OpStorage>();
         internal ThreadedDictionary<ulong, OpFile> FileMap = new ThreadedDictionary<ulong, OpFile>();
         internal ThreadedDictionary<ulong, OpFile> InternalFileMap = new ThreadedDictionary<ulong, OpFile>();// used to bring together files encrypted with different keys
 
-        Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
-        Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
-
-        int PruneSize = 100;
-
         int FileBufferSize = 4096;
         byte[] FileBuffer = new byte[4096]; // needs to be 4k to packet stream break/resume work
 
+        enum DataType { CacheFile = 1, DataFile = 2, WorkingFile = 3, ResourceFile = 4 };
+
+        VersionedCache Cache;
 
         // working
         internal Dictionary<uint, WorkingStorage> Working = new Dictionary<uint, WorkingStorage>();
@@ -79,47 +79,43 @@ namespace RiseOp.Services.Storage
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ServiceID, 0] = new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ServiceID, 0] = new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ServiceID, 0] = new PatchHandler(Store_Patch);
+            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.CacheFile);
 
-            Network.Searches.SearchEvent[ServiceID, 0] = new SearchRequestHandler(Search_Local);
-
-            if (Core.Sim != null)
-                PruneSize = 25;  
+            Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
+            Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
         }
         
         void Core_Load()
         {
             Links = Core.Links;
 
-            Core.Transfers.FileSearch[ServiceID, 0] = new FileSearchHandler(Transfers_FileSearch);
-            Core.Transfers.FileRequest[ServiceID, 0] = new FileRequestHandler(Transfers_FileRequest);
+            Core.Transfers.FileSearch[ServiceID, (ushort)DataType.DataFile] += new FileSearchHandler(Transfers_DataFileSearch);
+            Core.Transfers.FileRequest[ServiceID, (ushort)DataType.DataFile] += new FileRequestHandler(Transfers_DataFileRequest);
 
             Core.Links.LinkUpdate += new LinkUpdateHandler(Links_LinkUpdate);
 
-            StoragePath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
-            Directory.CreateDirectory(StoragePath);
-            Directory.CreateDirectory(StoragePath + Path.DirectorySeparatorChar + "0");
-            Directory.CreateDirectory(StoragePath + Path.DirectorySeparatorChar + "1");
+            string rootpath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString() + Path.DirectorySeparatorChar;
+            DataPath = rootpath + ((ushort)DataType.DataFile).ToString();
+            WorkingPath = rootpath + ((ushort)DataType.WorkingFile).ToString();
+            ResourcePath = rootpath + ((ushort)DataType.ResourceFile).ToString();
+
+            Directory.CreateDirectory(DataPath);
+            Directory.CreateDirectory(WorkingPath);
 
             // clear resource files so that updates of these files work
-            string resPath = StoragePath + Path.DirectorySeparatorChar + "2";
-            if (Directory.Exists(resPath))
-                Directory.Delete(resPath, true);
+            if (Directory.Exists(ResourcePath))
+                Directory.Delete(ResourcePath, true);
 
             LocalFileKey = Core.User.Settings.FileKey;
-
-            LoadHeaders();
-     
-            if (!StorageMap.SafeContainsKey(Core.LocalDhtID))
-                SaveLocal(0);
-
-  
+            
             // load working headers
+            OpStorage local = GetStorage(Core.LocalDhtID);
+
             foreach (uint project in Links.LocalTrust.Links.Keys)
             {
-                LoadHeaderFile(GetWorkingPath(project), LocalStorage, false, true);
+                if (local != null)
+                    LoadHeaderFile(GetWorkingPath(project), local, false, true);
+                
                 Working[project] = new WorkingStorage(this, project);
 
                 bool doSave = false;
@@ -193,34 +189,24 @@ namespace RiseOp.Services.Storage
 
             Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent.Remove(ServiceID, 0);
-            Store.ReplicateEvent.Remove(ServiceID, 0);
-            Store.PatchEvent.Remove(ServiceID, 0);
+            Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
+            Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);
+            Cache.Dispose();
 
-            Network.Searches.SearchEvent.Remove(ServiceID, 0);
-
-            Core.Transfers.FileSearch.Remove(ServiceID, 0);
-            Core.Transfers.FileRequest.Remove(ServiceID, 0);
+            Core.Transfers.FileSearch[ServiceID, (ushort)DataType.DataFile] -= new FileSearchHandler(Transfers_DataFileSearch);
+            Core.Transfers.FileRequest[ServiceID, (ushort)DataType.DataFile] -= new FileRequestHandler(Transfers_DataFileRequest);
 
             Core.Links.LinkUpdate -= new LinkUpdateHandler(Links_LinkUpdate);
         }
 
         void Core_Timer()
         {
-            if (RunSaveHeaders)
-                SaveHeaders();
-
             // hashing
             if (HashQueue.Count > 0 && (HashThreadHandle == null || !HashThreadHandle.IsAlive))
             {
                 HashThreadHandle = new Thread(new ThreadStart(HashThread));
                 HashThreadHandle.Start();
             }
-
-            // clean download later map
-            if (!Network.Established)
-                Utilities.PruneMap(DownloadLater, Core.LocalDhtID, PruneSize);
-
 
             // every 10 seconds
             if (Core.TimeNow.Second % 9 == 0) 
@@ -237,62 +223,13 @@ namespace RiseOp.Services.Storage
                 return;
 
 
-            List<ulong> focused = new List<ulong>();
+            /*List<ulong> focused = new List<ulong>();
 
             if (GetFocused != null)
                 foreach (StorageGetFocusedHandler handler in GetFocused.GetInvocationList())
                     foreach (ulong id in handler.Invoke())
                         if (!focused.Contains(id))
-                            focused.Add(id);
-
-            // prune
-            List<ulong> removeIDs = new List<ulong>();
-
-            StorageMap.LockReading(delegate()
-            {
-                if (StorageMap.Count > PruneSize)
-                    foreach (OpStorage storage in StorageMap.Values)
-                        if (storage.DhtID != Core.LocalDhtID &&
-                            !Core.Links.TrustMap.SafeContainsKey(storage.DhtID) && // dont remove nodes in our local hierarchy
-                            !focused.Contains(storage.DhtID) &&
-                            !Utilities.InBounds(storage.DhtID, storage.DhtBounds, Core.LocalDhtID))
-                            removeIDs.Add(storage.DhtID);
-            });
-
-            if (removeIDs.Count > 0)
-                StorageMap.LockWriting(delegate()
-                {
-                    while (removeIDs.Count > 0 && StorageMap.Count > PruneSize / 2)
-                    {
-                        ulong furthest = Core.LocalDhtID;
-                        OpStorage storage = StorageMap[furthest];
-
-                        foreach (ulong id in removeIDs)
-                            if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
-                                furthest = id;
-
-                        UnloadHeaderFile(GetFilePath(storage.Header), storage.Header.FileKey);
-
-                        if (storage.Header != null)
-                            try { File.Delete(GetFilePath(storage.Header)); }
-                            catch { }
-
-                        StorageMap.Remove(furthest);
-                        removeIDs.Remove(furthest);
-                        RunSaveHeaders = true;
-                    }
-                });
- 
-            // clean research map
-            removeIDs.Clear();
-
-            foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
-                if (Core.TimeNow > pair.Value)
-                    removeIDs.Add(pair.Key);
-
-            foreach (ulong id in removeIDs)
-                NextResearch.Remove(id);
-
+                            focused.Add(id);*/
 
             // clear de-reffed files
             FileMap.LockReading(delegate()
@@ -301,6 +238,16 @@ namespace RiseOp.Services.Storage
                     if (pair.Value.References == 0)
                         File.Delete(GetFilePath(pair.Key)); //crit test
             });
+        }
+
+        void Cache_FileRemoved(OpVersionedFile file)
+        {
+            OpStorage storage = GetStorage(file.DhtID);
+
+            if(storage != null)
+                UnloadHeaderFile(GetFilePath(storage), storage.File.Header.FileKey);
+
+            StorageMap.SafeRemove(file.DhtID);
         }
 
         public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
@@ -340,118 +287,34 @@ namespace RiseOp.Services.Storage
             if (WorkingFileUpdate != null)
                 Core.RunInGuiThread(WorkingFileUpdate, project, dir, uid, action);
         }
-        
-        private void LoadHeaders()
-        {
-            try
-            {
-                string path = StoragePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
-
-                if (!File.Exists(path))
-                    return;
-
-                FileStream file = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
-
-                G2Header root = null;
-
-                while (stream.ReadPacket(ref root))
-                    if (root.Name == DataPacket.SignedData)
-                    {
-                        SignedData signed = SignedData.Decode(Core.Protocol, root);
-                        G2Header embedded = new G2Header(signed.Data);
-
-                        // figure out data contained
-                        if (Core.Protocol.ReadPacket(embedded))
-                        {
-                            if (embedded.Name == StoragePacket.Header)
-                                Process_StorageHeader(null, signed, StorageHeader.Decode(Core.Protocol, embedded));
-                        }
-                    }
-
-                stream.Close();
-            }
-            catch (Exception ex)
-            {
-                Network.UpdateLog("Storage", "Error loading headers " + ex.Message);
-            }
-        }
-        
-        private void SaveHeaders()
-        {
-            RunSaveHeaders = false;
-
-            try
-            {
-                string tempPath = Core.GetTempPath();
-                FileStream file = new FileStream(tempPath, FileMode.Create);
-                CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
-
-                StorageMap.LockReading(delegate()
-                {
-                    foreach (OpStorage storage in StorageMap.Values)
-                        if (storage.SignedHeader != null)
-                            stream.Write(storage.SignedHeader, 0, storage.SignedHeader.Length);
-                });
-
-                stream.FlushFinalBlock();
-                stream.Close();
-
-
-                string finalPath = StoragePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
-                File.Delete(finalPath);
-                File.Move(tempPath, finalPath);
-            }
-            catch (Exception ex)
-            {
-                Network.UpdateLog("Storage", "Error saving headers " + ex.Message);
-            }
-        }
 
         internal void SaveLocal(uint project)
         {
-            if (Core.InvokeRequired)
-            {
-                Core.RunInCoreBlocked(delegate() { SaveLocal(project); });
-                return;
-            }
-
             try
             {
-                StorageHeader header = null;
-
-                OpStorage storage = GetStorage(Core.LocalDhtID);
-                if (storage != null)
-                    header = storage.Header;
-
-                string oldFile = null;
                 PacketStream oldStream = null;
 
-                if (header != null)
-                    oldFile = GetFilePath(header);
-                else
-                    header = new StorageHeader();
+                OpStorage local = GetStorage(Core.LocalDhtID);
 
-
-                if (oldFile != null)
+                if (local != null)
                 {
-                    FileStream file = new FileStream(oldFile, FileMode.Open, FileAccess.Read);
-                    CryptoStream crypto = new CryptoStream(file, header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                    oldStream = new PacketStream(crypto, Protocol, FileAccess.Read);
+                    string oldPath = GetFilePath(local);
+
+                    if (File.Exists(oldPath))
+                    {
+                        FileStream file = new FileStream(oldPath, FileMode.Open, FileAccess.Read);
+                        CryptoStream crypto = new CryptoStream(file, local.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                        oldStream = new PacketStream(crypto, Protocol, FileAccess.Read);
+                    }
                 }
 
-
-                header.Key = Core.User.Settings.KeyPublic;
-                header.KeyID = Core.LocalDhtID; // set so keycheck works
-                header.Version++;
-                header.Date = Core.TimeNow.ToUniversalTime();
-                header.FileKey.GenerateKey();
-                header.FileKey.IV = new byte[header.FileKey.IV.Length];
+                RijndaelManaged key = new RijndaelManaged();
+                key.GenerateKey();
+                key.IV = new byte[key.IV.Length]; 
 
                 string tempPath = Core.GetTempPath();
                 FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
-                CryptoStream stream = new CryptoStream(tempFile, header.FileKey.CreateEncryptor(), CryptoStreamMode.Write);
+                CryptoStream stream = new CryptoStream(tempFile, key.CreateEncryptor(), CryptoStreamMode.Write);
 
                 // write loaded projects
                 WorkingStorage working = null;
@@ -496,35 +359,11 @@ namespace RiseOp.Services.Storage
                 stream.FlushFinalBlock();
                 stream.Close();
 
-
-                // finish building header
-                Utilities.ShaHashFile(tempPath, ref header.FileHash, ref header.FileSize);
-
-                // move file, overwrite if need be
-                string finalPath = GetFilePath(header);
-                File.Move(tempPath, finalPath);
-
                 SavingLocal = true; // prevents auto-integrate from re-calling saveLocal
-                CacheStorage(new SignedData(Core.Protocol, Core.User.Settings.KeyPair, header), header);
+                OpVersionedFile vfile = Cache.UpdateLocal(tempPath, key, BitConverter.GetBytes(Core.TimeNow.ToUniversalTime().ToBinary()));
                 SavingLocal = false;
 
-                SaveHeaders();
-
-                if (oldFile != null && File.Exists(oldFile)) // delete after move to ensure a copy always exists (names different)
-                    try { File.Delete(oldFile); }
-                    catch { }
-
-
-                // get newly loaded object
-                storage = GetStorage(Core.LocalDhtID); 
-                if (storage == null)
-                    return;
-
-                // publish header
-                Store.PublishNetwork(Core.LocalDhtID, ServiceID, 0, storage.SignedHeader);
-
-                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, 0, storage.SignedHeader);
-
+                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, (ushort)DataType.CacheFile, vfile.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -532,172 +371,82 @@ namespace RiseOp.Services.Storage
             }
         }
 
-        private void Process_StorageHeader(DataReq data, SignedData signed, StorageHeader header)
+        void Cache_FileAquired(OpVersionedFile file)
         {
-            Core.IndexKey(header.KeyID, ref header.Key);
-           
-
-            // if link loaded
-            OpStorage current = GetStorage(header.KeyID);
-
-            if (current != null)
+            // unload old file
+            OpStorage prevStorage = GetStorage(file.DhtID);
+            if (prevStorage != null)
             {
-                // lower version
-                if (header.Version < current.Header.Version)
-                {
-                    if (data != null && data.Sources != null)
-                        foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, ServiceID, 0, current.SignedHeader));
-
-                    return;
-                }
-
-                // higher version
-                else if (header.Version > current.Header.Version)
-                {
-                    CacheStorage(signed, header);
-                }
+                string oldPath = GetFilePath(prevStorage);
+                
+                UnloadHeaderFile(oldPath, prevStorage.File.Header.FileKey);
             }
 
-            // else load file, set new header after file loaded
-            else
-                CacheStorage(signed, header);
-        }
+            OpStorage newStorage = new OpStorage(file);
 
-        private void DownloadStorage(SignedData signed, StorageHeader header)
-        {
-            if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
-                return;
+            StorageMap.SafeAdd(file.DhtID, newStorage);
 
-            FileDetails details = new FileDetails(ServiceID, 0, header.FileHash, header.FileSize, BitConverter.GetBytes(StoragePacket.Header));
 
-            Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
-        }
+            LoadHeaderFile(GetFilePath(newStorage), newStorage, false, false);
 
-        private void EndDownload(string path, object[] args)
-        {
-            SignedData signedHeader = (SignedData)args[0];
-            StorageHeader header = (StorageHeader)args[1];
-
-            try
+            // record changes of higher nodes for auto-integration purposes
+            Links.ProjectRoots.LockReading(delegate()
             {
-                File.Move(path, GetFilePath(header));
-            }
-            catch 
-            { 
-                return;
-            }
+                foreach (uint project in Links.ProjectRoots.Keys)
+                {
+                    List<ulong> inheritIDs = Links.GetAutoInheritIDs(Core.LocalDhtID, project);
 
-            CacheStorage(signedHeader, header);
-        }
+                    if (Core.LocalDhtID == newStorage.DhtID || inheritIDs.Contains(newStorage.DhtID))
+                        // doesnt get called on startup because working not initialized before headers are loaded
+                        if (Working.ContainsKey(project))
+                        {
+                            bool doSave = Working[project].RefreshHigherChanges(newStorage.DhtID);
 
-        private void CacheStorage(SignedData signedHeader, StorageHeader header)
-        {
-            if (Core.InvokeRequired)
-                Debug.Assert(false);
+                            if (!Core.Loading && !SavingLocal)
+                                Working[project].AutoIntegrate(doSave);
+                        }
+                }
+            });
 
-
-            try
+            // update subs
+            if (Network.Established)
             {
-                // check if file exists           
-                string path = GetFilePath(header);
-                if (!File.Exists(path))
-                {
-                    DownloadStorage(signedHeader, header);
-                    return;
-                }
+                List<LocationData> locations = new List<LocationData>();
 
-                // get storage
-                OpStorage prevStorage = GetStorage(header.KeyID);
-
-                OpStorage newStorage = new OpStorage(header.Key);
-
-                // delete old file
-                if (prevStorage != null)
-                {
-                    if (header.Version < prevStorage.Header.Version)
-                        return; // dont update with older version
-
-                    string oldPath = GetFilePath(prevStorage.Header);
-                    UnloadHeaderFile(oldPath, prevStorage.Header.FileKey);
-
-                    if (path != oldPath && File.Exists(oldPath))
-                        try { File.Delete(oldPath); }
-                        catch { }
-                }
-
-                // set new header
-                newStorage.Header = header;
-                newStorage.SignedHeader = signedHeader.Encode(Core.Protocol);
-                newStorage.Unique = Core.Loading;
-
-                StorageMap.SafeAdd(header.KeyID, newStorage);
-
-
-                if (header.KeyID == Core.LocalDhtID)
-                    LocalStorage = newStorage;
-
-                RunSaveHeaders = true;
-
-                LoadHeaderFile(path, newStorage, false, false);
-
-                // record changes of higher nodes for auto-integration purposes
                 Links.ProjectRoots.LockReading(delegate()
                 {
                     foreach (uint project in Links.ProjectRoots.Keys)
-                    {
-                        List<ulong> inheritIDs = Links.GetAutoInheritIDs(Core.LocalDhtID, project);
-
-                        if (Core.LocalDhtID == newStorage.DhtID || inheritIDs.Contains(newStorage.DhtID))
-                            // doesnt get called on startup because working not initialized before headers are loaded
-                            if (Working.ContainsKey(project))
-                            {
-                                bool doSave = Working[project].RefreshHigherChanges(newStorage.DhtID);
-
-                                if (!Core.Loading && !SavingLocal)
-                                    Working[project].AutoIntegrate(doSave);
-                            }
-                    }
+                        if (newStorage.DhtID == Core.LocalDhtID || Links.IsHigher(newStorage.DhtID, project))
+                            Links.GetLocsBelow(Core.LocalDhtID, project, locations);
                 });
 
-                // update subs
-                if (Network.Established)
-                {
-                    List<LocationData> locations = new List<LocationData>();
-
-                    Links.ProjectRoots.LockReading(delegate()
-                    {
-                        foreach (uint project in Links.ProjectRoots.Keys)
-                            if (newStorage.DhtID == Core.LocalDhtID || Links.IsHigher(newStorage.DhtID, project))
-                                Links.GetLocsBelow(Core.LocalDhtID, project, locations);
-                    });
-                    Store.PublishDirect(locations, newStorage.DhtID, ServiceID, 0, newStorage.SignedHeader);
-                }
-
-                if (StorageUpdate != null)
-                    Core.RunInGuiThread(StorageUpdate, newStorage);
-
-                if (Core.NewsWorthy(newStorage.DhtID, 0, false))
-                    Core.MakeNews("Storage updated by " + Links.GetName(newStorage.DhtID), newStorage.DhtID, 0, false, StorageRes.Icon, Menu_View);
-         
+                Store.PublishDirect(locations, newStorage.DhtID, ServiceID, (ushort) DataType.CacheFile, file.SignedHeader);
             }
-            catch (Exception ex)
-            {
-                Network.UpdateLog("Storage", "Error caching storage " + ex.Message);
-            }
+
+            if (StorageUpdate != null)
+                Core.RunInGuiThread(StorageUpdate, newStorage);
+
+            if (Core.NewsWorthy(newStorage.DhtID, 0, false))
+                Core.MakeNews("Storage updated by " + Links.GetName(newStorage.DhtID), newStorage.DhtID, 0, false, StorageRes.Icon, Menu_View);
+
         }
 
         void Links_LinkUpdate(OpTrust trust)
         {
             // update working projects (add)
             if (trust.DhtID == Core.LocalDhtID)
+            {
+                OpStorage local = GetStorage(Core.LocalDhtID);
+
                 foreach (uint project in Links.LocalTrust.Links.Keys)
                     if (!Working.ContainsKey(project))
                     {
-                        LoadHeaderFile(GetWorkingPath(project), LocalStorage, false, true);
+                        if(local != null)
+                            LoadHeaderFile(GetWorkingPath(project), local, false, true);
+                        
                         Working[project] = new WorkingStorage(this, project);
                     }
-
+            }
 
             // remove all higher changes, reload with new highers (cause link changed
             foreach (WorkingStorage working in Working.Values )
@@ -710,216 +459,45 @@ namespace RiseOp.Services.Storage
                 }
         }
 
-        bool Transfers_FileSearch(ulong key, FileDetails details)
+        bool Transfers_DataFileSearch(ulong key, FileDetails details)
         {
-            if (details.Extra.Length == 0)
-                return false;
+            ulong hashID = BitConverter.ToUInt64(details.Hash, 0);
 
-            if (details.Extra[0] == StoragePacket.Header)
-            {
-                OpStorage storage = GetStorage(key);
-                if (storage != null)
-                    if (details.Size == storage.Header.FileSize && Utilities.MemCompare(details.Hash, storage.Header.FileHash))
-                        return true;
-            }
+            OpFile file = null;
 
-            if (details.Extra[0] == StoragePacket.File)
-            {
-                ulong hashID = BitConverter.ToUInt64(details.Hash, 0);
-
-                OpFile file = null;
-
-                if (FileMap.SafeTryGetValue(hashID, out file))
-                    if (details.Size == file.Size && Utilities.MemCompare(details.Hash, file.Hash))
-                        return true;
-            }
+            if (FileMap.SafeTryGetValue(hashID, out file))
+                if (details.Size == file.Size && Utilities.MemCompare(details.Hash, file.Hash))
+                    return true;
 
             return false;
         }
 
-        string Transfers_FileRequest(ulong key, FileDetails details)
+        string Transfers_DataFileRequest(ulong key, FileDetails details)
         {
-             if (details.Extra.Length == 0)
-                 return null;
+            ulong hashID = BitConverter.ToUInt64(details.Hash, 0);
 
-             if (details.Extra[0] == StoragePacket.Header)
-             {
-                 OpStorage storage = GetStorage(key);
+            OpFile file = null;
 
-                 if (storage != null)
-                     if (details.Size == storage.Header.FileSize && Utilities.MemCompare(details.Hash, storage.Header.FileHash))
-                         return GetFilePath(storage.Header);
-             }
-
-            if (details.Extra[0] == StoragePacket.File)
-            {
-                ulong hashID = BitConverter.ToUInt64(details.Hash, 0);
-
-                OpFile file = null;
-
-                if (FileMap.SafeTryGetValue(hashID, out file))
-                    if (details.Size == file.Size && Utilities.MemCompare(details.Hash, file.Hash))
-                        return GetFilePath(hashID);
-            }
+            if (FileMap.SafeTryGetValue(hashID, out file))
+                if (details.Size == file.Size && Utilities.MemCompare(details.Hash, file.Hash))
+                    return GetFilePath(hashID);
 
             return null;
         }
 
-        void Store_Local(DataReq store)
-        {
-            // getting published to - search results - patch
-
-            SignedData signed = SignedData.Decode(Core.Protocol, store.Data);
-            StorageHeader header = StorageHeader.Decode(Core.Protocol, signed.Data);
-
-            Process_StorageHeader(null, signed, header);
-        }
-
-        const int PatchEntrySize = 12;
-
-        ReplicateData Store_Replicate(DhtContact contact, bool add)
-        {
-            if (!Network.Established)
-                return null;
-
-            ReplicateData data = new ReplicateData(PatchEntrySize);
-
-            byte[] patch = new byte[PatchEntrySize];
-
-            StorageMap.LockReading(delegate()
-            {
-                foreach (OpStorage storage in StorageMap.Values)
-                    if (Utilities.InBounds(storage.DhtID, storage.DhtBounds, contact.DhtID))
-                    {
-                        DhtContact target = contact;
-                        storage.DhtBounds = Store.RecalcBounds(storage.DhtID, add, ref target);
-
-                        if (target != null)
-                        {
-                            BitConverter.GetBytes(storage.DhtID).CopyTo(patch, 0);
-                            BitConverter.GetBytes(storage.Header.Version).CopyTo(patch, 8);
-
-                            data.Add(target, patch);
-                        }
-                    }
-            });
-
-            return data;
-        }
-
-        void Store_Patch(DhtAddress source, ulong distance, byte[] data)
-        {
-            if (data.Length % PatchEntrySize != 0)
-                return;
-
-            int offset = 0;
-
-            for (int i = 0; i < data.Length; i += PatchEntrySize)
-            {
-                ulong dhtid = BitConverter.ToUInt64(data, i);
-                uint version = BitConverter.ToUInt32(data, i + 8);
-
-                offset += PatchEntrySize;
-
-                if (!Utilities.InBounds(Core.LocalDhtID, distance, dhtid))
-                    continue;
-
-                OpStorage storage = GetStorage(dhtid);
-
-                if (storage != null && storage.Header != null)
-                {
-                    if (storage.Header.Version > version)
-                    {
-                        Store.Send_StoreReq(source, 0, new DataReq(null, storage.DhtID, ServiceID, 0, storage.SignedHeader));
-                        continue;
-                    }
-
-                    storage.Unique = false; // network has current or newer version
-
-                    if (storage.Header.Version == version)
-                        continue;
-
-                    // else our version is old, download below
-                }
-                
-
-                if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, ServiceID, 0, BitConverter.GetBytes(version));
-                else
-                    DownloadLater[dhtid] = version;
-            }
-        }
-
-        private void StartSearch(ulong key, uint version)
-        {
-            if (Core.InvokeRequired)
-            {
-                Core.RunInCoreAsync(delegate() { StartSearch(key, version); });
-                return;
-            }
-
-            byte[] parameters = BitConverter.GetBytes(version);
-            DhtSearch search = Core.OperationNet.Searches.Start(key, "Storage", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
-
-            if (search != null)
-                search.TargetResults = 2;
-        }
-
-        void EndSearch(DhtSearch search)
-        {
-            foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
-        }
-
-        List<byte[]> Search_Local(ulong key, byte[] parameters)
-        {
-            List<Byte[]> results = new List<byte[]>();
-
-            uint minVersion = BitConverter.ToUInt32(parameters, 0);
-
-            OpStorage storage = GetStorage(key);
-
-            if (storage != null)
-                if (storage.Header.Version >= minVersion)
-                    results.Add(storage.SignedHeader);
-
-            return results;
-        }
-
         void Network_Established()
         {
-            ulong localBounds = Store.RecalcBounds(Core.LocalDhtID);
-
-            // set bounds for objects
+            // trigger download of files now in cache range
             StorageMap.LockReading(delegate()
             {
                 foreach (OpStorage storage in StorageMap.Values)
-                {
-                    storage.DhtBounds = Store.RecalcBounds(storage.DhtID);
-
-
-                    if (Utilities.InBounds(Core.LocalDhtID, localBounds, storage.DhtID))
-                    {
-                        // republish objects that were not seen on the network during startup
-                        if (storage.Unique)
-                            Store.PublishNetwork(storage.DhtID, ServiceID, 0, storage.SignedHeader);
-
-                        // trigger download of files now in cache range
-                        LoadHeaderFile(GetFilePath(storage.Header), storage, true, false);
-                    }
-                }
+                    if(Utilities.InBounds(storage.DhtID, storage.File.DhtBounds, Core.LocalDhtID))
+                        LoadHeaderFile(GetFilePath(storage), storage, true, false);
             });
 
 
-            // only download those objects in our local area
-            foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
-                if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
-                    StartSearch(pair.Key, pair.Value);
-
-            DownloadLater.Clear();
-
             // delete loose files not in map - do here because now files in cache range are marked as reffed
-            foreach (string filepath in Directory.GetFiles(StoragePath + Path.DirectorySeparatorChar + "0"))
+            foreach (string filepath in Directory.GetFiles(DataPath))
             {
                 byte[] hash = Utilities.HextoBytes(Path.GetFileName(filepath));
 
@@ -939,34 +517,12 @@ namespace RiseOp.Services.Storage
 
         internal void Research(ulong key)
         {
-            if (Core.InvokeRequired)
-            {
-                Core.RunInCoreAsync(delegate() { Research(key); });
-                return;
-            }
-
-            if (!Network.Routing.Responsive())
-                return;
-
-            // limit re-search to once per 30 secs
-            if (NextResearch.ContainsKey(key))
-                if (Core.TimeNow < NextResearch[key])
-                    return;
-
-            uint version = 0;
-            OpStorage storage = GetStorage(key);
-            if (storage != null)
-                version = storage.Header.Version + 1;
-
-            StartSearch(key, version);
-
-            NextResearch[key] = Core.TimeNow.AddSeconds(30);
+            Cache.Research(key);
         }
 
-
-        internal string GetFilePath(StorageHeader header)
+        internal string GetFilePath(OpStorage storage)
         {
-            return StoragePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
+            return Cache.GetFilePath(storage.File.Header);
         }
 
         internal string GetFilePath(ulong hashID)
@@ -975,12 +531,12 @@ namespace RiseOp.Services.Storage
 
             byte[] hash = BitConverter.GetBytes(hashID);
 
-            return StoragePath + Path.DirectorySeparatorChar + "0" + Path.DirectorySeparatorChar + Utilities.BytestoHex(transform.TransformFinalBlock(hash, 0, hash.Length));
+            return DataPath + Path.DirectorySeparatorChar + Utilities.BytestoHex(transform.TransformFinalBlock(hash, 0, hash.Length));
         }
 
         internal string GetWorkingPath(uint project)
         {
-            return StoragePath + Path.DirectorySeparatorChar + "1" + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "working:" + project.ToString());
+            return WorkingPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "working:" + project.ToString());
         }
 
         internal OpStorage GetStorage(ulong key)
@@ -999,10 +555,10 @@ namespace RiseOp.Services.Storage
                 if (!File.Exists(path))
                     return;
 
-                bool cached = Utilities.InBounds(storage.DhtID, storage.DhtBounds, Core.LocalDhtID);
+                bool cached = Utilities.InBounds(storage.DhtID, storage.File.DhtBounds, Core.LocalDhtID);
                 bool local = false;
 
-                RijndaelManaged key = working ? LocalFileKey : storage.Header.FileKey; 
+                RijndaelManaged key = working ? LocalFileKey : storage.File.Header.FileKey; 
 
                 FileStream filex = new FileStream(path, FileMode.Open);
                 CryptoStream crypto = new CryptoStream(filex, key.CreateDecryptor(), CryptoStreamMode.Read);
@@ -1089,7 +645,7 @@ namespace RiseOp.Services.Storage
             if (file.Hash == null)
                 return;
 
-            FileDetails details = new FileDetails(ServiceID, 0, file.Hash, file.Size, BitConverter.GetBytes(StoragePacket.File));
+            FileDetails details = new FileDetails(ServiceID, (ushort) DataType.DataFile, file.Hash, file.Size, null);
 
             Core.Transfers.StartDownload(id, details, new object[] { file }, new EndDownloadHandler(EndDownloadFile));
         }
@@ -1420,7 +976,6 @@ namespace RiseOp.Services.Storage
             return name;
         }
 
-
         internal string UnlockFile(ulong dht, uint project, string path, StorageFile file, bool history, List<LockError> errors)
         {
             // path needs to include name, because for things like history files name is diff than file.Info
@@ -1568,7 +1123,6 @@ namespace RiseOp.Services.Storage
             }
         }
 
-
         internal bool DeleteFile(string path, List<LockError> errors, bool temp)
         {
             try
@@ -1650,7 +1204,6 @@ namespace RiseOp.Services.Storage
             catch { }
         }
 
-
         internal StorageActions ItemDiff(StorageItem item, StorageItem original)
         {
             StorageActions actions = StorageActions.None;
@@ -1695,7 +1248,6 @@ namespace RiseOp.Services.Storage
             return false;
         }
 
-
         internal List<ulong> GetHigherRegion(ulong id, uint project)
         {
             List<ulong> highers = Links.GetUplinkIDs(id, project); // works for loops
@@ -1720,19 +1272,28 @@ namespace RiseOp.Services.Storage
 
     internal class OpStorage
     {
-        internal ulong DhtID;
-        internal ulong DhtBounds = ulong.MaxValue;
-        internal byte[] Key;    // make sure reference is the same as main key list
-        internal bool Unique;
+        internal OpVersionedFile File;
 
-        internal StorageHeader Header;
-        internal byte[] SignedHeader;
-
-
-        internal OpStorage(byte[] key)
+        internal OpStorage(OpVersionedFile file)
         {
-            Key = key;
-            DhtID = Utilities.KeytoID(key);
+            File = file;
+        }
+
+        internal ulong DhtID
+        {
+            get
+            {
+                return File.DhtID;
+            }
+        }
+
+
+        internal DateTime Date
+        {
+            get
+            {
+                return DateTime.FromBinary(BitConverter.ToInt64(File.Header.Extra, 0));
+            }
         }
     }
 
@@ -1761,7 +1322,6 @@ namespace RiseOp.Services.Storage
                 References--;
         }
     }
-
 
     internal class HashPack
     {

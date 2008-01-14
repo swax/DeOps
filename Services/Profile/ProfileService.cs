@@ -21,7 +21,7 @@ namespace RiseOp.Services.Profile
     internal delegate void ProfileUpdateHandler(OpProfile profile);
     
 
-     class ProfileService : OpService
+    class ProfileService : OpService
     {
         public string Name { get { return "Profile"; } }
         public ushort ServiceID { get { return 4; } }
@@ -39,7 +39,7 @@ namespace RiseOp.Services.Profile
         
         internal ProfileUpdateHandler ProfileUpdate;
         
-        enum DataType { File = 0x01, Extracted = 0x02 };
+        enum DataType { File = 1, Extracted = 2 };
 
         internal VersionedCache Cache;
 
@@ -109,13 +109,14 @@ namespace RiseOp.Services.Profile
             ExtractPath = Core.User.RootPath + Path.DirectorySeparatorChar +
                         "Data" + Path.DirectorySeparatorChar +
                         ServiceID.ToString() + Path.DirectorySeparatorChar +
-                        DataType.Extracted.ToString();
+                        ((ushort)DataType.Extracted).ToString();
 
             Core.LoadEvent  += new LoadHandler(Core_Load);
 
             Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
+            Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
         }
 
         void Core_Load()
@@ -129,6 +130,10 @@ namespace RiseOp.Services.Profile
         public void Dispose()
         {
             Core.LoadEvent -= new LoadHandler(Core_Load);
+
+            Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
+            Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);
+            Cache.Dispose();
         }
 
         internal OpProfile GetProfile(ulong dhtid)
@@ -286,6 +291,15 @@ namespace RiseOp.Services.Profile
             }
         }
 
+
+        void Cache_FileRemoved(OpVersionedFile file)
+        {
+            OpProfile profile = GetProfile(file.DhtID);
+
+            if (profile != null)
+                ProfileMap.SafeRemove(file.DhtID);
+        }
+
         private void Cache_FileAquired(OpVersionedFile file)
         {
             // get profile
@@ -334,7 +348,7 @@ namespace RiseOp.Services.Profile
 
             try
             {
-                string path = Cache.GetFilePath(profile.File.Header);
+                string path = GetFilePath(profile);
 
                 if (!File.Exists(path))
                     return;
@@ -384,6 +398,11 @@ namespace RiseOp.Services.Profile
         {
             Cache.Research(key);
         }
+
+        internal string GetFilePath(OpProfile profile)
+        {
+            return Cache.GetFilePath(profile.File.Header);
+        }
     }
 
 
@@ -414,10 +433,6 @@ namespace RiseOp.Services.Profile
             get
             {
                 return BitConverter.ToInt64(File.Header.Extra, 0);
-            }
-            set
-            {
-                File.Header.Extra = BitConverter.GetBytes(value);
             }
         }
     }

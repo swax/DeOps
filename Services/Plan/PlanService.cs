@@ -42,7 +42,7 @@ namespace RiseOp.Services.Plan
         internal event PlanUpdateHandler PlanUpdate;
         internal event PlanGetFocusedHandler GetFocused;
 
-        enum DataType { File = 0x01 };
+        enum DataType { File = 1 };
 
         VersionedCache Cache;
 
@@ -60,9 +60,10 @@ namespace RiseOp.Services.Plan
             Core.LoadEvent += new LoadHandler(Core_Load);
             Core.TimerEvent += new TimerHandler(Core_Timer);
 
-            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File);
-            
+            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File);  
+         
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
+            Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
         }
 
         void Core_Load()
@@ -85,6 +86,8 @@ namespace RiseOp.Services.Plan
             Core.TimerEvent -= new TimerHandler(Core_Timer);
 
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
+            Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);
+            Cache.Dispose();
         }
 
         public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
@@ -169,6 +172,14 @@ namespace RiseOp.Services.Plan
             });
         }
 
+        void Cache_FileRemoved(OpVersionedFile file)
+        {
+            OpPlan plan = GetPlan(file.DhtID, false);
+
+            if (plan != null)
+                PlanMap.SafeRemove(file.DhtID);
+        }
+
         private void Cache_FileAquired(OpVersionedFile file)
         {
             OpPlan prevPlan = GetPlan(file.DhtID, false);
@@ -243,8 +254,6 @@ namespace RiseOp.Services.Plan
         {
             try
             {
-                OpPlan plan = GetPlan(Core.LocalDhtID, true);
-
                 RijndaelManaged key = new RijndaelManaged();
                 key.GenerateKey();
                 key.IV = new byte[key.IV.Length]; 
@@ -254,6 +263,8 @@ namespace RiseOp.Services.Plan
                 CryptoStream stream = new CryptoStream(tempFile, key.CreateEncryptor(), CryptoStreamMode.Write);
 
                 // write dummy block if nothing to write
+                OpPlan plan = GetPlan(Core.LocalDhtID, true);
+
                 if (plan == null ||
                     plan.Blocks == null ||
                     plan.Blocks.Count == 0)
@@ -284,7 +295,6 @@ namespace RiseOp.Services.Plan
                 OpVersionedFile file = Cache.UpdateLocal(tempPath, key, null);
 
                 Store.PublishDirect(Core.Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, (ushort) DataType.File, file.SignedHeader);
-
             }
             catch (Exception ex)
             {

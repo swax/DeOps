@@ -150,7 +150,7 @@ namespace RiseOp.Services.Profile
 
             // display
 
-            string tempPath = Profiles.ExtractPath + Path.DirectorySeparatorChar + "0";
+            string tempPath = Profiles.ExtractPath;
 
 
             // create if needed, clear of pre-existing data
@@ -214,7 +214,7 @@ namespace RiseOp.Services.Profile
             
             try
             {
-                FileStream stream = new FileStream(service.Cache.GetFilePath(profile.File.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
+                FileStream stream = new FileStream(service.GetFilePath(profile), FileMode.Open, FileAccess.Read, FileShare.Read);
                 CryptoStream crypto = new CryptoStream(stream, profile.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                 int buffSize = 4096;
@@ -371,7 +371,7 @@ namespace RiseOp.Services.Profile
                     // load default photo if none in file
                     else if (parts[0] == "file" && fileFields != null && parts[1] == "Photo")
                     {
-                        string path = service.ExtractPath + Path.DirectorySeparatorChar + "0";
+                        string path = service.ExtractPath;
 
                         // create if needed, clear of pre-existing data
                         if (!Directory.Exists(path))

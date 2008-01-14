@@ -47,10 +47,10 @@ namespace RiseOp.Services.Transfer
             Core.LoadEvent += new LoadHandler(Core_Load);
             Core.TimerEvent += new TimerHandler(Core_Timer);
 
-            Core.OperationNet.Searches.SearchEvent[ServiceID, 0] = new SearchRequestHandler(Search_Local);
+            Core.OperationNet.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(Search_Local);
 
             Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData[ServiceID, 0] = new SessionDataHandler(Session_Data);
+            Core.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
             Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
         }
 
@@ -76,10 +76,10 @@ namespace RiseOp.Services.Transfer
             Core.LoadEvent -= new LoadHandler(Core_Load);
             Core.TimerEvent -= new TimerHandler(Core_Timer);
 
-            Core.OperationNet.Searches.SearchEvent.Remove(ServiceID, 0);
+            Core.OperationNet.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(Search_Local);
 
             Core.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData.Remove(ServiceID, 0);
+            Core.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
             Core.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
         }
 

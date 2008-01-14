@@ -706,7 +706,10 @@ namespace RiseOp.Implementation
         {
             get
             {
-                return HandlerMap[service][type];
+                if (Contains(service, type))
+                    return HandlerMap[service][type];
+
+                return default(TDelegate);
             }
             set
             {
@@ -720,19 +723,6 @@ namespace RiseOp.Implementation
         internal bool Contains(ushort service, ushort type)
         {
             return HandlerMap.ContainsKey(service) && HandlerMap[service].ContainsKey(type);
-        }
-
-        internal IEnumerable Handlers()
-        {
-            foreach (Dictionary<ushort, TDelegate> map in HandlerMap.Values)
-                foreach (TDelegate handler in map.Values)
-                    yield return handler;
-        }
-
-        internal void Remove(ushort service, ushort type)
-        {
-            if (Contains(service, type))
-                HandlerMap[service].Remove(type);
         }
     }
 

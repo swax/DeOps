@@ -39,7 +39,7 @@ namespace RiseOp.Services.Chat
             Links = core.Links;
 
             Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData[ServiceID, 0] = new SessionDataHandler(Session_Data);
+            Core.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
             Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
 
             Core.LoadEvent += new LoadHandler(Core_Load);
@@ -60,7 +60,7 @@ namespace RiseOp.Services.Chat
                 throw new Exception("Chat Events not fin'd");
 
             Core.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData.Remove(ServiceID, 0);
+            Core.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
             Core.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
 
             Core.LoadEvent -= new LoadHandler(Core_Load);

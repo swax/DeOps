@@ -281,7 +281,7 @@ namespace RiseOp.Services.Storage
                 OpStorage storage = Storages.GetStorage(DhtID);
 
                 if (storage != null)
-                    LoadHeader(Storages.GetFilePath(storage.Header), storage.Header.FileKey);
+                    LoadHeader(Storages.GetFilePath(storage), storage.File.Header.FileKey);
             }
 
             // re-diff
@@ -340,7 +340,7 @@ namespace RiseOp.Services.Storage
                 return;
             }
 
-            string path = Storages.GetFilePath(storage.Header);
+            string path = Storages.GetFilePath(storage);
 
             if (!File.Exists(path))
             {
@@ -351,7 +351,7 @@ namespace RiseOp.Services.Storage
             try
             {
                 FileStream filex = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(filex, storage.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = new CryptoStream(filex, storage.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 
                 ulong remoteUID = 0;
@@ -2030,7 +2030,7 @@ namespace RiseOp.Services.Storage
             if (storage == null)
                 return;
 
-            string path = Storages.GetFilePath(storage.Header);
+            string path = Storages.GetFilePath(storage);
 
             if (!File.Exists(path))
                 return;
@@ -2038,7 +2038,7 @@ namespace RiseOp.Services.Storage
             try
             {
                 FileStream filex = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(filex, storage.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = new CryptoStream(filex, storage.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 
                 ulong remoteUID = 0;

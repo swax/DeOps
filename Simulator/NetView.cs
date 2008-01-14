@@ -224,7 +224,7 @@ namespace RiseOp.Simulator
                 core.Links.TrustMap.LockReading(delegate()
                 {
                     foreach (OpTrust trust in core.Links.TrustMap.Values)
-                        if (trust.Loaded && Utilities.MemCompare(trust.Header.FileHash, TrackHash))
+                        if (trust.Loaded && Utilities.MemCompare(trust.File.Header.FileHash, TrackHash))
                             found = true;
                 });
 

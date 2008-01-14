@@ -10,106 +10,13 @@ namespace RiseOp.Services.Storage
 {
     internal class StoragePacket
     {
-        internal const byte Header = 0x10;
         internal const byte Root   = 0x20;
         internal const byte Folder = 0x30;
         internal const byte File   = 0x40;
         internal const byte Pack   = 0x50;
     }
 
-    internal class StorageHeader : G2Packet
-    {
-        const byte Packet_Key = 0x10;
-        const byte Packet_Version = 0x20;
-        const byte Packet_FileHash = 0x30;
-        const byte Packet_FileSize = 0x40;
-        const byte Packet_FileKey = 0x50;
-        const byte Packet_Date = 0x60;
-
-
-        internal byte[] Key;
-        internal uint Version;
-        internal DateTime Date;
-        internal byte[] FileHash;
-        internal long FileSize;
-        internal RijndaelManaged FileKey = new RijndaelManaged();
-
-        internal ulong KeyID;
-
-
-        internal override byte[] Encode(G2Protocol protocol)
-        {
-            lock (protocol.WriteSection)
-            {
-                G2Frame header = protocol.WritePacket(null, StoragePacket.Header, null);
-
-                protocol.WritePacket(header, Packet_Key, Key);
-                protocol.WritePacket(header, Packet_Version, BitConverter.GetBytes(Version));
-                protocol.WritePacket(header, Packet_Date, BitConverter.GetBytes(Date.ToBinary()));
-                protocol.WritePacket(header, Packet_FileHash, FileHash);
-                protocol.WritePacket(header, Packet_FileSize, BitConverter.GetBytes(FileSize));
-                protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
-
-                return protocol.WriteFinish();
-            }
-        }
-
-        internal static StorageHeader Decode(G2Protocol protocol, byte[] data)
-        {
-            G2Header root = new G2Header(data);
-
-            if (!protocol.ReadPacket(root))
-                return null;
-
-            if (root.Name != StoragePacket.Header)
-                return null;
-
-            return StorageHeader.Decode(protocol, root);
-        }
-
-        internal static StorageHeader Decode(G2Protocol protocol, G2Header root)
-        {
-            StorageHeader header = new StorageHeader();
-            G2Header child = new G2Header(root.Data);
-
-            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                switch (child.Name)
-                {
-                    case Packet_Key:
-                        header.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        header.KeyID = Utilities.KeytoID(header.Key);
-                        break;
-
-                    case Packet_Version:
-                        header.Version = BitConverter.ToUInt32(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_Date:
-                        header.Date = DateTime.FromBinary(BitConverter.ToInt64(child.Data, child.PayloadPos));
-                        break;
-
-                    case Packet_FileHash:
-                        header.FileHash = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-
-                    case Packet_FileSize:
-                        header.FileSize = BitConverter.ToInt64(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_FileKey:
-                        header.FileKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        header.FileKey.IV = new byte[header.FileKey.IV.Length];
-                        break;
-                }
-            }
-
-            return header;
-        }
-    }
+   
     internal class StorageRoot : G2Packet
     {
         const byte Packet_Project = 0x10;

@@ -43,7 +43,7 @@ namespace RiseOp.Services.IM
             Core.TimerEvent += new TimerHandler(Core_Timer);
 
             Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData[ServiceID, 0] = new SessionDataHandler(Session_Data);
+            Core.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
             Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
         }
 
@@ -62,7 +62,7 @@ namespace RiseOp.Services.IM
             Core.TimerEvent -= new TimerHandler(Core_Timer);
 
             Core.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData.Remove(ServiceID, 0);
+            Core.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
             Core.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
 
             Core.Links.LinkUpdate -= new LinkUpdateHandler(Link_Update);
