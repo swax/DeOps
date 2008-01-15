@@ -177,9 +177,9 @@ namespace RiseOp.Services.Chat
             {
                 foreach (ushort client in clients)
                 {
-                    LocInfo info = Locations.GetLocationInfo(node.DhtID, client);
+                    ClientInfo info = Locations.GetLocationInfo(node.DhtID, client);
 
-                    if (info != null && info.Location.Away)
+                    if (info != null && info.Data.Away)
                         away = true;
                 }
             });

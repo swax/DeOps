@@ -587,21 +587,21 @@ namespace RiseOp.Services.Plan
             UpdatePlanItems(null);
         }
 
-        internal void GetFocused(List<ulong> focus)
+        internal void GetFocused()
         {
             // return all plans in tree, plus 1 down what is not visible
             // return all plans up from our own assigned plans, and 1 down from them
 
-            RecurseFocus(GoalTree.Nodes, focus);
+            RecurseFocus(GoalTree.Nodes);
         }
 
-        private void RecurseFocus(TreeListNodeCollection children, List<ulong> focus)
+        private void RecurseFocus(TreeListNodeCollection children)
         {
             foreach (GoalNode node in children)
             {
-                focus.Add(node.Goal.Person);
+                Core.Focused.SafeAdd(node.Goal.Person, true);
 
-                RecurseFocus(node.Nodes, focus);
+                RecurseFocus(node.Nodes);
             }
         }
   

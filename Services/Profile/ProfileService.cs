@@ -105,23 +105,19 @@ namespace RiseOp.Services.Profile
             Protocol = core.Protocol;
             Network = core.OperationNet;
             Store = Network.Store;
+            Links = Core.Links;
 
             ExtractPath = Core.User.RootPath + Path.DirectorySeparatorChar +
                         "Data" + Path.DirectorySeparatorChar +
                         ServiceID.ToString() + Path.DirectorySeparatorChar +
                         ((ushort)DataType.Extracted).ToString();
 
-            Core.LoadEvent  += new LoadHandler(Core_Load);
 
             Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
-        }
-
-        void Core_Load()
-        {
-            Links = Core.Links;
+            Cache.Load();
 
             if (!ProfileMap.SafeContainsKey(Core.LocalDhtID))
                 SaveLocal(DefaultTemplate, null, null);
@@ -129,8 +125,6 @@ namespace RiseOp.Services.Profile
 
         public void Dispose()
         {
-            Core.LoadEvent -= new LoadHandler(Core_Load);
-
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);
             Cache.Dispose();

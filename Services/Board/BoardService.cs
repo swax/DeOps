@@ -34,6 +34,7 @@ namespace RiseOp.Services.Board
         internal DhtStore Store;
         TrustService Links;
 
+        bool Loading = true;
         internal string BoardPath;
         RijndaelManaged LocalFileKey;
 
@@ -57,9 +58,10 @@ namespace RiseOp.Services.Board
             Protocol = Core.Protocol;
             Network  = Core.OperationNet;
             Store    = Network.Store;
+            Links = Core.Links;
 
-            Core.LoadEvent += new LoadHandler(Core_Load);
-            Core.TimerEvent += new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
@@ -69,23 +71,17 @@ namespace RiseOp.Services.Board
 
             Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(Search_Local);
 
-            if (Core.Sim != null)
-                PruneSize = 32;
-
-            
-        }
-
-        void Core_Load()
-        {
-            Links = Core.Links;
             Core.Transfers.FileSearch[ServiceID, 0] += new FileSearchHandler(Transfers_FileSearch);
             Core.Transfers.FileRequest[ServiceID, 0] += new FileRequestHandler(Transfers_FileRequest);
+
+            if (Core.Sim != null)
+                PruneSize = 32;
 
             LocalFileKey = Core.User.Settings.FileKey;
 
             BoardPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
 
-            if(!Directory.Exists(BoardPath))
+            if (!Directory.Exists(BoardPath))
                 Directory.CreateDirectory(BoardPath);
 
 
@@ -113,13 +109,14 @@ namespace RiseOp.Services.Board
                 if (loaded == PruneSize)
                     break;
             }
-        }
 
+            Loading = false;
+        }
 
         public void Dispose()
         {
-            Core.LoadEvent -= new LoadHandler(Core_Load);
-            Core.TimerEvent -= new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
             Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
 
@@ -134,7 +131,7 @@ namespace RiseOp.Services.Board
 
         }
 
-        void Core_Timer()
+        void Core_SecondTimer()
         {
             // save headers, timeout 10 secs
             if (Core.TimeNow.Second % 9 == 0)
@@ -149,12 +146,10 @@ namespace RiseOp.Services.Board
             // clean download later map
             if (!Network.Established)
                 PruneMap(DownloadLater);
-                
+        }
 
-            // do below once per minute
-            if (Core.TimeNow.Second != 0)
-                return;
-
+        void Core_MinuteTimer()
+        {
             List<ulong> removeBoards = new List<ulong>();
 
                
@@ -170,6 +165,7 @@ namespace RiseOp.Services.Board
                     foreach (OpBoard board in BoardMap.Values)
                         if (board.DhtID != Core.LocalDhtID &&
                             !Utilities.InBounds(board.DhtID, board.DhtBounds, Core.LocalDhtID) &&
+                            !Core.Focused.SafeContainsKey(board.DhtID) &&
                             !WindowMap.SafeContainsKey(board.DhtID) &&
                             !localRegion.Contains(board.DhtID))
                         {
@@ -604,7 +600,7 @@ namespace RiseOp.Services.Board
             post.Header = header;
             post.SignedHeader = signedHeader.Encode(Core.Protocol);
             post.Ident = header.TargetID.GetHashCode() ^ uid.GetHashCode();
-            post.Unique = Core.Loading;
+            post.Unique = Loading;
 
             // remove previous version of file, if its different
             OpPost prevPost = board.GetPost(uid);

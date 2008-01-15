@@ -5,7 +5,10 @@ using System.Drawing;
 using System.Text;
 
 using RiseOp.Implementation;
+
+using RiseOp.Services.Assist;
 using RiseOp.Services.Location;
+
 using RiseOp.Interface.TLVex;
 
 namespace RiseOp.Services.Trust
@@ -50,7 +53,7 @@ namespace RiseOp.Services.Trust
 
             Core.Locations.GuiUpdate += new LocationGuiUpdateHandler(Locations_Update);
             Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
-            Links.GetFocused += new LinkGetFocusedHandler(Links_GetFocused);
+            Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
 
             SelectedLink = Core.LocalDhtID;
 
@@ -67,7 +70,7 @@ namespace RiseOp.Services.Trust
 
             Core.Locations.GuiUpdate -= new LocationGuiUpdateHandler(Locations_Update);
             Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
-            Links.GetFocused -= new LinkGetFocusedHandler(Links_GetFocused);
+            Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
         }
 
         private void RefreshOperationTree()
@@ -307,26 +310,22 @@ namespace RiseOp.Services.Trust
 
         }
 
-        List<ulong> Links_GetFocused()
+        void Core_GetFocused()
         {
-            List<ulong> focused = new List<ulong>();
-
             foreach (TreeListNode item in Nodes)
-                RecurseFocus(item, focused);
-
-            return focused;
+                RecurseFocus(item);
         }
 
-        void RecurseFocus(TreeListNode parent, List<ulong> focused)
+        void RecurseFocus(TreeListNode parent)
         {
             // add parent to focus list
             if (parent.GetType() == typeof(LinkNode))
-                focused.Add(((LinkNode)parent).Link.DhtID);
+                Core.Focused.SafeAdd(((LinkNode)parent).Link.DhtID, true);
 
             // iterate through sub items
             foreach (TreeListNode subitem in parent.Nodes)
                 if (parent.GetType() == typeof(LinkNode))
-                    RecurseFocus(subitem, focused);
+                    RecurseFocus(subitem);
         }
 
         void Links_Update(ulong key)

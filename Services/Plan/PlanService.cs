@@ -19,7 +19,7 @@ using RiseOp.Services.Assist;
 namespace RiseOp.Services.Plan
 {
     internal delegate void PlanUpdateHandler(OpPlan plan);
-    internal delegate List<ulong> PlanGetFocusedHandler();
+
 
     internal class PlanService : OpService
     {
@@ -40,11 +40,10 @@ namespace RiseOp.Services.Plan
         internal ThreadedDictionary<ulong, OpPlan> PlanMap = new ThreadedDictionary<ulong, OpPlan>();
 
         internal event PlanUpdateHandler PlanUpdate;
-        internal event PlanGetFocusedHandler GetFocused;
 
         enum DataType { File = 1 };
 
-        VersionedCache Cache;
+        internal VersionedCache Cache;
 
 
         internal PlanService(OpCore core)
@@ -53,24 +52,19 @@ namespace RiseOp.Services.Plan
             Protocol = core.Protocol;
             Network = core.OperationNet;
             Store = Network.Store;
-
+            Links = Core.Links;
+            
             if (Core.Sim != null)
                 SaveInterval = 30;
             
-            Core.LoadEvent += new LoadHandler(Core_Load);
-            Core.TimerEvent += new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
 
             Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File);  
          
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
-        }
-
-        void Core_Load()
-        {
-            Links = Core.Links;
-
-            // try not to auto-publish empty file
+            Cache.Load();
+ 
             if (!PlanMap.SafeContainsKey(Core.LocalDhtID))
             {
                 LocalPlan = new OpPlan(new OpVersionedFile(Core.User.Settings.KeyPublic));
@@ -82,8 +76,7 @@ namespace RiseOp.Services.Plan
 
         public void Dispose()
         {
-            Core.LoadEvent -= new LoadHandler(Core_Load);
-            Core.TimerEvent -= new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
 
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);
@@ -133,7 +126,7 @@ namespace RiseOp.Services.Plan
             Core.InvokeView(node.IsExternal(), view);
         }
 
-        void Core_Timer()
+        void Core_SecondTimer()
         {
             // triggered on update estimates use time out so update doesnt cascade the network all the way up
             //  our save local can cause other save locals
@@ -144,40 +137,16 @@ namespace RiseOp.Services.Plan
                 if (RunSaveLocal == 0)
                     SaveLocal();
             }
-
-            // do below once per minute
-            if (Core.TimeNow.Second != 0)
-                return;
-
-
-            List<ulong> focused = new List<ulong>();
-
-            if (GetFocused != null)
-                foreach (PlanGetFocusedHandler handler in GetFocused.GetInvocationList())
-                    foreach (ulong id in handler.Invoke())
-                        if (!focused.Contains(id))
-                            focused.Add(id);
-
-            // unload
-            PlanMap.LockReading(delegate()
-            {
-                foreach (OpPlan plan in PlanMap.Values)
-                    if (plan.Loaded && plan != LocalPlan && !focused.Contains(plan.DhtID))
-                    {
-                        plan.Loaded = false;
-                        plan.Blocks = null;
-                        plan.GoalMap = null;
-                        plan.ItemMap = null;
-                    }
-            });
         }
 
         void Cache_FileRemoved(OpVersionedFile file)
         {
             OpPlan plan = GetPlan(file.DhtID, false);
 
-            if (plan != null)
-                PlanMap.SafeRemove(file.DhtID);
+            if (plan == null)
+                return;
+
+            PlanMap.SafeRemove(file.DhtID);
         }
 
         private void Cache_FileAquired(OpVersionedFile file)

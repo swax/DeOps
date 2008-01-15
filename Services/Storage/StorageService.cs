@@ -20,7 +20,6 @@ using RiseOp.Services.Trust;
 
 namespace RiseOp.Services.Storage
 {
-    internal delegate List<ulong> StorageGetFocusedHandler();
     internal delegate void StorageUpdateHandler(OpStorage storage);
     internal delegate void WorkingUpdateHandler(uint project, string dir, ulong uid, WorkingChange action);
 
@@ -36,6 +35,7 @@ namespace RiseOp.Services.Storage
         internal DhtStore Store;
         internal TrustService Links;
 
+        bool Loading = true;
         internal string DataPath;
         internal string WorkingPath;
         internal string ResourcePath;
@@ -73,26 +73,19 @@ namespace RiseOp.Services.Storage
             Protocol = core.Protocol;
             Network = core.OperationNet;
             Store = Network.Store;
+            Links = Core.Links;
 
-            Core.LoadEvent += new LoadHandler(Core_Load);
-            Core.TimerEvent += new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
-
-            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.CacheFile);
-
-            Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
-            Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
-        }
-        
-        void Core_Load()
-        {
-            Links = Core.Links;
 
             Core.Transfers.FileSearch[ServiceID, (ushort)DataType.DataFile] += new FileSearchHandler(Transfers_DataFileSearch);
             Core.Transfers.FileRequest[ServiceID, (ushort)DataType.DataFile] += new FileRequestHandler(Transfers_DataFileRequest);
 
             Core.Links.LinkUpdate += new LinkUpdateHandler(Links_LinkUpdate);
+
+
 
             string rootpath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString() + Path.DirectorySeparatorChar;
             DataPath = rootpath + ((ushort)DataType.DataFile).ToString();
@@ -108,6 +101,13 @@ namespace RiseOp.Services.Storage
 
             LocalFileKey = Core.User.Settings.FileKey;
             
+            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.CacheFile);
+
+            Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
+            Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
+            Cache.Load();
+            
+
             // load working headers
             OpStorage local = GetStorage(Core.LocalDhtID);
 
@@ -115,17 +115,20 @@ namespace RiseOp.Services.Storage
             {
                 if (local != null)
                     LoadHeaderFile(GetWorkingPath(project), local, false, true);
-                
+
                 Working[project] = new WorkingStorage(this, project);
 
                 bool doSave = false;
                 foreach (ulong higher in Links.GetAutoInheritIDs(Core.LocalDhtID, project))
-                    if(Working[project].RefreshHigherChanges(higher))
-                        doSave = true ;
+                    if (Working[project].RefreshHigherChanges(higher))
+                        doSave = true;
 
                 Working[project].AutoIntegrate(doSave);
             }
+
+            Loading = false;
         }
+       
 
         public void Dispose()
         {
@@ -184,8 +187,8 @@ namespace RiseOp.Services.Storage
             }
 
             // kill events
-            Core.LoadEvent -= new LoadHandler(Core_Load);
-            Core.TimerEvent -= new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
             Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
 
@@ -199,7 +202,7 @@ namespace RiseOp.Services.Storage
             Core.Links.LinkUpdate -= new LinkUpdateHandler(Links_LinkUpdate);
         }
 
-        void Core_Timer()
+        void Core_SecondTimer()
         {
             // hashing
             if (HashQueue.Count > 0 && (HashThreadHandle == null || !HashThreadHandle.IsAlive))
@@ -216,21 +219,10 @@ namespace RiseOp.Services.Storage
                         working.SaveWorking();
                         working.PeriodicSave = false;
                     }
+        }
 
-
-            // do below once per minute
-            if (Core.TimeNow.Second != 0)
-                return;
-
-
-            /*List<ulong> focused = new List<ulong>();
-
-            if (GetFocused != null)
-                foreach (StorageGetFocusedHandler handler in GetFocused.GetInvocationList())
-                    foreach (ulong id in handler.Invoke())
-                        if (!focused.Contains(id))
-                            focused.Add(id);*/
-
+        void Core_MinuteTimer()
+        {
             // clear de-reffed files
             FileMap.LockReading(delegate()
             {
@@ -402,7 +394,7 @@ namespace RiseOp.Services.Storage
                         {
                             bool doSave = Working[project].RefreshHigherChanges(newStorage.DhtID);
 
-                            if (!Core.Loading && !SavingLocal)
+                            if (!Loading && !SavingLocal)
                                 Working[project].AutoIntegrate(doSave);
                         }
                 }

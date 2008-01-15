@@ -46,6 +46,7 @@ namespace RiseOp.Services.Profile
         {
             Profiles.ProfileUpdate += new ProfileUpdateHandler(Profile_Update);
             Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
+            Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
             
             OpProfile profile = Profiles.GetProfile(CurrentDhtID);
 
@@ -62,12 +63,20 @@ namespace RiseOp.Services.Profile
                 Profiles.Research(id);
         }
 
+
         internal override bool Fin()
         {
             Profiles.ProfileUpdate -= new ProfileUpdateHandler(Profile_Update);
             Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
+            Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
 
             return true;
+        }
+
+
+        void Core_GetFocused()
+        {
+            Core.Focused.SafeAdd(CurrentDhtID, true);
         }
 
         private void DisplayLoading()

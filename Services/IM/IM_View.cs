@@ -49,6 +49,7 @@ namespace RiseOp.Services.IM
             // do here so window can be found and multiples not created for the same user
             IM.MessageUpdate += new IM_MessageHandler(IM_MessageUpdate);
             IM.StatusUpdate += new IM_StatusHandler(IM_StatusUpdate);
+            Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
 
             ContextMenu menu = new ContextMenu();
             TimestampMenu = new MenuItem("Timestamps", new EventHandler(Menu_Timestamps));
@@ -85,6 +86,8 @@ namespace RiseOp.Services.IM
 
             IM.MessageUpdate -= new IM_MessageHandler(IM_MessageUpdate);
             IM.StatusUpdate -= new IM_StatusHandler(IM_StatusUpdate);
+            Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
+
 
             if (External != null)
             {
@@ -93,6 +96,11 @@ namespace RiseOp.Services.IM
             }
 
             return true;
+        }
+
+        void Core_GetFocused()
+        {
+            Core.Focused.SafeAdd(DhtID, true);
         }
 
         internal override string GetTitle(bool small)
@@ -217,7 +225,7 @@ namespace RiseOp.Services.IM
             }
 
             string location = "";
-            if (!message.System && Locations.ClientCount(message.Source) > 1)
+            if (!message.System && Locations.ActiveClientCount(message.Source) > 1)
                 location = " @" + Locations.GetLocationName(message.Source, message.ClientID);
 
 

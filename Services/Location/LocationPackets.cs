@@ -27,12 +27,12 @@ namespace RiseOp.Services.Location
         const byte Packet_Proxies = 0x50;
         const byte Packet_Place = 0x60;
         const byte Packet_Version = 0x70;
-        const byte Packet_ProfileVersion = 0x80;
-        const byte Packet_LinkVersion = 0x90;
         const byte Packet_TTL = 0xA0;
         const byte Packet_GMTOffset = 0xB0;
         const byte Packet_Away = 0xC0;
         const byte Packet_AwayMsg = 0xD0;
+        const byte Packet_Date = 0xE0;
+        const byte Packet_Tag = 0xF0;
 
         internal byte[] Key;
         internal DhtSource Source;
@@ -42,7 +42,8 @@ namespace RiseOp.Services.Location
         internal string Place = "";
         internal uint TTL;
         internal uint Version;
-        internal uint LinkVersion;
+        internal DateTime Date; // only used when saving location cache and showing user last seen
+        internal List<LocationTag> Tags = new List<LocationTag>();
 
         internal int GmtOffset;
         internal bool Away;
@@ -65,10 +66,13 @@ namespace RiseOp.Services.Location
                 protocol.WritePacket(loc, Packet_Place, protocol.UTF.GetBytes(Place));
                 protocol.WritePacket(loc, Packet_TTL, BitConverter.GetBytes(TTL));
                 protocol.WritePacket(loc, Packet_Version, BitConverter.GetBytes(Version));
-                protocol.WritePacket(loc, Packet_LinkVersion, BitConverter.GetBytes(LinkVersion));
                 protocol.WritePacket(loc, Packet_GMTOffset, BitConverter.GetBytes(GmtOffset));
                 protocol.WritePacket(loc, Packet_Away, BitConverter.GetBytes(Away));
                 protocol.WritePacket(loc, Packet_AwayMsg, protocol.UTF.GetBytes(AwayMessage));
+                protocol.WritePacket(loc, Packet_Date, BitConverter.GetBytes(Date.ToBinary()));
+                    
+                foreach(LocationTag tag in Tags)
+                    protocol.WritePacket(loc, Packet_Tag, tag.ToBytes());
 
                 return protocol.WriteFinish();
             }
@@ -126,10 +130,6 @@ namespace RiseOp.Services.Location
                         loc.Version = BitConverter.ToUInt32(child.Data, child.PayloadPos);
                         break;
 
-                    case Packet_LinkVersion:
-                        loc.LinkVersion = BitConverter.ToUInt32(child.Data, child.PayloadPos);
-                        break;
-
                     case Packet_GMTOffset:
                         loc.GmtOffset = BitConverter.ToInt32(child.Data, child.PayloadPos);
                         break;
@@ -140,6 +140,14 @@ namespace RiseOp.Services.Location
 
                     case Packet_AwayMsg:
                         loc.AwayMessage = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_Date:
+                        loc.Date = DateTime.FromBinary(BitConverter.ToInt64(child.Data, child.PayloadPos));
+                        break;
+
+                    case Packet_Tag:
+                        loc.Tags.Add(LocationTag.FromBytes(child.Data, child.PayloadPos, child.PayloadSize));
                         break;
                 }
             }

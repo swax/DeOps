@@ -7,11 +7,15 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Interface;
+
 using RiseOp.Implementation;
-using RiseOp.Services.Trust;
+
+using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
 using RiseOp.Interface.Views;
+
+using RiseOp.Services.Assist;
+using RiseOp.Services.Trust;
 
 
 namespace RiseOp.Services.Plan
@@ -167,8 +171,7 @@ namespace RiseOp.Services.Plan
             Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
             Plans.PlanUpdate += new PlanUpdateHandler(Plans_Update);
 
-            Links.GetFocused += new LinkGetFocusedHandler(LinkandPlans_GetFocused);
-            Plans.GetFocused += new PlanGetFocusedHandler(LinkandPlans_GetFocused);
+            Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
 
 
             splitContainer1.Height = Height - toolStrip1.Height;
@@ -218,19 +221,14 @@ namespace RiseOp.Services.Plan
             Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
             Plans.PlanUpdate -= new PlanUpdateHandler(Plans_Update);
 
-            Links.GetFocused -= new LinkGetFocusedHandler(LinkandPlans_GetFocused);
-            Plans.GetFocused -= new PlanGetFocusedHandler(LinkandPlans_GetFocused);
-
+            Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
+            
             return true;
         }
 
-        List<ulong> LinkandPlans_GetFocused()
+        void Core_GetFocused()
         {
-            List<ulong> focus = new List<ulong>(); // new List<ulong>(ids);
-
-            MainPanel.GetFocused(focus);
-
-            return focus;
+            MainPanel.GetFocused();
         }
 
         void Links_Update(ulong key)

@@ -496,8 +496,8 @@ namespace RiseOp.Interface.Tools
                         {
                             LocationData data = LocationData.Decode(Core.Protocol, signed.Data);
 
-                            LocInfo info = new LocInfo(0);
-                            info.Location = data;
+                            ClientInfo info = new ClientInfo(0);
+                            info.Data = data;
                             info.TTL = loc.TTL;
 
                             DisplayLoc(opid, info);
@@ -512,32 +512,32 @@ namespace RiseOp.Interface.Tools
 
             Core.Locations.LocationMap.LockReading(delegate()
             {
-                foreach (ThreadedDictionary<ushort, LocInfo> dict in Core.Locations.LocationMap.Values)
+                foreach (ThreadedDictionary<ushort, ClientInfo> dict in Core.Locations.LocationMap.Values)
                     dict.LockReading(delegate()
                     {
-                        foreach (LocInfo info in dict.Values)
+                        foreach (ClientInfo info in dict.Values)
                             DisplayLoc(Core.OpID, info);
                     });
             });
 
         }
 
-        private void DisplayLoc(ulong opid, LocInfo info)
+        private void DisplayLoc(ulong opid, ClientInfo info)
         {
             listValues.Items.Add(new ListViewItem(new string[]
 				{
                     IDtoStr(opid),
                     xStr(info.TTL),
-                    IDtoStr(info.Location.KeyID),
-					xStr(info.Location.Source.ClientID),		
-					xStr(info.Location.Source.TcpPort),
-					xStr(info.Location.Source.UdpPort),
-					xStr(info.Location.Source.Firewall),
-					xStr(info.Location.IP),		
-					xStr(info.Location.Proxies.Count),
-					xStr(info.Location.Place),
-					xStr(info.Location.TTL),
-					xStr(info.Location.Version)
+                    IDtoStr(info.Data.KeyID),
+					xStr(info.Data.Source.ClientID),		
+					xStr(info.Data.Source.TcpPort),
+					xStr(info.Data.Source.UdpPort),
+					xStr(info.Data.Source.Firewall),
+					xStr(info.Data.IP),		
+					xStr(info.Data.Proxies.Count),
+					xStr(info.Data.Place),
+					xStr(info.Data.TTL),
+					xStr(info.Data.Version)
 				}));
         }
 

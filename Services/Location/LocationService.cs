@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 
 using RiseOp.Implementation;
@@ -16,7 +19,10 @@ namespace RiseOp.Services.Location
     internal delegate void LocationUpdateHandler(LocationData location);
     internal delegate void LocationGuiUpdateHandler(ulong key);
 
-    
+    internal delegate byte[] GetTagHandler();
+    internal delegate void TagReceivedHandler(ulong user, byte[] tag);
+
+
     internal class LocationService : OpService
     {
         public string Name { get { return "Location"; } }
@@ -28,18 +34,27 @@ namespace RiseOp.Services.Location
         internal DateTime NextLocationUpdate;
         internal DateTime NextGlobalPublish;
 
-        internal LocInfo LocalLocation;
+        bool Loading = true;
+        bool RunSaveLocs;
+        RijndaelManaged LocalKey;
+        string LocationPath;
+
+        internal ClientInfo LocalLocation;
         internal ThreadedDictionary<ulong, LinkedList<CryptLoc>> GlobalIndex = new ThreadedDictionary<ulong, LinkedList<CryptLoc>>();
-        internal ThreadedDictionary<ulong, ThreadedDictionary<ushort, LocInfo>> LocationMap = new ThreadedDictionary<ulong, ThreadedDictionary<ushort, LocInfo>>();
+        internal ThreadedDictionary<ulong, ThreadedDictionary<ushort, ClientInfo>> LocationMap = new ThreadedDictionary<ulong, ThreadedDictionary<ushort, ClientInfo>>();
 
         Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
 
         internal LocationUpdateHandler LocationUpdate;
         internal LocationGuiUpdateHandler GuiUpdate;
 
+        internal ServiceEvent<GetTagHandler> GetTag = new ServiceEvent<GetTagHandler>();
+        internal ServiceEvent<TagReceivedHandler> TagReceived = new ServiceEvent<TagReceivedHandler>();
+
+
         int PruneGlobalKeys    = 100;
         int PruneGlobalEntries = 20;
-        // int PruneLocations     = 100;
+        int PruneLocations = 100;
 
         internal bool LocalAway;
 
@@ -49,8 +64,9 @@ namespace RiseOp.Services.Location
             Core = core;
             Core.Locations = this;
 
-            Core.TimerEvent += new TimerHandler(Core_Timer);
-            
+            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
+
             Core.GlobalNet.Store.StoreEvent[ServiceID, 0] += new StoreHandler(GlobalStore_Local);
             Core.GlobalNet.Store.ReplicateEvent[ServiceID, 0] += new ReplicateHandler(GlobalStore_Replicate);
             Core.GlobalNet.Store.PatchEvent[ServiceID, 0] += new PatchHandler(GlobalStore_Patch);
@@ -66,13 +82,27 @@ namespace RiseOp.Services.Location
             {
                 PruneGlobalKeys    = 50;
                 PruneGlobalEntries = 10;
-                //PruneLocations     = 25;
+                PruneLocations = 25;
             }
+
+            LocalKey = Core.User.Settings.FileKey;
+
+            LocationPath = Core.User.RootPath + Path.DirectorySeparatorChar +
+                        "Data" + Path.DirectorySeparatorChar +
+                        ServiceID.ToString();
+
+            Directory.CreateDirectory(LocationPath);
+
+            LoadLocations();
+            Loading = false;
         }
+
+       
 
         public void Dispose()
         {
-            Core.TimerEvent -= new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.SecondTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
             Core.GlobalNet.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(GlobalStore_Local);
             Core.GlobalNet.Store.ReplicateEvent[ServiceID, 0] -= new ReplicateHandler(GlobalStore_Replicate);
@@ -84,7 +114,75 @@ namespace RiseOp.Services.Location
 
         }
 
-        void Core_Timer()
+        private void LoadLocations()
+        {
+            try
+            {
+                string path = LocationPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalKey, "LocHeaders");
+
+                if (!File.Exists(path))
+                    return;
+
+                FileStream file = new FileStream(path, FileMode.Open);
+                CryptoStream crypto = new CryptoStream(file, LocalKey.CreateDecryptor(), CryptoStreamMode.Read);
+                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+
+                G2Header root = null;
+
+                while (stream.ReadPacket(ref root))
+                    if (root.Name == DataPacket.SignedData)
+                    {
+                        SignedData signed = SignedData.Decode(Core.Protocol, root);
+                        G2Header embedded = new G2Header(signed.Data);
+
+                        // figure out data contained
+                        if (Core.Protocol.ReadPacket(embedded))
+                            if (embedded.Name == LocPacket.LocationData)
+                                Process_LocationData(null, signed, LocationData.Decode(Core.Protocol, signed.Data));
+                    }
+
+                stream.Close();
+            }
+            catch (Exception ex)
+            {
+                Core.OperationNet.UpdateLog("Locations", "Error loading data " + ex.Message);
+            }
+        }
+
+        private void SaveLocations()
+        {
+            try
+            {
+                string tempPath = Core.GetTempPath();
+                FileStream file = new FileStream(tempPath, FileMode.Create);
+                CryptoStream stream = new CryptoStream(file, LocalKey.CreateEncryptor(), CryptoStreamMode.Write);
+
+                LocationMap.LockReading(delegate()
+                {
+                    foreach (ThreadedDictionary<ushort, ClientInfo> map in LocationMap.Values)
+                        map.LockReading(delegate()
+                        {
+                            foreach(ClientInfo loc in map.Values)
+                                stream.Write(loc.SignedData, 0, loc.SignedData.Length);
+                        });
+                });
+
+                stream.FlushFinalBlock();
+                stream.Close();
+
+
+                string finalPath = LocationPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalKey, "LocHeaders");
+                File.Delete(finalPath);
+                File.Move(tempPath, finalPath);
+            }
+            catch (Exception ex)
+            {
+                Core.OperationNet.UpdateLog("Locations", "Error saving data " + ex.Message);
+            }
+        }
+
+
+        void Core_SecondTimer()
         {
             // global publish
             if (Core.GlobalNet != null && Core.TimeNow > NextGlobalPublish)
@@ -124,142 +222,155 @@ namespace RiseOp.Services.Location
                             list.RemoveLast();
             });
 
-            //crit op locs need pruning?
-            /* prune op locations
-            if (LocationMap.Count > PruneLocations)
-            {
-                List<ulong> removeLocs = new List<ulong>();
-
-                foreach (ulong id in LocationMap.Keys)
-                    if (!Core.Links.LinkMap.ContainsKey(id) &&
-                        !Utilities.InBounds(Core.LocalDhtID, Core.OperationNet.Store.MaxDistance, id)) //crit update later to dhtbounds
-                        removeLocs.Add(id);
-
-
-                while (removeLocs.Count > 0 && LocationMap.Count > PruneLocations / 2)
-                {
-                    ulong furthest = Core.LocalDhtID;
-
-                    foreach (ulong id in removeLocs)
-                        if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
-                            furthest = id;
-
-                    if (furthest != Core.LocalDhtID)
-                    {
-                        LocationMap.Remove(furthest);
-                        Core.InvokeInterface(GuiUpdate, furthest);
-                        removeLocs.Remove(furthest);
-                    }
-                }
-            }*/
-
-            // global ttl, once per minute
-            if (second == 60)
-            {
-
-                List<ulong> removeKeys = new List<ulong>();
-
-                GlobalIndex.LockReading(delegate()
-                {
-                    List<CryptLoc> removeList = new List<CryptLoc>();
-
-                    foreach (ulong key in GlobalIndex.Keys)
-                    {
-                        removeList.Clear();
-
-                        foreach (CryptLoc loc in GlobalIndex[key])
-                        {
-                            if (loc.TTL > 0)
-                                loc.TTL--;
-
-                            if (loc.TTL == 0)
-                                removeList.Add(loc);
-                        }
-
-                        foreach (CryptLoc loc in removeList)
-                            GlobalIndex[key].Remove(loc);
-
-                        if (GlobalIndex[key].Count == 0)
-                            removeKeys.Add(key);
-                    }
-
-
-                });
-
-                GlobalIndex.LockWriting(delegate()
-                 {
-                     foreach (ulong key in removeKeys)
-                         GlobalIndex.Remove(key);
-                 });
-            }
-
+            
+       
             // operation ttl (similar as above, but not the same)
             if (second % 15 == 0)
             {
-                List<ulong> removeKeys = new List<ulong>();
+                List<ulong> inactivated = new List<ulong>();
 
                 LocationMap.LockReading(delegate()
                 {
-                     List<ushort> removeClients = new List<ushort>();
-
-                     foreach (ulong key in LocationMap.Keys)
+                     foreach (ThreadedDictionary<ushort, ClientInfo> clients in LocationMap.Values)
                      {
-                         removeClients.Clear();
-
-                         ThreadedDictionary<ushort, LocInfo> clients = null;
-                         LocationMap.SafeTryGetValue(key, out clients);
-
-                         if (clients != null)
-                             clients.LockReading(delegate()
-                             {
-                                 foreach (ushort id in clients.Keys)
+                         clients.LockReading(delegate()
+                         {
+                             foreach (ClientInfo location in clients.Values)
+                                 if(location.Active)
                                  {
                                      if (second == 60)
                                      {
-                                         if (clients[id].TTL > 0)
-                                             clients[id].TTL--;
+                                         if (location.TTL > 0)
+                                             location.TTL--;
 
-                                         if (clients[id].TTL == 0)
-                                             removeClients.Add(id);
+                                         if (location.TTL == 0)
+                                         {
+                                             location.Active = false;
+                                             inactivated.Add(location.Data.KeyID);
+                                         }
                                      }
 
                                      //crit hack - last 30 and 15 secs before loc destroyed do searches (working pretty good through...)
-                                     if (clients[id].TTL == 1 &&
-                                         (second == 15 || second == 30))
-                                         if (Core.Links.TrustMap.SafeContainsKey(key))
-                                             StartSearch(key, 0, false);
+                                     if (location.TTL == 1 && (second == 15 || second == 30))
+                                         StartSearch(location.Data.KeyID, 0, false);
                                  }
-                             });
-
-                         foreach (ushort id in removeClients)
-                             clients.SafeRemove(id);
-
-                         if (clients.SafeCount == 0)
-                             removeKeys.Add(key);
+                         });
                      }
                 });
 
-                foreach (ulong key in removeKeys)
-                 {
-                     LocationMap.SafeRemove(key);
-
-                     Core.RunInGuiThread(GuiUpdate, key);
-                 }
+                foreach (ulong id in inactivated)
+                    Core.RunInGuiThread(GuiUpdate, id);
             }
+        }
+
+        void Core_MinuteTimer()
+        {
+
+            // prune op locs
+            List<ulong> removeIDs = new List<ulong>();
+            List<ushort> removeClients = new List<ushort>();
+
+            LocationMap.LockReading(delegate()
+            {
+                foreach (ulong id in LocationMap.Keys)
+                {
+                    if (LocationMap.Count > PruneLocations &&
+                        id != Core.LocalDhtID &&
+                        !Core.Focused.SafeContainsKey(id) &&
+                        !Utilities.InBounds(id, Core.OperationNet.Store.RecalcBounds(id), Core.LocalDhtID)) //crit update later to dhtbounds
+                        removeIDs.Add(id);
+
+                    // if more than one location and location hasnt been seen for a day - remove
+                    ThreadedDictionary<ushort, ClientInfo> clients;
+                    if(LocationMap.TryGetValue(id, out clients))
+                        if (clients.SafeCount > 1)
+                        {
+                            removeClients.Clear();
+
+                            clients.LockReading(delegate()
+                            {
+                                foreach (ClientInfo location in clients.Values)
+                                    if (location.Data.Date < Core.TimeNow.ToUniversalTime().AddDays(-1))
+                                        removeClients.Add(location.ClientID);
+                            });
+
+                            foreach (ushort client in removeClients)
+                                clients.SafeRemove(client);
+                        }
+                }
+            });
+
+            if (removeIDs.Count > 0)
+                LocationMap.LockWriting(delegate()
+                {
+                    while (removeIDs.Count > 0 && LocationMap.Count > PruneLocations / 2)
+                    {
+                        ulong furthest = Core.LocalDhtID;
+
+                        foreach (ulong id in removeIDs)
+                            if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                                furthest = id;
+
+                        LocationMap.Remove(furthest);
+                        Core.RunInGuiThread(GuiUpdate, furthest);
+                        removeIDs.Remove(furthest);
+                    }
+                });
+
+            
+            if (RunSaveLocs)
+            {
+                SaveLocations();
+                RunSaveLocs = false;
+            }
+
+
+            // global ttl, once per minute
+            removeIDs.Clear();
+
+            GlobalIndex.LockReading(delegate()
+            {
+                List<CryptLoc> removeList = new List<CryptLoc>();
+
+                foreach (ulong key in GlobalIndex.Keys)
+                {
+                    removeList.Clear();
+
+                    foreach (CryptLoc loc in GlobalIndex[key])
+                    {
+                        if (loc.TTL > 0)
+                            loc.TTL--;
+
+                        if (loc.TTL == 0)
+                            removeList.Add(loc);
+                    }
+
+                    foreach (CryptLoc loc in removeList)
+                        GlobalIndex[key].Remove(loc);
+
+                    if (GlobalIndex[key].Count == 0)
+                        removeIDs.Add(key);
+                }
+
+
+            });
+
+            GlobalIndex.LockWriting(delegate()
+            {
+                foreach (ulong key in removeIDs)
+                    GlobalIndex.Remove(key);
+            });
 
             // clean research map
-            if (second == 60)
-            {
-                List<ulong> removeIDs = new List<ulong>();
+            removeIDs.Clear();
 
-                foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
-                    if (Core.TimeNow > pair.Value)
-                        removeIDs.Add(pair.Key);
+            foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
+                if (Core.TimeNow > pair.Value)
+                    removeIDs.Add(pair.Key);
 
-                if (removeIDs.Count > 0)
-                    foreach (ulong id in removeIDs)
-                        NextResearch.Remove(id);
-            }
+            if (removeIDs.Count > 0)
+                foreach (ulong id in removeIDs)
+                    NextResearch.Remove(id);
         }
 
         public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
@@ -292,11 +403,27 @@ namespace RiseOp.Services.Location
             location.GmtOffset = System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes;
             location.Away = LocalAway;
             location.AwayMessage = LocalAway ? Core.User.Settings.AwayMessage : "";
+            location.Date = Core.TimeNow.ToUniversalTime(); 
 
             location.Version  = LocationVersion++;
-            //location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
-            location.LinkVersion = Core.Links.LocalTrust.File.Header.Version;
 
+            foreach(ushort service in GetTag.HandlerMap.Keys)
+                foreach (ushort datatype in GetTag.HandlerMap[service].Keys)
+                {
+                    LocationTag tag = new LocationTag();
+
+                    tag.Service = service;
+                    tag.DataType = datatype;
+                    tag.Tag = GetTag[service, datatype].Invoke();
+
+                    if (tag.Tag != null)
+                    {
+                        Debug.Assert(tag.Tag.Length < 8);
+
+                        if (tag.Tag.Length < 8)
+                            location.Tags.Add(tag);
+                    }
+                }
 
             byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, location);
 
@@ -321,17 +448,17 @@ namespace RiseOp.Services.Location
         {
             foreach (SearchValue found in search.FoundValues)
             {
-                DataReq location = new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value);
+                DataReq store = new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value);
 
                 if (search.Network == Core.GlobalNet)
                 {
                     if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
-                        location.Data = Utilities.DecryptBytes(location.Data, location.Data.Length, Core.OperationNet.OriginalCrypt);
+                        store.Data = Utilities.DecryptBytes(store.Data, store.Data.Length, Core.OperationNet.OriginalCrypt);
 
-                    location.Sources = null; // dont pass global sources to operation store 
+                    store.Sources = null; // dont pass global sources to operation store 
                 }
 
-                OperationStore_Local(location);
+                OperationStore_Local(store);
             }
         }
 
@@ -355,10 +482,10 @@ namespace RiseOp.Services.Location
 
             uint minVersion = BitConverter.ToUInt32(parameters, 0);
 
-            List<LocInfo> clients = GetClients(key);
+            List<ClientInfo> clients = GetClients(key);
 
-            foreach (LocInfo info in clients)
-                if (!info.Location.Global && info.Location.Version >= minVersion)
+            foreach (ClientInfo info in clients)
+                if (info.Data.Version >= minVersion)
                     results.Add(info.SignedData);
 
             return results;
@@ -395,70 +522,97 @@ namespace RiseOp.Services.Location
             locs.AddFirst(newLoc);
         }
 
-        void OperationStore_Local(DataReq data)
+        void OperationStore_Local(DataReq store)
         {
-            SignedData signed = SignedData.Decode(Core.Protocol, data.Data);
-            LocationData location = LocationData.Decode(Core.Protocol, signed.Data);
+            // getting published to - search results - patch
 
-            Core.IndexKey(location.KeyID, ref location.Key);
+            SignedData signed = SignedData.Decode(Core.Protocol, store.Data);
 
-            if (!Utilities.CheckSignedData(location.Key, signed.Data, signed.Signature))
+            if (signed == null)
                 return;
 
-            LocInfo current = GetLocationInfo(location.KeyID, location.Source.ClientID);
+            G2Header embedded = new G2Header(signed.Data);
+
+            // figure out data contained
+            if (Core.Protocol.ReadPacket(embedded))
+                if (embedded.Name == LocPacket.LocationData)
+                {
+                    LocationData location = LocationData.Decode(Core.Protocol, signed.Data);
+
+                    if (Utilities.CheckSignedData(location.Key, signed.Data, signed.Signature))
+                        Process_LocationData(store, signed, location);
+                }
+        }
+
+        private void Process_LocationData(DataReq data, SignedData signed, LocationData location)
+        {
+            Core.IndexKey(location.KeyID, ref location.Key);
+
+            ClientInfo current = GetLocationInfo(location.KeyID, location.Source.ClientID);
 
             // check location version
             if (current != null)
             {
-                if (location.Version == current.Location.Version)
+                if (location.Version == current.Data.Version)
                     return;
 
-                else if (location.Version < current.Location.Version)
+                else if (location.Version < current.Data.Version)
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Core.OperationNet.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Location.KeyID, ServiceID, 0, current.SignedData));
+                            Core.OperationNet.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Data.KeyID, ServiceID, 0, current.SignedData));
 
                     return;
                 }
             }
 
-            // version checks
-            //Core.Profiles.CheckVersion(location.KeyID, location.ProfileVersion);
-            Core.Links.CheckVersion(location.KeyID, location.LinkVersion);
+
+            // notify components of new versions
+            foreach (LocationTag tag in location.Tags)
+                if(TagReceived.Contains(tag.Service, tag.DataType))
+                    TagReceived[tag.Service, tag.DataType].Invoke(location.KeyID, tag.Tag);
 
 
             // add location
             if (current == null)
             {
-                ThreadedDictionary<ushort, LocInfo> locations = null;
+                ThreadedDictionary<ushort, ClientInfo> locations = null;
 
                 if (!LocationMap.SafeTryGetValue(location.KeyID, out locations))
                 {
-                    locations = new ThreadedDictionary<ushort, LocInfo>();
+                    locations = new ThreadedDictionary<ushort, ClientInfo>();
                     LocationMap.SafeAdd(location.KeyID, locations);
                 }
 
-                current = new LocInfo(location.Source.ClientID);
-                current.Cached = Core.OperationNet.Store.IsCached(location.KeyID);
+                current = new ClientInfo(location.Source.ClientID);
                 locations.SafeAdd(location.Source.ClientID, current);
             }
 
-            current.Location   = location;
-            current.SignedData = data.Data;
-            current.TTL        = location.TTL;
+            current.Data = location;
+            current.SignedData = signed.Encode(Core.Protocol);
 
-            if (current.Location.KeyID == Core.LocalDhtID && current.Location.Source.ClientID == Core.ClientID)
+            if (current.Data.KeyID == Core.LocalDhtID && current.Data.Source.ClientID == Core.ClientID)
                 LocalLocation = current;
 
+            if (Loading) // return if this operation came from a file, not the network
+            {
+                Core.OperationNet.AddCacheEntry(new IPCacheEntry(new DhtContact(location.Source, location.IP, location.Date)));
+                return;
+            }
+
+            current.TTL = location.TTL;
+            current.Active = true;
+
+            RunSaveLocs = true;
+            
             // if open and not global, add to routing
             if (location.Source.Firewall == FirewallType.Open && !location.Global)
                 Core.OperationNet.Routing.Add(new DhtContact(location.Source, location.IP, Core.TimeNow));
 
-            if(LocationUpdate != null)
-                LocationUpdate.Invoke(current.Location);
-            
-            Core.RunInGuiThread(GuiUpdate, current.Location.KeyID);
+            if (LocationUpdate != null)
+                LocationUpdate.Invoke(current.Data);
+
+            Core.RunInGuiThread(GuiUpdate, current.Data.KeyID);
         }
 
         internal void PublishGlobal()
@@ -504,9 +658,6 @@ namespace RiseOp.Services.Location
 
             location.Place = Core.User.Settings.Location;
             location.Version = LocationVersion++;
-            location.LinkVersion = Core.Links.LocalTrust.File.Header.Version;
-            //location.ProfileVersion = Core.Profiles.LocalProfile.Header.Version;
-
             location.TTL = LocationData.GLOBAL_TTL; // set expire 1 hour
 
             byte[] data = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, location);
@@ -535,13 +686,13 @@ namespace RiseOp.Services.Location
 
         }
 
-        internal LocInfo GetLocationInfo(ulong key, ushort client)
+        internal ClientInfo GetLocationInfo(ulong user, ushort client)
         {
-            ThreadedDictionary<ushort, LocInfo> locations = null;
+            ThreadedDictionary<ushort, ClientInfo> locations = null;
 
-            if (LocationMap.SafeTryGetValue(key, out locations))
+            if (LocationMap.SafeTryGetValue(user, out locations))
             {
-                LocInfo info = null;
+                ClientInfo info = null;
                 if (locations.SafeTryGetValue(client, out info))
                     return info;
             }
@@ -549,14 +700,14 @@ namespace RiseOp.Services.Location
             return null;
         }
 
-        internal string GetLocationName(ulong key, ushort id)
+        internal string GetLocationName(ulong user, ushort client)
         {
-            LocInfo current = Core.Locations.GetLocationInfo(key, id);
+            ClientInfo current = Core.Locations.GetLocationInfo(user, client);
 
             if(current == null)
-                return id.ToString();
+                return client.ToString();
 
-            LocationData data = current.Location;
+            LocationData data = current.Data;
 
             if (data == null || data.Place == null || data.Place == "")
                 return data.IP.ToString();
@@ -564,11 +715,11 @@ namespace RiseOp.Services.Location
             return data.Place;
         }
 
-        internal void Research(ulong key)
+        internal void Research(ulong user)
         {
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreAsync(delegate() { Research(key); });
+                Core.RunInCoreAsync(delegate() { Research(user); });
                 return;
             }
 
@@ -578,57 +729,95 @@ namespace RiseOp.Services.Location
             // limit re-search to once per 30 secs
             DateTime timeout = default(DateTime);
 
-            if (NextResearch.TryGetValue(key, out timeout))
+            if (NextResearch.TryGetValue(user, out timeout))
                 if (Core.TimeNow < timeout)
                     return;
 
-            StartSearch(key, 0, false);
+            StartSearch(user, 0, false);
 
-            NextResearch[key] = Core.TimeNow.AddSeconds(30);
+            NextResearch[user] = Core.TimeNow.AddSeconds(30);
         }
 
-        internal int ClientCount(ulong id)
+        internal int ActiveClientCount(ulong user)
         {
-            ThreadedDictionary<ushort, LocInfo> locations = null;
+            int count = 0;
+            ThreadedDictionary<ushort, ClientInfo> locations = null;
 
-            if (LocationMap.SafeTryGetValue(id, out locations))
-                return locations.SafeCount;
-
-            return 0;
+            if (LocationMap.SafeTryGetValue(user, out locations))
+                locations.LockReading(delegate()
+                {
+                    foreach (ClientInfo location in locations.Values)
+                        if (location.Active)
+                            count++;
+                });
+            return count;
         }
 
-        internal List<LocInfo> GetClients(ulong id)
+        internal List<ClientInfo> GetClients(ulong user)
         {
-            List<LocInfo> results = new List<LocInfo>();
+            //crit needs to change when global proxying implemented
+
+            List<ClientInfo> results = new List<ClientInfo>();
             
-            ThreadedDictionary<ushort, LocInfo> clients = null;
+            ThreadedDictionary<ushort, ClientInfo> clients = null;
 
-            if(!LocationMap.SafeTryGetValue(id, out clients))
+            if(!LocationMap.SafeTryGetValue(user, out clients))
                 return results;
 
             clients.LockReading(delegate()
             {
-                foreach (LocInfo info in clients.Values)
-                    results.Add(info);
+                foreach (ClientInfo info in clients.Values)
+                    if (!info.Data.Global)
+                        results.Add(info);
             });
 
             return results;
         }
     }
 
-    internal class LocInfo
+    internal class ClientInfo
     {
-        internal LocationData Location;
+        internal LocationData Data;
 
         internal byte[] SignedData;
 
+        internal bool Active;
         internal uint TTL;
-        internal bool Cached;
         internal ushort ClientID;
 
-        internal LocInfo(ushort id)
+        internal ClientInfo(ushort id)
         {
             ClientID = id;
+        }
+    }
+
+
+    internal class LocationTag
+    {
+        internal ushort Service;
+        internal ushort DataType;
+        internal byte[] Tag;
+
+        internal byte[] ToBytes()
+        {
+            byte[] data = new byte[2 + 2 + Tag.Length];
+
+            BitConverter.GetBytes(Service).CopyTo(data, 0);
+            BitConverter.GetBytes(DataType).CopyTo(data, 2);
+            Tag.CopyTo(data, 4);
+
+            return data;
+        }
+
+        internal static LocationTag FromBytes(byte[] data, int pos, int size)
+        {
+            LocationTag tag = new LocationTag();
+
+            tag.Service = BitConverter.ToUInt16(data, pos);
+            tag.DataType = BitConverter.ToUInt16(data, pos + 2);
+            tag.Tag = Utilities.ExtractBytes(data, pos + 4, size - 4);
+
+            return tag;
         }
     }
 }

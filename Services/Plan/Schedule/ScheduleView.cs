@@ -7,11 +7,15 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Services.Trust;
+
 using RiseOp.Implementation;
+
 using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
 using RiseOp.Interface.Views;
+
+using RiseOp.Services.Assist;
+using RiseOp.Services.Trust;
 
 
 namespace RiseOp.Services.Plan
@@ -109,8 +113,7 @@ namespace RiseOp.Services.Plan
             TopStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
             splitContainer1.Panel2Collapsed = true;
 
-            Links.GetFocused += new LinkGetFocusedHandler(LinkandPlans_GetFocused);
-            Plans.GetFocused += new PlanGetFocusedHandler(LinkandPlans_GetFocused);
+            Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
 
             PlanStructure.NodeExpanding += new EventHandler(PlanStructure_NodeExpanding);
             PlanStructure.NodeCollapsed += new EventHandler(PlanStructure_NodeCollapsed);
@@ -207,8 +210,7 @@ namespace RiseOp.Services.Plan
             Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
             Plans.PlanUpdate -= new PlanUpdateHandler(Plans_Update);
 
-            Links.GetFocused -= new LinkGetFocusedHandler(LinkandPlans_GetFocused);
-            Plans.GetFocused -= new PlanGetFocusedHandler(LinkandPlans_GetFocused);
+            Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
 
             HoverTimer.Enabled = false;
             return true;
@@ -612,24 +614,20 @@ namespace RiseOp.Services.Plan
             node.Remove(); // remove from tree
         }
 
-        List<ulong> LinkandPlans_GetFocused()
+        void Core_GetFocused()
         {
-            List<ulong> focused = new List<ulong>();
-
             foreach (PlanNode node in PlanStructure.Nodes)
-                RecurseFocus(node, focused);
-
-            return focused;
+                RecurseFocus(node);
         }
 
-        void RecurseFocus(PlanNode node, List<ulong> focused)
+        void RecurseFocus(PlanNode node)
         {
             // add parent to focus list
-            focused.Add(node.Link.DhtID);
-
+            Core.Focused.SafeAdd(node.Link.DhtID, true);
+            
             // iterate through sub items
             foreach (PlanNode sub in node.Nodes)
-                RecurseFocus(sub, focused);
+                RecurseFocus(sub);
         }
 
         void Plans_Update(OpPlan plan)

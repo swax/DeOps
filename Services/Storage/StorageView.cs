@@ -155,6 +155,7 @@ namespace RiseOp.Services.Storage
             // hook up events
             Storages.StorageUpdate += new StorageUpdateHandler(Storages_StorageUpdate);
             Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
+            Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
 
             if (IsLocal)
             {
@@ -210,13 +211,20 @@ namespace RiseOp.Services.Storage
         {
             Storages.StorageUpdate -= new StorageUpdateHandler(Storages_StorageUpdate);
             Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
+            Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
 
             Storages.WorkingFileUpdate -= new WorkingUpdateHandler(Storages_WorkingFileUpdate);
             Storages.WorkingFolderUpdate -= new WorkingUpdateHandler(Storages_WorkingFolderUpdate);
 
             return true;
         }
-        
+
+        void Core_GetFocused()
+        {
+            foreach (ulong id in CurrentDiffs)
+                Core.Focused.SafeAdd(id, true);
+        }
+
 
         private void DiffCombo_SelectedIndexChanged(object sender, EventArgs e)
         {

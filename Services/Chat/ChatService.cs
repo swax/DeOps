@@ -42,12 +42,9 @@ namespace RiseOp.Services.Chat
             Core.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
             Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
 
-            Core.LoadEvent += new LoadHandler(Core_Load);
-            Core.TimerEvent += new TimerHandler(Core_Timer);
-        }
+            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.GetFocusedCore += new GetFocusedHandler(Core_GetFocusedCore);
 
-        void Core_Load()
-        {
             Links.LinkUpdate += new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate += new LocationUpdateHandler(Location_Update);
 
@@ -63,8 +60,8 @@ namespace RiseOp.Services.Chat
             Core.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
             Core.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
 
-            Core.LoadEvent -= new LoadHandler(Core_Load);
-            Core.TimerEvent -= new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.GetFocusedCore -= new GetFocusedHandler(Core_GetFocusedCore);
 
             Links.LinkUpdate -= new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate -= new LocationUpdateHandler(Location_Update);
@@ -103,7 +100,31 @@ namespace RiseOp.Services.Chat
             Core.InvokeView(node.IsExternal(), view);
         }
 
-        void Core_Timer()
+        void Core_GetFocusedCore()
+        {
+            RoomMap.LockReading(delegate()
+            {
+                foreach (ChatRoom room in RoomMap.Values)
+                    if (!IsCommandRoom(room.Kind))
+                    {
+                        room.Members.LockReading(delegate()
+                        {
+                            foreach (ulong id in room.Members.Keys)
+                                Core.Focused.SafeAdd(id, true);
+                        });
+
+                        if(room.Invites != null)
+                            foreach(ulong id in room.Invites.Keys)
+                                Core.Focused.SafeAdd(id, true);
+
+                        if (room.Verified != null)
+                            foreach(ulong id in room.Verified.Keys)
+                                Core.Focused.SafeAdd(id, true);
+                    }
+            });
+        }
+
+        void Core_SecondTimer()
         {
             // send status upates once per second so we're not sending multiple updates to the same client more than
             // once per second
@@ -280,8 +301,9 @@ namespace RiseOp.Services.Chat
             room.Members.LockReading(delegate()
             {
                 foreach (ulong key in room.Members.Keys)
-                    foreach (LocInfo info in Core.Locations.GetClients(key))
-                        Core.RudpControl.Connect(info.Location);
+                    foreach (ClientInfo info in Core.Locations.GetClients(key))
+                        if(info.Active)
+                            Core.RudpControl.Connect(info.Data);
             });
         }
 
@@ -749,8 +771,9 @@ namespace RiseOp.Services.Chat
             room.Invites[id] = new Tuple<ChatInvite, List<ushort>>(invite, new List<ushort>());
 
             // try to conncet to all of id's locations
-            foreach (LocInfo loc in Core.Locations.GetClients(id))
-                Core.RudpControl.Connect(loc.Location);
+            foreach (ClientInfo loc in Core.Locations.GetClients(id))
+                if(loc.Active)
+                    Core.RudpControl.Connect(loc.Data);
 
             // send invite to already connected locations
             foreach (RudpSession session in Core.RudpControl.GetActiveSessions(id))
@@ -975,7 +998,7 @@ namespace RiseOp.Services.Chat
         {
             // only show user's location if more than one are active
 
-            if (Core.Locations.ClientCount(dhtID) > 1)
+            if (Core.Locations.ActiveClientCount(dhtID) > 1)
                 return " @" + Core.Locations.GetLocationName(dhtID, clientID);
 
             return "";

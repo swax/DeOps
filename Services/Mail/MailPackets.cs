@@ -16,8 +16,6 @@ namespace RiseOp.Services.Mail
         internal const byte MailFile = 0x40;
 
         internal const byte Ack = 0x50;
-
-        internal const byte Pending = 0x60;
     }
 
     // 20,000 emails stored locally, the header is ~10MB for 1024bit RSA, 2.5MB for 128bit ECC
@@ -415,80 +413,6 @@ namespace RiseOp.Services.Mail
             }
 
             return ack;
-        }
-    }
-
-    internal class PendingHeader : G2Packet
-    {
-        const byte Packet_Key      = 0x10;
-        const byte Packet_Version  = 0x20;
-        const byte Packet_FileHash = 0x30;
-        const byte Packet_FileSize = 0x40;
-        const byte Packet_FileKey  = 0x50;
-
-
-        internal byte[] Key;
-        internal uint Version;
-        internal byte[] FileHash;
-        internal long FileSize;
-        internal RijndaelManaged FileKey = new RijndaelManaged();
-
-        internal ulong KeyID;
-
-
-        internal override byte[] Encode(G2Protocol protocol)
-        {
-            lock (protocol.WriteSection)
-            {
-                G2Frame header = protocol.WritePacket(null, MailPacket.Pending, null);
-
-                protocol.WritePacket(header, Packet_Key, Key);
-                protocol.WritePacket(header, Packet_Version, BitConverter.GetBytes(Version));
-                protocol.WritePacket(header, Packet_FileHash, FileHash);
-                protocol.WritePacket(header, Packet_FileSize, BitConverter.GetBytes(FileSize));
-                protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
-
-                return protocol.WriteFinish();
-            }
-        }
-
-        internal static PendingHeader Decode(G2Protocol protocol, G2Header root)
-        {
-            PendingHeader header = new PendingHeader();
-            G2Header child = new G2Header(root.Data);
-
-            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                switch (child.Name)
-                {
-                    case Packet_Key:
-                        header.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        header.KeyID = Utilities.KeytoID(header.Key);
-                        break;
-
-                    case Packet_Version:
-                        header.Version = BitConverter.ToUInt32(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_FileHash:
-                        header.FileHash = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-
-                    case Packet_FileSize:
-                        header.FileSize = BitConverter.ToInt64(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_FileKey:
-                        header.FileKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        header.FileKey.IV = new byte[header.FileKey.IV.Length];
-                        break;
-                }
-            }
-
-            return header;
         }
     }
 }

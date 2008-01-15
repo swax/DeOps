@@ -1,36 +1,39 @@
 
-look at removing core_load event so components can be loaded dynamically
-investigate flexible 'smart byte'
-focus - plan, profile, storage
-	profile - get focused queries open windows gets back currently viewed ids
-allow all components to put a little 'lastest version' tag in location posts, hook into events, if focused then d/l
-	link / profile
+components need to republish above / below directly if version tagged in location info?
+chat not searching for locations
+	check where link search is done, and see if location research should be done as well
 
-
-
-component
-	**dont enforce default published empty files for storage, plan, mail boxes
-
-	common way of managing quotas
-		investigating total allocations on disk and in memory
-		
+network established can be called multiple times when re-connecting
+	investigate what happens, ensure locations are researched
 	
+auto do location searches for focused elements?
+	
+test clients with different local times, init random gmt offsets
+	
+	
+publishing to operation / global should be same function, just that global encrypts
+	operation clientID overrides, global clientID in location map
+		can we start transfers / chat? through global network, proxying?
+	
+	
+nav bar work with loops?
+investigate flexible 'smart byte'
+	
+
 board - All/Higher/Lower Posts, New Post
 live command tree/chat
-do full test once again
+do full test once again - need big network to ensure location -> service updates causing good refreshes
 
 Testing
 	more accurate replication - link/location/profile/mail
 	check that data is cachced 8 closest to ID, record cached link files in sim interface
 	links timing out when traversing strucuture
-	maxes / focus purging for all components - links/locs/profiles/mail
 	link.getlocs / getlocsbelow
 	link/plan research timer
 	38 crits
 
 
 spring release
-	crits
 	multisource downloading - use torrent
 		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
 		right click to cancel, increase/decrease priority
@@ -59,7 +62,7 @@ Interface
 		
 	Internal 
 		expand a little more (names associated with sessions/transfers/searches/publish)
-		browsing using nav bar needs to trigger searches and let link control know of whats focused
+		browsing using nav bar needs to trigger searches 
 		create function to search through externals for type/id/project, when popping external look for existing window?
 
 	Link
@@ -96,13 +99,6 @@ Components
 		Remove references to LinkMap, use GetLink
 		when component handles exit, assert that all events are emptied of references to debug gui's not releasing event handles
 		
-	***handle link get focused safely
-		check if its in storage as well
-		handle get focused in IM as well
-		plans
-		board
-		chat
-		profile?
 		ensure name resoluton works, chat/IM updated when link loaded
 		
 	Trust
@@ -113,6 +109,7 @@ Components
 			links   - getlocs .. check cache functions
 			chat    - high level chat is others in loop,
 		New function to 'find in link map' so that mail,board,chat can provide the user with an option to 'find' a user
+		Key termination command if private key compromised - auto-deletes all data associated with id
 
 	Location 
 		global replication
@@ -143,7 +140,6 @@ Components
 		double click member - IM, right click  - views, single click - send status, who
 		room option - show locations, also for IM, make location font smaller
 		check size of signed invite field
-		handle get link/location/profile focus calls
 		link name change should change name in chat logs as well for chat/IM/window title
 		implement live rooms / network
 		set default cursor in input box

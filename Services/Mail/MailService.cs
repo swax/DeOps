@@ -10,6 +10,8 @@ using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Transport;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
+
+using RiseOp.Services.Assist;
 using RiseOp.Services.Transfer;
 
 /* files
@@ -64,6 +66,7 @@ namespace RiseOp.Services.Mail
         internal DhtNetwork Network;
         internal DhtStore Store;
 
+        bool Loading = true;
         internal string MailPath;
         internal string CachePath;
         RijndaelManaged LocalFileKey;
@@ -79,16 +82,20 @@ namespace RiseOp.Services.Mail
         internal bool SaveInbox;
         internal bool SaveOutbox;
 
-        CachedPending LocalPending;
         internal Dictionary<ulong, List<ulong>>  PendingMail = new Dictionary<ulong, List<ulong>>();
         internal Dictionary<ulong, List<byte[]>> PendingAcks = new Dictionary<ulong, List<byte[]>>();
 
         bool RunSaveHeaders;
-        Dictionary<ulong, List<MailIdent>> DownloadLater = new Dictionary<ulong,List<MailIdent>>();
+        Dictionary<ulong, List<MailIdent>> DownloadMailLater = new Dictionary<ulong,List<MailIdent>>();
+        Dictionary<ulong, List<MailIdent>> DownloadAcksLater = new Dictionary<ulong, List<MailIdent>>();
 
         internal MailUpdateHandler MailUpdate;
 
         int PruneSize = 100;
+
+        enum DataType { Local = 1, Pending = 2, Mail = 3, Ack = 4 };
+
+        VersionedCache PendingCache;
 
 
         internal MailService(OpCore core)
@@ -98,26 +105,28 @@ namespace RiseOp.Services.Mail
             Network = core.OperationNet;
             Store = Network.Store;
 
-            Core.LoadEvent += new LoadHandler(Core_Load);
-            Core.TimerEvent += new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ServiceID, 0]     += new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ServiceID, 0] += new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ServiceID, 0] += new PatchHandler(Store_Patch);
-            
-            Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(Search_Local);
+            Store.StoreEvent[ServiceID, (ushort) DataType.Mail] += new StoreHandler(Store_LocalMail);
+            Store.StoreEvent[ServiceID, (ushort)DataType.Ack] += new StoreHandler(Store_LocalAck);
+
+            Network.Searches.SearchEvent[ServiceID, (ushort)DataType.Mail] += new SearchRequestHandler(Search_LocalMail);
+            Network.Searches.SearchEvent[ServiceID, (ushort)DataType.Ack] += new SearchRequestHandler(Search_LocalAck);
+
+            Store.ReplicateEvent[ServiceID, (ushort)DataType.Mail] += new ReplicateHandler(Store_ReplicateMail);
+            Store.ReplicateEvent[ServiceID, (ushort)DataType.Ack] += new ReplicateHandler(Store_ReplicateAck);
+
+            Store.PatchEvent[ServiceID, (ushort)DataType.Mail] += new PatchHandler(Store_PatchMail);
+            Store.PatchEvent[ServiceID, (ushort)DataType.Ack] += new PatchHandler(Store_PatchAck);
+
+            Core.Transfers.FileSearch[ServiceID, (ushort)DataType.Mail] += new FileSearchHandler(Transfers_MailSearch);
+            Core.Transfers.FileRequest[ServiceID, (ushort)DataType.Mail] += new FileRequestHandler(Transfers_MailRequest);
 
             if (Core.Sim != null)
                 PruneSize = 25;
-        }
-
-        void Core_Load()
-        {
-            Core.Transfers.FileSearch[ServiceID, 0] += new FileSearchHandler(Transfers_FileSearch);
-            Core.Transfers.FileRequest[ServiceID, 0] += new FileRequestHandler(Transfers_FileRequest);
-
 
             LocalFileKey = Core.User.Settings.FileKey;
 
@@ -132,37 +141,46 @@ namespace RiseOp.Services.Mail
             Directory.CreateDirectory(MailPath);
             Directory.CreateDirectory(CachePath);
 
+            PendingCache = new VersionedCache(Network, ServiceID, (ushort)DataType.Pending);
+
+            PendingCache.FileAquired += new FileAquiredHandler(PendingCache_FileAquired);
+            PendingCache.FileRemoved += new FileRemovedHandler(PendingCache_FileRemoved);
+            PendingCache.Load();
+
             LoadHeaders();
 
-            if (!PendingMap.ContainsKey(Core.LocalDhtID))
-            {
-                PendingMap[Core.LocalDhtID] = new CachedPending();
-                LocalPending = PendingMap[Core.LocalDhtID];
-                
-                SavePending();
-                SaveHeaders();
-            }
+            Loading = false;
         }
 
         public void Dispose()
         {
-            Core.LoadEvent -= new LoadHandler(Core_Load);
-            Core.TimerEvent -= new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
             Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
 
-            Store.StoreEvent[ServiceID, 0] -= new StoreHandler(Store_Local);
-            Store.ReplicateEvent[ServiceID, 0] -= new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[ServiceID, 0] -= new PatchHandler(Store_Patch);
+            Store.StoreEvent[ServiceID, (ushort)DataType.Mail] -= new StoreHandler(Store_LocalMail);
+            Store.StoreEvent[ServiceID, (ushort)DataType.Ack] -= new StoreHandler(Store_LocalAck);
 
-            Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[ServiceID, (ushort)DataType.Mail] -= new SearchRequestHandler(Search_LocalMail);
+            Network.Searches.SearchEvent[ServiceID, (ushort)DataType.Ack] -= new SearchRequestHandler(Search_LocalAck);
 
-            Core.Transfers.FileSearch[ServiceID, 0] -= new FileSearchHandler(Transfers_FileSearch);
-            Core.Transfers.FileRequest[ServiceID, 0] -= new FileRequestHandler(Transfers_FileRequest);
+            Store.ReplicateEvent[ServiceID, (ushort)DataType.Mail] -= new ReplicateHandler(Store_ReplicateMail);
+            Store.ReplicateEvent[ServiceID, (ushort)DataType.Ack] -= new ReplicateHandler(Store_ReplicateAck);
+
+            Store.PatchEvent[ServiceID, (ushort)DataType.Mail] -= new PatchHandler(Store_PatchMail);
+            Store.PatchEvent[ServiceID, (ushort)DataType.Ack] -= new PatchHandler(Store_PatchAck);
+
+            PendingCache.FileAquired -= new FileAquiredHandler(PendingCache_FileAquired);
+            PendingCache.FileRemoved -= new FileRemovedHandler(PendingCache_FileRemoved);
+            PendingCache.Dispose();
+
+            Core.Transfers.FileSearch[ServiceID, (ushort)DataType.Mail] -= new FileSearchHandler(Transfers_MailSearch);
+            Core.Transfers.FileRequest[ServiceID, (ushort)DataType.Mail] -= new FileRequestHandler(Transfers_MailRequest);
 
         }
 
-        void Core_Timer()
+        void Core_SecondTimer()
         {
             //crit periodically do search for unacked list so maybe mail/acks can be purged
 
@@ -181,14 +199,14 @@ namespace RiseOp.Services.Mail
 
             // clean download later map
             if (!Network.Established)
-                PruneMap(DownloadLater);
+            {
+                PruneMap(DownloadMailLater);
+                PruneMap(DownloadAcksLater);
+            }
+        }
 
-
-            // do below once per minute
-            if (Core.TimeNow.Second != 0)
-                return;
-
-
+        void Core_MinuteTimer()
+        {
             // prune mail 
             if (MailMap.Count > PruneSize)
             {
@@ -258,36 +276,14 @@ namespace RiseOp.Services.Mail
                     RunSaveHeaders = true;
                 }
             }
+        }
 
-            // prune pending
-            if (PendingMap.Count > PruneSize)
-            {
-                List<ulong> removeIds = new List<ulong>();
+        void PendingCache_FileRemoved(OpVersionedFile file)
+        {
+            CachedPending pending = FindPending(file.DhtID);
 
-                foreach (CachedPending pending in PendingMap.Values)
-                    if (pending.Header.KeyID != Core.LocalDhtID && 
-                        !Utilities.InBounds(pending.Header.KeyID, pending.DhtBounds, Core.LocalDhtID))
-                        removeIds.Add(pending.Header.KeyID);
-
-                while (removeIds.Count > 0 && PendingMap.Count > PruneSize / 2)
-                {
-                    ulong furthest = Core.LocalDhtID;
-                    CachedPending pending = PendingMap[furthest];
-
-                    foreach (ulong id in removeIds)
-                        if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
-                            furthest = id;
-
-                    if (pending.Header != null)
-                        try { File.Delete(GetFilePath(pending.Header)); }
-                        catch { }
-
-
-                    PendingMap.Remove(furthest);
-                    removeIds.Remove(furthest);
-                    RunSaveHeaders = true;
-                }
-            }
+            if (pending != null)
+                PendingMap.Remove(file.DhtID);
         }
 
         private void PruneMap(Dictionary<ulong, List<MailIdent>> map)
@@ -315,16 +311,6 @@ namespace RiseOp.Services.Mail
         {
             ulong localBounds = Store.RecalcBounds(Core.LocalDhtID);
 
-            // set bounds for pending
-            foreach (ulong key in PendingMap.Keys)
-            {
-                CachedPending pending = PendingMap[key];
-                pending.DhtBounds = Store.RecalcBounds(key);
-
-                // republish objects that were not seen on the network during startup
-                if (pending.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, key))
-                    Store.PublishNetwork(key, ServiceID, 0, pending.SignedHeader);
-            }
 
             // set bounds for acks
             foreach (ulong key in AckMap.Keys)
@@ -336,9 +322,17 @@ namespace RiseOp.Services.Mail
                     ack.DhtBounds = bounds;
 
                     if (ack.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, key))
-                        Store.PublishNetwork(key, ServiceID, 0, ack.SignedAck);
+                        Store.PublishNetwork(key, ServiceID, (ushort) DataType.Ack, ack.SignedAck);
                 }
             }
+
+            // only download those objects in our local area
+            foreach (ulong key in DownloadAcksLater.Keys)
+                if (Utilities.InBounds(Core.LocalDhtID, localBounds, key))
+                    foreach (MailIdent ident in DownloadAcksLater[key])
+                        StartAckSearch(key, ident.Encode());
+
+            DownloadAcksLater.Clear();
 
             // set bounds for mail
             foreach (ulong key in MailMap.Keys)
@@ -350,17 +344,17 @@ namespace RiseOp.Services.Mail
                     mail.DhtBounds = bounds;
 
                     if (mail.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, key))
-                        Store.PublishNetwork(key, ServiceID, 0, mail.SignedHeader);
+                        Store.PublishNetwork(key, ServiceID, (ushort)DataType.Mail, mail.SignedHeader);
                 }
             }
 
             // only download those objects in our local area
-            foreach (ulong key in DownloadLater.Keys)
+            foreach (ulong key in DownloadMailLater.Keys)
                 if (Utilities.InBounds(Core.LocalDhtID, localBounds, key))
-                    foreach (MailIdent ident in DownloadLater[key])
-                        StartSearch(key, ident.Encode());
+                    foreach (MailIdent ident in DownloadMailLater[key])
+                        StartMailSearch(key, ident.Encode());
 
-            DownloadLater.Clear();
+            DownloadMailLater.Clear();
         }
 
         void SaveHeaders()
@@ -386,9 +380,6 @@ namespace RiseOp.Services.Mail
                     foreach (CachedAck ack in list)
                         stream.Write(ack.SignedAck, 0, ack.SignedAck.Length);
 
-                // unacked
-                foreach (CachedPending pending in PendingMap.Values)
-                    stream.Write(pending.SignedHeader, 0, pending.SignedHeader.Length);
 
                 stream.FlushFinalBlock();
                 stream.Close();
@@ -433,9 +424,6 @@ namespace RiseOp.Services.Mail
 
                             else if (embedded.Name == MailPacket.Ack)
                                 Process_MailAck(null, signed, MailAck.Decode(Core.Protocol, embedded), true);
-
-                            if (embedded.Name == MailPacket.Pending)
-                                Process_PendingHeader(null, signed, PendingHeader.Decode(Core.Protocol, embedded));
                         }
                     }
 
@@ -763,7 +751,9 @@ namespace RiseOp.Services.Mail
             }
             
             SavePending();
-            header.SourceVersion = LocalPending.Header.Version;
+
+            CachedPending local = FindPending(Core.LocalDhtID);
+            header.SourceVersion = (local != null) ? local.Header.Version : 0;
 
             // publish to targets
             foreach (ulong id in targets)
@@ -778,9 +768,9 @@ namespace RiseOp.Services.Mail
 
                 byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, header.Encode(Core.Protocol, false) );
 
-                Core.OperationNet.Store.PublishNetwork(id, ServiceID, 0, signed);
+                Core.OperationNet.Store.PublishNetwork(id, ServiceID, (ushort)DataType.Mail, signed);
 
-                Store_Local(new DataReq(null, id, ServiceID, 0, signed)); // cant direct process_header, because header var is being modified
+                Store_LocalMail(new DataReq(null, id, ServiceID, (ushort)DataType.Mail, signed)); // cant direct process_header, because header var is being modified
             }
 
             SaveHeaders();
@@ -822,71 +812,63 @@ namespace RiseOp.Services.Mail
             return buffer;
         }
 
-        // only unacked are searched for in mail, mail/acks are replicated
-        private void StartSearch(ulong key, uint version)
+        private void StartMailSearch(ulong key, byte[] parameters)
         {
-            byte[] parameters = new MailIdent(MailPacket.Pending, key, BitConverter.GetBytes(version)).Encode();
-
-            StartSearch(key, parameters);
-        }
-
-        private void StartSearch(ulong key, byte[] parameters)
-        {
-            DhtSearch search = Core.OperationNet.Searches.Start(key, "Mail", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Core.OperationNet.Searches.Start(key, "Mail", ServiceID, (ushort) DataType.Mail, parameters, new EndSearchHandler(EndMailSearch));
 
             if (search != null)
                 search.TargetResults = 2;
         }
 
-        void EndSearch(DhtSearch search)
+        void EndMailSearch(DhtSearch search)
         {
             foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
+                Store_LocalMail(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
         }
 
-        List<byte[]> Search_Local(ulong key, byte[] parameters)
+        private void StartAckSearch(ulong key, byte[] parameters)
+        {
+            DhtSearch search = Core.OperationNet.Searches.Start(key, "Mail", ServiceID, (ushort)DataType.Ack, parameters, new EndSearchHandler(EndAckSearch));
+
+            if (search != null)
+                search.TargetResults = 2;
+        }
+
+        void EndAckSearch(DhtSearch search)
+        {
+            foreach (SearchValue found in search.FoundValues)
+                Store_LocalAck(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
+        }
+
+        List<byte[]> Search_LocalMail(ulong key, byte[] parameters)
         {
             List<Byte[]> results = new List<byte[]>();
 
             MailIdent ident = MailIdent.Decode(parameters, 0);
 
-            // unacked
-            if (ident.Packet == MailPacket.Pending)
-            {
-                // cant do find unacked because thats version specific
-                if (PendingMap.ContainsKey(key))
-                {
-                    CachedPending pending = PendingMap[key];
-                    
-                    uint minVersion = BitConverter.ToUInt32(ident.Data, 0);
+            CachedMail cached = FindMail(ident);
 
-                    if (pending.Header.Version >= minVersion)
-                        results.Add(pending.SignedHeader);
-                }
-            }
-
-            // ack 
-            if (ident.Packet == MailPacket.Ack)
-            {
-                CachedAck cached = FindAck(ident);
-
-                if (cached != null)
-                    results.Add(cached.SignedAck);
-            }
-
-            // mail
-            if (ident.Packet == MailPacket.MailHeader)
-            {
-                CachedMail cached = FindMail(ident);
-
-                if (cached != null)
-                    results.Add(cached.SignedHeader);
-            }
+            if (cached != null)
+                results.Add(cached.SignedHeader);
 
             return results;
         }
 
-        bool Transfers_FileSearch(ulong key, FileDetails details)
+        List<byte[]> Search_LocalAck(ulong key, byte[] parameters)
+        {
+            List<Byte[]> results = new List<byte[]>();
+
+            MailIdent ident = MailIdent.Decode(parameters, 0);
+
+            CachedAck cached = FindAck(ident);
+
+            if (cached != null)
+                results.Add(cached.SignedAck);
+
+            return results;
+        }
+
+        bool Transfers_MailSearch(ulong key, FileDetails details)
         {
             if (MailMap.ContainsKey(key))
             {
@@ -897,18 +879,10 @@ namespace RiseOp.Services.Mail
                         return true;
             }
 
-            if (PendingMap.ContainsKey(key))
-            {
-                CachedPending pending = PendingMap[key];
-
-                if (details.Size == pending.Header.FileSize && Utilities.MemCompare(details.Hash, pending.Header.FileHash))
-                    return true;
-            }
-
             return false;
         }
 
-        string Transfers_FileRequest(ulong key, FileDetails details)
+        string Transfers_MailRequest(ulong key, FileDetails details)
         {
             if (MailMap.ContainsKey(key))
             {
@@ -927,18 +901,10 @@ namespace RiseOp.Services.Mail
                     }
             }
 
-            if (PendingMap.ContainsKey(key))
-            {
-                CachedPending pending = PendingMap[key];
-
-                if (details.Size == pending.Header.FileSize && Utilities.MemCompare(details.Hash, pending.Header.FileHash))
-                    return GetFilePath(pending.Header);
-            }
-
             return null;
         }
 
-        void Store_Local(DataReq store)
+        void Store_LocalMail(DataReq store)
         {
             // getting published to - search results - patch
 
@@ -951,25 +917,29 @@ namespace RiseOp.Services.Mail
 
             // figure out data contained
             if (Core.Protocol.ReadPacket(embedded))
-            {
                 if (embedded.Name == MailPacket.MailHeader)
                     Process_MailHeader(store, signed, MailHeader.Decode(Core.Protocol, embedded));
-
-                else if (embedded.Name == MailPacket.Ack)
-                    Process_MailAck(store, signed, MailAck.Decode(Core.Protocol, embedded), false);
-
-                else if (embedded.Name == MailPacket.Pending)
-                    Process_PendingHeader(store, signed, PendingHeader.Decode(Core.Protocol, embedded));
-            }
         }
 
-        ReplicateData Store_Replicate(DhtContact contact, bool add)
+        void Store_LocalAck(DataReq store)
         {
-            // size 1+8+4=13
-            // unack -- packet.unack / Dhtid    / version
-            // mail  -- packet.mail  / targetid / mailid(4) 
-            // ack   -- packet.ack   / targetid / mailid(4)
+            // getting published to - search results - patch
 
+            SignedData signed = SignedData.Decode(Core.Protocol, store.Data);
+
+            if (signed == null)
+                return;
+
+            G2Header embedded = new G2Header(signed.Data);
+
+            // figure out data contained
+            if (Core.Protocol.ReadPacket(embedded))
+                if (embedded.Name == MailPacket.Ack)
+                    Process_MailAck(store, signed, MailAck.Decode(Core.Protocol, embedded), false);
+        }
+
+        ReplicateData Store_ReplicateMail(DhtContact contact, bool add)
+        {
             if (!Network.Established)
                 return null;
 
@@ -978,28 +948,6 @@ namespace RiseOp.Services.Mail
 
             byte[] patch = new byte[MailIdent.SIZE];
 
-            // unacked
-            foreach (CachedPending pending in PendingMap.Values)
-                if (Utilities.InBounds(pending.Header.KeyID, pending.DhtBounds, contact.DhtID))
-                {
-                    DhtContact target = contact;
-                    pending.DhtBounds = Store.RecalcBounds(pending.Header.KeyID, add, ref target);
-
-                    if (target != null)
-                        data.Add(target, new MailIdent(MailPacket.Pending, pending.Header.KeyID, BitConverter.GetBytes(pending.Header.Version)).Encode());
-                }
-
-            // acks
-            foreach (List<CachedAck> list in AckMap.Values)
-                foreach (CachedAck cached in list)
-                    if (Utilities.InBounds(cached.Ack.TargetID, cached.DhtBounds, contact.DhtID))
-                    {
-                        DhtContact target = contact;
-                        cached.DhtBounds = Store.RecalcBounds(cached.Ack.TargetID, add, ref target);
-
-                        if (target != null)
-                            data.Add(target, new MailIdent(MailPacket.Ack, cached.Ack.TargetID, Utilities.ExtractBytes(cached.Ack.MailID, 0, 4)).Encode());
-                    }
 
             // mail
             foreach (List<CachedMail> list in MailMap.Values)
@@ -1010,13 +958,37 @@ namespace RiseOp.Services.Mail
                         cached.DhtBounds = Store.RecalcBounds(cached.Header.TargetID, add, ref target);
 
                         if (target != null)
-                            data.Add(target, new MailIdent(MailPacket.MailHeader, cached.Header.TargetID, Utilities.ExtractBytes(cached.Header.MailID, 0, 4)).Encode());
+                            data.Add(target, new MailIdent(cached.Header.TargetID, Utilities.ExtractBytes(cached.Header.MailID, 0, 4)).Encode());
                     }
 
             return data;
         }
 
-        void Store_Patch(DhtAddress source, ulong distance, byte[] data)
+        ReplicateData Store_ReplicateAck(DhtContact contact, bool add)
+        {
+            if (!Network.Established)
+                return null;
+
+            ReplicateData data = new ReplicateData(MailIdent.SIZE);
+
+            byte[] patch = new byte[MailIdent.SIZE];
+
+            // acks
+            foreach (List<CachedAck> list in AckMap.Values)
+                foreach (CachedAck cached in list)
+                    if (Utilities.InBounds(cached.Ack.TargetID, cached.DhtBounds, contact.DhtID))
+                    {
+                        DhtContact target = contact;
+                        cached.DhtBounds = Store.RecalcBounds(cached.Ack.TargetID, add, ref target);
+
+                        if (target != null)
+                            data.Add(target, new MailIdent(cached.Ack.TargetID, Utilities.ExtractBytes(cached.Ack.MailID, 0, 4)).Encode());
+                    }
+
+            return data;
+        }
+
+        void Store_PatchMail(DhtAddress source, ulong distance, byte[] data)
         {
             if (data.Length % MailIdent.SIZE != 0)
                 return;
@@ -1030,70 +1002,56 @@ namespace RiseOp.Services.Mail
                 if (!Utilities.InBounds(Core.LocalDhtID, distance, ident.DhtID))
                     continue;
 
-                bool request = false;
+                CachedMail mail = FindMail(ident);
 
-                // unacked
-                if (ident.Packet == MailPacket.Pending)
+                if (mail != null)
                 {
-                    CachedPending pending = FindPending(ident);
-
-                    uint version = BitConverter.ToUInt32(ident.Data, 0);
-
-                    if (pending == null)
-                        request = true;
-                    else
-                    {
-                       
-
-                        if (pending.Header.Version > version) // we have new version
-                        {
-                            Store.Send_StoreReq(source, 0, new DataReq(null, ident.DhtID, ServiceID, 0, pending.SignedHeader));
-                            continue;
-                        }
-
-                        pending.Unique = false;
-
-                        if (pending.Header.Version == version) // we have current version
-                            continue;
-
-                        if (pending.Header.Version < version) // we have older version
-                            request = true;
-                    }
+                    mail.Unique = false;
+                    continue;
                 }
-               
-                // ack
-                if (ident.Packet == MailPacket.Ack)
-                {
-                    CachedAck ack = FindAck(ident);
-
-                    if (ack == null)
-                        request = true;
-                    else
-                        ack.Unique = false;
-                }
-
-                // mail
-                if (ident.Packet == MailPacket.MailHeader)
-                {
-                    CachedMail mail = FindMail(ident);
-                    
-                    if (mail == null)
-                        request = true;
-                    else
-                        mail.Unique = false;
-                }
-
-                if (!request)
-                    return;
 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, ident.DhtID, ServiceID, 0, ident.Encode());
+                    Network.Searches.SendDirectRequest(source, ident.DhtID, ServiceID, (ushort)DataType.Mail, ident.Encode());
                 else
                 {
-                    if (!DownloadLater.ContainsKey(ident.DhtID))
-                        DownloadLater[ident.DhtID] = new List<MailIdent>();
+                    if (!DownloadMailLater.ContainsKey(ident.DhtID))
+                        DownloadMailLater[ident.DhtID] = new List<MailIdent>();
 
-                    DownloadLater[ident.DhtID].Add(ident);
+                    DownloadMailLater[ident.DhtID].Add(ident);
+                }
+            }
+        }
+
+        void Store_PatchAck(DhtAddress source, ulong distance, byte[] data)
+        {
+            if (data.Length % MailIdent.SIZE != 0)
+                return;
+
+            int offset = 0;
+            for (int i = 0; i < data.Length; i += MailIdent.SIZE)
+            {
+                MailIdent ident = MailIdent.Decode(data, i);
+                offset += MailIdent.SIZE;
+
+                if (!Utilities.InBounds(Core.LocalDhtID, distance, ident.DhtID))
+                    continue;
+
+                CachedAck ack = FindAck(ident);
+
+                if (ack != null)
+                {
+                    ack.Unique = false;
+                    continue;
+                }
+
+                if (Network.Established)
+                    Network.Searches.SendDirectRequest(source, ident.DhtID, ServiceID, (ushort) DataType.Ack, ident.Encode());
+                else
+                {
+                    if (!DownloadAcksLater.ContainsKey(ident.DhtID))
+                        DownloadAcksLater[ident.DhtID] = new List<MailIdent>();
+
+                    DownloadAcksLater[ident.DhtID].Add(ident);
                 }
             }
         }
@@ -1118,10 +1076,10 @@ namespace RiseOp.Services.Mail
             return null;
         }
 
-        private CachedPending FindPending(MailIdent ident)
+        private CachedPending FindPending(ulong id)
         {
-            if (PendingMap.ContainsKey(ident.DhtID))
-                return PendingMap[ident.DhtID];
+            if (PendingMap.ContainsKey(id))
+                return PendingMap[id];
 
             return null;
         }
@@ -1146,7 +1104,7 @@ namespace RiseOp.Services.Mail
 
                 if (header.SourceVersion > pending.Header.Version)
                 {
-                    StartSearch(header.SourceID, header.SourceVersion);
+                    PendingCache.Research(header.SourceID);
                     cache = true;
                 }
                 else
@@ -1160,7 +1118,7 @@ namespace RiseOp.Services.Mail
             }
             else
             {
-                StartSearch(header.SourceID, header.SourceVersion);
+                PendingCache.Research(header.SourceID);
                 cache = true;
             }
 
@@ -1171,7 +1129,7 @@ namespace RiseOp.Services.Mail
 
                 if (header.TargetVersion > pending.Header.Version)
                 {
-                    StartSearch(header.TargetID, header.TargetVersion);
+                    PendingCache.Research(header.TargetID);
                     cache = true;
                 }
                 else
@@ -1184,7 +1142,7 @@ namespace RiseOp.Services.Mail
             }
             else
             {
-                StartSearch(header.TargetID, header.TargetVersion);
+                PendingCache.Research(header.TargetID);
                 cache = true;
             }
 
@@ -1197,7 +1155,7 @@ namespace RiseOp.Services.Mail
             if (!Utilities.CheckSignedData(header.Source, signed.Data, signed.Signature))
                 return;
 
-            FileDetails details = new FileDetails(ServiceID, 0, header.FileHash, header.FileSize, null);
+            FileDetails details = new FileDetails(ServiceID, (ushort)DataType.Mail, header.FileHash, header.FileSize, null);
 
             Core.Transfers.StartDownload(header.TargetID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload_Mail));
         }
@@ -1257,7 +1215,7 @@ namespace RiseOp.Services.Mail
 
                 mail.Header = header;
                 mail.SignedHeader = signed.Encode(Core.Protocol);
-                mail.Unique = Core.Loading;
+                mail.Unique = Loading;
 
                 MailMap[header.TargetID].Add(mail);
 
@@ -1314,14 +1272,15 @@ namespace RiseOp.Services.Mail
                 PendingAcks[ack.TargetID] = new List<byte[]>();
             PendingAcks[ack.TargetID].Add(ack.MailID);
 
-            ack.SourceVersion = LocalPending.Header.Version;
+            CachedPending local = FindPending(Core.LocalDhtID);
+            ack.SourceVersion = (local != null) ? local.Header.Version : 0;
             
             SavePending(); // also publishes
 
             // send 
             byte[] signedAck = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, ack.Encode(Core.Protocol));
-            Core.OperationNet.Store.PublishNetwork(header.SourceID, ServiceID, 0, signedAck);
-            Store_Local(new DataReq(null, header.SourceID, ServiceID, 0, signedAck)); // cant direct process_header, because header var is being modified
+            Core.OperationNet.Store.PublishNetwork(header.SourceID, ServiceID, (ushort)DataType.Ack, signedAck);
+            Store_LocalAck(new DataReq(null, header.SourceID, ServiceID, (ushort)DataType.Ack, signedAck)); // cant direct process_header, because header var is being modified
             RunSaveHeaders = true;
 
             Core.MakeNews("Mail Received from " + Core.Links.GetName(message.From), message.From, 0, false, MailRes.Icon, Menu_View);
@@ -1332,7 +1291,7 @@ namespace RiseOp.Services.Mail
         {
             try
             {
-                string path = GetFilePath(pending.Header);
+                string path = PendingCache.GetFilePath(pending.Header);
 
                 FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
                 CryptoStream crypto = new CryptoStream(file, pending.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
@@ -1375,7 +1334,7 @@ namespace RiseOp.Services.Mail
         {
             try
             {
-                string path = GetFilePath(pending.Header);
+                string path = PendingCache.GetFilePath(pending.Header);
 
                 FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
                 CryptoStream crypto = new CryptoStream(file, pending.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
@@ -1446,14 +1405,14 @@ namespace RiseOp.Services.Mail
 
                 // if our version of the pending file is out of date
                 if (ack.TargetVersion > pending.Header.Version)
-                    StartSearch(ack.TargetID, ack.TargetVersion);
+                    PendingCache.Research(ack.TargetID);
 
                 // not pending, means its not in file, which means it IS acked
                 else if (!IsMailPending(pending, ack.MailID))
                     add = false;
             }
             else
-                StartSearch(ack.TargetID, ack.TargetVersion);
+                PendingCache.Research(ack.TargetID);
 
             // check source pending file, but dont search for it or anything, focus on the target, source is backup
             if (PendingMap.ContainsKey(ack.SourceID))
@@ -1470,7 +1429,7 @@ namespace RiseOp.Services.Mail
                 if (!AckMap.ContainsKey(ack.TargetID))
                     AckMap[ack.TargetID] = new List<CachedAck>();
 
-                AckMap[ack.TargetID].Add(new CachedAck(signed.Encode(Core.Protocol), ack, Core.Loading));
+                AckMap[ack.TargetID].Add(new CachedAck(signed.Encode(Core.Protocol), ack, Loading));
             }
         }
 
@@ -1508,90 +1467,23 @@ namespace RiseOp.Services.Mail
                 });
         }
 
-        private void Process_PendingHeader(DataReq data, SignedData signed, PendingHeader header)
+
+        void PendingCache_FileAquired(OpVersionedFile cachedfile)
         {
-            Core.IndexKey(header.KeyID, ref header.Key);
-           
-            // if link loaded
-            if (PendingMap.ContainsKey(header.KeyID))
-            {
-                CachedPending current = PendingMap[header.KeyID];
-
-                // if remote source's version old
-                if (header.Version < current.Header.Version)
-                {
-                    if (data != null && data.Sources != null)
-                        foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Header.KeyID, ServiceID, 0, current.SignedHeader));
-
-                    return;
-                }
-
-                // higher version
-                else if (header.Version > current.Header.Version)
-                {
-                    CachePending(signed, header);
-                }
-            }
-
-            // else load file, set new header after file loaded
-            else
-                CachePending(signed, header);    
-        }
-
-        private void Download_Pending(SignedData signed, PendingHeader header)
-        {
-            if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
-                return;
-
-            FileDetails details = new FileDetails(ServiceID, 0, header.FileHash, header.FileSize, null);
-
-            Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload_Pending));
-        }
-
-        private void EndDownload_Pending(string path, object[] args)
-        {
-            SignedData signedHeader = (SignedData)args[0];
-            PendingHeader header = (PendingHeader)args[1];
-
             try
             {
-                File.Move(path, GetFilePath(header));
-            }
-            catch { return; }
+                if (!PendingMap.ContainsKey(cachedfile.DhtID))
+                    PendingMap[cachedfile.DhtID] = new CachedPending(cachedfile);
 
-            CachePending(signedHeader, header);
-        }
-
-        private void CachePending(SignedData signed, PendingHeader header)
-        {
-            if (Core.InvokeRequired)
-                Debug.Assert(false);
-
-            try
-            {
-                string path = "";
-                if (header.FileHash != null)
-                    path = GetFilePath(header);
-
-                if (!File.Exists(path))
-                {
-                    Download_Pending(signed, header);
-                    return;
-                }
-
-                if (!PendingMap.ContainsKey(header.KeyID))
-                    PendingMap[header.KeyID] = new CachedPending();
-
-                CachedPending pending = PendingMap[header.KeyID];
+                CachedPending pending = PendingMap[cachedfile.DhtID];
 
                 List<byte[]> pendingMailIDs = new List<byte[]>();
                 List<byte[]> pendingAckIDs = new List<byte[]>();
 
 
                 // load pending file
-                FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                CryptoStream crypto = new CryptoStream(file, header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                FileStream file = new FileStream(PendingCache.GetFilePath(cachedfile.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
+                CryptoStream crypto = new CryptoStream(file, cachedfile.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                 bool dividerPassed = false;
                 byte[] divider = new byte[16];
@@ -1624,7 +1516,7 @@ namespace RiseOp.Services.Mail
 
 
                 // if the local pending file that we are loading
-                if (header.KeyID == Core.LocalDhtID)
+                if (cachedfile.DhtID == Core.LocalDhtID)
                 {
                     // setup local mail pending
                     PendingMail.Clear();
@@ -1676,28 +1568,7 @@ namespace RiseOp.Services.Mail
                     }
                 }   
 
-
-                // delete old file
-                if (pending.Header != null)
-                {
-                    string oldPath = GetFilePath(pending.Header);
-                    if (path != oldPath && File.Exists(oldPath))
-                        try { File.Delete(oldPath); }
-                        catch { }
-                }
-
-                // set new header
-                pending.Header = header;
-                pending.SignedHeader = signed.Encode(Core.Protocol);
-                pending.Unique = Core.Loading;
-
-                if(pending.Header.KeyID == Core.LocalDhtID)
-                    LocalPending = pending;
-
                 CheckCache(pending, pendingMailIDs, pendingAckIDs);
-                
-
-                RunSaveHeaders = true;
             }
             catch (Exception ex)
             {
@@ -1731,7 +1602,7 @@ namespace RiseOp.Services.Mail
  *          ID not in targets pending mail list
  * */
 
-            PendingHeader header = pending.Header;
+            VersionedFileHeader header = pending.Header;
 
             List<string> removePaths = new List<string>();
 
@@ -1889,34 +1760,19 @@ namespace RiseOp.Services.Mail
 
         private void SavePending()
         {
-            if (Core.InvokeRequired)
-                Debug.Assert(false);
-
             // pending file is shared over the network, the first part is pending mail IDs
             // the next part is pending ack IDs, because IDs are encrypted ack side needs to seperately
             // store the target ID of the ack locally, local host is only able to decrypt pending mail IDs
 
             try
             {
-                PendingHeader header = LocalPending.Header;
-
-                string oldFile = null;
-
-                if (header != null)
-                    oldFile = GetFilePath(header);
-                else
-                    header = new PendingHeader();
-
-                header.Key = Core.User.Settings.KeyPublic;
-                header.KeyID = Core.LocalDhtID; // set so keycheck works
-                header.Version++;
-                header.FileKey.GenerateKey();
-                header.FileKey.IV = new byte[header.FileKey.IV.Length];
-
+                RijndaelManaged key = new RijndaelManaged();
+                key.GenerateKey();
+                key.IV = new byte[key.IV.Length]; 
 
                 string tempPath = Core.GetTempPath();
                 FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
-                CryptoStream stream = new CryptoStream(tempFile, header.FileKey.CreateEncryptor(), CryptoStreamMode.Write);
+                CryptoStream stream = new CryptoStream(tempFile, key.CreateEncryptor(), CryptoStreamMode.Write);
 
                 byte[] buffer = null;
 
@@ -1941,19 +1797,6 @@ namespace RiseOp.Services.Mail
                 stream.Close();
 
 
-                // finish building header
-                Utilities.ShaHashFile(tempPath, ref header.FileHash, ref header.FileSize);
-
-
-                // move file, overwrite if need be
-                string finalPath = GetFilePath(header);
-                File.Move(tempPath, finalPath);
-   
-                if (oldFile != null && File.Exists(oldFile))
-                    try { File.Delete(oldFile); }
-                    catch { }
-
-
                 // save pending ack targets in local file
                 string localpath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "acktargets");
 
@@ -1971,22 +1814,12 @@ namespace RiseOp.Services.Mail
                 else if (File.Exists(localpath))
                     File.Delete(localpath);
 
-                // re-load
-                CachePending(new SignedData(Core.Protocol, Core.User.Settings.KeyPair, header), header);
-
-                // publish header
-                Core.OperationNet.Store.PublishNetwork(Core.LocalDhtID, ServiceID, 0, LocalPending.SignedHeader);
-
+                PendingCache.UpdateLocal(tempPath, key, null);
             }
             catch (Exception ex)
             {
                 Core.OperationNet.UpdateLog("Profile", "Error saving pending " + ex.Message);
             }
-        }
-        
-        internal string GetFilePath(PendingHeader header)
-        {
-            return CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.KeyID, header.FileHash);
         }
 
         internal string GetCachePath(MailHeader header)
@@ -2096,11 +1929,20 @@ namespace RiseOp.Services.Mail
 
     internal class CachedPending
     {
-        internal ulong DhtBounds = ulong.MaxValue;
-        internal bool  Unique;
+        OpVersionedFile File;
 
-        internal PendingHeader Header;
-        internal byte[]        SignedHeader;
+        internal CachedPending(OpVersionedFile file)
+        {
+            File = file;
+        }
+
+        internal VersionedFileHeader Header
+        {
+            get
+            {
+                return File.Header;
+            }
+        }
     }
 
     internal class CachedMail
@@ -2128,9 +1970,8 @@ namespace RiseOp.Services.Mail
 
     internal class MailIdent
     {
-        internal const int SIZE = 13;
+        internal const int SIZE = 12;
 
-        internal byte   Packet;
         internal ulong  DhtID;
         internal byte[] Data;
 
@@ -2138,9 +1979,8 @@ namespace RiseOp.Services.Mail
         { 
         }
 
-        internal MailIdent(byte packet, ulong dhtid, byte[] data)
+        internal MailIdent(ulong dhtid, byte[] data)
         {
-            Packet = packet;
             DhtID  = dhtid;
             Data   = data;
         }
@@ -2149,9 +1989,8 @@ namespace RiseOp.Services.Mail
         {
             byte[] encoded = new byte[SIZE];
 
-            encoded[0] = Packet;
-            BitConverter.GetBytes(DhtID).CopyTo(encoded, 1);
-            Data.CopyTo(encoded, 9);
+            BitConverter.GetBytes(DhtID).CopyTo(encoded, 0);
+            Data.CopyTo(encoded, 8);
 
             return encoded;
         }
@@ -2160,9 +1999,8 @@ namespace RiseOp.Services.Mail
         {
             MailIdent ident = new MailIdent();
 
-            ident.Packet = data[offset];
-            ident.DhtID  = BitConverter.ToUInt64(data, offset + 1);
-            ident.Data   = Utilities.ExtractBytes(data, offset + 9, 4);
+            ident.DhtID  = BitConverter.ToUInt64(data, offset);
+            ident.Data   = Utilities.ExtractBytes(data, offset + 8, 4);
 
             return ident;
         }

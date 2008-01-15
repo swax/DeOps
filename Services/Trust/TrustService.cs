@@ -20,7 +20,6 @@ namespace RiseOp.Services.Trust
 {
     internal delegate void LinkUpdateHandler(OpTrust trust);
     internal delegate void LinkGuiUpdateHandler(ulong key);
-    internal delegate List<ulong> LinkGetFocusedHandler();
 
 
     class TrustService : OpService
@@ -51,7 +50,6 @@ namespace RiseOp.Services.Trust
 
         internal LinkUpdateHandler LinkUpdate;
         internal LinkGuiUpdateHandler GuiUpdate;
-        internal event LinkGetFocusedHandler GetFocused;
 
 
         internal TrustService(OpCore core)
@@ -62,8 +60,9 @@ namespace RiseOp.Services.Trust
             Store = Core.OperationNet.Store;
             Network = Core.OperationNet;
 
-            Core.TimerEvent += new TimerHandler(Core_Timer);
-            Core.LoadEvent += new LoadHandler(Core_Load);
+            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
+            Core.GetFocusedCore += new GetFocusedHandler(Core_GetFocusedCore);
 
             Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File);
 
@@ -73,10 +72,8 @@ namespace RiseOp.Services.Trust
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
-        }
+            Cache.Load();
 
-        void Core_Load()
-        {
             ProjectNames.SafeAdd(0, Core.User.Settings.Operation);
 
             LinkPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
@@ -103,13 +100,13 @@ namespace RiseOp.Services.Trust
 
                 SaveLocal();
             }
-
         }
 
         public void Dispose()
         {
-            Core.TimerEvent -= new TimerHandler(Core_Timer);
-            Core.LoadEvent -= new LoadHandler(Core_Load);
+            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
+            Core.GetFocusedCore -= new GetFocusedHandler(Core_GetFocusedCore);
 
             Network.Searches.SearchEvent[ServiceID, (ushort)DataType.File] -= new SearchRequestHandler(Search_Local);
 
@@ -346,7 +343,7 @@ namespace RiseOp.Services.Trust
             }
         }
 
-        void Core_Timer()
+        void Core_SecondTimer()
         {
             //crit remove projects no longer referenced, call for projects refresh
             // location updates are done for nodes in link map that are focused or linked
@@ -359,14 +356,10 @@ namespace RiseOp.Services.Trust
                 RefreshLinked();
                 SaveUplinkReqs();
             }
+        }
 
-            // do below once per minute
-            if (Core.TimeNow.Second != 0)
-                return;
-
-            //crit List<ulong> focused = GetFocusedLinks();
-
-
+        void Core_MinuteTimer()
+        {
             // clean roots
             List<uint> removeList = new List<uint>();
 
@@ -384,6 +377,21 @@ namespace RiseOp.Services.Trust
                        ProjectRoots.Remove(project);
                    //ProjectNames.Remove(id); // if we are only root, and leave project, but have downlinks, still need the name
                });
+        }
+
+
+        void Core_GetFocusedCore()
+        {
+           RefreshLinked();
+
+           TrustMap.LockReading(delegate()
+           {
+               foreach (OpTrust trust in TrustMap.Values)
+                   if (trust.InLocalLinkTree)
+                       Core.Focused.SafeAdd(trust.DhtID, true);
+           });
+
+            //crit needs to update live tree as well
         }
 
         void Cache_FileRemoved(OpVersionedFile file)
@@ -735,7 +743,7 @@ namespace RiseOp.Services.Trust
 
 
             // if target is marked as linked or focused, update link of target and sender
-            if (targetTrust.Loaded && (targetTrust.InLocalLinkTree || GetFocusedLinks().Contains(targetTrust.DhtID)))
+            if (targetTrust.Loaded && (targetTrust.InLocalLinkTree || Core.Focused.SafeContainsKey(targetTrust.DhtID)))
             {
                 if (targetTrust.File.Header.Version < request.TargetVersion)
                     Cache.Research(targetTrust.DhtID);
@@ -752,19 +760,6 @@ namespace RiseOp.Services.Trust
             }
 
             RunSaveUplinks = true;
-        }
-
-        private List<ulong> GetFocusedLinks()
-        {
-            List<ulong> focused = new List<ulong>();
-
-            if (GetFocused != null)
-                foreach (LinkGetFocusedHandler handler in GetFocused.GetInvocationList())
-                    foreach (ulong id in handler.Invoke())
-                        if (!focused.Contains(id))
-                            focused.Add(id);
-
-            return focused;
         }
 
         private void Cache_FileAquired(OpVersionedFile cachefile)
@@ -1128,16 +1123,16 @@ namespace RiseOp.Services.Trust
         {
             bool online = false;
 
-            List<LocInfo> clients = Core.Locations.GetClients(link.DhtID);
+            List<ClientInfo> clients = Core.Locations.GetClients(link.DhtID);
 
-            foreach (LocInfo info in clients)
-                if (!info.Location.Global)
+            foreach (ClientInfo info in clients)
+                if(info.Active)
                 {
-                    if (info.Location.KeyID == Core.LocalDhtID && info.Location.Source.ClientID == Core.ClientID)
+                    if (info.Data.KeyID == Core.LocalDhtID && info.Data.Source.ClientID == Core.ClientID)
                         continue;
 
-                    if (!locations.Contains(info.Location))
-                        locations.Add(info.Location);
+                    if (!locations.Contains(info.Data))
+                        locations.Add(info.Data);
 
                     online = true;
                 }

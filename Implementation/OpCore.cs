@@ -45,6 +45,7 @@ namespace RiseOp.Implementation
     internal delegate void ExitHandler();
     internal delegate void TimerHandler();
     internal delegate void NewsUpdateHandler(NewsItemInfo info);
+    internal delegate void GetFocusedHandler();
 
     internal delegate List<MenuItemInfo> MenuRequestHandler(InterfaceMenuType menuType, ulong key, uint proj);
     
@@ -81,7 +82,6 @@ namespace RiseOp.Implementation
         internal DateTime     StartTime;
         internal DateTime     NextSaveCache;
         internal ulong        OpID;
-        internal bool         Loading;
 
         internal Dictionary<ulong, byte[]> KeyMap = new Dictionary<ulong, byte[]>();
 
@@ -89,10 +89,15 @@ namespace RiseOp.Implementation
 
 
         // events
-        internal event LoadHandler  LoadEvent;
-        internal event TimerHandler TimerEvent;
+        internal event TimerHandler SecondTimerEvent;
+
+        int MinutePoint; // random so all of network doesnt burst at once
+        internal event TimerHandler MinuteTimerEvent;
         internal event NewsUpdateHandler NewsUpdate;
 
+        internal event GetFocusedHandler GetFocusedGui;
+        internal event GetFocusedHandler GetFocusedCore;
+        internal ThreadedDictionary<ulong, bool> Focused = new ThreadedDictionary<ulong, bool>();
 
         // interfaces
         internal MainForm      GuiMain;
@@ -137,6 +142,7 @@ namespace RiseOp.Implementation
         {
             StartTime = TimeNow;
             NextSaveCache = TimeNow.AddMinutes(1);
+            MinutePoint = RndGen.Next(2, 59);
 
             ConsoleLog("RiseOp " + Application.ProductVersion);
 
@@ -164,11 +170,17 @@ namespace RiseOp.Implementation
                     if (Directory.Exists(dirpath))
                         Directory.Delete(dirpath, true);
                 }
-            
+
+            Test test = new Test(); // should be empty unless running a test    
+
+            User.Load(LoadModeType.Cache);
+
+
             // permanent
-            AddService(new TrustService(this));
-            AddService(new LocationService(this));
             AddService(new TransferService(this));
+            AddService(new LocationService(this));
+            AddService(new TrustService(this));
+ 
 
             // optional
             AddService(new ProfileService(this));
@@ -178,17 +190,6 @@ namespace RiseOp.Implementation
             AddService(new BoardService(this));
             AddService(new PlanService(this));
             AddService(new StorageService(this));
-
-
-            User.Load(LoadModeType.Cache);
-
-
-            // trigger components to load
-            Loading = true;
-                LoadEvent.Invoke();
-            Loading = false;
-
-            Test test = new Test(); // should be empty unless running a test    
 
 
             CoreThread = new Thread(RunCore);
@@ -346,14 +347,26 @@ namespace RiseOp.Implementation
 				GlobalNet.SecondTimer();
                 OperationNet.SecondTimer();
 
-                TimerEvent.Invoke();
-
+                SecondTimerEvent.Invoke();
 
                 // save cache
                 if (TimeNow > NextSaveCache)
                 {
                     User.Save();
                     NextSaveCache = TimeNow.AddMinutes(5);
+                }
+
+                // before minute timer give gui 2 secs to tell us of nodes it doesnt want removed
+                if (TimeNow.Second == MinutePoint - 2)
+                {
+                    Focused.SafeClear();
+                    RunInGuiThread(GetFocusedGui);
+                }
+
+                if (TimeNow.Second == MinutePoint)
+                {
+                    GetFocusedCore.Invoke();
+                    MinuteTimerEvent.Invoke();
                 }
 			}
 			catch(Exception ex)

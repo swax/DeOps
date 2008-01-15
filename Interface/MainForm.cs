@@ -135,6 +135,7 @@ namespace RiseOp.Interface
             Core.NewsUpdate += new NewsUpdateHandler(Core_NewsUpdate);
             Links.GuiUpdate  += new LinkGuiUpdateHandler(Links_Update);
             Core.Locations.GuiUpdate += new LocationGuiUpdateHandler(Location_Update);
+            Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
 
             CommandTree.SelectedLink = Core.LocalDhtID;
 
@@ -197,6 +198,7 @@ namespace RiseOp.Interface
             Core.NewsUpdate -= new NewsUpdateHandler(Core_NewsUpdate);
             Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
             Core.Locations.GuiUpdate -= new LocationGuiUpdateHandler(Location_Update);
+            Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
 
             Core.GuiMain = null;
 
@@ -268,19 +270,6 @@ namespace RiseOp.Interface
 
             InternalView.Init();
             InternalPanel.Visible = true;
-        }
-
-
-        void RecurseFocus(TreeListNode parent, List<ulong> focused)
-        {
-            // add parent to focus list
-            if (parent.GetType() == typeof(LinkNode))
-                focused.Add(((LinkNode)parent).Link.DhtID);
-
-            // iterate through sub items
-            foreach (TreeListNode subitem in parent.Nodes)
-                if (parent.GetType() == typeof(LinkNode))
-                    RecurseFocus(subitem, focused);
         }
 
         void Links_Update(ulong key)
@@ -476,28 +465,38 @@ namespace RiseOp.Interface
                 //    Server: Last Seen 10/2/2007
 
 
-                if (Core.OperationNet.Routing.Responsive())
+                 List<ClientInfo> clients = Core.Locations.GetClients(link.DhtID);
+
+                foreach (ClientInfo info in clients)
+                    if (info.Active)
+                    {
+                        string status = "";
+
+                        if (info.Data.Away)
+                            status += "Away " + info.Data.AwayMessage;
+                        else
+                            status += "Online";
+
+                        if (info.Data.GmtOffset != System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes)
+                            status += ", Local Time " + Core.TimeNow.ToUniversalTime().AddMinutes(info.Data.GmtOffset).ToString("t");
+
+                        // last seen stuff here
+
+                        locations.Add(new Tuple<string, string>(Core.Locations.GetLocationName(link.DhtID, info.ClientID), status));
+                    }
+
+
+                if (locations.Count == 0 && clients.Count > 0)
                 {
-                    List<LocInfo> clients = Core.Locations.GetClients(link.DhtID);
+                    ClientInfo latest = clients[0];
 
-                    foreach (LocInfo info in clients)
-                        if (!info.Location.Global)
-                        {
-                            string status = "";
+                    foreach (ClientInfo info in clients)
+                        if (info.Data.Date > latest.Data.Date)
+                            latest = info;
 
-                            if (info.Location.Away)
-                                status += "Away " + info.Location.AwayMessage;
-                            else
-                                status += "Online";
-
-                            if (info.Location.GmtOffset != System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes)
-                                status += ", Local Time " + Core.TimeNow.ToUniversalTime().AddMinutes(info.Location.GmtOffset).ToString("t");
-
-                            // last seen stuff here
-
-                            locations.Add(new Tuple<string, string>(Core.Locations.GetLocationName(link.DhtID, info.ClientID), status));
-                        }
+                    locations.Add(new Tuple<string, string>("Last Seen", latest.Data.Date.ToLocalTime().ToString()));
                 }
+
 
                 content = GenerateContent(tuples, locations);
             }
@@ -798,6 +797,20 @@ namespace RiseOp.Interface
 
             return false;
         }
+
+
+        void Core_GetFocused()
+        {
+            // return links in nav bar
+            foreach (ToolStripItem item in PersonNavButton.DropDownItems)
+            {
+                PersonNavItem person = item as PersonNavItem;
+
+                if (person != null)
+                    Core.Focused.SafeAdd(person.DhtID, true);
+            }
+        }
+
 
         private void UpdateNavBar()
         {

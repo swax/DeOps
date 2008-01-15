@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 
 using RiseOp.Services;
+using RiseOp.Services.Location;
 using RiseOp.Services.Transfer;
 
 using RiseOp.Implementation;
@@ -19,12 +20,14 @@ namespace RiseOp.Services.Assist
     internal delegate void FileAquiredHandler(OpVersionedFile file);
     internal delegate void FileRemovedHandler(OpVersionedFile file);
 
+
     class VersionedCache : IDisposable
     {
         OpCore Core;
         DhtNetwork Network;
         internal DhtStore Store;
 
+        bool Loading;
         internal ushort Service;
         internal ushort DataType;
 
@@ -41,7 +44,7 @@ namespace RiseOp.Services.Assist
 
         internal FileAquiredHandler FileAquired;
         internal FileRemovedHandler FileRemoved;
-        
+
 
         internal VersionedCache(DhtNetwork network, ushort service, ushort type)
         {
@@ -61,8 +64,8 @@ namespace RiseOp.Services.Assist
 
             LocalKey = Core.User.Settings.FileKey;
 
-            Core.LoadEvent += new LoadHandler(Core_Load);
-            Core.TimerEvent += new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
             Network.EstablishedEvent += new EstablishedHandler(Network_Established);
 
@@ -72,20 +75,30 @@ namespace RiseOp.Services.Assist
 
             Network.Searches.SearchEvent[Service, DataType] += new SearchRequestHandler(Search_Local);
 
+            Core.Transfers.FileSearch[Service, DataType] += new FileSearchHandler(Transfers_FileSearch);
+            Core.Transfers.FileRequest[Service, DataType] += new FileRequestHandler(Transfers_FileRequest);
+
+            Core.Locations.GetTag[Service, DataType] += new GetTagHandler(Locations_GetTag);
+            Core.Locations.TagReceived[Service, DataType] += new TagReceivedHandler(Locations_TagReceived);
+
             if (Core.Sim != null)
                 PruneSize = 25;
         }
-        
-        void Core_Load()
-        {
-            Core.Transfers.FileSearch[Service, DataType] = new FileSearchHandler(Transfers_FileSearch);
-            Core.Transfers.FileRequest[Service, DataType] = new FileRequestHandler(Transfers_FileRequest);
 
-            LoadHeaders();   
+        public void Load()
+        {
+            Loading = true;
+
+            LoadHeaders();
+
+            Loading = false;
         }
 
         public void Dispose()
         {
+            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
+
             Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
 
             Store.StoreEvent[Service, DataType] -= new StoreHandler(Store_Local);
@@ -96,9 +109,13 @@ namespace RiseOp.Services.Assist
 
             Core.Transfers.FileSearch[Service, DataType] -= new FileSearchHandler(Transfers_FileSearch);
             Core.Transfers.FileRequest[Service, DataType] -= new FileRequestHandler(Transfers_FileRequest);
+
+            Core.Locations.GetTag[Service, DataType] -= new GetTagHandler(Locations_GetTag);
+            Core.Locations.TagReceived[Service, DataType] -= new TagReceivedHandler(Locations_TagReceived);
+
         }
 
-        void Core_Timer()
+        void Core_SecondTimer()
         {
             // clean download later map
             if (!Network.Established)
@@ -107,34 +124,23 @@ namespace RiseOp.Services.Assist
             // save headers
             if (RunSaveHeaders)
                 SaveHeaders();
-
-            // do below once per minute
-            if (Core.TimeNow.Second != 0)
-                return;
-
-            List<ulong> focused = new List<ulong>();
-
-            //crit
-            /*
-            if (GetFocused != null)
-                foreach (PlanGetFocusedHandler handler in GetFocused.GetInvocationList())
-                    foreach (ulong id in handler.Invoke())
-                        if (!focused.Contains(id))
-                            focused.Add(id);*/
-
+        }
+        
+        void Core_MinuteTimer()
+        {
             // prune
             List<ulong> removeIDs = new List<ulong>();
 
-            FileMap.LockReading(delegate()
-            {
-                if (FileMap.Count > PruneSize)
-                    foreach (OpVersionedFile vfile in FileMap.Values)
-                        if (vfile.DhtID != Core.LocalDhtID &&
-                            !Core.Links.TrustMap.SafeContainsKey(vfile.DhtID) && // dont remove nodes in our local hierarchy
-                            !focused.Contains(vfile.DhtID) &&
-                            !Utilities.InBounds(vfile.DhtID, vfile.DhtBounds, Core.LocalDhtID))
-                            removeIDs.Add(vfile.DhtID);
-            });
+            if (FileMap.SafeCount > PruneSize)
+                FileMap.LockReading(delegate()
+                {
+                    if (FileMap.Count > PruneSize)
+                        foreach (OpVersionedFile vfile in FileMap.Values)
+                            if (vfile.DhtID != Core.LocalDhtID &&
+                                !Core.Focused.SafeContainsKey(vfile.DhtID) &&
+                                !Utilities.InBounds(vfile.DhtID, vfile.DhtBounds, Core.LocalDhtID))
+                                removeIDs.Add(vfile.DhtID);
+                });
 
             if (removeIDs.Count > 0)
                 FileMap.LockWriting(delegate()
@@ -386,7 +392,7 @@ namespace RiseOp.Services.Assist
                 // set new header
                 newFile.Header = header;
                 newFile.SignedHeader = signedHeader.Encode(Core.Protocol);
-                newFile.Unique = Core.Loading;
+                newFile.Unique = Loading;
 
                 FileMap.SafeAdd(header.KeyID, newFile);
 
@@ -614,6 +620,31 @@ namespace RiseOp.Services.Assist
         {
             foreach (SearchValue found in search.FoundValues)
                 Store_Local(new DataReq(found.Sources, search.TargetID, Service, DataType, found.Value));
+        }
+
+        byte[] Locations_GetTag()
+        {
+            OpVersionedFile file = GetFile(Core.LocalDhtID);
+
+            return (file != null) ? BitConverter.GetBytes(file.Header.Version) : null;
+        }
+
+        void Locations_TagReceived(ulong user, byte[] tag)
+        {
+            if(tag.Length < 4)
+                return;
+
+            OpVersionedFile file = GetFile(user);
+
+            if (file != null)
+            {
+                uint version = BitConverter.ToUInt32(tag, 0);
+
+                if (version > file.Header.Version)
+                    foreach(ClientInfo client in Core.Locations.GetClients(user))
+                        if(client.Active)
+                            Network.Searches.SendDirectRequest(new DhtAddress(client.Data.IP, client.Data.Source), user, Service, DataType, BitConverter.GetBytes(version));
+            }
         }
     }
 

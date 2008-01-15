@@ -39,16 +39,12 @@ namespace RiseOp.Services.IM
             Links = core.Links;
             Locations = core.Locations;
 
-            Core.LoadEvent  += new LoadHandler(Core_Load);
-            Core.TimerEvent += new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
 
             Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
             Core.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
             Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
-        }
 
-        void Core_Load()
-        {
             Core.Links.LinkUpdate += new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate += new LocationUpdateHandler(Location_Update);
         }
@@ -58,8 +54,7 @@ namespace RiseOp.Services.IM
             if (MessageUpdate != null)
                 throw new Exception("IM Events not fin'd");
 
-            Core.LoadEvent -= new LoadHandler(Core_Load);
-            Core.TimerEvent -= new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
 
             Core.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
             Core.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
@@ -69,7 +64,7 @@ namespace RiseOp.Services.IM
             Core.Locations.LocationUpdate -= new LocationUpdateHandler(Location_Update);
         }
 
-        void Core_Timer()
+        void Core_SecondTimer()
         {
             // need keep alives because someone else might have IM window open while we have it closed
 
@@ -171,8 +166,9 @@ namespace RiseOp.Services.IM
                 IMMap.SafeAdd(key, status);
             }
 
-            foreach (LocInfo loc in Core.Locations.GetClients(key))
-                Core.RudpControl.Connect(loc.Location);
+            foreach (ClientInfo loc in Core.Locations.GetClients(key))
+                if(loc.Active)
+                    Core.RudpControl.Connect(loc.Data);
 
             Update(status);
         }
@@ -203,14 +199,14 @@ namespace RiseOp.Services.IM
 
                 if (session.Status == SessionStatus.Active)
                 {
-                    LocInfo info = Locations.GetLocationInfo(key, session.ClientID);
+                    ClientInfo info = Locations.GetLocationInfo(key, session.ClientID);
 
                     awayMessage = "";
                     if (info != null)
-                        if (info.Location.Away)
+                        if (info.Data.Away)
                         {
                             status.Away = true;
-                            awayMessage = " " + info.Location.AwayMessage;
+                            awayMessage = " " + info.Data.AwayMessage;
                         }
                         else
                             status.Connected = true;

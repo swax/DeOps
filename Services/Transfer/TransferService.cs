@@ -44,18 +44,14 @@ namespace RiseOp.Services.Transfer
             Core = core;
             Core.Transfers = this;
 
-            Core.LoadEvent += new LoadHandler(Core_Load);
-            Core.TimerEvent += new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
 
             Core.OperationNet.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(Search_Local);
 
             Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
             Core.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
             Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
-        }
 
-        internal void Core_Load()
-        {
             // create and clear transfer dir
             try
             {
@@ -73,8 +69,7 @@ namespace RiseOp.Services.Transfer
 
         public void Dispose()
         {
-            Core.LoadEvent -= new LoadHandler(Core_Load);
-            Core.TimerEvent -= new TimerHandler(Core_Timer);
+            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
 
             Core.OperationNet.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(Search_Local);
 
@@ -107,11 +102,11 @@ namespace RiseOp.Services.Transfer
             if (!DownloadMap.ContainsKey(id))
                 return;
 
-            List<LocInfo> clients = Core.Locations.GetClients(key);
+            List<ClientInfo> clients = Core.Locations.GetClients(key);
 
-            foreach (LocInfo info in clients)
-                if (!info.Location.Global) //crit works when proxying over global?
-                    DownloadMap[id].AddSource(info.Location);
+            foreach (ClientInfo info in clients)
+                if(info.Active)
+                    DownloadMap[id].AddSource(info.Data);
         }
 
         internal void CancelDownload(ushort id, byte[] hash, long size)
@@ -139,7 +134,7 @@ namespace RiseOp.Services.Transfer
             }
         }
 
-        void Core_Timer()
+        void Core_SecondTimer()
         {
             // move downloads from pending to active
             if (Active.Count < ConcurrentDownloads && Pending.Count > 0)
@@ -305,7 +300,7 @@ namespace RiseOp.Services.Transfer
                 if (FileSearch[details.Service, details.DataType].Invoke(key, details))
                 {
                     List<Byte[]> results = new List<byte[]>();
-                    results.Add(Core.Locations.LocalLocation.Location.Encode(Core.Protocol));
+                    results.Add(Core.Locations.LocalLocation.Data.Encode(Core.Protocol));
                     return results;
                 }
 
