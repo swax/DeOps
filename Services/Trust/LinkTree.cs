@@ -201,12 +201,16 @@ namespace RiseOp.Services.Trust
             foreach (OpLink link in node.Link.Downlinks)
                 if (!node.Link.IsLoopedTo(link))
                 {
+                    Core.Locations.Research(link.DhtID);
+
                     // if doesnt exist search for it
                     if (!link.Trust.Loaded)
                     {
                         Links.Research(link.DhtID, Project, false);
                         continue;
                     }
+
+                    
 
                     //if(node.Link.IsLoopRoot)
                     //    node.Nodes.Insert(0, CreateNode(link));

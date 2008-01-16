@@ -1,20 +1,15 @@
 
-components need to republish above / below directly if version tagged in location info?
-chat not searching for locations
-	check where link search is done, and see if location research should be done as well
+generate accounts, select number, and number of operations, even distribution made
 
-network established can be called multiple times when re-connecting
-	investigate what happens, ensure locations are researched
+64 client test, all unorganized, investigate how many links / locations are found on network
+	not all should be found
+	doing an instant message to someone we know, but they dont know us should resolve ourselves
+	test linkups
+
 	
-auto do location searches for focused elements?
-	
-test clients with different local times, init random gmt offsets
-	
-	
-publishing to operation / global should be same function, just that global encrypts
-	operation clientID overrides, global clientID in location map
-		can we start transfers / chat? through global network, proxying?
-	
+
+do full test once again - need big network to ensure location -> service updates causing good refreshes	
+
 	
 nav bar work with loops?
 investigate flexible 'smart byte'
@@ -22,8 +17,11 @@ investigate flexible 'smart byte'
 
 board - All/Higher/Lower Posts, New Post
 live command tree/chat
-do full test once again - need big network to ensure location -> service updates causing good refreshes
 
+test clients with different local times, init random gmt offsets
+network established can be called multiple times when re-connecting
+	investigate what happens, ensure locations are researched
+	
 Testing
 	more accurate replication - link/location/profile/mail
 	check that data is cachced 8 closest to ID, record cached link files in sim interface

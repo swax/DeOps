@@ -105,7 +105,7 @@ namespace RiseOp.Services.Chat
             RoomMap.LockReading(delegate()
             {
                 foreach (ChatRoom room in RoomMap.Values)
-                    if (!IsCommandRoom(room.Kind))
+                    if (room.Active && !IsCommandRoom(room.Kind))
                     {
                         room.Members.LockReading(delegate()
                         {
@@ -301,9 +301,16 @@ namespace RiseOp.Services.Chat
             room.Members.LockReading(delegate()
             {
                 foreach (ulong key in room.Members.Keys)
+                {
                     foreach (ClientInfo info in Core.Locations.GetClients(key))
-                        if(info.Active)
+                        if (info.Active)
                             Core.RudpControl.Connect(info.Data);
+
+                    if (Links.GetTrust(key) != null)
+                        Links.Research(key, 0, false);
+
+                    Core.Locations.Research(key);
+                }
             });
         }
 
@@ -986,9 +993,16 @@ namespace RiseOp.Services.Chat
             {
                 // add members to our own list
                 foreach(ulong id in who.Members)
-                    if(!room.Members.SafeContainsKey(id))
+                    if (!room.Members.SafeContainsKey(id))
+                    {
                         room.Members.SafeAdd(id, new ThreadedList<ushort>());
-                    
+
+                        if (Links.GetTrust(id) != null)
+                            Links.Research(id, 0, false);
+
+                        Core.Locations.Research(id);
+                    }
+
                 // connect to new members
                 ConnectRoom(room); 
             }

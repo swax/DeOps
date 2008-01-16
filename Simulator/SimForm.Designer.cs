@@ -62,6 +62,8 @@ namespace RiseOp.Simulator
             this.label6 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.LoadProgress = new System.Windows.Forms.ProgressBar();
+            this.GenerateUsersMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -204,6 +206,8 @@ namespace RiseOp.Simulator
             // FileMenu
             // 
             this.FileMenu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.GenerateUsersMenuItem,
+            this.toolStripMenuItem2,
             this.LoadMenuItem,
             this.SaveMenuItem,
             this.toolStripMenuItem1,
@@ -215,26 +219,26 @@ namespace RiseOp.Simulator
             // LoadMenuItem
             // 
             this.LoadMenuItem.Name = "LoadMenuItem";
-            this.LoadMenuItem.Size = new System.Drawing.Size(109, 22);
+            this.LoadMenuItem.Size = new System.Drawing.Size(160, 22);
             this.LoadMenuItem.Text = "Load";
             this.LoadMenuItem.Click += new System.EventHandler(this.LoadMenuItem_Click);
             // 
             // SaveMenuItem
             // 
             this.SaveMenuItem.Name = "SaveMenuItem";
-            this.SaveMenuItem.Size = new System.Drawing.Size(109, 22);
+            this.SaveMenuItem.Size = new System.Drawing.Size(160, 22);
             this.SaveMenuItem.Text = "Save";
             this.SaveMenuItem.Click += new System.EventHandler(this.SaveMenuItem_Click);
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(106, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(157, 6);
             // 
             // ExitMenuItem
             // 
             this.ExitMenuItem.Name = "ExitMenuItem";
-            this.ExitMenuItem.Size = new System.Drawing.Size(109, 22);
+            this.ExitMenuItem.Size = new System.Drawing.Size(160, 22);
             this.ExitMenuItem.Text = "Exit";
             this.ExitMenuItem.Click += new System.EventHandler(this.ExitMenuItem_Click);
             // 
@@ -346,6 +350,18 @@ namespace RiseOp.Simulator
             this.LoadProgress.TabIndex = 18;
             this.LoadProgress.Visible = false;
             // 
+            // GenerateUsersMenuItem
+            // 
+            this.GenerateUsersMenuItem.Name = "GenerateUsersMenuItem";
+            this.GenerateUsersMenuItem.Size = new System.Drawing.Size(160, 22);
+            this.GenerateUsersMenuItem.Text = "Generate Users";
+            this.GenerateUsersMenuItem.Click += new System.EventHandler(this.GenerateUsersMenuItem_Click);
+            // 
+            // toolStripMenuItem2
+            // 
+            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(157, 6);
+            // 
             // SimForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -364,8 +380,8 @@ namespace RiseOp.Simulator
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "SimForm";
             this.Text = "RiseOp Internet Simulator";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ControlForm_FormClosing);
             this.Load += new System.EventHandler(this.ControlForm_Load);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ControlForm_FormClosing);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.groupBox1.ResumeLayout(false);
@@ -409,5 +425,7 @@ namespace RiseOp.Simulator
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.ProgressBar LoadProgress;
+        private System.Windows.Forms.ToolStripMenuItem GenerateUsersMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
     }
 }

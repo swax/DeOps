@@ -13,12 +13,11 @@ using System.Security.Cryptography;
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Transport;
-using RiseOp.Implementation.Protocol.Net;
+
 using RiseOp.Services.Transfer;
 
 using RiseOp.Interface;
 using RiseOp.Interface.Tools;
-using RiseOp.Implementation.Protocol;
 
 
 namespace RiseOp.Simulator
@@ -32,14 +31,7 @@ namespace RiseOp.Simulator
         internal delegate void InstanceChangeHandler(SimInstance instance, InstanceChangeType type);
         internal InstanceChangeHandler InstanceChange;
 
-        Random Rnd = new Random((int)DateTime.Now.Ticks);
-
-        string[] OpNames = new string[20];
-        RijndaelManaged[] OpKeys = new RijndaelManaged[20];
-
         private ListViewColumnSorter lvwColumnSorter = new ListViewColumnSorter();
-
-        G2Protocol Protocol = new G2Protocol();
 
         internal Dictionary<ulong, NetView> NetViews = new Dictionary<ulong, NetView>();
 
@@ -66,102 +58,7 @@ namespace RiseOp.Simulator
 
             listInstances.ListViewItemSorter = lvwColumnSorter;
 
-            //LoadNames();
-
             Sim = new InternetSim(this);
-        }
-
-        void LoadNames()
-        {
-            // operations
-            OpNames[0] = "Firesoft";
-            OpNames[1] = "Shacknews";
-            OpNames[2] = "Engadget";
-            OpNames[3] = "Gizmodo";
-            OpNames[4] = "SomethingAwful";
-            OpNames[5] = "Transbuddah";
-            OpNames[6] = "Metafilter";
-            OpNames[7] = "BoingBoing";
-            OpNames[8] = "Yahoo";
-            OpNames[9] = "Google";
-            OpNames[10] = "Wikipedia";
-            OpNames[11] = "Souceforge";
-            OpNames[12] = "c0re";
-            OpNames[13] = "MSDN";
-            OpNames[14] = "Ebay";
-            OpNames[15] = "Flickr";
-            OpNames[16] = "Fark";
-            OpNames[17] = "ScienceDaily";
-            OpNames[18] = "Unicef";
-            OpNames[19] = "Peta";
-
-            for (int i = 0; i < 20; i++)
-            {
-                OpKeys[i] = new RijndaelManaged();
-                OpKeys[i].GenerateKey();
-            }
-
-
-            // load last / male / female names
-            List<string> LastNames = new List<string>();
-            List<string> MaleNames = new List<string>();
-            List<string> FemaleNames = new List<string>();
-
-            ReadNames("..\\..\\names_last.txt", LastNames);
-            ReadNames("..\\..\\names_male.txt", MaleNames);
-            ReadNames("..\\..\\names_female.txt", FemaleNames);
-
-            string rootpath = Application.StartupPath + Path.DirectorySeparatorChar + "Firesoft" + Path.DirectorySeparatorChar;
-            Directory.CreateDirectory(rootpath);
-
-            // choose random name combos to create profiles for
-            string name = "";
-
-            for(int i = 0; i < 13; i++)
-            {
-                if( Rnd.Next(2) == 1)
-                    name = MaleNames[Rnd.Next(MaleNames.Count)];
-                else
-                    name = FemaleNames[Rnd.Next(FemaleNames.Count)];
-
-                name += " " + LastNames[Rnd.Next(LastNames.Count)];
-                
-                // create profile
-                int index = Rnd.Next(19);
-
-                string filename = OpNames[0] + " - " + name;
-                string path = rootpath + filename + Path.DirectorySeparatorChar + filename + ".dop";
-                Directory.CreateDirectory(rootpath + filename);
-
-                Identity ident = new Identity(path, name, Protocol);
-
-
-                ident.Settings.Operation = OpNames[0];
-                ident.Settings.ScreenName = name;
-                ident.Settings.KeyPair = new RSACryptoServiceProvider(1024);
-                ident.Settings.OpKey = OpKeys[0];
-                ident.Settings.OpAccess = AccessType.Public;
-
-                ident.Save();
-            }
-        }
-
-        private void ReadNames(string path, List<string> list)
-        {
-            StreamReader file = new StreamReader(path);
-            
-            string name = file.ReadLine();
-
-            while (name != null)
-            {
-                name = name.Trim();
-                name = name.ToLower();
-                char[] letters = name.ToCharArray();
-                letters[0] = char.ToUpper(letters[0]);
-                list.Add(new string(letters));
-                
-                name = file.ReadLine();
-            }
         }
 
         private void ControlForm_Load(object sender, EventArgs e)
@@ -675,6 +572,12 @@ namespace RiseOp.Simulator
 
             view.Show();
             view.BringToFront();
+        }
+
+        private void GenerateUsersMenuItem_Click(object sender, EventArgs e)
+        {
+            GenerateUsers form = new GenerateUsers();
+            form.ShowDialog();
         }
 
 

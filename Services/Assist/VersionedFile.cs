@@ -641,8 +641,8 @@ namespace RiseOp.Services.Assist
                 uint version = BitConverter.ToUInt32(tag, 0);
 
                 if (version > file.Header.Version)
-                    foreach(ClientInfo client in Core.Locations.GetClients(user))
-                        if(client.Active)
+                    foreach (ClientInfo client in Core.Locations.GetClients(user))
+                        if (client.Active)
                             Network.Searches.SendDirectRequest(new DhtAddress(client.Data.IP, client.Data.Source), user, Service, DataType, BitConverter.GetBytes(version));
             }
         }

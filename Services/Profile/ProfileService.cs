@@ -377,17 +377,6 @@ namespace RiseOp.Services.Profile
 
         }
 
-        /*internal void CheckVersion(ulong key, uint version)
-        {
-            OpProfile profile = GetProfile(key);
-
-            if (profile == null || profile.Header == null)
-                return;
-
-            if (profile.Header.Version < version)
-                StartSearch(key, version);
-        }*/
-
         internal void Research(ulong key)
         {
             Cache.Research(key);

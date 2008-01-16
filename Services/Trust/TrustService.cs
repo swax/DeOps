@@ -994,15 +994,6 @@ namespace RiseOp.Services.Trust
             }
         }
 
-        internal void CheckVersion(ulong key, uint version)
-        {
-            OpTrust trust = GetTrust(key);
-
-            if (trust != null && trust.File.Header != null)
-                if (trust.File.Header.Version < version)
-                    Cache.Research(key);
-        }
-
         internal uint CreateProject(string name)
         {
             uint id = (uint)Core.RndGen.Next();
