@@ -12,7 +12,7 @@ using RiseOp.Services.Location;
 
 namespace RiseOp.Implementation.Dht
 {
-    internal delegate List<byte[]> SearchRequestHandler(ulong key, byte[] parameters);
+    internal delegate void SearchRequestHandler(ulong key, byte[] parameters, List<byte[]> values);
 
 
     class DhtSearchControl
@@ -241,17 +241,25 @@ namespace RiseOp.Implementation.Dht
 
             else
             {
-                List<byte[]> values = SearchEvent[request.Service, request.DataType].Invoke(request.TargetID, request.Parameters);
 
-                if (values == null)
+                List<byte[]> results = new List<byte[]>();
+                SearchEvent[request.Service, request.DataType].Invoke(request.TargetID, request.Parameters, results);
+
+                // if nothing found, still send ack with closer contacts
+                if (results == null || results.Count == 0)
+                {
+                    if(request.SearchID != 0)
+                        SendAck(packet, request, ack);
+
                     return;
+                }
 
                 // if a direct search
                 if (request.SearchID == 0)
                 {
                     ulong proxyID = packet.Tcp != null ? packet.Tcp.DhtID : 0;
 
-                    foreach(byte[] value in values)
+                    foreach(byte[] value in results)
                         Network.Store.Send_StoreReq(packet.Source, proxyID, new DataReq(null, request.Source.DhtID, request.Service, request.DataType, value));
                     
                     return;
@@ -260,7 +268,7 @@ namespace RiseOp.Implementation.Dht
                 // else send normal search results
                 int totalSize = 0;
 
-                foreach (byte[] data in values)
+                foreach (byte[] data in results)
                 {
                     if (data.Length + totalSize > 1200)
                     {

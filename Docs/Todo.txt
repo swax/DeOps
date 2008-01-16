@@ -1,22 +1,28 @@
 
-generate accounts, select number, and number of operations, even distribution made
+scale to test32
+comm map overloaded
+focused on entire untrusted network - max 16, 32 in release
+in sim us global publicKey cache
+researchmap in trust's verioned file maxxed
+download / transfer map high as well
 
 64 client test, all unorganized, investigate how many links / locations are found on network
+	basic network startup, tracking searches, make sure things are found
 	not all should be found
 	doing an instant message to someone we know, but they dont know us should resolve ourselves
 	test linkups
-
+	ensure location -> service updates causing good refreshes with tags
 	
 
-do full test once again - need big network to ensure location -> service updates causing good refreshes	
 
-	
+
 nav bar work with loops?
 investigate flexible 'smart byte'
 	
 
 board - All/Higher/Lower Posts, New Post
 live command tree/chat
+	ensure when random subset of nodes removed all links still connected through live
 
 test clients with different local times, init random gmt offsets
 network established can be called multiple times when re-connecting
@@ -26,15 +32,17 @@ Testing
 	more accurate replication - link/location/profile/mail
 	check that data is cachced 8 closest to ID, record cached link files in sim interface
 	links timing out when traversing strucuture
-	link.getlocs / getlocsbelow
+	link.getlocs / getlocsbelow / use live links?
 	link/plan research timer
 	38 crits
 
 
 spring release
+	network bandwidth limits - tracking in sim triggers node to start logging bw data
 	multisource downloading - use torrent
 		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
 		right click to cancel, increase/decrease priority
+		
 	store caching
 	proxying
 	invitations

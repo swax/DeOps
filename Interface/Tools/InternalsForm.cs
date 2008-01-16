@@ -390,7 +390,7 @@ namespace RiseOp.Interface.Tools
 			listValues.Items.Clear();
 
             listValues.Columns.Add("Name",		100, HorizontalAlignment.Left);
-			listValues.Columns.Add("KeyType",		100, HorizontalAlignment.Left);
+			listValues.Columns.Add("Service",		100, HorizontalAlignment.Left);
 			listValues.Columns.Add("Target",		100, HorizontalAlignment.Left);
 			listValues.Columns.Add("SearchID",		100, HorizontalAlignment.Left);
 			listValues.Columns.Add("LookupList",	100, HorizontalAlignment.Left);
@@ -406,7 +406,7 @@ namespace RiseOp.Interface.Tools
 				    listValues.Items.Add( new ListViewItem( new string[]
 				    {
                         xStr(search.Name),		
-					    xStr(search.Service),
+					    xStr(Core.GetServiceName(search.Service)),
 					    IDtoStr(search.TargetID),		
 					    xStr(search.SearchID),
 					    xStr(search.LookupList.Count),
@@ -732,7 +732,7 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("ClientID",  100, HorizontalAlignment.Left);
             listValues.Columns.Add("Done",      100, HorizontalAlignment.Left);
             listValues.Columns.Add("TransferID", 100, HorizontalAlignment.Left);
-            listValues.Columns.Add("Component",  100, HorizontalAlignment.Left);
+            listValues.Columns.Add("Service",  100, HorizontalAlignment.Left);
             listValues.Columns.Add("FileSize",  100, HorizontalAlignment.Left);
             listValues.Columns.Add("FileHash",  100, HorizontalAlignment.Left);
             listValues.Columns.Add("FilePos", 100, HorizontalAlignment.Left);
@@ -763,7 +763,7 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Target", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Status", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("TransferID", 100, HorizontalAlignment.Left);
-            listValues.Columns.Add("Component", 100, HorizontalAlignment.Left);
+            listValues.Columns.Add("Service", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("FileSize", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("FileHash", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("FilePos", 100, HorizontalAlignment.Left);
@@ -900,6 +900,7 @@ namespace RiseOp.Interface.Tools
                         "",
 						"",		
 						"",
+                        "",
 						""
                     });
 

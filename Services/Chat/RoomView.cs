@@ -146,9 +146,9 @@ namespace RiseOp.Services.Chat
                                     continue; 
 
                             MemberNode node = new MemberNode(this, id);
-                            Utilities.InsertSubNode(root, node);
-                            UpdateNode(node);
                             NodeMap[id] = node;
+                            UpdateNode(node);
+                            Utilities.InsertSubNode(root, node);
                         }
                 });
             });
@@ -308,6 +308,9 @@ namespace RiseOp.Services.Chat
 
             if (node == null)
                 return;
+
+            Core.Links.Research(node.DhtID, 0, false);
+            Core.Locations.Research(node.DhtID);
 
             ContextMenuStripEx treeMenu = new ContextMenuStripEx();
 

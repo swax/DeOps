@@ -580,6 +580,39 @@ namespace RiseOp.Simulator
             form.ShowDialog();
         }
 
+        private void OptionsMenuItem_DropDownOpening(object sender, EventArgs e)
+        {
+            /*string enc = "Encryption: ";
+            enc += Sim.TestEncryption ? "On" : "Off";
+            EncryptionMenuItem.Text = enc;*/
+
+            string text = "Speed: ";
+            text += Sim.SleepTime.ToString() + "ms";
+            SpeedMenuItem.Text = text;
+
+            text = "Fresh Start: ";
+            text += Sim.FreshStart ? "Yes" : "No";
+            FreshStartMenuItem.Text = text;
+        }
+
+        private void EncryptionMenuItem_Click(object sender, EventArgs e)
+        {
+            Sim.TestEncryption = !Sim.TestEncryption;
+        }
+
+        private void SpeedMenuItem_Click(object sender, EventArgs e)
+        {
+            GetTextDialog getText = new GetTextDialog("Options", "Enter # of ms to sleep between sim ticks (1000ms is real-time)", Sim.SleepTime.ToString());
+
+            if (getText.ShowDialog() == DialogResult.OK)
+                int.TryParse(getText.ResultBox.Text, out Sim.SleepTime);
+        }
+
+        private void FreshStartMenuItem_Click(object sender, EventArgs e)
+        {
+            Sim.FreshStart = !Sim.FreshStart;
+        }
+
 
     }
 

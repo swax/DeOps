@@ -162,19 +162,19 @@ namespace RiseOp.Implementation
                 GlobalNet = new DhtNetwork(this, true);
 
 
-            // delete data dirs if frsh start indicated
-            if (Sim != null && Sim.Internet.FreshStart)
-                foreach (ushort id in ServiceMap.Keys)
-                {
-                    string dirpath = User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + id.ToString();
-                    if (Directory.Exists(dirpath))
-                        Directory.Delete(dirpath, true);
-                }
-
             Test test = new Test(); // should be empty unless running a test    
 
             User.Load(LoadModeType.Cache);
 
+
+            // delete data dirs if frsh start indicated
+            if (Sim != null && Sim.Internet.FreshStart)
+                for (int service = 1; service < 20; service++ ) // 0 is temp folder, cleared on startup
+                {
+                    string dirpath = User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + service.ToString();
+                    if (Directory.Exists(dirpath))
+                        Directory.Delete(dirpath, true);
+                }
 
             // permanent
             AddService(new TransferService(this));
@@ -190,6 +190,9 @@ namespace RiseOp.Implementation
             //AddService(new BoardService(this));
             //AddService(new PlanService(this));
             //AddService(new StorageService(this));
+
+            
+
 
 
             CoreThread = new Thread(RunCore);
@@ -224,7 +227,7 @@ namespace RiseOp.Implementation
             if (ServiceMap.ContainsKey(id))
                 return ServiceMap[id].Name;
 
-            return "Unknown";
+            return id.ToString();
         }
 
         internal OpService GetService(string name)

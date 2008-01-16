@@ -519,10 +519,8 @@ namespace RiseOp.Services.Trust
                 Cache.Research(id);
         }
 
-        List<byte[]> Search_Local(ulong key, byte[] parameters)
+        void Search_Local(ulong key, byte[] parameters, List<byte[]> results)
         {
-            List<Byte[]> results = new List<byte[]>();
-
             uint minVersion = BitConverter.ToUInt32(parameters, 0);
 
             OpTrust trust = GetTrust(key);
@@ -532,8 +530,6 @@ namespace RiseOp.Services.Trust
                     foreach (UplinkRequest request in link.Requests)
                         if (request.TargetVersion > minVersion)
                             results.Add(request.Signed);
-
-            return results;
         }
 
         internal void RoutingUpdate(DhtContact contact)

@@ -840,32 +840,24 @@ namespace RiseOp.Services.Mail
                 Store_LocalAck(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
         }
 
-        List<byte[]> Search_LocalMail(ulong key, byte[] parameters)
+        void Search_LocalMail(ulong key, byte[] parameters, List<byte[]> results)
         {
-            List<Byte[]> results = new List<byte[]>();
-
             MailIdent ident = MailIdent.Decode(parameters, 0);
 
             CachedMail cached = FindMail(ident);
 
             if (cached != null)
                 results.Add(cached.SignedHeader);
-
-            return results;
         }
 
-        List<byte[]> Search_LocalAck(ulong key, byte[] parameters)
+        void Search_LocalAck(ulong key, byte[] parameters, List<byte[]> results)
         {
-            List<Byte[]> results = new List<byte[]>();
-
             MailIdent ident = MailIdent.Decode(parameters, 0);
 
             CachedAck cached = FindAck(ident);
 
             if (cached != null)
                 results.Add(cached.SignedAck);
-
-            return results;
         }
 
         bool Transfers_MailSearch(ulong key, FileDetails details)

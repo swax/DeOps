@@ -115,6 +115,7 @@ namespace RiseOp.Interface.Tools
             this.TreeViewPacket.Name = "TreeViewPacket";
             this.TreeViewPacket.Size = new System.Drawing.Size(568, 112);
             this.TreeViewPacket.TabIndex = 0;
+            this.TreeViewPacket.MouseClick += new System.Windows.Forms.MouseEventHandler(this.TreeViewPacket_MouseClick);
             this.TreeViewPacket.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TreeViewPacket_KeyDown);
             // 
             // splitter1
@@ -230,8 +231,8 @@ namespace RiseOp.Interface.Tools
             this.Menu = this.mainMenu1;
             this.Name = "PacketsForm";
             this.Text = "Packets";
-            this.Closing += new System.ComponentModel.CancelEventHandler(this.PacketsForm_Closing);
             this.Load += new System.EventHandler(this.PacketsForm_Load);
+            this.Closing += new System.ComponentModel.CancelEventHandler(this.PacketsForm_Closing);
             this.ResumeLayout(false);
 
 		}
@@ -308,7 +309,7 @@ namespace RiseOp.Interface.Tools
                     {
                         CommData data = CommData.Decode(Protocol, root);
 
-                        name += " - " + data.Service.ToString(); // GetVariableName(typeof(ServiceID), data.Service);
+                        name += " - " + Network.Core.GetServiceName(data.Service); 
                     }
 
                 }
@@ -356,7 +357,7 @@ namespace RiseOp.Interface.Tools
                             }
 
                             if(id != 0)
-                                name += " - " + id.ToString(); // GetVariableName(typeof(ServiceID), id);
+                                name += " - " + Network.Core.GetServiceName(id); // GetVariableName(typeof(ServiceID), id);
                         }
                     }
                 }
@@ -413,7 +414,7 @@ namespace RiseOp.Interface.Tools
                     TreeNode rootNode = TreeViewPacket.Nodes.Add(name);
 
                     if (G2Protocol.ReadPayload(root))
-                        rootNode.Nodes.Add(Utilities.BytestoHex(root.Data, root.PayloadPos, root.PayloadSize, true));
+                        rootNode.Nodes.Add(new DataNode(root.Data, root.PayloadPos, root.PayloadSize));
 
                     G2Protocol.ResetPacket(root);
 
@@ -448,13 +449,11 @@ namespace RiseOp.Interface.Tools
                     string name = root.Name.ToString() + " : " + GetVariableName(typeof(RootPacket), root.Name);
                     TreeNode rootNode = TreeViewPacket.Nodes.Add(name);
 
-                    byte[] payload = null;
-                    TreeNode payloadNode = null;
+                    DataNode payloadNode = null;
                     if (G2Protocol.ReadPayload(root))
                     {
-                        payloadNode = new TreeNode(Utilities.BytestoHex(root.Data, root.PayloadPos, root.PayloadSize, true));
-                        rootNode.Nodes.Add(payloadNode);
-                        payload = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
+                        payloadNode = new DataNode(root.Data, root.PayloadPos, root.PayloadSize);
+                        rootNode.Nodes.Add(payloadNode);                     
                     }
                     G2Protocol.ResetPacket(root);
 
@@ -467,14 +466,14 @@ namespace RiseOp.Interface.Tools
                     {
                         ReadChildren(root, rootNode, typeof(NetworkPacket));
 
-                        G2Header payloadRoot = new G2Header(payload);
-                        if (payload != null && Protocol.ReadPacket(payloadRoot))
+                        G2Header payloadRoot = new G2Header(payloadNode.Data);
+                        if (payloadNode.Data != null && Protocol.ReadPacket(payloadRoot))
                         {
                             name = payloadRoot.Name.ToString() + " : " + GetVariableName(typeof(NetworkPacket), payloadRoot.Name);
                             TreeNode netNode = payloadNode.Nodes.Add(name);
 
                             if (G2Protocol.ReadPayload(payloadRoot))
-                                netNode.Nodes.Add(Utilities.BytestoHex(payloadRoot.Data, payloadRoot.PayloadPos, payloadRoot.PayloadSize, true));
+                                netNode.Nodes.Add(new DataNode(payloadRoot.Data, payloadRoot.PayloadPos, payloadRoot.PayloadSize));
                             G2Protocol.ResetPacket(payloadRoot);
 
                             Type packetType = null;
@@ -560,7 +559,7 @@ namespace RiseOp.Interface.Tools
 				if(G2Protocol.ReadPayload(child))
 				{
 					//childNode.Nodes.Add( "Payload Ascii: " + Utilities.BytestoAscii(childPacket.Data, childPacket.PayloadPos, childPacket.PayloadSize));
-					childNode.Nodes.Add(Utilities.BytestoHex(child.Data, child.PayloadPos, child.PayloadSize, true));
+					childNode.Nodes.Add(new DataNode(child.Data, child.PayloadPos, child.PayloadSize));
 				}
 
 				G2Protocol.ResetPacket(child);
@@ -637,7 +636,96 @@ namespace RiseOp.Interface.Tools
                     AddListItem(logEntry);
         }
 
+        private void TreeViewPacket_MouseClick(object sender, MouseEventArgs e)
+        {
+            TreeNode item = TreeViewPacket.GetNodeAt(e.Location);
+
+            if (item == null)
+                return;
+
+            TreeViewPacket.SelectedNode = item;
+
+            DataNode node = item as DataNode;
+
+            if (node == null || e.Button != MouseButtons.Right)
+                return;
+
+            ContextMenu menu = new ContextMenu();
+
+            if(node.Data.Length == 8)
+                menu.MenuItems.Add("To Binary", new EventHandler(Menu_ToBinary));
+
+            if (node.Data.Length == 8 || node.Data.Length == 4 || node.Data.Length == 2 || node.Data.Length == 1)
+                menu.MenuItems.Add("To Decimal", new EventHandler(Menu_ToDecimal));
+            
+            menu.MenuItems.Add("To Hex", new EventHandler(Menu_ToHex));
+
+            if (node.Data.Length == 4)
+                menu.MenuItems.Add("To IP", new EventHandler(Menu_ToIP));
+
+            menu.Show(TreeViewPacket, e.Location);
+        }
+
+        private void Menu_ToBinary(object sender, EventArgs e)
+        {
+            DataNode node = TreeViewPacket.SelectedNode as DataNode;
+
+            if (node == null)
+                return;
+
+            if (node.Data.Length == 8)
+                node.Text = Utilities.IDtoBin(BitConverter.ToUInt64(node.Data, 0));
+        }
+
+        private void Menu_ToDecimal(object sender, EventArgs e)
+        {
+            DataNode node = TreeViewPacket.SelectedNode as DataNode;
+
+            if (node == null)
+                return;
+
+            if (node.Data.Length == 8)
+                node.Text = BitConverter.ToUInt64(node.Data, 0).ToString();
+            if (node.Data.Length == 4)
+                node.Text = BitConverter.ToUInt32(node.Data, 0).ToString();
+            if (node.Data.Length == 2)
+                node.Text = BitConverter.ToUInt16(node.Data, 0).ToString();
+            if (node.Data.Length == 1)
+                node.Text = node.Data[0].ToString();
+        }
+
+        private void Menu_ToHex(object sender, EventArgs e)
+        {
+            DataNode node = TreeViewPacket.SelectedNode as DataNode;
+
+            if (node == null)
+                return;
+
+            node.Text = Utilities.BytestoHex(node.Data, 0, node.Data.Length, true);
+        }
+
+        private void Menu_ToIP(object sender, EventArgs e)
+        {
+            DataNode node = TreeViewPacket.SelectedNode as DataNode;
+
+            if (node == null)
+                return;
+
+            if (node.Data.Length == 4)
+                node.Text = Utilities.BytestoIP(node.Data, 0).ToString();
+        }
 	}
+
+    internal class DataNode : TreeNode
+    {
+        internal byte[] Data;
+
+        internal DataNode(byte[] buffer, int pos, int length)
+            : base(Utilities.BytestoHex(buffer, pos, length, true))
+        {
+            Data = Utilities.ExtractBytes(buffer, pos, length);
+        }
+    }
 
 	
 	internal class PacketListViewItem : ListViewItem

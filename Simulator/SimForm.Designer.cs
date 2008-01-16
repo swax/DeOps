@@ -48,10 +48,14 @@ namespace RiseOp.Simulator
             this.LinkUpdate = new System.Windows.Forms.LinkLabel();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.FileMenu = new System.Windows.Forms.ToolStripMenuItem();
+            this.GenerateUsersMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.LoadMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.SaveMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.ExitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.OptionsMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.SpeedMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ViewMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.ButtonStep = new System.Windows.Forms.Button();
             this.TimeLabel = new System.Windows.Forms.Label();
@@ -62,8 +66,7 @@ namespace RiseOp.Simulator
             this.label6 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.LoadProgress = new System.Windows.Forms.ProgressBar();
-            this.GenerateUsersMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
+            this.FreshStartMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -195,6 +198,7 @@ namespace RiseOp.Simulator
             // 
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.FileMenu,
+            this.OptionsMenuItem,
             this.ViewMenu});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
@@ -206,15 +210,27 @@ namespace RiseOp.Simulator
             // FileMenu
             // 
             this.FileMenu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.GenerateUsersMenuItem,
-            this.toolStripMenuItem2,
             this.LoadMenuItem,
             this.SaveMenuItem,
             this.toolStripMenuItem1,
+            this.GenerateUsersMenuItem,
+            this.toolStripMenuItem2,
             this.ExitMenuItem});
             this.FileMenu.Name = "FileMenu";
             this.FileMenu.Size = new System.Drawing.Size(35, 20);
             this.FileMenu.Text = "File";
+            // 
+            // GenerateUsersMenuItem
+            // 
+            this.GenerateUsersMenuItem.Name = "GenerateUsersMenuItem";
+            this.GenerateUsersMenuItem.Size = new System.Drawing.Size(160, 22);
+            this.GenerateUsersMenuItem.Text = "Generate Users";
+            this.GenerateUsersMenuItem.Click += new System.EventHandler(this.GenerateUsersMenuItem_Click);
+            // 
+            // toolStripMenuItem2
+            // 
+            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(157, 6);
             // 
             // LoadMenuItem
             // 
@@ -241,6 +257,23 @@ namespace RiseOp.Simulator
             this.ExitMenuItem.Size = new System.Drawing.Size(160, 22);
             this.ExitMenuItem.Text = "Exit";
             this.ExitMenuItem.Click += new System.EventHandler(this.ExitMenuItem_Click);
+            // 
+            // OptionsMenuItem
+            // 
+            this.OptionsMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.FreshStartMenuItem,
+            this.SpeedMenuItem});
+            this.OptionsMenuItem.Name = "OptionsMenuItem";
+            this.OptionsMenuItem.Size = new System.Drawing.Size(56, 20);
+            this.OptionsMenuItem.Text = "Options";
+            this.OptionsMenuItem.DropDownOpening += new System.EventHandler(this.OptionsMenuItem_DropDownOpening);
+            // 
+            // SpeedMenuItem
+            // 
+            this.SpeedMenuItem.Name = "SpeedMenuItem";
+            this.SpeedMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.SpeedMenuItem.Text = "Speed";
+            this.SpeedMenuItem.Click += new System.EventHandler(this.SpeedMenuItem_Click);
             // 
             // ViewMenu
             // 
@@ -303,12 +336,12 @@ namespace RiseOp.Simulator
             this.label5.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label5.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.label5.Location = new System.Drawing.Point(9, 35);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(528, 13);
             this.label5.TabIndex = 15;
-            this.label5.Text = "This is a limited alpha not to be distributed without permission of John Marshall" +
-                " Group";
+            this.label5.Text = "Limited Alpha NOT to be distributed without permission of Swax Research";
             this.label5.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // label6
@@ -317,10 +350,9 @@ namespace RiseOp.Simulator
             this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label6.Location = new System.Drawing.Point(12, 153);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(398, 13);
+            this.label6.Size = new System.Drawing.Size(261, 13);
             this.label6.TabIndex = 16;
-            this.label6.Text = "Click start then right-click on an instance and select Main to switch into its in" +
-                "terface";
+            this.label6.Text = "Double-click on an instance to switch into its interface";
             // 
             // groupBox1
             // 
@@ -350,17 +382,12 @@ namespace RiseOp.Simulator
             this.LoadProgress.TabIndex = 18;
             this.LoadProgress.Visible = false;
             // 
-            // GenerateUsersMenuItem
+            // FreshStartMenuItem
             // 
-            this.GenerateUsersMenuItem.Name = "GenerateUsersMenuItem";
-            this.GenerateUsersMenuItem.Size = new System.Drawing.Size(160, 22);
-            this.GenerateUsersMenuItem.Text = "Generate Users";
-            this.GenerateUsersMenuItem.Click += new System.EventHandler(this.GenerateUsersMenuItem_Click);
-            // 
-            // toolStripMenuItem2
-            // 
-            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(157, 6);
+            this.FreshStartMenuItem.Name = "FreshStartMenuItem";
+            this.FreshStartMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.FreshStartMenuItem.Text = "Fresh Start";
+            this.FreshStartMenuItem.Click += new System.EventHandler(this.FreshStartMenuItem_Click);
             // 
             // SimForm
             // 
@@ -427,5 +454,8 @@ namespace RiseOp.Simulator
         private System.Windows.Forms.ProgressBar LoadProgress;
         private System.Windows.Forms.ToolStripMenuItem GenerateUsersMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
+        private System.Windows.Forms.ToolStripMenuItem OptionsMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem SpeedMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem FreshStartMenuItem;
     }
 }

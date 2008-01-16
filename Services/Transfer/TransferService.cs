@@ -282,29 +282,23 @@ namespace RiseOp.Services.Transfer
                 active[session.DhtID] = true;
         }
 
-        List<byte[]> Search_Local(ulong key, byte[] parameters)
+        void Search_Local(ulong key, byte[] parameters, List<byte[]> results)
         {
             if (parameters == null)
             {
                 Core.OperationNet.UpdateLog("Transfers", "Search Recieved with null parameters");
-                return null;
+                return;
             }
 
             FileDetails details = FileDetails.Decode(Core.Protocol, parameters);
 
             if (details == null || Core.Locations.LocalLocation == null)
-                return null;
+                return;
 
             // reply with loc info if a component has the file
             if(FileSearch.Contains(details.Service, details.DataType))
                 if (FileSearch[details.Service, details.DataType].Invoke(key, details))
-                {
-                    List<Byte[]> results = new List<byte[]>();
                     results.Add(Core.Locations.LocalLocation.Data.Encode(Core.Protocol));
-                    return results;
-                }
-
-            return null;
         }
 
         void EndSearch(DhtSearch search)

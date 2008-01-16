@@ -462,24 +462,18 @@ namespace RiseOp.Services.Location
             }
         }
 
-        List<byte[]> GlobalSearch_Local(ulong key, byte[] parameters)
+        void GlobalSearch_Local(ulong key, byte[] parameters, List<byte[]> results)
         {
-            List<Byte[]> results = new List<byte[]>();
-
             GlobalIndex.LockReading(delegate()
             {
                 if (GlobalIndex.ContainsKey(key))
                     foreach (CryptLoc loc in GlobalIndex[key])
                         results.Add(loc.Data);
             });
-
-            return results;
         }
 
-        List<byte[]> OperationSearch_Local(ulong key, byte[] parameters)
+        void OperationSearch_Local(ulong key, byte[] parameters, List<byte[]> results)
         {
-            List<Byte[]> results = new List<byte[]>();
-
             uint minVersion = BitConverter.ToUInt32(parameters, 0);
 
             List<ClientInfo> clients = GetClients(key);
@@ -487,8 +481,6 @@ namespace RiseOp.Services.Location
             foreach (ClientInfo info in clients)
                 if (info.Data.Version >= minVersion)
                     results.Add(info.SignedData);
-
-            return results;
         }
 
         void GlobalStore_Local(DataReq location)

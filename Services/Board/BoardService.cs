@@ -952,20 +952,18 @@ namespace RiseOp.Services.Board
                 Store_Local(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
         }
 
-        List<byte[]> Search_Local(ulong key, byte[] parameters)
+        void Search_Local(ulong key, byte[] parameters, List<byte[]> results)
         {
-            List<Byte[]> results = new List<byte[]>();
-
             OpBoard board = GetBoard(key);
 
             if (board == null || parameters == null)
-                return null;
+                return;
 
             // thread search
             if (parameters[0] == (byte)BoardSearch.Threads)
             {
                 if (parameters.Length < TheadSearch_ParamsSize)
-                    return null;
+                    return;
 
                 uint project = BitConverter.ToUInt32(parameters, 1);
                 uint parent = BitConverter.ToUInt32(parameters, 5);
@@ -991,7 +989,7 @@ namespace RiseOp.Services.Board
             else if (parameters[0] == (byte)BoardSearch.Time)
             {
                 if (parameters.Length < TimeSearch_ParamsSize)
-                    return null;
+                    return;
 
                 uint project = BitConverter.ToUInt32(parameters, 1);
                 DateTime time = DateTime.FromBinary(BitConverter.ToInt64(parameters, 5));
@@ -1014,7 +1012,7 @@ namespace RiseOp.Services.Board
             else if (parameters[0] == (byte)BoardSearch.Post)
             {
                 if (parameters.Length < PostSearch_ParamsSize)
-                    return null;
+                    return;
 
                 PostUID uid = PostUID.FromBytes(parameters, 1);
                 ushort version = BitConverter.ToUInt16(parameters, 17);
@@ -1024,8 +1022,6 @@ namespace RiseOp.Services.Board
                     if (post.Header.Version == version)
                         results.Add(post.SignedHeader);
             }
-
-            return results;
         }
 
         internal string GetPostInfo(OpPost post)

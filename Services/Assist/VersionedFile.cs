@@ -595,16 +595,14 @@ namespace RiseOp.Services.Assist
             }
 
             byte[] parameters = BitConverter.GetBytes(version);
-            DhtSearch search = Core.OperationNet.Searches.Start(key, "VersionedFile", Service, DataType, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Core.OperationNet.Searches.Start(key, Core.GetServiceName(Service), Service, DataType, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
         }
 
-        List<byte[]> Search_Local(ulong key, byte[] parameters)
+        void Search_Local(ulong key, byte[] parameters, List<byte[]> results)
         {
-            List<Byte[]> results = new List<byte[]>();
-
             uint minVersion = BitConverter.ToUInt32(parameters, 0);
 
             OpVersionedFile vfile = GetFile(key);
@@ -612,8 +610,6 @@ namespace RiseOp.Services.Assist
             if (vfile != null)
                 if (vfile.Header.Version >= minVersion)
                     results.Add(vfile.SignedHeader);
-
-            return results;
         }
 
         void EndSearch(DhtSearch search)

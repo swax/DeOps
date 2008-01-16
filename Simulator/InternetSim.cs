@@ -50,11 +50,11 @@ namespace RiseOp.Simulator
         internal bool   Shutdown;
         
         // settings
-        int SleepTime = 100; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
+        internal int SleepTime = 100; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
 
         bool RandomCache = true;
         internal bool TestEncryption = false;
-        internal bool FreshStart = true;
+        internal bool FreshStart = false;
         internal bool TestTcpFullBuffer = false;
         internal bool UseTimeFile = true;
         internal bool TestCoreThread = false; // sleepTime needs to be set with this so packets have time to process ayncronously

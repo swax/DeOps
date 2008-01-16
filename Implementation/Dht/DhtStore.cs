@@ -30,7 +30,7 @@ namespace RiseOp.Implementation.Dht
         internal ulong MaxDistance = ulong.MaxValue;
 
         internal ServiceEvent<StoreHandler> StoreEvent = new ServiceEvent<StoreHandler>();
-        internal ServiceEvent<ReplicateHandler> ReplicateEvent = new ServiceEvent<ReplicateHandler>();
+        internal ServiceEvent<ReplicateHandler> ReplicateEvent = new ServiceEvent<ReplicateHandler>(); // this event doesnt support overloading
         internal ServiceEvent<PatchHandler> PatchEvent = new ServiceEvent<PatchHandler>();
 
 
@@ -47,7 +47,8 @@ namespace RiseOp.Implementation.Dht
 
             string type = "Publish " + service.ToString();
 
-            DhtSearch search = Network.Searches.Start(target, type, service, datatype, data, new EndSearchHandler(EndPublishSearch));
+            // find users closest to publish target
+            DhtSearch search = Network.Searches.Start(target, type, 0, 0, null, new EndSearchHandler(EndPublishSearch));
             
             if(search != null)
                 search.Carry = new DataReq(null, target, service, datatype, data);
@@ -237,9 +238,9 @@ namespace RiseOp.Implementation.Dht
             foreach(ushort service in ReplicateEvent.HandlerMap.Keys)
                 foreach (ushort datatype in ReplicateEvent.HandlerMap[service].Keys)
                 {
-                    ReplicateData data = ReplicateEvent.HandlerMap[service][datatype].Invoke(contact, false);
+                    ReplicateData data = ReplicateEvent.HandlerMap[service][datatype].Invoke(contact, false); 
 
-                    if (data != null)
+                    if(data != null)
                         foreach (DhtContact target in data.TargetMap.Values)
                         {
                             if (!ContactMap.ContainsKey(target.DhtID))

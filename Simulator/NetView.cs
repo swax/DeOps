@@ -346,7 +346,7 @@ namespace RiseOp.Simulator
             {
                 foreach (SimPacket packet in Sim.OutPackets)
                     if (SelectedID == 0 || (!ShowInbound && SelectedID == packet.SenderID) || (ShowInbound && SelectedID == packet.Dest.Core.LocalDhtID))
-                        if ((packet.Dest.IsGlobal && OpID == 0) || (packet.Dest.Core.OpID == OpID))
+                        if ((packet.Dest.IsGlobal && OpID == 0) || (!packet.Dest.IsGlobal && packet.Dest.Core.OpID == OpID))
                         {
                             Dictionary<ulong, Dictionary<ulong, PacketGroup>> TrafficGroup = packet.Tcp != null ? TcpTraffic : UdpTraffic;
 
@@ -545,13 +545,6 @@ namespace RiseOp.Simulator
             return Legend.PicUnk.BackColor;
         }
 
-        private void FileMenu_Click(object sender, EventArgs e)
-        {
-            TrackFile form = new TrackFile(this);
-
-            form.Show(this);
-        }
-
         ulong CurrentTip;
 
         private void NetView_MouseMove(object sender, MouseEventArgs e)
@@ -589,6 +582,14 @@ namespace RiseOp.Simulator
             LegendForm form = new LegendForm();
 
             form.Show(this);
+        }
+
+        private void TrackMenuItem_Click(object sender, EventArgs e)
+        {
+            TrackFile form = new TrackFile(this);
+
+            form.Show(this);
+
         }
     }
 
