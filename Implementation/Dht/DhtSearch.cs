@@ -75,9 +75,7 @@ namespace RiseOp.Implementation.Dht
             }
 
 			// bootstrap search from routing
-            List<DhtContact> contactList = Network.Routing.Find(TargetID, 8);
-
-			foreach(DhtContact contact in contactList)
+			foreach(DhtContact contact in Network.Routing.Find(TargetID, 8))
 				Add(contact);
 
 			// if natted send request to proxies for fresh nodes

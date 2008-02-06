@@ -808,7 +808,6 @@ namespace RiseOp.Interface.Tools
             listValues.Items.Add(new ListViewItem(new string[] { "ProjectNames",    xStr(Core.Links.ProjectNames.SafeCount) }));
 
             listValues.Items.Add(new ListViewItem(new string[] { "LinkPath",        xStr(Core.Links.LinkPath) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "StructureKnown",  xStr(Core.Links.StructureKnown) }));
         }
 
         internal void ShowLinkMap(object pass)
@@ -1154,8 +1153,13 @@ namespace RiseOp.Interface.Tools
                     string project = Core.Links.GetProjectName(id);
                     string names = "";
 
-                    foreach (OpLink link in Core.Links.ProjectRoots[id])
-                        names += xStr(Core.Links.GetName(link.DhtID)) + ", ";
+                    ThreadedList<OpLink> roots = Core.Links.ProjectRoots[id];
+
+                    roots.LockReading(delegate()
+                    {
+                        foreach (OpLink link in roots)
+                            names += xStr(Core.Links.GetName(link.DhtID)) + ", ";
+                    });
 
                     listValues.Items.Add(new ListViewItem(new string[] { project, names }));
                 }

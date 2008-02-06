@@ -132,7 +132,7 @@ namespace RiseOp.Implementation.Transport
             // replicate
             if (Age == 15 && !Network.IsGlobal)
             {
-                Network.Store.Replicate(new DhtContact(this, RemoteIP, Core.TimeNow), true);
+                Network.Store.Replicate(new DhtContact(this, RemoteIP, Core.TimeNow));
             }
 
             // new global proxy

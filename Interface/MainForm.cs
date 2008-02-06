@@ -339,12 +339,12 @@ namespace RiseOp.Interface
 
             if (Core.GlobalNet == null)
                 global = "Disconnected";
-            else if (Core.GlobalNet.Routing.Responsive())
+            else if (Core.GlobalNet.Routing.Responsive)
                 global = "Connected";
             else
                 global = "Connecting";
 
-            if (Core.OperationNet.Routing.Responsive())
+            if (Core.OperationNet.Routing.Responsive)
                 operation = "Connected";
             else
                 operation = "Connecting";
@@ -464,11 +464,11 @@ namespace RiseOp.Interface
                 //    Mobile: Online, Local Time 2:30pm
                 //    Server: Last Seen 10/2/2007
 
+                bool online = false;
 
                  List<ClientInfo> clients = Core.Locations.GetClients(link.DhtID);
 
                 foreach (ClientInfo info in clients)
-                    if (info.Active)
                     {
                         string status = "";
 
@@ -482,11 +482,13 @@ namespace RiseOp.Interface
 
                         // last seen stuff here
 
+                        online = true;
                         locations.Add(new Tuple<string, string>(Core.Locations.GetLocationName(link.DhtID, info.ClientID), status));
                     }
 
 
-                if (locations.Count == 0 && clients.Count > 0)
+                //crit - get last update from localSync
+                /*if (locations.Count == 0)
                 {
                     ClientInfo latest = clients[0];
 
@@ -495,10 +497,9 @@ namespace RiseOp.Interface
                             latest = info;
 
                     locations.Add(new Tuple<string, string>("Last Seen", latest.Data.Date.ToLocalTime().ToString()));
-                }
+                }*/
 
-
-                content = GenerateContent(tuples, locations);
+                content = GenerateContent(tuples, locations, online);
             }
 
             // display
@@ -521,7 +522,7 @@ namespace RiseOp.Interface
             }
         }
 
-        string GenerateContent(List<Tuple<string, string>> tuples, List<Tuple<string, string>> locations)
+        string GenerateContent(List<Tuple<string, string>> tuples, List<Tuple<string, string>> locations, bool online)
         {
             string content = "<table callpadding=3>  ";
 
@@ -532,7 +533,7 @@ namespace RiseOp.Interface
                 return content + "</table>";
 
             // locations
-            string ifonline = locations.Count > 0 ? "Locations" : "Offline";
+            string ifonline = online ? "Locations" : "Offline";
 
             content += "<tr><td colspan=2><p><b>" + ifonline + "</b><br>";
             foreach (Tuple<string, string> tuple in locations)

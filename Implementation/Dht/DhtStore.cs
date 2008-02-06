@@ -17,8 +17,8 @@ using RiseOp.Services.Location;
 namespace RiseOp.Implementation.Dht
 {
     internal delegate void StoreHandler(DataReq data);
-    internal delegate ReplicateData ReplicateHandler(DhtContact contact, bool add);
-    internal delegate void PatchHandler(DhtAddress source, ulong distance, byte[] data);
+    internal delegate List<byte[]> ReplicateHandler(DhtContact contact);
+    internal delegate void PatchHandler(DhtAddress source, byte[] data);
 
     internal class DhtStore
     {
@@ -27,7 +27,7 @@ namespace RiseOp.Implementation.Dht
         DhtNetwork Network; 
         
         //crit - if middle bucket had one entry would it still be replicated to? maybe should not use maxdistance
-        internal ulong MaxDistance = ulong.MaxValue;
+        //internal ulong MaxDistance = ulong.MaxValue;
 
         internal ServiceEvent<StoreHandler> StoreEvent = new ServiceEvent<StoreHandler>();
         internal ServiceEvent<ReplicateHandler> ReplicateEvent = new ServiceEvent<ReplicateHandler>(); // this event doesnt support overloading
@@ -47,11 +47,21 @@ namespace RiseOp.Implementation.Dht
 
             string type = "Publish " + service.ToString();
 
+            DataReq store = new DataReq(null, target, service, datatype, data);
+
             // find users closest to publish target
-            DhtSearch search = Network.Searches.Start(target, type, 0, 0, null, new EndSearchHandler(EndPublishSearch));
-            
-            if(search != null)
-                search.Carry = new DataReq(null, target, service, datatype, data);
+            if (target == Core.LocalDhtID)
+            {
+                foreach (DhtContact closest in Network.Routing.GetCacheArea())
+                    Send_StoreReq(closest.ToDhtAddress(), 0, store);
+            }
+            else
+            {
+                DhtSearch search = Network.Searches.Start(target, type, 0, 0, null, new EndSearchHandler(EndPublishSearch));
+
+                if (search != null)
+                    search.Carry = store;
+            }
         }
 
         void EndPublishSearch(DhtSearch search)
@@ -159,9 +169,11 @@ namespace RiseOp.Implementation.Dht
                 StoreEvent[store.Service, store.DataType].Invoke(data);
         }
 
-        internal bool IsCached(ulong id)
+        /*internal bool IsCached(ulong id)
         {
             return (id ^ Core.LocalDhtID) < MaxDistance;
+
+            // 1 up higher bucket might have a lot more than 16 nodes on network, do we really want to replicate to all of them??
         }
 
         internal void RoutingUpdate(int depth)
@@ -183,7 +195,7 @@ namespace RiseOp.Implementation.Dht
 
         internal void RoutingAdd(DhtContact contact)
         {
-            /* This will need to be re-analyzed, there are 2 ways to patch per node, and per key.
+            * This will need to be re-analyzed, there are 2 ways to patch per node, and per key.
              * Per Key: Foreach key, find the 8 closest nodes, if this added node is one of the closest, include data
              * associated with key in the patch.
              * Per Node: Find the closest 8 nodes to the new contact, make the furthest nodes id the max bounds
@@ -195,7 +207,7 @@ namespace RiseOp.Implementation.Dht
              *
              * figure out how to dynamically find 8 closest nodes to each key in caches shouldreplicate()? 
              *
-             */
+             *
 
             // dont replicate to nodes outside our max caching bounds
             if ((contact.DhtID ^ Core.LocalDhtID) > MaxDistance)
@@ -215,18 +227,17 @@ namespace RiseOp.Implementation.Dht
 
 
             Replicate(contact, false);
-        }
+        }*/
 
-        internal void Replicate(DhtContact contact, bool add)
+        internal void Replicate(DhtContact contact)
         {
-            /* tricky stuff, for add or delete first new bounds are set
-             * for an add patch info is sent to the added contact
-             * for a delete patch info is sent to multiple targets that where close to the deleted
-             *    targets depend on the specific key of the specific data
-             */
+            // when new user comes into our cache area, we send them the data we have in our high/low/xor bounds
 
-            Dictionary<ulong, DhtContact> ContactMap = new Dictionary<ulong, DhtContact>();
-            Dictionary<ulong, Dictionary<uint, List<byte[]>>> DataMap = new Dictionary<ulong, Dictionary<uint, List<byte[]>>>();
+            // replicate is only for cached area
+            // for remote user stuff that loads up with client, but now out of bounds, it is
+            // republished by the uniqe modifier on data
+
+            Dictionary<uint, List<byte[]>> DataMap = new Dictionary<uint, List<byte[]>>();
 
             // get data that needs to be replicated from components
             // structure as so
@@ -235,22 +246,13 @@ namespace RiseOp.Implementation.Dht
             //              datatype []
             //                  patch data []
 
-            foreach(ushort service in ReplicateEvent.HandlerMap.Keys)
+            foreach (ushort service in ReplicateEvent.HandlerMap.Keys)
                 foreach (ushort datatype in ReplicateEvent.HandlerMap[service].Keys)
                 {
-                    ReplicateData data = ReplicateEvent.HandlerMap[service][datatype].Invoke(contact, false); 
+                    List<byte[]> data = ReplicateEvent.HandlerMap[service][datatype].Invoke(contact);
 
-                    if(data != null)
-                        foreach (DhtContact target in data.TargetMap.Values)
-                        {
-                            if (!ContactMap.ContainsKey(target.DhtID))
-                                ContactMap[target.DhtID] = target;
-
-                            if (!DataMap.ContainsKey(target.DhtID))
-                                DataMap[target.DhtID] = new Dictionary<uint, List<byte[]>>();
-
-                            DataMap[target.DhtID][(uint)((service << 16) + datatype) ] = data.GetTargetData(target.DhtID);
-                        }
+                    if (data != null)
+                        DataMap[(uint)((service << 16) + datatype)] = data;
                 }
 
             ulong proxyID = 0;
@@ -258,42 +260,39 @@ namespace RiseOp.Implementation.Dht
                 if (Network.TcpControl.ConnectionMap[contact.DhtID].ClientID == contact.ClientID)
                     proxyID = contact.DhtID;
 
-            foreach (ulong id in DataMap.Keys)
+
+
+            PatchPacket packet = new PatchPacket();
+
+            int totalSize = 0;
+
+            foreach (uint serviceData in DataMap.Keys)
             {
-                PatchPacket packet = new PatchPacket();
+                List<byte[]> list = DataMap[serviceData];
 
-                int totalSize = 0;
-
-                foreach (uint serviceData in DataMap[id].Keys)
+                foreach (byte[] data in list)
                 {
-                    List<byte[]> list = DataMap[id][serviceData];
-
-                    foreach (byte[] data in list)
+                    if (data.Length + totalSize > 1200)
                     {
-                        if (data.Length + totalSize > 1200)
-                        {
-                            if (packet.PatchData.Count > 0)
-                                Send_StoreReq(ContactMap[id].ToDhtAddress(), proxyID, new DataReq(null, id, 0, 0, packet.Encode(Core.Protocol)));
+                        if (packet.PatchData.Count > 0)
+                            Send_StoreReq(contact.ToDhtAddress(), proxyID, new DataReq(null, contact.DhtID, 0, 0, packet.Encode(Core.Protocol)));
 
-                            packet.PatchData.Clear();
-                            totalSize = 0;
-                        }
-
-                        packet.PatchData.Add(new Tuple<uint, byte[]>(serviceData, data));
-                        totalSize += data.Length;
+                        packet.PatchData.Clear();
+                        totalSize = 0;
                     }
-                }
 
-                if (packet.PatchData.Count > 0)
-                    Send_StoreReq(ContactMap[id].ToDhtAddress(), proxyID, new DataReq(null, id, 0, 0, packet.Encode(Core.Protocol)));
+                    packet.PatchData.Add(new Tuple<uint, byte[]>(serviceData, data));
+                    totalSize += data.Length;
+                }
             }
+
+            if (packet.PatchData.Count > 0)
+                Send_StoreReq(contact.ToDhtAddress(), proxyID, new DataReq(null, contact.DhtID, 0, 0, packet.Encode(Core.Protocol)));
+
         }
 
         private void Receive_Patch(DhtAddress source, byte[] data)
         {
-            // get max distance
-            ulong localBounds = RecalcBounds(Core.LocalDhtID);
-
             // invoke patch
             G2Header root = new G2Header(data);
 
@@ -311,111 +310,9 @@ namespace RiseOp.Implementation.Dht
                         ushort datatype = (ushort) (pair.First & 0x00FF);
 
                         if (PatchEvent.Contains(service, datatype))
-                            PatchEvent[service, datatype].Invoke(source, localBounds, pair.Second);
+                            PatchEvent[service, datatype].Invoke(source, pair.Second);
                     }
                 }
-        }
-
-        internal ulong RecalcBounds(ulong id)
-        {
-            List<DhtContact> closest = Network.Routing.Find(id, 8);
-
-            if (closest.Count < 8)
-                return ulong.MaxValue;
-
-            return closest[7].DhtID ^ id;
-        }
-
-        internal ulong RecalcBounds(ulong id, bool add, ref DhtContact contact)
-        {
-            List<DhtContact> closest = Network.Routing.Find(id, 8);
-
-            // add false means caller is re-calcing from contact delete operation, return next closest contact
-
-            if (closest.Count < 8)
-            {
-                if (!add)
-                    contact = null;
-
-                return ulong.MaxValue;
-            }
-
-            if (!add)
-                contact = closest[7];
-
-            return closest[7].DhtID ^ id;
-        }
-    }
-
-    internal class ReplicateData
-    {
-        int MaxSize = 1024;
-        int EntrySize;
-
-        internal Dictionary<ulong, DhtContact> TargetMap = new Dictionary<ulong,DhtContact>();
-        internal Dictionary<ulong, List<byte[]>> Patches = new Dictionary<ulong, List<byte[]>>();
-        internal Dictionary<ulong, int> Offsets = new Dictionary<ulong, int>();
-
-
-        internal ReplicateData(int entrySize)
-        {
-            MaxSize = MaxSize - (MaxSize % entrySize);
-            EntrySize = entrySize;
-        }
-
-        internal void Add(DhtContact target, byte[] data)
-        {
-            ulong id = target.DhtID;
-
-            if (data.Length != EntrySize)
-                throw new Exception("Data added to replication patch is not correct size " + data.Length.ToString() + " vs " + EntrySize.ToString());
-
-            if (!TargetMap.ContainsKey(id))
-                TargetMap[id] = target;
-
-            // get patch for contact
-            if (!Patches.ContainsKey(id))
-            {
-                Patches[id] = new List<byte[]>();
-                Patches[id].Add(new byte[MaxSize]);
-            }
-
-            if (!Offsets.ContainsKey(id))
-                Offsets[id] = 0;
-            
-            // add data to contact's data list
-            List<byte[]> DataList = Patches[id];
-            int offset = Offsets[id];
-
-            data.CopyTo(DataList[DataList.Count - 1], offset);
-            Offsets[id] = offset + EntrySize; // patch value is offset
-
-            // if max reached create new data entry
-            if (offset == MaxSize)
-            {
-                DataList.Add(new byte[MaxSize]);
-                Offsets[id] = 0;
-            }
-        }
-
-        internal List<byte[]> GetTargetData(ulong id)
-        {
-            if (!Patches.ContainsKey(id))
-                throw new Exception("Target not found in patch map");
-
-            List<byte[]> source = Patches[id];
-            List<byte[]> final = new List<byte[]>();
-
-            for (int i = 0; i < source.Count; i++)
-                // if not last entry
-                if (i != source.Count - 1)
-                    final.Add(source[i]);
-   
-                // if last have to extract from offset
-                else
-                    final.Add(Utilities.ExtractBytes(source[i], 0, Offsets[id]));
-
-            return final;
         }
     }
 

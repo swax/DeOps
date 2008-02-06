@@ -167,8 +167,7 @@ namespace RiseOp.Services.IM
             }
 
             foreach (ClientInfo loc in Core.Locations.GetClients(key))
-                if(loc.Active)
-                    Core.RudpControl.Connect(loc.Data);
+                Core.RudpControl.Connect(loc.Data);
 
             Update(status);
         }

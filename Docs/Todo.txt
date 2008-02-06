@@ -1,33 +1,89 @@
 
-scale to test32
-comm map overloaded
-focused on entire untrusted network - max 16, 32 in release
-in sim us global publicKey cache
-researchmap in trust's verioned file maxxed
-download / transfer map high as well
+create localsync service
 
-64 client test, all unorganized, investigate how many links / locations are found on network
-	basic network startup, tracking searches, make sure things are found
-	not all should be found
-	doing an instant message to someone we know, but they dont know us should resolve ourselves
-	test linkups
-	ensure location -> service updates causing good refreshes with tags
+	when user comes online because local user in local neighborhood to sync
+		use routing add, if master exists check that we have latest
+		check if we have his master file cached, check if we have all the latest versions specified in that master file
+		network shrinking handle event telling us removed user, check we have files of next closest
+	ensure that as network expands / collapses versioned files get replicated through local sync
+		use routing update to check if latest version cached, dont check too quickly on network startup though
+	if versioned file signalled to replicate node, that is also signal to get node's latest files to cache		
+	ensure that sync files are being patch/replicated over network, track them
+
+	
+	
+menu option to bring on/off line x users at staggered rate - test/monitor replication as net grows/shrinks, chat room untrusted/livee
+
+
+interface click on node, plot cache area as lines on chart
+use last seen date in localSync - show day, not time
+alert user of desyncs detected in localSync, maybe as news alert,
+	if local versions are newer than those specified in localSync
+rename versionedcache in svn
+
+turn packet/error logging back on after tests - ensure mem usage at mim - let user right click turn logging on/off
+
+
+test
+	location tag reports localSync version
+	replication/patch only in localSync
+	localSync gets tags from other components
+	local publish uses nodes directly from routing
+	routing add/remove high/low/xor
+	20 clients same ID, check buckets, high/low/xor, reflection
+	replication / patching, track area
+		when node removed, closest is replicated to
+		when node added, cache space tightens
+			on patch - if in cache area, cache it
+			on replicate 
+				new node (grow) - send patch of files in cache area
+				node remove (shrink) - get new cache area, send files to nodes that were previously outside of it
+				send all cached files in our area, dont recalc for specific node, let them decide what to take
+			cache area
+				use routing.InCacheArea(user)
+	test network with all nodes in same section of network, ensure appropriate routing tables created
+	check no dupes being added to high/low contact lists
+	check SetResponsive is called once on connect and once on disconnect
+	check statusChange is called for connectioned/disconnected, and that caches are set back to unique an republished
+	
+	
+32 clients, 10 sim minutes, no services loaded, fresh start, avg memory
+	debug : 265mb
+	release: 265mb
+	debug - logging off - 
+		170mb constant without large increases/crashes GC'd down to 60mb
+		same with 64 clients GC'd to 120mb
+	debug - global cache
+	**each rudp session/sock is around 150kb overhead, get that doooown 64x64 clients interconnect = 600mb
 	
 
+test effect additional services have on mem usage
+turn on IM - doing an instant message to someone we know, but they dont know us should resolve ourselves
+turn on chat - limit untrusted chat focus
+test linkups
+ensure location -> service updates causing good refreshes with tags
+location signoff tag
+
+ensure search for lastest version of service doesnt get hung up on old versions and return prematurely
 
 
-nav bar work with loops?
-investigate flexible 'smart byte'
-	
-
-board - All/Higher/Lower Posts, New Post
 live command tree/chat
 	ensure when random subset of nodes removed all links still connected through live
 
-test clients with different local times, init random gmt offsets
+test - isolating node from network, 
+	having it detect its not connected
+	debug places where searches etc.. are happening, when client knows its not connected
+
 network established can be called multiple times when re-connecting
 	investigate what happens, ensure locations are researched
-	
+nav bar work with loops?
+investigate flexible 'smart byte'
+fix vertical scroll bar in link/chat window once and for all
+board - All/Higher/Lower Posts, New Post
+test clients with different local times, init random gmt offsets
+
+
+
 Testing
 	more accurate replication - link/location/profile/mail
 	check that data is cachced 8 closest to ID, record cached link files in sim interface
@@ -53,7 +109,10 @@ spring release
 	mobile - proxy mode can be set and tested in normal version
 	mono
 	open source compensation model using credits
-
+	
+	how to run process on web server? need to figure out how to use them for own purpose
+	web node people can put on site as a permanent cache
+	global web nodes ;)
 
 Interface
 	General
@@ -168,6 +227,7 @@ Components
 	Board 
 		 board scope sub-levels down, auto search highers for posts that have source==target, and show if in scope
 		 attaching files
+		 detect if post success, if not (not connected) ensure re-post when network.established
 		 ***posts/replies not updating quickly or at all :(
 		 *** use high/low check buttons, not a drop down
 		 
@@ -260,6 +320,12 @@ Core
 
 
 	store caching 
+		keep track of when last result was sent
+			if greater than a minute, cache entry is up for pruning
+		
+		if greater than x requests in time period, signal in search result to republish
+			if search result tagged with republish, republish result at closest node that didnt have data
+	
 		used when high load
 		how to keep cache entries up to date?
 		cache entries only last for like 5 mins
@@ -305,7 +371,6 @@ quick
 	test with null global, even have option for secret at this point?
 	ensure callers know what to do when tcpcontrol.sendpacket is overloaded
 	bandwidth chart
-	subclass collections, create auto locked collections
 	use localfilekey for all file names so name diff per computer
 	finish self search and then start bucket replication so startup doesnt spit out massive patches
 	component dir also encoded with local key / trimmed to 8 chars
@@ -435,6 +500,9 @@ Future
 			if mobile user had a camera phone then highers could see what the user sees - live reporting
 			pipes - user could temporarily grant access to others devices
 				ex. higher views camera of lower, and gives access to all his lowers so everyone can see
+			In an office environment people could share printers for example 
+				have them accessible throughout the network
+				because devices are directly tied to a person there is always someone responsible to talk to (distributed support)
 		
 		security
 			keeps dns resolved list of online contacts

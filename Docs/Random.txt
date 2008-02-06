@@ -14,6 +14,19 @@ motivation
 	working on dream project, no one else involved, doing my own thing
     emergent behavior arises for tightly connected, communicating objects in a space
 		how tight, how connected do people need to be before something really cool emerges?
+	
+	goal is to expand quickly in all directions with no bounaries
+		system is NOW built for large scale coordiation, can now be used on RiseOp itself to drive development while retaining full direction
+			licenensed source
+				+allow re-distribution / sale as long as person has license 
+				dont want to sale by major point release, want to ensure continual upgrade process
+				how to compensate devs fairly?
+					definite salary employees for highest echelons
+					very lax credit pool for contributions, that can be given out freely, traded, exchanged by anyone
+			full open source
+				+avoid problems of patches going in multiple directions and who owns them
+				---clone / rip-off companies turning profit on our labor
+		
 
 
 selling points
@@ -88,6 +101,9 @@ selling points
 		
 	The difference between rich and poor countries boil down to the sophistication of the coordiation and trust structures
 		http://www.slate.com/id/2174706/fr/flyout
+	
+	Distributed Office System - No one has a good answer that doesnt require big IT investment
+		http://ask.slashdot.org/article.pl?sid=08/01/21/2032241&from=rss
 	
 	Andy Tanenbaum: The problem is co-ordinating things. Projects like GNU, MINIX, or LINUX only hold together if one person is in charge. 
 	Linus Torvalds: Yes, coordination is a big problem, and I don't think linux will move away from me as "head surgeon" for some time..
@@ -196,6 +212,11 @@ Scenarios
 	
 	help desk - database with outstanding computers to help
 		customer input / query interfaces
+		
+	religious groups spread out around the world 
+		in places with only cellphone or very limited infrastructure (works fine offline, online instant sync)
+		can help, assist, report, provide charity, etc.. with complete support wherever they are
+		great example of IT infrastructure with the manual labor / capitol investment
 
 		
 star trek - ever member has a 'console' black surface

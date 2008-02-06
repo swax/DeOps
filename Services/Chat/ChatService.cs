@@ -165,9 +165,9 @@ namespace RiseOp.Services.Chat
                             JoinCommand(project, RoomKind.Live_High);
                             JoinCommand(project, RoomKind.Live_Low);
 
-                            RoomMap.SafeAdd(GetRoomID(project, RoomKind.Untrusted), new ChatRoom(RoomKind.Untrusted, project, ""));
-                            if(uplink == null && downlinks.Count == 0)
-                                JoinCommand(project, RoomKind.Untrusted);
+                            //RoomMap.SafeAdd(GetRoomID(project, RoomKind.Untrusted), new ChatRoom(RoomKind.Untrusted, project, ""));
+                            //if(uplink == null && downlinks.Count == 0)
+                            //    JoinCommand(project, RoomKind.Untrusted);
      
                         }
 
@@ -303,8 +303,7 @@ namespace RiseOp.Services.Chat
                 foreach (ulong key in room.Members.Keys)
                 {
                     foreach (ClientInfo info in Core.Locations.GetClients(key))
-                        if (info.Active)
-                            Core.RudpControl.Connect(info.Data);
+                        Core.RudpControl.Connect(info.Data);
 
                     if (Links.GetTrust(key) != null)
                         Links.Research(key, 0, false);
@@ -400,14 +399,17 @@ namespace RiseOp.Services.Chat
             {
                 // don't remove connections that are no longer in untrusted group
 
-                List<OpLink> roots = null;
+                ThreadedList<OpLink> roots = null;
                 if (Links.ProjectRoots.SafeTryGetValue(room.ProjectID, out roots))
-                    foreach (OpLink root in roots)
-                        if (root.GetLowers(true).Count == 0 &&
-                            !room.Members.SafeContainsKey(root.DhtID))
-                        {
-                            room.Members.SafeAdd(root.DhtID, new ThreadedList<ushort>());
-                        }
+                    roots.LockReading(delegate()
+                    {
+                        foreach (OpLink root in roots)
+                            if (root.GetLowers(true).Count == 0 &&
+                                !room.Members.SafeContainsKey(root.DhtID))
+                            {
+                                room.Members.SafeAdd(root.DhtID, new ThreadedList<ushort>());
+                            }
+                    });
             }
 
             // update dispaly that members has been refreshed
@@ -779,8 +781,7 @@ namespace RiseOp.Services.Chat
 
             // try to conncet to all of id's locations
             foreach (ClientInfo loc in Core.Locations.GetClients(id))
-                if(loc.Active)
-                    Core.RudpControl.Connect(loc.Data);
+                Core.RudpControl.Connect(loc.Data);
 
             // send invite to already connected locations
             foreach (RudpSession session in Core.RudpControl.GetActiveSessions(id))

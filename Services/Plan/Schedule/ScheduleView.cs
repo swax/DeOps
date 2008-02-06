@@ -298,42 +298,45 @@ namespace RiseOp.Services.Plan
 
      
             // nodes
-            List<OpLink> roots = null;
+            ThreadedList<OpLink> roots = null;
             if (Links.ProjectRoots.SafeTryGetValue(ProjectID, out roots))
-                foreach (OpLink root in roots)
+                roots.LockReading(delegate()
                 {
-                    if (Uplinks.Contains(root.DhtID))
+                    foreach (OpLink root in roots)
                     {
-                        PlanNode node = CreateNode(root);
+                        if (Uplinks.Contains(root.DhtID))
+                        {
+                            PlanNode node = CreateNode(root);
 
-                        Plans.Research(root.DhtID);
+                            Plans.Research(root.DhtID);
 
-                        LoadNode(node);
+                            LoadNode(node);
 
-                        Utilities.InsertSubNode(PlanStructure.virtualParent, node);
+                            Utilities.InsertSubNode(PlanStructure.virtualParent, node);
 
-                        ExpandPath(node, Uplinks);
+                            ExpandPath(node, Uplinks);
+                        }
+
+                        if (root.IsLoopRoot &&
+                            root.Downlinks.Count > 0 &&
+                            Uplinks.Contains(root.Downlinks[0].DhtID))
+                        {
+                            foreach (OpLink downlink in root.Downlinks)
+                                if (!root.IsLoopedTo(downlink))
+                                {
+                                    PlanNode node = CreateNode(downlink);
+
+                                    Plans.Research(downlink.DhtID);
+
+                                    LoadNode(node);
+
+                                    Utilities.InsertSubNode(PlanStructure.virtualParent, node);
+
+                                    ExpandPath(node, Uplinks);
+                                }
+                        }
                     }
-
-                    if (root.IsLoopRoot && 
-                        root.Downlinks.Count > 0 && 
-                        Uplinks.Contains(root.Downlinks[0].DhtID))
-                    {
-                        foreach(OpLink downlink in root.Downlinks)
-                            if (!root.IsLoopedTo(downlink))
-                            {
-                                PlanNode node = CreateNode(downlink);
-
-                                Plans.Research(downlink.DhtID);
-
-                                LoadNode(node);
-
-                                Utilities.InsertSubNode(PlanStructure.virtualParent, node);
-
-                                ExpandPath(node, Uplinks);
-                            }
-                    }
-                }
+                });
 
             // restore visible
             foreach (ulong id in visible)

@@ -121,6 +121,7 @@ namespace RiseOp.Simulator
                     byte[] startTime = new byte[8];
                     TimeFile.Read(startTime, 0, 8);
                     Sim.TimeNow = DateTime.FromBinary(BitConverter.ToInt64(startTime, 0));
+                    Sim.StartTime = Sim.TimeNow;
                 }
             }
 
@@ -222,12 +223,12 @@ namespace RiseOp.Simulator
 
             LastSimTime = Sim.TimeNow;
 
-            string label = total.ToString();
-
-            labelTime.Text = /*SpantoString(total) + " / " + */ SpantoString(real);
-
+ 
+            labelTime.Text = SpantoString(real);
             TimeLabel.Text = Sim.TimeNow.ToString();
+            ElapsedLabel.Text = SpantoString(total);
 
+            
             if (Sim.UseTimeFile && TimeFile != null)
             {
                 TimeFile.Seek(0, SeekOrigin.Begin);
@@ -613,6 +614,11 @@ namespace RiseOp.Simulator
             Sim.FreshStart = !Sim.FreshStart;
         }
 
+        private void CollectMenuItem_Click(object sender, EventArgs e)
+        {
+            GC.Collect();
+        }
+
 
     }
 
@@ -684,10 +690,10 @@ namespace RiseOp.Simulator
 
             // routing unresponsive global/op
             if(Instance.Core.GlobalNet != null)
-                if(!Instance.Core.GlobalNet.Routing.Responsive())
+                if(!Instance.Core.GlobalNet.Routing.Responsive)
                     alerts += "Global Routing, ";
 
-            if (!Instance.Core.OperationNet.Routing.Responsive())
+            if (!Instance.Core.OperationNet.Routing.Responsive)
                 alerts += "Op Routing, ";
 
             // not proxied global/op

@@ -78,7 +78,7 @@ namespace RiseOp.Services.Storage
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
-            Network.EstablishedEvent += new EstablishedHandler(Network_Established);
+            Network.StatusChange += new StatusChange(Network_StatusChange);
 
             Core.Transfers.FileSearch[ServiceID, (ushort)DataType.DataFile] += new FileSearchHandler(Transfers_DataFileSearch);
             Core.Transfers.FileRequest[ServiceID, (ushort)DataType.DataFile] += new FileRequestHandler(Transfers_DataFileRequest);
@@ -100,8 +100,8 @@ namespace RiseOp.Services.Storage
                 Directory.Delete(ResourcePath, true);
 
             LocalFileKey = Core.User.Settings.FileKey;
-            
-            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.CacheFile);
+
+            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.CacheFile, true);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
@@ -190,7 +190,7 @@ namespace RiseOp.Services.Storage
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
-            Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
+            Network.StatusChange -= new StatusChange(Network_StatusChange);
 
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);
@@ -477,13 +477,16 @@ namespace RiseOp.Services.Storage
             return null;
         }
 
-        void Network_Established()
+        void Network_StatusChange()
         {
+            if (!Network.Established)
+                return;
+
             // trigger download of files now in cache range
             StorageMap.LockReading(delegate()
             {
                 foreach (OpStorage storage in StorageMap.Values)
-                    if(Utilities.InBounds(storage.DhtID, storage.File.DhtBounds, Core.LocalDhtID))
+                    if (Network.Routing.InCacheArea(storage.DhtID))
                         LoadHeaderFile(GetFilePath(storage), storage, true, false);
             });
 
@@ -547,7 +550,7 @@ namespace RiseOp.Services.Storage
                 if (!File.Exists(path))
                     return;
 
-                bool cached = Utilities.InBounds(storage.DhtID, storage.File.DhtBounds, Core.LocalDhtID);
+                bool cached = Network.Routing.InCacheArea(storage.DhtID);
                 bool local = false;
 
                 RijndaelManaged key = working ? LocalFileKey : storage.File.Header.FileKey; 

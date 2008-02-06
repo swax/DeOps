@@ -48,7 +48,7 @@ namespace RiseOp.Implementation.Dht
 
   
             // if pending searches
-            if (Routing.Responsive()) // only move from pending to active if network responsive
+            if (Routing.Responsive) // only move from pending to active if network responsive
                 while( searchCount < MAX_SEARCHES && Pending.Count > 0)
                 {
                     DhtSearch move = Pending[0];
@@ -398,6 +398,8 @@ namespace RiseOp.Implementation.Dht
             }
             else
                 Network.UdpControl.SendTo(dest, request);
+
+            // if remote end has what we need they will send us a store request
         }
     }
 }

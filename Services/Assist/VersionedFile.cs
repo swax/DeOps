@@ -35,9 +35,10 @@ namespace RiseOp.Services.Assist
         string CachePath;
 
         internal ThreadedDictionary<ulong, OpVersionedFile> FileMap = new ThreadedDictionary<ulong, OpVersionedFile>();
-       
+
+        bool UseLocalSync;
         bool RunSaveHeaders;
-        int PruneSize = 100;
+        int PruneSize = 64;
         Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
         Dictionary<ulong, uint> DownloadLater = new Dictionary<ulong, uint>();
 
@@ -46,7 +47,7 @@ namespace RiseOp.Services.Assist
         internal FileRemovedHandler FileRemoved;
 
 
-        internal VersionedCache(DhtNetwork network, ushort service, ushort type)
+        internal VersionedCache(DhtNetwork network, ushort service, ushort type, bool useLocalSync)
         {
             Core    = network.Core;
             Network = network;
@@ -54,6 +55,7 @@ namespace RiseOp.Services.Assist
 
             Service = service;
             DataType = type;
+            UseLocalSync = useLocalSync;
 
             CachePath = Core.User.RootPath + Path.DirectorySeparatorChar +
                         "Data" + Path.DirectorySeparatorChar +
@@ -65,24 +67,30 @@ namespace RiseOp.Services.Assist
             LocalKey = Core.User.Settings.FileKey;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
-            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
-            Network.EstablishedEvent += new EstablishedHandler(Network_Established);
+            Network.StatusChange += new StatusChange(Network_StatusChange);
 
             Store.StoreEvent[Service, DataType] += new StoreHandler(Store_Local);
-            Store.ReplicateEvent[Service, DataType] += new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[Service, DataType] += new PatchHandler(Store_Patch);
+
+            if ( !UseLocalSync )
+            {
+                Store.ReplicateEvent[Service, DataType] += new ReplicateHandler(Store_Replicate);
+                Store.PatchEvent[Service, DataType] += new PatchHandler(Store_Patch);
+            }
 
             Network.Searches.SearchEvent[Service, DataType] += new SearchRequestHandler(Search_Local);
 
             Core.Transfers.FileSearch[Service, DataType] += new FileSearchHandler(Transfers_FileSearch);
             Core.Transfers.FileRequest[Service, DataType] += new FileRequestHandler(Transfers_FileRequest);
 
-            Core.Locations.GetTag[Service, DataType] += new GetTagHandler(Locations_GetTag);
-            Core.Locations.TagReceived[Service, DataType] += new TagReceivedHandler(Locations_TagReceived);
+            if (UseLocalSync)
+            {
+                Core.Sync.GetTag[Service, DataType] += new GetLocalSyncTagHandler(LocalSync_GetTag);
+                Core.Sync.TagReceived[Service, DataType] += new LocalSyncTagReceivedHandler(LocalSync_TagReceived);
+            }
 
             if (Core.Sim != null)
-                PruneSize = 25;
+                PruneSize = 16;
         }
 
         public void Load()
@@ -97,22 +105,27 @@ namespace RiseOp.Services.Assist
         public void Dispose()
         {
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
-            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
-            Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
+            Network.StatusChange -= new StatusChange(Network_StatusChange);
 
             Store.StoreEvent[Service, DataType] -= new StoreHandler(Store_Local);
-            Store.ReplicateEvent[Service, DataType] -= new ReplicateHandler(Store_Replicate);
-            Store.PatchEvent[Service, DataType] -= new PatchHandler(Store_Patch);
+
+            if ( !UseLocalSync )
+            {
+                Store.ReplicateEvent[Service, DataType] -= new ReplicateHandler(Store_Replicate);
+                Store.PatchEvent[Service, DataType] -= new PatchHandler(Store_Patch);
+            }
 
             Network.Searches.SearchEvent[Service, DataType] -= new SearchRequestHandler(Search_Local);
 
             Core.Transfers.FileSearch[Service, DataType] -= new FileSearchHandler(Transfers_FileSearch);
             Core.Transfers.FileRequest[Service, DataType] -= new FileRequestHandler(Transfers_FileRequest);
 
-            Core.Locations.GetTag[Service, DataType] -= new GetTagHandler(Locations_GetTag);
-            Core.Locations.TagReceived[Service, DataType] -= new TagReceivedHandler(Locations_TagReceived);
-
+            if (UseLocalSync)
+            {
+                Core.Sync.GetTag[Service, DataType] -= new GetLocalSyncTagHandler(LocalSync_GetTag);
+                Core.Sync.TagReceived[Service, DataType] -= new LocalSyncTagReceivedHandler(LocalSync_TagReceived);
+            }
         }
 
         void Core_SecondTimer()
@@ -124,22 +137,21 @@ namespace RiseOp.Services.Assist
             // save headers
             if (RunSaveHeaders)
                 SaveHeaders();
-        }
-        
-        void Core_MinuteTimer()
-        {
+
             // prune
             List<ulong> removeIDs = new List<ulong>();
 
-            if (FileMap.SafeCount > PruneSize)
+            if (FileMap.SafeCount > PruneSize * 2)
                 FileMap.LockReading(delegate()
                 {
                     if (FileMap.Count > PruneSize)
                         foreach (OpVersionedFile vfile in FileMap.Values)
+                        {
                             if (vfile.DhtID != Core.LocalDhtID &&
                                 !Core.Focused.SafeContainsKey(vfile.DhtID) &&
-                                !Utilities.InBounds(vfile.DhtID, vfile.DhtBounds, Core.LocalDhtID))
+                                !Network.Routing.InCacheArea(vfile.DhtID))
                                 removeIDs.Add(vfile.DhtID);
+                        }
                 });
 
             if (removeIDs.Count > 0)
@@ -154,6 +166,8 @@ namespace RiseOp.Services.Assist
                             if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
                                 furthest = id;
 
+                        vfile = FileMap[furthest];
+
                         FileRemoved.Invoke(vfile);
 
                         if (vfile.Header != null)
@@ -166,41 +180,51 @@ namespace RiseOp.Services.Assist
                     }
                 });
 
-            // clean research map
-            removeIDs.Clear();
+            // clean research map every 10 seconds
+            if (Core.TimeNow.Second % 9 == 0)
+            {
+                removeIDs.Clear();
 
-            foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
-                if (Core.TimeNow > pair.Value)
-                    removeIDs.Add(pair.Key);
+                foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
+                    if (Core.TimeNow > pair.Value)
+                        removeIDs.Add(pair.Key);
 
-            if (removeIDs.Count > 0)
-                foreach (ulong id in removeIDs)
-                    NextResearch.Remove(id);
+                if (removeIDs.Count > 0)
+                    foreach (ulong id in removeIDs)
+                        NextResearch.Remove(id);
+            }
         }
 
-        void Network_Established()
+        void Network_StatusChange()
         {
-            ulong localBounds = Store.RecalcBounds(Core.LocalDhtID);
-
-            // set bounds for objects
-            FileMap.LockReading(delegate()
+            if (Network.Established)
             {
-                foreach (OpVersionedFile vfile in FileMap.Values)
+                // republish objects that were not seen on the network during startup
+                if (!UseLocalSync)
+                    FileMap.LockReading(delegate()
+                    {
+                        foreach (OpVersionedFile vfile in FileMap.Values)
+                            if (vfile.Unique && Network.Routing.InCacheArea(vfile.DhtID))
+                                Store.PublishNetwork(vfile.DhtID, Service, DataType, vfile.SignedHeader);
+                    });
+
+                // only download those objects in our local area
+                foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
+                    if (Network.Routing.InCacheArea(pair.Key))
+                        StartSearch(pair.Key, pair.Value);
+
+                DownloadLater.Clear();
+            }
+
+            // disconnected, reset cache to unique
+            else
+            {
+                FileMap.LockReading(delegate()
                 {
-                    vfile.DhtBounds = Store.RecalcBounds(vfile.DhtID);
-
-                    // republish objects that were not seen on the network during startup
-                    if (vfile.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, vfile.DhtID))
-                        Store.PublishNetwork(vfile.DhtID, Service, DataType, vfile.SignedHeader);
-                }
-            });
-
-            // only download those objects in our local area
-            foreach (KeyValuePair<ulong, uint> pair in DownloadLater)
-                if (Utilities.InBounds(Core.LocalDhtID, localBounds, pair.Key))
-                    StartSearch(pair.Key, pair.Value);
-
-            DownloadLater.Clear();
+                    foreach (OpVersionedFile vfile in FileMap.Values)
+                        vfile.Unique = true;
+                });
+            }
         }
 
         internal void LoadHeaders()
@@ -282,16 +306,16 @@ namespace RiseOp.Services.Assist
             }
 
             vfile = GetFile(Core.LocalDhtID);
-            VersionedFileHeader header = null;
 
+            VersionedFileHeader header = null;
             if (vfile != null)
                 header = vfile.Header;
 
             string oldFile = null;
-
-            if (header != null)
+            if (header != null && header.FileHash != null)
                 oldFile = GetFilePath(header);
-            else
+
+            if (header == null)
                 header = new VersionedFileHeader();
 
 
@@ -303,11 +327,14 @@ namespace RiseOp.Services.Assist
 
 
             // finish building header
-            Utilities.ShaHashFile(tempPath, ref header.FileHash, ref header.FileSize);
+            if (key != null)
+            {
+                Utilities.ShaHashFile(tempPath, ref header.FileHash, ref header.FileSize);
 
-            // move file, overwrite if need be
-            string finalPath = GetFilePath(header);
-            File.Move(tempPath, finalPath);
+                // move file, overwrite if need be
+                string finalPath = GetFilePath(header);
+                File.Move(tempPath, finalPath);
+            }
 
             CacheFile(new SignedData(Core.Protocol, Core.User.Settings.KeyPair, header), header);
 
@@ -317,13 +344,12 @@ namespace RiseOp.Services.Assist
                 try { File.Delete(oldFile); }
                 catch { }
 
-            // publish header
-            vfile = GetFile(Core.LocalDhtID); // get newly loaded object
+            vfile = GetFile(Core.LocalDhtID);
 
-            if (vfile == null)
-                return null;
-
-            Store.PublishNetwork(Core.LocalDhtID, Service, DataType, vfile.SignedHeader);
+            if (UseLocalSync)
+                Core.Sync.UpdateLocal();
+            else
+                Store.PublishNetwork(Core.LocalDhtID, Service, DataType, vfile.SignedHeader);
 
             return vfile;
         }
@@ -376,15 +402,23 @@ namespace RiseOp.Services.Assist
             try
             {
                 // check if file exists           
-                string path = GetFilePath(header);
-                if (!File.Exists(path))
+                string path = "";
+                if (header.FileHash != null)
                 {
-                    Download(signedHeader, header);
-                    return;
+                    path = GetFilePath(header);
+                    if (!File.Exists(path))
+                    {
+                        Download(signedHeader, header);
+                        return;
+                    }
                 }
 
                 // get file
                 OpVersionedFile prevFile = GetFile(header.KeyID);
+
+                if (prevFile != null)
+                    if (header.Version < prevFile.Header.Version)
+                        return; // dont update with older version
 
                 OpVersionedFile newFile = new OpVersionedFile(header.Key);
 
@@ -402,11 +436,8 @@ namespace RiseOp.Services.Assist
 
 
                 // delete old file - do after aquired event so invoked (storage) can perform clean up operation
-                if (prevFile != null)
+                if (prevFile != null && prevFile.Header.FileHash != null)
                 {
-                    if (header.Version < prevFile.Header.Version)
-                        return; // dont update with older version
-
                     string oldPath = GetFilePath(prevFile.Header);
                     if (path != oldPath && File.Exists(oldPath))
                         try { File.Delete(oldPath); }
@@ -491,37 +522,31 @@ namespace RiseOp.Services.Assist
 
         const int PatchEntrySize = 12;
 
-        ReplicateData Store_Replicate(DhtContact contact, bool add)
+        List<byte[]> Store_Replicate(DhtContact contact)
         {
             if (!Network.Established)
                 return null;
 
-            ReplicateData data = new ReplicateData(PatchEntrySize);
-
-            byte[] patch = new byte[PatchEntrySize];
+            List<byte[]> patches = new List<byte[]>();
 
             FileMap.LockReading(delegate()
             {
                 foreach (OpVersionedFile vfile in FileMap.Values)
-                    if (Utilities.InBounds(vfile.DhtID, vfile.DhtBounds, contact.DhtID))
+                    if (Network.Routing.InCacheArea(vfile.DhtID))
                     {
-                        DhtContact target = contact;
-                        vfile.DhtBounds = Store.RecalcBounds(vfile.DhtID, add, ref target);
+                        byte[] patch = new byte[PatchEntrySize];
 
-                        if (target != null)
-                        {
-                            BitConverter.GetBytes(vfile.DhtID).CopyTo(patch, 0);
-                            BitConverter.GetBytes(vfile.Header.Version).CopyTo(patch, 8);
+                        BitConverter.GetBytes(vfile.DhtID).CopyTo(patch, 0);
+                        BitConverter.GetBytes(vfile.Header.Version).CopyTo(patch, 8);
 
-                            data.Add(target, patch);
-                        }
+                        patches.Add(patch);
                     }
             });
 
-            return data;
+            return patches;
         }
 
-        void Store_Patch(DhtAddress source, ulong distance, byte[] data)
+        void Store_Patch(DhtAddress source, byte[] data)
         {
             if (data.Length % PatchEntrySize != 0)
                 return;
@@ -535,7 +560,7 @@ namespace RiseOp.Services.Assist
 
                 offset += PatchEntrySize;
 
-                if (!Utilities.InBounds(Core.LocalDhtID, distance, dhtid))
+                if (!Network.Routing.InCacheArea(dhtid))
                     continue;
 
                 OpVersionedFile vfile = GetFile(dhtid);
@@ -566,7 +591,7 @@ namespace RiseOp.Services.Assist
 
         internal void Research(ulong key)
         {
-            if (!Network.Routing.Responsive())
+            if (!Network.Routing.Responsive)
                 return;
 
             // limit re-search to once per 30 secs
@@ -618,15 +643,17 @@ namespace RiseOp.Services.Assist
                 Store_Local(new DataReq(found.Sources, search.TargetID, Service, DataType, found.Value));
         }
 
-        byte[] Locations_GetTag()
+        byte[] LocalSync_GetTag()
         {
             OpVersionedFile file = GetFile(Core.LocalDhtID);
 
             return (file != null) ? BitConverter.GetBytes(file.Header.Version) : null;
         }
 
-        void Locations_TagReceived(ulong user, byte[] tag)
+        void LocalSync_TagReceived(ulong user, byte[] tag)
         {
+            //crit if user in cache bounds - get the file
+
             if(tag.Length < 4)
                 return;
 
@@ -637,9 +664,17 @@ namespace RiseOp.Services.Assist
                 uint version = BitConverter.ToUInt32(tag, 0);
 
                 if (version > file.Header.Version)
+                {
+                    StartSearch(user, version); // this could be called from a patch given to another user, direct connect not gauranteed
+
                     foreach (ClientInfo client in Core.Locations.GetClients(user))
-                        if (client.Active)
-                            Network.Searches.SendDirectRequest(new DhtAddress(client.Data.IP, client.Data.Source), user, Service, DataType, BitConverter.GetBytes(version));
+                        Network.Searches.SendDirectRequest(new DhtAddress(client.Data.IP, client.Data.Source), user, Service, DataType, BitConverter.GetBytes(version));
+                }
+
+                // wont cause loop because localsync's fileAquired will only fire on new file version
+                if (version < file.Header.Version)
+                    Core.Sync.Research(user);
+
             }
         }
     }
@@ -647,7 +682,6 @@ namespace RiseOp.Services.Assist
     internal class OpVersionedFile
     {
         internal ulong    DhtID;
-        internal ulong    DhtBounds = ulong.MaxValue;
         internal byte[]   Key;    // make sure reference is the same as main key list (saves memory)
         internal bool     Unique;
 
@@ -689,9 +723,14 @@ namespace RiseOp.Services.Assist
 
                 protocol.WritePacket(header, Packet_Key, Key);
                 protocol.WritePacket(header, Packet_Version, BitConverter.GetBytes(Version));
-                protocol.WritePacket(header, Packet_FileHash, FileHash);
-                protocol.WritePacket(header, Packet_FileSize, BitConverter.GetBytes(FileSize));
-                protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
+
+                if (FileHash != null)
+                {
+                    protocol.WritePacket(header, Packet_FileHash, FileHash);
+                    protocol.WritePacket(header, Packet_FileSize, BitConverter.GetBytes(FileSize));
+                    protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
+                }
+
                 protocol.WritePacket(header, Packet_Extra, Extra);
 
                 return protocol.WriteFinish();

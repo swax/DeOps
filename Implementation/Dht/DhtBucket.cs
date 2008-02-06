@@ -14,7 +14,7 @@ namespace RiseOp.Implementation.Dht
 	/// </summary>
 	internal class DhtBucket
 	{
-		internal static int MAX_CONTACTS = 16;
+        internal Dictionary<ulong, List<DhtContact>> ContactMap = new Dictionary<ulong, List<DhtContact>>();
 
         internal List<DhtContact> ContactList = new List<DhtContact>();
 
@@ -60,37 +60,24 @@ namespace RiseOp.Implementation.Dht
 			return randomID;
 		}
 
-		internal bool Add(DhtContact newContact, bool merge)
+		internal bool Add(DhtContact newContact)
 		{
             // if already here update last seen
             foreach (DhtContact contact in ContactList)
                 if (contact.Equals(newContact))
                 {
-                    if (newContact.LastSeen > contact.LastSeen)
-                    {
-                        contact.LastSeen = newContact.LastSeen;
-                        contact.Attempts = 0;
-                    }
+                    contact.Alive(newContact.LastSeen);
 
                     return true;
                 }
 
             // check if bucket full
-            if (ContactList.Count >= MAX_CONTACTS)
+            if (ContactList.Count >= Routing.ContactsPerBucket)
                 return false;
 
             // else good to go
             ContactList.Add(newContact);
-
-            
-            // signal data replication
-            if (!merge)
-            {
-                Routing.Network.Store.RoutingAdd(newContact);
-
-                if (!Routing.Network.IsGlobal)
-                    Routing.Core.Links.RoutingUpdate(newContact);
-            }
+            Routing.ContactMap[newContact.RoutingID] = newContact;
 
             return true;
 		}
@@ -98,9 +85,18 @@ namespace RiseOp.Implementation.Dht
 
 	internal class DhtContact
 	{
+        
+        // RoutingID: slightly mod the user's lower bits so that dhtid is unique (max 64k uniques)
+        // needed so that 1000 of the same user are online, the routing table still works
+        // high/low/xor cache area is still fair and balanced
+        internal ulong RoutingID
+        {
+            get { return DhtID ^ ClientID; }
+        }
+
         const int BYTE_SIZE = 18;
 
-		internal UInt64    DhtID;
+		internal ulong    DhtID;
         internal ushort    ClientID;
         internal IPAddress Address;
         internal ushort    TcpPort;
@@ -210,6 +206,15 @@ namespace RiseOp.Implementation.Dht
                 results.Add(DhtContact.FromBytes(data, i));
 
             return results;
+        }
+
+        internal void Alive(DateTime latest)
+        {
+            if (latest > LastSeen)
+            {
+                LastSeen = latest;
+                Attempts = 0;
+            }
         }
     }
 }

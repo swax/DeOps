@@ -63,7 +63,7 @@ namespace RiseOp.Services.Board
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
-            Network.EstablishedEvent += new EstablishedHandler(Network_Established);
+            Network.StatusChange += new StatusChange(Network_StatusChange);
 
             Store.StoreEvent[ServiceID, 0] += new StoreHandler(Store_Local);
             Store.ReplicateEvent[ServiceID, 0] += new ReplicateHandler(Store_Replicate);
@@ -75,7 +75,7 @@ namespace RiseOp.Services.Board
             Core.Transfers.FileRequest[ServiceID, 0] += new FileRequestHandler(Transfers_FileRequest);
 
             if (Core.Sim != null)
-                PruneSize = 32;
+                PruneSize = 16;
 
             LocalFileKey = Core.User.Settings.FileKey;
 
@@ -118,7 +118,7 @@ namespace RiseOp.Services.Board
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
-            Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
+            Network.StatusChange -= new StatusChange(Network_StatusChange);
 
             Store.StoreEvent[ServiceID, 0] -= new StoreHandler(Store_Local);
             Store.ReplicateEvent[ServiceID, 0] -= new ReplicateHandler(Store_Replicate);
@@ -164,7 +164,7 @@ namespace RiseOp.Services.Board
 
                     foreach (OpBoard board in BoardMap.Values)
                         if (board.DhtID != Core.LocalDhtID &&
-                            !Utilities.InBounds(board.DhtID, board.DhtBounds, Core.LocalDhtID) &&
+                            !Network.Routing.InCacheArea(board.DhtID) &&
                             !Core.Focused.SafeContainsKey(board.DhtID) &&
                             !WindowMap.SafeContainsKey(board.DhtID) &&
                             !localRegion.Contains(board.DhtID))
@@ -230,37 +230,47 @@ namespace RiseOp.Services.Board
             });
         }
 
-        void Network_Established()
+        void Network_StatusChange()
         {
-            ulong localBounds = Store.RecalcBounds(Core.LocalDhtID);
-
-            // set bounds for objects
-            BoardMap.LockReading(delegate()
+            if (Network.Established)
             {
-                foreach (OpBoard board in BoardMap.Values)
+                // republish objects that were not seen on the network during startup
+                BoardMap.LockReading(delegate()
                 {
-                    board.DhtBounds = Store.RecalcBounds(board.DhtID);
+                    foreach (OpBoard board in BoardMap.Values)
+                        board.Posts.LockReading(delegate()
+                        {
+                            foreach (OpPost post in board.Posts.Values)
+                                if (post.Unique && Network.Routing.InCacheArea(board.DhtID))
+                                    Store.PublishNetwork(board.DhtID, ServiceID, 0, post.SignedHeader);
+                        });
+                });
 
-                    // republish objects that were not seen on the network during startup
-                    board.Posts.LockReading(delegate()
-                    {
-                       foreach (OpPost post in board.Posts.Values)
-                           if (post.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, board.DhtID))
-                               Store.PublishNetwork(board.DhtID, ServiceID, 0, post.SignedHeader);
-                    });
-                }
-            });
+                // only download those objects in our local area
+                DownloadLater.LockWriting(delegate()
+                {
+                    foreach (ulong key in DownloadLater.Keys)
+                        if (Network.Routing.InCacheArea(key))
+                            foreach (PostUID uid in DownloadLater[key])
+                                PostSearch(key, uid, 0);
 
-            // only download those objects in our local area
-            DownloadLater.LockWriting(delegate()
+                    DownloadLater.Clear();
+                });
+            }
+
+            // disconnected, reset cache to unique
+            else
             {
-                foreach (ulong key in DownloadLater.Keys)
-                    if (Utilities.InBounds(Core.LocalDhtID, localBounds, key))
-                        foreach (PostUID uid in DownloadLater[key])
-                            PostSearch(key, uid, 0);
-
-                DownloadLater.Clear();
-            });
+                BoardMap.LockReading(delegate()
+                {
+                    foreach (OpBoard board in BoardMap.Values)
+                        board.Posts.LockReading(delegate()
+                        {
+                            foreach (OpPost post in board.Posts.Values)
+                                post.Unique = true;
+                        });
+                });
+            }
         }
 
         internal void LoadHeader(ulong id)
@@ -712,47 +722,43 @@ namespace RiseOp.Services.Board
 
         int PatchEntrySize = 8 + PostUID.SIZE + 2;
 
-        ReplicateData Store_Replicate(DhtContact contact, bool add)
+        List<byte[]> Store_Replicate(DhtContact contact)
         {
             if (!Network.Established)
                 return null;
+
+
+            List<byte[]> patches = new List<byte[]>();
+
             
-
-            ReplicateData data = new ReplicateData(PatchEntrySize);
-
-            byte[] patch = new byte[PatchEntrySize];
-
             BoardMap.LockReading(delegate()
             {
                 foreach (OpBoard board in BoardMap.Values)
-                    if (Utilities.InBounds(board.DhtID, board.DhtBounds, contact.DhtID))
+                    if (Network.Routing.InCacheArea(board.DhtID))
                     {
-                        // bounds is a distance value
-                        DhtContact target = contact;
-                        board.DhtBounds = Store.RecalcBounds(board.DhtID, add, ref target);
-
-                        if (target != null)
+                        
+                        board.Posts.LockReading(delegate()
                         {
-                            BitConverter.GetBytes(board.DhtID).CopyTo(patch, 0);
-
-                            board.Posts.LockReading(delegate()
+                            foreach (PostUID uid in board.Posts.Keys)
                             {
-                                foreach (PostUID uid in board.Posts.Keys)
-                                {
-                                    uid.ToBytes().CopyTo(patch, 8);
-                                    BitConverter.GetBytes(board.Posts[uid].Header.Version).CopyTo(patch, 24);
+                                byte[] patch = new byte[PatchEntrySize];
 
-                                    data.Add(target, patch);
-                                }
-                            });
-                        }
+                                BitConverter.GetBytes(board.DhtID).CopyTo(patch, 0);
+
+                                uid.ToBytes().CopyTo(patch, 8);
+                                BitConverter.GetBytes(board.Posts[uid].Header.Version).CopyTo(patch, 24);
+
+                                patches.Add( patch);
+                            }
+                        });
+
                     }
             });
 
-            return data;
+            return patches;
         }
 
-        void Store_Patch(DhtAddress source, ulong distance, byte[] data)
+        void Store_Patch(DhtAddress source, byte[] data)
         {
             if (data.Length % PatchEntrySize != 0)
                 return;
@@ -767,7 +773,7 @@ namespace RiseOp.Services.Board
 
                 offset += PatchEntrySize;
 
-                if (!Utilities.InBounds(Core.LocalDhtID, distance, dhtid))
+                if (!Network.Routing.InCacheArea(dhtid))
                     continue;
 
                 OpPost post = GetPost(dhtid, uid);
@@ -1299,7 +1305,6 @@ namespace RiseOp.Services.Board
     internal class OpBoard
     {
         internal ulong DhtID;
-        internal ulong DhtBounds = ulong.MaxValue;
         internal byte[] Key;    // make sure reference is the same as main key list
 
         internal ThreadedDictionary<PostUID, OpPost> Posts = new ThreadedDictionary<PostUID, OpPost>();

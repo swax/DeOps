@@ -91,7 +91,7 @@ namespace RiseOp.Services.Mail
 
         internal MailUpdateHandler MailUpdate;
 
-        int PruneSize = 100;
+        int PruneSize = 64;
 
         enum DataType { Local = 1, Pending = 2, Mail = 3, Ack = 4 };
 
@@ -108,7 +108,7 @@ namespace RiseOp.Services.Mail
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
-            Network.EstablishedEvent += new EstablishedHandler(Network_Established);
+            Network.StatusChange += new StatusChange(Network_StatusChange);
 
             Store.StoreEvent[ServiceID, (ushort) DataType.Mail] += new StoreHandler(Store_LocalMail);
             Store.StoreEvent[ServiceID, (ushort)DataType.Ack] += new StoreHandler(Store_LocalAck);
@@ -126,7 +126,7 @@ namespace RiseOp.Services.Mail
             Core.Transfers.FileRequest[ServiceID, (ushort)DataType.Mail] += new FileRequestHandler(Transfers_MailRequest);
 
             if (Core.Sim != null)
-                PruneSize = 25;
+                PruneSize = 16;
 
             LocalFileKey = Core.User.Settings.FileKey;
 
@@ -141,7 +141,7 @@ namespace RiseOp.Services.Mail
             Directory.CreateDirectory(MailPath);
             Directory.CreateDirectory(CachePath);
 
-            PendingCache = new VersionedCache(Network, ServiceID, (ushort)DataType.Pending);
+            PendingCache = new VersionedCache(Network, ServiceID, (ushort)DataType.Pending, true);
 
             PendingCache.FileAquired += new FileAquiredHandler(PendingCache_FileAquired);
             PendingCache.FileRemoved += new FileRemovedHandler(PendingCache_FileRemoved);
@@ -157,7 +157,7 @@ namespace RiseOp.Services.Mail
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
-            Network.EstablishedEvent -= new EstablishedHandler(Network_Established);
+            Network.StatusChange -= new StatusChange(Network_StatusChange);
 
             Store.StoreEvent[ServiceID, (ushort)DataType.Mail] -= new StoreHandler(Store_LocalMail);
             Store.StoreEvent[ServiceID, (ushort)DataType.Ack] -= new StoreHandler(Store_LocalAck);
@@ -218,7 +218,7 @@ namespace RiseOp.Services.Mail
                         list.RemoveRange(0, list.Count - PruneSize);
 
                     foreach (CachedMail mail in list)
-                        if (!Utilities.InBounds(mail.Header.TargetID, mail.DhtBounds, Core.LocalDhtID))
+                        if (!Network.Routing.InCacheArea(mail.Header.TargetID))
                         {
                             removeIds.Add(mail.Header.TargetID);
                             break;
@@ -233,6 +233,8 @@ namespace RiseOp.Services.Mail
                     foreach (ulong id in removeIds)
                         if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
                             furthest = id;
+
+                    mails = MailMap[furthest];
 
                     foreach(CachedMail mail in mails)
                         if(mail.Header != null)
@@ -256,7 +258,7 @@ namespace RiseOp.Services.Mail
                         list.RemoveRange(0, list.Count - PruneSize);
 
                     foreach (CachedAck cached in list)
-                        if (!Utilities.InBounds(cached.Ack.TargetID, cached.DhtBounds, Core.LocalDhtID))
+                        if (!Network.Routing.InCacheArea(cached.Ack.TargetID))
                         {
                             removeIds.Add(cached.Ack.TargetID);
                             break;
@@ -307,54 +309,52 @@ namespace RiseOp.Services.Mail
             }  
         }
 
-        void Network_Established()
+        void Network_StatusChange()
         {
-            ulong localBounds = Store.RecalcBounds(Core.LocalDhtID);
-
-
-            // set bounds for acks
-            foreach (ulong key in AckMap.Keys)
+            if (Network.Established)
             {
-                ulong bounds = Store.RecalcBounds(key);
+                // re-publish acks
+                foreach (ulong key in AckMap.Keys)
+                    foreach (CachedAck ack in AckMap[key])
+                        if (ack.Unique && Network.Routing.InCacheArea(key))
+                            Store.PublishNetwork(key, ServiceID, (ushort)DataType.Ack, ack.SignedAck);
 
-                foreach (CachedAck ack in AckMap[key])
-                {
-                    ack.DhtBounds = bounds;
+                // only download those objects in our local area
+                foreach (ulong key in DownloadAcksLater.Keys)
+                    if (Network.Routing.InCacheArea(key))
+                        foreach (MailIdent ident in DownloadAcksLater[key])
+                            StartAckSearch(key, ident.Encode());
 
-                    if (ack.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, key))
-                        Store.PublishNetwork(key, ServiceID, (ushort) DataType.Ack, ack.SignedAck);
-                }
+                DownloadAcksLater.Clear();
+
+                // re-publish mail
+                foreach (ulong key in MailMap.Keys)
+                    foreach (CachedMail mail in MailMap[key])
+                        if (mail.Unique && Network.Routing.InCacheArea(key))
+                            Store.PublishNetwork(key, ServiceID, (ushort)DataType.Mail, mail.SignedHeader);
+
+
+                // only download those objects in our local area
+                foreach (ulong key in DownloadMailLater.Keys)
+                    if (Network.Routing.InCacheArea(key))
+                        foreach (MailIdent ident in DownloadMailLater[key])
+                            StartMailSearch(key, ident.Encode());
+
+                DownloadMailLater.Clear();
             }
 
-            // only download those objects in our local area
-            foreach (ulong key in DownloadAcksLater.Keys)
-                if (Utilities.InBounds(Core.LocalDhtID, localBounds, key))
-                    foreach (MailIdent ident in DownloadAcksLater[key])
-                        StartAckSearch(key, ident.Encode());
-
-            DownloadAcksLater.Clear();
-
-            // set bounds for mail
-            foreach (ulong key in MailMap.Keys)
+            // disconnected, reset cache to unique
+            else
             {
-                ulong bounds = Store.RecalcBounds(key);
+                foreach (ulong key in AckMap.Keys)
+                    foreach (CachedAck ack in AckMap[key])
+                        ack.Unique = true;
 
-                foreach (CachedMail mail in MailMap[key])
-                {
-                    mail.DhtBounds = bounds;
 
-                    if (mail.Unique && Utilities.InBounds(Core.LocalDhtID, localBounds, key))
-                        Store.PublishNetwork(key, ServiceID, (ushort)DataType.Mail, mail.SignedHeader);
-                }
+                foreach (ulong key in MailMap.Keys)
+                    foreach (CachedMail mail in MailMap[key])
+                        mail.Unique = true;
             }
-
-            // only download those objects in our local area
-            foreach (ulong key in DownloadMailLater.Keys)
-                if (Utilities.InBounds(Core.LocalDhtID, localBounds, key))
-                    foreach (MailIdent ident in DownloadMailLater[key])
-                        StartMailSearch(key, ident.Encode());
-
-            DownloadMailLater.Clear();
         }
 
         void SaveHeaders()
@@ -930,57 +930,40 @@ namespace RiseOp.Services.Mail
                     Process_MailAck(store, signed, MailAck.Decode(Core.Protocol, embedded), false);
         }
 
-        ReplicateData Store_ReplicateMail(DhtContact contact, bool add)
+        List<byte[]> Store_ReplicateMail(DhtContact contact)
         {
             if (!Network.Established)
                 return null;
 
 
-            ReplicateData data = new ReplicateData(MailIdent.SIZE);
+            List<byte[]> patches = new List<byte[]>();
 
-            byte[] patch = new byte[MailIdent.SIZE];
-
-
-            // mail
             foreach (List<CachedMail> list in MailMap.Values)
                 foreach (CachedMail cached in list)
-                    if (Utilities.InBounds(cached.Header.TargetID, cached.DhtBounds, contact.DhtID))
-                    {
-                        DhtContact target = contact;
-                        cached.DhtBounds = Store.RecalcBounds(cached.Header.TargetID, add, ref target);
+                    if( Network.Routing.InCacheArea(cached.Header.TargetID))
+                        patches.Add(new MailIdent(cached.Header.TargetID, Utilities.ExtractBytes(cached.Header.MailID, 0, 4)).Encode());
 
-                        if (target != null)
-                            data.Add(target, new MailIdent(cached.Header.TargetID, Utilities.ExtractBytes(cached.Header.MailID, 0, 4)).Encode());
-                    }
-
-            return data;
+            return patches;
         }
 
-        ReplicateData Store_ReplicateAck(DhtContact contact, bool add)
+        List<byte[]> Store_ReplicateAck(DhtContact contact)
         {
             if (!Network.Established)
                 return null;
 
-            ReplicateData data = new ReplicateData(MailIdent.SIZE);
 
-            byte[] patch = new byte[MailIdent.SIZE];
+            List<byte[]> patches = new List<byte[]>();
 
             // acks
             foreach (List<CachedAck> list in AckMap.Values)
                 foreach (CachedAck cached in list)
-                    if (Utilities.InBounds(cached.Ack.TargetID, cached.DhtBounds, contact.DhtID))
-                    {
-                        DhtContact target = contact;
-                        cached.DhtBounds = Store.RecalcBounds(cached.Ack.TargetID, add, ref target);
+                    if(Network.Routing.InCacheArea(cached.Ack.TargetID))
+                        patches.Add( new MailIdent(cached.Ack.TargetID, Utilities.ExtractBytes(cached.Ack.MailID, 0, 4)).Encode());
 
-                        if (target != null)
-                            data.Add(target, new MailIdent(cached.Ack.TargetID, Utilities.ExtractBytes(cached.Ack.MailID, 0, 4)).Encode());
-                    }
-
-            return data;
+            return patches;
         }
 
-        void Store_PatchMail(DhtAddress source, ulong distance, byte[] data)
+        void Store_PatchMail(DhtAddress source, byte[] data)
         {
             if (data.Length % MailIdent.SIZE != 0)
                 return;
@@ -991,7 +974,7 @@ namespace RiseOp.Services.Mail
                 MailIdent ident = MailIdent.Decode(data, i);
                 offset += MailIdent.SIZE;
 
-                if (!Utilities.InBounds(Core.LocalDhtID, distance, ident.DhtID))
+                if (!Network.Routing.InCacheArea(ident.DhtID))
                     continue;
 
                 CachedMail mail = FindMail(ident);
@@ -1014,7 +997,7 @@ namespace RiseOp.Services.Mail
             }
         }
 
-        void Store_PatchAck(DhtAddress source, ulong distance, byte[] data)
+        void Store_PatchAck(DhtAddress source, byte[] data)
         {
             if (data.Length % MailIdent.SIZE != 0)
                 return;
@@ -1025,7 +1008,7 @@ namespace RiseOp.Services.Mail
                 MailIdent ident = MailIdent.Decode(data, i);
                 offset += MailIdent.SIZE;
 
-                if (!Utilities.InBounds(Core.LocalDhtID, distance, ident.DhtID))
+                if (!Network.Routing.InCacheArea(ident.DhtID))
                     continue;
 
                 CachedAck ack = FindAck(ident);
@@ -1941,7 +1924,6 @@ namespace RiseOp.Services.Mail
     {
         internal MailHeader Header;
         internal byte[]     SignedHeader;
-        internal ulong      DhtBounds = ulong.MaxValue;
         internal bool       Unique;
     }
 
@@ -1949,7 +1931,6 @@ namespace RiseOp.Services.Mail
     {
         internal MailAck Ack;
         internal byte[]  SignedAck;
-        internal ulong   DhtBounds = ulong.MaxValue;
         internal bool    Unique;
 
         internal CachedAck(byte[] signed, MailAck ack, bool unique)

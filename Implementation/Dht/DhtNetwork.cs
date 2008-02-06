@@ -19,7 +19,7 @@ using RiseOp.Interface.Tools;
 
 namespace RiseOp.Implementation.Dht
 {
-    internal delegate void EstablishedHandler();
+    internal delegate void StatusChange();
 
 
     internal class DhtNetwork
@@ -43,8 +43,8 @@ namespace RiseOp.Implementation.Dht
         internal DateTime BootstrapTimeout;
 
         internal bool Established;
-        internal int FireEstablished; // timeout until established is called
-        internal event EstablishedHandler EstablishedEvent; // operation only
+        internal int FireStatusChange; // timeout until established is called
+        internal StatusChange StatusChange; // operation only
 
         internal RijndaelManaged OriginalCrypt;
         internal RijndaelManaged AugmentedCrypt;
@@ -103,7 +103,7 @@ namespace RiseOp.Implementation.Dht
             Searches.SecondTimer();
 
             // if unresponsive
-            if (!Routing.Responsive())
+            if (!Routing.Responsive)
                 DoBootstrap(); 
             
             // ip cache
@@ -116,19 +116,18 @@ namespace RiseOp.Implementation.Dht
                 }
 
             // established in dht
-            if (FireEstablished > 0)
+            if (FireStatusChange > 0)
             {
-                FireEstablished--;
+                FireStatusChange--;
 
-                if (FireEstablished == 0)
+                if (FireStatusChange == 0)
                 {
                     Established = true;
 
                     if (IsGlobal)
                         return;
 
-                    if (EstablishedEvent != null)
-                        EstablishedEvent.Invoke();
+                    StatusChange.Invoke();
                 }
             }
         }
@@ -146,6 +145,9 @@ namespace RiseOp.Implementation.Dht
 
         internal void UpdateLog(string type, string message)
         {
+            //crit
+            return;
+
             lock (LogTable)
             {
                 Queue<string> targetLog = null;
@@ -633,7 +635,7 @@ namespace RiseOp.Implementation.Dht
                 Core.SetFirewallType(FirewallType.NAT);
 
                 // send bootstrap if Dht cache dead
-                if (!Routing.Responsive())
+                if (!Routing.Responsive)
                     Searches.SendUdpRequest(packet.Source, Core.LocalDhtID, 0, Core.DhtServiceID, 0, null);
 
                 // add to routing
@@ -826,7 +828,7 @@ namespace RiseOp.Implementation.Dht
 
             if (GuiCrawler != null)
                 GuiCrawler.BeginInvoke(GuiCrawler.CrawlAck, ack, packet);
-
+            
         }
 
         internal void LogPacket(PacketLogEntry logEntry)
@@ -836,7 +838,7 @@ namespace RiseOp.Implementation.Dht
 
             lock (LoggedPackets)
             {
-                LoggedPackets.Enqueue(logEntry);
+                //crit LoggedPackets.Enqueue(logEntry);
 
                 while (LoggedPackets.Count > 50)
                     LoggedPackets.Dequeue();

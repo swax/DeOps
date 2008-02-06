@@ -113,7 +113,7 @@ namespace RiseOp.Services.Profile
                         ((ushort)DataType.Extracted).ToString();
 
 
-            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File);
+            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File, true);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
@@ -162,7 +162,7 @@ namespace RiseOp.Services.Profile
 
             ulong key = node.GetKey();
 
-            if (Network.Routing.Responsive())
+            if (Network.Routing.Responsive)
                 Research(key);
 
             // gui creates viewshell, component just passes view object

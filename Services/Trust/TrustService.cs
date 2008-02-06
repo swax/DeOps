@@ -36,14 +36,13 @@ namespace RiseOp.Services.Trust
 
         internal ThreadedDictionary<ulong, OpTrust> TrustMap = new ThreadedDictionary<ulong, OpTrust>();
         internal ThreadedDictionary<uint, string> ProjectNames = new ThreadedDictionary<uint, string>();
-        internal ThreadedDictionary<uint, List<OpLink>> ProjectRoots = new ThreadedDictionary<uint, List<OpLink>>();
+        internal ThreadedDictionary<uint, ThreadedList<OpLink>> ProjectRoots = new ThreadedDictionary<uint, ThreadedList<OpLink>>();
 
         enum DataType { File = 1 };
 
         internal VersionedCache Cache;
 
         internal string LinkPath;
-        internal bool StructureKnown;
 
         bool RunSaveUplinks;
         RijndaelManaged LocalFileKey;
@@ -64,7 +63,7 @@ namespace RiseOp.Services.Trust
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
             Core.GetFocusedCore += new GetFocusedHandler(Core_GetFocusedCore);
 
-            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File);
+            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File, true);
 
             // piggyback searching for uplink requests on cache file data
             Store.StoreEvent[ServiceID, (ushort)DataType.File] += new StoreHandler(Store_Local);
@@ -364,11 +363,11 @@ namespace RiseOp.Services.Trust
             List<uint> removeList = new List<uint>();
 
             ProjectRoots.LockReading(delegate()
-                {
-                    foreach (uint project in ProjectRoots.Keys)
-                        if (ProjectRoots[project].Count == 0)
-                            removeList.Add(project);
-                });
+            {
+                foreach (uint project in ProjectRoots.Keys)
+                    if (ProjectRoots[project].SafeCount == 0)
+                        removeList.Add(project);
+            });
 
             if (removeList.Count > 0)
                 ProjectRoots.LockWriting(delegate()
@@ -382,14 +381,23 @@ namespace RiseOp.Services.Trust
 
         void Core_GetFocusedCore()
         {
-           RefreshLinked();
+            RefreshLinked();
 
-           TrustMap.LockReading(delegate()
-           {
-               foreach (OpTrust trust in TrustMap.Values)
-                   if (trust.InLocalLinkTree)
-                       Core.Focused.SafeAdd(trust.DhtID, true);
-           });
+            TrustMap.LockReading(delegate()
+            {
+                foreach (OpTrust trust in TrustMap.Values)
+                    if (trust.InLocalLinkTree)
+                        Core.Focused.SafeAdd(trust.DhtID, true);
+
+                    // if in bounds, set highers of node to focused
+                    // because if highers removed, they will just be re-added when inbounds link cache is refreshed
+                    else if (Network.Routing.InCacheArea(trust.DhtID))
+                        foreach(OpLink link in trust.Links.Values)
+                            foreach(ulong id in link.GetHighers())
+                                Core.Focused.SafeAdd(id, true);
+            });
+
+
 
             //crit needs to update live tree as well
         }
@@ -398,19 +406,29 @@ namespace RiseOp.Services.Trust
         {
             OpTrust trust = GetTrust(file.DhtID);
 
-            if (trust != null)
-            {
-                trust.Reset();
-                trust.Loaded = false;
+            if (trust == null)
+                return;
 
-                TrustMap.SafeRemove(file.DhtID);
-            }
+            ProjectRoots.LockReading(delegate()
+            {
+                foreach (uint project in trust.Links.Keys)
+                    if(ProjectRoots.ContainsKey(project))
+                        ProjectRoots[project].SafeRemove(trust.Links[project]);
+            });
+
+            trust.Reset();
+            trust.Loaded = false;
+            TrustMap.SafeRemove(file.DhtID);
+            
+            // alert services/gui
+            if (LinkUpdate != null)
+                LinkUpdate.Invoke(trust);
+
+            Core.RunInGuiThread(GuiUpdate, trust.DhtID);
         }
 
         void RefreshLinked()
         {
-            StructureKnown = false;
-
             // unmark all nodes
 
             TrustMap.LockReading(delegate()
@@ -438,7 +456,9 @@ namespace RiseOp.Services.Trust
                     }
 
                     // TraverseDown 2 from Roots
-                    List<OpLink> roots = null;
+                    // dont keep focused on every untrusted node, will overwhelm us
+                    // other processes will keep right about of contacts and delete furthest
+                    /*List<OpLink> roots = null;
                     if (ProjectRoots.SafeTryGetValue(project, out roots))
                         foreach (OpLink root in roots)
                         {
@@ -448,7 +468,7 @@ namespace RiseOp.Services.Trust
                                     StructureKnown = true;
 
                             MarkBranchLinked(root, 2);
-                        }
+                        }*/
                 }
             });
         }
@@ -477,7 +497,7 @@ namespace RiseOp.Services.Trust
                 return;
             }
 
-            if (!Network.Routing.Responsive())
+            if (!Network.Routing.Responsive)
                 return;
 
             List<ulong> searchList = new List<ulong>();
@@ -534,14 +554,18 @@ namespace RiseOp.Services.Trust
 
         internal void RoutingUpdate(DhtContact contact)
         {
+            //*** if enough nodes in local neighborhood that are untrusted then they need to figure out
+            // among themselves what the deal is, because entire network could be clueless people
+            // and this line of code will flood the network to aimless searches
+
             // find node if structure not known
-            if (StructureKnown)
-                return;
+            //if (StructureKnown)
+            //    return;
 
-            OpTrust trust = GetTrust(contact.DhtID);
+            //OpTrust trust = GetTrust(contact.DhtID);
 
-            if (trust == null)
-                Cache.Research(contact.DhtID);
+            //if (trust == null)
+            //    Cache.Research(contact.DhtID);
         }
 
         void Store_Local(DataReq store)
@@ -786,21 +810,26 @@ namespace RiseOp.Services.Trust
                         if (link == null)
                             continue;
 
-                        ProjectRoots[project].Remove(link);
+                        ThreadedList<OpLink> roots = ProjectRoots[project];
+
+                        roots.SafeRemove(link);
 
                         // remove loop node
                         if (link.LoopRoot != null)
-                            foreach (OpLink root in ProjectRoots[project])
-                                if (root.DhtID == link.LoopRoot.DhtID)
-                                {
-                                    ProjectRoots[project].Remove(root); // root is a loop node
+                            roots.LockReading(delegate()
+                            {
+                                foreach (OpLink root in roots)
+                                    if (root.DhtID == link.LoopRoot.DhtID)
+                                    {
+                                        roots.Remove(root); // root is a loop node
 
-                                    // remove associations with loop node
-                                    foreach (OpLink downlink in root.Downlinks)
-                                        downlink.LoopRoot = null;
+                                        // remove associations with loop node
+                                        foreach (OpLink downlink in root.Downlinks)
+                                            downlink.LoopRoot = null;
 
-                                    break;
-                                }
+                                        break;
+                                    }
+                            });
                     }
                 });
 
@@ -916,16 +945,16 @@ namespace RiseOp.Services.Trust
 
         private void AddRoot(OpLink link)
         {
-            List<OpLink> roots = null;
+            ThreadedList<OpLink> roots = null;
 
             if (!ProjectRoots.SafeTryGetValue(link.Project, out roots))
             {
-                roots = new List<OpLink>();
+                roots = new ThreadedList<OpLink>();
                 ProjectRoots.SafeAdd(link.Project, roots);
             }
 
-            if (!roots.Contains(link)) // possible it wasnt removed above because link might not be part of project locally but others think it does (uplink)
-                roots.Add(link);
+            if (!roots.SafeContains(link)) // possible it wasnt removed above because link might not be part of project locally but others think it does (uplink)
+                roots.SafeAdd(link);
         }
 
         private void Process_ProjectData(OpTrust trust, SignedData signed, ProjectData project)
@@ -977,7 +1006,8 @@ namespace RiseOp.Services.Trust
 
                 targetLink.Downlinks.Add(localLink);
 
-                if (!targetTrust.Loaded && !StructureKnown)
+                // always know a link's trust structure to the top
+                if (!targetTrust.Loaded)
                     Cache.Research(targetTrust.DhtID);
 
                 if (targetLink.Uplink == null)
@@ -997,8 +1027,8 @@ namespace RiseOp.Services.Trust
             ProjectNames.SafeAdd(id, name);
             LocalTrust.AddProject(id, true);
 
-            List<OpLink> roots = new List<OpLink>();
-            roots.Add(LocalTrust.GetLink(id));
+            ThreadedList<OpLink> roots = new ThreadedList<OpLink>();
+            roots.SafeAdd(LocalTrust.GetLink(id));
             ProjectRoots.SafeAdd(id, roots);
 
             SaveLocal();
@@ -1075,10 +1105,13 @@ namespace RiseOp.Services.Trust
             // if at top, get nodes around roots
             else
             {
-                List<OpLink> roots = null;
+                ThreadedList<OpLink> roots = null;
                 if (ProjectRoots.SafeTryGetValue(project, out roots))
-                    foreach (OpLink root in roots)
-                        GetLinkLocs(root, 1, locations);
+                    roots.LockReading(delegate()
+                    {
+                        foreach (OpLink root in roots)
+                            GetLinkLocs(root, 1, locations);
+                    });
             }
         }
 
@@ -1108,23 +1141,18 @@ namespace RiseOp.Services.Trust
 
         private bool AddLinkLocations(OpLink link, List<LocationData> locations)
         {
-            bool online = false;
-
             List<ClientInfo> clients = Core.Locations.GetClients(link.DhtID);
 
             foreach (ClientInfo info in clients)
-                if(info.Active)
-                {
-                    if (info.Data.KeyID == Core.LocalDhtID && info.Data.Source.ClientID == Core.ClientID)
-                        continue;
+            {
+                if (info.Data.KeyID == Core.LocalDhtID && info.Data.Source.ClientID == Core.ClientID)
+                    continue;
 
-                    if (!locations.Contains(info.Data))
-                        locations.Add(info.Data);
+                if (!locations.Contains(info.Data))
+                    locations.Add(info.Data);
+            }
 
-                    online = true;
-                }
-
-            return online;
+            return (locations.Count > 0);
         }
 
 
@@ -1288,26 +1316,12 @@ namespace RiseOp.Services.Trust
         {
             // get uplinks from local, including first id in loop, but no more
 
-            List<ulong> list = new List<ulong>();
-
             OpLink link = GetLink(local, project);
 
-            if (link == null || link.LoopRoot != null)
-                return list;
+            if (link == null)
+                return new List<ulong>();
 
-            OpLink uplink = link.GetHigher(true);
-
-            while (uplink != null)
-            {
-                list.Add(uplink.DhtID);
-
-                uplink = uplink.GetHigher(true);
-
-                if (uplink != null && uplink.LoopRoot != null)
-                    return list;
-            }
-
-            return list;
+            return link.GetHighers();
         }
 
         internal List<ulong> GetAdjacentIDs(ulong id, uint project)
@@ -1693,5 +1707,27 @@ namespace RiseOp.Services.Trust
                 }
         }
 
+
+        internal List<ulong> GetHighers()
+        {
+            List<ulong> list = new List<ulong>();
+
+            if (LoopRoot != null)
+                return list;
+
+            OpLink uplink = GetHigher(true);
+
+            while (uplink != null)
+            {
+                list.Add(uplink.DhtID);
+
+                uplink = uplink.GetHigher(true);
+
+                if (uplink != null && uplink.LoopRoot != null)
+                    return list;
+            }
+
+            return list;
+        }
     }
 }

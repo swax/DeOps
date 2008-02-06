@@ -130,10 +130,13 @@ namespace RiseOp.Services.Trust
             // get roots for specific project
             else
             {
-                List<OpLink> roots = null;
+                ThreadedList<OpLink> roots = null;
                 if (Links.ProjectRoots.SafeTryGetValue(Project, out roots))
-                    foreach (OpLink root in roots)
-                        SetupRoot(root);
+                    roots.LockReading(delegate()
+                    {
+                        foreach (OpLink root in roots)
+                            SetupRoot(root);
+                    });
             }
 
             // show unlinked if there's something to show
@@ -376,7 +379,10 @@ namespace RiseOp.Services.Trust
             if (TreeMode == CommandTreeMode.Operation)
             {
                 if (NodeMap.ContainsKey(key))
+                {
                     node = NodeMap[key];
+                    node.Link = link; // links reset and re-loaded from file
+                }
 
                 TreeListNode parent = null;
                 OpLink uplink = GetTreeHigher(link);
@@ -393,6 +399,7 @@ namespace RiseOp.Services.Trust
                 // if nodes status unchanged
                 if (node != null && parent != null && node.Parent == parent)
                 {
+                    
                     node.UpdateName(CommandTreeMode.Operation);
                     Invalidate();
                     return;
@@ -405,10 +412,11 @@ namespace RiseOp.Services.Trust
 
             else if (TreeMode == CommandTreeMode.Online)
             {
-                
-
                 if (NodeMap.ContainsKey(key))
+                {
                     node = NodeMap[key];
+                    node.Link = link;
+                }
                 else
                     node = new LinkNode(link, this, TreeMode);
 

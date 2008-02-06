@@ -366,14 +366,6 @@ namespace RiseOp
             return BytestoHex(transform.TransformFinalBlock(buffer, 0, buffer.Length));
         }
 
-        internal static bool InBounds(ulong zero, ulong distance, ulong id)
-        {
-            if ((id ^ zero) <= distance)
-                return true;
-
-            return false;
-        }
-
         const long BytesInKilo = 1024;
         const long BytesInMega = 1024 * 1024;
         const long BytesInGiga = 1024 * 1024 * 1024;

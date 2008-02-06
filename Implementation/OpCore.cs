@@ -9,18 +9,18 @@ using System.Threading;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
-
 using RiseOp.Services;
+using RiseOp.Services.Assist;
+using RiseOp.Services.Board;
 using RiseOp.Services.Chat;
 using RiseOp.Services.IM;
-using RiseOp.Services.Trust;
 using RiseOp.Services.Location;
 using RiseOp.Services.Mail;
-using RiseOp.Services.Profile;
-using RiseOp.Services.Transfer;
-using RiseOp.Services.Board;
 using RiseOp.Services.Plan;
+using RiseOp.Services.Profile;
 using RiseOp.Services.Storage;
+using RiseOp.Services.Transfer;
+using RiseOp.Services.Trust;
 
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
@@ -65,9 +65,10 @@ namespace RiseOp.Implementation
         internal RudpHandler RudpControl;
 
         // services
-        internal TrustService     Links;
+        internal TrustService    Links;
         internal LocationService Locations;
-        internal TransferService Transfers; 
+        internal TransferService Transfers;
+        internal LocalSync       Sync;
 
 
         internal ushort DhtServiceID = 0;
@@ -176,16 +177,17 @@ namespace RiseOp.Implementation
                         Directory.Delete(dirpath, true);
                 }
 
-            // permanent
+            // permanent - order is important here
             AddService(new TransferService(this));
             AddService(new LocationService(this));
+            AddService(new LocalSync(this));
             AddService(new TrustService(this));
  
 
             // optional
             //AddService(new ProfileService(this));
-            AddService(new IMService(this));
-            AddService(new ChatService(this));
+            //AddService(new IMService(this));
+            //AddService(new ChatService(this));
             //AddService(new MailService(this));
             //AddService(new BoardService(this));
             //AddService(new PlanService(this));

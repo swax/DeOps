@@ -33,6 +33,15 @@ Petar Maymounkov
 http://pdos.csail.mit.edu/~petar/
 Kademlia mathemation
 
+Gwren - AntsP2P - Roberto Rossi
+Ireland, 27, OR, .Net experience
+http://gwren.users.mcs2.netarray.com/LabForWeb/
+labforweb@hotmail.com
+
+Ashley Jennings - gumnut - community over gnutella
+fooscope@gmail.com
+http://gumnut.sourceforge.net/
+
 michael stokes
 shareaza
 Australia

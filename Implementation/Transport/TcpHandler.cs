@@ -233,14 +233,12 @@ namespace RiseOp.Implementation.Transport
 		void ConnectProxy()
 		{
 			// Get cloest contacts and sort by distance to us
-            List<DhtContact> contacts = Network.Routing.Find(Core.LocalDhtID, 8);
-
 			DhtContact attempt = null;
 			
 			// no Dht contacts, use ip cache will be used to connect tcp/udp in DoBootstrap
 
 			// find if any contacts in list are worth trying (will be skipped if set already)
-            foreach (DhtContact contact in contacts)
+            foreach (DhtContact contact in Network.Routing.XorContacts)
             {
                 if (ConnectionMap.ContainsKey(contact.DhtID))
                     continue;

@@ -31,8 +31,7 @@ namespace RiseOp.Services.Location
         const byte Packet_GMTOffset = 0xB0;
         const byte Packet_Away = 0xC0;
         const byte Packet_AwayMsg = 0xD0;
-        const byte Packet_Date = 0xE0;
-        const byte Packet_Tag = 0xF0;
+        const byte Packet_Tag = 0xE0;
 
         internal byte[] Key;
         internal DhtSource Source;
@@ -42,7 +41,6 @@ namespace RiseOp.Services.Location
         internal string Place = "";
         internal uint TTL;
         internal uint Version;
-        internal DateTime Date; // only used when saving location cache and showing user last seen
         internal List<LocationTag> Tags = new List<LocationTag>();
 
         internal int GmtOffset;
@@ -69,7 +67,6 @@ namespace RiseOp.Services.Location
                 protocol.WritePacket(loc, Packet_GMTOffset, BitConverter.GetBytes(GmtOffset));
                 protocol.WritePacket(loc, Packet_Away, BitConverter.GetBytes(Away));
                 protocol.WritePacket(loc, Packet_AwayMsg, protocol.UTF.GetBytes(AwayMessage));
-                protocol.WritePacket(loc, Packet_Date, BitConverter.GetBytes(Date.ToBinary()));
                     
                 foreach(LocationTag tag in Tags)
                     protocol.WritePacket(loc, Packet_Tag, tag.ToBytes());
@@ -140,10 +137,6 @@ namespace RiseOp.Services.Location
 
                     case Packet_AwayMsg:
                         loc.AwayMessage = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-
-                    case Packet_Date:
-                        loc.Date = DateTime.FromBinary(BitConverter.ToInt64(child.Data, child.PayloadPos));
                         break;
 
                     case Packet_Tag:

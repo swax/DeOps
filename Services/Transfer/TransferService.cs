@@ -105,8 +105,7 @@ namespace RiseOp.Services.Transfer
             List<ClientInfo> clients = Core.Locations.GetClients(key);
 
             foreach (ClientInfo info in clients)
-                if(info.Active)
-                    DownloadMap[id].AddSource(info.Data);
+                DownloadMap[id].AddSource(info.Data);
         }
 
         internal void CancelDownload(ushort id, byte[] hash, long size)
