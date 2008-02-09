@@ -13,6 +13,10 @@ using RiseOp.Implementation.Transport;
 
 namespace RiseOp.Simulator
 {
+    internal enum InstanceChangeType { Add, Remove, Update, Refresh };
+    internal delegate void InstanceChangeHandler(SimInstance instance, InstanceChangeType type);
+    internal delegate void UpdateViewHandler();
+
     internal class InternetSim
     {
         // super-class
@@ -25,6 +29,10 @@ namespace RiseOp.Simulator
         internal List<SimInstance> Offline = new List<SimInstance>();
 
         Random RndGen = new Random(unchecked((int)DateTime.Now.Ticks));
+
+        
+        internal InstanceChangeHandler InstanceChange;
+        internal UpdateViewHandler UpdateView;
 
         // Sim
         internal Dictionary<IPEndPoint, DhtNetwork> AddressMap = new Dictionary<IPEndPoint, DhtNetwork>();
@@ -53,6 +61,7 @@ namespace RiseOp.Simulator
         internal int SleepTime = 100; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
 
         bool RandomCache = true;
+        internal bool LoadOnline = true;
         internal bool TestEncryption = false;
         internal bool FreshStart = false;
         internal bool TestTcpFullBuffer = false;
@@ -69,7 +78,6 @@ namespace RiseOp.Simulator
 
         internal InternetSim(SimForm form)
         {
-       
             Interface = form;
 
             StartTime = new DateTime(2006, 1, 1, 0, 0, 0);
@@ -80,7 +88,7 @@ namespace RiseOp.Simulator
         {
             SimInstance instance = new SimInstance(this, path);
 
-            if (!Flux)
+            if (LoadOnline)
                 BringOnline(instance);
             else
                 Offline.Add(instance);
@@ -88,7 +96,7 @@ namespace RiseOp.Simulator
             lock (Instances) 
                 Instances.Add(instance);
             
-            Interface.BeginInvoke(Interface.InstanceChange, instance, InstanceChangeType.Add);
+            Interface.BeginInvoke(InstanceChange, instance, InstanceChangeType.Add);
         }
 
         internal void DoFlux()
@@ -168,7 +176,7 @@ namespace RiseOp.Simulator
                 if (Offline.Contains(instance))
                     Offline.Remove(instance);
 
-            Interface.BeginInvoke(Interface.InstanceChange, instance, InstanceChangeType.Update);
+            Interface.BeginInvoke(InstanceChange, instance, InstanceChangeType.Update);
         }
 
         internal void BringOffline(SimInstance instance)
@@ -194,7 +202,7 @@ namespace RiseOp.Simulator
             instance.Core.Exit();
             instance.Core = null;
             
-            Interface.BeginInvoke(Interface.InstanceChange, instance, InstanceChangeType.Update);
+            Interface.BeginInvoke(InstanceChange, instance, InstanceChangeType.Update);
         }
 
         internal void AddAddress(IPEndPoint address, DhtNetwork network)
@@ -336,8 +344,7 @@ namespace RiseOp.Simulator
 
                     TimeNow = TimeNow.AddMilliseconds(1000 / pumps);
 
-                    foreach (NetView view in Interface.NetViews.Values)
-                        view.BeginInvoke(view.UpdateView, null);
+                    Interface.BeginInvoke(UpdateView, null);
 
                     if (Step)
                     {
@@ -429,8 +436,7 @@ namespace RiseOp.Simulator
 
                     TimeNow = TimeNow.AddMilliseconds(1000 / pumps);
 
-                    foreach (NetView view in Interface.NetViews.Values)
-                        view.BeginInvoke(view.UpdateView, null);
+                    Interface.BeginInvoke(UpdateView, null);
 
                     if (Step || Shutdown)
                     {

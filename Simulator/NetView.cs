@@ -45,8 +45,6 @@ namespace RiseOp.Simulator
 
         Font TahomaFont = new Font("Tahoma", 8);
 
-        internal delegate void UpdateViewHandler();
-        internal UpdateViewHandler UpdateView;
 
         ulong SelectedID;
         bool  ShowInbound;
@@ -73,7 +71,7 @@ namespace RiseOp.Simulator
 
             Redraw = true;
 
-            UpdateView = new UpdateViewHandler(OnUpdateView);
+            Sim.UpdateView += new UpdateViewHandler(OnUpdateView);
 
             InitializeComponent();
 
@@ -95,6 +93,9 @@ namespace RiseOp.Simulator
         
         private void NetView_FormClosing(object sender, FormClosingEventArgs e)
         {
+            Sim.UpdateView -= new UpdateViewHandler(OnUpdateView);
+
+
             Main.NetViews.Remove(OpID);
         }
 

@@ -249,7 +249,7 @@ namespace RiseOp.Interface
 
             ExternalViews.Add(external);
 
-            if(!InternalView.BlockReinit)
+            if(InternalView == null || !InternalView.BlockReinit)
                 view.Init();
 
             external.Show();

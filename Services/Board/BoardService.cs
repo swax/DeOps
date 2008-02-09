@@ -479,7 +479,13 @@ namespace RiseOp.Services.Board
             CachePost(new SignedData(Protocol, Core.User.Settings.KeyPair, header), header);
 
             // publish to network and local region of target
-            Network.Store.PublishNetwork(header.TargetID, ServiceID, 0, GetPost(header).SignedHeader);
+            OpPost post = GetPost(header);
+
+            if (Network.Established)
+                Network.Store.PublishNetwork(header.TargetID, ServiceID, 0, GetPost(header).SignedHeader);
+            else if (post != null)
+                post.Unique = true; // publish when connected
+                
 
             List<LocationData> locations = new List<LocationData>();
             Links.GetLocs(header.TargetID, header.ProjectID, 1, 1, locations);

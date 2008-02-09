@@ -6,8 +6,12 @@ debugging
 		re-name old strucutures to *old
 		create mirror stuctures
 		start moving old implementation over to the new 
-		
-
+	
+performance	
+	128 clients, 10 sim minutes, no services loaded, fresh start, avg memory, logging off
+		debug < 400mb, 80mb after GC
+		max 500kb bandwidth, < 1kb/s
+	
 Threading
 	Op objects are recreated when loaded so that interface with current handle doesnt get collections modified inbetween
 		dont need to lock inside op stucture if only interface accesses it

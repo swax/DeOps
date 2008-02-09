@@ -20,7 +20,7 @@ namespace RiseOp.Services.Location
     internal delegate void LocationGuiUpdateHandler(ulong key);
 
     internal delegate byte[] GetLocationTagHandler();
-    internal delegate void LocationTagReceivedHandler(ulong user, byte[] tag);
+    internal delegate void LocationTagReceivedHandler(DhtAddress address, ulong user, byte[] tag);
 
 
     internal class LocationService : OpService
@@ -455,11 +455,13 @@ namespace RiseOp.Services.Location
                 }
             }
 
-
+             
             // notify components of new versions
+            DhtAddress address = new DhtAddress(location.IP, location.Source);
+
             foreach (LocationTag tag in location.Tags)
                 if(TagReceived.Contains(tag.Service, tag.DataType))
-                    TagReceived[tag.Service, tag.DataType].Invoke(location.KeyID, tag.Tag);
+                    TagReceived[tag.Service, tag.DataType].Invoke(address, location.KeyID, tag.Tag);
 
 
             // add location

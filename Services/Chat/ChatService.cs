@@ -305,7 +305,7 @@ namespace RiseOp.Services.Chat
                     foreach (ClientInfo info in Core.Locations.GetClients(key))
                         Core.RudpControl.Connect(info.Data);
 
-                    if (Links.GetTrust(key) != null)
+                    if (Links.GetTrust(key) == null)
                         Links.Research(key, 0, false);
 
                     Core.Locations.Research(key);
@@ -998,7 +998,7 @@ namespace RiseOp.Services.Chat
                     {
                         room.Members.SafeAdd(id, new ThreadedList<ushort>());
 
-                        if (Links.GetTrust(id) != null)
+                        if (Links.GetTrust(id) == null)
                             Links.Research(id, 0, false);
 
                         Core.Locations.Research(id);

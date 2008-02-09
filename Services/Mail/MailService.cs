@@ -66,7 +66,6 @@ namespace RiseOp.Services.Mail
         internal DhtNetwork Network;
         internal DhtStore Store;
 
-        bool Loading = true;
         internal string MailPath;
         internal string CachePath;
         RijndaelManaged LocalFileKey;
@@ -148,8 +147,6 @@ namespace RiseOp.Services.Mail
             PendingCache.Load();
 
             LoadHeaders();
-
-            Loading = false;
         }
 
         public void Dispose()
@@ -768,7 +765,8 @@ namespace RiseOp.Services.Mail
 
                 byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, header.Encode(Core.Protocol, false) );
 
-                Core.OperationNet.Store.PublishNetwork(id, ServiceID, (ushort)DataType.Mail, signed);
+                if(Network.Established)
+                    Core.OperationNet.Store.PublishNetwork(id, ServiceID, (ushort)DataType.Mail, signed);
 
                 Store_LocalMail(new DataReq(null, id, ServiceID, (ushort)DataType.Mail, signed)); // cant direct process_header, because header var is being modified
             }
@@ -1190,7 +1188,7 @@ namespace RiseOp.Services.Mail
 
                 mail.Header = header;
                 mail.SignedHeader = signed.Encode(Core.Protocol);
-                mail.Unique = Loading;
+                mail.Unique = !Network.Established;
 
                 MailMap[header.TargetID].Add(mail);
 
@@ -1254,10 +1252,13 @@ namespace RiseOp.Services.Mail
 
             // send 
             byte[] signedAck = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, ack.Encode(Core.Protocol));
-            Core.OperationNet.Store.PublishNetwork(header.SourceID, ServiceID, (ushort)DataType.Ack, signedAck);
+            
+            if(Network.Established)
+                Core.OperationNet.Store.PublishNetwork(header.SourceID, ServiceID, (ushort)DataType.Ack, signedAck);
+            
             Store_LocalAck(new DataReq(null, header.SourceID, ServiceID, (ushort)DataType.Ack, signedAck)); // cant direct process_header, because header var is being modified
             RunSaveHeaders = true;
-
+            
             Core.MakeNews("Mail Received from " + Core.Links.GetName(message.From), message.From, 0, false, MailRes.Icon, Menu_View);
          
         }
@@ -1404,7 +1405,7 @@ namespace RiseOp.Services.Mail
                 if (!AckMap.ContainsKey(ack.TargetID))
                     AckMap[ack.TargetID] = new List<CachedAck>();
 
-                AckMap[ack.TargetID].Add(new CachedAck(signed.Encode(Core.Protocol), ack, Loading));
+                AckMap[ack.TargetID].Add(new CachedAck(signed.Encode(Core.Protocol), ack, !Network.Established));
             }
         }
 

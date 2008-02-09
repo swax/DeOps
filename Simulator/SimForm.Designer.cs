@@ -52,11 +52,14 @@ namespace RiseOp.Simulator
             this.SaveMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.GenerateUsersMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.UnloadAllMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.ExitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.OptionsMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.FreshStartMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.LoadOnlineMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.SpeedMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.CollectMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ViewMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.ButtonStep = new System.Windows.Forms.Button();
             this.TimeLabel = new System.Windows.Forms.Label();
@@ -69,7 +72,6 @@ namespace RiseOp.Simulator
             this.ElapsedLabel = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.LoadProgress = new System.Windows.Forms.ProgressBar();
-            this.CollectMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -217,6 +219,7 @@ namespace RiseOp.Simulator
             this.SaveMenuItem,
             this.toolStripMenuItem1,
             this.GenerateUsersMenuItem,
+            this.UnloadAllMenuItem,
             this.toolStripMenuItem2,
             this.ExitMenuItem});
             this.FileMenu.Name = "FileMenu";
@@ -249,6 +252,13 @@ namespace RiseOp.Simulator
             this.GenerateUsersMenuItem.Text = "Generate Users";
             this.GenerateUsersMenuItem.Click += new System.EventHandler(this.GenerateUsersMenuItem_Click);
             // 
+            // UnloadAllMenuItem
+            // 
+            this.UnloadAllMenuItem.Name = "UnloadAllMenuItem";
+            this.UnloadAllMenuItem.Size = new System.Drawing.Size(160, 22);
+            this.UnloadAllMenuItem.Text = "Unload All";
+            this.UnloadAllMenuItem.Click += new System.EventHandler(this.UnloadAllMenuItem_Click);
+            // 
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
@@ -265,6 +275,7 @@ namespace RiseOp.Simulator
             // 
             this.OptionsMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.FreshStartMenuItem,
+            this.LoadOnlineMenuItem,
             this.SpeedMenuItem,
             this.CollectMenuItem});
             this.OptionsMenuItem.Name = "OptionsMenuItem";
@@ -279,12 +290,26 @@ namespace RiseOp.Simulator
             this.FreshStartMenuItem.Text = "Fresh Start";
             this.FreshStartMenuItem.Click += new System.EventHandler(this.FreshStartMenuItem_Click);
             // 
+            // LoadOnlineMenuItem
+            // 
+            this.LoadOnlineMenuItem.Name = "LoadOnlineMenuItem";
+            this.LoadOnlineMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.LoadOnlineMenuItem.Text = "Load Online";
+            this.LoadOnlineMenuItem.Click += new System.EventHandler(this.LoadOnlineMenu_Click);
+            // 
             // SpeedMenuItem
             // 
             this.SpeedMenuItem.Name = "SpeedMenuItem";
             this.SpeedMenuItem.Size = new System.Drawing.Size(152, 22);
             this.SpeedMenuItem.Text = "Speed";
             this.SpeedMenuItem.Click += new System.EventHandler(this.SpeedMenuItem_Click);
+            // 
+            // CollectMenuItem
+            // 
+            this.CollectMenuItem.Name = "CollectMenuItem";
+            this.CollectMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.CollectMenuItem.Text = "GC Collect";
+            this.CollectMenuItem.Click += new System.EventHandler(this.CollectMenuItem_Click);
             // 
             // ViewMenu
             // 
@@ -415,13 +440,6 @@ namespace RiseOp.Simulator
             this.LoadProgress.TabIndex = 18;
             this.LoadProgress.Visible = false;
             // 
-            // CollectMenuItem
-            // 
-            this.CollectMenuItem.Name = "CollectMenuItem";
-            this.CollectMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.CollectMenuItem.Text = "GC Collect";
-            this.CollectMenuItem.Click += new System.EventHandler(this.CollectMenuItem_Click);
-            // 
             // SimForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -493,5 +511,7 @@ namespace RiseOp.Simulator
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label ElapsedLabel;
         private System.Windows.Forms.ToolStripMenuItem CollectMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem LoadOnlineMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem UnloadAllMenuItem;
     }
 }

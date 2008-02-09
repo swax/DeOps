@@ -20,6 +20,9 @@ namespace RiseOp.Services.Assist
     internal delegate void FileAquiredHandler(OpVersionedFile file);
     internal delegate void FileRemovedHandler(OpVersionedFile file);
 
+    // A versioned cache is used for a single file you want to keep cached around the local user's ID
+    // So it is persistant on the network.  Newer versions of files replace older versions.
+    // LocalSync is used to provide simultaneous replication of all versioned files
 
     class VersionedCache : IDisposable
     {
@@ -27,7 +30,6 @@ namespace RiseOp.Services.Assist
         DhtNetwork Network;
         internal DhtStore Store;
 
-        bool Loading;
         internal ushort Service;
         internal ushort DataType;
 
@@ -67,9 +69,10 @@ namespace RiseOp.Services.Assist
             LocalKey = Core.User.Settings.FileKey;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
             Network.StatusChange += new StatusChange(Network_StatusChange);
-
+ 
             Store.StoreEvent[Service, DataType] += new StoreHandler(Store_Local);
 
             if ( !UseLocalSync )
@@ -95,16 +98,13 @@ namespace RiseOp.Services.Assist
 
         public void Load()
         {
-            Loading = true;
-
             LoadHeaders();
-
-            Loading = false;
         }
 
         public void Dispose()
         {
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
             Network.StatusChange -= new StatusChange(Network_StatusChange);
 
@@ -138,6 +138,23 @@ namespace RiseOp.Services.Assist
             if (RunSaveHeaders)
                 SaveHeaders();
 
+            // clean research map every 10 seconds
+            if (Core.TimeNow.Second % 9 == 0)
+            {
+                List<ulong> removeIDs = new List<ulong>();
+
+                foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
+                    if (Core.TimeNow > pair.Value)
+                        removeIDs.Add(pair.Key);
+
+                if (removeIDs.Count > 0)
+                    foreach (ulong id in removeIDs)
+                        NextResearch.Remove(id);
+            }
+        }
+
+        void Core_MinuteTimer()
+        {
             // prune
             List<ulong> removeIDs = new List<ulong>();
 
@@ -179,20 +196,6 @@ namespace RiseOp.Services.Assist
                         RunSaveHeaders = true;
                     }
                 });
-
-            // clean research map every 10 seconds
-            if (Core.TimeNow.Second % 9 == 0)
-            {
-                removeIDs.Clear();
-
-                foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
-                    if (Core.TimeNow > pair.Value)
-                        removeIDs.Add(pair.Key);
-
-                if (removeIDs.Count > 0)
-                    foreach (ulong id in removeIDs)
-                        NextResearch.Remove(id);
-            }
         }
 
         void Network_StatusChange()
@@ -348,8 +351,10 @@ namespace RiseOp.Services.Assist
 
             if (UseLocalSync)
                 Core.Sync.UpdateLocal();
-            else
+            else if (Network.Established)
                 Store.PublishNetwork(Core.LocalDhtID, Service, DataType, vfile.SignedHeader);
+            else
+                vfile.Unique = true; // publish when connected
 
             return vfile;
         }
@@ -426,7 +431,7 @@ namespace RiseOp.Services.Assist
                 // set new header
                 newFile.Header = header;
                 newFile.SignedHeader = signedHeader.Encode(Core.Protocol);
-                newFile.Unique = Loading;
+                newFile.Unique = !Network.Established;
 
                 FileMap.SafeAdd(header.KeyID, newFile);
 
@@ -652,29 +657,31 @@ namespace RiseOp.Services.Assist
 
         void LocalSync_TagReceived(ulong user, byte[] tag)
         {
-            //crit if user in cache bounds - get the file
-
             if(tag.Length < 4)
                 return;
+
+            uint version = 0;
 
             OpVersionedFile file = GetFile(user);
 
             if (file != null)
             {
-                uint version = BitConverter.ToUInt32(tag, 0);
+                version = BitConverter.ToUInt32(tag, 0);
 
-                if (version > file.Header.Version)
-                {
-                    StartSearch(user, version); // this could be called from a patch given to another user, direct connect not gauranteed
-
-                    foreach (ClientInfo client in Core.Locations.GetClients(user))
-                        Network.Searches.SendDirectRequest(new DhtAddress(client.Data.IP, client.Data.Source), user, Service, DataType, BitConverter.GetBytes(version));
-                }
-
-                // wont cause loop because localsync's fileAquired will only fire on new file version
+                // version old, so we need the latest localSync file
+                // wont cause loop because localsync's fileAquired will only fire on new version of localSync
                 if (version < file.Header.Version)
                     Core.Sync.Research(user);
+            }
 
+            // if newer file on network, or this node is in our cache area, find it
+            if ((file != null && version > file.Header.Version) ||
+                (file == null && Network.Routing.InCacheArea(user)))
+            {
+                StartSearch(user, version); // this could be called from a patch given to another user, direct connect not gauranteed
+
+                foreach (ClientInfo client in Core.Locations.GetClients(user))
+                    Network.Searches.SendDirectRequest(new DhtAddress(client.Data.IP, client.Data.Source), user, Service, DataType, BitConverter.GetBytes(version));
             }
         }
     }

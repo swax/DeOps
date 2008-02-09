@@ -40,6 +40,7 @@ namespace RiseOp.Services.IM
             Locations = core.Locations;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.GetFocusedCore += new GetFocusedHandler(Core_GetFocusedCore);
 
             Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
             Core.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
@@ -55,6 +56,7 @@ namespace RiseOp.Services.IM
                 throw new Exception("IM Events not fin'd");
 
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.GetFocusedCore -= new GetFocusedHandler(Core_GetFocusedCore);
 
             Core.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
             Core.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
@@ -99,6 +101,15 @@ namespace RiseOp.Services.IM
                     foreach (BoxInt ttl in status.TTL.Values)
                         if (ttl.Value > 0)
                             ttl.Value--;
+            });
+        }
+
+        void Core_GetFocusedCore()
+        {
+            IMMap.LockReading(delegate()
+            {
+                foreach (ulong user in IMMap.Keys )
+                    Core.Focused.SafeAdd(user, true);
             });
         }
 
@@ -198,6 +209,8 @@ namespace RiseOp.Services.IM
 
                 if (session.Status == SessionStatus.Active)
                 {
+                    status.Connected = true;
+
                     ClientInfo info = Locations.GetLocationInfo(key, session.ClientID);
 
                     awayMessage = "";
@@ -206,24 +219,16 @@ namespace RiseOp.Services.IM
                         {
                             status.Away = true;
                             awayMessage = " " + info.Data.AwayMessage;
-                        }
-                        else
-                            status.Connected = true;
+                        }      
 
                     activeCount++;
                     places += " @" + Locations.GetLocationName(key, session.ClientID) + awayMessage + ",";
                 }
             }
 
-            if (status.Connected)
-            {
-                status.Text = "Connected to " + Core.Links.GetName(key);
 
-                if (activeCount > 1)
-                    status.Text += places.TrimEnd(',');
-            }
 
-            else if (status.Away)
+            if (status.Away)
             {
                 status.Text = Core.Links.GetName(key) + " is Away ";
 
@@ -231,6 +236,14 @@ namespace RiseOp.Services.IM
                     status.Text += places.TrimEnd(',');
                 else
                     status.Text += awayMessage;
+            }
+
+            else if (status.Connected)
+            {
+                status.Text = "Connected to " + Core.Links.GetName(key);
+                
+                if (activeCount > 1)
+                    status.Text += places.TrimEnd(',');
             }
 
             else if(status.Connecting)
@@ -259,6 +272,12 @@ namespace RiseOp.Services.IM
             if (Core.GuiMain == null)
                 return null;
 
+            if (Links.GetTrust(key) == null)
+                Links.Research(key, 0, false);
+
+            if (Locations.GetClients(key).Count == 0)
+                Locations.Research(key);
+
             IM_View view = new IM_View(this, key);
 
             Core.InvokeView(true, view);
@@ -271,7 +290,9 @@ namespace RiseOp.Services.IM
             if (FindView(trust.DhtID) == null)
                 return;
 
-            Core.RunInGuiThread(StatusUpdate, trust.DhtID);
+            IMStatus status = null;
+            if (IMMap.SafeTryGetValue(trust.DhtID, out status))
+                Update(status);
         }
 
         internal void Location_Update(LocationData location)

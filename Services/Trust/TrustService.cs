@@ -231,7 +231,9 @@ namespace RiseOp.Services.Trust
             request.TargetID = remoteLink.DhtID;
 
             byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, request);
-            Store.PublishNetwork(request.TargetID, ServiceID, (ushort) DataType.File, signed);
+
+            if(Network.Established)
+                Store.PublishNetwork(request.TargetID, ServiceID, (ushort) DataType.File, signed);
 
             // store locally
             Process_UplinkReq(null, new SignedData(Core.Protocol, Core.User.Settings.KeyPair, request), request);

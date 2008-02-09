@@ -238,7 +238,7 @@ namespace RiseOp.Implementation.Transport
 			// no Dht contacts, use ip cache will be used to connect tcp/udp in DoBootstrap
 
 			// find if any contacts in list are worth trying (will be skipped if set already)
-            foreach (DhtContact contact in Network.Routing.XorContacts)
+            foreach (DhtContact contact in Network.Routing.NearXor.Contacts)
             {
                 if (ConnectionMap.ContainsKey(contact.DhtID))
                     continue;

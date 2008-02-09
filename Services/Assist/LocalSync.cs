@@ -16,6 +16,10 @@ namespace RiseOp.Services.Assist
     internal delegate byte[] GetLocalSyncTagHandler();
     internal delegate void LocalSyncTagReceivedHandler(ulong user, byte[] tag);
 
+    // gives any service the ability to store a little piece of data on the network for anything
+    // usually its version number purpose of this is to ease the burdon of patching the local area
+    // as services increase, patch size remains constant
+    
 
     class LocalSync : OpService
     {
@@ -24,10 +28,14 @@ namespace RiseOp.Services.Assist
 
         OpCore Core;
         DhtNetwork Network;
+        DhtStore Store;
 
         enum DataType { SyncObject = 1 };
 
         internal VersionedCache Cache;
+
+        internal Dictionary<ulong, ServiceData> InRange = new Dictionary<ulong, ServiceData>();
+        internal Dictionary<ulong, ServiceData> OutofRange = new Dictionary<ulong, ServiceData>();
 
         internal ServiceEvent<GetLocalSyncTagHandler> GetTag = new ServiceEvent<GetLocalSyncTagHandler>();
         internal ServiceEvent<LocalSyncTagReceivedHandler> TagReceived = new ServiceEvent<LocalSyncTagReceivedHandler>();
@@ -37,14 +45,18 @@ namespace RiseOp.Services.Assist
         {
             Core = core;
             Network = core.OperationNet;
+            Store = Network.Store;
             Core.Sync = this;
 
             Core.Locations.GetTag[ServiceID, (ushort) DataType.SyncObject] += new GetLocationTagHandler(Locations_GetTag);
             Core.Locations.TagReceived[ServiceID, (ushort) DataType.SyncObject] += new LocationTagReceivedHandler(Locations_TagReceived);
 
+            Store.ReplicateEvent[ServiceID, (ushort)DataType.SyncObject] += new ReplicateHandler(Store_Replicate);
 
             Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.SyncObject, false);
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
+            Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
+            Cache.Load();
 
             // if sync file for ourselves does not exist create
             if (!Cache.FileMap.SafeContainsKey(Core.LocalDhtID))
@@ -56,7 +68,10 @@ namespace RiseOp.Services.Assist
             Core.Locations.GetTag[ServiceID, (ushort)DataType.SyncObject] -= new GetLocationTagHandler(Locations_GetTag);
             Core.Locations.TagReceived[ServiceID, (ushort)DataType.SyncObject] -= new LocationTagReceivedHandler(Locations_TagReceived);
 
+            Store.ReplicateEvent[ServiceID, (ushort)DataType.SyncObject] -= new ReplicateHandler(Store_Replicate);
+
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
+            Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);
             Cache.Dispose();
         }
 
@@ -91,13 +106,69 @@ namespace RiseOp.Services.Assist
             Cache.UpdateLocal("", null, data.Encode(Core.Protocol));
         }
 
+        void InvokeTags(ulong user, ServiceData data)
+        {
+            foreach (LocationTag tag in data.Tags)
+                if (TagReceived.Contains(tag.Service, tag.DataType))
+                    TagReceived[tag.Service, tag.DataType].Invoke(user, tag.Tag);
+        }
+
         void Cache_FileAquired(OpVersionedFile file)
         {
             ServiceData data = ServiceData.Decode(Core.Protocol, file.Header.Extra);
 
-            foreach (LocationTag tag in data.Tags)
-                if (TagReceived.Contains(tag.Service, tag.DataType))
-                    TagReceived[tag.Service, tag.DataType].Invoke(file.DhtID, tag.Tag);
+            if (Network.Routing.InCacheArea(file.DhtID))
+                InRange[file.DhtID] = data;
+            else
+                OutofRange[file.DhtID] = data;
+
+            InvokeTags(file.DhtID, data);
+        }
+
+        void Cache_FileRemoved(OpVersionedFile file)
+        {
+            if(InRange.ContainsKey(file.DhtID))
+                InRange.Remove(file.DhtID);
+
+            if (OutofRange.ContainsKey(file.DhtID))
+                OutofRange.Remove(file.DhtID);
+        }
+
+        List<byte[]> Store_Replicate(DhtContact contact)
+        {
+            // indicates cache area has changed, move contacts between out and in range
+
+            // move in to out
+            List<ulong> remove = new List<ulong>();
+
+            foreach(ulong user in InRange.Keys)
+                if (!Network.Routing.InCacheArea(user))
+                {
+                    OutofRange[user] = InRange[user];
+                    remove.Add(user);
+                }
+
+            foreach (ulong key in remove)
+                InRange.Remove(key);
+
+            // move out to in
+            remove.Clear();
+
+            foreach (ulong user in OutofRange.Keys)
+                if (Network.Routing.InCacheArea(user))
+                {
+                    InRange[user] = OutofRange[user];
+                    remove.Add(user);
+                }
+
+            foreach (ulong key in remove)
+                OutofRange.Remove(key);
+
+            // invoke tags on data moving in range so all services are cached
+            foreach (ulong key in remove)
+                InvokeTags(key, InRange[key]);
+
+            return null;
         }
 
         byte[] Locations_GetTag()
@@ -107,20 +178,29 @@ namespace RiseOp.Services.Assist
             return (file != null) ? BitConverter.GetBytes(file.Header.Version) : null;
         }
 
-        void Locations_TagReceived(ulong user, byte[] tag)
+        void Locations_TagReceived(DhtAddress address, ulong user, byte[] tag)
         {
             if (tag.Length < 4)
                 return;
+
+            uint version = 0;
 
             OpVersionedFile file = Cache.GetFile(user);
 
             if (file != null)
             {
-                uint version = BitConverter.ToUInt32(tag, 0);
+                version = BitConverter.ToUInt32(tag, 0);
 
-                if (version > file.Header.Version)
-                    foreach (ClientInfo client in Core.Locations.GetClients(user))
-                        Network.Searches.SendDirectRequest(new DhtAddress(client.Data.IP, client.Data.Source), user, ServiceID, (ushort) DataType.SyncObject, BitConverter.GetBytes(version));
+                if (version < file.Header.Version)
+                    Store.Send_StoreReq(address, 0, new DataReq(null, file.DhtID, ServiceID, (ushort)DataType.SyncObject, file.SignedHeader));
+            }
+
+            if ((file != null && version > file.Header.Version) ||
+                (file == null && Network.Routing.InCacheArea(user)))
+            {
+                Cache.Research(user);
+
+                Network.Searches.SendDirectRequest(address, user, ServiceID, (ushort)DataType.SyncObject, BitConverter.GetBytes(version));
             }
         }
 

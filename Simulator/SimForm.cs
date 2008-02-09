@@ -22,14 +22,12 @@ using RiseOp.Interface.Tools;
 
 namespace RiseOp.Simulator
 {
-    internal enum InstanceChangeType { Add, Remove, Update, Refresh};
 
     internal partial class SimForm : Form
     {
         internal InternetSim Sim;
 
-        internal delegate void InstanceChangeHandler(SimInstance instance, InstanceChangeType type);
-        internal InstanceChangeHandler InstanceChange;
+
 
         private ListViewColumnSorter lvwColumnSorter = new ListViewColumnSorter();
 
@@ -37,8 +35,9 @@ namespace RiseOp.Simulator
 
         FileStream TimeFile;
 
-        bool Loaded;
-        string LoadPath;
+        //bool Loaded;
+        //string DelayLoadPath;
+
 
         internal SimForm()
         {
@@ -49,7 +48,7 @@ namespace RiseOp.Simulator
         {
             Construct();
 
-            LoadPath = path;
+            //DelayLoadPath = path;
         }
 
         void Construct()
@@ -63,17 +62,17 @@ namespace RiseOp.Simulator
 
         private void ControlForm_Load(object sender, EventArgs e)
         {
-            InstanceChange += new InstanceChangeHandler(OnInstanceChange);
+            Sim.InstanceChange += new InstanceChangeHandler(OnInstanceChange);
 
-            Loaded = true;
+            //Loaded = true;
             string name = SystemInformation.UserName;
             string comp = SystemInformation.ComputerName;
             
-            // check for new version
+            // call home for alpha security
 #if !DEBUG
             WebClient client  = new WebClient();
             client.DownloadStringCompleted += new DownloadStringCompletedEventHandler( DownloadStringCallback);
-            client.DownloadStringAsync(new Uri("http://www.c0re.net/deops/update.php?build=" + "alpha1" + "&comp=" + comp + "&name=" + name ));
+            client.DownloadStringAsync(new Uri("http://www.c0re.net/deops/update.php?build=" + "alpha2" + "&comp=" + comp + "&name=" + name ));
 #endif 
         }
 
@@ -235,12 +234,12 @@ namespace RiseOp.Simulator
                 TimeFile.Write(BitConverter.GetBytes(Sim.TimeNow.ToBinary()), 0, 8);
             }
 
-            if (Loaded && LoadPath != null)
+            /*if (Loaded && DelayLoadPath != null)
             {
-                string path = LoadPath;
-                LoadPath = null; // done because doevents will refire
+                string path = DelayLoadPath;
+                DelayLoadPath = null; // done because doevents will refire
                 LoadDirectory(Application.StartupPath + Path.DirectorySeparatorChar + path);
-            }
+            }*/
         }
 
         string SpantoString(TimeSpan span)
@@ -290,7 +289,7 @@ namespace RiseOp.Simulator
             ContextMenu menu = new ContextMenu();
 
             if(item.Instance.Core == null)
-                menu.MenuItems.Add(new MenuItem("Start", new EventHandler(Click_Connect)));
+                menu.MenuItems.Add(new MenuItem("Bring Online", new EventHandler(Click_Connect)));
             else
             {
                 MenuItem global = new MenuItem("Global");
@@ -312,7 +311,7 @@ namespace RiseOp.Simulator
                 menu.MenuItems.Add(operation);
                 menu.MenuItems.Add(new MenuItem("Console", new EventHandler(Click_Console)));
                 menu.MenuItems.Add(new MenuItem("-"));
-                menu.MenuItems.Add(new MenuItem("Exit", new EventHandler(Click_Disconnect)));
+                menu.MenuItems.Add(new MenuItem("Bring Offline", new EventHandler(Click_Disconnect)));
             }
 
             menu.Show(listInstances, e.Location);
@@ -594,6 +593,10 @@ namespace RiseOp.Simulator
             text = "Fresh Start: ";
             text += Sim.FreshStart ? "Yes" : "No";
             FreshStartMenuItem.Text = text;
+
+            text = "Load Online: ";
+            text += Sim.LoadOnline ? "Yes" : "No";
+            LoadOnlineMenuItem.Text = text;
         }
 
         private void EncryptionMenuItem_Click(object sender, EventArgs e)
@@ -619,7 +622,31 @@ namespace RiseOp.Simulator
             GC.Collect();
         }
 
+        private void LoadOnlineMenu_Click(object sender, EventArgs e)
+        {
+            Sim.LoadOnline = !Sim.LoadOnline;
+        }
 
+        private void UnloadAllMenuItem_Click(object sender, EventArgs e)
+        {
+            // unload
+            Sim.InstanceChange -= new InstanceChangeHandler(OnInstanceChange);
+
+            if (TimeFile != null)
+            {
+                TimeFile.Dispose();
+                TimeFile = null;
+            }
+
+            Sim.Exit();
+
+
+            // re-init
+            Sim = new InternetSim(this);
+            Sim.InstanceChange += new InstanceChangeHandler(OnInstanceChange);
+
+            OnInstanceChange(null, InstanceChangeType.Refresh);
+        }
     }
 
     internal class ViewMenuItem : ToolStripMenuItem

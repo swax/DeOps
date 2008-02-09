@@ -173,15 +173,16 @@ namespace RiseOp.Services.IM
 
             StatusLabel.Text = status.Text;
 
+            if (status.Away)
+                StatusImage.Image = IMRes.yellowled;
             if (status.Connected)
                 StatusImage.Image = IMRes.greenled;
-            else if (status.Away)
-                StatusImage.Image = IMRes.yellowled;
             else if (status.Connecting)
                 StatusImage.Image = IMRes.yellowled;
             else
                 StatusImage.Image = IMRes.redled;
 
+            DisplayLog();
         }
 
         internal void IM_MessageUpdate(ulong dhtid, InstantMessage message)

@@ -15,16 +15,12 @@ namespace RiseOp.Implementation.Dht
         int BucketLimit = 63;
         internal int ContactsPerBucket = 16;
 
-        int HighLowCacheCount = 4;
-        int XorCacheCount = 8;
-
-  
         // super-classes
         internal OpCore Core;
 		internal DhtNetwork Network;
 
 
-        ulong LocalRoutingID;
+        internal ulong LocalRoutingID;
 
 		internal int CurrentBucket;
         internal List<DhtBucket> BucketList = new List<DhtBucket>();
@@ -36,13 +32,9 @@ namespace RiseOp.Implementation.Dht
         internal DateTime LastUpdated    = new DateTime(0);
 		internal DateTime NextSelfSearch = new DateTime(0);
 
-        internal ulong XorBound = ulong.MaxValue;
-        internal ulong HighBound = ulong.MaxValue;
-        internal ulong LowBound = 0;
-
-        internal List<DhtContact> XorContacts = new List<DhtContact>();
-        internal List<DhtContact> HighContacts = new List<DhtContact>();
-        internal List<DhtContact> LowContacts = new List<DhtContact>();
+        internal DhtBound NearXor = new DhtBound(ulong.MaxValue, 8);
+        internal DhtBound NearHigh = new DhtBound(ulong.MaxValue, 4);
+        internal DhtBound NearLow = new DhtBound(0, 4);
 
 
 		internal DhtRouting(DhtNetwork network)
@@ -53,10 +45,7 @@ namespace RiseOp.Implementation.Dht
 			LastUpdated = new DateTime(0);
 
             if (Core.Sim != null)
-            {
-                BucketLimit = 25;
                 ContactsPerBucket = 8;
-            }
 
             LocalRoutingID = Core.LocalDhtID ^ Core.ClientID;
 
@@ -65,6 +54,15 @@ namespace RiseOp.Implementation.Dht
 
         internal void SecondTimer()
         {
+            // if no updates in a minute, we're disconnected
+            if (Network.Established && LastUpdated.AddSeconds(NetworkTimeout) < Core.TimeNow)
+            {
+                SetResponsive(false);
+                return;
+            }
+
+
+            // hourly self search
             if (Core.TimeNow > NextSelfSearch)
             {
                 // if behind nat this is how we ensure we are at closest proxy
@@ -73,98 +71,105 @@ namespace RiseOp.Implementation.Dht
                 NextSelfSearch = Core.TimeNow.AddHours(1);
             }
 
-            // get current bucket
-            DhtBucket bucket = null;
+            
 
-            lock (BucketList)
-                if (CurrentBucket < BucketList.Count)
-                {
-                    bucket = BucketList[CurrentBucket];
-                    CurrentBucket++;
-                }
-                else
-                {
-                    bucket = BucketList[0];
-                    CurrentBucket = 1;
-                }
 
-            bool bucketLow = bucket.ContactList.Count < ContactsPerBucket / 2;
+            // if current bucket low refresh, time out 15min between tries
+            if (CurrentBucket >= BucketList.Count)
+                CurrentBucket = 0;
 
-            // if bucket low
-            if (bucketLow &&
+            DhtBucket bucket = BucketList[CurrentBucket++];
+
+            if (bucket.ContactList.Count < ContactsPerBucket / 2 &&
                 Core.Firewall == FirewallType.Open &&
                 Core.TimeNow > bucket.NextRefresh)
             {
-                // get random id in bucket
+                // search on random id in bucket
                 Network.Searches.Start(bucket.GetRandomBucketID(), "Low Bucket", Core.DhtServiceID, 0, null, null);
                 bucket.NextRefresh = Core.TimeNow.AddMinutes(15);
             }
 
-            List<DhtContact> replicate = new List<DhtContact>();
+
+            // every 10 secs check nodes in contact list
+            if (Core.TimeNow.Second % 9 != 0)
+                return;
+
+
+            List<DhtContact> remove = new List<DhtContact>();
+
+            foreach (DhtContact contact in ContactMap.Values)
+                // if havent seen for more than a minute and time is greater than nexttry
+                if (contact.LastSeen.AddMinutes(1) < Core.TimeNow)
+                {
+                    // if less than 2 attempts
+                    if (contact.Attempts < 2)
+                    {
+                        // if not firewalled proxy refreshes nodes, let old ones timeout
+                        if (Core.Firewall == FirewallType.Open)
+                            Network.Send_Ping(contact.ToDhtAddress());
+
+                        contact.Attempts++;
+                        contact.NextTry = Core.TimeNow.AddSeconds(30);
+                    }
+
+                    // else remove contact
+                    else
+                        remove.Add(contact);
+                }
 
 
             // alert app of new bounds? yes need to activate caching to new nodes in bounds as network shrinks 
 
+            bool refreshBuckets = false;
             bool refreshXor = false;
             bool refreshHigh = false;
             bool refreshLow = false;
 
-            // check xor bounds
-            DhtContact removed = CheckContactList(bucket.ContactList);
 
-            if (removed != null)
+            foreach (DhtContact contact in remove)
             {
+                if (ContactMap.ContainsKey(contact.RoutingID))
+                    ContactMap.Remove(contact.RoutingID);
+
+                foreach(DhtBucket check in BucketList)
+                    if (check.ContactList.Contains(contact))
+                    {
+                        refreshBuckets = check.ContactList.Remove(contact) ? true : refreshBuckets;
+                        break;
+                    }
+
+                refreshXor = NearXor.Contacts.Remove(contact) ? true : refreshXor;
+                refreshHigh = NearHigh.Contacts.Remove(contact) ? true : refreshHigh;
+                refreshLow = NearLow.Contacts.Remove(contact) ? true : refreshLow;
+            }
+
+            if(refreshBuckets)
                 CheckMerge();
-                XorContacts.Remove(removed);
 
-                refreshXor = ((LocalRoutingID ^ removed.RoutingID) < XorBound);
-                refreshHigh = HighContacts.Remove(removed);
-                refreshLow = LowContacts.Remove(removed);
-            }
 
-            // check low bounds
-            if (Core.TimeNow.Second == 0 || Core.TimeNow.Second == 20 || Core.TimeNow.Second == 40)
-            {
-                removed = CheckContactList(LowContacts);
-
-                if (removed != null)
-                {
-                    refreshLow = true;
-                    refreshXor = RemoveFromBuckets(removed);
-                }
-            }
-
-            // check high bounds
-            if (Core.TimeNow.Second == 10 || Core.TimeNow.Second == 30 || Core.TimeNow.Second == 50)
-            {
-                removed = CheckContactList(HighContacts);
-                if (removed != null)
-                {
-                    refreshHigh = true;
-                    refreshXor = RemoveFromBuckets(removed);
-                }
-            }
-
+            // refesh lists that have been modified by getting next closest contacts
+            List<DhtContact> replicate = new List<DhtContact>();
 
             if (refreshXor)
             {
-                XorContacts = Find(LocalRoutingID, XorCacheCount);
+                NearXor.Contacts = Find(LocalRoutingID, NearXor.Max);
 
                 // set bound to furthest contact in range
-                if (XorContacts.Count == XorCacheCount)
+                if (NearXor.Contacts.Count == NearXor.Max)
                 {
-                    DhtContact furthest = XorContacts[XorCacheCount - 1];
+                    DhtContact furthest = NearXor.Contacts[NearXor.Max - 1];
 
-                    XorBound = LocalRoutingID ^ furthest.RoutingID;
+                    NearXor.SetBounds(LocalRoutingID ^ furthest.RoutingID,
+                                  Core.LocalDhtID ^ furthest.DhtID);
 
                     // ensure node being replicated to hasnt already been replicated to through another list
-                    if (!HighContacts.Contains(furthest) &&
-                        !LowContacts.Contains(furthest) && 
+                    if (!NearHigh.Contacts.Contains(furthest) &&
+                        !NearLow.Contacts.Contains(furthest) && 
                         !replicate.Contains(furthest))
                         replicate.Add(furthest);
                 }
                 else
-                    XorBound = ulong.MaxValue;
+                    NearXor.SetBounds( ulong.MaxValue, ulong.MaxValue);
             }
 
             // node removed from closest, so there isnt anything in buckets closer than lower bound
@@ -172,7 +177,7 @@ namespace RiseOp.Implementation.Dht
             if (refreshLow)
             {
                 DhtContact closest = null;
-                ulong bound = LowContacts.Count > 0 ? LowContacts[0].RoutingID : LocalRoutingID;
+                ulong bound = NearLow.Contacts.Count > 0 ? NearLow.Contacts[0].RoutingID : LocalRoutingID;
 
                 foreach (DhtBucket x in BucketList)
                     foreach (DhtContact contact in x.ContactList)
@@ -182,27 +187,27 @@ namespace RiseOp.Implementation.Dht
                             closest = contact;
                         }
 
-                if (closest != null && !LowContacts.Contains(closest))
+                if (closest != null && !NearLow.Contacts.Contains(closest))
                 {
-                    LowContacts.Insert(0, closest);
+                    NearLow.Contacts.Insert(0, closest);
 
-                    if (!XorContacts.Contains(closest) &&
-                        !HighContacts.Contains(closest) && 
+                    if (!NearXor.Contacts.Contains(closest) &&
+                        !NearHigh.Contacts.Contains(closest) && 
                         !replicate.Contains(closest))
                         replicate.Add(closest);
                 }
 
-                if (LowContacts.Count < HighLowCacheCount)
-                    LowBound = 0;
+                if (NearLow.Contacts.Count < NearLow.Max)
+                    NearLow.SetBounds(0, 0);
                 else
-                    LowBound = LowContacts[0].RoutingID;
+                    NearLow.SetBounds(NearLow.Contacts[0].RoutingID, NearLow.Contacts[0].DhtID);
             }
 
             // high - get next highest
             if (refreshHigh)
             {
                 DhtContact closest = null;
-                ulong bound = HighContacts.Count > 0 ? HighContacts[HighContacts.Count - 1].RoutingID : LocalRoutingID;
+                ulong bound = NearHigh.Contacts.Count > 0 ? NearHigh.Contacts[NearHigh.Contacts.Count - 1].RoutingID : LocalRoutingID;
 
                 foreach (DhtBucket x in BucketList)
                     foreach (DhtContact contact in x.ContactList)
@@ -212,29 +217,28 @@ namespace RiseOp.Implementation.Dht
                             closest = contact;
                         }
 
-                if (closest != null && !HighContacts.Contains(closest))
+                if (closest != null && !NearHigh.Contacts.Contains(closest))
                 {
-                    HighContacts.Insert(HighContacts.Count, closest);
+                    NearHigh.Contacts.Insert(NearHigh.Contacts.Count, closest);
 
-                    if (!XorContacts.Contains(closest) &&
-                        !LowContacts.Contains(closest) && 
+                    if (!NearXor.Contacts.Contains(closest) &&
+                        !NearLow.Contacts.Contains(closest) && 
                         !replicate.Contains(closest))
                         replicate.Add(closest);
                 }
 
-                if (HighContacts.Count < HighLowCacheCount)
-                    HighBound = ulong.MaxValue;
+                if (NearHigh.Contacts.Count < NearHigh.Max)
+                    NearHigh.SetBounds( ulong.MaxValue, ulong.MaxValue);
                 else
-                    HighBound = HighContacts[HighContacts.Count - 1].RoutingID;
+                    NearHigh.SetBounds( NearHigh.Contacts[NearHigh.Contacts.Count - 1].RoutingID, 
+                                     NearHigh.Contacts[NearHigh.Contacts.Count - 1].DhtID);
 
             }
 
             foreach (DhtContact contact in replicate)
                 Network.Store.Replicate(contact);
 
-            // if no updates in a minute, we're disconnected
-            if (Network.Established && LastUpdated.AddSeconds(NetworkTimeout) < Core.TimeNow)
-                SetResponsive(false);
+            
         }
 
         private bool RemoveFromBuckets(DhtContact removed)
@@ -247,7 +251,7 @@ namespace RiseOp.Implementation.Dht
                         return true;
                     }
 
-            XorContacts.Remove(removed);
+            NearXor.Contacts.Remove(removed);
 
             return false;
         }
@@ -262,51 +266,6 @@ namespace RiseOp.Implementation.Dht
             return false;
         }
 
-        private DhtContact CheckContactList(List<DhtContact> contacts)
-        {
-            // get oldest pingable contact
-            DateTime oldestTime = Core.TimeNow;
-            DhtContact oldContact = null;
-
-
-            // if havent seen for more than a minute and time is greater than nexttry
-            foreach (DhtContact contact in contacts)
-                if (contact.LastSeen.AddMinutes(1) < Core.TimeNow &&
-                    contact.LastSeen < oldestTime &&
-                    contact.NextTry < Core.TimeNow)
-                {
-                    oldContact = contact;
-                    oldestTime = contact.LastSeen;
-                }
-
-            if (oldContact != null)
-            {
-                // if less than 2 attempts
-                if (oldContact.Attempts < 2)
-                {
-                    // if not firewalled proxy refreshes nodes, let old ones timeout
-                    if (Core.Firewall == FirewallType.Open)
-                        Network.Send_Ping(oldContact.ToDhtAddress());
-
-                    oldContact.Attempts++;
-                    oldContact.NextTry = Core.TimeNow.AddSeconds(30);
-                }
-
-                // else remove contact
-                else
-                {
-                    contacts.Remove(oldContact);
-
-                    if (ContactMap.ContainsKey(oldContact.RoutingID))
-                        ContactMap.Remove(oldContact.RoutingID);
-
-                    return oldContact;
-                }
-            }
-
-            return null;
-        }
-
         internal bool InCacheArea(ulong user)
         {
             // modify lower bits so user on xor/high/low routing ID specific client boundary wont be rejected 
@@ -315,17 +274,16 @@ namespace RiseOp.Implementation.Dht
                 return true;
 
             // xor is primary
-            ulong xor = XorBound & ushort.MaxValue;
-            if ((Core.LocalDhtID ^ user) <= xor)
+            if ((Core.LocalDhtID ^ user) <= NearXor.UserBound)
                 return true;
 
             // high/low is backup, a continuous cache, to keep data from being lost by grouped nodes in xor
-            user = user & ushort.MaxValue;
-            if (LowBound <= user && user <= Core.LocalDhtID)
+            // boundaries are xor'd with client id these need to be modified to work with an user id
+
+            if (NearLow.UserBound <= user && user <= Core.LocalDhtID)
                 return true;
 
-            user = user & ushort.MinValue;
-            if (Core.LocalDhtID <= user && user <= HighBound)
+           if (Core.LocalDhtID <= user && user <= NearHigh.UserBound)
                 return true;
 
             return false;
@@ -337,15 +295,15 @@ namespace RiseOp.Implementation.Dht
 
             // can replace these with delegate
 
-            foreach (DhtContact contact in XorContacts)
+            foreach (DhtContact contact in NearXor.Contacts)
                 if (!map.ContainsKey(contact.RoutingID))
                     map.Add(contact.RoutingID, contact);
 
-            foreach (DhtContact contact in LowContacts)
+            foreach (DhtContact contact in NearLow.Contacts)
                 if (!map.ContainsKey(contact.RoutingID))
                     map.Add(contact.RoutingID, contact);
 
-            foreach (DhtContact contact in HighContacts)
+            foreach (DhtContact contact in NearHigh.Contacts)
                 if (!map.ContainsKey(contact.RoutingID))
                     map.Add(contact.RoutingID, contact);
 
@@ -455,7 +413,9 @@ namespace RiseOp.Implementation.Dht
             else
             {
                 Network.Established = false;
-                Network.StatusChange.Invoke();
+
+                if(Network.StatusChange != null)
+                    Network.StatusChange.Invoke();
             }
         }
 
@@ -523,13 +483,14 @@ namespace RiseOp.Implementation.Dht
 
         private bool CheckXor(DhtContact check)
         {
-            if ((LocalRoutingID ^ check.RoutingID) <= XorBound)
+            if ((LocalRoutingID ^ check.RoutingID) <= NearXor.RoutingBound)
             {
-                XorContacts = Find(LocalRoutingID, XorCacheCount);
+                NearXor.Contacts = Find(LocalRoutingID, NearXor.Max);
 
                 // set bound to furthest contact in range
-                if (XorContacts.Count == XorCacheCount)
-                    XorBound = LocalRoutingID ^ XorContacts[XorCacheCount - 1].RoutingID;
+                if (NearXor.Contacts.Count == NearXor.Max)
+                    NearXor.SetBounds( LocalRoutingID ^ NearXor.Contacts[NearXor.Max - 1].RoutingID,
+                                    Core.LocalDhtID ^ NearXor.Contacts[NearXor.Max - 1].DhtID);
 
                 return true;
             }
@@ -548,51 +509,52 @@ namespace RiseOp.Implementation.Dht
             // nodes in high/low and xor ranges should mostly overlap
 
             // if another client of same user added, in bounds, replicate to it
-            if (LowBound < check.RoutingID && check.RoutingID < LocalRoutingID)     
+            if (NearLow.RoutingBound < check.RoutingID && check.RoutingID < LocalRoutingID)     
             {
                 // sorted lowest to ourself
                 int i = 0;
-                for ( ; i < LowContacts.Count; i++)
-                    if (check.RoutingID < LowContacts[i].RoutingID)
+                for ( ; i < NearLow.Contacts.Count; i++)
+                    if (check.RoutingID < NearLow.Contacts[i].RoutingID)
                         break;
 
-                LowContacts.Insert(i, check);
+                NearLow.Contacts.Insert(i, check);
                 ContactMap[check.RoutingID] = check;
 
-                if (LowContacts.Count > HighLowCacheCount)
+                if (NearLow.Contacts.Count > NearLow.Max)
                 {
-                    DhtContact remove = LowContacts[0];
-                    LowContacts.Remove(remove);
+                    DhtContact remove = NearLow.Contacts[0];
+                    NearLow.Contacts.Remove(remove);
                     if (!InBucket(remove))
                         ContactMap.Remove(remove.RoutingID);
 
 
-                    LowBound = LowContacts[0].RoutingID;
+                    NearLow.SetBounds( NearLow.Contacts[0].RoutingID, NearLow.Contacts[0].DhtID);
                 }
 
                 return true;
             }
 
 
-            if (LocalRoutingID < check.RoutingID && check.RoutingID < HighBound)
+            if (LocalRoutingID < check.RoutingID && check.RoutingID < NearHigh.RoutingBound)
             {
                 // sorted ourself to highest
                 int i = 0;
-                for (; i < HighContacts.Count; i++)
-                    if (check.RoutingID < HighContacts[i].RoutingID)
+                for (; i < NearHigh.Contacts.Count; i++)
+                    if (check.RoutingID < NearHigh.Contacts[i].RoutingID)
                         break;
 
-                HighContacts.Insert(i, check);
+                NearHigh.Contacts.Insert(i, check);
                 ContactMap[check.RoutingID] = check;
 
-                if (HighContacts.Count > HighLowCacheCount)
+                if (NearHigh.Contacts.Count > NearHigh.Max)
                 {
-                    DhtContact remove = HighContacts[HighContacts.Count - 1];
-                    HighContacts.Remove(remove);
+                    DhtContact remove = NearHigh.Contacts[NearHigh.Contacts.Count - 1];
+                    NearHigh.Contacts.Remove(remove);
                     if ( !InBucket(remove) )
                         ContactMap.Remove(remove.RoutingID);
 
-                    HighBound = HighContacts[HighContacts.Count - 1].RoutingID;
+                    NearHigh.SetBounds( NearHigh.Contacts[NearHigh.Contacts.Count - 1].RoutingID, 
+                        NearHigh.Contacts[NearHigh.Contacts.Count - 1].DhtID);
                 }
 
                 return true;
@@ -716,5 +678,28 @@ namespace RiseOp.Implementation.Dht
 
             return results;*/
 		}
+    }
+
+    internal class DhtBound
+    {
+        internal ulong RoutingBound;
+        internal ulong UserBound;
+
+        internal List<DhtContact> Contacts = new List<DhtContact>();
+
+        internal int Max;
+
+        internal DhtBound(ulong bound, int max)
+        {
+            RoutingBound = bound;
+            UserBound = bound;
+            Max = max;
+        }
+
+        internal void SetBounds(ulong routing, ulong user)
+        {
+            RoutingBound = routing;
+            UserBound = user;
+        }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Forms;
 
@@ -122,21 +123,29 @@ namespace RiseOp.Interface.Tools
 			buffer.FillEllipse( new SolidBrush(Color.Black), GetBoundingBox(centerPoint, maxRadius));
 
 			uint localID = IDto32(Core.LocalDhtID);
-			
-			ArrayList contactPoints = new ArrayList();
+
+            List<Rectangle> contactPoints = new List<Rectangle>();
+            List<Rectangle> cachePoints = new List<Rectangle>();
 
 			// draw circles
 			int i = 0;
 			float sweepAngle = 360;
 			Pen orangePen = new Pen(Color.Orange, 2);
-			
+            int arcs = 0;
+
+            int maxLevels = 10;
+            int drawBuckets = Routing.BucketList.Count > maxLevels ? maxLevels : Routing.BucketList.Count;
+
 			lock(Routing.BucketList)
 				foreach(DhtBucket bucket in Routing.BucketList)
 				{
+                    if (sweepAngle < 0.1 || i >= maxLevels)
+                        break;
+
 					// draw lines
                     if (!bucket.Last)
                     {
-                        int rad = maxRadius * i / Routing.BucketList.Count;
+                        int rad = maxRadius * i / drawBuckets;
 
                         uint lowpos = localID >> (32 - i);
                         lowpos = lowpos << (32 - i);
@@ -146,6 +155,7 @@ namespace RiseOp.Interface.Tools
 
                         if (rad > 0)
                         {
+                            arcs++;
                             buffer.DrawArc(orangePen, GetBoundingBox(centerPoint, rad), startAngle, sweepAngle);
 
                             buffer.DrawLine(orangePen, GetCircumPoint(centerPoint, rad, lowpos), GetCircumPoint(centerPoint, maxRadius, lowpos));
@@ -169,15 +179,23 @@ namespace RiseOp.Interface.Tools
                     }
 
 					foreach(DhtContact contact in bucket.ContactList)
+                    {
 						contactPoints.Add(GetBoundingBox(GetCircumPoint(centerPoint, maxRadius, IDto32(contact.DhtID)), 4));
+
+                        if(Routing.InCacheArea(contact.DhtID))
+                            cachePoints.Add(GetBoundingBox(GetCircumPoint(centerPoint, maxRadius, IDto32(contact.DhtID)), 1));
+                    }
 
 					sweepAngle /= 2;
 					i++;
 				}
 
 			// draw contacts
-			foreach(Rectangle contactRect in contactPoints)
-				buffer.FillEllipse(new SolidBrush(Color.White), contactRect);
+			foreach(Rectangle rect in contactPoints)
+                buffer.FillEllipse(new SolidBrush(Color.White), rect);
+
+            foreach (Rectangle rect in cachePoints)
+                buffer.FillEllipse(new SolidBrush(Color.Black), rect);
 
 			// draw proxies
 			lock(Network.TcpControl.Connections)

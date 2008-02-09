@@ -98,6 +98,7 @@ namespace RiseOp.Implementation
 
         internal event GetFocusedHandler GetFocusedGui;
         internal event GetFocusedHandler GetFocusedCore;
+        // only safe to use this from core_minuteTimer because updated 2 secs before it
         internal ThreadedDictionary<ulong, bool> Focused = new ThreadedDictionary<ulong, bool>();
 
         // interfaces
@@ -186,7 +187,7 @@ namespace RiseOp.Implementation
 
             // optional
             //AddService(new ProfileService(this));
-            //AddService(new IMService(this));
+            AddService(new IMService(this));
             //AddService(new ChatService(this));
             //AddService(new MailService(this));
             //AddService(new BoardService(this));
@@ -365,12 +366,13 @@ namespace RiseOp.Implementation
                 if (TimeNow.Second == MinutePoint - 2)
                 {
                     Focused.SafeClear();
+
+                    GetFocusedCore.Invoke();
                     RunInGuiThread(GetFocusedGui);
                 }
 
                 if (TimeNow.Second == MinutePoint)
                 {
-                    GetFocusedCore.Invoke();
                     MinuteTimerEvent.Invoke();
                 }
 			}

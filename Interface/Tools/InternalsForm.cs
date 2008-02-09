@@ -12,15 +12,15 @@ using RiseOp.Implementation.Transport;
 using RiseOp.Implementation.Protocol.Net;
 
 using RiseOp.Services;
+using RiseOp.Services.Assist;
 using RiseOp.Services.Board;
 using RiseOp.Services.Chat;
 using RiseOp.Services.IM;
-using RiseOp.Services.Trust;
 using RiseOp.Services.Location;
 using RiseOp.Services.Mail;
 using RiseOp.Services.Profile;
 using RiseOp.Services.Transfer;
-
+using RiseOp.Services.Trust;
 
 namespace RiseOp.Interface.Tools
 {
@@ -147,6 +147,11 @@ namespace RiseOp.Interface.Tools
                     case 8://ServiceID.Board:
                         StructureNode boardNode = new StructureNode("Board", new ShowDelegate(ShowBoard), null);
                         componentsNode.Nodes.Add(boardNode);
+                        break;
+
+                    case 11: // ServiceID.LocalSync
+                        StructureNode syncNode = new StructureNode("LocalSync", new ShowDelegate(ShowLocalSync), null);
+                        componentsNode.Nodes.Add(syncNode);
                         break;
                 }
             }
@@ -622,42 +627,49 @@ namespace RiseOp.Interface.Tools
 		internal void ShowRouting(object pass)
 		{
             DhtNetwork network = pass as DhtNetwork;
+            DhtRouting routing = network.Routing;
 
 			listValues.Columns.Clear();
 			listValues.Items.Clear();
 
-			listValues.Columns.Add("Depth",	100, HorizontalAlignment.Left);
-			listValues.Columns.Add("LastBucket",	100, HorizontalAlignment.Left);
-			listValues.Columns.Add("NextRefresh",150, HorizontalAlignment.Left);
+			listValues.Columns.Add("Property",	100, HorizontalAlignment.Left);
+			listValues.Columns.Add("Value",	200, HorizontalAlignment.Left);
+	
+            
+            listValues.Items.Add(new ListViewItem(new string[] { "LocalRoutingID", Utilities.IDtoBin(routing.LocalRoutingID) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "Buckets", xStr(routing.BucketList.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "NearXor", xStr(routing.NearXor.Contacts.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "NearHigh", xStr(routing.NearHigh.Contacts.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "NearLow", xStr(routing.NearLow.Contacts.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "ContactMap", xStr(routing.ContactMap.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "Responsive", xStr(routing.Responsive) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "LastUpdated", xStr(routing.LastUpdated) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "NextSelfSearch", xStr(routing.NextSelfSearch) }));
+
+
+            TreeNodeCollection nodes = treeStructure.SelectedNode.Nodes;
+
+            nodes.Clear();
 
             foreach (DhtBucket bucket in network.Routing.BucketList)
-				listValues.Items.Add( new ListViewItem( new string[]
-				{
-					xStr(bucket.Depth),		
-					xStr(bucket.Last),
-					xStr(bucket.NextRefresh)
-				}));
+                nodes.Add(new StructureNode(bucket.Depth.ToString(), new ShowDelegate(ShowBucket), bucket.ContactList));
 
-			AddBuckets((StructureNode) treeStructure.SelectedNode, network);
-		}
+            nodes.Add(new StructureNode("Near", new ShowDelegate(ShowBucket), network.Routing.NearXor.Contacts));
+            nodes.Add(new StructureNode("High", new ShowDelegate(ShowBucket), network.Routing.NearHigh.Contacts));
+            nodes.Add(new StructureNode("Low", new ShowDelegate(ShowBucket), network.Routing.NearLow.Contacts));
+        }
 
-        internal void AddBuckets(StructureNode parentNode, DhtNetwork network)
-		{
-			parentNode.Nodes.Clear();
-
-            foreach (DhtBucket bucket in network.Routing.BucketList)
-				parentNode.Nodes.Add( new StructureNode(bucket.Depth.ToString(), new ShowDelegate(ShowBucket), bucket));
-		}
 
 		internal void ShowBucket(object pass)
 		{
-            DhtBucket bucket = pass as DhtBucket;
+            List<DhtContact> contactList = pass as List<DhtContact>;
 
 			listValues.Columns.Clear();
 			listValues.Items.Clear();
 
-			listValues.Columns.Add("DhtID",			100, HorizontalAlignment.Left);
-			listValues.Columns.Add("ClientID",		100, HorizontalAlignment.Left);
+			listValues.Columns.Add("Name",			100, HorizontalAlignment.Left);
+			listValues.Columns.Add("RoutingID",		100, HorizontalAlignment.Left);
+            listValues.Columns.Add("ClientID",      100, HorizontalAlignment.Left);
 			listValues.Columns.Add("Address",		100, HorizontalAlignment.Left);
 			listValues.Columns.Add("TcpPort",		100, HorizontalAlignment.Left);
 			listValues.Columns.Add("UdpPort",		100, HorizontalAlignment.Left);
@@ -666,13 +678,14 @@ namespace RiseOp.Interface.Tools
 			listValues.Columns.Add("Attempts",		100, HorizontalAlignment.Left);
 			listValues.Columns.Add("NextTryProxy",	100, HorizontalAlignment.Left);
 
-			foreach(DhtContact contact in bucket.ContactList)
+			foreach(DhtContact contact in contactList)
 				
 				
 					listValues.Items.Add( new ListViewItem( new string[]
 					{
-						IDtoStr(contact.DhtID),
-						xStr(contact.ClientID),		
+						GetLinkName(contact.DhtID),
+						xStr( Utilities.IDtoBin(contact.RoutingID)),
+		                xStr(contact.ClientID),	
 						xStr(contact.Address),
 						xStr(contact.TcpPort),
 						xStr(contact.UdpPort),		
@@ -1182,6 +1195,52 @@ namespace RiseOp.Interface.Tools
                 }
             });
 
+        }
+
+        internal void ShowLocalSync(object pass)
+        {
+            listValues.Columns.Clear();
+            listValues.Items.Clear();
+
+            listValues.Columns.Add("Name", 100, HorizontalAlignment.Left);
+            listValues.Columns.Add("ID", 100, HorizontalAlignment.Left);
+            listValues.Columns.Add("Version", 100, HorizontalAlignment.Left);
+            listValues.Columns.Add("InCache", 100, HorizontalAlignment.Left);
+            listValues.Columns.Add("Tags", 400, HorizontalAlignment.Left);
+
+            ShowLocalSyncItems(pass, Core.Sync.InRange, "yes");
+            ShowLocalSyncItems(pass, Core.Sync.OutofRange, "no");
+        }
+
+        internal void ShowLocalSyncItems(object pass, Dictionary<ulong, ServiceData> map, string inCache)
+        {
+            foreach (ulong user in map.Keys)
+            {
+                OpVersionedFile file = Core.Sync.Cache.GetFile(user);
+                ServiceData data = map[user];
+
+                string tags = "";
+                foreach(LocationTag tag in data.Tags)
+                    if (tag.Tag.Length >= 4)
+                    {
+                        uint version = BitConverter.ToUInt32(tag.Tag, 0);
+
+                        tags += Core.GetServiceName(tag.Service) + ":" + tag.DataType.ToString() + " v" + version.ToString() + ", ";
+                    }
+                tags.Trim(',', ' ');
+
+                ListViewItem item = new ListViewItem(new string[] {
+                    GetLinkName(user), 
+                    Utilities.IDtoBin(user), 
+                    file.Header.Version.ToString(),
+                    inCache,
+                    tags
+                });
+
+                listValues.Items.Add(item);
+            }
+
+            
         }
 
         internal void ShowProfiles(object pass)
