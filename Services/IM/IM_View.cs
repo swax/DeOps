@@ -25,6 +25,7 @@ namespace RiseOp.Services.IM
         internal ulong  DhtID;
 
         MenuItem TimestampMenu;
+        string RemoteName;
 
         bool WindowActivated;
         bool FlashMe;
@@ -59,8 +60,10 @@ namespace RiseOp.Services.IM
 
         private void UpdateName()
         {
+            RemoteName = Links.GetName(DhtID);
+
             if(External != null)
-                External.Text = "IM " + Links.GetName(DhtID);
+                External.Text = "IM " + RemoteName;
         }
 
         internal override void Init()
@@ -161,7 +164,6 @@ namespace RiseOp.Services.IM
                 return;
 
             CheckBackColor();
-            UpdateName();
 
             IMStatus status = null;
             if (!IM.IMMap.SafeTryGetValue(id, out status))
@@ -182,7 +184,11 @@ namespace RiseOp.Services.IM
             else
                 StatusImage.Image = IMRes.redled;
 
-            DisplayLog();
+            if(RemoteName != Links.GetName(id))
+            {
+                UpdateName();
+                DisplayLog();
+            }
         }
 
         internal void IM_MessageUpdate(ulong dhtid, InstantMessage message)

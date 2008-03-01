@@ -11,6 +11,7 @@ performance
 	128 clients, 10 sim minutes, no services loaded, fresh start, avg memory, logging off
 		debug < 400mb, 80mb after GC
 		max 500kb bandwidth, < 1kb/s
+		with chat, each connection 150kb overhead so 128 * 16 max per untrusted room * 150kb = 300mb!
 	
 Threading
 	Op objects are recreated when loaded so that interface with current handle doesnt get collections modified inbetween

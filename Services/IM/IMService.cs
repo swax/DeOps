@@ -394,8 +394,6 @@ namespace RiseOp.Services.IM
             if (Core.GuiMain == null)
                 return;
 
-            Update(status);
-
             Core.RunInGuiThread( (MethodInvoker) delegate()
             {
                 IM_View view = FindView(status.DhtID);
@@ -405,7 +403,8 @@ namespace RiseOp.Services.IM
                 else
                     MessageUpdate(status.DhtID, message);
             });
-            
+
+            Update(status);
         }
 
         void Session_KeepActive(Dictionary<ulong, bool> active)

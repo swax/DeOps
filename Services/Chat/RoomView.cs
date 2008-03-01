@@ -137,12 +137,12 @@ namespace RiseOp.Services.Chat
 
                 Room.Members.LockReading(delegate()
                 {
-                    foreach (ulong id in Room.Members.Keys)
+                    foreach (ulong id in Room.Members)
                         if (id != Room.Host)
                         {
                             // if they left the room dont show them
                             if (Room.Kind == RoomKind.Public || Room.Kind == RoomKind.Private)
-                                if (Room.Members[id].SafeCount == 0)
+                                if (Room.Members.SafeCount == 0)
                                     continue; 
 
                             MemberNode node = new MemberNode(this, id);
@@ -158,9 +158,7 @@ namespace RiseOp.Services.Chat
 
         void UpdateNode(MemberNode node)
         {
-
-            ThreadedList<ushort> clients = null;
-            if (!Room.Members.TryGetValue(node.DhtID, out clients))
+            if (!Room.Members.SafeContains(node.DhtID))
             {
                 if (node.IsLoopRoot)
                     node.Text = "Trust Loop";
@@ -169,20 +167,17 @@ namespace RiseOp.Services.Chat
             }
 
             // get if node is connected
-            bool connected = (Room.Active && clients.SafeCount > 0);
+            bool connected = (Room.Active && 
+                            (node.DhtID == Core.LocalDhtID || Core.RudpControl.GetActiveSessions(node.DhtID).Count > 0));
 
             // get away status
             bool away = false;
-            clients.LockReading(delegate()
-            {
-                foreach (ushort client in clients)
-                {
-                    ClientInfo info = Locations.GetLocationInfo(node.DhtID, client);
 
-                    if (info != null && info.Data.Away)
-                        away = true;
-                }
-            });
+
+            foreach (ClientInfo info in Core.Locations.GetClients(node.DhtID))
+                if (info != null && info.Data.Away)
+                    away = true;
+      
 
             node.Text = Links.GetName(node.DhtID);
 

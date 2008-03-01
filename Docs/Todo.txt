@@ -1,4 +1,83 @@
 
+multi-source d/l
+	hashing
+		unencrypted file encrypted
+		encrypted file md5 hashed per 128kb block
+		blocks, resolution, and file size attached to end of file
+		entire file sha1 hashed
+
+	a transfer doesn't keep track of more than 20 peers
+		peer list like mini-dht every 2 slots is xor closer to local
+		empty slots are filled with closest xor nodes, 2 up, and 2 down
+		a node will always be gaurenteed a community in file transfer
+		
+	on connection
+		peers exchange caches of those close to each other
+		peers exhcange bitfields
+		keep master bytefield of rarity of parts, add/subtract to it as need be
+		
+	client starts sending remote rarest piece remote doesnt have
+		remote acknowledges and starts writing, or cancles transfer if receiving already from faster source
+		cancel message includes preference for particular or no piece at all
+		
+	who to send to 
+		clients are sent chunks round robin to who needs them
+		no need to client to signal choked, server decides when to send based on if remote is interested
+		give u/l pref to files being downloaded
+		
+	what do we know
+		we know our send rate total and per node based on acknowledgements
+		we know we want 5kb/s at least as overhead for network comm
+		we know if remote is dropping packets because they are re-requested
+		
+	bandwidth test
+		once connected to network
+		select 10 closests nodes
+		send at full speed to all hosts for 10 seconds
+		record u/l speed
+		re-test every hour
+	
+		once u/l speed determined 
+			if > 10kb/s ensure transfers remain at that level minus 7kb/s
+			if < 10kb/s transfers remain at half determined speed
+		
+	how many and how fast to send to
+		slot speed set at 7 so 256kb block transferred in 30secs slowest
+		transfer slots maxed at u/l speed / 7
+		if u/l speed < 85% of determined max allow another slot
+		stop allowing more slots if average u/l speed < 4kbs
+		
+		transfer control is aware of pending transfers
+		when slot avaialable transfer is selected by component (round robin), then FCFS for multiple transfers in component
+			transfer awarded slot, transfers chunk
+			when finished requests from control to keep slot
+
+	securing files
+		encrypt file to temp
+		hash 256kb parts and total
+		attachlist of parts to end of file
+		attached encypted size to end of file
+		
+		when decrypting file back size read to figure how much to decrypt
+		transfer reads back of file for size/parts and sends to client when requested
+
+	testing 
+		in network view, seed file and watch
+		each node shows a progress bar of the files completion
+		optimize for max propagation through network
+	
+live
+	build test algorithms
+	acts as continously active real-time conduit between all members in trusted system (might want to pipe system msgs through this)
+	live based on rudp links, if no rudp link, live connect to next canidate, even if loc for someone exists
+	rapidly alert up/down links when going offilne so that live structure can be patched quickly wihout nodes thinking location file is still active
+	downlink determined by closest sub, if equal, highest rank where 2 nodes split tracks
+	uplink determined by highest offline where not challenged
+	show trusted/untrusted in live
+
+chat
+	private triggering 2 invites, members dont see each other
+	if node starts up untrusted, display help service by default instead of chat
 
 test
 	location tag reports localSync version
@@ -9,14 +88,23 @@ test
 	check SetResponsive is called once on connect and once on disconnect
 	check statusChange is called for connectioned/disconnected, and that caches are set back to unique an republished
 	ensure search for lastest version of service doesnt get hung up on old versions and return prematurely
+	having it detect its not connected
+	debug places where searches etc.. are happening, when client knows its not connected
+	a superior 5 levels up, on other side of network, updating plan should reflect on lower on next location update
+	links timing out when traversing strucuture
+	link.getlocs / getlocsbelow / use live links?
+	link/plan research timer
 	
-	
-doesnt seem like cache is refreshed fast enough
 turn on chat - limit untrusted chat focus
-test linkups
-ensure location -> service updates causing good refreshes with tags
+test linkups - test chat focus dynamically changing
+live command tree/chat
+	ensure when random subset of nodes removed all links still connected through live
+
+reduce size of rudp connections, global buffer for inc packets?
+doesnt seem like cache is refreshed fast enough
 location signoff tag
 assert in deconstructors that events are set back to null
+GetActiveSessions not threaded for gui, try not to thread dictionary
 	
 use last seen date in localSync - show day, not time
 alert user of desyncs detected in localSync, maybe as news alert,
@@ -30,51 +118,28 @@ other concerns, fix or catagorize
 	use common assist for posts/mail/uplinkReqs?
 
 
-live command tree/chat
-	ensure when random subset of nodes removed all links still connected through live
-
-test - isolating node from network, 
-	having it detect its not connected
-	debug places where searches etc.. are happening, when client knows its not connected
-
-network established can be called multiple times when re-connecting
-	investigate what happens, ensure locations are researched
 nav bar work with loops?
 investigate flexible 'smart byte'
 fix vertical scroll bar in link/chat window once and for all
 board - All/Higher/Lower Posts, New Post
 test clients with different local times, init random gmt offsets
-
-
-
-Testing
-	links timing out when traversing strucuture
-	link.getlocs / getlocsbelow / use live links?
-	link/plan research timer
-	38 crits
-
+graphics - darker invite, news icon update, take border off pacman guy
 
 spring release
 	live locations/chat
 	network bandwidth limits - tracking in sim triggers node to start logging bw data
-	multisource downloading - use torrent
+	multisource downloading 
 		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
 		right click to cancel, increase/decrease priority
-		
+	crits
 	store caching
 	proxying
+	web caching
 	invitations
 	website, auto-update
 	licensing, installer
-	compartmentalization
-	modifyable encryption
-	mobile - proxy mode can be set and tested in normal version
 	mono
-	open source compensation model using credits
-	
-	how to run process on web server? need to figure out how to use them for own purpose
-	web node people can put on site as a permanent cache
-	global web nodes ;)
+
 
 Interface
 	General
@@ -170,6 +235,7 @@ Components
 		set default cursor in input box
 		test that our own link changes are reflected in link changes
 		if room custom and no members, kill
+		untrusted rooms discussed in chat.txt
 		
 		in future nodes marked as server can have rooms registered there so only one node to query for full room list
 		log does chat/im - setup like yahoo chat log
@@ -212,13 +278,35 @@ Components
 
 		$ save storage snapshots (past header file versions) - display at root node	
 		$ signal on comparison page if all files are replicated on network (can go offline and files still exist)
-		
-	Search
-		index components in local area of dht network
-		search - sends query to that area of network target is in	
-		each component has hooks for search
-		when big public network started, will need a link search so people can find each other, not just see loacl area
 
+	Search Service
+		local 
+			Index - Component ID / Object ID / pub,priv / keywords
+			Build index iteratively as program runs
+			On exit encrypt save index file, if one exists index1,2,3, etc..
+			On search gui - 1st time, load index files, when re-saved they are merged
+				only load search indexes on demand, or slowly as app runs, dont lock app up
+			Simple dictionay<key, list<object keys>> for each component
+			Lookup(component, value) loads appropriate index if needed, returns object key
+				object key mapped by component to object example key first 4 bytes of hash, object is full hash
+		
+			sqlite full text search - if previous too memory consuming or something
+				get ado.net interface, db_linq, and full text search packages
+				insert component ID / keywords / object ID for any new object coming in
+				object removed trigger removal of anything in db with object ID
+				search goes through all objects
+				first version has no encryption, need $$ to pay for see license
+		
+		remote
+			allow services to store key/byte[] on network
+			example link component will publish userID at keys for Joe Smith on dht, so a search for Joe will find users named Joe
+			keys expire over a certain amount of time, replicated until then
+			
+			link - publish name keys, userID, on result find location show if online
+			storage - for large files pulish hash key, user ID - use for multi-source d/l
+			
+			global network could use this to find public operations key name, value OpID
+			
 Core
     old projects not cleared from components during savelocal, save / ditch / option?
     multisource downloading
@@ -383,17 +471,42 @@ Future
 		periodic heart beat with secuity key sent from to all trusted nodes, key transmitted during all ops
 			keeps untrusted from being sent any storage information, if kicked out of trusted tree		
 		
-	web based node
-		server like caching if enabled
-		web node is owned by an individual, like any other node	
-		web interface, at first just caching support
+		on load private key / sync encypt and store that in memory
+			when something needs to be signed / decrypted use sync key to decrypt private on fly
+			minimize the amount of time private the key stays in memeory
 		
+	web-node
+		php script
+			user configs into script password so that it can be admined
+			through admin user can generate passkey, copy pasted into RiseOp
+			webnode's have no idea the contents of file being posted, just the hash
+			script keeps track of total cached files, oldest purged when space limit hit
+			if cache compramised, passkey can be changed and redistributed to trusted nodes
+		
+		in riseOp user puts in link file webnode address / passkey
+			clients who trust the node record the webnode / passkey	then tested
+			storing data
+				post to webnode with hash of file being posted
+			searching data
+				get to webnode with hash of file being requested
+			startup 
+				get to webnode with hashes of cached info
+				webnode replies with hashes it is not caching
+				post to webnode the files cache is missing
+
+
 	server mode
 		increase prune object amounts accross all services
 		increase bucket sizes
 		
 	huge part of project is allowing companies to sell licensense (applications) throughout network
 		subs auto inherit purchased apps, never be anywhere without apps, look at encryption techniques to make this work
+
+	mobile 
+		uses proxy mode be default
+		core can be tested by setting proxy mode in desktop version
+		desktop to mobile core should be direct port
+		interface uses linked in source files
 
 	components
 		auto component distribution to lowers if they dont have it
@@ -415,6 +528,15 @@ Future
 			lower corner box shows zoomed out view
 			samples - geographical area, flow chart, blueprints
 		
+			provide a facility in which large amounts of users can bring info into system and analyze it collaboratively
+			overlay chat on top of visual
+			
+			tools
+				bitmap paint (default)
+				simple vector shapes
+				web browser view real-time updating but can be drawn over etc.. 
+				file icons - links to actual files
+		
 		database 
 			holder of database can create dashboards, custom views into data for highers ups to understand
 			lowers to aggregate data, example - call center statistics, support database with issues
@@ -423,6 +545,7 @@ Future
 			sql express backend? should work on phones as well
 		
 		audio 
+			speex bsd licensed audio codec
 			headphones/speakers, left side is lowers, right side is higher/adjacents	
 				on mono prefix high/low beep before audio clip to signal what level talker is from
 				save last x voice messages received for playback
@@ -538,6 +661,11 @@ Future
 			alerts user if local time looks like its an outlier from the network
 			posts, changes, etc.. uses this time to tag packets instead of computers own time
 			trial versions, invite expirations, etc.. can also use network time as opposed to system time
+
+		bootable riseOp
+			uses minimal linux distro/VM on USB key
+			doesnt allow any apps to be installed, just riseOp
+			protect from key loggers, or other malicious apps
 
 
 	Compartmentalization

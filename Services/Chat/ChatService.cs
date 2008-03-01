@@ -24,7 +24,6 @@ namespace RiseOp.Services.Chat
         internal OpCore Core;
         internal TrustService Links;
 
-        //internal ThreadedList<ChatRoom> Rooms = new ThreadedList<ChatRoom>();
         internal ThreadedDictionary<uint, ChatRoom> RoomMap = new ThreadedDictionary<uint, ChatRoom>();
 
         internal Dictionary<ulong, bool> StatusUpdate = new Dictionary<ulong, bool>();
@@ -95,7 +94,7 @@ namespace RiseOp.Services.Chat
                 return;
 
             // gui creates viewshell, component just passes view object
-            ChatView view = new ChatView(this, node.GetProject(), null);
+            ChatView view = new ChatView(this, node.GetProject());
 
             Core.InvokeView(node.IsExternal(), view);
         }
@@ -109,7 +108,7 @@ namespace RiseOp.Services.Chat
                     {
                         room.Members.LockReading(delegate()
                         {
-                            foreach (ulong id in room.Members.Keys)
+                            foreach (ulong id in room.Members)
                                 Core.Focused.SafeAdd(id, true);
                         });
 
@@ -164,11 +163,6 @@ namespace RiseOp.Services.Chat
                             JoinCommand(project, RoomKind.Command_Low);
                             JoinCommand(project, RoomKind.Live_High);
                             JoinCommand(project, RoomKind.Live_Low);
-
-                            //RoomMap.SafeAdd(GetRoomID(project, RoomKind.Untrusted), new ChatRoom(RoomKind.Untrusted, project, ""));
-                            //if(uplink == null && downlinks.Count == 0)
-                            //    JoinCommand(project, RoomKind.Untrusted);
-     
                         }
 
                         // else leave any command/live rooms for this project
@@ -193,9 +187,6 @@ namespace RiseOp.Services.Chat
                             RefreshCommand(project, RoomKind.Command_Low);
                             RefreshCommand(project, RoomKind.Live_Low);
                         }
-
-                        if (remoteLink.GetHigher(true) == null)
-                            RefreshCommand(project, RoomKind.Untrusted);
                     }
 
                     Core.RunInGuiThread(Refresh);
@@ -207,19 +198,19 @@ namespace RiseOp.Services.Chat
             foreach(ChatRoom room in FindRoom(trust.DhtID))
                 if(IsCommandRoom(room.Kind))
                     RefreshCommand(room);
-                else if(room.Members.SafeContainsKey(trust.DhtID))
+                else if(room.Members.SafeContains(trust.DhtID))
                     Core.RunInGuiThread(room.MembersUpdate);
         }
 
         internal ChatRoom CreateRoom(string name, RoomKind kind)
         {
             // create room
-            ChatRoom room = new ChatRoom(kind, 0, name);
-
-            uint id = (uint) Core.RndGen.Next();
+            uint id = (uint)Core.RndGen.Next();
+            
+            ChatRoom room = new ChatRoom(kind, id, name);
 
             room.Active = true;
-            room.AddMember(Core.LocalDhtID, Core.ClientID);
+            room.AddMember(Core.LocalDhtID);
 
             RoomMap.SafeAdd(id, room);
             
@@ -235,20 +226,6 @@ namespace RiseOp.Services.Chat
             return room;    
         }
 
-        internal void ShowRoom(ChatRoom room)
-        {
-            if (room.MembersUpdate != null)
-                foreach (Delegate func in room.MembersUpdate.GetInvocationList())
-                    if (func.Target is RoomView)
-                        if (((RoomView)func.Target).ParentView.External != null)
-                        {
-                            ((RoomView)func.Target).ParentView.External.BringToFront();
-                            return;
-                        }
-
-            Core.InvokeView(true, new ChatView(this, room.ProjectID, room));
-        }
-
         internal void JoinRoom(ChatRoom room)
         {
             if (room.Kind != RoomKind.Public && room.Kind != RoomKind.Private)
@@ -258,7 +235,7 @@ namespace RiseOp.Services.Chat
             }
 
             room.Active = true;
-            room.AddMember(Core.LocalDhtID, Core.ClientID);
+            room.AddMember(Core.LocalDhtID);
 
             // for private rooms, send proof of invite first
             if (room.Kind == RoomKind.Private)
@@ -279,20 +256,15 @@ namespace RiseOp.Services.Chat
             ChatRoom room = null;
 
             if (!RoomMap.SafeTryGetValue(id, out room))
-                room = new ChatRoom(kind, project, "");
+                room = new ChatRoom(kind, project);
 
             room.Active = true;
-            room.AddMember(Core.LocalDhtID, Core.ClientID);
+            room.AddMember(Core.LocalDhtID);
 
             RoomMap.SafeAdd(id, room);
 
             RefreshCommand(room);
-
             SendStatus(room);
-
-            if (kind == RoomKind.Untrusted)
-                SendWhoRequest(room);
-
             ConnectRoom(room);
         }
 
@@ -300,15 +272,18 @@ namespace RiseOp.Services.Chat
         {
             room.Members.LockReading(delegate()
             {
-                foreach (ulong key in room.Members.Keys)
+                foreach (ulong key in room.Members)
                 {
-                    foreach (ClientInfo info in Core.Locations.GetClients(key))
-                        Core.RudpControl.Connect(info.Data);
+                    List<ClientInfo> clients = Core.Locations.GetClients(key);
+
+                    if(clients.Count == 0)
+                        Core.Locations.Research(key);
+                    else
+                        foreach (ClientInfo info in clients)
+                            Core.RudpControl.Connect(info.Data);
 
                     if (Links.GetTrust(key) == null)
-                        Links.Research(key, 0, false);
-
-                    Core.Locations.Research(key);
+                        Links.Research(key, 0, false);    
                 }
             });
         }
@@ -345,8 +320,7 @@ namespace RiseOp.Services.Chat
 
             if (room.Kind == RoomKind.Command_High)
             {
-                ThreadedDictionary<ulong, ThreadedList<ushort>> prevMembers =  room.Members;
-                room.Members = new ThreadedDictionary<ulong,ThreadedList<ushort>>();
+                room.Members = new ThreadedList<ulong>();
 
                 if (uplink != null)
                 {
@@ -360,24 +334,23 @@ namespace RiseOp.Services.Chat
                     {
                         room.Host = uplink.DhtID;
                         room.IsLoop = false;
-                        room.AddMember(room.Host, prevMembers);
+                        room.AddMember(room.Host);
                     }
 
                     foreach (OpLink downlink in uplink.GetLowers(true))
-                        room.AddMember(downlink.DhtID, prevMembers);
+                        room.AddMember(downlink.DhtID);
                 }
             }
 
             else if (room.Kind == RoomKind.Command_Low)
             {
-                ThreadedDictionary<ulong, ThreadedList<ushort>> prevMembers = room.Members;
-                room.Members = new ThreadedDictionary<ulong, ThreadedList<ushort>>();
+                room.Members = new ThreadedList<ulong>();
 
                 room.Host = Core.LocalDhtID;
-                room.AddMember(room.Host, prevMembers);
+                room.AddMember(room.Host);
 
                 foreach (OpLink downlink in localLink.GetLowers(true))
-                    room.AddMember(downlink.DhtID, prevMembers);
+                    room.AddMember(downlink.DhtID);
             }
 
             else if (room.Kind == RoomKind.Live_High)
@@ -395,22 +368,6 @@ namespace RiseOp.Services.Chat
                 // just add self, dont remove members
             }
 
-            else if (room.Kind == RoomKind.Untrusted)
-            {
-                // don't remove connections that are no longer in untrusted group
-
-                ThreadedList<OpLink> roots = null;
-                if (Links.ProjectRoots.SafeTryGetValue(room.ProjectID, out roots))
-                    roots.LockReading(delegate()
-                    {
-                        foreach (OpLink root in roots)
-                            if (root.GetLowers(true).Count == 0 &&
-                                !room.Members.SafeContainsKey(root.DhtID))
-                            {
-                                room.Members.SafeAdd(root.DhtID, new ThreadedList<ushort>());
-                            }
-                    });
-            }
 
             // update dispaly that members has been refreshed
             Core.RunInGuiThread(room.MembersUpdate);
@@ -418,7 +375,6 @@ namespace RiseOp.Services.Chat
 
         void LeaveRooms(uint project)
         {
-            LeaveRoom(project, RoomKind.Untrusted);
             LeaveRoom(project, RoomKind.Command_High);
             LeaveRoom(project, RoomKind.Command_Low);
             LeaveRoom(project, RoomKind.Live_High);
@@ -442,7 +398,7 @@ namespace RiseOp.Services.Chat
         {
             room.Active = false;
 
-            room.RemoveMember(Core.LocalDhtID, Core.ClientID, !IsCommandRoom(room.Kind));
+            room.RemoveMember(Core.LocalDhtID);
 
             SendStatus(room);
 
@@ -450,7 +406,7 @@ namespace RiseOp.Services.Chat
             Core.RunInGuiThread(room.MembersUpdate);
         }
 
-        internal bool IsCommandRoom(RoomKind kind)
+        internal static bool IsCommandRoom(RoomKind kind)
         {
             return (kind == RoomKind.Command_High || kind == RoomKind.Command_Low ||
                     kind == RoomKind.Live_High || kind == RoomKind.Live_Low);
@@ -477,7 +433,7 @@ namespace RiseOp.Services.Chat
             RoomMap.LockReading(delegate()
             {
                 foreach (ChatRoom room in RoomMap.Values)
-                    if(room.Members.SafeContainsKey(key))
+                    if(room.Members.SafeContains(key))
                         results.Add(room);
             });
 
@@ -516,7 +472,7 @@ namespace RiseOp.Services.Chat
 
             room.Members.LockReading(delegate()
             {
-               foreach (ulong member in room.Members.Keys)
+               foreach (ulong member in room.Members)
                    foreach (RudpSession session in Core.RudpControl.GetActiveSessions(member))
                    {
                        sent = true;
@@ -563,7 +519,7 @@ namespace RiseOp.Services.Chat
             }
 
             // if sender not in room
-            if(!room.Members.SafeContainsKey(session.DhtID))
+            if(!room.Members.SafeContains(session.DhtID))
                 return;
 
             ProcessMessage(room, new ChatMessage(Core, session, message.Text));
@@ -584,21 +540,22 @@ namespace RiseOp.Services.Chat
                     {
                         if (room.NeedSendInvite(session.DhtID, session.ClientID))
                             // invite not sent
-                            if (room.Host == Core.LocalDhtID)
+                            if (room.Kind == RoomKind.Public || room.Host == Core.LocalDhtID)
                             {
                                 session.SendData(ServiceID, 0, room.Invites[session.DhtID].First, true);
                                 room.Invites[session.DhtID].Second.Add(session.ClientID);
                                 AlertInviteSent(room, session);
                                 SendWhoResponse(room, session);
                             }
-                            // else proof not sent
+                            // else private room and we are not the host, send proof we belong here
                             else
                             {
                                 SendInviteProof(room, session);
                             }
 
-                        if ((room.Kind == RoomKind.Public || room.Kind == RoomKind.Private || room.Kind == RoomKind.Untrusted) &&
-                            room.Members.SafeContainsKey(session.DhtID))
+                        // ask member who else is in room
+                        if ((room.Kind == RoomKind.Public || room.Kind == RoomKind.Private) &&
+                            room.Members.SafeContains(session.DhtID))
                             SendWhoRequest(room, session);
                     }
                 });
@@ -610,11 +567,9 @@ namespace RiseOp.Services.Chat
             // if disconnected
             if (session.Status == SessionStatus.Closed)
                 foreach (ChatRoom room in FindRoom(session.DhtID))
-                {
-                    room.RemoveMember(session.DhtID, session.ClientID, !IsCommandRoom(room.Kind));
-
-                    Core.RunInGuiThread(room.MembersUpdate);
-                }
+                    if (room.Active) 
+                        // don't remove from members unless explicitly told in status
+                        Core.RunInGuiThread(room.MembersUpdate);
         }
 
         void Session_Data(RudpSession session, byte[] data)
@@ -662,7 +617,7 @@ namespace RiseOp.Services.Chat
                     if(room.Active)
                         room.Members.LockReading(delegate()
                         {
-                            foreach (ulong member in room.Members.Keys)
+                            foreach (ulong member in room.Members)
                                 active[member] = true;
                         });
             });
@@ -689,18 +644,17 @@ namespace RiseOp.Services.Chat
                     bool update = false;
 
                     // remove from room
-                    if (!status.ActiveRooms.Contains(room.RoomID) && room.Members.SafeContainsKey(session.DhtID))
+                    if (!status.ActiveRooms.Contains(room.RoomID) && room.Members.SafeContains(session.DhtID))
                     {
-                        room.RemoveMember(session.DhtID, session.ClientID, !IsCommandRoom(room.Kind));
+                        if(!IsCommandRoom(room.Kind))
+                            room.RemoveMember(session.DhtID);
+                        
                         update = true;
                     }
 
                     // add member to room
-                    if (IsCommandRoom(room.Kind) && room.Members.SafeContainsKey(session.DhtID))
-                    {
-                        room.AddMember(session.DhtID, session.ClientID);
+                    if (IsCommandRoom(room.Kind) && room.Members.SafeContains(session.DhtID))
                         update = true;
-                    }
 
                     else if (status.ActiveRooms.Contains(room.RoomID))
                     {
@@ -708,8 +662,8 @@ namespace RiseOp.Services.Chat
                         if (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.DhtID))
                             continue;
 
-                         room.AddMember(session.DhtID, session.ClientID);
-                         update = true;
+                        room.AddMember(session.DhtID);
+                        update = true;
                     }
 
                     if (update)
@@ -722,7 +676,7 @@ namespace RiseOp.Services.Chat
         {
             room.Members.LockReading(delegate()
             {
-                foreach (ulong id in room.Members.Keys)
+                foreach (ulong id in room.Members)
                     StatusUpdate[id] = true;
             });
         }
@@ -755,6 +709,9 @@ namespace RiseOp.Services.Chat
                 Core.RunInCoreAsync(delegate() { SendInviteRequest(room, id); });
                 return;
             }
+
+            room.AddMember(id);
+
 
             ChatInvite invite = null;
 
@@ -805,7 +762,7 @@ namespace RiseOp.Services.Chat
         {
             room.Members.LockReading(delegate()
             {
-                foreach (ulong id in room.Members.Keys)
+                foreach (ulong id in room.Members)
                     foreach (RudpSession session in Core.RudpControl.GetActiveSessions(id))
                         if(room.NeedSendInvite(id, session.ClientID))
                             SendInviteProof(room, session);
@@ -848,10 +805,10 @@ namespace RiseOp.Services.Chat
              if (!RoomMap.TryGetValue(invite.RoomID, out room))
              {
                  RoomKind kind = invite.SignedInvite != null ? RoomKind.Private : RoomKind.Public;
-                 room = new ChatRoom(kind, 0, invite.Title);
+                 room = new ChatRoom(kind, invite.RoomID, invite.Title);
                  room.RoomID = invite.RoomID;
                  room.Kind = kind;
-                 room.Members.SafeAdd(session.DhtID, new ThreadedList<ushort>());
+                 room.AddMember(session.DhtID);
 
                  if (invite.Host != null)
                  {
@@ -921,7 +878,7 @@ namespace RiseOp.Services.Chat
 
             room.Members.LockReading(delegate()
            {
-               foreach (ulong id in room.Members.Keys)
+               foreach (ulong id in room.Members)
                    foreach (RudpSession session in Core.RudpControl.GetActiveSessions(id))
                         SendWhoRequest(room, session);
            });
@@ -940,7 +897,6 @@ namespace RiseOp.Services.Chat
         {
             Debug.Assert(!IsCommandRoom(room.Kind));
 
-
             List<ChatWho> whoPackets = new List<ChatWho>();
 
             ChatWho who = new ChatWho();
@@ -949,17 +905,18 @@ namespace RiseOp.Services.Chat
 
             room.Members.LockReading(delegate()
             {
-                foreach (ulong id in room.Members.Keys)
-                {
-                    who.Members.Add(id);
-
-                    if (who.Members.Count > 40) // 40 * 8 = 320 bytes
+                foreach (ulong id in room.Members)
+                    if (Core.RudpControl.GetActiveSessions(id).Count > 0) // only send members who are connected
                     {
-                        who = new ChatWho();
-                        who.RoomID = room.RoomID;
-                        whoPackets.Add(who);
+                        who.Members.Add(id);
+
+                        if (who.Members.Count > 40) // 40 * 8 = 320 bytes
+                        {
+                            who = new ChatWho();
+                            who.RoomID = room.RoomID;
+                            whoPackets.Add(who);
+                        }
                     }
-                }
             });
 
             // send who to already connected locations
@@ -980,7 +937,7 @@ namespace RiseOp.Services.Chat
                 return;
             }
 
-            // if room not public, not untrusted, and not from verified private room member or host, igonre
+            // if room not public, and not from verified private room member or host, igonre
             if (IsCommandRoom(room.Kind) || (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.DhtID)))
                 return;
 
@@ -994,9 +951,9 @@ namespace RiseOp.Services.Chat
             {
                 // add members to our own list
                 foreach(ulong id in who.Members)
-                    if (!room.Members.SafeContainsKey(id))
+                    if (!room.Members.SafeContains(id))
                     {
-                        room.Members.SafeAdd(id, new ThreadedList<ushort>());
+                        room.AddMember(id);
 
                         if (Links.GetTrust(id) == null)
                             Links.Research(id, 0, false);
@@ -1021,7 +978,7 @@ namespace RiseOp.Services.Chat
     }
 
 
-    internal enum RoomKind { Command_High, Command_Low, Live_High, Live_Low, Untrusted, Public, Private  }; // do not change order
+    internal enum RoomKind { Command_High, Command_Low, Live_High, Live_Low, Public, Private  }; // do not change order
 
 
     internal delegate void MembersUpdateHandler();
@@ -1037,7 +994,8 @@ namespace RiseOp.Services.Chat
         internal bool     Active;
 
         internal ulong Host;
-        internal ThreadedDictionary<ulong, ThreadedList<ushort>> Members = new ThreadedDictionary<ulong, ThreadedList<ushort>>();
+        // members in room by key, if online there will be elements in list for each location
+        internal ThreadedList<ulong> Members = new ThreadedList<ulong>();
         
         // for host this is a map of clients who have been sent invitations
         // for invitee this is a map of clients who have been sent proof that we are part of the room
@@ -1052,11 +1010,21 @@ namespace RiseOp.Services.Chat
         // per channel polling needs to be done because client may be still connected, leaving one channel, joining another
 
 
-        internal ChatRoom(RoomKind kind, uint project, string title)
+        internal ChatRoom(RoomKind kind, uint project)
         {
-            RoomID = project + (uint)kind;
+            Debug.Assert( ChatService.IsCommandRoom(kind) );
+
             Kind = kind;
-            ProjectID   = project;
+            RoomID = project + (uint)kind;
+            ProjectID = project;
+        }
+
+        internal ChatRoom(RoomKind kind, uint id, string title)
+        {
+            Debug.Assert( !ChatService.IsCommandRoom(kind) );
+
+            Kind = kind;
+            RoomID = id;
             Title = title;
 
             if (Kind == RoomKind.Private || kind == RoomKind.Public)
@@ -1066,50 +1034,14 @@ namespace RiseOp.Services.Chat
                 Verified = new Dictionary<ulong, bool>();
         }
 
-        internal void AddMember(ulong dhtid, ThreadedDictionary<ulong, ThreadedList<ushort>> prev)
-        {
-            ThreadedList<ushort> connected = null;
-            if (!prev.SafeTryGetValue(dhtid, out connected))
-                connected = new ThreadedList<ushort>();
-
-            Members.SafeAdd(dhtid, connected);
-        }
-
-        internal void AddMember(ulong dhtid, ushort client)
-        {
-            ThreadedList<ushort> connected = null;
-            if (!Members.SafeTryGetValue(dhtid, out connected))
-                connected = new ThreadedList<ushort>();
-
-            if (client != 0 && !connected.SafeContains(client))
-                connected.SafeAdd(client);
-
-            Members.SafeAdd(dhtid, connected);
-        }
-
-        internal void RemoveMember(ulong dhtid, ushort client, bool delete)
-        {
-            ThreadedList<ushort> connected = null;
-
-            if (!Members.SafeTryGetValue(dhtid, out connected))
-                return;
-
-            if (connected.SafeContains(client))
-                connected.SafeRemove(client);
-
-            // remove member himself if no connections, and not a command room 
-            if (delete && connected.SafeCount == 0 && (Kind == RoomKind.Untrusted || Kind == RoomKind.Public || Kind == RoomKind.Private))
-                Members.SafeRemove(dhtid);
-        }
-
-        internal int GetActiveMembers()
+        internal int GetActiveMembers(ChatService chat)
         {
             int count = 0;
 
             Members.LockReading(delegate()
             {
-                foreach (ThreadedList<ushort> clients in Members.Values)
-                    if (clients.SafeCount > 0)
+                foreach (ulong user in Members)
+                    if (chat.Core.RudpControl.GetActiveSessions(user).Count > 0)
                         count++;
             });
 
@@ -1121,6 +1053,17 @@ namespace RiseOp.Services.Chat
             return  Invites != null &&
                     Invites.ContainsKey(id) &&
                     !Invites[id].Second.Contains(client);
+        }
+
+        internal void AddMember(ulong user)
+        {
+            if(!Members.SafeContains(user))
+                Members.SafeAdd(user);
+        }
+
+        internal void RemoveMember(ulong user)
+        {
+            Members.SafeRemove(user);
         }
     }
 

@@ -186,9 +186,9 @@ namespace RiseOp.Implementation
  
 
             // optional
-            //AddService(new ProfileService(this));
             AddService(new IMService(this));
-            //AddService(new ChatService(this));
+            AddService(new ChatService(this));
+            //AddService(new ProfileService(this));
             //AddService(new MailService(this));
             //AddService(new BoardService(this));
             //AddService(new PlanService(this));

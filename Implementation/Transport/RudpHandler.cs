@@ -113,22 +113,16 @@ namespace RiseOp.Implementation.Transport
 
             return null;
         }
-
-        internal List<RudpSession> GetActiveSessions(ulong key, bool onlyActive)
+        internal List<RudpSession> GetActiveSessions(ulong key)
         {
             List<RudpSession> sessions = new List<RudpSession>();
 
             if (SessionMap.ContainsKey(key))
                 foreach (RudpSession session in SessionMap[key])
-                    if (!onlyActive || session.Status == SessionStatus.Active)
+                    if (session.Status == SessionStatus.Active)
                         sessions.Add(session);
 
             return sessions;
-        }
-
-        internal List<RudpSession> GetActiveSessions(ulong key)
-        {
-            return GetActiveSessions(key, true);
         }
 
         internal bool IsConnected(LocationData location)

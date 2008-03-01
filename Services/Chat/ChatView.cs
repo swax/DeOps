@@ -17,49 +17,45 @@ namespace RiseOp.Services.Chat
     {
         ChatService Chat;
         uint ProjectID;
-        ChatRoom Custom;
-
+        
         RoomView ViewHigh;
         RoomView ViewLow;
+        ChatRoom Custom;
 
         bool WindowActivated;
         bool FlashMe;
 
 
-        internal ChatView(ChatService chat, uint project, ChatRoom custom)
+        internal ChatView(ChatService chat, uint project)
         {
             InitializeComponent();
 
             Chat = chat;
             ProjectID = project;
-            Custom = custom;
 
             Chat.Refresh += new RefreshHandler(Chat_Refresh);
             Chat.Invited += new InvitedHandler(Chat_Invited);
 
             toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
 
-            bool isCustom = (custom != null);
+            RoomsButton.Visible  = true;
+            RoomSeparator.Visible = true;
+            LocalButton.Visible   = true;
+            LiveButton.Visible    = true;
+            CustomButton.Visible  = false;
             
-            LocalButton.Checked = !isCustom;
-
-            LocalButton.Visible     = !isCustom;
-            LiveButton.Visible      = !isCustom;
-            UntrustedButton.Visible = !isCustom;
-            RoomSeparator.Visible = !isCustom;
-            RoomsButton.Visible = !isCustom;
-
             JoinButton.Visible   = false;
-            LeaveButton.Visible  = isCustom;
-            InviteButton.Visible = isCustom && (Custom.Kind == RoomKind.Public || Custom.Host == Chat.Core.LocalDhtID);
+            LeaveButton.Visible  = false;
+            InviteButton.Visible = false; 
         }
 
         internal override void Init()
         {
             Chat_Refresh();
 
-            if (ViewHigh == null && ViewLow == null)
-                UntrustedButton_Click(null, null);
+            //crit command room default, next public rooms, else message showing info
+            if (RoomsActive(RoomKind.Command_High, RoomKind.Command_Low))
+                LocalButton_Click(null, null);
 
             if (External != null)
             {
@@ -91,19 +87,23 @@ namespace RiseOp.Services.Chat
 
             string title = "";
 
-            if (Custom == null)
+            if (!CustomButton.Checked)
             {
-                title = "My ";
+                title += Chat.Core.Links.GetProjectName(ProjectID) + " ";
 
-                if (ProjectID != 0)
-                    title += Chat.Core.Links.GetProjectName(ProjectID) + " ";
+                if (LocalButton.Checked)
+                    title += "Local ";
+                else if (LiveButton.Checked)
+                    title += "Live ";
 
-                title += " Chat";
+                title += "Chat";
             }
-            else
+            else if (Custom != null)
             {
                 title = Custom.Title;
             }
+            else
+                title = "Chat";
 
             return title;
         }
@@ -123,22 +123,15 @@ namespace RiseOp.Services.Chat
 
             // set which buttons are visible/checked
 
-            if (Custom != null)
-            {
-                SetTopView(Custom, true);
-                SetBottomView(null);
 
-                JoinButton.Visible = !Custom.Active;
-                LeaveButton.Visible = Custom.Active;
-            }
-
-            else if (LocalButton.Checked)
+            if (LocalButton.Checked)
             {
                 SetTopView( Chat.GetRoom(ProjectID, RoomKind.Command_High), false);
                 SetBottomView( Chat.GetRoom(ProjectID, RoomKind.Command_Low));
 
                 JoinButton.Visible = false;
                 LeaveButton.Visible = false;
+                InviteButton.Visible = false;
             }
 
             else if (LiveButton.Checked)
@@ -148,25 +141,26 @@ namespace RiseOp.Services.Chat
                
                 JoinButton.Visible = false;
                 LeaveButton.Visible = false;
+                InviteButton.Visible = false;
             }
 
-            else if (UntrustedButton.Checked)
+            else if (CustomButton.Checked)
             {
-                ChatRoom room = Chat.GetRoom(ProjectID, RoomKind.Untrusted);
-
-                SetTopView(room, true);
+                SetTopView(Custom, true);
                 SetBottomView(null);
 
-                if (room != null)
-                {
-                    JoinButton.Visible = !room.Active;
-                    LeaveButton.Visible = room.Active;
-                }
+                JoinButton.Visible = !Custom.Active;
+                LeaveButton.Visible = Custom.Active;
+
+                InviteButton.Visible = (Custom.Active && 
+                                        (Custom.Kind == RoomKind.Public || Custom.Host == Chat.Core.LocalDhtID));
             }
 
             LocalButton.ForeColor = RoomsActive(RoomKind.Command_High, RoomKind.Command_Low) ? Color.Black : Color.DimGray;
             LiveButton.ForeColor = RoomsActive(RoomKind.Live_High, RoomKind.Live_Low) ? Color.Black : Color.DimGray;
-            UntrustedButton.ForeColor = RoomsActive(RoomKind.Untrusted) ? Color.Black : Color.DimGray;
+            
+            if(Custom != null)
+                CustomButton.ForeColor = Custom.Active ? Color.Black : Color.DimGray;
 
             // collapse unused panels
             if (ViewContainer.Panel1.Controls.Count == 0)
@@ -174,6 +168,9 @@ namespace RiseOp.Services.Chat
 
             if (ViewContainer.Panel2.Controls.Count == 0)
                 ViewContainer.Panel2Collapsed = true;
+
+            if (External != null)
+                External.Text = GetTitle(false);
         }
 
         private bool RoomsActive(params RoomKind[] kinds)
@@ -184,8 +181,9 @@ namespace RiseOp.Services.Chat
 
                 if (room != null)
                 {
-                    if (Chat.IsCommandRoom(room.Kind ))
+                    if (ChatService.IsCommandRoom(room.Kind ))
                     {
+                        // if more people in command room, even if not online then it is active
                         if (room.Members.SafeCount > 1)
                             return true;
                     }
@@ -247,7 +245,7 @@ namespace RiseOp.Services.Chat
         {
             LocalButton.Checked = true;
             LiveButton.Checked = false;
-            UntrustedButton.Checked = false;
+            CustomButton.Checked = false;
 
             Chat_Refresh();
         }
@@ -256,16 +254,16 @@ namespace RiseOp.Services.Chat
         {
             LocalButton.Checked = false;
             LiveButton.Checked = true;
-            UntrustedButton.Checked = false;
+            CustomButton.Checked = false;
 
             Chat_Refresh();
         }
 
-        private void UntrustedButton_Click(object sender, EventArgs e)
+        private void CustomButton_Click(object sender, EventArgs e)
         {
             LocalButton.Checked = false;
             LiveButton.Checked = false;
-            UntrustedButton.Checked = true;
+            CustomButton.Checked = true;
 
             Chat_Refresh();
         }
@@ -276,9 +274,6 @@ namespace RiseOp.Services.Chat
             {
                 if (Custom != null)
                     Chat.JoinRoom(Custom);
-
-                if (UntrustedButton.Checked)
-                    Chat.JoinCommand(ProjectID, RoomKind.Untrusted);
             });
 
             Chat.Refresh.Invoke(); // all interfaces need to reflect this
@@ -286,10 +281,6 @@ namespace RiseOp.Services.Chat
 
         private void LeaveButton_Click(object sender, EventArgs e)
         {
-
-            if (UntrustedButton.Checked)
-                Chat.LeaveRoom(ProjectID, RoomKind.Untrusted);
-
             if (Custom != null)
                 Chat.LeaveRoom(Custom);
 
@@ -306,7 +297,7 @@ namespace RiseOp.Services.Chat
                 foreach (ChatRoom room in Chat.RoomMap.Values)
                     if (room.Kind == RoomKind.Public || room.Kind == RoomKind.Private)
                     {
-                        RoomsButton.DropDownItems.Add(new RoomItem(room, RoomMenu_Click));
+                        RoomsButton.DropDownItems.Add(new RoomItem(Chat, room, RoomMenu_Click));
                     }
             });
 
@@ -323,7 +314,7 @@ namespace RiseOp.Services.Chat
             if (item == null)
                 return;
 
-            Chat.ShowRoom(item.Room);
+            SetCustomRoom(item.Room);
         }
 
         private void RoomMenu_Create(object sender, EventArgs e)
@@ -340,8 +331,18 @@ namespace RiseOp.Services.Chat
                 RoomKind kind = form.PublicButton.Checked ? RoomKind.Public : RoomKind.Private;
 
                 ChatRoom room = Chat.CreateRoom(name, kind);
-                Chat.ShowRoom(room);
+
+                SetCustomRoom(room);
             }
+        }
+
+        private void SetCustomRoom(ChatRoom room)
+        {
+            CustomButton.Visible = true;
+            CustomButton.Text = room.Title;
+            Custom = room;
+
+            CustomButton_Click(null, null);
         }
 
         private void InviteButton_Click(object sender, EventArgs e)
@@ -355,12 +356,7 @@ namespace RiseOp.Services.Chat
 
             if (add.ShowDialog(this) == DialogResult.OK)
                 foreach (ulong id in add.People)
-                {
-                    if (!Custom.Members.SafeContainsKey(id))
-                        Custom.Members.SafeAdd(id, new ThreadedList<ushort>());
-
                     Chat.SendInviteRequest(Custom, id);
-                }
         }
 
 
@@ -373,8 +369,8 @@ namespace RiseOp.Services.Chat
             {
                 Chat.JoinRoom(room);
             });
-            
-            Chat.ShowRoom(room);
+
+            SetCustomRoom(room);
         }
 
         internal void MessageFlash()
@@ -407,8 +403,8 @@ namespace RiseOp.Services.Chat
         internal ChatRoom Room;
 
 
-        internal RoomItem(ChatRoom room, EventHandler onClick)
-            : base(room.Title + " (" + room.GetActiveMembers().ToString() + ")", null, onClick)
+        internal RoomItem(ChatService chat, ChatRoom room, EventHandler onClick)
+            : base(room.Title + " (" + room.GetActiveMembers(chat).ToString() + ")", null, onClick)
         {
             Room = room;
 

@@ -1,4 +1,13 @@
 
+put untrusted room on back burner
+	room would be always desynched, endless support questions
+	would  only allow nearest 16 xor/high/low nodes
+	generates many location queries on startup of potential untrusted nodes
+	special handles needed for those who wish to chat with untrusted who are not
+	untrusted can create public rooms anyways
+	uses a lot of bw/memory for udp connections for a flurry of unreliability
+
+
 invoke needs to be changed to begin invoke
 
 profile/link change (node) (subscribe)

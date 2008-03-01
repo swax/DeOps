@@ -105,6 +105,15 @@ selling points
 	Distributed Office System - No one has a good answer that doesnt require big IT investment
 		http://ask.slashdot.org/article.pl?sid=08/01/21/2032241&from=rss
 	
+	Web 2.0 Foundationally unsecure
+		http://www.internetnews.com/webcontent/article.php/3726496
+	
+	Crowds are better at solving easy problems, but hard problems are solved better by many small groups
+		http://www.sciencedaily.com/releases/2008/02/080220091419.htms
+	
+	Better to not see other people working simultaneously because are continually using our brain to model their behavior
+		http://www.sciencedaily.com/releases/2008/02/080220110323.htm
+	
 	Andy Tanenbaum: The problem is co-ordinating things. Projects like GNU, MINIX, or LINUX only hold together if one person is in charge. 
 	Linus Torvalds: Yes, coordination is a big problem, and I don't think linux will move away from me as "head surgeon" for some time..
 	
@@ -218,6 +227,10 @@ Scenarios
 		can help, assist, report, provide charity, etc.. with complete support wherever they are
 		great example of IT infrastructure with the manual labor / capitol investment
 
+	2 offices are joined using RiseOp
+		say a backhoe breaks the link between the offices
+		the live communication / command system gracefully keeps order/communication in the desynched company
+		a powerpoint slide showing a split tree would really help explain this
 		
 star trek - ever member has a 'console' black surface
 	many diff subcomponents custom cantrols can be added
@@ -427,6 +440,9 @@ Features
 	not a publishing network, maximize node position
 	next gen Dht buckets that reduce network hops
 	completely managed, no pinvokes, no unsafe code
+	Multihoming - reliable link can be maintained over multiple interfaces
+		for example if client is being proxied by 2 hosts, and 1 goes down, reliable connection is uninterrupted
+		keep-alives continually transmitted over all possible links
 	
 	Transfers
 		Encrypted / Compressed
