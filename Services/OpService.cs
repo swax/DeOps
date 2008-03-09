@@ -59,7 +59,7 @@ namespace RiseOp.Services
          List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project);
 
          string Name { get; }
-         ushort ServiceID { get; }
+         uint ServiceID { get; }
     }
 
     internal class DataPacket

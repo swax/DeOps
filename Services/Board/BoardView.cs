@@ -478,7 +478,7 @@ namespace RiseOp.Services.Board
 
             try
             {
-                FileStream stream = new FileStream(Boards.GetPostPath(post.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
+                TaggedStream stream = new TaggedStream(Boards.GetPostPath(post.Header));
                 CryptoStream crypto = new CryptoStream(stream, post.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                 int buffSize = 4096;

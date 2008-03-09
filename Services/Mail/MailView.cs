@@ -355,7 +355,7 @@ namespace RiseOp.Services.Mail
 
             try
             {
-                FileStream stream = new FileStream(Mail.GetLocalPath(message.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
+                TaggedStream stream = new TaggedStream(Mail.GetLocalPath(message.Header));
                 CryptoStream crypto = new CryptoStream(stream, message.Header.LocalKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                 int buffSize = 4096;

@@ -19,7 +19,7 @@ namespace RiseOp.Services.IM
     internal class IMService : OpService
     {
         public string Name { get { return "IM"; } }
-        public ushort ServiceID { get { return 5; } }
+        public uint ServiceID { get { return 5; } }
 
         const int SessionTimeout = 10;
 

@@ -30,8 +30,8 @@ namespace RiseOp.Services.Assist
         DhtNetwork Network;
         internal DhtStore Store;
 
-        internal ushort Service;
-        internal ushort DataType;
+        internal uint Service;
+        internal uint DataType;
 
         RijndaelManaged LocalKey;
         string CachePath;
@@ -49,7 +49,7 @@ namespace RiseOp.Services.Assist
         internal FileRemovedHandler FileRemoved;
 
 
-        internal VersionedCache(DhtNetwork network, ushort service, ushort type, bool useLocalSync)
+        internal VersionedCache(DhtNetwork network, uint service, uint type, bool useLocalSync)
         {
             Core    = network.Core;
             Network = network;
@@ -332,7 +332,7 @@ namespace RiseOp.Services.Assist
             // finish building header
             if (key != null)
             {
-                Utilities.ShaHashFile(tempPath, ref header.FileHash, ref header.FileSize);
+                Utilities.HashTagFile(tempPath, ref header.FileHash, ref header.FileSize);
 
                 // move file, overwrite if need be
                 string finalPath = GetFilePath(header);
@@ -525,8 +525,6 @@ namespace RiseOp.Services.Assist
                     Process_VersionedFile(null, signed, VersionedFileHeader.Decode(Core.Protocol, signed.Data));
         }
 
-        const int PatchEntrySize = 12;
-
         List<byte[]> Store_Replicate(DhtContact contact)
         {
             if (!Network.Established)
@@ -539,10 +537,13 @@ namespace RiseOp.Services.Assist
                 foreach (OpVersionedFile vfile in FileMap.Values)
                     if (Network.Routing.InCacheArea(vfile.DhtID))
                     {
-                        byte[] patch = new byte[PatchEntrySize];
 
-                        BitConverter.GetBytes(vfile.DhtID).CopyTo(patch, 0);
-                        BitConverter.GetBytes(vfile.Header.Version).CopyTo(patch, 8);
+                        byte[] id = BitConverter.GetBytes(vfile.DhtID);
+                        byte[] ver = CompactNum.GetBytes(vfile.Header.Version);
+
+                        byte[] patch = new byte[id.Length + ver.Length];
+                        id.CopyTo(patch, 0);
+                        ver.CopyTo(patch, 8);
 
                         patches.Add(patch);
                     }
@@ -553,45 +554,39 @@ namespace RiseOp.Services.Assist
 
         void Store_Patch(DhtAddress source, byte[] data)
         {
-            if (data.Length % PatchEntrySize != 0)
+            if (data.Length < 9)
                 return;
 
-            int offset = 0;
+            ulong dhtid = BitConverter.ToUInt64(data, 0);
 
-            for (int i = 0; i < data.Length; i += PatchEntrySize)
+            if (!Network.Routing.InCacheArea(dhtid))
+                return;
+
+            uint version = CompactNum.ToUInt32(data, 8, data.Length - 8);
+
+            OpVersionedFile vfile = GetFile(dhtid);
+
+            if (vfile != null && vfile.Header != null)
             {
-                ulong dhtid = BitConverter.ToUInt64(data, i);
-                uint version = BitConverter.ToUInt32(data, i + 8);
-
-                offset += PatchEntrySize;
-
-                if (!Network.Routing.InCacheArea(dhtid))
-                    continue;
-
-                OpVersionedFile vfile = GetFile(dhtid);
-
-                if (vfile != null && vfile.Header != null)
+                if (vfile.Header.Version > version)
                 {
-                    if (vfile.Header.Version > version)
-                    {
-                        Store.Send_StoreReq(source, 0, new DataReq(null, vfile.DhtID, Service, DataType, vfile.SignedHeader));
-                        continue;
-                    }
-
-                    vfile.Unique = false; // network has current or newer version
-
-                    if (vfile.Header.Version == version)
-                        continue;
-
-                    // else our version is old, download below
+                    Store.Send_StoreReq(source, 0, new DataReq(null, vfile.DhtID, Service, DataType, vfile.SignedHeader));
+                    return;
                 }
 
+                vfile.Unique = false; // network has current or newer version
 
-                if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, Service, DataType, BitConverter.GetBytes(version));
-                else
-                    DownloadLater[dhtid] = version;
+                if (vfile.Header.Version == version)
+                    return;
+
+                // else our version is old, download below
             }
+
+
+            if (Network.Established)
+                Network.Searches.SendDirectRequest(source, dhtid, Service, DataType, BitConverter.GetBytes(version));
+            else
+                DownloadLater[dhtid] = version;
         }
 
         internal void Research(ulong key)
@@ -652,12 +647,12 @@ namespace RiseOp.Services.Assist
         {
             OpVersionedFile file = GetFile(Core.LocalDhtID);
 
-            return (file != null) ? BitConverter.GetBytes(file.Header.Version) : null;
+            return (file != null) ? CompactNum.GetBytes(file.Header.Version) : null;
         }
 
         void LocalSync_TagReceived(ulong user, byte[] tag)
         {
-            if(tag.Length < 4)
+            if(tag.Length == 0)
                 return;
 
             uint version = 0;
@@ -666,7 +661,7 @@ namespace RiseOp.Services.Assist
 
             if (file != null)
             {
-                version = BitConverter.ToUInt32(tag, 0);
+                version = CompactNum.ToUInt32(tag, 0, tag.Length);
 
                 // version old, so we need the latest localSync file
                 // wont cause loop because localsync's fileAquired will only fire on new version of localSync
@@ -729,12 +724,12 @@ namespace RiseOp.Services.Assist
                 G2Frame header = protocol.WritePacket(null, DataPacket.VersionedFile, null);
 
                 protocol.WritePacket(header, Packet_Key, Key);
-                protocol.WritePacket(header, Packet_Version, BitConverter.GetBytes(Version));
+                protocol.WritePacket(header, Packet_Version, CompactNum.GetBytes(Version));
 
                 if (FileHash != null)
                 {
                     protocol.WritePacket(header, Packet_FileHash, FileHash);
-                    protocol.WritePacket(header, Packet_FileSize, BitConverter.GetBytes(FileSize));
+                    protocol.WritePacket(header, Packet_FileSize, CompactNum.GetBytes(FileSize));
                     protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
                 }
 
@@ -775,7 +770,7 @@ namespace RiseOp.Services.Assist
                         break;
 
                     case Packet_Version:
-                        header.Version = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        header.Version = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_FileHash:
@@ -783,7 +778,7 @@ namespace RiseOp.Services.Assist
                         break;
 
                     case Packet_FileSize:
-                        header.FileSize = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        header.FileSize = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_FileKey:

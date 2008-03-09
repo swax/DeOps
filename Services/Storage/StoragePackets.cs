@@ -278,10 +278,10 @@ namespace RiseOp.Services.Storage
                 protocol.WritePacket(file, Packet_Revs, BitConverter.GetBytes(Revs));
                 protocol.WritePacket(file, Packet_Integrated, BitConverter.GetBytes(IntegratedID));
 
-                protocol.WritePacket(file, Packet_Size, BitConverter.GetBytes(Size));
+                protocol.WritePacket(file, Packet_Size, CompactNum.GetBytes(Size));
                 protocol.WritePacket(file, Packet_Hash, Hash);
                 protocol.WritePacket(file, Packet_FileKey, FileKey.Key);
-                protocol.WritePacket(file, Packet_InternalSize, BitConverter.GetBytes(InternalSize));
+                protocol.WritePacket(file, Packet_InternalSize, CompactNum.GetBytes(InternalSize));
                 protocol.WritePacket(file, Packet_InternalHash, InternalHash);
 
                 byte[] scopefield = new byte[10];
@@ -350,7 +350,7 @@ namespace RiseOp.Services.Storage
                         break;
 
                     case Packet_Size:
-                        file.Size = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        file.Size = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Hash:
@@ -364,7 +364,7 @@ namespace RiseOp.Services.Storage
                         break;
 
                     case Packet_InternalSize:
-                        file.InternalSize = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        file.InternalSize = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_InternalHash:

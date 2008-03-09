@@ -26,7 +26,7 @@ namespace RiseOp.Services.Location
     internal class LocationService : OpService
     {
         public string Name { get { return "Location"; } }
-        public ushort ServiceID { get { return 2; } }
+        public uint ServiceID { get { return 2; } }
 
         OpCore Core;
 
@@ -304,10 +304,10 @@ namespace RiseOp.Services.Location
 
             location.Version  = LocationVersion++;
 
-            foreach(ushort service in GetTag.HandlerMap.Keys)
-                foreach (ushort datatype in GetTag.HandlerMap[service].Keys)
+            foreach (uint service in GetTag.HandlerMap.Keys)
+                foreach (uint datatype in GetTag.HandlerMap[service].Keys)
                 {
-                    LocationTag tag = new LocationTag();
+                    PatchTag tag = new PatchTag();
 
                     tag.Service = service;
                     tag.DataType = datatype;
@@ -459,7 +459,7 @@ namespace RiseOp.Services.Location
             // notify components of new versions
             DhtAddress address = new DhtAddress(location.IP, location.Source);
 
-            foreach (LocationTag tag in location.Tags)
+            foreach (PatchTag tag in location.Tags)
                 if(TagReceived.Contains(tag.Service, tag.DataType))
                     TagReceived[tag.Service, tag.DataType].Invoke(address, location.KeyID, tag.Tag);
 
@@ -677,30 +677,45 @@ namespace RiseOp.Services.Location
     }
 
 
-    internal class LocationTag
+    internal class PatchTag
     {
-        internal ushort Service;
-        internal ushort DataType;
+        internal uint Service;
+        internal uint DataType;
         internal byte[] Tag;
 
         internal byte[] ToBytes()
         {
-            byte[] data = new byte[2 + 2 + Tag.Length];
+            byte[] sByte = CompactNum.GetBytes(Service);
+            byte[] dByte = CompactNum.GetBytes(DataType);
+            
+            byte control = (byte) (sByte.Length << 3);
+            control |= (byte) dByte.Length;
 
-            BitConverter.GetBytes(Service).CopyTo(data, 0);
-            BitConverter.GetBytes(DataType).CopyTo(data, 2);
-            Tag.CopyTo(data, 4);
+            int size = 1 + sByte.Length + dByte.Length + Tag.Length;
+
+            byte[] data = new byte[size];
+
+            data[0] = control;
+            sByte.CopyTo(data, 1);
+            dByte.CopyTo(data, 1 + sByte.Length);
+            Tag.CopyTo(data, 1 + sByte.Length + dByte.Length);
 
             return data;
         }
 
-        internal static LocationTag FromBytes(byte[] data, int pos, int size)
+        internal static PatchTag FromBytes(byte[] data, int pos, int size)
         {
-            LocationTag tag = new LocationTag();
+            PatchTag tag = new PatchTag();
 
-            tag.Service = BitConverter.ToUInt16(data, pos);
-            tag.DataType = BitConverter.ToUInt16(data, pos + 2);
-            tag.Tag = Utilities.ExtractBytes(data, pos + 4, size - 4);
+            byte control = data[pos];
+            int sLength = (control & 0x38) >> 3;
+            int dLength = (control & 0x07);
+
+            tag.Service = CompactNum.ToUInt32(data, pos + 1, sLength);
+            tag.DataType = CompactNum.ToUInt32(data, pos + 1 + sLength, dLength);
+
+            int dataPos = 1 + sLength + dLength;
+            tag.Tag = Utilities.ExtractBytes(data, pos + dataPos, size - dataPos);
 
             return tag;
         }

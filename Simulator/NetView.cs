@@ -523,7 +523,7 @@ namespace RiseOp.Simulator
                 }
         }
 
-        private Color GetComponentColor(ushort id)
+        private Color GetComponentColor(uint id)
         {
             switch (id)
             {

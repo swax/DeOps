@@ -26,7 +26,7 @@ namespace RiseOp.Services.Board
     internal class BoardService : OpService
     {
         public string Name { get { return "Board"; } }
-        public ushort ServiceID { get { return 8; } }
+        public uint ServiceID { get { return 8; } }
 
         internal OpCore Core;
         internal G2Protocol Protocol;
@@ -456,11 +456,13 @@ namespace RiseOp.Services.Board
                 }
             }
 
+            stream.WriteByte(0); // signal last packet
+
             stream.FlushFinalBlock();
             stream.Close();
 
             // finish building header
-            Utilities.ShaHashFile(tempPath, ref header.FileHash, ref header.FileSize);
+            Utilities.HashTagFile(tempPath, ref header.FileHash, ref header.FileSize);
 
             string finalPath = GetPostPath(header);
             File.Move(tempPath, finalPath);
@@ -1047,7 +1049,7 @@ namespace RiseOp.Services.Board
 
                     post.Attached = new List<PostFile>();
 
-                    FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    TaggedStream file = new TaggedStream(path);
                     CryptoStream crypto = new CryptoStream(file, post.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                     PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 

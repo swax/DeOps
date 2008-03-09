@@ -333,7 +333,7 @@ namespace RiseOp.Interface.Tools
                         {
                             name += GetVariableName(typeof(NetworkPacket), internalRoot.Name);
 
-                            ushort id = 0;
+                            uint id = 0;
                             G2ReceivedPacket wrap = new G2ReceivedPacket();
                             wrap.Root = internalRoot;
 

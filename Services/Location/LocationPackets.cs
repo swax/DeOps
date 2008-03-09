@@ -41,7 +41,7 @@ namespace RiseOp.Services.Location
         internal string Place = "";
         internal uint TTL;
         internal uint Version;
-        internal List<LocationTag> Tags = new List<LocationTag>();
+        internal List<PatchTag> Tags = new List<PatchTag>();
 
         internal int GmtOffset;
         internal bool Away;
@@ -63,12 +63,12 @@ namespace RiseOp.Services.Location
                 protocol.WritePacket(loc, Packet_Proxies, DhtAddress.ToByteList(Proxies));
                 protocol.WritePacket(loc, Packet_Place, protocol.UTF.GetBytes(Place));
                 protocol.WritePacket(loc, Packet_TTL, BitConverter.GetBytes(TTL));
-                protocol.WritePacket(loc, Packet_Version, BitConverter.GetBytes(Version));
+                protocol.WritePacket(loc, Packet_Version, CompactNum.GetBytes(Version));
                 protocol.WritePacket(loc, Packet_GMTOffset, BitConverter.GetBytes(GmtOffset));
                 protocol.WritePacket(loc, Packet_Away, BitConverter.GetBytes(Away));
                 protocol.WritePacket(loc, Packet_AwayMsg, protocol.UTF.GetBytes(AwayMessage));
                     
-                foreach(LocationTag tag in Tags)
+                foreach(PatchTag tag in Tags)
                     protocol.WritePacket(loc, Packet_Tag, tag.ToBytes());
 
                 return protocol.WriteFinish();
@@ -124,7 +124,7 @@ namespace RiseOp.Services.Location
                         break;
 
                     case Packet_Version:
-                        loc.Version = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        loc.Version = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_GMTOffset:
@@ -140,7 +140,7 @@ namespace RiseOp.Services.Location
                         break;
 
                     case Packet_Tag:
-                        loc.Tags.Add(LocationTag.FromBytes(child.Data, child.PayloadPos, child.PayloadSize));
+                        loc.Tags.Add(PatchTag.FromBytes(child.Data, child.PayloadPos, child.PayloadSize));
                         break;
                 }
             }

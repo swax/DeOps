@@ -40,7 +40,7 @@ namespace RiseOp.Implementation.Dht
             Core = Network.Core;
         }
 
-        internal void PublishNetwork(ulong target, ushort service, ushort datatype, byte[] data)
+        internal void PublishNetwork(ulong target, uint service, uint datatype, byte[] data)
         {
             if (Core.InvokeRequired)
                 Debug.Assert(false);
@@ -74,7 +74,7 @@ namespace RiseOp.Implementation.Dht
                 Send_StoreReq(node.Contact.ToDhtAddress(), 0, publish);
         }
 
-        internal void PublishDirect(List<LocationData> locations, ulong target, ushort service, ushort datatype, byte[] data)
+        internal void PublishDirect(List<LocationData> locations, ulong target, uint service, uint datatype, byte[] data)
         {
             if (Core.InvokeRequired)
             {
@@ -237,7 +237,7 @@ namespace RiseOp.Implementation.Dht
             // for remote user stuff that loads up with client, but now out of bounds, it is
             // republished by the uniqe modifier on data
 
-            Dictionary<uint, List<byte[]>> DataMap = new Dictionary<uint, List<byte[]>>();
+            List<PatchTag> PatchList = new List<PatchTag>();
 
             // get data that needs to be replicated from components
             // structure as so
@@ -246,13 +246,21 @@ namespace RiseOp.Implementation.Dht
             //              datatype []
             //                  patch data []
 
-            foreach (ushort service in ReplicateEvent.HandlerMap.Keys)
-                foreach (ushort datatype in ReplicateEvent.HandlerMap[service].Keys)
+            foreach (uint service in ReplicateEvent.HandlerMap.Keys)
+                foreach (uint datatype in ReplicateEvent.HandlerMap[service].Keys)
                 {
-                    List<byte[]> data = ReplicateEvent.HandlerMap[service][datatype].Invoke(contact);
+                    List<byte[]> patches = ReplicateEvent.HandlerMap[service][datatype].Invoke(contact);
 
-                    if (data != null)
-                        DataMap[(uint)((service << 16) + datatype)] = data;
+                    if(patches != null)
+                        foreach (byte[] data in patches)
+                        {
+                            PatchTag patch = new PatchTag();
+                            patch.Service = service;
+                            patch.DataType = datatype;
+                            patch.Tag = data;
+
+                            PatchList.Add(patch);
+                        }
                 }
 
             ulong proxyID = 0;
@@ -266,24 +274,19 @@ namespace RiseOp.Implementation.Dht
 
             int totalSize = 0;
 
-            foreach (uint serviceData in DataMap.Keys)
+            foreach (PatchTag patch in PatchList)
             {
-                List<byte[]> list = DataMap[serviceData];
-
-                foreach (byte[] data in list)
+                if (patch.Tag.Length + totalSize > 1000)
                 {
-                    if (data.Length + totalSize > 1200)
-                    {
-                        if (packet.PatchData.Count > 0)
-                            Send_StoreReq(contact.ToDhtAddress(), proxyID, new DataReq(null, contact.DhtID, 0, 0, packet.Encode(Core.Protocol)));
+                    if (packet.PatchData.Count > 0)
+                        Send_StoreReq(contact.ToDhtAddress(), proxyID, new DataReq(null, contact.DhtID, 0, 0, packet.Encode(Core.Protocol)));
 
-                        packet.PatchData.Clear();
-                        totalSize = 0;
-                    }
-
-                    packet.PatchData.Add(new Tuple<uint, byte[]>(serviceData, data));
-                    totalSize += data.Length;
+                    packet.PatchData.Clear();
+                    totalSize = 0;
                 }
+
+                packet.PatchData.Add(patch);
+                totalSize += patch.Tag.Length;
             }
 
             if (packet.PatchData.Count > 0)
@@ -304,14 +307,9 @@ namespace RiseOp.Implementation.Dht
                     if (packet == null)
                         return;
 
-                    foreach (Tuple<uint, byte[]> pair in packet.PatchData)
-                    {
-                        ushort service = (ushort) (pair.First >> 16);
-                        ushort datatype = (ushort) (pair.First & 0x00FF);
-
-                        if (PatchEvent.Contains(service, datatype))
-                            PatchEvent[service, datatype].Invoke(source, pair.Second);
-                    }
+                    foreach (PatchTag patch in packet.PatchData)
+                        if (PatchEvent.Contains(patch.Service, patch.DataType))
+                            PatchEvent[patch.Service, patch.DataType].Invoke(source, patch.Tag);
                 }
         }
     }
@@ -322,11 +320,11 @@ namespace RiseOp.Implementation.Dht
         internal ulong LocalProxy;
 
         internal ulong  Target;
-        internal ushort Service;
-        internal ushort DataType;
+        internal uint Service;
+        internal uint DataType;
         internal byte[] Data;
 
-        internal DataReq(List<DhtAddress> sources, ulong target, ushort service, ushort datatype, byte[] data)
+        internal DataReq(List<DhtAddress> sources, ulong target, uint service, uint datatype, byte[] data)
         {
             Sources   = sources;
             Target    = target;
@@ -343,10 +341,9 @@ namespace RiseOp.Implementation.Dht
 
     internal class PatchPacket : G2Packet
     {
-        const byte Packet_ServiceType = 0x10;
-        const byte Packet_Data = 0x20;
+        const byte Packet_Patch = 0x01;
 
-        internal List<Tuple<uint, byte[]>> PatchData = new List<Tuple<uint, byte[]>>();
+        internal List<PatchTag> PatchData = new List<PatchTag>();
 
         internal PatchPacket()
         {
@@ -359,12 +356,8 @@ namespace RiseOp.Implementation.Dht
             {
                 G2Frame patch = protocol.WritePacket(null, StorePacket.Patch, null);
 
-                foreach (Tuple<uint, byte[]> pair in PatchData)
-                {
-                    G2Frame data = protocol.WritePacket(patch, Packet_ServiceType, BitConverter.GetBytes(pair.First));
-
-                    protocol.WritePacket(data, Packet_Data, pair.Second);
-                }
+                foreach (PatchTag tag in PatchData)
+                    protocol.WritePacket(patch, Packet_Patch, tag.ToBytes());
 
                 return protocol.WriteFinish();
             }
@@ -376,23 +369,8 @@ namespace RiseOp.Implementation.Dht
             G2Header child = new G2Header(root.Data);
 
             while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (child.Name == Packet_ServiceType && G2Protocol.ReadPayload(child))
-                {
-                    uint serviceType = BitConverter.ToUInt32(child.Data, child.PayloadPos);
-                    byte[] data = null;
-
-                    G2Protocol.ResetPacket(child);
-
-                    G2Header embedded = new G2Header(child.Data);
-                    if (G2Protocol.ReadNextChild(child, embedded) == G2ReadResult.PACKET_GOOD)
-                        if(embedded.Name == Packet_Data && G2Protocol.ReadPayload(embedded))
-                            data = Utilities.ExtractBytes(embedded.Data, embedded.PayloadPos, embedded.PayloadSize);
-
-                    if(data != null)
-                        patch.PatchData.Add(new Tuple<uint, byte[]>(serviceType, data));
-                }
-            }
+                if (child.Name == Packet_Patch && G2Protocol.ReadPayload(child))
+                    patch.PatchData.Add((PatchTag) PatchTag.FromBytes(child.Data, child.PayloadPos, child.PayloadSize));
 
             return patch;
         }

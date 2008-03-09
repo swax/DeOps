@@ -266,8 +266,8 @@ namespace RiseOp.Implementation.Protocol.Net
 		internal bool      Nodes  = true;
         internal uint      SearchID;
 		internal UInt64    TargetID;
-        internal ushort    Service;
-        internal ushort    DataType;
+        internal uint      Service;
+        internal uint      DataType;
         internal byte[]    Parameters;
         internal bool      EndProxySearch;
 
@@ -281,8 +281,8 @@ namespace RiseOp.Implementation.Protocol.Net
                 protocol.WritePacket(req, Packet_Nodes, BitConverter.GetBytes(Nodes));
                 protocol.WritePacket(req, Packet_SearchID,  BitConverter.GetBytes(SearchID));
                 protocol.WritePacket(req, Packet_Target,    BitConverter.GetBytes(TargetID));
-                protocol.WritePacket(req, Packet_Service, BitConverter.GetBytes(Service));
-                protocol.WritePacket(req, Packet_DataType, BitConverter.GetBytes(DataType));
+                protocol.WritePacket(req, Packet_Service, CompactNum.GetBytes(Service));
+                protocol.WritePacket(req, Packet_DataType, CompactNum.GetBytes(DataType));
                 protocol.WritePacket(req, Packet_Parameters, Parameters);
 
                 if (EndProxySearch)
@@ -320,11 +320,11 @@ namespace RiseOp.Implementation.Protocol.Net
                         break;
 
                     case Packet_Service:
-                        req.Service = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        req.Service = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_DataType:
-                        req.DataType = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        req.DataType = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Parameters:
@@ -358,7 +358,7 @@ namespace RiseOp.Implementation.Protocol.Net
 		internal DhtSource Source = new DhtSource();
 		internal uint SearchID;
 		internal bool Proxied;
-        internal ushort Service;
+        internal uint Service;
         internal List<DhtContact> ContactList = new List<DhtContact>();
         internal List<byte[]> ValueList = new List<byte[]>();
 
@@ -371,7 +371,7 @@ namespace RiseOp.Implementation.Protocol.Net
                 protocol.WritePacket(ack, Packet_Source, Source.ToBytes());
 
                 protocol.WritePacket(ack, Packet_SearchID, BitConverter.GetBytes(SearchID));
-                protocol.WritePacket(ack, Packet_Service, BitConverter.GetBytes(Service));
+                protocol.WritePacket(ack, Packet_Service, CompactNum.GetBytes(Service));
 
                 if (Proxied)
                     protocol.WritePacket(ack, Packet_Proxied, null);
@@ -420,7 +420,7 @@ namespace RiseOp.Implementation.Protocol.Net
                         break;
 
                     case Packet_Service:
-                        ack.Service = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        ack.Service = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Values:
@@ -445,8 +445,8 @@ namespace RiseOp.Implementation.Protocol.Net
 
         internal DhtSource  Source = new DhtSource();
         internal UInt64 Key;
-        internal ushort Service;
-        internal ushort DataType;
+        internal uint Service;
+        internal uint DataType;
         internal byte[] Data;
         internal ushort TTL = ushort.MaxValue;
 
@@ -460,8 +460,8 @@ namespace RiseOp.Implementation.Protocol.Net
                 protocol.WritePacket(req, Packet_Source, Source.ToBytes());
 
                 protocol.WritePacket(req, Packet_Key, BitConverter.GetBytes(Key));
-                protocol.WritePacket(req, Packet_Service, BitConverter.GetBytes(Service));
-                protocol.WritePacket(req, Packet_DataType, BitConverter.GetBytes(DataType));
+                protocol.WritePacket(req, Packet_Service, CompactNum.GetBytes(Service));
+                protocol.WritePacket(req, Packet_DataType, CompactNum.GetBytes(DataType));
                 protocol.WritePacket(req, Packet_Data, Data);
 
                 protocol.WritePacket(req, Packet_TTL, BitConverter.GetBytes(TTL));
@@ -494,11 +494,11 @@ namespace RiseOp.Implementation.Protocol.Net
                         break;
 
                     case Packet_Service:
-                        req.Service = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        req.Service = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_DataType:
-                        req.DataType = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        req.DataType = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Data:

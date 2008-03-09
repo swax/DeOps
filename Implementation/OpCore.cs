@@ -72,7 +72,7 @@ namespace RiseOp.Implementation
 
 
         internal ushort DhtServiceID = 0;
-        internal Dictionary<ushort, OpService> ServiceMap = new Dictionary<ushort, OpService>();
+        internal Dictionary<uint, OpService> ServiceMap = new Dictionary<uint, OpService>();
 
 
 		// properties
@@ -192,7 +192,7 @@ namespace RiseOp.Implementation
             //AddService(new MailService(this));
             //AddService(new BoardService(this));
             //AddService(new PlanService(this));
-            //AddService(new StorageService(this));
+            AddService(new StorageService(this));
 
             
 
@@ -212,7 +212,7 @@ namespace RiseOp.Implementation
             ServiceMap[service.ServiceID] = service;
         }
 
-        private void RemoveService(ushort id)
+        private void RemoveService(uint id)
         {
             if (!ServiceMap.ContainsKey(id))
                 return;
@@ -222,7 +222,7 @@ namespace RiseOp.Implementation
             ServiceMap.Remove(id);
         }
 
-        internal string GetServiceName(ushort id)
+        internal string GetServiceName(uint id)
         {
             if (id == 0)
                 return "DHT";

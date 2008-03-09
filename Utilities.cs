@@ -262,6 +262,51 @@ namespace RiseOp
             file.Close();
         }
 
+        internal static void HashTagFile(string path, ref byte[] hash, ref long size)
+        {
+            FileStream file = new FileStream(path, FileMode.Open, FileAccess.ReadWrite);
+
+            // record size of file
+            long originalSize = file.Length;
+
+            // md5 hash 128k chunks of file
+            SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
+            
+            int read = 0;
+            byte chunkBits = 7; // 128kb chunks
+            int chunkSize = (int) Math.Pow(2, chunkBits) * 1024;
+            int buffSize = file.Length > chunkSize ? chunkSize : (int) file.Length;
+            byte[] chunk = new byte[buffSize];
+            List<byte[]> hashes = new List<byte[]>();
+
+            read = 1;
+            while (read > 0)
+            {
+                read = file.Read(chunk, 0, buffSize);
+
+                if (read > 0)
+                    hashes.Add(sha.ComputeHash(chunk, 0, read));
+            }
+
+            // attach chunk hashes to end of file
+            foreach (byte[] chunkhash in hashes)
+                file.Write(chunkhash, 0, chunkhash.Length);
+
+            // attach the size of each chunk
+            file.WriteByte(chunkBits);
+
+            // attach original size to end of file
+            byte[] sizeBytes = BitConverter.GetBytes(originalSize);
+            file.Write(sizeBytes, 0, sizeBytes.Length);
+
+            // sha1 hash tagged file
+            file.Seek(0, SeekOrigin.Begin);
+            hash = sha.ComputeHash(file);
+            size = file.Length;
+
+            file.Close();
+        }
+
         internal static string CryptType(object crypt)
         {
             if (crypt.GetType() == typeof(RijndaelManaged))
@@ -692,9 +737,9 @@ namespace RiseOp.Implementation
 
     internal class ServiceEvent<TDelegate>
     {
-        internal Dictionary<ushort, Dictionary<ushort, TDelegate>> HandlerMap = new Dictionary<ushort, Dictionary<ushort, TDelegate>>();
+        internal Dictionary<uint, Dictionary<uint, TDelegate>> HandlerMap = new Dictionary<uint, Dictionary<uint, TDelegate>>();
 
-        internal TDelegate this[ushort service, ushort type]
+        internal TDelegate this[uint service, uint type]
         {
             get
             {
@@ -706,13 +751,13 @@ namespace RiseOp.Implementation
             set
             {
                 if (!HandlerMap.ContainsKey(service))
-                    HandlerMap[service] = new Dictionary<ushort, TDelegate>();
+                    HandlerMap[service] = new Dictionary<uint, TDelegate>();
 
                 HandlerMap[service][type] = value;
             }
         }
 
-        internal bool Contains(ushort service, ushort type)
+        internal bool Contains(uint service, uint type)
         {
             return HandlerMap.ContainsKey(service) && HandlerMap[service].ContainsKey(type);
         }
@@ -1355,6 +1400,39 @@ namespace RiseOp.Implementation
         public override int GetHashCode()
         {
             return First.GetHashCode() ^ Second.GetHashCode();
+        }
+    }
+
+    internal class TaggedStream : FileStream
+    {
+        long InternalSize;
+
+        internal TaggedStream(string path)
+            : base(path, FileMode.Open, FileAccess.Read, FileShare.Read)
+        {
+            Seek(-8, SeekOrigin.End);
+
+            byte[] sizeBytes = new byte[8];
+            Read(sizeBytes, 0, sizeBytes.Length);
+            InternalSize = BitConverter.ToInt64(sizeBytes, 0);
+
+            Seek(0, SeekOrigin.Begin);
+        }
+
+        public override long Length
+        {
+            get
+            {
+                return (InternalSize == 0) ? base.Length : InternalSize;
+            }
+        }
+
+        public override int Read(byte[] array, int offset, int count)
+        {
+            if (Position + count > Length)
+                count = (int)(Length - Position);
+
+            return base.Read(array, offset, count);
         }
     }
 }

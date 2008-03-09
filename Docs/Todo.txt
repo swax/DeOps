@@ -1,20 +1,33 @@
 
+show file's distribution over network
+file download interface
+	main: hash, size, parts graphic
+	subs: name, status (pending / 5kb/s), parts graphic
+	
+analyze current algorithm
+	how to pause re-request file transfers? encapsulate in g2?
+	are there different 'streams' for file transfers control and data?
+
+should there be a difference between uploads and downloads?
+
 multi-source d/l
-	hashing
-		unencrypted file encrypted
-		encrypted file md5 hashed per 128kb block
-		blocks, resolution, and file size attached to end of file
-		entire file sha1 hashed
+	current algorithm dl/ul
+		Start d/l puts file in pending queue
+		Move to active when less than 5 active
+		New active searches for target
 
 	a transfer doesn't keep track of more than 20 peers
 		peer list like mini-dht every 2 slots is xor closer to local
 		empty slots are filled with closest xor nodes, 2 up, and 2 down
 		a node will always be gaurenteed a community in file transfer
+		support web cache in mesh
+		
 		
 	on connection
 		peers exchange caches of those close to each other
 		peers exhcange bitfields
 		keep master bytefield of rarity of parts, add/subtract to it as need be
+		part hashes if requested
 		
 	client starts sending remote rarest piece remote doesnt have
 		remote acknowledges and starts writing, or cancles transfer if receiving already from faster source
@@ -61,8 +74,10 @@ multi-source d/l
 		when decrypting file back size read to figure how much to decrypt
 		transfer reads back of file for size/parts and sends to client when requested
 
+		large partial files should be saved between runs
+
 	testing 
-		in network view, seed file and watch
+		in network view, seed file and watch, implement bw limits in simulator
 		each node shows a progress bar of the files completion
 		optimize for max propagation through network
 	
@@ -74,7 +89,8 @@ live
 	downlink determined by closest sub, if equal, highest rank where 2 nodes split tracks
 	uplink determined by highest offline where not challenged
 	show trusted/untrusted in live
-
+	ensure when random subset of nodes removed all links/chat rooms still connected through live
+	
 chat
 	private triggering 2 invites, members dont see each other
 	if node starts up untrusted, display help service by default instead of chat
@@ -94,17 +110,13 @@ test
 	links timing out when traversing strucuture
 	link.getlocs / getlocsbelow / use live links?
 	link/plan research timer
-	
-turn on chat - limit untrusted chat focus
-test linkups - test chat focus dynamically changing
-live command tree/chat
-	ensure when random subset of nodes removed all links still connected through live
 
-reduce size of rudp connections, global buffer for inc packets?
+
 doesnt seem like cache is refreshed fast enough
 location signoff tag
 assert in deconstructors that events are set back to null
 GetActiveSessions not threaded for gui, try not to thread dictionary
+window title not updated on name change
 	
 use last seen date in localSync - show day, not time
 alert user of desyncs detected in localSync, maybe as news alert,
@@ -131,15 +143,14 @@ spring release
 	multisource downloading 
 		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
 		right click to cancel, increase/decrease priority
+	*** items from todo
 	crits
 	store caching
 	proxying
-	web caching
+	web caching - look at using EC2
 	invitations
 	website, auto-update
 	licensing, installer
-	mono
-
 
 Interface
 	General
@@ -190,8 +201,6 @@ Components
 		component plug-ins / view plugins for private components
 		Remove references to LinkMap, use GetLink
 		when component handles exit, assert that all events are emptied of references to debug gui's not releasing event handles
-		
-		ensure name resoluton works, chat/IM updated when link loaded
 		
 	Trust
 		Higher determines lower's title/Name upon trust?
@@ -313,13 +322,16 @@ Core
     each component's minute action should have unique interrupt given by core class
      
 	Rudp
-		location updates
 		route data over session if desination the same	
 		nat/block keep list of recent search ids/kadids so duplicate results arent sent out
 		check natted are finding closest nodes to proxy off of
 		use rudp when available to transmit link / loc data
-		with rudp now being used, should analyze purely global network
-		each rudp session/sock is around 150kb overhead, get that doooown
+
+		investigate LAN max transfer speed / CPU usuage and see what limits current setup imposes
+		send packets directly from udp to rudp without switching to core thread
+		rudpSession receive packet activate core thread		
+		rudp socket send/recv buffer should use packet list instead of static buffers
+		rudp session send/ecrypt buffers should be dynamically created for larger sizes
 
 	Search 
 		give components priority?? link over location, etc..
@@ -478,7 +490,12 @@ Future
 	web-node
 		php script
 			user configs into script password so that it can be admined
-			through admin user can generate passkey, copy pasted into RiseOp
+			through admin 
+				user can generate passkey, copy pasted into RiseOp
+				check bandwidth
+				set shutdown at bandwidth x trigger
+				max cache file size
+				max cache size
 			webnode's have no idea the contents of file being posted, just the hash
 			script keeps track of total cached files, oldest purged when space limit hit
 			if cache compramised, passkey can be changed and redistributed to trusted nodes

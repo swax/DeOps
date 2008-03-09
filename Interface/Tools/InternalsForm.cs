@@ -1220,7 +1220,7 @@ namespace RiseOp.Interface.Tools
                 ServiceData data = map[user];
 
                 string tags = "";
-                foreach(LocationTag tag in data.Tags)
+                foreach(PatchTag tag in data.Tags)
                     if (tag.Tag.Length >= 4)
                     {
                         uint version = BitConverter.ToUInt32(tag.Tag, 0);

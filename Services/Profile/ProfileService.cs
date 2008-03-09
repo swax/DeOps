@@ -24,7 +24,10 @@ namespace RiseOp.Services.Profile
     class ProfileService : OpService
     {
         public string Name { get { return "Profile"; } }
-        public ushort ServiceID { get { return 4; } }
+        public uint ServiceID { get { return 4; } }
+
+        const uint DataTypeFile = 0x01;
+        const uint DataTypeExtracted = 0x02;
 
         internal OpCore     Core;
         internal G2Protocol Protocol;
@@ -38,8 +41,6 @@ namespace RiseOp.Services.Profile
         internal ThreadedDictionary<ulong, OpProfile> ProfileMap = new ThreadedDictionary<ulong, OpProfile>();
         
         internal ProfileUpdateHandler ProfileUpdate;
-        
-        enum DataType { File = 1, Extracted = 2 };
 
         internal VersionedCache Cache;
 
@@ -110,10 +111,9 @@ namespace RiseOp.Services.Profile
             ExtractPath = Core.User.RootPath + Path.DirectorySeparatorChar +
                         "Data" + Path.DirectorySeparatorChar +
                         ServiceID.ToString() + Path.DirectorySeparatorChar +
-                        ((ushort)DataType.Extracted).ToString();
+                        DataTypeExtracted.ToString();
 
-
-            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File, true);
+            Cache = new VersionedCache(Network, ServiceID, DataTypeFile, true);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
@@ -277,7 +277,7 @@ namespace RiseOp.Services.Profile
 
                 OpVersionedFile vfile = Cache.UpdateLocal(tempPath, key, BitConverter.GetBytes(embeddedStart));
 
-                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, (ushort)DataType.File, vfile.SignedHeader);
+                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, DataTypeFile, vfile.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -349,7 +349,7 @@ namespace RiseOp.Services.Profile
 
                 profile.Attached = new List<ProfileAttachment>();
 
-                FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                TaggedStream file = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(file, profile.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 

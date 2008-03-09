@@ -30,8 +30,8 @@ namespace RiseOp.Implementation.Dht
 		internal UInt64    TargetID;
 		internal uint      SearchID;
         internal string    Name;
-        internal ushort    Service;
-        internal ushort    DataType;
+        internal uint      Service;
+        internal uint      DataType;
         EndSearchHandler   EndSearch;
         internal int       TargetResults = 10;
 
@@ -49,7 +49,7 @@ namespace RiseOp.Implementation.Dht
         internal object Carry;
 
 
-        internal DhtSearch(DhtSearchControl control, UInt64 targetID, string name, ushort service, ushort datatype, EndSearchHandler endSearch)
+        internal DhtSearch(DhtSearchControl control, UInt64 targetID, string name, uint service, uint datatype, EndSearchHandler endSearch)
 		{
             Core      = control.Core;
             Network   = control.Network ;

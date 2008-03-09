@@ -104,7 +104,7 @@ namespace RiseOp.Implementation.Protocol
 				while(packet.InternalLength >= Math.Pow(256, packet.LenLen) )
 					packet.LenLen++;
 
-				Debug.Assert(packet.LenLen < 4);
+				Debug.Assert(packet.LenLen < 8);
 
 				packet.HeaderLength = 1 + packet.LenLen + 1;
 
@@ -133,7 +133,7 @@ namespace RiseOp.Implementation.Protocol
 				}
 
 				byte control = 0;
-				control |= (byte) (packet.LenLen << 6);
+				control |= (byte) (packet.LenLen << 5);
                 control |= (byte) (1 << 3);
 				control |= (byte) (packet.Compound << 2);
 		
@@ -202,9 +202,9 @@ namespace RiseOp.Implementation.Protocol
 			if ( control == 0 ) 
 				return G2ReadResult.STREAM_END;
 
-			byte lenLen  = (byte) ( (control & 0xC0) >> 6); 
-			byte nameLen = (byte) ( (control & 0x38) >> 3);
-			byte flags   = (byte)   (control & 0x07); 
+			byte lenLen  = (byte) ( (control & 0xE0) >> 5); // 11100000
+			byte nameLen = (byte) ( (control & 0x18) >> 3); // 00011000 
+			byte flags   = (byte)   (control & 0x07);       // 00000111
 
 			bool bigEndian  = (flags & 0x02) != 0; 
 			bool isCompound = (flags & 0x04) != 0; 
@@ -225,10 +225,10 @@ namespace RiseOp.Implementation.Protocol
 					return G2ReadResult.PACKET_INCOMPLETE;
 				}
 				
-				byte[] lenData = new byte[4]; // create here because lenLen is less than 4 in size
+				byte[] lenData = new byte[8]; // create here because lenLen is less than 8 in size
 				Buffer.BlockCopy(packet.Data, readPos, lenData, 0, lenLen);
 
-				packet.InternalSize = BitConverter.ToInt32(lenData, 0);
+				packet.InternalSize = BitConverter.ToInt32(lenData, 0); // only 4 bytes supported so far
 
 				Debug.Assert(MAX_FINAL_SIZE < G2_PACKET_BUFF);
 				if(packet.InternalSize >= MAX_FINAL_SIZE)
@@ -363,7 +363,7 @@ namespace RiseOp.Implementation.Protocol
 		internal G2Frame Parent;
 
 		internal int HeaderLength;
-		internal int InternalLength;
+        internal int InternalLength;
 	
 		internal byte Name;
 
@@ -374,7 +374,7 @@ namespace RiseOp.Implementation.Protocol
 
 		internal int   PayloadPos;
 		internal int   PayloadLength;
-		internal int   PayloadOffset;
+        internal int   PayloadOffset;
 
 
 		internal G2Frame()
@@ -474,6 +474,55 @@ namespace RiseOp.Implementation.Protocol
             Utilities.ReadtoEnd(ParentStream);
 
             ParentStream.Close();
+        }
+    }
+
+    internal static class CompactNum
+    {
+        internal static byte[] GetBytes(uint num)
+        {
+            if (num <= byte.MaxValue)
+                return BitConverter.GetBytes((byte)num);
+
+            else if (num <= ushort.MaxValue)
+                return BitConverter.GetBytes((ushort)num);
+
+            else
+                return BitConverter.GetBytes(num);
+        }
+
+        internal static byte[] GetBytes(long num)
+        {
+            Debug.Assert(num >= 0); // kinda stupid, all the file size nums are long, compact doesnt support negs yet
+
+            if (num <= uint.MaxValue)
+                return CompactNum.GetBytes((uint)num);
+
+            else
+                return BitConverter.GetBytes(num);
+        }
+
+        internal static uint ToUInt32(byte[] data, int pos, int size)
+        {
+            if (size == 1)
+                return (uint)data[pos];
+
+            else if (size == 2)
+                return (uint)BitConverter.ToUInt16(data, pos);
+
+            else
+                return BitConverter.ToUInt32(data, pos);
+
+        }
+
+        internal static long ToInt64(byte[] data, int pos, int size)
+        {
+            if (size <= 4)
+                return (long)CompactNum.ToUInt32(data, pos, size);
+
+            else
+                return BitConverter.ToInt64(data, pos);
+
         }
     }
 }

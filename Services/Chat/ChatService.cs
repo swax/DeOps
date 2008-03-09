@@ -19,7 +19,7 @@ namespace RiseOp.Services.Chat
     internal class ChatService : OpService
     {
         public string Name { get { return "Chat"; } }
-        public ushort ServiceID { get { return 6; } }
+        public uint ServiceID { get { return 6; } }
 
         internal OpCore Core;
         internal TrustService Links;

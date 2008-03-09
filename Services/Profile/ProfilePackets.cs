@@ -40,7 +40,7 @@ namespace RiseOp.Services.Profile
                 G2Frame header = protocol.WritePacket(null, ProfilePacket.Attachment, null);
 
                 protocol.WritePacket(header, Packet_Name, protocol.UTF.GetBytes(Name));
-                protocol.WritePacket(header, Packet_Size, BitConverter.GetBytes(Size));
+                protocol.WritePacket(header, Packet_Size, CompactNum.GetBytes(Size));
 
                 return protocol.WriteFinish();
             }
@@ -63,7 +63,7 @@ namespace RiseOp.Services.Profile
                         break;
 
                     case Packet_Size:
-                        file.Size = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        file.Size = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }

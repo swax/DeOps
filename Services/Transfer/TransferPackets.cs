@@ -23,8 +23,8 @@ namespace RiseOp.Services.Transfer
         const byte Packet_Size  = 0x40;
         const byte Packet_Extra = 0x50;
 
-        internal ushort Service;
-        internal ushort DataType;
+        internal uint Service;
+        internal uint DataType;
         internal byte[] Hash;
         internal long   Size;
         internal byte[] Extra;
@@ -34,7 +34,7 @@ namespace RiseOp.Services.Transfer
         {
         }
 
-        internal FileDetails(ushort service, ushort datatype, byte[] hash, long size, byte[] extra)
+        internal FileDetails(uint service, uint datatype, byte[] hash, long size, byte[] extra)
         {
             Service = service;
             DataType = datatype;
@@ -71,10 +71,10 @@ namespace RiseOp.Services.Transfer
             {
                 G2Frame packet = protocol.WritePacket(null, TransferPacket.Params, null);
 
-                protocol.WritePacket(packet, Packet_Service, BitConverter.GetBytes(Service));
-                protocol.WritePacket(packet, Packet_DataType, BitConverter.GetBytes(DataType));
+                protocol.WritePacket(packet, Packet_Service, CompactNum.GetBytes(Service));
+                protocol.WritePacket(packet, Packet_DataType, CompactNum.GetBytes(DataType));
                 protocol.WritePacket(packet, Packet_Hash, Hash);
-                protocol.WritePacket(packet, Packet_Size, BitConverter.GetBytes(Size));
+                protocol.WritePacket(packet, Packet_Size, CompactNum.GetBytes(Size));
                 protocol.WritePacket(packet, Packet_Extra, Extra);
 
                 return protocol.WriteFinish();
@@ -107,11 +107,11 @@ namespace RiseOp.Services.Transfer
                 switch (child.Name)
                 {
                     case Packet_Service:
-                        packet.Service = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        packet.Service = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_DataType:
-                        packet.DataType = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        packet.DataType = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Hash:
@@ -119,7 +119,7 @@ namespace RiseOp.Services.Transfer
                         break;
 
                     case Packet_Size:
-                        packet.Size = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        packet.Size = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Extra:
@@ -166,7 +166,7 @@ namespace RiseOp.Services.Transfer
                 protocol.WritePacket(tr, Packet_ID, BitConverter.GetBytes(TransferID));
                 protocol.WritePacket(tr, Packet_Target, BitConverter.GetBytes(Target));
                 protocol.WritePacket(tr, Packet_Details, Details);
-                protocol.WritePacket(tr, Packet_Start, BitConverter.GetBytes(StartByte));
+                protocol.WritePacket(tr, Packet_Start, CompactNum.GetBytes(StartByte));
 
                 return protocol.WriteFinish();
             }
@@ -198,7 +198,7 @@ namespace RiseOp.Services.Transfer
                         break;
 
                     case Packet_Start:
-                        tr.StartByte = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        tr.StartByte = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }
@@ -216,7 +216,7 @@ namespace RiseOp.Services.Transfer
 
         internal int TransferID;
         internal bool Accept;
-        internal ulong StartByte;
+        internal long StartByte;
 
 
         internal TransferAck()
@@ -231,7 +231,7 @@ namespace RiseOp.Services.Transfer
 
                 protocol.WritePacket(ta, Packet_ID, BitConverter.GetBytes(TransferID));
                 protocol.WritePacket(ta, Packet_Accept, BitConverter.GetBytes(Accept));
-                protocol.WritePacket(ta, Packet_Start, BitConverter.GetBytes(StartByte));
+                protocol.WritePacket(ta, Packet_Start, CompactNum.GetBytes(StartByte));
 
                 return protocol.WriteFinish();
             }
@@ -259,7 +259,7 @@ namespace RiseOp.Services.Transfer
                         break;
 
                     case Packet_Start:
-                        ta.StartByte = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        ta.StartByte = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }
@@ -301,7 +301,7 @@ namespace RiseOp.Services.Transfer
                 G2Frame td = protocol.WritePacket(null, TransferPacket.Data, Data);
 
                 protocol.WritePacket(td, Packet_ID, BitConverter.GetBytes(TransferID));
-                protocol.WritePacket(td, Packet_Start, BitConverter.GetBytes(StartByte));
+                protocol.WritePacket(td, Packet_Start, CompactNum.GetBytes(StartByte));
 
                 return protocol.WriteFinish();
             }
@@ -330,7 +330,7 @@ namespace RiseOp.Services.Transfer
                         break;
 
                     case Packet_Start:
-                        td.StartByte = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        td.StartByte = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }

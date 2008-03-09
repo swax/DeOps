@@ -41,9 +41,9 @@ namespace RiseOp.Services.Trust
                 G2Frame header = protocol.WritePacket(null, TrustPacket.TrustHeader, null);
 
                 protocol.WritePacket(header, Packet_Key, Key);
-                protocol.WritePacket(header, Packet_Version, BitConverter.GetBytes(Version));
+                protocol.WritePacket(header, Packet_Version, CompactNum.GetBytes(Version));
                 protocol.WritePacket(header, Packet_FileHash, FileHash);
-                protocol.WritePacket(header, Packet_FileSize, BitConverter.GetBytes(FileSize));
+                protocol.WritePacket(header, Packet_FileSize, CompactNum.GetBytes(FileSize));
                 protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
 
                 return protocol.WriteFinish();
@@ -68,7 +68,7 @@ namespace RiseOp.Services.Trust
                         break;
 
                     case Packet_Version:
-                        header.Version = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        header.Version = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_FileHash:
@@ -76,7 +76,7 @@ namespace RiseOp.Services.Trust
                         break;
 
                     case Packet_FileSize:
-                        header.FileSize = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        header.FileSize = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_FileKey:

@@ -37,7 +37,7 @@ namespace RiseOp.Implementation.Transport
 
         internal DateTime NegotiateTimeout;
 
-        internal const int BUFF_SIZE = 16 * 1024;
+        internal const int BUFF_SIZE = 8 * 1024;
 		
         // sending
         int SendBlockSize = 16;
@@ -449,7 +449,7 @@ namespace RiseOp.Implementation.Transport
             UpdateStatus(SessionStatus.Active);
 		}
 
-        internal bool SendData(ushort service, ushort datatype, G2Packet packet, bool expedite)
+        internal bool SendData(uint service, uint datatype, G2Packet packet, bool expedite)
         {
             CommData data = new CommData(service, datatype, packet.Encode(Core.Protocol));
 

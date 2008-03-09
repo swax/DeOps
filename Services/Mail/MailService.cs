@@ -59,7 +59,12 @@ namespace RiseOp.Services.Mail
     class MailService : OpService
     {
         public string Name { get { return "Mail"; } }
-        public ushort ServiceID { get { return 7; } }
+        public uint ServiceID { get { return 7; } }
+
+        const uint DataTypeLocal = 0x01;
+        const uint DataTypePending = 0x02;
+        const uint DataTypeMail = 0x03;
+        const uint DataTypeAck = 0x04;
 
         internal OpCore Core;
         G2Protocol Protocol;
@@ -92,7 +97,6 @@ namespace RiseOp.Services.Mail
 
         int PruneSize = 64;
 
-        enum DataType { Local = 1, Pending = 2, Mail = 3, Ack = 4 };
 
         VersionedCache PendingCache;
 
@@ -109,20 +113,20 @@ namespace RiseOp.Services.Mail
 
             Network.StatusChange += new StatusChange(Network_StatusChange);
 
-            Store.StoreEvent[ServiceID, (ushort) DataType.Mail] += new StoreHandler(Store_LocalMail);
-            Store.StoreEvent[ServiceID, (ushort)DataType.Ack] += new StoreHandler(Store_LocalAck);
+            Store.StoreEvent[ServiceID, DataTypeMail] += new StoreHandler(Store_LocalMail);
+            Store.StoreEvent[ServiceID, DataTypeAck] += new StoreHandler(Store_LocalAck);
 
-            Network.Searches.SearchEvent[ServiceID, (ushort)DataType.Mail] += new SearchRequestHandler(Search_LocalMail);
-            Network.Searches.SearchEvent[ServiceID, (ushort)DataType.Ack] += new SearchRequestHandler(Search_LocalAck);
+            Network.Searches.SearchEvent[ServiceID, DataTypeMail] += new SearchRequestHandler(Search_LocalMail);
+            Network.Searches.SearchEvent[ServiceID, DataTypeAck] += new SearchRequestHandler(Search_LocalAck);
 
-            Store.ReplicateEvent[ServiceID, (ushort)DataType.Mail] += new ReplicateHandler(Store_ReplicateMail);
-            Store.ReplicateEvent[ServiceID, (ushort)DataType.Ack] += new ReplicateHandler(Store_ReplicateAck);
+            Store.ReplicateEvent[ServiceID, DataTypeMail] += new ReplicateHandler(Store_ReplicateMail);
+            Store.ReplicateEvent[ServiceID, DataTypeAck] += new ReplicateHandler(Store_ReplicateAck);
 
-            Store.PatchEvent[ServiceID, (ushort)DataType.Mail] += new PatchHandler(Store_PatchMail);
-            Store.PatchEvent[ServiceID, (ushort)DataType.Ack] += new PatchHandler(Store_PatchAck);
+            Store.PatchEvent[ServiceID, DataTypeMail] += new PatchHandler(Store_PatchMail);
+            Store.PatchEvent[ServiceID, DataTypeAck] += new PatchHandler(Store_PatchAck);
 
-            Core.Transfers.FileSearch[ServiceID, (ushort)DataType.Mail] += new FileSearchHandler(Transfers_MailSearch);
-            Core.Transfers.FileRequest[ServiceID, (ushort)DataType.Mail] += new FileRequestHandler(Transfers_MailRequest);
+            Core.Transfers.FileSearch[ServiceID, DataTypeMail] += new FileSearchHandler(Transfers_MailSearch);
+            Core.Transfers.FileRequest[ServiceID, DataTypeMail] += new FileRequestHandler(Transfers_MailRequest);
 
             if (Core.Sim != null)
                 PruneSize = 16;
@@ -140,7 +144,7 @@ namespace RiseOp.Services.Mail
             Directory.CreateDirectory(MailPath);
             Directory.CreateDirectory(CachePath);
 
-            PendingCache = new VersionedCache(Network, ServiceID, (ushort)DataType.Pending, true);
+            PendingCache = new VersionedCache(Network, ServiceID, DataTypePending, true);
 
             PendingCache.FileAquired += new FileAquiredHandler(PendingCache_FileAquired);
             PendingCache.FileRemoved += new FileRemovedHandler(PendingCache_FileRemoved);
@@ -156,24 +160,24 @@ namespace RiseOp.Services.Mail
 
             Network.StatusChange -= new StatusChange(Network_StatusChange);
 
-            Store.StoreEvent[ServiceID, (ushort)DataType.Mail] -= new StoreHandler(Store_LocalMail);
-            Store.StoreEvent[ServiceID, (ushort)DataType.Ack] -= new StoreHandler(Store_LocalAck);
+            Store.StoreEvent[ServiceID, DataTypeMail] -= new StoreHandler(Store_LocalMail);
+            Store.StoreEvent[ServiceID, DataTypeAck] -= new StoreHandler(Store_LocalAck);
 
-            Network.Searches.SearchEvent[ServiceID, (ushort)DataType.Mail] -= new SearchRequestHandler(Search_LocalMail);
-            Network.Searches.SearchEvent[ServiceID, (ushort)DataType.Ack] -= new SearchRequestHandler(Search_LocalAck);
+            Network.Searches.SearchEvent[ServiceID, DataTypeMail] -= new SearchRequestHandler(Search_LocalMail);
+            Network.Searches.SearchEvent[ServiceID, DataTypeAck] -= new SearchRequestHandler(Search_LocalAck);
 
-            Store.ReplicateEvent[ServiceID, (ushort)DataType.Mail] -= new ReplicateHandler(Store_ReplicateMail);
-            Store.ReplicateEvent[ServiceID, (ushort)DataType.Ack] -= new ReplicateHandler(Store_ReplicateAck);
+            Store.ReplicateEvent[ServiceID, DataTypeMail] -= new ReplicateHandler(Store_ReplicateMail);
+            Store.ReplicateEvent[ServiceID, DataTypeAck] -= new ReplicateHandler(Store_ReplicateAck);
 
-            Store.PatchEvent[ServiceID, (ushort)DataType.Mail] -= new PatchHandler(Store_PatchMail);
-            Store.PatchEvent[ServiceID, (ushort)DataType.Ack] -= new PatchHandler(Store_PatchAck);
+            Store.PatchEvent[ServiceID, DataTypeMail] -= new PatchHandler(Store_PatchMail);
+            Store.PatchEvent[ServiceID, DataTypeAck] -= new PatchHandler(Store_PatchAck);
 
             PendingCache.FileAquired -= new FileAquiredHandler(PendingCache_FileAquired);
             PendingCache.FileRemoved -= new FileRemovedHandler(PendingCache_FileRemoved);
             PendingCache.Dispose();
 
-            Core.Transfers.FileSearch[ServiceID, (ushort)DataType.Mail] -= new FileSearchHandler(Transfers_MailSearch);
-            Core.Transfers.FileRequest[ServiceID, (ushort)DataType.Mail] -= new FileRequestHandler(Transfers_MailRequest);
+            Core.Transfers.FileSearch[ServiceID, DataTypeMail] -= new FileSearchHandler(Transfers_MailSearch);
+            Core.Transfers.FileRequest[ServiceID, DataTypeMail] -= new FileRequestHandler(Transfers_MailRequest);
 
         }
 
@@ -314,7 +318,7 @@ namespace RiseOp.Services.Mail
                 foreach (ulong key in AckMap.Keys)
                     foreach (CachedAck ack in AckMap[key])
                         if (ack.Unique && Network.Routing.InCacheArea(key))
-                            Store.PublishNetwork(key, ServiceID, (ushort)DataType.Ack, ack.SignedAck);
+                            Store.PublishNetwork(key, ServiceID, DataTypeAck, ack.SignedAck);
 
                 // only download those objects in our local area
                 foreach (ulong key in DownloadAcksLater.Keys)
@@ -328,7 +332,7 @@ namespace RiseOp.Services.Mail
                 foreach (ulong key in MailMap.Keys)
                     foreach (CachedMail mail in MailMap[key])
                         if (mail.Unique && Network.Routing.InCacheArea(key))
-                            Store.PublishNetwork(key, ServiceID, (ushort)DataType.Mail, mail.SignedHeader);
+                            Store.PublishNetwork(key, ServiceID, DataTypeMail, mail.SignedHeader);
 
 
                 // only download those objects in our local area
@@ -549,7 +553,7 @@ namespace RiseOp.Services.Mail
                 if (!File.Exists(path))
                     return null;
 
-                FileStream   file   = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                TaggedStream file = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(file, header.LocalKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 
@@ -709,7 +713,7 @@ namespace RiseOp.Services.Mail
 
 
             // finish building header
-            Utilities.ShaHashFile(tempPath, ref header.FileHash, ref header.FileSize);
+            Utilities.HashTagFile(tempPath, ref header.FileHash, ref header.FileSize);
 
 
             // move file, overwrite if need be, local id used so filename is the same for all targets
@@ -766,9 +770,9 @@ namespace RiseOp.Services.Mail
                 byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, header.Encode(Core.Protocol, false) );
 
                 if(Network.Established)
-                    Core.OperationNet.Store.PublishNetwork(id, ServiceID, (ushort)DataType.Mail, signed);
+                    Core.OperationNet.Store.PublishNetwork(id, ServiceID, DataTypeMail, signed);
 
-                Store_LocalMail(new DataReq(null, id, ServiceID, (ushort)DataType.Mail, signed)); // cant direct process_header, because header var is being modified
+                Store_LocalMail(new DataReq(null, id, ServiceID, DataTypeMail, signed)); // cant direct process_header, because header var is being modified
             }
 
             SaveHeaders();
@@ -812,7 +816,7 @@ namespace RiseOp.Services.Mail
 
         private void StartMailSearch(ulong key, byte[] parameters)
         {
-            DhtSearch search = Core.OperationNet.Searches.Start(key, "Mail", ServiceID, (ushort) DataType.Mail, parameters, new EndSearchHandler(EndMailSearch));
+            DhtSearch search = Core.OperationNet.Searches.Start(key, "Mail", ServiceID, DataTypeMail, parameters, new EndSearchHandler(EndMailSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -826,7 +830,7 @@ namespace RiseOp.Services.Mail
 
         private void StartAckSearch(ulong key, byte[] parameters)
         {
-            DhtSearch search = Core.OperationNet.Searches.Start(key, "Mail", ServiceID, (ushort)DataType.Ack, parameters, new EndSearchHandler(EndAckSearch));
+            DhtSearch search = Core.OperationNet.Searches.Start(key, "Mail", ServiceID, DataTypeAck, parameters, new EndSearchHandler(EndAckSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -984,7 +988,7 @@ namespace RiseOp.Services.Mail
                 }
 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, ident.DhtID, ServiceID, (ushort)DataType.Mail, ident.Encode());
+                    Network.Searches.SendDirectRequest(source, ident.DhtID, ServiceID, DataTypeMail, ident.Encode());
                 else
                 {
                     if (!DownloadMailLater.ContainsKey(ident.DhtID))
@@ -1018,7 +1022,7 @@ namespace RiseOp.Services.Mail
                 }
 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, ident.DhtID, ServiceID, (ushort) DataType.Ack, ident.Encode());
+                    Network.Searches.SendDirectRequest(source, ident.DhtID, ServiceID, DataTypeAck, ident.Encode());
                 else
                 {
                     if (!DownloadAcksLater.ContainsKey(ident.DhtID))
@@ -1128,7 +1132,7 @@ namespace RiseOp.Services.Mail
             if (!Utilities.CheckSignedData(header.Source, signed.Data, signed.Signature))
                 return;
 
-            FileDetails details = new FileDetails(ServiceID, (ushort)DataType.Mail, header.FileHash, header.FileSize, null);
+            FileDetails details = new FileDetails(ServiceID, DataTypeMail, header.FileHash, header.FileSize, null);
 
             Core.Transfers.StartDownload(header.TargetID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload_Mail));
         }
@@ -1254,9 +1258,9 @@ namespace RiseOp.Services.Mail
             byte[] signedAck = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, ack.Encode(Core.Protocol));
             
             if(Network.Established)
-                Core.OperationNet.Store.PublishNetwork(header.SourceID, ServiceID, (ushort)DataType.Ack, signedAck);
-            
-            Store_LocalAck(new DataReq(null, header.SourceID, ServiceID, (ushort)DataType.Ack, signedAck)); // cant direct process_header, because header var is being modified
+                Core.OperationNet.Store.PublishNetwork(header.SourceID, ServiceID, DataTypeAck, signedAck);
+
+            Store_LocalAck(new DataReq(null, header.SourceID, ServiceID, DataTypeAck, signedAck)); // cant direct process_header, because header var is being modified
             RunSaveHeaders = true;
             
             Core.MakeNews("Mail Received from " + Core.Links.GetName(message.From), message.From, 0, false, MailRes.Icon, Menu_View);
@@ -1269,7 +1273,7 @@ namespace RiseOp.Services.Mail
             {
                 string path = PendingCache.GetFilePath(pending.Header);
 
-                FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                TaggedStream file = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(file, pending.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                 byte[] divider = new byte[16];
@@ -1312,7 +1316,7 @@ namespace RiseOp.Services.Mail
             {
                 string path = PendingCache.GetFilePath(pending.Header);
 
-                FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                TaggedStream file = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(file, pending.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                 bool dividerReached = false;
@@ -1458,7 +1462,7 @@ namespace RiseOp.Services.Mail
 
 
                 // load pending file
-                FileStream file = new FileStream(PendingCache.GetFilePath(cachedfile.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
+                TaggedStream file = new TaggedStream(PendingCache.GetFilePath(cachedfile.Header));
                 CryptoStream crypto = new CryptoStream(file, cachedfile.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                 bool dividerPassed = false;
@@ -1517,7 +1521,7 @@ namespace RiseOp.Services.Mail
 
                     if (File.Exists(localpath))
                     {
-                        file = new FileStream(localpath, FileMode.Open);
+                        file = new TaggedStream(localpath);
                         crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                         read = buffer.Length;

@@ -453,8 +453,8 @@ namespace RiseOp.Implementation.Protocol.Comm
         const byte Packet_DataType = 0x20;
         const byte Packet_Data = 0x30;
 
-        internal ushort Service;
-        internal ushort DataType;
+        internal uint Service;
+        internal uint DataType;
         internal byte[] Data;
 
 
@@ -462,7 +462,7 @@ namespace RiseOp.Implementation.Protocol.Comm
         {
         }
 
-        internal CommData(ushort id, ushort type, byte[] data)
+        internal CommData(uint id, uint type, byte[] data)
         {
             Service = id;
             DataType = type;
@@ -475,8 +475,8 @@ namespace RiseOp.Implementation.Protocol.Comm
             {
                 G2Frame packet = protocol.WritePacket(null, CommPacket.Data, null);
 
-                protocol.WritePacket(packet, Packet_Service, BitConverter.GetBytes(Service));
-                protocol.WritePacket(packet, Packet_DataType, BitConverter.GetBytes(DataType)); 
+                protocol.WritePacket(packet, Packet_Service, CompactNum.GetBytes(Service));
+                protocol.WritePacket(packet, Packet_DataType, CompactNum.GetBytes(DataType)); 
                 protocol.WritePacket(packet, Packet_Data, Data);
 
                 return protocol.WriteFinish();
@@ -502,11 +502,11 @@ namespace RiseOp.Implementation.Protocol.Comm
                 switch (child.Name)
                 {
                     case Packet_Service:
-                        data.Service = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        data.Service = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_DataType:
-                        data.DataType = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        data.DataType = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Data:

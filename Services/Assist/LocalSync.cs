@@ -24,13 +24,14 @@ namespace RiseOp.Services.Assist
     class LocalSync : OpService
     {
         public string Name { get { return "LocalSync"; } }
-        public ushort ServiceID { get { return 11; } }
+        public uint ServiceID { get { return 11; } }
+
+        const uint DataTypeSync = 0x01;
+
 
         OpCore Core;
         DhtNetwork Network;
         DhtStore Store;
-
-        enum DataType { SyncObject = 1 };
 
         internal VersionedCache Cache;
 
@@ -48,12 +49,12 @@ namespace RiseOp.Services.Assist
             Store = Network.Store;
             Core.Sync = this;
 
-            Core.Locations.GetTag[ServiceID, (ushort) DataType.SyncObject] += new GetLocationTagHandler(Locations_GetTag);
-            Core.Locations.TagReceived[ServiceID, (ushort) DataType.SyncObject] += new LocationTagReceivedHandler(Locations_TagReceived);
+            Core.Locations.GetTag[ServiceID, DataTypeSync] += new GetLocationTagHandler(Locations_GetTag);
+            Core.Locations.TagReceived[ServiceID, DataTypeSync] += new LocationTagReceivedHandler(Locations_TagReceived);
 
-            Store.ReplicateEvent[ServiceID, (ushort)DataType.SyncObject] += new ReplicateHandler(Store_Replicate);
+            Store.ReplicateEvent[ServiceID, DataTypeSync] += new ReplicateHandler(Store_Replicate);
 
-            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.SyncObject, false);
+            Cache = new VersionedCache(Network, ServiceID, DataTypeSync, false);
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
             Cache.Load();
@@ -65,10 +66,10 @@ namespace RiseOp.Services.Assist
 
         public void Dispose()
         {
-            Core.Locations.GetTag[ServiceID, (ushort)DataType.SyncObject] -= new GetLocationTagHandler(Locations_GetTag);
-            Core.Locations.TagReceived[ServiceID, (ushort)DataType.SyncObject] -= new LocationTagReceivedHandler(Locations_TagReceived);
+            Core.Locations.GetTag[ServiceID, DataTypeSync] -= new GetLocationTagHandler(Locations_GetTag);
+            Core.Locations.TagReceived[ServiceID, DataTypeSync] -= new LocationTagReceivedHandler(Locations_TagReceived);
 
-            Store.ReplicateEvent[ServiceID, (ushort)DataType.SyncObject] -= new ReplicateHandler(Store_Replicate);
+            Store.ReplicateEvent[ServiceID, DataTypeSync] -= new ReplicateHandler(Store_Replicate);
 
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);
@@ -85,10 +86,10 @@ namespace RiseOp.Services.Assist
             ServiceData data = new ServiceData();
             data.Date = Core.TimeNow.ToUniversalTime();
 
-            foreach (ushort service in GetTag.HandlerMap.Keys)
-                foreach (ushort datatype in GetTag.HandlerMap[service].Keys)
+            foreach (uint service in GetTag.HandlerMap.Keys)
+                foreach (uint datatype in GetTag.HandlerMap[service].Keys)
                 {
-                    LocationTag tag = new LocationTag();
+                    PatchTag tag = new PatchTag();
 
                     tag.Service = service;
                     tag.DataType = datatype;
@@ -108,7 +109,7 @@ namespace RiseOp.Services.Assist
 
         void InvokeTags(ulong user, ServiceData data)
         {
-            foreach (LocationTag tag in data.Tags)
+            foreach (PatchTag tag in data.Tags)
                 if (TagReceived.Contains(tag.Service, tag.DataType))
                     TagReceived[tag.Service, tag.DataType].Invoke(user, tag.Tag);
         }
@@ -175,12 +176,12 @@ namespace RiseOp.Services.Assist
         {
             OpVersionedFile file = Cache.GetFile(Core.LocalDhtID);
 
-            return (file != null) ? BitConverter.GetBytes(file.Header.Version) : null;
+            return (file != null) ? CompactNum.GetBytes(file.Header.Version) : null;
         }
 
         void Locations_TagReceived(DhtAddress address, ulong user, byte[] tag)
         {
-            if (tag.Length < 4)
+            if (tag.Length == 0)
                 return;
 
             uint version = 0;
@@ -189,10 +190,10 @@ namespace RiseOp.Services.Assist
 
             if (file != null)
             {
-                version = BitConverter.ToUInt32(tag, 0);
+                version = CompactNum.ToUInt32(tag, 0, tag.Length);
 
                 if (version < file.Header.Version)
-                    Store.Send_StoreReq(address, 0, new DataReq(null, file.DhtID, ServiceID, (ushort)DataType.SyncObject, file.SignedHeader));
+                    Store.Send_StoreReq(address, 0, new DataReq(null, file.DhtID, ServiceID, DataTypeSync, file.SignedHeader));
             }
 
             if ((file != null && version > file.Header.Version) ||
@@ -200,7 +201,7 @@ namespace RiseOp.Services.Assist
             {
                 Cache.Research(user);
 
-                Network.Searches.SendDirectRequest(address, user, ServiceID, (ushort)DataType.SyncObject, BitConverter.GetBytes(version));
+                Network.Searches.SendDirectRequest(address, user, ServiceID, DataTypeSync, BitConverter.GetBytes(version));
             }
         }
 
@@ -222,7 +223,7 @@ namespace RiseOp.Services.Assist
         const byte Packet_Tag = 0xF0;
 
         internal DateTime Date;
-        internal List<LocationTag> Tags = new List<LocationTag>();
+        internal List<PatchTag> Tags = new List<PatchTag>();
 
 
         internal override byte[] Encode(G2Protocol protocol)
@@ -233,7 +234,7 @@ namespace RiseOp.Services.Assist
 
                 protocol.WritePacket(data, Packet_Date, BitConverter.GetBytes(Date.ToBinary()));
 
-                foreach (LocationTag tag in Tags)
+                foreach (PatchTag tag in Tags)
                     protocol.WritePacket(data, Packet_Tag, tag.ToBytes());
 
                 return protocol.WriteFinish();
@@ -264,7 +265,7 @@ namespace RiseOp.Services.Assist
                         break;
 
                     case Packet_Tag:
-                        packet.Tags.Add(LocationTag.FromBytes(child.Data, child.PayloadPos, child.PayloadSize));
+                        packet.Tags.Add(PatchTag.FromBytes(child.Data, child.PayloadPos, child.PayloadSize));
                         break;
                 }
             }

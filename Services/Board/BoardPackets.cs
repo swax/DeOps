@@ -273,7 +273,7 @@ namespace RiseOp.Services.Board
                 G2Frame file = protocol.WritePacket(null, BoardPacket.PostFile, null);
 
                 protocol.WritePacket(file, Packet_Name, protocol.UTF.GetBytes(Name));
-                protocol.WritePacket(file, Packet_Size, BitConverter.GetBytes(Size));
+                protocol.WritePacket(file, Packet_Size, CompactNum.GetBytes(Size));
 
                 return protocol.WriteFinish();
             }
@@ -296,7 +296,7 @@ namespace RiseOp.Services.Board
                         break;
 
                     case Packet_Size:
-                        file.Size = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        file.Size = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }

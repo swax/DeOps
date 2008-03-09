@@ -97,10 +97,10 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
-        delegate DhtSearch StartHandler(ulong key, string name, ushort component, byte[] parameters, EndSearchHandler endSearch); 
+        delegate DhtSearch StartHandler(ulong key, string name, ushort component, byte[] parameters, EndSearchHandler endSearch);
 
 
-        internal DhtSearch Start(ulong key, string name, ushort service, ushort datatype, byte[] parameters, EndSearchHandler endSearch)
+        internal DhtSearch Start(ulong key, string name, uint service, uint datatype, byte[] parameters, EndSearchHandler endSearch)
         {
             if (Core.InvokeRequired)
                 Debug.Assert(false);
@@ -129,7 +129,7 @@ namespace RiseOp.Implementation.Dht
             return search;
         }
 
-        internal void SendUdpRequest(DhtAddress address, UInt64 targetID, uint searchID, ushort service, ushort datatype, byte[] parameters)
+        internal void SendUdpRequest(DhtAddress address, UInt64 targetID, uint searchID, uint service, uint datatype, byte[] parameters)
         {
             SearchReq request = new SearchReq();
 
@@ -374,7 +374,7 @@ namespace RiseOp.Implementation.Dht
         }
 
 
-        internal void SendDirectRequest(DhtAddress dest, ulong target, ushort service, ushort datatype, byte[] parameters)
+        internal void SendDirectRequest(DhtAddress dest, ulong target, uint service, uint datatype, byte[] parameters)
         {
             SearchReq request = new SearchReq();
 

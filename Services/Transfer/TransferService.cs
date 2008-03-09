@@ -21,7 +21,7 @@ namespace RiseOp.Services.Transfer
     internal class TransferService : OpService
     {
         public string Name { get { return "Transfer"; } }
-        public ushort ServiceID { get { return 3; } }
+        public uint ServiceID { get { return 3; } }
 
         internal OpCore Core;
 
@@ -108,7 +108,7 @@ namespace RiseOp.Services.Transfer
                 DownloadMap[id].AddSource(info.Data);
         }
 
-        internal void CancelDownload(ushort id, byte[] hash, long size)
+        internal void CancelDownload(uint id, byte[] hash, long size)
         {
             FileDownload target = null;
 
@@ -231,7 +231,7 @@ namespace RiseOp.Services.Transfer
             return null;
         }
 
-        internal string GetStatus(ushort id, byte[] hash, long size)
+        internal string GetStatus(uint id, byte[] hash, long size)
         {
             FileDownload target = null;
 
@@ -691,7 +691,7 @@ namespace RiseOp.Services.Transfer
 
     internal class FileUpload
     {
-        internal const int READ_SIZE = 2048;
+        internal const int READ_SIZE = 4096;
 
         internal RudpSession     Session;
         internal TransferRequest Request;

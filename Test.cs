@@ -7,14 +7,17 @@ using System.Net;
 using System.Security.Cryptography;
 
 using RiseOp.Services.Storage;
+using RiseOp.Services.Location;
 using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 
 namespace RiseOp
 {
     class TestFile
     {
-        byte[] Hash = new byte[50];
+
+        
     }
 
 
@@ -25,15 +28,8 @@ namespace RiseOp
 	{
 		internal Test()
         {
-            int x = 1;
-            int y = 0;
 
-            int z = x.GetHashCode() ^ y.GetHashCode();
 
-            int i = 0;
-            int j = 1;
-
-            int k = i.GetHashCode() ^ j.GetHashCode();
 		}
 
         /*void TestSigning()

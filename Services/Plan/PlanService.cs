@@ -24,8 +24,11 @@ namespace RiseOp.Services.Plan
     internal class PlanService : OpService
     {
         public string Name { get { return "Plan"; } }
-        public ushort ServiceID { get { return 9; } }
+        public uint ServiceID { get { return 9; } }
 
+        const uint DataTypeFile = 0x01;
+
+        
         internal OpCore      Core;
         internal G2Protocol  Protocol;
         internal DhtNetwork  Network;
@@ -40,8 +43,6 @@ namespace RiseOp.Services.Plan
         internal ThreadedDictionary<ulong, OpPlan> PlanMap = new ThreadedDictionary<ulong, OpPlan>();
 
         internal event PlanUpdateHandler PlanUpdate;
-
-        enum DataType { File = 1 };
 
         internal VersionedCache Cache;
 
@@ -59,7 +60,7 @@ namespace RiseOp.Services.Plan
             
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
 
-            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File, true);  
+            Cache = new VersionedCache(Network, ServiceID, DataTypeFile, true);  
          
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
@@ -175,7 +176,7 @@ namespace RiseOp.Services.Plan
                             Links.GetLocsBelow(Core.LocalDhtID, project, locations);
                 });
 
-                Store.PublishDirect(locations, newPlan.DhtID, ServiceID, (ushort)DataType.File, newPlan.File.SignedHeader);
+                Store.PublishDirect(locations, newPlan.DhtID, ServiceID, DataTypeFile, newPlan.File.SignedHeader);
             }
 
 
@@ -258,12 +259,14 @@ namespace RiseOp.Services.Plan
                             Protocol.WriteToFile(item, stream);
                 }
 
+                stream.WriteByte(0); // signal last packet
+
                 stream.FlushFinalBlock();
                 stream.Close();
 
                 OpVersionedFile file = Cache.UpdateLocal(tempPath, key, null);
 
-                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, (ushort) DataType.File, file.SignedHeader);
+                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, DataTypeFile, file.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -304,7 +307,7 @@ namespace RiseOp.Services.Plan
 
                 List<int> myjobs = new List<int>();
 
-                FileStream   file   = new FileStream(path, FileMode.Open);
+                TaggedStream file = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(file, plan.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 

@@ -43,8 +43,8 @@ namespace RiseOp.Implementation.Transport
 
 		const int MAX_WINDOW_SIZE  = 25;
 		internal const int SEND_BUFFER_SIZE = 64 * 1024;
-		const int CHUNK_SIZE       = 512;
-		const int MAX_CHUNK_SIZE   = 2048;
+		const int CHUNK_SIZE       = 1024;
+		const int MAX_CHUNK_SIZE   = 1024;
 		const int RECEIVE_BUFFER_SIZE = MAX_CHUNK_SIZE * MAX_WINDOW_SIZE;
 
 		// connecting 
@@ -310,7 +310,7 @@ namespace RiseOp.Implementation.Transport
 			// if SYN, DATA or FIN packet
 
 			// stop acking so remote host catches up
-			if(packet.Sequence > HighestSeqRecvd + 25 || RecvPacketMap.Count > MAX_WINDOW_SIZE)
+            if (packet.Sequence > HighestSeqRecvd + MAX_WINDOW_SIZE || RecvPacketMap.Count > MAX_WINDOW_SIZE)
 			{
                 //Session.Log("Error Packet Overflow");
 				return;
@@ -835,7 +835,7 @@ namespace RiseOp.Implementation.Transport
                 //    ", SQ: " + SendPacketMap.Count.ToString() + 
                 //    ", SB: " + SendBuffLength.ToString());
 
-				if(packetLoss < 10 && SendWindowSize < 25)
+                if (packetLoss < 10 && SendWindowSize < MAX_WINDOW_SIZE)
 					SendWindowSize++;
 				if(packetLoss > 20 && SendWindowSize > 1)
 					SendWindowSize /= 2;

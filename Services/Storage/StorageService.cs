@@ -27,7 +27,12 @@ namespace RiseOp.Services.Storage
     class StorageService : OpService
     {
         public string Name { get { return "Storage"; } }
-        public ushort ServiceID { get { return 10; } }
+        public uint ServiceID { get { return 10; } }
+
+        const uint FileTypeCache = 0x01;
+        const uint FileTypeData = 0x02;
+        const uint FileTypeWorking = 0x03;
+        const uint FileTypeResource = 0x04;
 
         internal OpCore Core;
         internal G2Protocol Protocol;
@@ -51,8 +56,6 @@ namespace RiseOp.Services.Storage
 
         int FileBufferSize = 4096;
         byte[] FileBuffer = new byte[4096]; // needs to be 4k to packet stream break/resume work
-
-        enum DataType { CacheFile = 1, DataFile = 2, WorkingFile = 3, ResourceFile = 4 };
 
         VersionedCache Cache;
 
@@ -80,17 +83,17 @@ namespace RiseOp.Services.Storage
 
             Network.StatusChange += new StatusChange(Network_StatusChange);
 
-            Core.Transfers.FileSearch[ServiceID, (ushort)DataType.DataFile] += new FileSearchHandler(Transfers_DataFileSearch);
-            Core.Transfers.FileRequest[ServiceID, (ushort)DataType.DataFile] += new FileRequestHandler(Transfers_DataFileRequest);
+            Core.Transfers.FileSearch[ServiceID, FileTypeData] += new FileSearchHandler(Transfers_DataFileSearch);
+            Core.Transfers.FileRequest[ServiceID, FileTypeData] += new FileRequestHandler(Transfers_DataFileRequest);
 
             Core.Links.LinkUpdate += new LinkUpdateHandler(Links_LinkUpdate);
 
 
 
             string rootpath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString() + Path.DirectorySeparatorChar;
-            DataPath = rootpath + ((ushort)DataType.DataFile).ToString();
-            WorkingPath = rootpath + ((ushort)DataType.WorkingFile).ToString();
-            ResourcePath = rootpath + ((ushort)DataType.ResourceFile).ToString();
+            DataPath = rootpath + FileTypeData.ToString();
+            WorkingPath = rootpath + FileTypeWorking.ToString();
+            ResourcePath = rootpath + FileTypeResource.ToString();
 
             Directory.CreateDirectory(DataPath);
             Directory.CreateDirectory(WorkingPath);
@@ -101,7 +104,7 @@ namespace RiseOp.Services.Storage
 
             LocalFileKey = Core.User.Settings.FileKey;
 
-            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.CacheFile, true);
+            Cache = new VersionedCache(Network, ServiceID, FileTypeCache, true);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
@@ -196,8 +199,8 @@ namespace RiseOp.Services.Storage
             Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);
             Cache.Dispose();
 
-            Core.Transfers.FileSearch[ServiceID, (ushort)DataType.DataFile] -= new FileSearchHandler(Transfers_DataFileSearch);
-            Core.Transfers.FileRequest[ServiceID, (ushort)DataType.DataFile] -= new FileRequestHandler(Transfers_DataFileRequest);
+            Core.Transfers.FileSearch[ServiceID, FileTypeData] -= new FileSearchHandler(Transfers_DataFileSearch);
+            Core.Transfers.FileRequest[ServiceID, FileTypeData] -= new FileRequestHandler(Transfers_DataFileRequest);
 
             Core.Links.LinkUpdate -= new LinkUpdateHandler(Links_LinkUpdate);
         }
@@ -294,7 +297,7 @@ namespace RiseOp.Services.Storage
 
                     if (File.Exists(oldPath))
                     {
-                        FileStream file = new FileStream(oldPath, FileMode.Open, FileAccess.Read);
+                        TaggedStream file = new TaggedStream(oldPath);
                         CryptoStream crypto = new CryptoStream(file, local.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                         oldStream = new PacketStream(crypto, Protocol, FileAccess.Read);
                     }
@@ -348,6 +351,8 @@ namespace RiseOp.Services.Storage
                     oldStream.Close();
                 }
 
+                stream.WriteByte(0); // signal last packet
+
                 stream.FlushFinalBlock();
                 stream.Close();
 
@@ -355,7 +360,7 @@ namespace RiseOp.Services.Storage
                 OpVersionedFile vfile = Cache.UpdateLocal(tempPath, key, BitConverter.GetBytes(Core.TimeNow.ToUniversalTime().ToBinary()));
                 SavingLocal = false;
 
-                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, (ushort)DataType.CacheFile, vfile.SignedHeader);
+                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, FileTypeCache, vfile.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -412,7 +417,7 @@ namespace RiseOp.Services.Storage
                             Links.GetLocsBelow(Core.LocalDhtID, project, locations);
                 });
 
-                Store.PublishDirect(locations, newStorage.DhtID, ServiceID, (ushort) DataType.CacheFile, file.SignedHeader);
+                Store.PublishDirect(locations, newStorage.DhtID, ServiceID, FileTypeCache, file.SignedHeader);
             }
 
             if (StorageUpdate != null)
@@ -467,7 +472,7 @@ namespace RiseOp.Services.Storage
         string Transfers_DataFileRequest(ulong key, FileDetails details)
         {
             ulong hashID = BitConverter.ToUInt64(details.Hash, 0);
-
+            
             OpFile file = null;
 
             if (FileMap.SafeTryGetValue(hashID, out file))
@@ -553,9 +558,9 @@ namespace RiseOp.Services.Storage
                 bool cached = Network.Routing.InCacheArea(storage.DhtID);
                 bool local = false;
 
-                RijndaelManaged key = working ? LocalFileKey : storage.File.Header.FileKey; 
+                RijndaelManaged key = working ? LocalFileKey : storage.File.Header.FileKey;
 
-                FileStream filex = new FileStream(path, FileMode.Open);
+                TaggedStream filex = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(filex, key.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
@@ -640,7 +645,7 @@ namespace RiseOp.Services.Storage
             if (file.Hash == null)
                 return;
 
-            FileDetails details = new FileDetails(ServiceID, (ushort) DataType.DataFile, file.Hash, file.Size, null);
+            FileDetails details = new FileDetails(ServiceID, FileTypeData, file.Hash, file.Size, null);
 
             Core.Transfers.StartDownload(id, details, new object[] { file }, new EndDownloadHandler(EndDownloadFile));
         }
@@ -669,7 +674,7 @@ namespace RiseOp.Services.Storage
                 if (!File.Exists(path))
                     return;
 
-                FileStream filex = new FileStream(path, FileMode.Open);
+                TaggedStream filex = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(filex, key.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
@@ -814,7 +819,7 @@ namespace RiseOp.Services.Storage
                     stream.Close();
 
                     // hash temp file
-                    Utilities.ShaHashFile(tempPath, ref info.Hash, ref info.Size);
+                    Utilities.HashTagFile(tempPath, ref info.Hash, ref info.Size);
                     info.HashID = BitConverter.ToUInt64(info.Hash, 0);
 
                     // move to official path
@@ -1031,7 +1036,7 @@ namespace RiseOp.Services.Storage
                 string tempPath = Core.GetTempPath();
                 FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
 
-                FileStream encFile = new FileStream(GetFilePath(file.HashID), FileMode.Open, FileAccess.Read);
+                TaggedStream encFile = new TaggedStream(GetFilePath(file.HashID));
                 CryptoStream stream = new CryptoStream(encFile, file.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                 int read = FileBufferSize;
@@ -1043,6 +1048,31 @@ namespace RiseOp.Services.Storage
 
                 tempFile.Close();
                 stream.Close();
+
+                /*
+                string tempPath = Core.GetTempPath();
+                FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
+
+                string filePath = GetFilePath(file.HashID);
+                long bytesLeft = Utilities.GetTaggedFileSize(filePath);
+
+                FileStream encFile = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+                CryptoStream stream = new CryptoStream(encFile, file.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+
+                while (bytesLeft > 0)
+                {
+                    int count = (bytesLeft > FileBufferSize) ? FileBufferSize : (int) bytesLeft;
+                    int read = stream.Read(FileBuffer, 0, count);
+
+                    if (read <= 0)
+                        break;
+
+                    bytesLeft -= read;
+                    tempFile.Write(FileBuffer, 0, read);
+                }
+
+                tempFile.Close();
+                stream.Close();*/
 
                 // move to official path
                 File.Move(tempPath, finalpath);

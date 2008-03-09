@@ -25,7 +25,9 @@ namespace RiseOp.Services.Trust
     class TrustService : OpService
     {
         public string Name { get { return "Trust"; } }
-        public ushort ServiceID { get { return 1; } }
+        public uint ServiceID { get { return 1; } }
+
+        const uint DataTypeFile = 0x01;
 
 
         internal OpCore Core;
@@ -37,8 +39,6 @@ namespace RiseOp.Services.Trust
         internal ThreadedDictionary<ulong, OpTrust> TrustMap = new ThreadedDictionary<ulong, OpTrust>();
         internal ThreadedDictionary<uint, string> ProjectNames = new ThreadedDictionary<uint, string>();
         internal ThreadedDictionary<uint, ThreadedList<OpLink>> ProjectRoots = new ThreadedDictionary<uint, ThreadedList<OpLink>>();
-
-        enum DataType { File = 1 };
 
         internal VersionedCache Cache;
 
@@ -63,11 +63,11 @@ namespace RiseOp.Services.Trust
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
             Core.GetFocusedCore += new GetFocusedHandler(Core_GetFocusedCore);
 
-            Cache = new VersionedCache(Network, ServiceID, (ushort)DataType.File, true);
+            Cache = new VersionedCache(Network, ServiceID, DataTypeFile, true);
 
             // piggyback searching for uplink requests on cache file data
-            Store.StoreEvent[ServiceID, (ushort)DataType.File] += new StoreHandler(Store_Local);
-            Network.Searches.SearchEvent[ServiceID, (ushort)DataType.File] += new SearchRequestHandler(Search_Local);
+            Store.StoreEvent[ServiceID, DataTypeFile] += new StoreHandler(Store_Local);
+            Network.Searches.SearchEvent[ServiceID, DataTypeFile] += new SearchRequestHandler(Search_Local);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
@@ -107,7 +107,7 @@ namespace RiseOp.Services.Trust
             Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
             Core.GetFocusedCore -= new GetFocusedHandler(Core_GetFocusedCore);
 
-            Network.Searches.SearchEvent[ServiceID, (ushort)DataType.File] -= new SearchRequestHandler(Search_Local);
+            Network.Searches.SearchEvent[ServiceID, DataTypeFile] -= new SearchRequestHandler(Search_Local);
 
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);
@@ -233,7 +233,7 @@ namespace RiseOp.Services.Trust
             byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, request);
 
             if(Network.Established)
-                Store.PublishNetwork(request.TargetID, ServiceID, (ushort) DataType.File, signed);
+                Store.PublishNetwork(request.TargetID, ServiceID, DataTypeFile, signed);
 
             // store locally
             Process_UplinkReq(null, new SignedData(Core.Protocol, Core.User.Settings.KeyPair, request), request);
@@ -242,7 +242,7 @@ namespace RiseOp.Services.Trust
             List<LocationData> locations = new List<LocationData>();
             GetLocs(Core.LocalDhtID, remoteLink.Project, 1, 1, locations);
             GetLocsBelow(Core.LocalDhtID, remoteLink.Project, locations);
-            Store.PublishDirect(locations, request.TargetID, ServiceID, (ushort) DataType.File, signed);
+            Store.PublishDirect(locations, request.TargetID, ServiceID, DataTypeFile, signed);
         }
 
         private void Menu_ConfirmLink(object sender, EventArgs e)
@@ -636,12 +636,14 @@ namespace RiseOp.Services.Trust
                             }
                     }
 
+                stream.WriteByte(0); // signal last packet
+
                 stream.FlushFinalBlock();
                 stream.Close();
 
                 OpVersionedFile file = Cache.UpdateLocal(tempPath, key, null);
 
-                Store.PublishDirect(GetLocsAbove(), Core.LocalDhtID, ServiceID, (ushort) DataType.File, file.SignedHeader);
+                Store.PublishDirect(GetLocsAbove(), Core.LocalDhtID, ServiceID, DataTypeFile, file.SignedHeader);
 
                 SaveUplinkReqs();
             }
@@ -839,7 +841,7 @@ namespace RiseOp.Services.Trust
 
 
                 // load data from link file
-                FileStream file = new FileStream(Cache.GetFilePath(cachefile.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
+                TaggedStream file = new TaggedStream(Cache.GetFilePath(cachefile.Header));
                 CryptoStream crypto = new CryptoStream(file, cachefile.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 
