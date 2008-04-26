@@ -392,6 +392,7 @@ namespace RiseOp.Implementation.Protocol
         byte[] ReadBuffer;
         int    ReadSize;
         int    Start;
+        int Pos;
 
         G2ReadResult ReadStatus = G2ReadResult.PACKET_INCOMPLETE;
 
@@ -423,7 +424,10 @@ namespace RiseOp.Implementation.Protocol
 
             // incomplete, or just started, read some more from file
             Start = 0;
-            ReadSize += ParentStream.Read(ReadBuffer, ReadSize, ReadBuffer.Length - ReadSize);
+            
+            int read = ParentStream.Read(ReadBuffer, ReadSize, ReadBuffer.Length - ReadSize);
+            Pos += read;
+            ReadSize += read;
 
             if (ReadNext(root))
                 return true;

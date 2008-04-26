@@ -223,7 +223,7 @@ namespace RiseOp.Services.Profile
             
             try
             {
-                FileStream stream = new FileStream(service.GetFilePath(profile), FileMode.Open, FileAccess.Read, FileShare.Read);
+                TaggedStream stream = new TaggedStream(service.GetFilePath(profile), FileMode.Open, FileAccess.Read, FileShare.Read);
                 CryptoStream crypto = new CryptoStream(stream, profile.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                 int buffSize = 4096;

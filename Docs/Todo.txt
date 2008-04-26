@@ -1,4 +1,7 @@
 
+test32 nodes 3 lvls down disposing trust of adjacent link nodes
+board replies not propagating
+
 show file's distribution over network
 file download interface
 	main: hash, size, parts graphic
@@ -183,6 +186,12 @@ Interface
 			show self only if local didn't make the change, if non-local self change show as white
 			detect diff between changed schedule / changed goals or both
 
+	input interface
+		move to html from rtf? smaller data format, everything plaintext by default, augmented by html where desired
+		customizable style sheet for IM that user can edit
+		embed pictures/videos, etc.. in email / posts / chat / IMs
+		ability to right-click switch from normal to html view
+
 	graphics
 		storage - restore
 		mail	- forward, reply
@@ -201,6 +210,11 @@ Components
 		component plug-ins / view plugins for private components
 		Remove references to LinkMap, use GetLink
 		when component handles exit, assert that all events are emptied of references to debug gui's not releasing event handles
+		Use LAN find code from gnuc to find peers on LAN, add to global then query for op
+		
+		Setting up and editing operation can also change the type/strength of the encryption used
+		People can choose the strength/type of the encryption on their profile
+		only load secret key on demand somehow, once used replace with zero's so not sitting static in memory
 		
 	Trust
 		Higher determines lower's title/Name upon trust?
@@ -230,7 +244,8 @@ Components
 		Internal interface
 		Log Interface - in chat log
 		Crash on close IM, fin being called? unhooking from IMcontrol events? 
-		
+		sending file / picture - other side sees link click to accept, starts d/l with progress real time update to window
+			result showed inline pic, or link to open file, file put in personal storage?
 	Chat 
 		show unfocused label as red on new messages
 		only send full status on connect, otherwise send mini status updates for join/leaves
@@ -270,6 +285,7 @@ Components
 	Profile
 		time out loading - better searching interface use smoke color and better font, more info searching/dling/etc..
 		Search / Transfer process painfully slow in real time mode, analyze
+		Rename to Sites? Allow internal interlinked sub-pages
 
 	Plans
 		old plans not being deleted? seems like extra files in dir, try loading solo and updating local plan file
@@ -284,6 +300,8 @@ Components
 		review file references system
 		drag files folder over highlights target
 		secure copy / paste can use same folder commands as drag/drop
+			copy/paste will be used as psuedo-fork to create local copy of groups build to work on in a seperate dir
+			ensure really fast, because no 'real' files being created, all dupes in file system
 
 		$ save storage snapshots (past header file versions) - display at root node	
 		$ signal on comparison page if all files are replicated on network (can go offline and files still exist)
@@ -671,7 +689,9 @@ Future
 				give them their own unit type, same with land
 				exchanges can be made between units with third parties (trusted higher)
 				
-				
+		sentry
+			security plug-in
+			monitors IPs, network size, untrusted nodes
 
 		time
 			uses samples of UTC time from nodes on network to determine mean time, with certian confidence
@@ -684,6 +704,18 @@ Future
 			doesnt allow any apps to be installed, just riseOp
 			protect from key loggers, or other malicious apps
 
+		plug in manager
+			should detect service id conflicts
+			distributed as source or signed executables so they do not rip internal private keys for example
+
+		'keeper' a process that contains only the user's public key, cannot sign anything
+			takes orders for master or superiors to him based on settings
+			good for running remote computers, phones, devices, etc.. without risking private key
+			would be cool if hooked to phone then any superior can get live video feed for security, or montoring something
+				or gps info, say the device was specific to a vehical, the superior couuld remote control, stats, etc..
+				main point is that assets are controlled and accounted for by organization
+
+		name server component for trusted lookup of data provider making url/x work
 
 	Compartmentalization
 		sign with level key, mark with level version of key signed

@@ -88,20 +88,26 @@ namespace RiseOp.Services.Storage
             {
                 string path = Storages.GetWorkingPath(ProjectID);
                 RijndaelManaged key = Storages.LocalFileKey;
+                Stream source = null;
 
-                if (!File.Exists(path))
+                if (File.Exists(path)) // use locally committed storage file
                 {
-                    path = Storages.GetFilePath(local);
-                    key = local.File.Header.FileKey;
+                    Modified = true; // working file present on startup, meaning there are changes lingering to be committed
+                    source = new FileStream(path, FileMode.Open);
                 }
                 else
-                    Modified = true; // working file present on startup, meaning there are changes lingering to be committed
+                {
 
-                if (!File.Exists(path))
-                    return;
+                    path = Storages.GetFilePath(local);
 
-                FileStream filex = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(filex, key.CreateDecryptor(), CryptoStreamMode.Read);
+                    if (!File.Exists(path))
+                        return;
+
+                    key = local.File.Header.FileKey;
+                    source = new TaggedStream(path);
+                }
+
+                CryptoStream crypto = new CryptoStream(source, key.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
                 G2Header header = null;
@@ -1132,7 +1138,7 @@ namespace RiseOp.Services.Storage
 
             try
             {
-                FileStream filex = new FileStream(path, FileMode.Open);
+                TaggedStream filex = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(filex, storage.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
 

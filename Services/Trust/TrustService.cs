@@ -126,13 +126,18 @@ namespace RiseOp.Services.Trust
             OpLink remoteLink = GetLink(user, project);
             OpLink localLink = LocalTrust.GetLink(project);
 
-            if (remoteLink == null || localLink == null)
+            if (remoteLink == null)
                 return menus;
 
             // linkup
             if (Core.LocalDhtID != user &&
-                (localLink.Uplink == null || localLink.Uplink.DhtID != user)) // not already linked to
+                (localLink == null || 
+                 localLink.Uplink == null || 
+                 localLink.Uplink.DhtID != user)) // not already linked to
                 menus.Add(new MenuItemInfo("Trust", LinkRes.link, new EventHandler(Menu_Linkup)));
+
+            if (localLink == null)
+                return menus;
 
             // confirm
             if (localLink.Downlinks.Contains(remoteLink))

@@ -66,7 +66,6 @@ namespace RiseOp.Simulator
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
-            this.label5 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.ElapsedLabel = new System.Windows.Forms.Label();
@@ -124,9 +123,9 @@ namespace RiseOp.Simulator
             this.columnHeader8,
             this.columnHeader9});
             this.listInstances.FullRowSelect = true;
-            this.listInstances.Location = new System.Drawing.Point(12, 171);
+            this.listInstances.Location = new System.Drawing.Point(12, 142);
             this.listInstances.Name = "listInstances";
-            this.listInstances.Size = new System.Drawing.Size(525, 255);
+            this.listInstances.Size = new System.Drawing.Size(525, 284);
             this.listInstances.TabIndex = 3;
             this.listInstances.UseCompatibleStateImageBehavior = false;
             this.listInstances.View = System.Windows.Forms.View.Details;
@@ -286,28 +285,28 @@ namespace RiseOp.Simulator
             // FreshStartMenuItem
             // 
             this.FreshStartMenuItem.Name = "FreshStartMenuItem";
-            this.FreshStartMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.FreshStartMenuItem.Size = new System.Drawing.Size(141, 22);
             this.FreshStartMenuItem.Text = "Fresh Start";
             this.FreshStartMenuItem.Click += new System.EventHandler(this.FreshStartMenuItem_Click);
             // 
             // LoadOnlineMenuItem
             // 
             this.LoadOnlineMenuItem.Name = "LoadOnlineMenuItem";
-            this.LoadOnlineMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.LoadOnlineMenuItem.Size = new System.Drawing.Size(141, 22);
             this.LoadOnlineMenuItem.Text = "Load Online";
             this.LoadOnlineMenuItem.Click += new System.EventHandler(this.LoadOnlineMenu_Click);
             // 
             // SpeedMenuItem
             // 
             this.SpeedMenuItem.Name = "SpeedMenuItem";
-            this.SpeedMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.SpeedMenuItem.Size = new System.Drawing.Size(141, 22);
             this.SpeedMenuItem.Text = "Speed";
             this.SpeedMenuItem.Click += new System.EventHandler(this.SpeedMenuItem_Click);
             // 
             // CollectMenuItem
             // 
             this.CollectMenuItem.Name = "CollectMenuItem";
-            this.CollectMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.CollectMenuItem.Size = new System.Drawing.Size(141, 22);
             this.CollectMenuItem.Text = "GC Collect";
             this.CollectMenuItem.Click += new System.EventHandler(this.CollectMenuItem_Click);
             // 
@@ -367,24 +366,11 @@ namespace RiseOp.Simulator
             this.label3.Size = new System.Drawing.Size(0, 13);
             this.label3.TabIndex = 13;
             // 
-            // label5
-            // 
-            this.label5.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label5.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.label5.Location = new System.Drawing.Point(9, 35);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(528, 13);
-            this.label5.TabIndex = 15;
-            this.label5.Text = "Limited Alpha NOT to be distributed without permission of Swax Research";
-            this.label5.TextAlign = System.Drawing.ContentAlignment.TopCenter;
-            // 
             // label6
             // 
             this.label6.AutoSize = true;
             this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label6.Location = new System.Drawing.Point(12, 153);
+            this.label6.Location = new System.Drawing.Point(12, 126);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(261, 13);
             this.label6.TabIndex = 16;
@@ -403,7 +389,7 @@ namespace RiseOp.Simulator
             this.groupBox1.Controls.Add(this.label2);
             this.groupBox1.Controls.Add(this.TimeLabel);
             this.groupBox1.Controls.Add(this.label1);
-            this.groupBox1.Location = new System.Drawing.Point(12, 62);
+            this.groupBox1.Location = new System.Drawing.Point(12, 37);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(525, 70);
             this.groupBox1.TabIndex = 17;
@@ -448,7 +434,6 @@ namespace RiseOp.Simulator
             this.Controls.Add(this.LoadProgress);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.label6);
-            this.Controls.Add(this.label5);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.LinkUpdate);
             this.Controls.Add(this.LabelInstances);
@@ -499,7 +484,6 @@ namespace RiseOp.Simulator
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.ProgressBar LoadProgress;

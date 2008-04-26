@@ -7,6 +7,9 @@ debugging
 		create mirror stuctures
 		start moving old implementation over to the new 
 	
+	Length of the data to decrypt is invalid.
+		Happens when FileStream is used to read TaggedStream data
+	
 performance	
 	128 clients, 10 sim minutes, no services loaded, fresh start, avg memory, logging off
 		debug < 400mb, 80mb after GC

@@ -1,10 +1,13 @@
-
+abstract data/user location
 problems solving
     end to end (user to user) security within organization
     IT management of networks, firewalls, setups, VPNs
     massive scale coordination, get MORE done FASTER - build people sims, create benchmarks, continually improve this
     auto quality control / responsibility / accountibility
 	rapid / dynamic project growth, put de-ops link on dev site, let people immediately join project
+	
+	try to not get sucked into friend 2 friend networks, stay focused on enhancing coordination
+	Focus on users using the project to form large teams and accomplish real goals
 
 motivation
 	**location independence
@@ -114,6 +117,38 @@ selling points
 	Better to not see other people working simultaneously because are continually using our brain to model their behavior
 		http://www.sciencedaily.com/releases/2008/02/080220110323.htm
 	
+	AJAX powered web 2.0 apps not quick enough to keep up with business power users
+		http://www.thestandard.com/news/2008/03/24/forrester-ajax-powered-web-apps-disappoint-power-users
+	
+	Patriot Act haunts Google service - private data at risk when using web based solutions
+		http://www.theglobeandmail.com/servlet/story/RTGAM.20080324.wrgoogle24/BNStory/Technology/home
+	
+	Let users manage their own PCs - with RiseOp security / backup is taken care of 
+		http://www.infoworld.com/article/08/04/02/14FE-user-managed-pc_1.html
+	
+	http://www.wired.com/politics/security/news/2008/04/chinese_hackers
+	
+	hosting projects outside of your control can back fire like google taking control   
+	also google code - OS licenses, code plex - only non-GPL, i mean WTF, screw hosting
+		http://blog.milkingthegnu.org/2008/04/google-to-user.html
+	
+	secure coordinated nomad workers
+		http://www.economist.com/specialreports/displaystory.cfm?story_id=10950378
+	
+	enterprise web 2.0 spending increasing, potential market is huge, internationals coming on board
+		http://www.readwriteweb.com/archives/enterprise_20_to_become_a_46_billion_industry.php
+	
+	microsoft live mesh - following same path
+		http://www.techcrunch.com/2008/04/22/microsofts-mesh-revealed%e2%80%94sync-all-apps-and-all-files-to-all-devices-as-long-as-theyre-windows/
+	
+	hierarchy hard wired in our brains
+		http://www.sciencedaily.com/releases/2008/04/080423121430.htm
+	
+	optimal group size is 10
+		http://www.37signals.com/svn/posts/995-if-youre-working-in-a-big-group-youre-fighting-human-nature
+		ensure teams feel secure, discrete, enclosed in riseOp so that not overwhelmed by larger picture
+	    
+	    
 	Andy Tanenbaum: The problem is co-ordinating things. Projects like GNU, MINIX, or LINUX only hold together if one person is in charge. 
 	Linus Torvalds: Yes, coordination is a big problem, and I don't think linux will move away from me as "head surgeon" for some time..
 	
@@ -455,6 +490,8 @@ Features
 		Sha1 used as key and IV for AES 192 encryption of keypair file 
 		
 Why P2P
+	Both data and users are location abstracted
+		user/data can have 10 locations each, but they can be found at the same index
 	Freen Open Source application without need for cost of servers because it is p2p
 	Controlled by users
 	Compare to waste, gnutella, napster, other IM clients

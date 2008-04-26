@@ -1049,31 +1049,6 @@ namespace RiseOp.Services.Storage
                 tempFile.Close();
                 stream.Close();
 
-                /*
-                string tempPath = Core.GetTempPath();
-                FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
-
-                string filePath = GetFilePath(file.HashID);
-                long bytesLeft = Utilities.GetTaggedFileSize(filePath);
-
-                FileStream encFile = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-                CryptoStream stream = new CryptoStream(encFile, file.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
-
-                while (bytesLeft > 0)
-                {
-                    int count = (bytesLeft > FileBufferSize) ? FileBufferSize : (int) bytesLeft;
-                    int read = stream.Read(FileBuffer, 0, count);
-
-                    if (read <= 0)
-                        break;
-
-                    bytesLeft -= read;
-                    tempFile.Write(FileBuffer, 0, read);
-                }
-
-                tempFile.Close();
-                stream.Close();*/
-
                 // move to official path
                 File.Move(tempPath, finalpath);
             }

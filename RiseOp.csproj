@@ -134,6 +134,7 @@
     <Compile Include="AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Implementation\Transport\UPnP.cs" />
     <Compile Include="Services\Assist\VersionedFile.cs" />
     <Compile Include="Services\Board\BoardService.cs" />
     <Compile Include="Services\Chat\ChatService.cs" />
