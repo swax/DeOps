@@ -165,6 +165,8 @@ namespace RiseOp.Services.Trust
             ulong remoteKey = ((IViewParams)sender).GetKey();
             uint project = ((IViewParams)sender).GetProject();
 
+            LocalTrust.AddProject(project, true);
+
             OpLink localLink = LocalTrust.GetLink(project);
 
             if (localLink == null)

@@ -729,6 +729,7 @@ namespace RiseOp.Implementation
                 return;
             }
 
+            RunInCoreThread(code, null);
             RunInCoreThread(code, null).Processed.WaitOne();
         }
 
@@ -742,6 +743,7 @@ namespace RiseOp.Implementation
                     if (Sim.Internet.CoreMessages.Count < 100)
                         Sim.Internet.CoreMessages.Enqueue(function);
             }
+            else
             {
                 lock (CoreMessages)
                     if (CoreMessages.Count < 100)
