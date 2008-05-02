@@ -94,9 +94,7 @@ live
 	
 
 test
-	location tag reports localSync version
-	replication/patch only in localSync
-	localSync gets tags from other components
+	compactNum value 1 converted to 2 bytes not 1
 	local publish uses nodes directly from routing
 	check no dupes being added to high/low contact lists
 	check SetResponsive is called once on connect and once on disconnect
@@ -123,16 +121,18 @@ other
 	rename versionedcache in svn
 	turn packet/error logging back on after tests - ensure mem usage at mim - let user right click turn logging on/off
 	
+	mainform - 
+	
 	chat
 		private triggering 2 invites, members dont see each other
 		if node starts up untrusted, display help service by default instead of chat
+		auto-open local chatroom when link made
 
 	publishing / pruing / re-publishing / replicating uplink requests
 	posts, outbound mail re-published on startup?
 	use common assist for posts/mail/uplinkReqs?
 
 	nav bar work with loops?
-	investigate flexible 'smart byte'
 	fix vertical scroll bar in link/chat window once and for all
 	board - All/Higher/Lower Posts, New Post
 	test clients with different local times, init random gmt offsets
@@ -161,9 +161,9 @@ Interface
 		status panel needs to update as network connects network_statusupdate, trigger news as well
 		test gmt visible in status panel
 		unload tray icon on exit?
-		alphabetizize component menus
+		alphabetizize component menus, project button, nav bar, project nav drop down
 		dont allow nav bar person switch on mail/chat components
-
+			
 		animate loader - fade in gradient, logo rises from offscreen into position, rise and op bob indepenently
 		
 	Internal 
