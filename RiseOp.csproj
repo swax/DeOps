@@ -597,6 +597,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Win32.cs" />
+    <Content Include="Docs\future.txt" />
     <Content Include="Docs\transfers.txt" />
     <Content Include="Services\Board\Board.txt" />
     <None Include="Services\Chat\Res\chat.ico" />

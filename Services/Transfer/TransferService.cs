@@ -99,6 +99,9 @@ namespace RiseOp.Services.Transfer
 
         internal void AddSource(int id, ulong key)
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             if (!DownloadMap.ContainsKey(id))
                 return;
 
@@ -110,6 +113,9 @@ namespace RiseOp.Services.Transfer
 
         internal void CancelDownload(uint id, byte[] hash, long size)
         {
+            if (Core.InvokeRequired)
+                Debug.Assert(false);
+
             FileDownload target = null;
 
             foreach (FileDownload download in DownloadMap.Values)

@@ -141,7 +141,7 @@ namespace RiseOp.Services.Profile
             
             try
             {
-                FileStream stream = new FileStream(template.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                TaggedStream stream = new TaggedStream(template.FilePath);
                 CryptoStream crypto = new CryptoStream(stream, template.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
 
                 int buffSize = 4096;

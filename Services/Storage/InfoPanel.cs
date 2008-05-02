@@ -1296,7 +1296,11 @@ namespace RiseOp.Services.Storage
 
             if (parts[1] == "dlcancel")
             {
-                ParentView.Core.Transfers.CancelDownload(Storages.ServiceID, file.Hash, file.Size);
+                ParentView.Core.RunInCoreBlocked(delegate() 
+                {
+                    ParentView.Core.Transfers.CancelDownload(Storages.ServiceID, file.Hash, file.Size);
+                });
+
                 transferChange = true;
             }
 

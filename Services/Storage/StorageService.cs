@@ -641,10 +641,18 @@ namespace RiseOp.Services.Storage
 
         internal void DownloadFile(ulong id, StorageFile file)
         {
+            // called from hash thread
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { DownloadFile(id, file); });
+                return;
+            }
+
             // if file still processing return
             if (file.Hash == null)
                 return;
 
+ 
             FileDetails details = new FileDetails(ServiceID, FileTypeData, file.Hash, file.Size, null);
 
             Core.Transfers.StartDownload(id, details, new object[] { file }, new EndDownloadHandler(EndDownloadFile));

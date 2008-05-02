@@ -58,7 +58,7 @@ namespace RiseOp.Simulator
         internal bool   Shutdown;
         
         // settings
-        internal int SleepTime = 100; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
+        internal int SleepTime = 250; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
 
         bool RandomCache = true;
         internal bool LoadOnline = true;

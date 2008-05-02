@@ -212,7 +212,7 @@ namespace RiseOp.Services.Plan
             {
                 DialogResult result = MessageBox.Show(this, "Save Chages to Goals?", "RiseOp", MessageBoxButtons.YesNoCancel);
 
-                if (result == DialogResult.OK)
+                if (result == DialogResult.Yes)
                     Plans.SaveLocal();
                 if (result == DialogResult.Cancel)
                     return false;

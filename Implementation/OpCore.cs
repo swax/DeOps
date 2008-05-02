@@ -729,7 +729,6 @@ namespace RiseOp.Implementation
                 return;
             }
 
-            RunInCoreThread(code, null);
             RunInCoreThread(code, null).Processed.WaitOne();
         }
 
