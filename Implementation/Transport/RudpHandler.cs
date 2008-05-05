@@ -80,17 +80,17 @@ namespace RiseOp.Implementation.Transport
 
         internal void Connect(LocationData location)
         {
-            if (location.KeyID == Core.LocalDhtID && location.Source.ClientID == Core.ClientID)
+            if (location.DhtID == Core.LocalDhtID && location.Source.ClientID == Core.ClientID)
                 return;
 
             if (IsConnected(location))
                 return;
 
-            if (!SessionMap.ContainsKey(location.KeyID))
-                SessionMap[location.KeyID] = new List<RudpSession>();
+            if (!SessionMap.ContainsKey(location.DhtID))
+                SessionMap[location.DhtID] = new List<RudpSession>();
 
-            RudpSession session = new RudpSession(Core, location.KeyID, location.Source.ClientID, false);
-            SessionMap[location.KeyID].Add(session);
+            RudpSession session = new RudpSession(Core, location.DhtID, location.Source.ClientID, false);
+            SessionMap[location.DhtID].Add(session);
 
             session.Comm.AddAddress(new RudpAddress(Core, new DhtAddress(location.IP, location.Source), location.Global));
 
@@ -102,7 +102,7 @@ namespace RiseOp.Implementation.Transport
 
         internal RudpSession GetActiveSession(LocationData location)
         {
-            return GetActiveSession(location.KeyID, location.Source.ClientID);
+            return GetActiveSession(location.DhtID, location.Source.ClientID);
         }
 
         internal RudpSession GetActiveSession(ulong key, ushort client)

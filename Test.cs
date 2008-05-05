@@ -28,8 +28,9 @@ namespace RiseOp
 	{
 		internal Test()
         {
+            //int test = ushort.MaxValue;
 
-
+            //byte[] x = BitConverter.GetBytes((ushort)test);
 		}
 
         /*void TestSigning()

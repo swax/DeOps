@@ -444,7 +444,7 @@ namespace RiseOp.Services.Chat
         {
             bool connect = false;
 
-            foreach (ChatRoom room in FindRoom(location.KeyID))
+            foreach (ChatRoom room in FindRoom(location.DhtID))
                 if (room.Active)
                     connect = true;
 

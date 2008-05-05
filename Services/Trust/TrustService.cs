@@ -1156,7 +1156,7 @@ namespace RiseOp.Services.Trust
 
             foreach (ClientInfo info in clients)
             {
-                if (info.Data.KeyID == Core.LocalDhtID && info.Data.Source.ClientID == Core.ClientID)
+                if (info.Data.DhtID == Core.LocalDhtID && info.Data.Source.ClientID == Core.ClientID)
                     continue;
 
                 if (!locations.Contains(info.Data))

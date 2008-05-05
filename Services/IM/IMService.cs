@@ -297,11 +297,11 @@ namespace RiseOp.Services.IM
 
         internal void Location_Update(LocationData location)
         {
-            if (FindView(location.KeyID) == null)
+            if (FindView(location.DhtID) == null)
                 return;
 
             IMStatus status = null;
-            if (!IMMap.SafeTryGetValue(location.KeyID, out status))
+            if (!IMMap.SafeTryGetValue(location.DhtID, out status))
                 return;
 
             Core.RudpControl.Connect(location);

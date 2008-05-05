@@ -17,7 +17,7 @@ namespace RiseOp.Services.Location
     internal class LocationData : G2Packet
     {
         internal const int GLOBAL_TTL = 60;
-        internal const int OP_TTL = 5;
+        internal const int OP_TTL = 4;
 
 
         const byte Packet_Key = 0x10;
@@ -48,7 +48,7 @@ namespace RiseOp.Services.Location
         internal string AwayMessage = "";
 
 
-        internal ulong KeyID;
+        internal ulong DhtID;
 
         internal override byte[] Encode(G2Protocol protocol)
         {
@@ -96,7 +96,7 @@ namespace RiseOp.Services.Location
                 {
                     case Packet_Key:
                         loc.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        loc.KeyID = Utilities.KeytoID(loc.Key);
+                        loc.DhtID = Utilities.KeytoID(loc.Key);
                         break;
 
                     case Packet_Source:

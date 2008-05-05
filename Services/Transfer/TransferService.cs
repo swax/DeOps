@@ -321,7 +321,7 @@ namespace RiseOp.Services.Transfer
                 {
                     LocationData location = LocationData.Decode(Core.Protocol, found.Value);
                     
-                    Core.IndexKey(location.KeyID, ref location.Key);
+                    Core.IndexKey(location.DhtID, ref location.Key);
                     download.AddSource(location);
                 }
                 catch (Exception ex)
@@ -369,7 +369,7 @@ namespace RiseOp.Services.Transfer
                 if(session.Status == SessionStatus.Active)
                     if ( download.Status != DownloadStatus.Done && !download.Sessions.Contains(session))
                             foreach(LocationData source in download.Sources)
-                                if (source.KeyID == session.DhtID && source.Source.ClientID == session.ClientID)
+                                if (source.DhtID == session.DhtID && source.Source.ClientID == session.ClientID)
                                 {
                                     download.Log("Request sent to " + session.Name);
                                     Send_Request(session, download);
@@ -671,7 +671,7 @@ namespace RiseOp.Services.Transfer
         internal void AddSource(LocationData location)
         {
             foreach (LocationData source in Sources)
-                if (source.KeyID == location.KeyID && source.Source.ClientID == location.Source.ClientID)
+                if (source.DhtID == location.DhtID && source.Source.ClientID == location.Source.ClientID)
                     return;
 
             Sources.Add(location);

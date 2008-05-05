@@ -533,7 +533,7 @@ namespace RiseOp.Interface.Tools
 				{
                     IDtoStr(opid),
                     xStr(info.TTL),
-                    IDtoStr(info.Data.KeyID),
+                    IDtoStr(info.Data.DhtID),
 					xStr(info.Data.Source.ClientID),		
 					xStr(info.Data.Source.TcpPort),
 					xStr(info.Data.Source.UdpPort),

@@ -144,7 +144,7 @@ namespace RiseOp.Services.Location
             // operation ttl (similar as above, but not the same)
             if (second % 15 == 0)
             {
-                List<ulong> inactivated = new List<ulong>();
+                Dictionary<ulong, bool> affectedUsers = new Dictionary<ulong, bool>();
                 List<ushort> deadClients = new List<ushort>();
 
                 LocationMap.LockReading(delegate()
@@ -165,22 +165,29 @@ namespace RiseOp.Services.Location
                                      if (location.TTL == 0)
                                      {
                                          deadClients.Add(location.ClientID);
-                                         inactivated.Add(location.Data.KeyID);
+                                         affectedUsers.Add(location.Data.DhtID, true);
                                      }
                                  }
 
                                  //crit hack - last 30 and 15 secs before loc destroyed do searches (working pretty good through...)
                                  if (location.TTL == 1 && (second == 15 || second == 30))
-                                     StartSearch(location.Data.KeyID, 0, false);
+                                     StartSearch(location.Data.DhtID, 0, false);
                              }
                          });
 
                          foreach (ushort dead in deadClients)
                              clients.SafeRemove(dead);
-                     }
+                     }                    
                 });
 
-                foreach (ulong id in inactivated)
+                LocationMap.LockWriting(delegate()
+                {
+                    foreach (ulong id in affectedUsers.Keys)
+                        if (LocationMap[id].Count == 0)
+                            LocationMap.Remove(id);
+                });
+
+                foreach (ulong id in affectedUsers.Keys)
                     Core.RunInGuiThread(GuiUpdate, id);
             }
         }
@@ -324,6 +331,7 @@ namespace RiseOp.Services.Location
 
             byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, location);
 
+            Debug.Assert(location.TTL < 5);
             Core.OperationNet.Store.PublishNetwork(Core.LocalDhtID, ServiceID, 0, signed);
 
             OperationStore_Local(new DataReq(null, Core.LocalDhtID, ServiceID, 0, signed));
@@ -384,6 +392,8 @@ namespace RiseOp.Services.Location
         {
             CryptLoc newLoc = CryptLoc.Decode(Core.Protocol, location.Data);
 
+            Debug.Assert(newLoc.TTL > 55);
+
             if (newLoc == null)
                 return;
 
@@ -435,9 +445,11 @@ namespace RiseOp.Services.Location
 
         private void Process_LocationData(DataReq data, SignedData signed, LocationData location)
         {
-            Core.IndexKey(location.KeyID, ref location.Key);
+            Debug.Assert(location.TTL < 5);
 
-            ClientInfo current = GetLocationInfo(location.KeyID, location.Source.ClientID);
+            Core.IndexKey(location.DhtID, ref location.Key);
+
+            ClientInfo current = GetLocationInfo(location.DhtID, location.Source.ClientID);
 
             // check location version
             if (current != null)
@@ -449,7 +461,7 @@ namespace RiseOp.Services.Location
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Core.OperationNet.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Data.KeyID, ServiceID, 0, current.SignedData));
+                            Core.OperationNet.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Data.DhtID, ServiceID, 0, current.SignedData));
 
                     return;
                 }
@@ -461,7 +473,7 @@ namespace RiseOp.Services.Location
 
             foreach (PatchTag tag in location.Tags)
                 if(TagReceived.Contains(tag.Service, tag.DataType))
-                    TagReceived[tag.Service, tag.DataType].Invoke(address, location.KeyID, tag.Tag);
+                    TagReceived[tag.Service, tag.DataType].Invoke(address, location.DhtID, tag.Tag);
 
 
             // add location
@@ -469,13 +481,13 @@ namespace RiseOp.Services.Location
             {
                 ThreadedDictionary<ushort, ClientInfo> locations = null;
 
-                if (!LocationMap.SafeTryGetValue(location.KeyID, out locations))
+                if (!LocationMap.SafeTryGetValue(location.DhtID, out locations))
                 {
                     locations = new ThreadedDictionary<ushort, ClientInfo>();
-                    LocationMap.SafeAdd(location.KeyID, locations);
+                    LocationMap.SafeAdd(location.DhtID, locations);
                 }
 
-                if (location.KeyID != Core.LocalDhtID && locations.SafeCount > MaxClientsperUser)
+                if (location.DhtID != Core.LocalDhtID && locations.SafeCount > MaxClientsperUser)
                     return;
 
                 current = new ClientInfo(location.Source.ClientID);
@@ -485,7 +497,7 @@ namespace RiseOp.Services.Location
             current.Data = location;
             current.SignedData = signed.Encode(Core.Protocol);
 
-            if (current.Data.KeyID == Core.LocalDhtID && current.Data.Source.ClientID == Core.ClientID)
+            if (current.Data.DhtID == Core.LocalDhtID && current.Data.Source.ClientID == Core.ClientID)
                 LocalLocation = current;
 
             current.TTL = location.TTL;
@@ -498,7 +510,7 @@ namespace RiseOp.Services.Location
             if (LocationUpdate != null)
                 LocationUpdate.Invoke(current.Data);
 
-            Core.RunInGuiThread(GuiUpdate, current.Data.KeyID);
+            Core.RunInGuiThread(GuiUpdate, current.Data.DhtID);
         }
 
         internal void PublishGlobal()
@@ -542,16 +554,18 @@ namespace RiseOp.Services.Location
             else
                 return;
 
-            location.Place = Core.User.Settings.Location;
+
             location.Version = LocationVersion++;
-            location.TTL = LocationData.GLOBAL_TTL; // set expire 1 hour
+            // location packet is encrypted inside global loc packet
+            // this embedded has OP TTL, while wrapper (CryptLoc) has global TTL
+            location.TTL = LocationData.OP_TTL;
 
             byte[] data = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, location);
 
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
                 data = Utilities.EncryptBytes(data, Core.OperationNet.OriginalCrypt);
 
-            data = new CryptLoc(60 * 60, data).Encode(Core.Protocol);
+            data = new CryptLoc(LocationData.GLOBAL_TTL, data).Encode(Core.Protocol);
 
             Core.GlobalNet.Store.PublishNetwork(Core.OpID, ServiceID, 0, data);
 

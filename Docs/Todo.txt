@@ -94,13 +94,9 @@ live
 	
 
 test
-	compactNum value 1 converted to 2 bytes not 1
-	local publish uses nodes directly from routing
-	check no dupes being added to high/low contact lists
-	check SetResponsive is called once on connect and once on disconnect
-	check statusChange is called for connectioned/disconnected, and that caches are set back to unique an republished
+	test bringing half offline, and contacts reflecting that change
+	test lockreading inside writing and visa versa
 	ensure search for lastest version of service doesnt get hung up on old versions and return prematurely
-	having it detect its not connected
 	debug places where searches etc.. are happening, when client knows its not connected
 	a superior 5 levels up, on other side of network, updating plan should reflect on lower on next location update
 	links timing out when traversing strucuture
@@ -120,8 +116,6 @@ other
 		if local versions are newer than those specified in localSync
 	rename versionedcache in svn
 	turn packet/error logging back on after tests - ensure mem usage at mim - let user right click turn logging on/off
-	
-	mainform - 
 	
 	chat
 		private triggering 2 invites, members dont see each other
@@ -450,7 +444,6 @@ Simulator
 	figure out why IO writes in FiresoftDemo so high, getting 2min/sec through, pretty damn good
 	record max udp burst sizes, or do packet size distribution histogram
 
-	***test lockreading inside writing and visa versa
 	***checksigned / idtokey throw exceptions, maybe just return false or something?
 	
 			

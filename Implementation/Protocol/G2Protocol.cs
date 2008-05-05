@@ -486,7 +486,7 @@ namespace RiseOp.Implementation.Protocol
         internal static byte[] GetBytes(uint num)
         {
             if (num <= byte.MaxValue)
-                return BitConverter.GetBytes((byte)num);
+                return new byte[] {(byte)num};
 
             else if (num <= ushort.MaxValue)
                 return BitConverter.GetBytes((ushort)num);

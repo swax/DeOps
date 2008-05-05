@@ -25,7 +25,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("John Marshall Group")]
 [assembly: AssemblyProduct("")]
-[assembly: AssemblyCopyright("2005-2006")]
+[assembly: AssemblyCopyright("2005-2008")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]		
 
