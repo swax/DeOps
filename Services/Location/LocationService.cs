@@ -106,7 +106,7 @@ namespace RiseOp.Services.Location
                 PublishGlobal();
 
             // operation publish
-            if (Core.OperationNet.Routing.Responsive && Core.TimeNow > NextLocationUpdate)
+            if (Core.OperationNet.Responsive && Core.TimeNow > NextLocationUpdate)
                 UpdateLocation();
 
             // run code below every quarter second
@@ -183,7 +183,7 @@ namespace RiseOp.Services.Location
                 LocationMap.LockWriting(delegate()
                 {
                     foreach (ulong id in affectedUsers.Keys)
-                        if (LocationMap[id].Count == 0)
+                        if (LocationMap[id].SafeCount == 0)
                             LocationMap.Remove(id);
                 });
 
@@ -623,7 +623,7 @@ namespace RiseOp.Services.Location
                 return;
             }
 
-            if (!Core.OperationNet.Routing.Responsive)
+            if (!Core.OperationNet.Responsive)
                 return;
 
             // limit re-search to once per 30 secs

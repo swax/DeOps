@@ -8,6 +8,7 @@ using System.Diagnostics;
 using RiseOp.Services.Location;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Comm;
+using RiseOp.Implementation.Protocol.Net;
 
 
 namespace RiseOp.Implementation.Transport
@@ -109,7 +110,8 @@ namespace RiseOp.Implementation.Transport
                     Core.CommMap.Remove(Comm.PeerID);
             }
 
-            Core.RudpControl.SessionUpdate.Invoke(this);
+            if (Core.RudpControl.SessionUpdate != null)
+                Core.RudpControl.SessionUpdate.Invoke(this);
 		}	
 
 		internal bool SendPacket(G2Packet packet, bool expedite)
@@ -248,6 +250,10 @@ namespace RiseOp.Implementation.Transport
                     InboundEnc.Padding = PaddingMode.None;
                     RecvDecryptor = InboundEnc.CreateDecryptor();
                 }
+
+                else if (packet.Root.Name == CommPacket.ProxyUpdate)
+                    Receive_ProxyUpdate(packet);
+
 
 				return;
 			}
@@ -489,6 +495,27 @@ namespace RiseOp.Implementation.Transport
 			UpdateStatus(SessionStatus.Closed);
 		}
 
+        internal void Send_ProxyUpdate(TcpConnect tcp)
+        {
+            ProxyUpdate update = new ProxyUpdate();
+
+            update.Global = tcp.Network.IsGlobal;
+            update.Proxy = new DhtAddress(tcp.RemoteIP, tcp);
+
+            Log("Sent Proxy Update (" + update.Proxy + ")");
+
+            SendPacket(update, true);
+        }
+
+        internal void Receive_ProxyUpdate(G2ReceivedPacket embeddedPacket)
+        {
+            ProxyUpdate update = ProxyUpdate.Decode(Core.Protocol, embeddedPacket);
+
+            Comm.AddAddress(new RudpAddress(Core, update.Proxy, update.Global));
+
+            Log("Received Proxy Update (" + update.Proxy + ")");
+        }
+
 		internal bool AlreadyActive()
 		{
 			foreach(RudpSession session in Core.RudpControl.SessionMap[DhtID])
@@ -652,5 +679,7 @@ namespace RiseOp.Implementation.Transport
 
             return true;
         }
+
+
     }
 }

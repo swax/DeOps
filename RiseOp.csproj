@@ -51,6 +51,7 @@
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <OutputPath>bin\Debug\</OutputPath>
@@ -597,6 +598,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Win32.cs" />
+    <Content Include="Docs\ChangeLog.txt" />
     <Content Include="Docs\future.txt" />
     <Content Include="Docs\transfers.txt" />
     <Content Include="Services\Board\Board.txt" />

@@ -27,8 +27,7 @@ namespace RiseOp.Implementation.Dht
 
         internal Dictionary<ulong, DhtContact> ContactMap = new Dictionary<ulong, DhtContact>();
 
-        internal bool Responsive;
-        int NetworkTimeout = 60; // seconds
+        int NetworkTimeout = 15; // seconds
         internal DateTime LastUpdated    = new DateTime(0);
 		internal DateTime NextSelfSearch = new DateTime(0);
 
@@ -54,32 +53,27 @@ namespace RiseOp.Implementation.Dht
 
         internal void SecondTimer()
         {
-            // if no updates in a minute, we're disconnected
-            if (Network.Established && LastUpdated.AddSeconds(NetworkTimeout) < Core.TimeNow)
-            {
-                SetResponsive(false);
+            // if not connected, cache is frozen until re-connected
+            // ideally for disconnects around 10 mins, most of cache will still be valid upon reconnect
+            if (!Network.Established)
                 return;
-            }
-
 
             // hourly self search
             if (Core.TimeNow > NextSelfSearch)
             {
                 // if behind nat this is how we ensure we are at closest proxy
                 // slightly off to avoid proxy host from returning with a found
-                Network.Searches.Start(LocalRoutingID + 1, "Self", Core.DhtServiceID, 0, null, new EndSearchHandler(EndSelfSearch));
+                Network.Searches.Start(LocalRoutingID + 1, "Self", Core.DhtServiceID, 0, null, null);
                 NextSelfSearch = Core.TimeNow.AddHours(1);
             }
 
-            
-
-
-            // if current bucket low refresh, time out 15min between tries
             if (CurrentBucket >= BucketList.Count)
                 CurrentBucket = 0;
 
             DhtBucket bucket = BucketList[CurrentBucket++];
 
+            // if bucket not low, then it will not refresh, but once low state is triggered  
+            // a re-search is almost always immediately done to bring it back up
             if (bucket.ContactList.Count < ContactsPerBucket / 2 &&
                 Core.Firewall == FirewallType.Open &&
                 Core.TimeNow > bucket.NextRefresh)
@@ -89,35 +83,62 @@ namespace RiseOp.Implementation.Dht
                 bucket.NextRefresh = Core.TimeNow.AddMinutes(15);
             }
 
-
-            // every 10 secs check nodes in contact list
-            if (Core.TimeNow.Second % 9 != 0)
-                return;
-
-
-            List<DhtContact> remove = new List<DhtContact>();
+            /*
+                est network size = bucket size * 2^(number of buckets - 1)
+		        est cache contacts = bucket size * number of buckets
+		        ex: net of 2M = 2^21 = 2^4 * 2^(18-1)
+			        contacts = 16 * 18 = 288, 1 refresh per sec = ~5 mins for full cache validation
+			*/
+           
+            // get youngest (freshest) and oldest contact
+            DhtContact oldest = null;
+            DhtContact youngest = null;
+            List<DhtContact> timedout = new List<DhtContact>();
 
             foreach (DhtContact contact in ContactMap.Values)
-                // if havent seen for more than a minute and time is greater than nexttry
-                if (contact.LastSeen.AddMinutes(1) < Core.TimeNow)
+            {
+                if (youngest == null || contact.LastSeen > youngest.LastSeen)
+                    youngest = contact;
+
+                if (Core.TimeNow > contact.NextTry &&
+                    (oldest == null || contact.LastSeen < oldest.LastSeen))
                 {
-                    // if less than 2 attempts
-                    if (contact.Attempts < 2)
-                    {
-                        // if not firewalled proxy refreshes nodes, let old ones timeout
-                        if (Core.Firewall == FirewallType.Open)
-                            Network.Send_Ping(contact.ToDhtAddress());
-
-                        contact.Attempts++;
-                        contact.NextTry = Core.TimeNow.AddSeconds(30);
-                    }
-
-                    // else remove contact
+                    if (contact.Attempts >= 2)
+                        timedout.Add(contact);
                     else
-                        remove.Add(contact);
+                        oldest = contact;
                 }
+            }
+
+            foreach (DhtContact contact in timedout)
+                RemoveContact(contact);
+
+            
+            // stagger cache pings, so once every second
+			// find oldest can attempt, send ping, remove expired
+            if (oldest != null)
+            {
+                // if not firewalled proxy refreshes nodes, let old ones timeout
+                if (Core.Firewall == FirewallType.Open)
+                    Network.Send_Ping(oldest.ToDhtAddress());
+
+                oldest.Attempts++;
+                
+                // allow 10 unique nodes to be tried before disconnect
+                // (others should be pinging us as well if connected)
+                oldest.NextTry = Core.TimeNow.AddSeconds(5);
+            }
 
 
+            // know if disconnected within 10 secs for any network size
+			// find youngest, if more than 10 secs old, we are disconnected
+            // in this time 10 unique contacts should have been pinged
+            if (youngest == null || youngest.LastSeen.AddSeconds(NetworkTimeout) < Core.TimeNow)
+                Network.SetResponsive(false);
+        }
+
+        private void RemoveContact(DhtContact target)
+        {
             // alert app of new bounds? yes need to activate caching to new nodes in bounds as network shrinks 
 
             bool refreshBuckets = false;
@@ -126,24 +147,22 @@ namespace RiseOp.Implementation.Dht
             bool refreshLow = false;
 
 
-            foreach (DhtContact contact in remove)
-            {
-                if (ContactMap.ContainsKey(contact.RoutingID))
-                    ContactMap.Remove(contact.RoutingID);
+            if (ContactMap.ContainsKey(target.RoutingID))
+                ContactMap.Remove(target.RoutingID);
 
-                foreach(DhtBucket check in BucketList)
-                    if (check.ContactList.Contains(contact))
-                    {
-                        refreshBuckets = check.ContactList.Remove(contact) ? true : refreshBuckets;
-                        break;
-                    }
+            foreach (DhtBucket check in BucketList)
+                if (check.ContactList.Contains(target))
+                {
+                    refreshBuckets = check.ContactList.Remove(target) ? true : refreshBuckets;
+                    break;
+                }
 
-                refreshXor = NearXor.Contacts.Remove(contact) ? true : refreshXor;
-                refreshHigh = NearHigh.Contacts.Remove(contact) ? true : refreshHigh;
-                refreshLow = NearLow.Contacts.Remove(contact) ? true : refreshLow;
-            }
+            refreshXor = NearXor.Contacts.Remove(target) ? true : refreshXor;
+            refreshHigh = NearHigh.Contacts.Remove(target) ? true : refreshHigh;
+            refreshLow = NearLow.Contacts.Remove(target) ? true : refreshLow;
+        
 
-            if(refreshBuckets)
+            if (refreshBuckets)
                 CheckMerge();
 
 
@@ -164,12 +183,12 @@ namespace RiseOp.Implementation.Dht
 
                     // ensure node being replicated to hasnt already been replicated to through another list
                     if (!NearHigh.Contacts.Contains(furthest) &&
-                        !NearLow.Contacts.Contains(furthest) && 
+                        !NearLow.Contacts.Contains(furthest) &&
                         !replicate.Contains(furthest))
                         replicate.Add(furthest);
                 }
                 else
-                    NearXor.SetBounds( ulong.MaxValue, ulong.MaxValue);
+                    NearXor.SetBounds(ulong.MaxValue, ulong.MaxValue);
             }
 
             // node removed from closest, so there isnt anything in buckets closer than lower bound
@@ -192,7 +211,7 @@ namespace RiseOp.Implementation.Dht
                     NearLow.Contacts.Insert(0, closest);
 
                     if (!NearXor.Contacts.Contains(closest) &&
-                        !NearHigh.Contacts.Contains(closest) && 
+                        !NearHigh.Contacts.Contains(closest) &&
                         !replicate.Contains(closest))
                         replicate.Add(closest);
                 }
@@ -222,23 +241,21 @@ namespace RiseOp.Implementation.Dht
                     NearHigh.Contacts.Insert(NearHigh.Contacts.Count, closest);
 
                     if (!NearXor.Contacts.Contains(closest) &&
-                        !NearLow.Contacts.Contains(closest) && 
+                        !NearLow.Contacts.Contains(closest) &&
                         !replicate.Contains(closest))
                         replicate.Add(closest);
                 }
 
                 if (NearHigh.Contacts.Count < NearHigh.Max)
-                    NearHigh.SetBounds( ulong.MaxValue, ulong.MaxValue);
+                    NearHigh.SetBounds(ulong.MaxValue, ulong.MaxValue);
                 else
-                    NearHigh.SetBounds( NearHigh.Contacts[NearHigh.Contacts.Count - 1].RoutingID, 
+                    NearHigh.SetBounds(NearHigh.Contacts[NearHigh.Contacts.Count - 1].RoutingID,
                                      NearHigh.Contacts[NearHigh.Contacts.Count - 1].DhtID);
 
             }
 
             foreach (DhtContact contact in replicate)
                 Network.Store.Replicate(contact);
-
-            
         }
 
         private bool RemoveFromBuckets(DhtContact removed)
@@ -310,15 +327,6 @@ namespace RiseOp.Implementation.Dht
             return map.Values;
         }
 
-        internal void EndSelfSearch(DhtSearch search)
-        {
-            // if not already established (an hourly self re-search)
-            if (!Network.Established)
-            {
-                Network.FireStatusChange = 10; // a little buffer time for local nodes to send patch files
-            }
-        }
-
 		internal void Add(DhtContact newContact)
 		{
 			if(newContact.DhtID == 0)
@@ -359,8 +367,8 @@ namespace RiseOp.Implementation.Dht
             {
                 LastUpdated = newContact.LastSeen;
 
-                if (!Responsive)
-                    SetResponsive(true);
+                if (!Network.Responsive)
+                    Network.SetResponsive(true);
             }
 
             // add to ip cache
@@ -398,26 +406,6 @@ namespace RiseOp.Implementation.Dht
             if(Network.GuiGraph != null)
                 Network.GuiGraph.BeginInvoke(Network.GuiGraph.UpdateGraph);
 		}
-
-        private void SetResponsive(bool responsive)
-        {
-            Responsive = responsive;
-
-            if (Responsive)
-            {
-                Network.Searches.Start(LocalRoutingID + 1, "Self", Core.DhtServiceID, 0, null, new EndSearchHandler(EndSelfSearch));
-                NextSelfSearch = Core.TimeNow.AddHours(1);
-            }
-
-            // network dead
-            else
-            {
-                Network.Established = false;
-
-                if(Network.StatusChange != null)
-                    Network.StatusChange.Invoke();
-            }
-        }
 
         private void AddtoBucket(DhtContact newContact)
         {
@@ -677,7 +665,7 @@ namespace RiseOp.Implementation.Dht
                 }
 
             return results;*/
-		}
+        }
     }
 
     internal class DhtBound

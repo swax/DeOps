@@ -134,6 +134,14 @@ namespace RiseOp.Implementation.Transport
         {
             return (GetActiveSessions(id).Count > 0);
         }
+
+        internal void AnnounceProxy(TcpConnect tcp)
+        {
+            foreach (List<RudpSession> sessions in SessionMap.Values)
+                foreach(RudpSession session in sessions)
+                    if (session.Status == SessionStatus.Active)
+                        session.Send_ProxyUpdate(tcp);
+        }
     }
 
     internal class ActiveSessions

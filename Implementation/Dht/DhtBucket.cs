@@ -65,11 +65,7 @@ namespace RiseOp.Implementation.Dht
             // if already here update last seen
             foreach (DhtContact contact in ContactList)
                 if (contact.Equals(newContact))
-                {
-                    contact.Alive(newContact.LastSeen);
-
                     return true;
-                }
 
             // check if bucket full
             if (ContactList.Count >= Routing.ContactsPerBucket)
@@ -102,8 +98,8 @@ namespace RiseOp.Implementation.Dht
         internal ushort    TcpPort;
         internal ushort    UdpPort;
         internal DateTime  LastSeen;
-        internal DateTime  NextTry;
         internal int       Attempts;
+        internal DateTime NextTry;
         internal DateTime  NextTryProxy; // required because attempts more spaced out
 
         internal DhtContact(UInt64 Dhtid, ushort clientID, IPAddress address, ushort tcpPort, ushort udpPort, DateTime lastSeen)
@@ -114,7 +110,7 @@ namespace RiseOp.Implementation.Dht
 			TcpPort   = tcpPort;
 			UdpPort   = udpPort;
 			LastSeen  = lastSeen;
-			NextTry   = new DateTime(0);
+            NextTry = new DateTime(0); 
 			NextTryProxy = new DateTime(0);
 		}
 
@@ -126,7 +122,6 @@ namespace RiseOp.Implementation.Dht
             TcpPort = Dht.TcpPort;
             UdpPort = Dht.UdpPort;
             LastSeen = lastSeen;
-            NextTry = new DateTime(0);
             NextTryProxy = new DateTime(0);
         }
 
@@ -149,7 +144,9 @@ namespace RiseOp.Implementation.Dht
 
         public override string ToString()
 		{
-			return Address.ToString() + ":" + TcpPort.ToString() + ":" + UdpPort.ToString();
+			//crit return Address.ToString() + ":" + TcpPort.ToString() + ":" + UdpPort.ToString();
+
+            return LastSeen.ToString() + ":" + Address.ToString() + ":" + TcpPort.ToString() + ":" + UdpPort.ToString(); ;
 		}
 
         internal byte[] ToBytes()

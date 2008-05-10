@@ -339,12 +339,12 @@ namespace RiseOp.Interface
 
             if (Core.GlobalNet == null)
                 global = "Disconnected";
-            else if (Core.GlobalNet.Routing.Responsive)
+            else if (Core.GlobalNet.Responsive)
                 global = "Connected";
             else
                 global = "Connecting";
 
-            if (Core.OperationNet.Routing.Responsive)
+            if (Core.OperationNet.Responsive)
                 operation = "Connected";
             else
                 operation = "Connecting";

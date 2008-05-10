@@ -23,7 +23,8 @@ namespace RiseOp.Implementation.Protocol.Comm
         internal const byte CryptStart      = 0x50;
         internal const byte CryptPadding    = 0x60;
         internal const byte Data            = 0x70;
-        internal const byte Close           = 0x80;
+        internal const byte ProxyUpdate     = 0x80;
+        internal const byte Close           = 0x90;
     }
 
 	internal class RudpPacketType 
@@ -516,6 +517,60 @@ namespace RiseOp.Implementation.Protocol.Comm
             }
 
             return data;
+        }
+    }
+
+    internal class ProxyUpdate : G2Packet
+    {
+        const byte Packet_Global = 0x10;
+        const byte Packet_Proxy = 0x20;
+
+
+        internal bool Global;
+        internal DhtAddress Proxy;
+
+
+        internal ProxyUpdate()
+        {
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame update = protocol.WritePacket(null, CommPacket.ProxyUpdate, null);
+
+                protocol.WritePacket(update, Packet_Global, BitConverter.GetBytes(Global));
+                protocol.WritePacket(update, Packet_Proxy, Proxy.ToBytes());
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static ProxyUpdate Decode(G2Protocol protocol, G2ReceivedPacket packet)
+        {
+            ProxyUpdate update = new ProxyUpdate();
+
+            G2Header child = new G2Header(packet.Root.Data);
+
+            while (G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_Global:
+                        update.Global = BitConverter.ToBoolean(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Proxy:
+                        update.Proxy = DhtAddress.FromBytes(child.Data, child.PayloadPos);
+                        break;
+                }
+            }
+
+            return update;
         }
     }
 

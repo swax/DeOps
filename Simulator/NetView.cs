@@ -204,8 +204,12 @@ namespace RiseOp.Simulator
                 name += " " + Utilities.IDtoBin(networks[SelectedID].Core.LocalDhtID);
                 name += ShowInbound ? " Inbound Traffic" : " Outbound Traffic";
 
-                buffer.DrawString(name, TahomaFont, BlackBrush, new PointF(3, 3));
+                buffer.DrawString(name, TahomaFont, BlackBrush, new PointF(3, 37));
             }
+
+            // write hits for global
+            if(OpID == 0)
+                buffer.DrawString(Sim.WebCacheHits + " WebCache Hits", TahomaFont, BlackBrush, new PointF(3, 25));
 
             // Copy buffer to display
             e.Graphics.DrawImage(DisplayBuffer, 0, 0);

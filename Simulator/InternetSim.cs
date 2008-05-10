@@ -51,6 +51,8 @@ namespace RiseOp.Simulator
         internal DateTime StartTime;
         internal DateTime TimeNow;
 
+        internal int WebCacheHits;
+
         // thread
         internal Thread RunThread;
         internal bool Paused;
@@ -73,7 +75,7 @@ namespace RiseOp.Simulator
         int  FluxOut     = 0;
 
         int PercentNAT = 0;
-        int PercentBlocked = 0;  
+        int PercentBlocked = 30;  
 
 
         internal InternetSim(SimForm form)
@@ -246,6 +248,7 @@ namespace RiseOp.Simulator
         {
             // 2 threads, background (core) and foreground (interface)
 
+            int i = 0;
             int pumps = 4;
             List<SimPacket> tempList = new List<SimPacket>();
 
@@ -267,7 +270,8 @@ namespace RiseOp.Simulator
 
 
                 // pump packets, 4 times (250ms latency
-                for (int i = 0; i < pumps; i++)
+
+                while (i < pumps)
                 {
                     // clear out buffer by switching with in buffer
                     lock (OutPackets)
@@ -346,6 +350,9 @@ namespace RiseOp.Simulator
 
                     Interface.BeginInvoke(UpdateView, null);
 
+
+                    i++;
+
                     if (Step)
                     {
                         Step = false;
@@ -354,9 +361,14 @@ namespace RiseOp.Simulator
                 }
 
                 // instance timer
-                lock (Online)
-                    foreach (SimInstance instance in Online)
-                        instance.Core.SecondTimer();
+                if (i == pumps) // stepping would cause second timer to run every 250ms without this
+                {
+                    lock (Online)
+                        foreach (SimInstance instance in Online)
+                            instance.Core.SecondTimer();
+
+                    i = 0;
+                }
 
                 // if run sim slow
                 if (SleepTime > 0)
@@ -551,6 +563,8 @@ namespace RiseOp.Simulator
 
         internal void DownloadCache(DhtNetwork network)
         {
+            WebCacheHits++;
+
             if (Online.Count == 0)
                 return;
 

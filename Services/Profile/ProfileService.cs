@@ -162,7 +162,7 @@ namespace RiseOp.Services.Profile
 
             ulong key = node.GetKey();
 
-            if (Network.Routing.Responsive)
+            if (Network.Responsive)
                 Research(key);
 
             // gui creates viewshell, component just passes view object

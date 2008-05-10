@@ -506,7 +506,7 @@ namespace RiseOp.Services.Trust
                 return;
             }
 
-            if (!Network.Routing.Responsive)
+            if (!Network.Responsive)
                 return;
 
             List<ulong> searchList = new List<ulong>();
@@ -832,7 +832,7 @@ namespace RiseOp.Services.Trust
                                 foreach (OpLink root in roots)
                                     if (root.DhtID == link.LoopRoot.DhtID)
                                     {
-                                        roots.Remove(root); // root is a loop node
+                                        roots.SafeRemove(root); // root is a loop node
 
                                         // remove associations with loop node
                                         foreach (OpLink downlink in root.Downlinks)

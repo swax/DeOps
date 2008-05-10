@@ -591,7 +591,7 @@ namespace RiseOp.Services.Assist
 
         internal void Research(ulong key)
         {
-            if (!Network.Routing.Responsive)
+            if (!Network.Responsive)
                 return;
 
             // limit re-search to once per 30 secs

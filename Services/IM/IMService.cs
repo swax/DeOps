@@ -200,31 +200,33 @@ namespace RiseOp.Services.IM
             string awayMessage = "";
             int activeCount = 0;
 
-            foreach (RudpSession session in Core.RudpControl.GetActiveSessions(key))
-            {
-                if (session.Status == SessionStatus.Closed)
-                    continue;
 
-                status.Connecting = true;
-
-                if (session.Status == SessionStatus.Active)
+            if (Core.RudpControl.SessionMap.ContainsKey(key))
+                foreach (RudpSession session in Core.RudpControl.SessionMap[key])
                 {
-                    status.Connected = true;
+                    if (session.Status == SessionStatus.Closed)
+                        continue;
 
-                    ClientInfo info = Locations.GetLocationInfo(key, session.ClientID);
+                    status.Connecting = true;
 
-                    awayMessage = "";
-                    if (info != null)
-                        if (info.Data.Away)
-                        {
-                            status.Away = true;
-                            awayMessage = " " + info.Data.AwayMessage;
-                        }      
+                    if (session.Status == SessionStatus.Active)
+                    {
+                        status.Connected = true;
 
-                    activeCount++;
-                    places += " @" + Locations.GetLocationName(key, session.ClientID) + awayMessage + ",";
+                        ClientInfo info = Locations.GetLocationInfo(key, session.ClientID);
+
+                        awayMessage = "";
+                        if (info != null)
+                            if (info.Data.Away)
+                            {
+                                status.Away = true;
+                                awayMessage = " " + info.Data.AwayMessage;
+                            }
+
+                        activeCount++;
+                        places += " @" + Locations.GetLocationName(key, session.ClientID) + awayMessage + ",";
+                    }
                 }
-            }
 
 
 

@@ -40,11 +40,14 @@ namespace RiseOp.Implementation.Dht
         internal Dictionary<int, LinkedListNode<IPCacheEntry>> IPTable = new Dictionary<int, LinkedListNode<IPCacheEntry>>();
 
         internal bool IsGlobal;
-        internal DateTime BootstrapTimeout;
+        internal DateTime NextWebcacheTry;
 
         internal bool Established;
+        internal bool Responsive;
         internal int FireStatusChange; // timeout until established is called
         internal StatusChange StatusChange; // operation only
+        RetryIntervals Retry;
+
 
         internal RijndaelManaged OriginalCrypt;
         internal RijndaelManaged AugmentedCrypt;
@@ -93,6 +96,8 @@ namespace RiseOp.Implementation.Dht
             Routing     = new DhtRouting(this);
             Store       = new DhtStore(this);
             Searches    = new DhtSearchControl(this);
+
+            Retry = new RetryIntervals(Core);
         }
 
         internal void SecondTimer()
@@ -103,7 +108,7 @@ namespace RiseOp.Implementation.Dht
             Searches.SecondTimer();
 
             // if unresponsive
-            if (!Routing.Responsive)
+            if (!Responsive)
                 DoBootstrap(); 
             
             // ip cache
@@ -124,10 +129,8 @@ namespace RiseOp.Implementation.Dht
                 {
                     Established = true;
 
-                    if (IsGlobal)
-                        return;
-
-                    StatusChange.Invoke();
+                    if(StatusChange != null)
+                        StatusChange.Invoke();
                 }
             }
         }
@@ -166,16 +169,51 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
+        int ThinkOnline = 0;
+        DateTime NextOnlineCheck;
+
         void DoBootstrap()
         {
-            bool NoDelay = (IPCache.Count == 0 || Core.TimeNow > Core.StartTime.AddSeconds(10));
+            // only called if network not responsive
+
+            // try website BootstrapTimeout at 1 2 5 10 15 30 / 30 / 30 intervals 
+            // reset increment when disconnected
+            // dont try web cache for first 10 seconds
+
+            Retry.Timer();
+
+
+            // ensure that if re-connected at anytime then re-connect to network is fast
+            if (Core.Sim == null)
+            {               
+                // ThinkOnline state changed to connected then retry timers reset
+                if (IsGlobal && Core.TimeNow > NextOnlineCheck)
+                    if (ThinkOnline > 0)
+                    {
+                        // check online status by pinging google/yahoo/microsoft every 60 secs
+                        PingCheck();
+                        NextOnlineCheck = Core.TimeNow.AddSeconds(60);
+                    }
+
+                    // if think offline
+                    else if (ThinkOnline == 0)
+                    {
+                        // try google/yahoo/microsoft every 5 secs
+                        PingCheck();
+                        NextOnlineCheck = Core.TimeNow.AddSeconds(5);
+                    }
+            }
+            
+
+            bool AllowWeb = (IPCache.Count == 0 || Core.TimeNow > Retry.Start.AddSeconds(10));
+
 
             // give a few seconds at startup to try to connect to Dht networks from the cache
-            if (Core.TimeNow > BootstrapTimeout && NoDelay)
+            if (Core.TimeNow > NextWebcacheTry && AllowWeb)
             {
-                BootstrapTimeout = Core.TimeNow.AddMinutes(30);
-                
-                // global use web cache
+                NextWebcacheTry = Retry.NextTry;
+
+                // if not connected to global use web cache
                 if (IsGlobal)
                 {
                     if (Core.Sim == null)
@@ -194,6 +232,7 @@ namespace RiseOp.Implementation.Dht
 
 
             // send pings to nodes in cache, responses will startup the routing system
+            // 10 udp pings per second, 10 min retry
             int pings = 0;
 
             lock (IPCache)
@@ -204,7 +243,7 @@ namespace RiseOp.Implementation.Dht
 
                     Send_Ping(entry.Address);
 
-                    entry.NextTry = Core.TimeNow.AddMinutes(10);
+                    entry.NextTry = Retry.NextTry;
 
                     pings++;
                     if (pings >= 10)
@@ -213,6 +252,7 @@ namespace RiseOp.Implementation.Dht
                     
 
             // if blocked and go through cache and mark as tcp tried
+            // 1 outbound tcp per second, 10 min retry
             if (Core.Firewall == FirewallType.Blocked)
 
                 lock (IPCache)
@@ -223,9 +263,57 @@ namespace RiseOp.Implementation.Dht
 
                         TcpControl.MakeOutbound(entry.Address, entry.TcpPort);
 
-                        entry.NextTryTcp = Core.TimeNow.AddMinutes(10);
+                        entry.NextTryTcp = Retry.NextTry;
                         break;
                     }
+        }
+
+        string[] TestSites = new string[] { "www.google.com", 
+                                            "www.yahoo.com", 
+                                            "www.youtube.com", 
+                                            "www.myspace.com"};
+
+        private void PingCheck()
+        {
+            System.Net.NetworkInformation.Ping pingSender = new System.Net.NetworkInformation.Ping();
+
+            // Create an event handler for ping complete
+            pingSender.PingCompleted += new System.Net.NetworkInformation.PingCompletedEventHandler(Ping_Complete);
+
+            // Send the ping asynchronously
+            string site = TestSites[Core.RndGen.Next(TestSites.Length)];
+            pingSender.SendAsync(site, 5000, null);
+        }
+
+        private void Ping_Complete(object sender, System.Net.NetworkInformation.PingCompletedEventArgs e)
+        {
+            if (e.Reply != null && e.Reply.Status == System.Net.NetworkInformation.IPStatus.Success)
+            {
+                // if previously thought we were offline
+                if (ThinkOnline == 0)
+                {
+                    Retry.Reset();
+                    NextWebcacheTry = new DateTime(0);
+
+                    foreach (IPCacheEntry entry in IPCache)
+                    {
+                        entry.NextTry = new DateTime(0);
+                        entry.NextTryTcp = new DateTime(0);
+                    }
+                }
+
+                if(ThinkOnline < 3)
+                    ThinkOnline++;
+            }
+
+            // not success, try another random site
+            else if (ThinkOnline > 0)
+            {
+                ThinkOnline--;
+
+                PingCheck();
+            }
+
         }
 
         void DownloadCache()
@@ -259,6 +347,44 @@ namespace RiseOp.Implementation.Dht
             catch (Exception ex)
             {
                 UpdateLog("Exception", "KimCore::DownloadCache: " + ex.Message);
+            }
+        }
+
+        internal void SetResponsive(bool value)
+        {
+            Responsive = value;
+
+            if (Responsive)
+            {
+                // done to fill up routing table down to self
+
+                Searches.Start(Routing.LocalRoutingID + 1, "Self", Core.DhtServiceID, 0, null, new EndSearchHandler(EndSelfSearch));
+                Routing.NextSelfSearch = Core.TimeNow.AddHours(1);
+
+                // at end of self search, status change count down triggered
+            }
+
+            // network dead
+            else
+            {
+                Established = false;
+
+                Retry.Reset();
+                NextWebcacheTry = Core.TimeNow.AddMinutes(1);
+
+                if (StatusChange != null)
+                    StatusChange.Invoke();
+            }
+        }
+
+        internal void EndSelfSearch(DhtSearch search)
+        {
+            // if not already established (an hourly self re-search)
+            if (!Established)
+            {
+                // a little buffer time for local nodes to send patch files
+                // so we dont start sending our own huge patch files
+                FireStatusChange = 10;
             }
         }
 
@@ -479,15 +605,28 @@ namespace RiseOp.Implementation.Dht
                 Core.RudpControl.SessionMap[syn.SenderID].Add(newSession);
 
                 
-                // add addresses and connect
-                RudpAddress address = new RudpAddress(Core, raw.Source, IsGlobal);
-                address.LocalProxyID = raw.Tcp != null ? raw.Tcp.DhtID : 0;
+                // add proxied and direct addresses
+                // proxied first because that packet has highest chance of being received, no need for retry
+                // also allows quick udp hole punching
+                RudpAddress address = null;
+
+                if (raw.Tcp != null)
+                {
+                    address = new RudpAddress(Core, raw.Source, IsGlobal);
+                    address.LocalProxyID = raw.Tcp.DhtID;
+                    newSession.Comm.AddAddress(address);
+                }
+
+                address = new RudpAddress(Core, raw.Source, IsGlobal);
                 newSession.Comm.AddAddress(address);
-                newSession.Connect();
-                
+               
+                // send ack before sending our own syn (connect)
+                // ack tells remote which address is good so that our syn's ack comes back quickly
                 newSession.Comm.RudpReceive(raw, packet);
                 
+                newSession.Connect();
                 
+
                 UpdateLog("RUDP", "Inbound session accepted to ClientID " + syn.ClientID.ToString());
             }
             catch (Exception ex)
@@ -635,7 +774,7 @@ namespace RiseOp.Implementation.Dht
                 Core.SetFirewallType(FirewallType.NAT);
 
                 // send bootstrap if Dht cache dead
-                if (!Routing.Responsive)
+                if (!Responsive)
                     Searches.SendUdpRequest(packet.Source, Core.LocalDhtID, 0, Core.DhtServiceID, 0, null);
 
                 // add to routing
@@ -757,6 +896,8 @@ namespace RiseOp.Implementation.Dht
                 packet.Tcp.Proxy = ProxyType.Server;
 
                 TcpControl.CheckProxies();
+
+                // location and rudp connections updated after 20 seconds
             }
         }
 
@@ -931,6 +1072,51 @@ namespace RiseOp.Implementation.Dht
             Packet = packet;
             Data = data;
             Global = global;
+        }
+    }
+
+    class RetryIntervals
+    {
+        OpCore Core;
+
+        internal DateTime Start;
+        int Index = 0;
+        DateTime LastIncrement;
+
+        int[] Intervals = new int[] { 0, 1, 2, 5, 10, 15, 30 };
+
+
+        internal RetryIntervals(OpCore core)
+        {
+            Core = core;
+
+            Reset();
+        }
+
+        internal void Reset()
+        {
+            Start = Core.TimeNow;
+            Index = 0;
+            LastIncrement = new DateTime(0);
+        }
+
+        internal DateTime NextTry
+        {
+            get
+            {
+                return Core.TimeNow.AddMinutes(Intervals[Index]);
+            }
+        }
+    
+        internal void Timer()
+        {
+            if (Core.TimeNow > LastIncrement.AddMinutes(Intervals[Index]))
+            {
+                LastIncrement = Core.TimeNow;
+                
+                if(Index < Intervals.Length - 1)
+                    Index++;
+            }
         }
     }
 }

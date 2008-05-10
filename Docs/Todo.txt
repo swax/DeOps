@@ -94,18 +94,19 @@ live
 	
 
 test
-	test bringing half offline, and contacts reflecting that change
-	test lockreading inside writing and visa versa
-	ensure search for lastest version of service doesnt get hung up on old versions and return prematurely
 	debug places where searches etc.. are happening, when client knows its not connected
+	prevent searches from piling up in disconnected state
+	combine responsive / established - might want to do with proxying to ensure stuff is published over proxy
+	
+	ensure search for lastest version of service doesnt get hung up on old versions and return prematurely
 	a superior 5 levels up, on other side of network, updating plan should reflect on lower on next location update
 	links timing out when traversing strucuture
 	link.getlocs / getlocsbelow / use live links?
 	link/plan research timer
 
 other
-	test32 nodes 3 lvls down disposing trust of adjacent link nodes
-	doesnt seem like cache is refreshed fast enough
+	news message when connected / disconnected from op
+	test32 nodes 3 lvls down disposing trust of adjacent link node
 	location signoff tag
 	assert in deconstructors that events are set back to null
 	GetActiveSessions not threaded for gui, try not to thread dictionary
@@ -134,20 +135,22 @@ other
 
 
 spring release
+	global proxying
+	invitations
+	web caching - look at using EC2
+	auto-update
+	licensing, installer
+	website
+	*** items from todo
+	crits
 	live locations/chat
 	network bandwidth limits - tracking in sim triggers node to start logging bw data
 	multisource downloading 
 		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
 		right click to cancel, increase/decrease priority
-	*** items from todo
-	crits
-	store caching
-	proxying
-	web caching - look at using EC2
-	invitations
-	website, auto-update
-	licensing, installer
 	
+	store caching
+
 
 Interface
 	General
@@ -396,6 +399,9 @@ Core
 		public
 			opID is embedded in link riseop://network:opid
 
+		detect clients on LAN to connect to
+			add LAN broadcast ping interval to boostrap
+		implement upnp
 
 	store caching 
 		keep track of when last result was sent

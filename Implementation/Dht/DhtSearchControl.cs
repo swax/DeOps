@@ -48,7 +48,7 @@ namespace RiseOp.Implementation.Dht
 
   
             // if pending searches
-            if (Routing.Responsive) // only move from pending to active if network responsive
+            if (Network.Responsive) // only move from pending to active if network responsive
                 while( searchCount < MAX_SEARCHES && Pending.Count > 0)
                 {
                     DhtSearch move = Pending[0];

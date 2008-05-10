@@ -750,10 +750,27 @@ namespace RiseOp.Implementation
             }
             set
             {
-                if (!HandlerMap.ContainsKey(service))
-                    HandlerMap[service] = new Dictionary<uint, TDelegate>();
+                // adding handler
+                if (value != null)
+                {
+                    if (!HandlerMap.ContainsKey(service))
+                        HandlerMap[service] = new Dictionary<uint, TDelegate>();
 
-                HandlerMap[service][type] = value;
+                    HandlerMap[service][type] = value;
+                }
+
+                // removing handler
+                else
+                {
+                    if (HandlerMap.ContainsKey(service))
+                    {
+                        if (HandlerMap[service].ContainsKey(type))
+                            HandlerMap[service].Remove(type);
+
+                        if (HandlerMap[service].Count == 0)
+                            HandlerMap.Remove(service);
+                    }
+                }
             }
         }
 
@@ -877,12 +894,25 @@ namespace RiseOp.Implementation
 
         internal void LockWriting(VoidType code)
         {
-            Access.AcquireWriterLock(-1);
-            try
+            if (Access.IsReaderLockHeld)
             {
-                code();
+                LockCookie cookie = Access.UpgradeToWriterLock(-1);
+                try
+                {
+                    code();
+                }
+                finally { Access.DowngradeFromWriterLock(ref cookie); }
             }
-            finally { Access.ReleaseWriterLock(); }
+
+            else
+            {
+                Access.AcquireWriterLock(-1);
+                try
+                {
+                    code();
+                }
+                finally { Access.ReleaseWriterLock(); }
+            }
         }
 
         internal delegate bool MatchType(TValue value);
@@ -978,9 +1008,10 @@ namespace RiseOp.Implementation
 
         internal delegate void VoidType();
 
-
+        
         internal new int Count
-        {
+        { 
+            
             get
             {
                 Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
@@ -1036,12 +1067,25 @@ namespace RiseOp.Implementation
 
         internal void LockWriting(VoidType code)
         {
-            Access.AcquireWriterLock(-1);
-            try
+            if (Access.IsReaderLockHeld)
             {
-                code();
+                LockCookie cookie = Access.UpgradeToWriterLock(-1);
+                try
+                {
+                    code();
+                }
+                finally { Access.DowngradeFromWriterLock( ref cookie); }
             }
-            finally { Access.ReleaseWriterLock(); }
+
+            else
+            {
+                Access.AcquireWriterLock(-1);
+                try
+                {
+                    code();
+                }
+                finally { Access.ReleaseWriterLock(); }
+            }
         }
 
         internal void SafeAdd(T value)
@@ -1263,12 +1307,25 @@ namespace RiseOp.Implementation
 
         internal void LockWriting(VoidType code)
         {
-            Access.AcquireWriterLock(-1);
-            try
+            if (Access.IsReaderLockHeld)
             {
-                code();
+                LockCookie cookie = Access.UpgradeToWriterLock(-1);
+                try
+                {
+                    code();
+                }
+                finally { Access.DowngradeFromWriterLock(ref cookie); }
             }
-            finally { Access.ReleaseWriterLock(); }
+
+            else
+            {
+                Access.AcquireWriterLock(-1);
+                try
+                {
+                    code();
+                }
+                finally { Access.ReleaseWriterLock(); }
+            }
         }
 
         internal void SafeAddFirst(T value)

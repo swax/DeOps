@@ -450,7 +450,6 @@ namespace RiseOp.Interface.Tools
 			listValues.Columns.Add("TcpPort",	100, HorizontalAlignment.Left);
 			listValues.Columns.Add("UdpPort",	100, HorizontalAlignment.Left);
 			listValues.Columns.Add("LastSeen",	100, HorizontalAlignment.Left);
-			listValues.Columns.Add("NextTry",	100, HorizontalAlignment.Left);
 			listValues.Columns.Add("Attempts",	100, HorizontalAlignment.Left);
 			listValues.Columns.Add("NextTryProxy",	100, HorizontalAlignment.Left);
 
@@ -465,7 +464,6 @@ namespace RiseOp.Interface.Tools
 					xStr(lookup.Contact.TcpPort),
 					xStr(lookup.Contact.UdpPort),		
 					xStr(lookup.Contact.LastSeen),
-					xStr(lookup.Contact.NextTry),
 					xStr(lookup.Contact.Attempts),
 					xStr(lookup.Contact.NextTryProxy)
 				}));
@@ -642,7 +640,6 @@ namespace RiseOp.Interface.Tools
             listValues.Items.Add(new ListViewItem(new string[] { "NearHigh", xStr(routing.NearHigh.Contacts.Count) }));
             listValues.Items.Add(new ListViewItem(new string[] { "NearLow", xStr(routing.NearLow.Contacts.Count) }));
             listValues.Items.Add(new ListViewItem(new string[] { "ContactMap", xStr(routing.ContactMap.Count) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "Responsive", xStr(routing.Responsive) }));
             listValues.Items.Add(new ListViewItem(new string[] { "LastUpdated", xStr(routing.LastUpdated) }));
             listValues.Items.Add(new ListViewItem(new string[] { "NextSelfSearch", xStr(routing.NextSelfSearch) }));
 
@@ -674,7 +671,6 @@ namespace RiseOp.Interface.Tools
 			listValues.Columns.Add("TcpPort",		100, HorizontalAlignment.Left);
 			listValues.Columns.Add("UdpPort",		100, HorizontalAlignment.Left);
 			listValues.Columns.Add("LastSeen",		100, HorizontalAlignment.Left);
-			listValues.Columns.Add("NextTry",		100, HorizontalAlignment.Left);
 			listValues.Columns.Add("Attempts",		100, HorizontalAlignment.Left);
 			listValues.Columns.Add("NextTryProxy",	100, HorizontalAlignment.Left);
 
@@ -690,7 +686,6 @@ namespace RiseOp.Interface.Tools
 						xStr(contact.TcpPort),
 						xStr(contact.UdpPort),		
 						xStr(contact.LastSeen),
-						xStr(contact.NextTry),
 						xStr(contact.Attempts),		
 						xStr(contact.NextTryProxy)
 					}));

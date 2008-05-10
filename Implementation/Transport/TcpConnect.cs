@@ -136,13 +136,18 @@ namespace RiseOp.Implementation.Transport
             }
 
             // new global proxy
-            if (Age == 20 && Proxy == ProxyType.Server)
-            {
-                if (Network.IsGlobal)
-                    Core.Locations.PublishGlobal();
-                else
-                    Core.Locations.UpdateLocation();
-            }
+            if (Proxy == ProxyType.Server)
+                if (Age == 5)
+                {
+                    Core.RudpControl.AnnounceProxy(this);
+                }
+                else if (Age == 20)
+                {
+                    if (Network.IsGlobal)
+                        Core.Locations.PublishGlobal();
+                    else
+                        Core.Locations.UpdateLocation();
+                }
 
             
 

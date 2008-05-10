@@ -717,10 +717,10 @@ namespace RiseOp.Simulator
 
             // routing unresponsive global/op
             if(Instance.Core.GlobalNet != null)
-                if(!Instance.Core.GlobalNet.Routing.Responsive)
+                if(!Instance.Core.GlobalNet.Responsive)
                     alerts += "Global Routing, ";
 
-            if (!Instance.Core.OperationNet.Routing.Responsive)
+            if (!Instance.Core.OperationNet.Responsive)
                 alerts += "Op Routing, ";
 
             // not proxied global/op

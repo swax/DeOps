@@ -45,6 +45,7 @@ namespace RiseOp.Interface.Tools
         private MenuItem MenuItemUdp;
         private MenuItem MenuItemRudp;
         private ColumnHeader columnHeaderTime;
+        private MenuItem ClearMenuItem;
         private IContainer components;
 
         internal PacketsForm(string name, DhtNetwork network)
@@ -104,6 +105,7 @@ namespace RiseOp.Interface.Tools
             this.MenuItemTcp = new System.Windows.Forms.MenuItem();
             this.MenuItemUdp = new System.Windows.Forms.MenuItem();
             this.MenuItemRudp = new System.Windows.Forms.MenuItem();
+            this.ClearMenuItem = new System.Windows.Forms.MenuItem();
             this.SuspendLayout();
             // 
             // TreeViewPacket
@@ -187,6 +189,7 @@ namespace RiseOp.Interface.Tools
             // 
             this.menuItemCommands.Index = 0;
             this.menuItemCommands.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+            this.ClearMenuItem,
             this.menuItemPause,
             this.MenuItemTcp,
             this.MenuItemUdp,
@@ -195,30 +198,36 @@ namespace RiseOp.Interface.Tools
             // 
             // menuItemPause
             // 
-            this.menuItemPause.Index = 0;
+            this.menuItemPause.Index = 1;
             this.menuItemPause.Text = "Pause";
             this.menuItemPause.Click += new System.EventHandler(this.menuItemPause_Click);
             // 
             // MenuItemTcp
             // 
             this.MenuItemTcp.Checked = true;
-            this.MenuItemTcp.Index = 1;
+            this.MenuItemTcp.Index = 2;
             this.MenuItemTcp.Text = "Tcp";
             this.MenuItemTcp.Click += new System.EventHandler(this.MenuItemTcp_Click);
             // 
             // MenuItemUdp
             // 
             this.MenuItemUdp.Checked = true;
-            this.MenuItemUdp.Index = 2;
+            this.MenuItemUdp.Index = 3;
             this.MenuItemUdp.Text = "Udp";
             this.MenuItemUdp.Click += new System.EventHandler(this.MenuItemUdp_Click);
             // 
             // MenuItemRudp
             // 
             this.MenuItemRudp.Checked = true;
-            this.MenuItemRudp.Index = 3;
+            this.MenuItemRudp.Index = 4;
             this.MenuItemRudp.Text = "Rudp";
             this.MenuItemRudp.Click += new System.EventHandler(this.MenuItemRudp_Click);
+            // 
+            // ClearMenuItem
+            // 
+            this.ClearMenuItem.Index = 0;
+            this.ClearMenuItem.Text = "Clear";
+            this.ClearMenuItem.Click += new System.EventHandler(this.ClearMenuItem_Click);
             // 
             // PacketsForm
             // 
@@ -713,6 +722,12 @@ namespace RiseOp.Interface.Tools
 
             if (node.Data.Length == 4)
                 node.Text = Utilities.BytestoIP(node.Data, 0).ToString();
+        }
+
+        private void ClearMenuItem_Click(object sender, EventArgs e)
+        {
+            ListViewPackets.Items.Clear();
+            TreeViewPacket.Nodes.Clear();
         }
 	}
 

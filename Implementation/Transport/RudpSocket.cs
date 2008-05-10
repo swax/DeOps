@@ -266,9 +266,9 @@ namespace RiseOp.Implementation.Transport
 			if(packet.Sequence > HighestSeqRecvd && State == RudpState.Closed) // accept only packets that came before the fin
 				error = "Packet Received while in Close State ID " + packet.PeerID.ToString() + ", Type " + packet.PacketType.ToString();
 
-            else if (raw.Root.Data.Length > 4096)
+            else if (packet.Payload.Length > 4096)
             {
-                error = "Too Large Packet Received Size " + raw.Root.Data.Length.ToString() + ", Type " + packet.PacketType.ToString();
+                error = "Too Large Packet Received Size " + packet.Payload.Length.ToString() + ", Type " + packet.PacketType.ToString();
                 RudpClose(CloseReason.LARGE_PACKET);
             }
 
@@ -277,6 +277,9 @@ namespace RiseOp.Implementation.Transport
                 Session.Log(error);
 				return;
 			}
+
+            //crit addAddress source, if raw.Tcp set local proxy and add
+
 
             // received syn, ident 5, from 1001 over tcp
             string log = "Received " + packet.PacketType.ToString();
@@ -332,8 +335,9 @@ namespace RiseOp.Implementation.Transport
 
 			ManageRecvWindow();
 
-			// ack down here so highest received is iterated
-			SendAck(packet);
+			// ack down here so highest received is iterated, syns send own acks
+            if (packet.PacketType != RudpPacketType.Syn)
+			    SendAck(packet);
 		}
 
 
@@ -437,6 +441,9 @@ namespace RiseOp.Implementation.Transport
                         Session.Log("Connected (recv ack)");
 					    State = RudpState.Connected;
 					    SetConnected();
+
+                        // if data packets received before final connection ack, process them now
+                        ManageRecvWindow(); 
 				    }
 			    }
 
@@ -533,9 +540,12 @@ namespace RiseOp.Implementation.Transport
 
         void ReceivePong(RudpPacket pong)
         {
-            uint ident = BitConverter.ToUInt32(pong.Payload, 0);
+            if (pong.Payload != null)
+            {
+                uint ident = BitConverter.ToUInt32(pong.Payload, 0);
 
-            SetPrimaryAddress(ident);
+                SetPrimaryAddress(ident);
+            }
         }
 
         private void SetPrimaryAddress(uint ident)
@@ -551,7 +561,7 @@ namespace RiseOp.Implementation.Transport
                         if (AddressList[0].Reset && AddressList.Count > 1)
                         {
                             AddressList.Remove(address);
-                            AddressList[0] = address;
+                            AddressList.Insert(0, address);
                         }
 
                         AddressList[0].Reset = false;
@@ -815,6 +825,8 @@ namespace RiseOp.Implementation.Transport
             Session.OnClose();
 		}
 
+        DateTime NextCheckRoutes;
+
 		internal void SecondTimer()
 		{
 			int packetLoss = 0;
@@ -842,7 +854,7 @@ namespace RiseOp.Implementation.Transport
 		
 
 				// if data waiting to be read
-				if(RecvBuffLength > 0)
+                if (State == RudpState.Connected && RecvBuffLength > 0)
                     Session.OnReceive();
 
                 DateTime lastRecv = AddressList[0].LastAck;
@@ -851,18 +863,22 @@ namespace RiseOp.Implementation.Transport
                 if (Core.TimeNow > lastRecv.AddSeconds(12))
                     RudpClose(CloseReason.TIMEOUT);
 
-                // re-analyze alternate routes after 8 secs
-                else if (Core.TimeNow > lastRecv.AddSeconds(8))
+                // re-analyze alternate routes after 15 secs
+                else if (Core.TimeNow > NextCheckRoutes)
                 {
+                    // after connection this should immediately be called to find best route
+
                     AddressList[0].Reset = true;
                     
                     lock (AddressList)
                         foreach (RudpAddress address in AddressList)
                             SendPing(address);
+
+                    NextCheckRoutes = Core.TimeNow.AddSeconds(15);
                 }
 
-                // send keep alive after 4 secs
-                else if (Core.TimeNow > lastRecv.AddSeconds(4))
+                // send keep alive if nothing received after 5 secs
+                else if (Core.TimeNow > lastRecv.AddSeconds(5))
                 {
                     SendPing(AddressList[0]);
                 }
@@ -905,7 +921,7 @@ namespace RiseOp.Implementation.Transport
     internal class RudpAddress
     {
         internal DhtAddress Address;
-        internal ulong      LocalProxyID;
+        internal ulong      LocalProxyID; // NAT -> proxy -> host, NAT will only recv packets from specific proxy
         internal bool       Global;
         internal uint       Ident;
         internal DateTime   LastAck; // so not removed from address list when added
@@ -928,7 +944,7 @@ namespace RiseOp.Implementation.Transport
             if (check == null)
                 return false;
 
-            if (Address.Equals(check.Address) && Global == check.Global)
+            if (Address.Equals(check.Address) && Global == check.Global && LocalProxyID == check.LocalProxyID)
                 return true;
 
             return false;
