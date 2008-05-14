@@ -1,3 +1,9 @@
-﻿
+﻿Net/Comm packets send client id
 
+5/10/08 - Add addresses - figure fast lookup in RudpReceive - done/test
+		  prune addressList to 6 entries
+		  disabled rudp logging
+5/9/08 - fixed rudp open -> nat
+		 nat <-> nat working
+		 hole punching working
 5/8/08 - added quick internet connection detection using pings to bootstrap

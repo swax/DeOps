@@ -95,7 +95,7 @@ namespace RiseOp.Implementation.Transport
                     return;
                 }
 
-                TcpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                TcpSocket = new Socket(address.IP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 TcpSocket.BeginConnect((EndPoint)endpoint, new AsyncCallback(Socket_Connect), TcpSocket);
             }
             catch (Exception ex)
@@ -298,10 +298,13 @@ namespace RiseOp.Implementation.Transport
 			try
 			{
                 if (packet is NetworkPacket)
+                {
                     ((NetworkPacket)packet).SourceID = Core.LocalDhtID;
+                    ((NetworkPacket)packet).ClientID = Core.ClientID;
+                }
 
 				byte[] encoded = packet.Encode(Core.Protocol);
-                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tcp, DirectionType.Out, new DhtAddress(DhtID, RemoteIP, TcpPort), encoded);
+                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tcp, DirectionType.Out, new DhtAddress(DhtID, ClientID, RemoteIP, TcpPort), encoded);
                 Network.LogPacket(logEntry);
 
                 lock(FinalSendBuffer)

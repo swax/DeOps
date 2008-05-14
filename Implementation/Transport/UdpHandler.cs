@@ -95,7 +95,10 @@ namespace RiseOp.Implementation.Transport
                 Debug.Assert(false);
 
             if (packet is NetworkPacket)
+            {
                 ((NetworkPacket)packet).SourceID = Core.LocalDhtID;
+                ((NetworkPacket)packet).ClientID = Core.ClientID;
+            }
 
             byte[] encoded = packet.Encode(Core.Protocol);
 
@@ -224,7 +227,7 @@ namespace RiseOp.Implementation.Transport
 
             if(Core.Protocol.ReadPacket(packet.Root))
             {
-                packet.Source = new DhtAddress(0, sender.Address, (ushort)sender.Port);
+                packet.Source = new DhtAddress(0, 0, sender.Address, (ushort)sender.Port);
 
                 byte[] packetData = copied ? buff : Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize);
                 

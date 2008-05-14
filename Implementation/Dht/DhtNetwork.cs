@@ -148,9 +148,6 @@ namespace RiseOp.Implementation.Dht
 
         internal void UpdateLog(string type, string message)
         {
-            //crit
-            return;
-
             lock (LogTable)
             {
                 Queue<string> targetLog = null;
@@ -261,7 +258,7 @@ namespace RiseOp.Implementation.Dht
                         if (Core.TimeNow < entry.NextTryTcp)
                             continue;
 
-                        TcpControl.MakeOutbound(entry.Address, entry.TcpPort);
+                        TcpControl.MakeOutbound(entry.Address, entry.TcpPort, "ip cache");
 
                         entry.NextTryTcp = Retry.NextTry;
                         break;
@@ -442,6 +439,7 @@ namespace RiseOp.Implementation.Dht
                 embedded.Tcp    = packet.Tcp;
                 embedded.Source = packet.Source;
                 embedded.Source.DhtID = netPacket.SourceID;
+                embedded.Source.ClientID = netPacket.ClientID;
                 embedded.Root   = new G2Header(netPacket.InternalData);
 
                 // from - received from proxy server
@@ -490,6 +488,7 @@ namespace RiseOp.Implementation.Dht
                 RudpPacket commPacket = RudpPacket.Decode(Core.Protocol, packet);
 
                 packet.Source.DhtID = commPacket.SenderID;
+                packet.Source.ClientID = commPacket.SenderClient;
 
                 // Also Forward to appropriate node
                 //crit work for multiple clients
@@ -505,6 +504,7 @@ namespace RiseOp.Implementation.Dht
                     commPacket.FromEndPoint = packet.Source;
 
                     commPacket.SenderID = Core.LocalDhtID;
+                    commPacket.SenderClient = Core.ClientID;
                     connection.SendPacket(commPacket);
                     return;
                 }
@@ -517,11 +517,12 @@ namespace RiseOp.Implementation.Dht
                     commPacket.ToEndPoint = null; // strip TO flag
 
                     commPacket.SenderID = Core.LocalDhtID;
+                    commPacket.SenderClient = Core.ClientID;
                     UdpControl.SendTo(address, commPacket);
                 }
 
                 // For local host
-                if (commPacket.TargetID == Core.LocalDhtID)
+                if (commPacket.TargetID == Core.LocalDhtID && commPacket.TargetClient == Core.ClientID)
                 {
                     if (packet.Tcp != null && commPacket.FromEndPoint != null)
                         packet.Source = commPacket.FromEndPoint;
@@ -540,7 +541,7 @@ namespace RiseOp.Implementation.Dht
                 lock (Core.CommMap)
                     if (Core.CommMap.ContainsKey(packet.PeerID))
                     {
-                        Core.CommMap[packet.PeerID].RudpReceive(raw, packet);
+                        Core.CommMap[packet.PeerID].RudpReceive(raw, packet, IsGlobal);
                         return;
                     }
 
@@ -579,7 +580,7 @@ namespace RiseOp.Implementation.Dht
                             if ((session.Comm.State == RudpState.Connecting && session.Comm.RemotePeerID == 0) ||
                                 (session.Comm.State != RudpState.Closed && session.Comm.RemotePeerID == syn.ConnID)) // duplicate syn
                             {
-                                session.Comm.RudpReceive(raw, packet);
+                                session.Comm.RudpReceive(raw, packet, IsGlobal);
                             }
                             else
                                 session.Log("Session request denied (already active)");
@@ -603,26 +604,10 @@ namespace RiseOp.Implementation.Dht
                     Core.RudpControl.SessionMap[syn.SenderID] = new List<RudpSession>();
 
                 Core.RudpControl.SessionMap[syn.SenderID].Add(newSession);
-
-                
-                // add proxied and direct addresses
-                // proxied first because that packet has highest chance of being received, no need for retry
-                // also allows quick udp hole punching
-                RudpAddress address = null;
-
-                if (raw.Tcp != null)
-                {
-                    address = new RudpAddress(Core, raw.Source, IsGlobal);
-                    address.LocalProxyID = raw.Tcp.DhtID;
-                    newSession.Comm.AddAddress(address);
-                }
-
-                address = new RudpAddress(Core, raw.Source, IsGlobal);
-                newSession.Comm.AddAddress(address);
                
                 // send ack before sending our own syn (connect)
                 // ack tells remote which address is good so that our syn's ack comes back quickly
-                newSession.Comm.RudpReceive(raw, packet);
+                newSession.Comm.RudpReceive(raw, packet, IsGlobal);
                 
                 newSession.Connect();
                 
@@ -703,7 +688,6 @@ namespace RiseOp.Implementation.Dht
 
             Pong pong = new Pong();
             pong.Source = GetLocalSource();
-            pong.RemoteIP = packet.Source.IP;
 
             if (ping.RemoteIP != null)
                 pong.RemoteIP = packet.Source.IP;
@@ -737,9 +721,9 @@ namespace RiseOp.Implementation.Dht
 
                 if (!packet.Tcp.Outbound)
                     Core.SetFirewallType(FirewallType.Open); // received incoming tcp means we are not firewalled
-                // done here to prevent setting open for loopback tcp connection
+                    // done here to prevent setting open for loopback tcp connection
 
-                if (packet.Tcp.DhtID == 0)
+                if (packet.Tcp.DhtID == 0 || packet.Tcp.ClientID == 0)
                 {
                     packet.Tcp.DhtID = ping.Source.DhtID;
                     packet.Tcp.ClientID = ping.Source.ClientID;
@@ -748,10 +732,12 @@ namespace RiseOp.Implementation.Dht
                     TcpControl.ConnectionMap[ping.Source.DhtID] = packet.Tcp;
                 }
 
+                //crit put in map, if already connected to dht/client disconnect
+
                 // if requesting a firewall check and havent checked yet
                 if (ping.Source.Firewall != FirewallType.Open && !packet.Tcp.CheckedFirewall)
                 {
-                    TcpControl.MakeOutbound(packet.Source, ping.Source.TcpPort);
+                    TcpControl.MakeOutbound(packet.Source, ping.Source.TcpPort, "check firewall");
                     packet.Tcp.CheckedFirewall = true;
                 }
 
@@ -886,8 +872,7 @@ namespace RiseOp.Implementation.Dht
             if (packet.Tcp == null)
             {
                 if(!TcpControl.ConnectionMap.ContainsKey(ack.Source.DhtID))
-                    TcpControl.MakeOutbound(packet.Source, ack.Source.TcpPort);
-                
+                    TcpControl.MakeOutbound(packet.Source, ack.Source.TcpPort, "proxy ack recv");
             }
 
             // received ack tcp

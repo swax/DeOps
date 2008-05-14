@@ -54,9 +54,10 @@ namespace RiseOp.Implementation.Protocol.Net
 
     internal class DhtAddress
     {
-        internal const int BYTE_SIZE = 14;
+        internal const int BYTE_SIZE = 16;
 
         internal ulong     DhtID;
+        internal ushort    ClientID;
         internal IPAddress IP;
         internal ushort    UdpPort;
 
@@ -64,10 +65,11 @@ namespace RiseOp.Implementation.Protocol.Net
         {
         }
 
-        internal DhtAddress(ulong dhtid, IPAddress ip, ushort port)
+        internal DhtAddress(ulong dhtid, ushort clientID, IPAddress ip, ushort port)
         {
-            DhtID = dhtid;
-            IP    = ip;
+            DhtID    = dhtid;
+            ClientID = clientID;
+            IP       = ip;
             UdpPort  = port;
         }
 
@@ -81,6 +83,7 @@ namespace RiseOp.Implementation.Protocol.Net
         internal DhtAddress(IPAddress ip, DhtSource source)
         {
             DhtID = source.DhtID;
+            ClientID = source.ClientID;
             IP = ip;
             UdpPort = source.UdpPort;
         }
@@ -95,8 +98,9 @@ namespace RiseOp.Implementation.Protocol.Net
             byte[] bytes = new byte[BYTE_SIZE];
 
             BitConverter.GetBytes(DhtID).CopyTo(bytes, 0);
-            IP.GetAddressBytes().CopyTo(bytes, 8);
-            BitConverter.GetBytes(UdpPort).CopyTo(bytes, 12);
+            BitConverter.GetBytes(ClientID).CopyTo(bytes, 8);
+            IP.GetAddressBytes().CopyTo(bytes, 10);
+            BitConverter.GetBytes(UdpPort).CopyTo(bytes, 14);
 
             return bytes;
         }
@@ -106,8 +110,9 @@ namespace RiseOp.Implementation.Protocol.Net
             DhtAddress address = new DhtAddress();
             
             address.DhtID = BitConverter.ToUInt64(data, pos);
-            address.IP = Utilities.BytestoIP(data, pos + 8);
-            address.UdpPort = BitConverter.ToUInt16(data, pos + 12);
+            address.ClientID = BitConverter.ToUInt16(data, pos + 8);
+            address.IP = Utilities.BytestoIP(data, pos + 10);
+            address.UdpPort = BitConverter.ToUInt16(data, pos + 14);
 
             return address;
         }
@@ -119,7 +124,7 @@ namespace RiseOp.Implementation.Protocol.Net
             if (check == null)
                 return false;
 
-            if (DhtID == check.DhtID && IP.Equals(check.IP) && UdpPort == check.UdpPort)
+            if (DhtID == check.DhtID && ClientID == check.ClientID && IP.Equals(check.IP) && UdpPort == check.UdpPort)
                 return true;
 
             return false;
@@ -127,12 +132,12 @@ namespace RiseOp.Implementation.Protocol.Net
 
         public override int GetHashCode()
         {
-            return DhtID.GetHashCode() ^ IP.GetHashCode() ^ UdpPort.GetHashCode();
+            return DhtID.GetHashCode() ^ ClientID.GetHashCode() ^ IP.GetHashCode() ^ UdpPort.GetHashCode();
         }
 
         public override string  ToString()
         {
-            return IP.ToString() + ":" + UdpPort.ToString() + ":" + Utilities.IDtoBin(DhtID).Substring(0, 10);
+            return IP.ToString() + ":" + ClientID.ToString() + ":" + UdpPort.ToString() + ":" + Utilities.IDtoBin(DhtID).Substring(0, 10);
         }
 
 
@@ -170,8 +175,9 @@ namespace RiseOp.Implementation.Protocol.Net
     internal class NetworkPacket : G2Packet
 	{
         const byte Packet_SourceID = 0x01;
-        const byte Packet_To       = 0x02;
-        const byte Packet_From     = 0x03;
+        const byte Packet_ClientID = 0x02;
+        const byte Packet_To       = 0x03;
+        const byte Packet_From     = 0x04;
 
         // internal packet types
         internal const byte SearchRequest   = 0x10;
@@ -187,6 +193,7 @@ namespace RiseOp.Implementation.Protocol.Net
 
         
         internal ulong      SourceID;
+        internal ushort     ClientID;
         internal DhtAddress ToAddress;
         internal DhtAddress FromAddress;
 
@@ -200,6 +207,7 @@ namespace RiseOp.Implementation.Protocol.Net
                 G2Frame gn = protocol.WritePacket(null, RootPacket.Network, InternalData);
 
                 protocol.WritePacket(gn, Packet_SourceID, BitConverter.GetBytes(SourceID));
+                protocol.WritePacket(gn, Packet_ClientID, BitConverter.GetBytes(ClientID));
 
                 if (ToAddress != null)
                     protocol.WritePacket(gn, Packet_To, ToAddress.ToBytes());
@@ -234,6 +242,10 @@ namespace RiseOp.Implementation.Protocol.Net
                 {
                     case Packet_SourceID:
                         gn.SourceID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_ClientID:
+                        gn.ClientID = BitConverter.ToUInt16(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_To:

@@ -83,7 +83,7 @@ namespace RiseOp.Implementation.Dht
                 lock (Network.TcpControl.Connections)
                     foreach (TcpConnect connection in Network.TcpControl.Connections)
                     {
-                        DhtAddress address = new DhtAddress(connection.DhtID, connection.RemoteIP, connection.UdpPort);
+                        DhtAddress address = new DhtAddress(connection.DhtID, connection.ClientID, connection.RemoteIP, connection.UdpPort);
                         Searches.SendUdpRequest(address, TargetID, SearchID, Service, DataType, Parameters);
                     }			
 

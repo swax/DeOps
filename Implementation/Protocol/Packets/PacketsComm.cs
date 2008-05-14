@@ -39,18 +39,23 @@ namespace RiseOp.Implementation.Protocol.Comm
 
 	internal class RudpPacket : G2Packet
 	{
-        const byte Packet_Sender = 0x10;
-        const byte Packet_Target = 0x20;
-        const byte Packet_Type   = 0x30;
-        const byte Packet_ID     = 0x40;
-        const byte Packet_Seq    = 0x50;
-        const byte Packet_To     = 0x60;
-        const byte Packet_From   = 0x70;
-        const byte Packet_Ident  = 0x80;
+        const byte Packet_SenderDht     = 0x10;
+        const byte Packet_SenderClient  = 0x20;
+        const byte Packet_TargetDht     = 0x30;
+        const byte Packet_TargetClient  = 0x40;
+        const byte Packet_Type          = 0x50;
+        const byte Packet_ID            = 0x60;
+        const byte Packet_Seq           = 0x70;
+        const byte Packet_To            = 0x80;
+        const byte Packet_From          = 0x90;
+        const byte Packet_Ident         = 0xA0;
 
 
         internal ulong SenderID;
+        internal ushort SenderClient;
+
         internal ulong TargetID;
+        internal ushort TargetClient;
 
         internal byte PacketType;
 
@@ -73,8 +78,10 @@ namespace RiseOp.Implementation.Protocol.Comm
             {
                 G2Frame bdy = protocol.WritePacket(null, RootPacket.Comm, Payload);
 
-                protocol.WritePacket(bdy, Packet_Sender, BitConverter.GetBytes(SenderID));
-                protocol.WritePacket(bdy, Packet_Target, BitConverter.GetBytes(TargetID));
+                protocol.WritePacket(bdy, Packet_SenderDht, BitConverter.GetBytes(SenderID));
+                protocol.WritePacket(bdy, Packet_SenderClient, BitConverter.GetBytes(SenderClient));
+                protocol.WritePacket(bdy, Packet_TargetDht, BitConverter.GetBytes(TargetID));
+                protocol.WritePacket(bdy, Packet_TargetClient, BitConverter.GetBytes(TargetClient));
                 protocol.WritePacket(bdy, Packet_Type,   BitConverter.GetBytes(PacketType));
                 protocol.WritePacket(bdy, Packet_ID,     BitConverter.GetBytes(PeerID));
                 protocol.WritePacket(bdy, Packet_Seq,    BitConverter.GetBytes(Sequence));
@@ -116,12 +123,20 @@ namespace RiseOp.Implementation.Protocol.Comm
 
                 switch (child.Name)
                 {
-                    case Packet_Sender:
+                    case Packet_SenderDht:
                         gc.SenderID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
                         break;
 
-                    case Packet_Target:
+                    case Packet_SenderClient:
+                        gc.SenderClient = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_TargetDht:
                         gc.TargetID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_TargetClient:
+                        gc.TargetClient = BitConverter.ToUInt16(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Type:

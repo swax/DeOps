@@ -30,7 +30,8 @@ namespace RiseOp.Implementation.Transport
         RudpSession Session;
 
 		// properties
-		internal List<RudpAddress> AddressList = new List<RudpAddress>();
+        internal RudpAddress PrimaryAddress;
+        internal Dictionary<int, RudpAddress> AddressMap = new Dictionary<int, RudpAddress>();
         internal ushort    PeerID;
 		internal ushort    RemotePeerID;
 
@@ -97,11 +98,11 @@ namespace RiseOp.Implementation.Transport
 
         internal void AddAddress(RudpAddress address)
         {
-            foreach (RudpAddress check in AddressList)
-                if (check.Equals(address))
-                    return;
+            if (!AddressMap.ContainsKey(address.GetHashCode()))
+                AddressMap[address.GetHashCode()] = address;
 
-            AddressList.Add(address);
+            if (PrimaryAddress == null)
+                PrimaryAddress = address;
         }
 
 		internal int Send(byte[] buff, int buffLength)
@@ -254,7 +255,7 @@ namespace RiseOp.Implementation.Transport
                 Session.OnConnect();
 		}
 
-		internal void RudpReceive(G2ReceivedPacket raw, RudpPacket packet)
+		internal void RudpReceive(G2ReceivedPacket raw, RudpPacket packet, bool global)
 		{
 			// check if packet meant for another socket
 			if(packet.PeerID != 0 && packet.PeerID != PeerID)
@@ -278,11 +279,17 @@ namespace RiseOp.Implementation.Transport
 				return;
 			}
 
-            //crit addAddress source, if raw.Tcp set local proxy and add
 
+            // add proxied and direct addresses
+            // proxied first because that packet has highest chance of being received, no need for retry
+            // also allows quick udp hole punching
+            if (raw.Tcp != null)
+                AddAddress(new RudpAddress(Core, raw.Source, global, raw.Tcp.DhtID));
+
+            AddAddress( new RudpAddress(Core, raw.Source, global) );
 
             // received syn, ident 5, from 1001 over tcp
-            string log = "Received " + packet.PacketType.ToString();
+            /*string log = "Received " + packet.PacketType.ToString();
             if (packet.Ident != 0) log += " ID:" + packet.Ident.ToString();
             log += " from " + raw.Source.ToString();
 
@@ -290,7 +297,8 @@ namespace RiseOp.Implementation.Transport
                 log += " tcp";
             else
                 log += " udp";
-            Session.Log(log);
+            Session.Log(log);*/
+            
 
 			// try to clear up bufffer, helps if full, better than calling this on each return statement
 			ManageRecvWindow();
@@ -349,6 +357,7 @@ namespace RiseOp.Implementation.Transport
             lock (SendSection) // ensure queued in right order with right current seq
             {
                 syn.TargetID = Session.DhtID;
+                syn.TargetClient = Session.ClientID;
                 syn.PeerID = 0;
                 syn.PacketType = RudpPacketType.Syn;
                 syn.Sequence = CurrentSeq++;
@@ -367,7 +376,7 @@ namespace RiseOp.Implementation.Transport
 			if(RemotePeerID == 0)
 				RemotePeerID = syn.ConnID;
 
-            Session.Log("Syn Recv, Seq " + packet.Sequence.ToString() + ", ID " + syn.ConnID.ToString());
+            //Session.Log("Syn Recv, Seq " + packet.Sequence.ToString() + ", ID " + syn.ConnID.ToString());
 
 			SendAck(packet); // send ack here also because peerID now set
 
@@ -386,13 +395,14 @@ namespace RiseOp.Implementation.Transport
 			RudpPacket ack = new RudpPacket();
 
             ack.TargetID = Session.DhtID;
+            ack.TargetClient = Session.ClientID;
 			ack.PeerID   = RemotePeerID;
 			ack.PacketType     = RudpPacketType.Ack;
 			ack.Sequence = packet.Sequence;
 			ack.Payload  = RudpAck.Encode(HighestSeqRecvd, (byte) (MAX_WINDOW_SIZE - RecvPacketMap.Count));
             ack.Ident = packet.Ident;
 
-            Session.Log("Ack Sent, Seq " + ack.Sequence.ToString() + ", ID " + ack.PeerID.ToString() + ", highest " + HighestSeqRecvd.ToString());
+            //Session.Log("Ack Sent, Seq " + ack.Sequence.ToString() + ", ID " + ack.PeerID.ToString() + ", highest " + HighestSeqRecvd.ToString());
 
 			if( !AckMap.Contains(ack.Sequence) )
 			{	
@@ -466,7 +476,7 @@ namespace RiseOp.Implementation.Transport
 		    }
 
             RudpAck ack = new RudpAck(packet.Payload);
-            Session.Log("Ack Recv, Seq " + packet.Sequence.ToString() + ", ID " + packet.PeerID.ToString() + ", highest " + ack.Start.ToString() + ", retries " + retries.ToString() + ", latency " + latency.ToString());
+            //Session.Log("Ack Recv, Seq " + packet.Sequence.ToString() + ", ID " + packet.PeerID.ToString() + ", highest " + ack.Start.ToString() + ", retries " + retries.ToString() + ", latency " + latency.ToString());
 
             lock (SendSection)
             {
@@ -512,6 +522,7 @@ namespace RiseOp.Implementation.Transport
 			RudpPacket ping = new RudpPacket();
 
             ping.TargetID = Session.DhtID;
+            ping.TargetClient = Session.ClientID;
             ping.PeerID = RemotePeerID;
             ping.PacketType = RudpPacketType.Ping;
             ping.Sequence = 0;
@@ -530,6 +541,7 @@ namespace RiseOp.Implementation.Transport
             RudpPacket pong = new RudpPacket();
 
             pong.TargetID = Session.DhtID;
+            pong.TargetClient = Session.ClientID;
             pong.PeerID = RemotePeerID;
             pong.PacketType = RudpPacketType.Pong;
             pong.Sequence = 0;
@@ -550,25 +562,22 @@ namespace RiseOp.Implementation.Transport
 
         private void SetPrimaryAddress(uint ident)
         {
-            lock (AddressList)
-            {
-                foreach (RudpAddress address in AddressList)
-                    if (address.Ident == ident)
+            foreach (RudpAddress address in AddressMap.Values)
+                if (address.Ident == ident)
+                {
+                    address.LastAck = Core.TimeNow;
+
+                    // if primary address needs to be reset, replace with this one 
+                    // (which would be first/fastest received)
+                    if (PrimaryAddress.Reset)
                     {
-                        address.LastAck = Core.TimeNow;
-
-                        // if primary address needs to be reset, replace with this one (which would be first/fastest received
-                        if (AddressList[0].Reset && AddressList.Count > 1)
-                        {
-                            AddressList.Remove(address);
-                            AddressList.Insert(0, address);
-                        }
-
-                        AddressList[0].Reset = false;
-
-                        break;
+                        PrimaryAddress.Reset = false;
+                        PrimaryAddress = address;
                     }
-            }
+
+                    break;
+                }
+            
         }
 
 		void SendFin(CloseReason reason)
@@ -578,6 +587,7 @@ namespace RiseOp.Implementation.Transport
             lock (SendSection) // ensure queued in right order with right current seq
             {
                 fin.TargetID = Session.DhtID;
+                fin.TargetClient = Session.ClientID;
                 fin.PeerID = RemotePeerID;
                 fin.PacketType = RudpPacketType.Fin;
                 fin.Sequence = CurrentSeq++;
@@ -668,6 +678,7 @@ namespace RiseOp.Implementation.Transport
 
                     RudpPacket data = new RudpPacket();
                     data.TargetID = Session.DhtID;
+                    data.TargetClient = Session.ClientID;
                     data.PeerID = RemotePeerID;
                     data.PacketType = RudpPacketType.Data;
                     data.Sequence = CurrentSeq++;
@@ -750,15 +761,16 @@ namespace RiseOp.Implementation.Transport
 
 		internal void SendTracked(TrackPacket tracked)
         {
-            if (AddressList.Count == 0)
+            if (AddressMap.Count == 0)
                 return;
 
-            RudpAddress target = tracked.SpecialTarget ? tracked.Target : AddressList[0];
+            RudpAddress target = tracked.SpecialTarget ? tracked.Target : PrimaryAddress;
 
             LastSend = Core.TimeNow;
             tracked.TimeSent = Core.TimeNow.Ticks;
             tracked.Target = target;
             tracked.Packet.SenderID = Core.LocalDhtID;
+            tracked.Packet.SenderClient = Core.ClientID;
 
 
             if (tracked.Packet.PacketType != RudpPacketType.Syn)
@@ -766,9 +778,9 @@ namespace RiseOp.Implementation.Transport
 
             else
             {
-                AddressList[0].Reset = true;
+                PrimaryAddress.Reset = true;
 
-                foreach (RudpAddress address in AddressList)
+                foreach (RudpAddress address in AddressMap.Values)
                 {
                     tracked.Packet.Ident = address.Ident;
                     tracked.Target = address;
@@ -782,10 +794,10 @@ namespace RiseOp.Implementation.Transport
         {
             // sending syn  to (tracked target) through (address target) udp / tcp
 
-            string log = "Sending " + tracked.Packet.PacketType.ToString();
+            /*string log = "Sending " + tracked.Packet.PacketType.ToString();
             if (tracked.Packet.Ident != 0) log  += ", ID " + tracked.Packet.Ident.ToString();
             log +=  " to " + Utilities.IDtoBin(tracked.Packet.TargetID).Substring(0, 10);
-            log += " target address " + target.Address.ToString();
+            log += " target address " + target.Address.ToString();*/
 
             DhtNetwork network = target.Global ? Core.GlobalNet : Core.OperationNet;
 
@@ -795,7 +807,7 @@ namespace RiseOp.Implementation.Transport
             if (Core.Firewall != FirewallType.Blocked && target.LocalProxyID == 0)
             {
                 network.UdpControl.SendTo(target.Address, tracked.Packet);
-                log += " udp";
+                //log += " udp";
             }
 
 
@@ -811,10 +823,10 @@ namespace RiseOp.Implementation.Transport
                 else
                     network.TcpControl.ProxyPacket(tracked.Packet.TargetID, tracked.Packet);
 
-                log += " proxied by local tcp";
+                //log += " proxied by local tcp";
             }
 
-            Session.Log(log);
+            //Session.Log(log);
         }
 
 
@@ -857,7 +869,7 @@ namespace RiseOp.Implementation.Transport
                 if (State == RudpState.Connected && RecvBuffLength > 0)
                     Session.OnReceive();
 
-                DateTime lastRecv = AddressList[0].LastAck;
+                DateTime lastRecv = PrimaryAddress.LastAck;
 
                 // if nothing received for 12 seconds disconnect
                 if (Core.TimeNow > lastRecv.AddSeconds(12))
@@ -868,11 +880,10 @@ namespace RiseOp.Implementation.Transport
                 {
                     // after connection this should immediately be called to find best route
 
-                    AddressList[0].Reset = true;
-                    
-                    lock (AddressList)
-                        foreach (RudpAddress address in AddressList)
-                            SendPing(address);
+                    PrimaryAddress.Reset = true;
+
+                    foreach (RudpAddress address in AddressMap.Values)
+                        SendPing(address);
 
                     NextCheckRoutes = Core.TimeNow.AddSeconds(15);
                 }
@@ -880,9 +891,21 @@ namespace RiseOp.Implementation.Transport
                 // send keep alive if nothing received after 5 secs
                 else if (Core.TimeNow > lastRecv.AddSeconds(5))
                 {
-                    SendPing(AddressList[0]);
+                    SendPing(PrimaryAddress);
                 }
 			}
+
+            // prune addressMap to last 6 addresses seen
+            while (AddressMap.Count > 6)
+            {
+                RudpAddress lastSeen = PrimaryAddress;
+
+                foreach (RudpAddress address in AddressMap.Values)
+                    if (address.LastAck < lastSeen.LastAck)
+                        lastSeen = address;
+
+                AddressMap.Remove(lastSeen.GetHashCode());
+            }
 
 			// re-send packets in out buffer
 			if(State == RudpState.Connecting || State == RudpState.Connected)
@@ -929,12 +952,22 @@ namespace RiseOp.Implementation.Transport
 
         internal RudpAddress(OpCore core, DhtAddress address, bool global)
         {
+            Init(core, address, global);
+        }
+
+        internal RudpAddress(OpCore core, DhtAddress address, bool global, ulong proxyID)
+        {
+            LocalProxyID = proxyID;
+
+            Init(core, address, global);
+        }
+
+        void Init(OpCore core, DhtAddress address, bool global)
+        {
             Address = address;
             Global = global;
 
-            Ident = (uint) core.RndGen.Next();
-
-            LastAck = core.TimeNow; // so not removed from address list when added
+            Ident = (uint)core.RndGen.Next();
         }
 
         public override bool Equals(object obj)
@@ -952,7 +985,7 @@ namespace RiseOp.Implementation.Transport
 
         public override int GetHashCode()
         {
-            return base.GetHashCode();
+            return Address.GetHashCode() ^ Global.GetHashCode() ^ LocalProxyID.GetHashCode();
         }
     }
 }

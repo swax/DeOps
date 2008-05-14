@@ -187,32 +187,6 @@ namespace RiseOp
 			return IPAddress.Parse( address.TrimEnd('.') );
 		}
 
-		internal static byte[] AddresstoBytes(IPEndPoint ip)
-		{
-			byte[] bytes = new byte[6];
-
-            ip.Address.GetAddressBytes().CopyTo(bytes, 0);
-            BitConverter.GetBytes((ushort)ip.Port).CopyTo(bytes, 4);
-
-			return bytes;
-		}
-
-		internal static byte[] EncodeAddresses(ArrayList addresses)
-		{
-			int offset = 0;
-
-			// ip 4b, udp 2b = 6b per contact
-			byte[] buffer = new byte[addresses.Count * 6];
-
-			foreach(IPEndPoint address in addresses)
-			{
-                AddresstoBytes(address).CopyTo(buffer, offset);
-				offset += 6;
-			}
-			
-			return buffer;
-		}
-
 		internal static ArrayList DecodeAddresses(byte[] data)
 		{	
 			return DecodeAddresses(data, 0, data.Length);

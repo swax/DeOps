@@ -214,12 +214,12 @@ namespace RiseOp.Implementation.Transport
             return inbound;
         }
 
-		internal void MakeOutbound( DhtAddress address, ushort tcpPort)
+		internal void MakeOutbound( DhtAddress address, ushort tcpPort, string reason)
 		{
 			try
 			{
                 TcpConnect outbound = new TcpConnect(this, address, tcpPort);
-				Network.UpdateLog("Tcp", "Attempting Connection to " + address.ToString() + ":" + tcpPort.ToString());
+				Network.UpdateLog("Tcp", "Attempting Connection to " + address.ToString() + ":" + tcpPort.ToString() + " (" + reason + ")");
 				
                 lock(Connections)
                     Connections.Add(outbound);
@@ -271,7 +271,7 @@ namespace RiseOp.Implementation.Transport
 				{
 					// continue attempted to test nat with pings which are small
                     Network.Send_Ping(attempt.ToDhtAddress());
-					MakeOutbound( attempt.ToDhtAddress(), attempt.TcpPort);
+					MakeOutbound( attempt.ToDhtAddress(), attempt.TcpPort, "try proxy");
 				}
 
 				// if natted do udp proxy request first before connect

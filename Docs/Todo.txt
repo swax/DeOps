@@ -1,98 +1,28 @@
 
+testing
+	test blocked to blocked through single proxy
+		debug why proxy reqs /byes being sent
+	test proxy updates sent and received
+	test connection between 2 blocked
+		remove current proxies, add brand new ones
+	test blocked connected to same proxy can communicate
+	figure out where most of the proxy traffic is coming form
 
-multi-source d/l
-	show file's distribution over network
-	file download interface
-		main: hash, size, parts graphic
-		subs: name, status (pending / 5kb/s), parts graphic
-		
-	analyze current algorithm
-		how to pause re-request file transfers? encapsulate in g2?
-		are there different 'streams' for file transfers control and data?
-
-	should there be a difference between uploads and downloads?
-
-	current algorithm dl/ul
-		Start d/l puts file in pending queue
-		Move to active when less than 5 active
-		New active searches for target
-
-	a transfer doesn't keep track of more than 20 peers
-		peer list like mini-dht every 2 slots is xor closer to local
-		empty slots are filled with closest xor nodes, 2 up, and 2 down
-		a node will always be gaurenteed a community in file transfer
-		support web cache in mesh
-		
-		
-	on connection
-		peers exchange caches of those close to each other
-		peers exhcange bitfields
-		keep master bytefield of rarity of parts, add/subtract to it as need be
-		part hashes if requested
-		
-	client starts sending remote rarest piece remote doesnt have
-		remote acknowledges and starts writing, or cancles transfer if receiving already from faster source
-		cancel message includes preference for particular or no piece at all
-		
-	who to send to 
-		clients are sent chunks round robin to who needs them
-		no need to client to signal choked, server decides when to send based on if remote is interested
-		give u/l pref to files being downloaded
-		
-	what do we know
-		we know our send rate total and per node based on acknowledgements
-		we know we want 5kb/s at least as overhead for network comm
-		we know if remote is dropping packets because they are re-requested
-		
-	bandwidth test
-		once connected to network
-		select 10 closests nodes
-		send at full speed to all hosts for 10 seconds
-		record u/l speed
-		re-test every hour
+	why did client make multiple proxy reqs?
+	why did server accept multiple proxy reqs?
+	why keep trying web cache?
 	
-		once u/l speed determined 
-			if > 10kb/s ensure transfers remain at that level minus 7kb/s
-			if < 10kb/s transfers remain at half determined speed
+	need to make tcp work with multiple clients with same dhtID
+
+	test network of open / blocked - same dhtID
+	test network of all same dhtID open/nat/blocked
+
+next
+   duplicate users on same proxy, does forwarding work?
+   global proxying
+	bandwidth limits / auditing
+		when bandwidth chart, figure out why bandwidth quadrupiles with 30% NATs
 		
-	how many and how fast to send to
-		slot speed set at 7 so 256kb block transferred in 30secs slowest
-		transfer slots maxed at u/l speed / 7
-		if u/l speed < 85% of determined max allow another slot
-		stop allowing more slots if average u/l speed < 4kbs
-		
-		transfer control is aware of pending transfers
-		when slot avaialable transfer is selected by component (round robin), then FCFS for multiple transfers in component
-			transfer awarded slot, transfers chunk
-			when finished requests from control to keep slot
-
-	securing files
-		encrypt file to temp
-		hash 256kb parts and total
-		attachlist of parts to end of file
-		attached encypted size to end of file
-		
-		when decrypting file back size read to figure how much to decrypt
-		transfer reads back of file for size/parts and sends to client when requested
-
-		large partial files should be saved between runs
-
-	testing 
-		in network view, seed file and watch, implement bw limits in simulator
-		each node shows a progress bar of the files completion
-		optimize for max propagation through network
-	
-live
-	build test algorithms
-	acts as continously active real-time conduit between all members in trusted system (might want to pipe system msgs through this)
-	live based on rudp links, if no rudp link, live connect to next canidate, even if loc for someone exists
-	rapidly alert up/down links when going offilne so that live structure can be patched quickly wihout nodes thinking location file is still active
-	downlink determined by closest sub, if equal, highest rank where 2 nodes split tracks
-	uplink determined by highest offline where not challenged
-	show trusted/untrusted in live
-	ensure when random subset of nodes removed all links/chat rooms still connected through live
-	
-
 test
 	debug places where searches etc.. are happening, when client knows its not connected
 	prevent searches from piling up in disconnected state
@@ -142,7 +72,7 @@ spring release
 	licensing, installer
 	website
 	*** items from todo
-	crits
+	42 crits
 	live locations/chat
 	network bandwidth limits - tracking in sim triggers node to start logging bw data
 	multisource downloading 
@@ -451,6 +381,17 @@ Simulator
 	record max udp burst sizes, or do packet size distribution histogram
 
 	***checksigned / idtokey throw exceptions, maybe just return false or something?
+	
+	
+live
+	build test algorithms
+	acts as continously active real-time conduit between all members in trusted system (might want to pipe system msgs through this)
+	live based on rudp links, if no rudp link, live connect to next canidate, even if loc for someone exists
+	rapidly alert up/down links when going offilne so that live structure can be patched quickly wihout nodes thinking location file is still active
+	downlink determined by closest sub, if equal, highest rank where 2 nodes split tracks
+	uplink determined by highest offline where not challenged
+	show trusted/untrusted in live
+	ensure when random subset of nodes removed all links/chat rooms still connected through live
 	
 			
 quick

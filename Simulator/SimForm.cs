@@ -712,8 +712,8 @@ namespace RiseOp.Simulator
                 alerts += "Firewall, ";
 
             // ip incorrect
-            if (!Instance.RealIP.Equals(Instance.Core.LocalIP))
-                alerts += "IP, ";
+            if (Instance.Core.LocalIP != null && !Instance.RealIP.Equals(Instance.Core.LocalIP))
+                alerts += "IP Mismatch, ";
 
             // routing unresponsive global/op
             if(Instance.Core.GlobalNet != null)
@@ -738,11 +738,10 @@ namespace RiseOp.Simulator
             if (Instance.Core.Locations.LocationMap.SafeCount <= 1)
                 alerts += "Locs, ";
 
-            string localip = (Instance.Core.LocalIP == null) ? "null" : Instance.Core.LocalIP.ToString();
-
+            
             SubItems[1].Text = Instance.Core.User.Settings.Operation;
             SubItems[2].Text = Utilities.IDtoBin(Instance.Core.LocalDhtID);
-            SubItems[3].Text = Instance.Core.ClientID.ToString(); 
+            SubItems[3].Text = Instance.RealIP.ToString() + "/" + Instance.Core.ClientID.ToString(); 
             SubItems[4].Text = Instance.RealFirewall.ToString();
             SubItems[5].Text = alerts;
 

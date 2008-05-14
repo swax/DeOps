@@ -124,7 +124,7 @@ namespace RiseOp.Implementation.Transport
             if (Comm.State != RudpState.Connected)
                 return false;
 
-            PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Rudp, DirectionType.Out, Comm.AddressList[0].Address, final);
+            PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Rudp, DirectionType.Out, Comm.PrimaryAddress.Address, final);
             Core.OperationNet.LogPacket(logEntry);
 
             // dont worry about buffers, cause initial comm buffer is large enough to fit all negotiating packets
@@ -251,10 +251,6 @@ namespace RiseOp.Implementation.Transport
                     RecvDecryptor = InboundEnc.CreateDecryptor();
                 }
 
-                else if (packet.Root.Name == CommPacket.ProxyUpdate)
-                    Receive_ProxyUpdate(packet);
-
-
 				return;
 			}
 			
@@ -262,6 +258,9 @@ namespace RiseOp.Implementation.Transport
 			{
                 if (packet.Root.Name == CommPacket.Data)
                     ReceiveData(packet);
+
+                else if (packet.Root.Name == CommPacket.ProxyUpdate)
+                    Receive_ProxyUpdate(packet);
 
 				return;
 			}
@@ -513,6 +512,9 @@ namespace RiseOp.Implementation.Transport
 
             Comm.AddAddress(new RudpAddress(Core, update.Proxy, update.Global));
 
+            if(embeddedPacket.Tcp != null)
+                Comm.AddAddress(new RudpAddress(Core, update.Proxy, update.Global, embeddedPacket.Tcp.DhtID));
+
             Log("Received Proxy Update (" + update.Proxy + ")");
         }
 
@@ -596,7 +598,7 @@ namespace RiseOp.Implementation.Transport
                     if (streamStatus != G2ReadResult.PACKET_GOOD)
                         break;
 
-                    PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Rudp, DirectionType.In, Comm.AddressList[0].Address, Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize));
+                    PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Rudp, DirectionType.In, Comm.PrimaryAddress.Address, Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize));
                     Core.OperationNet.LogPacket(logEntry);
 
                     ReceivePacket(packet);
@@ -639,7 +641,7 @@ namespace RiseOp.Implementation.Transport
                     if (streamStatus != G2ReadResult.PACKET_GOOD)
                         break;
 
-                    PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Rudp, DirectionType.In, Comm.AddressList[0].Address, Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize));
+                    PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Rudp, DirectionType.In, Comm.PrimaryAddress.Address, Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize));
                     Core.OperationNet.LogPacket(logEntry);
 
                     ReceivePacket(packet);

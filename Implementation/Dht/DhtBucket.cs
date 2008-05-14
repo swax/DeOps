@@ -139,7 +139,7 @@ namespace RiseOp.Implementation.Dht
 
         internal DhtAddress ToDhtAddress()
         {
-            return new DhtAddress(DhtID, Address, UdpPort);
+            return new DhtAddress(DhtID, ClientID, Address, UdpPort);
         }
 
         public override string ToString()
