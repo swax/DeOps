@@ -1,5 +1,7 @@
-﻿Net/Comm packets send client id
-
+﻿
+5/16/08 - debugged 1 on 1 open -> nat establishes global/operation network
+5/15/08 - Net/Comm packets send client id
+		  tcp reonnecting
 5/10/08 - Add addresses - figure fast lookup in RudpReceive - done/test
 		  prune addressList to 6 entries
 		  disabled rudp logging

@@ -284,7 +284,7 @@ namespace RiseOp.Implementation.Transport
             // proxied first because that packet has highest chance of being received, no need for retry
             // also allows quick udp hole punching
             if (raw.Tcp != null)
-                AddAddress(new RudpAddress(Core, raw.Source, global, raw.Tcp.DhtID));
+                AddAddress(new RudpAddress(Core, raw.Source, global, raw.Tcp));
 
             AddAddress( new RudpAddress(Core, raw.Source, global) );
 
@@ -804,7 +804,7 @@ namespace RiseOp.Implementation.Transport
             if (network == null)
                 return;
 
-            if (Core.Firewall != FirewallType.Blocked && target.LocalProxyID == 0)
+            if (Core.Firewall != FirewallType.Blocked && target.LocalProxy == null)
             {
                 network.UdpControl.SendTo(target.Address, tracked.Packet);
                 //log += " udp";
@@ -815,13 +815,12 @@ namespace RiseOp.Implementation.Transport
             {
                 tracked.Packet.ToEndPoint = target.Address;
 
-                if (target.LocalProxyID != 0 && 
-                    network.TcpControl.ConnectionMap.ContainsKey(target.LocalProxyID) &&
-                    network.TcpControl.ConnectionMap[target.LocalProxyID].State == TcpState.Connected)
-                    network.TcpControl.ConnectionMap[target.LocalProxyID].SendPacket(tracked.Packet);
+                TcpConnect proxy = network.TcpControl.GetConnection(target.LocalProxy);
 
+                if (proxy != null)
+                    proxy.SendPacket(tracked.Packet);
                 else
-                    network.TcpControl.ProxyPacket(tracked.Packet.TargetID, tracked.Packet);
+                    network.TcpControl.SendRandomProxy(tracked.Packet);
 
                 //log += " proxied by local tcp";
             }
@@ -869,14 +868,17 @@ namespace RiseOp.Implementation.Transport
                 if (State == RudpState.Connected && RecvBuffLength > 0)
                     Session.OnReceive();
 
+
+                // dead - 5 secs send ping, 10 secs reset primary addr, 15 secs close
+
                 DateTime lastRecv = PrimaryAddress.LastAck;
 
-                // if nothing received for 12 seconds disconnect
-                if (Core.TimeNow > lastRecv.AddSeconds(12))
+                // if nothing received for 15 seconds disconnect
+                if (Core.TimeNow > lastRecv.AddSeconds(15))
                     RudpClose(CloseReason.TIMEOUT);
 
-                // re-analyze alternate routes after 15 secs
-                else if (Core.TimeNow > NextCheckRoutes)
+                // re-analyze alternate routes after 10 secs dead, or half min interval
+                else if (Core.TimeNow > lastRecv.AddSeconds(10) || Core.TimeNow > NextCheckRoutes)
                 {
                     // after connection this should immediately be called to find best route
 
@@ -885,7 +887,7 @@ namespace RiseOp.Implementation.Transport
                     foreach (RudpAddress address in AddressMap.Values)
                         SendPing(address);
 
-                    NextCheckRoutes = Core.TimeNow.AddSeconds(15);
+                    NextCheckRoutes = Core.TimeNow.AddSeconds(30);
                 }
 
                 // send keep alive if nothing received after 5 secs
@@ -944,7 +946,7 @@ namespace RiseOp.Implementation.Transport
     internal class RudpAddress
     {
         internal DhtAddress Address;
-        internal ulong      LocalProxyID; // NAT -> proxy -> host, NAT will only recv packets from specific proxy
+        internal DhtClient  LocalProxy; // NAT -> proxy -> host, NAT will only recv packets from specific proxy
         internal bool       Global;
         internal uint       Ident;
         internal DateTime   LastAck; // so not removed from address list when added
@@ -955,9 +957,9 @@ namespace RiseOp.Implementation.Transport
             Init(core, address, global);
         }
 
-        internal RudpAddress(OpCore core, DhtAddress address, bool global, ulong proxyID)
+        internal RudpAddress(OpCore core, DhtAddress address, bool global, TcpConnect proxy)
         {
-            LocalProxyID = proxyID;
+            LocalProxy = new DhtClient(proxy);
 
             Init(core, address, global);
         }
@@ -977,7 +979,7 @@ namespace RiseOp.Implementation.Transport
             if (check == null)
                 return false;
 
-            if (Address.Equals(check.Address) && Global == check.Global && LocalProxyID == check.LocalProxyID)
+            if (Address.Equals(check.Address) && Global == check.Global && LocalProxy.Equals(check.LocalProxy))
                 return true;
 
             return false;
@@ -985,7 +987,12 @@ namespace RiseOp.Implementation.Transport
 
         public override int GetHashCode()
         {
-            return Address.GetHashCode() ^ Global.GetHashCode() ^ LocalProxyID.GetHashCode();
+            int hash = Address.GetHashCode() ^ Global.GetHashCode();
+            
+            if(LocalProxy != null)
+                hash = hash ^ LocalProxy.GetHashCode();
+
+            return hash; 
         }
     }
 }

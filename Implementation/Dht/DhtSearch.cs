@@ -65,43 +65,40 @@ namespace RiseOp.Implementation.Dht
 
 		internal bool Activate()
 		{
-			// check if node tcp connected
-            if (Service == Core.DhtServiceID && Network.TcpControl.ConnectionMap.ContainsKey(TargetID))
-            {
-                TcpConnect connection = Network.TcpControl.ConnectionMap[TargetID];
-
-                Found(connection.GetContact(), false);
-                return true;
-            }
-
 			// bootstrap search from routing
 			foreach(DhtContact contact in Network.Routing.Find(TargetID, 8))
 				Add(contact);
 
-			// if natted send request to proxies for fresh nodes
-            if (Core.Firewall == FirewallType.NAT)
-                lock (Network.TcpControl.Connections)
-                    foreach (TcpConnect connection in Network.TcpControl.Connections)
-                    {
-                        DhtAddress address = new DhtAddress(connection.DhtID, connection.ClientID, connection.RemoteIP, connection.UdpPort);
-                        Searches.SendUdpRequest(address, TargetID, SearchID, Service, DataType, Parameters);
-                    }			
+            List<TcpConnect> sockets = null;
+
+            // if open send search to proxied nodes just for good measure, probably helps on very small networks
+            if (Core.Firewall == FirewallType.Open)
+                sockets = Network.TcpControl.ProxyClients;
+
+            // if natted send request to proxies for fresh nodes
+            if(Core.Firewall == FirewallType.NAT)
+                sockets = Network.TcpControl.ProxyServers;
+
+            if(sockets != null)
+                foreach (TcpConnect socket in sockets)
+                {
+                    DhtAddress address = new DhtAddress(socket.DhtID, socket.ClientID, socket.RemoteIP, socket.UdpPort);
+                    Searches.SendDirectRequest(address, TargetID, Service, DataType, Parameters);
+
+                    DhtLookup host = Add(socket.GetContact());
+                    if (host != null)
+                        host.Status = LookupStatus.Done;
+                }					
 
 			// if blocked send proxy search request to 1 proxy, record and wait
             if (Core.Firewall == FirewallType.Blocked)
 			{
 				// pick random proxy server
-				ArrayList servers = new ArrayList();
-
-                lock (Network.TcpControl.Connections)
-                    foreach (TcpConnect connection in Network.TcpControl.Connections)
-						if(connection.Proxy == ProxyType.Server)
-							servers.Add(connection);
-
-				if(servers.Count == 0)
+                if (Network.TcpControl.ProxyServers.Count == 0)
 					return false;
 
-                ProxyTcp = (TcpConnect)servers[Core.RndGen.Next(servers.Count)];
+                ProxyTcp = Network.TcpControl.ProxyServers[Core.RndGen.Next(Network.TcpControl.ProxyServers.Count)];
+
                 Send_ProxySearchRequest();
 			}
 
@@ -123,45 +120,45 @@ namespace RiseOp.Implementation.Dht
         }
 
 
-		internal void Add(DhtContact contact)
+        internal DhtLookup Add(DhtContact contact)
 		{
-			// never going to add self because filtered by routing.add
+            DhtLookup added = null;
+
+            if (contact.DhtID == Core.LocalDhtID && contact.ClientID == Core.ClientID)
+                return null;
 
 			if(Finished) // search over
-				return;
+                return null;
 
 			// go through lookup list, add if closer to target
-			lock(LookupList)
-			{
-                bool added = false;
+			foreach(DhtLookup lookup in LookupList)
+			{	
+				if(contact.DhtID == lookup.Contact.DhtID && contact.ClientID == lookup.Contact.ClientID)
+					return lookup;
 
-				foreach(DhtLookup lookup in LookupList)
-				{	
-					if(contact.DhtID == lookup.Contact.DhtID && contact.ClientID == lookup.Contact.ClientID)
-						return;
-
-					if((contact.DhtID ^ TargetID) < (lookup.Contact.DhtID ^ TargetID))
-					{
-						LookupList.Insert( LookupList.IndexOf(lookup), new DhtLookup(contact));
-                        added = true;
-						break;
-					}
+				if((contact.DhtID ^ TargetID) < (lookup.Contact.DhtID ^ TargetID))
+				{
+                    added = new DhtLookup(contact);
+                    LookupList.Insert(LookupList.IndexOf(lookup), added);
+					break;
 				}
-
-                if(!added)
-                    LookupList.Add(new DhtLookup(contact));
-
-                while (LookupList.Count > LOOKUP_SIZE)
-					LookupList.RemoveAt(LookupList.Count - 1);
 			}
-			
 
+            if (added == null)
+            {
+                added = new DhtLookup(contact);
+                LookupList.Add(added);
+            }
+
+            while (LookupList.Count > LOOKUP_SIZE)
+				LookupList.RemoveAt(LookupList.Count - 1);
+		
+	
 			// at end so we ensure this node is put into list and sent with proxy results
             if (Service == Core.DhtServiceID && contact.DhtID == TargetID)
-			{
 				Found(contact, false);
-				return;
-			}
+
+            return added;
 		}
 
 		internal void SecondTimer()
@@ -180,40 +177,40 @@ namespace RiseOp.Implementation.Dht
 
             // iterate through lookup nodes
             bool alldone = true;
-			lock(LookupList)
-                foreach (DhtLookup lookup in LookupList)
+
+            foreach (DhtLookup lookup in LookupList)
+            {
+                if (lookup.Status == LookupStatus.Done)
+                    continue;
+
+                alldone = false;
+
+                // if searching
+                if (lookup.Status == LookupStatus.Searching)
                 {
-					if(lookup.Status == LookupStatus.Done)
-					    continue;
+                    lookup.Age++;
 
-                    alldone = false;
-
-                    // if searching
-                    if (lookup.Status == LookupStatus.Searching)
-                    {
-                        lookup.Age++;
-
-                        // research after 3 seconds
-                        if (lookup.Age == 3)
-                        {
-                            //Log("Sending Request to " + lookup.Contact.Address.ToString() + " (" + Utilities.IDtoBin(lookup.Contact.DhtID) + ")");
-                            Network.Searches.SendUdpRequest(lookup.Contact.ToDhtAddress(), TargetID, SearchID, Service, DataType, Parameters);
-                        }
-
-                        // drop after 6
-                        if (lookup.Age >= 6)
-                            lookup.Status = LookupStatus.Done;
-                    }
-
-                    // start search if room available
-                    if (lookup.Status == LookupStatus.None && searching < SEARCH_ALPHA)
+                    // research after 3 seconds
+                    if (lookup.Age == 3)
                     {
                         //Log("Sending Request to " + lookup.Contact.Address.ToString() + " (" + Utilities.IDtoBin(lookup.Contact.DhtID) + ")");
                         Network.Searches.SendUdpRequest(lookup.Contact.ToDhtAddress(), TargetID, SearchID, Service, DataType, Parameters);
-
-                        lookup.Status = LookupStatus.Searching;
                     }
-				}
+
+                    // drop after 6
+                    if (lookup.Age >= 6)
+                        lookup.Status = LookupStatus.Done;
+                }
+
+                // start search if room available
+                if (lookup.Status == LookupStatus.None && searching < SEARCH_ALPHA)
+                {
+                    //Log("Sending Request to " + lookup.Contact.Address.ToString() + " (" + Utilities.IDtoBin(lookup.Contact.DhtID) + ")");
+                    Network.Searches.SendUdpRequest(lookup.Contact.ToDhtAddress(), TargetID, SearchID, Service, DataType, Parameters);
+
+                    lookup.Status = LookupStatus.Searching;
+                }
+            }
 
 
 			// set search over if nothing more

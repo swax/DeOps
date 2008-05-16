@@ -1128,16 +1128,23 @@ namespace RiseOp.Services.Trust
 
         internal void GetLocsBelow(ulong id, uint project, List<LocationData> locations)
         {
+            GetLocsBelow(id, id, project, locations);
+        }
+
+        internal void GetLocsBelow(ulong id, ulong root, uint project, List<LocationData> locations)    
+        {
             // this is a spam type function that finds all locations (online nodes) below
             // a certain link.  it stops traversing down when an online node is found in a branch
             // the online node will call this function to continue traversing data down the network
             // upon being updated with the data object sent by whoever is calling this function
 
+            // root prevents problem with trust loops
+
             OpLink link = GetLink(id, project);
 
             if (link != null)
                 foreach (OpLink child in link.Downlinks)
-                    if (!AddLinkLocations(child, locations))
+                    if (child.DhtID != root && !AddLinkLocations(child, locations))
                         GetLocsBelow(child.DhtID, project, locations);
         }
         private void GetLinkLocs(OpLink parent, int depth, List<LocationData> locations)
@@ -1536,6 +1543,12 @@ namespace RiseOp.Services.Trust
             AddProject(project, true);
         }
 
+        internal bool InProject(uint project)
+        {
+            OpLink link = GetLink(project);
+
+            return link != null && link.Active;
+        }
 
         internal void AddProject(uint project, bool active)
         {
@@ -1548,7 +1561,7 @@ namespace RiseOp.Services.Trust
             }
 
             // setting project to non-active has to be done manually
-            if (!link.Active) 
+            if(!link.Active) // only allow false->true, not true->false
                 link.Active = active;
         }
 
@@ -1557,11 +1570,14 @@ namespace RiseOp.Services.Trust
             OpLink link = GetLink(project);
 
             if (link == null)
-                link.Active = false;
+                return;
 
+            link.Active = false;
             link.Uplink = null;
             link.Title = "";
             link.Confirmed.Clear();
+
+            // downlinks remain so structure can still be seen
         }
 
         internal OpLink GetLink(uint project)

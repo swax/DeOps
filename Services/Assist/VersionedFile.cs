@@ -570,7 +570,7 @@ namespace RiseOp.Services.Assist
             {
                 if (vfile.Header.Version > version)
                 {
-                    Store.Send_StoreReq(source, 0, new DataReq(null, vfile.DhtID, Service, DataType, vfile.SignedHeader));
+                    Store.Send_StoreReq(source, null, new DataReq(null, vfile.DhtID, Service, DataType, vfile.SignedHeader));
                     return;
                 }
 

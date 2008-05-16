@@ -15,12 +15,47 @@ using RiseOp.Implementation.Protocol;
 
 namespace RiseOp.Implementation.Protocol.Net
 {
-	internal class DhtSource
+    internal class DhtClient
+    {
+        internal ulong DhtID;
+        internal ushort ClientID;
+
+        internal DhtClient()
+        {
+        }
+
+        internal DhtClient(DhtClient copy)
+        {
+            DhtID = copy.DhtID;
+            ClientID = copy.ClientID;
+        }
+
+        internal DhtClient(ulong dht, ushort client)
+        {
+            DhtID = dht;
+            ClientID = client;
+        }
+
+        public override bool Equals(object obj)
+        {
+            DhtClient compare = obj as DhtClient;
+
+            if (compare == null)
+                return false ;
+
+            return DhtID == compare.DhtID && ClientID == compare.ClientID;
+        }
+
+        public override int GetHashCode()
+        {
+            return DhtID.GetHashCode() ^ ClientID.GetHashCode();
+        }
+    }
+
+    internal class DhtSource : DhtClient
 	{
         internal const int BYTE_SIZE = 15;
 
-		internal UInt64 DhtID;
-		internal ushort ClientID;
 		internal ushort TcpPort;
 		internal ushort UdpPort;
         internal FirewallType Firewall;
@@ -50,14 +85,17 @@ namespace RiseOp.Implementation.Protocol.Net
 
             return source;
         }
-	}
 
-    internal class DhtAddress
+        DhtClient GetDhtClient()
+        {
+            return new DhtClient(DhtID, ClientID);
+        }
+    }
+
+    internal class DhtAddress : DhtClient
     {
         internal const int BYTE_SIZE = 16;
 
-        internal ulong     DhtID;
-        internal ushort    ClientID;
         internal IPAddress IP;
         internal ushort    UdpPort;
 
@@ -533,7 +571,7 @@ namespace RiseOp.Implementation.Protocol.Net
         const byte Packet_RemoteIP = 0x20;
 
 
-		internal DhtSource Source = new DhtSource();
+        internal DhtSource Source;
         internal IPAddress RemoteIP;
 
 
@@ -544,7 +582,8 @@ namespace RiseOp.Implementation.Protocol.Net
                 // ping packet
                 G2Frame pi = protocol.WritePacket(null, NetworkPacket.Ping, null);
 
-                protocol.WritePacket(pi, Packet_Source, Source.ToBytes());
+                if(Source != null)
+                    protocol.WritePacket(pi, Packet_Source, Source.ToBytes());
 
                 if (RemoteIP != null)
                     protocol.WritePacket(pi, Packet_RemoteIP, RemoteIP.GetAddressBytes());
@@ -587,10 +626,11 @@ namespace RiseOp.Implementation.Protocol.Net
 	{
         const byte Packet_Source   = 0x10;
         const byte Packet_RemoteIP = 0x20;
+        const byte Packet_Direct   = 0x30;
 
-
-		internal DhtSource Source = new DhtSource();
+		internal DhtSource Source;
 		internal IPAddress RemoteIP;
+        internal bool Direct;
 
 
 		internal override byte[] Encode(G2Protocol protocol)
@@ -599,10 +639,14 @@ namespace RiseOp.Implementation.Protocol.Net
             {
                 G2Frame po = protocol.WritePacket(null, NetworkPacket.Pong, null);
 
-                protocol.WritePacket(po, Packet_Source, Source.ToBytes());
+                if(Source != null)
+                    protocol.WritePacket(po, Packet_Source, Source.ToBytes());
 
                 if (RemoteIP != null)
                     protocol.WritePacket(po, Packet_RemoteIP, RemoteIP.GetAddressBytes());
+
+                if(Direct)
+                    protocol.WritePacket(po, Packet_Direct, null);
 
                 // network packet
                 InternalData = protocol.WriteFinish();
@@ -620,7 +664,12 @@ namespace RiseOp.Implementation.Protocol.Net
 			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
                 if (!G2Protocol.ReadPayload(child))
+                {
+                    if(child.Name == Packet_Direct)
+                        po.Direct = true;
+
                     continue;
+                }
 
                 switch (child.Name)
                 {
@@ -640,14 +689,15 @@ namespace RiseOp.Implementation.Protocol.Net
 
 	internal class Bye : NetworkPacket
 	{
-        const byte Packet_Source   = 0x10;
-        const byte Packet_Contacts = 0x20;
-        const byte Packet_Message = 0x30;
+        const byte Packet_Source    = 0x10;
+        const byte Packet_Contacts  = 0x20;
+        const byte Packet_Message   = 0x30;
+        const byte Packet_Reconnect = 0x40;
 
-
-		internal UInt64    SenderID;
+		internal UInt64     SenderID;
         internal List<DhtContact> ContactList = new List<DhtContact>();
-		internal string    Message;
+		internal string     Message;
+        internal bool       Reconnect;
 
 
 		internal override byte[] Encode(G2Protocol protocol)
@@ -663,6 +713,9 @@ namespace RiseOp.Implementation.Protocol.Net
 
                 if (Message != null)
                     protocol.WritePacket(bye, Packet_Message, protocol.UTF.GetBytes(Message));
+
+                if (Reconnect)
+                    protocol.WritePacket(bye, Packet_Reconnect, null);
 
                 // network packet
                 InternalData = protocol.WriteFinish();
@@ -680,7 +733,12 @@ namespace RiseOp.Implementation.Protocol.Net
 			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
                 if (!G2Protocol.ReadPayload(child))
+                {
+                    if (child.Name == Packet_Reconnect)
+                        bye.Reconnect = true;
+
                     continue;
+                }
 
                 switch (child.Name)
                 {

@@ -72,8 +72,6 @@ namespace RiseOp.Services.Location
             Core.OperationNet.Store.StoreEvent[ServiceID, 0] += new StoreHandler(OperationStore_Local);
             Core.OperationNet.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(OperationSearch_Local);
 
-            // should be published auto anyways, on bootstrap, or firewall/proxy update
-            NextGlobalPublish = Core.TimeNow.AddMinutes(1);
 
             if (Core.Sim != null)
             {
@@ -102,7 +100,10 @@ namespace RiseOp.Services.Location
         void Core_SecondTimer()
         {
             // global publish
-            if (Core.GlobalNet != null && Core.TimeNow > NextGlobalPublish)
+            if (Core.Firewall == FirewallType.Open && 
+                Core.GlobalNet != null && 
+                Core.GlobalNet.Responsive && 
+                Core.TimeNow > NextGlobalPublish)
                 PublishGlobal();
 
             // operation publish
@@ -300,7 +301,7 @@ namespace RiseOp.Services.Location
             location.Source = Core.OperationNet.GetLocalSource();
             location.TTL    = LocationData.OP_TTL;
             
-            foreach (TcpConnect connect in Core.OperationNet.TcpControl.Connections)
+            foreach (TcpConnect connect in Core.OperationNet.TcpControl.SocketList)
                 if (connect.Proxy == ProxyType.Server)
                     location.Proxies.Add(new DhtAddress(connect.RemoteIP, connect));
 
@@ -355,15 +356,10 @@ namespace RiseOp.Services.Location
             {
                 DataReq store = new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value);
 
-                if (search.Network == Core.GlobalNet)
-                {
-                    if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
-                        store.Data = Utilities.DecryptBytes(store.Data, store.Data.Length, Core.OperationNet.OriginalCrypt);
-
-                    store.Sources = null; // dont pass global sources to operation store 
-                }
-
-                OperationStore_Local(store);
+                if (search.Network.IsGlobal)
+                    GlobalStore_Local(store);
+                else
+                    OperationStore_Local(store);
             }
         }
 
@@ -373,7 +369,7 @@ namespace RiseOp.Services.Location
             {
                 if (GlobalIndex.ContainsKey(key))
                     foreach (CryptLoc loc in GlobalIndex[key])
-                        results.Add(loc.Data);
+                        results.Add(loc.Encode(Core.Protocol));
             });
         }
 
@@ -388,37 +384,49 @@ namespace RiseOp.Services.Location
                     results.Add(info.SignedData);
         }
 
-        void GlobalStore_Local(DataReq location)
+        void GlobalStore_Local(DataReq crypt)
         {
-            CryptLoc newLoc = CryptLoc.Decode(Core.Protocol, location.Data);
+            CryptLoc newLoc = CryptLoc.Decode(Core.Protocol, crypt.Data);
 
             Debug.Assert(newLoc.TTL > 55);
-
+            
             if (newLoc == null)
                 return;
 
-            // check for duplicates
-
-            LinkedList<CryptLoc> locs = null;
-
-            if (GlobalIndex.SafeTryGetValue(location.Target, out locs))
+            // check if data is for our operation, if it is use it
+            if (crypt.Target == Core.OpID)
             {
-                foreach (CryptLoc loc in locs)
-                       if (Utilities.MemCompare(location.Data, loc.Data))
-                       {
-                           if (newLoc.TTL > loc.TTL)
-                               loc.TTL = newLoc.TTL;
+                DataReq store = new DataReq(null, Core.OpID, ServiceID, 0, newLoc.Data);
 
-                           return;
-                       }
+                if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
+                    store.Data = Utilities.DecryptBytes(store.Data, store.Data.Length, Core.OperationNet.OriginalCrypt);
+
+                store.Sources = null; // dont pass global sources to operation store 
+
+                OperationStore_Local(store);
+            }
+
+            // index location 
+            LinkedList<CryptLoc> locations = null;
+
+            if (GlobalIndex.SafeTryGetValue(crypt.Target, out locations))
+            {
+                foreach (CryptLoc location in locations)
+                    if (Utilities.MemCompare(crypt.Data, location.Data))
+                    {
+                        if (newLoc.TTL > location.TTL)
+                            location.TTL = newLoc.TTL;
+
+                        return;
+                    }
             }
             else
             {
-                locs = new LinkedList<CryptLoc>();
-                GlobalIndex.SafeAdd(location.Target, locs);
+                locations = new LinkedList<CryptLoc>();
+                GlobalIndex.SafeAdd(crypt.Target, locations);
             }
 
-            locs.AddFirst(newLoc);
+            locations.AddFirst(newLoc);
         }
 
         void OperationStore_Local(DataReq store)
@@ -545,7 +553,7 @@ namespace RiseOp.Services.Location
                 location.Global = true;
                 location.Source = Core.GlobalNet.GetLocalSource();
 
-                foreach (TcpConnect connect in Core.GlobalNet.TcpControl.Connections)
+                foreach (TcpConnect connect in Core.GlobalNet.TcpControl.SocketList)
                     if (connect.Proxy == ProxyType.Server)
                         location.Proxies.Add(new DhtAddress(connect.RemoteIP, connect));
             }

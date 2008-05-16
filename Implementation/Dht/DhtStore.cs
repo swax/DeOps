@@ -53,7 +53,7 @@ namespace RiseOp.Implementation.Dht
             if (target == Core.LocalDhtID)
             {
                 foreach (DhtContact closest in Network.Routing.GetCacheArea())
-                    Send_StoreReq(closest.ToDhtAddress(), 0, store);
+                    Send_StoreReq(closest.ToDhtAddress(), null, store);
             }
             else
             {
@@ -71,7 +71,7 @@ namespace RiseOp.Implementation.Dht
             // need to carry over componentid that wanted search also so store works
 
             foreach (DhtLookup node in search.LookupList)
-                Send_StoreReq(node.Contact.ToDhtAddress(), 0, publish);
+                Send_StoreReq(node.Contact.ToDhtAddress(), null, publish);
         }
 
         internal void PublishDirect(List<LocationData> locations, ulong target, uint service, uint datatype, byte[] data)
@@ -90,13 +90,13 @@ namespace RiseOp.Implementation.Dht
             foreach (LocationData location in locations)
             {
                 DhtAddress address = new DhtAddress(location.IP, location.Source);
-                Send_StoreReq(address, 0, req);
+                Send_StoreReq(address, null, req);
 
                 foreach (DhtAddress proxy in location.Proxies)
-                    Send_StoreReq(proxy, 0, req);
+                    Send_StoreReq(proxy, null, req);
             }
         }
-        internal void Send_StoreReq(DhtAddress address, ulong proxyID, DataReq publish)
+        internal void Send_StoreReq(DhtAddress address, DhtClient contact, DataReq publish)
         {
             if (address == null)
                 return;
@@ -108,18 +108,16 @@ namespace RiseOp.Implementation.Dht
             store.DataType  = publish.DataType;
             store.Data      = publish.Data;
 
+            TcpConnect direct = Network.TcpControl.GetConnection(contact);
+
+            if (direct != null)
+                direct.SendPacket(store);
+
             // if blocked send tcp with to tag
-            if (Core.Firewall == FirewallType.Blocked || proxyID != 0)
+            else if (Core.Firewall == FirewallType.Blocked)
             {
                 store.ToAddress = address;
-
-                if (proxyID == 0)
-                    Network.TcpControl.ProxyPacket(address.DhtID, store);
-
-                //crit doesnt work with multiple clients of same id
-                else if (Network.TcpControl.ConnectionMap.ContainsKey(proxyID) &&
-                    Network.TcpControl.ConnectionMap[proxyID].Proxy == ProxyType.Server)
-                    Network.TcpControl.ConnectionMap[proxyID].SendPacket(store);
+                Network.TcpControl.SendRandomProxy(store);
             }
             else
                 Network.UdpControl.SendTo(address, store);
@@ -132,35 +130,26 @@ namespace RiseOp.Implementation.Dht
             if (store.Source.Firewall == FirewallType.Open )
                     // dont need to add to routing if nat/blocked because eventual routing ping by server will auto add
                     Network.Routing.Add(new DhtContact(store.Source, packet.Source.IP, Core.TimeNow));
-            
-            
-            // forward to proxied nodes
-            store.FromAddress = packet.Source;
 
-            if (!Network.IsGlobal) // only replicate data to blocked nodes on operation network
-                lock (Network.TcpControl.Connections)
-                    foreach (TcpConnect connection in Network.TcpControl.Connections)
-                        if (connection.State == TcpState.Connected &&
-                            (connection.Proxy == ProxyType.ClientBlocked || connection.Proxy == ProxyType.ClientNAT))
-                            if (packet.Tcp == null || packet.Tcp != connection)
-                            {
-                                if(packet.Tcp == null)
-                                    store.FromAddress = packet.Source;
-                                
-                                connection.SendPacket(store);
-                            }
 
-            //crit delete?
-            //if (!Core.Links.StructureKnown)
-            //    if (!Core.Links.LinkMap.ContainsKey(store.Source.DhtID) || !Core.Links.LinkMap[store.Source.DhtID].Loaded)
-            //        Core.Links.StartSearch(store.Source.DhtID, 0);
+            // forward to proxied nodes - only replicate data to blocked nodes on operation network
+            if (!Network.IsGlobal)
+                // when we go offline it will be these nodes that update their next proxy with stored info
+                foreach (TcpConnect socket in Network.TcpControl.ProxyClients)
+                    if (packet.Tcp != socket)
+                    {
+                        if (packet.Tcp == null)
+                            store.FromAddress = packet.Source;
+
+                        socket.SendPacket(store);
+                    }
 
             // pass to components
-            DataReq data = new DataReq(new List<DhtAddress>(), store.Key, store.Service, store.DataType, store.Data); //crit need to pass which tcp proxy received through
+            DataReq data = new DataReq(new List<DhtAddress>(), store.Key, store.Service, store.DataType, store.Data);
             data.Sources.Add( packet.Source);
             
             if(packet.Tcp != null)
-                data.LocalProxy = packet.Tcp.DhtID;
+                data.LocalProxy = new DhtClient(packet.Tcp);
 
             if(data.Service == 0)
                 Receive_Patch(packet.Source, store.Data);
@@ -168,66 +157,6 @@ namespace RiseOp.Implementation.Dht
             else if (StoreEvent.Contains(store.Service, store.DataType))
                 StoreEvent[store.Service, store.DataType].Invoke(data);
         }
-
-        /*internal bool IsCached(ulong id)
-        {
-            return (id ^ Core.LocalDhtID) < MaxDistance;
-
-            // 1 up higher bucket might have a lot more than 16 nodes on network, do we really want to replicate to all of them??
-        }
-
-        internal void RoutingUpdate(int depth)
-        {
-            // Dhtid 00000
-            //          prefix  routing
-            // depth 1  none    1...
-            // depth 2  none    01...
-            // depth 3  0       001..
-            // dept  4  00      000..
-
-            int prefix = 0;
-
-            if (depth > 2)
-                prefix = depth - 2;
-
-            MaxDistance = ulong.MaxValue >> prefix;
-        }
-
-        internal void RoutingAdd(DhtContact contact)
-        {
-            * This will need to be re-analyzed, there are 2 ways to patch per node, and per key.
-             * Per Key: Foreach key, find the 8 closest nodes, if this added node is one of the closest, include data
-             * associated with key in the patch.
-             * Per Node: Find the closest 8 nodes to the new contact, make the furthest nodes id the max bounds
-             * send patch keys with in those bounds.
-             * Per Node takes less processing power but I think its not as accurate as per key
-             * orr.. 
-             * *** I can just check if added is of of the top 8 local nodes, if it is I replicate my
-             * keys with in the top 8 range to that node
-             *
-             * figure out how to dynamically find 8 closest nodes to each key in caches shouldreplicate()? 
-             *
-             *
-
-            // dont replicate to nodes outside our max caching bounds
-            if ((contact.DhtID ^ Core.LocalDhtID) > MaxDistance)
-                return;
-
-
-            Replicate(contact, true);
-        }
-
-        internal void RoutingDelete(DhtContact contact)
-        {
-            // basically contact gets deleted, send patch to the new furthest replicate node
-
-            // dont replicate to nodes outside our max caching bounds
-            if ((contact.DhtID ^ Core.LocalDhtID) > MaxDistance)
-                return;
-
-
-            Replicate(contact, false);
-        }*/
 
         internal void Replicate(DhtContact contact)
         {
@@ -263,13 +192,6 @@ namespace RiseOp.Implementation.Dht
                         }
                 }
 
-            ulong proxyID = 0;
-            if (Network.TcpControl.ConnectionMap.ContainsKey(contact.DhtID))
-                if (Network.TcpControl.ConnectionMap[contact.DhtID].ClientID == contact.ClientID)
-                    proxyID = contact.DhtID;
-
-
-
             PatchPacket packet = new PatchPacket();
 
             int totalSize = 0;
@@ -279,7 +201,7 @@ namespace RiseOp.Implementation.Dht
                 if (patch.Tag.Length + totalSize > 1000)
                 {
                     if (packet.PatchData.Count > 0)
-                        Send_StoreReq(contact.ToDhtAddress(), proxyID, new DataReq(null, contact.DhtID, 0, 0, packet.Encode(Core.Protocol)));
+                        Send_StoreReq(contact.ToDhtAddress(), contact, new DataReq(null, contact.DhtID, 0, 0, packet.Encode(Core.Protocol)));
 
                     packet.PatchData.Clear();
                     totalSize = 0;
@@ -290,7 +212,7 @@ namespace RiseOp.Implementation.Dht
             }
 
             if (packet.PatchData.Count > 0)
-                Send_StoreReq(contact.ToDhtAddress(), proxyID, new DataReq(null, contact.DhtID, 0, 0, packet.Encode(Core.Protocol)));
+                Send_StoreReq(contact.ToDhtAddress(), contact, new DataReq(null, contact.DhtID, 0, 0, packet.Encode(Core.Protocol)));
 
         }
 
@@ -317,7 +239,7 @@ namespace RiseOp.Implementation.Dht
     internal class DataReq
     {
         internal List<DhtAddress> Sources;
-        internal ulong LocalProxy;
+        internal DhtClient LocalProxy;
 
         internal ulong  Target;
         internal uint Service;

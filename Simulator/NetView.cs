@@ -159,8 +159,8 @@ namespace RiseOp.Simulator
 
             // draw lines for tcp between points
             foreach(DhtNetwork network in networks.Values)
-                lock(network.TcpControl.Connections)
-                    foreach(TcpConnect connect in network.TcpControl.Connections)
+                lock(network.TcpControl.SocketList)
+                    foreach(TcpConnect connect in network.TcpControl.SocketList)
                         if(connect.State == TcpState.Connected && NodePoints.ContainsKey(connect.DhtID))
                             buffer.DrawLine(BluePen, NodePoints[network.Core.LocalDhtID], NodePoints[connect.DhtID]);
 

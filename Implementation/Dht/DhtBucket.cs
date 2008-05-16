@@ -79,7 +79,7 @@ namespace RiseOp.Implementation.Dht
 		}
 	}
 
-	internal class DhtContact
+	internal class DhtContact : DhtClient
 	{
         
         // RoutingID: slightly mod the user's lower bits so that dhtid is unique (max 64k uniques)
@@ -92,8 +92,6 @@ namespace RiseOp.Implementation.Dht
 
         const int BYTE_SIZE = 18;
 
-		internal ulong    DhtID;
-        internal ushort    ClientID;
         internal IPAddress Address;
         internal ushort    TcpPort;
         internal ushort    UdpPort;

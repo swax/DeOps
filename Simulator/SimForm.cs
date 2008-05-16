@@ -758,8 +758,8 @@ namespace RiseOp.Simulator
         {
             StringBuilder summary = new StringBuilder();
 
-            lock(control.Connections)
-                foreach(TcpConnect connect in control.Connections)
+            lock(control.SocketList)
+                foreach(TcpConnect connect in control.SocketList)
                     if(connect.State == TcpState.Connected)
                         if (connect.Proxy == ProxyType.ClientBlocked || connect.Proxy == ProxyType.ClientNAT)
                             if(Instance.Internet.UserNames.ContainsKey(connect.DhtID))

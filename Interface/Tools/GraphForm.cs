@@ -198,8 +198,8 @@ namespace RiseOp.Interface.Tools
                 buffer.FillEllipse(new SolidBrush(Color.Black), rect);
 
 			// draw proxies
-			lock(Network.TcpControl.Connections)
-                foreach (TcpConnect connection in Network.TcpControl.Connections)
+			lock(Network.TcpControl.SocketList)
+                foreach (TcpConnect connection in Network.TcpControl.SocketList)
 				{
 					if(connection.Proxy == ProxyType.Server)
 						buffer.FillEllipse(new SolidBrush(Color.Green), GetBoundingBox(GetCircumPoint(centerPoint, maxRadius, IDto32(connection.DhtID)), 4));

@@ -83,8 +83,6 @@ namespace RiseOp.Implementation.Transport
             UdpPort  = address.UdpPort;
             DhtID    = address.DhtID;
 
-            TcpControl.ConnectionMap[DhtID] = this;
-
             try
             {
                 IPEndPoint endpoint = new IPEndPoint(RemoteIP, TcpPort);
@@ -107,8 +105,6 @@ namespace RiseOp.Implementation.Transport
 
 		internal void SecondTimer()
 		{
-			Age++;
-
             if (State == TcpState.Closed)
                 return;
 
@@ -117,6 +113,9 @@ namespace RiseOp.Implementation.Transport
 
 			BytesSentinSec     = 0;
 			BytesReceivedinSec = 0;
+
+            if (Age < 60)
+                Age++;
 
 			// if proxy not set after 10 secs disconnect
 			if(Age > 10 && Proxy == ProxyType.Unset)
@@ -154,10 +153,7 @@ namespace RiseOp.Implementation.Transport
 			// send ping if dead for x secs
             if (SecondsDead > 30 && SecondsDead % 5 == 0)
 			{
-				Ping ping     = new Ping();
-				ping.Source   = Network.GetLocalSource();
-
-				SendPacket(ping);
+				SendPacket(new Ping());
 			}
 			else if(SecondsDead > 60)
 			{
@@ -197,12 +193,14 @@ namespace RiseOp.Implementation.Transport
             ping.Source = Network.GetLocalSource();
             ping.RemoteIP = RemoteIP;
 
-            Core.RunInCoreAsync(delegate() { SendPacket(ping); });
+            Core.RunInCoreAsync(delegate() 
+            {
+                SendPacket(ping);
 
-            // if we made connection to the node its not firewalled
-            if (Outbound)
-                Network.Routing.Add(new DhtContact(this, RemoteIP, Core.TimeNow));
-
+                // if we made connection to the node its not firewalled
+                if (Outbound)
+                    Network.Routing.Add(new DhtContact(this, RemoteIP, Core.TimeNow));
+            });
         }
 
         private void CreateEncryptor()
@@ -243,7 +241,12 @@ namespace RiseOp.Implementation.Transport
 			}
 		}
 
-		internal void CleanClose(string reason)
+        internal void CleanClose(string reason)
+        {
+            CleanClose(reason, false);
+        }
+
+		internal void CleanClose(string reason, bool reconnect)
 		{
             if (State == TcpState.Connecting)
                 ByeMessage = reason;
@@ -257,6 +260,7 @@ namespace RiseOp.Implementation.Transport
                 bye.SenderID = Core.LocalDhtID;
                 bye.ContactList = Network.Routing.Find(DhtID, 8);
                 bye.Message = reason;
+                bye.Reconnect = reconnect;
 
                 SendPacket(bye);
 
@@ -579,5 +583,14 @@ namespace RiseOp.Implementation.Transport
 		{
 			return RemoteIP.ToString() + ":" + TcpPort.ToString();
 		}
+
+        // the simulator uses tcpConnects in a dictionay, this prevents it from using the base hash and overlapping
+        // tcpConnect instances
+        object UniqueIdentifier = new object();
+
+        public override int GetHashCode()
+        {
+            return UniqueIdentifier.GetHashCode();
+        }
 	}
 }

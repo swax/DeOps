@@ -11,6 +11,8 @@ using RiseOp.Services.Location;
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
+
 
 namespace RiseOp
 {

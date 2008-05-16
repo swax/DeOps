@@ -513,7 +513,7 @@ namespace RiseOp.Implementation.Transport
             Comm.AddAddress(new RudpAddress(Core, update.Proxy, update.Global));
 
             if(embeddedPacket.Tcp != null)
-                Comm.AddAddress(new RudpAddress(Core, update.Proxy, update.Global, embeddedPacket.Tcp.DhtID));
+                Comm.AddAddress(new RudpAddress(Core, update.Proxy, update.Global, embeddedPacket.Tcp));
 
             Log("Received Proxy Update (" + update.Proxy + ")");
         }

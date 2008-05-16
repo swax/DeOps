@@ -30,7 +30,7 @@ namespace RiseOp.Interface
     internal partial class MainForm : Form
     {
         internal OpCore Core;
-        internal TrustService Links;
+        internal TrustService Trust;
 
         internal ShowExternalHandler ShowExternal;
         internal ShowInternalHandler ShowInternal;
@@ -127,13 +127,13 @@ namespace RiseOp.Interface
             InitializeComponent();
             
             Core = core;
-            Links = Core.Links;
+            Trust = Core.Links;
 
             ShowExternal += new ShowExternalHandler(OnShowExternal);
             ShowInternal += new ShowInternalHandler(OnShowInternal);
 
             Core.NewsUpdate += new NewsUpdateHandler(Core_NewsUpdate);
-            Links.GuiUpdate  += new LinkGuiUpdateHandler(Links_Update);
+            Trust.GuiUpdate  += new LinkGuiUpdateHandler(Links_Update);
             Core.Locations.GuiUpdate += new LocationGuiUpdateHandler(Location_Update);
             Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
 
@@ -153,7 +153,7 @@ namespace RiseOp.Interface
         {
             Text = Core.User.Settings.Operation + " - " + Core.User.Settings.ScreenName;
 
-            CommandTree.Init(Links);
+            CommandTree.Init(Trust);
             CommandTree.ShowProject(0);
 
             OnSelectChange(Core.LocalDhtID, CommandTree.Project);
@@ -196,7 +196,7 @@ namespace RiseOp.Interface
             ShowInternal -= new ShowInternalHandler(OnShowInternal);
 
             Core.NewsUpdate -= new NewsUpdateHandler(Core_NewsUpdate);
-            Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
+            Trust.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
             Core.Locations.GuiUpdate -= new LocationGuiUpdateHandler(Location_Update);
             Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
 
@@ -274,14 +274,14 @@ namespace RiseOp.Interface
 
         void Links_Update(ulong key)
         {
-            OpTrust trust = Links.GetTrust(key);
+            OpTrust trust = Trust.GetTrust(key);
 
             if (trust == null)
                 return;
 
             
 
-            if (!Links.ProjectRoots.SafeContainsKey(CommandTree.Project))
+            if (!Trust.ProjectRoots.SafeContainsKey(CommandTree.Project))
             {
                 if (ProjectButton.Checked)
                     OperationButton.Checked = true;
@@ -417,14 +417,14 @@ namespace RiseOp.Interface
                         confirmed = downlink.GetHigher(true) == null ? "(unconfirmed)" : "";
 
                         if (downlink.DhtID == Core.LocalDhtID)
-                            order += " &nbsp&nbsp&nbsp <b>" + Links.GetName(downlink.DhtID) + "</b> <i>trusts ";
+                            order += " &nbsp&nbsp&nbsp <b>" + Trust.GetName(downlink.DhtID) + "</b> <i>trusts ";
                         else
-                            order += " &nbsp&nbsp&nbsp " + Links.GetName(downlink.DhtID) + " <i>trusts ";
+                            order += " &nbsp&nbsp&nbsp " + Trust.GetName(downlink.DhtID) + " <i>trusts ";
 
                         order += confirmed + "</i><br>";
                     }
 
-                    order += " &nbsp&nbsp&nbsp " + Links.GetName(link.Downlinks[0].DhtID) + "<br>";
+                    order += " &nbsp&nbsp&nbsp " + Trust.GetName(link.Downlinks[0].DhtID) + "<br>";
                 }
 
                 content += order + 
@@ -435,7 +435,7 @@ namespace RiseOp.Interface
             else
             {
                 // name
-                name = "<b>" + Links.GetName(link.DhtID) + "</b>";
+                name = "<b>" + Trust.GetName(link.DhtID) + "</b>";
 
                 if (link.DhtID == Core.LocalDhtID)
                     name += "  &nbsp&nbsp  (<a href='edit:local'><font color=white>edit</font></a>)";
@@ -450,7 +450,7 @@ namespace RiseOp.Interface
                 string projects = "";
                 foreach (uint id in link.Trust.Links.Keys)
                     if (id != 0)
-                        projects += "<a href='project:" + id.ToString() + "'>" + Links.GetProjectName(id) + "</a>, ";
+                        projects += "<a href='project:" + id.ToString() + "'>" + Trust.GetProjectName(id) + "</a>, ";
                 projects = projects.TrimEnd(new char[] { ' ', ',' });
 
                 if (projects != "")
@@ -647,7 +647,7 @@ namespace RiseOp.Interface
             {
                 List<ToolStripMenuItem> linkMenus = new List<ToolStripMenuItem>();
 
-                List<MenuItemInfo> menuList = Links.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, CommandTree.Project);
+                List<MenuItemInfo> menuList = Trust.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, CommandTree.Project);
 
                 if (menuList != null && menuList.Count > 0)
                     foreach (MenuItemInfo info in menuList)
@@ -724,11 +724,11 @@ namespace RiseOp.Interface
         {
             SuspendLayout();
 
-            OpTrust trust = Links.GetTrust(id);
+            OpTrust trust = Trust.GetTrust(id);
 
             if (trust == null)
             {
-                trust = Links.LocalTrust;
+                trust = Trust.LocalTrust;
                 id = Core.LocalDhtID;
             }
 
@@ -819,14 +819,14 @@ namespace RiseOp.Interface
             ProjectNavButton.DropDownItems.Clear();
             ComponentNavButton.DropDownItems.Clear();
 
-            OpLink link = Links.GetLink(CommandTree.SelectedLink, SelectedProject);
+            OpLink link = Trust.GetLink(CommandTree.SelectedLink, SelectedProject);
 
             if (link != null)
             {
                 if (link.DhtID == Core.LocalDhtID)
                     PersonNavButton.Text = "My";
                 else
-                    PersonNavButton.Text = Links.GetName(link.DhtID) + "'s";
+                    PersonNavButton.Text = Trust.GetName(link.DhtID) + "'s";
 
                 PersonNavItem self = null;
                 
@@ -834,12 +834,12 @@ namespace RiseOp.Interface
                 OpLink higher = link.GetHigher(false);
                 if (higher != null)
                 {
-                    PersonNavButton.DropDownItems.Add(new PersonNavItem(Links.GetName(higher.DhtID), higher.DhtID, this, PersonNav_Clicked));
+                    PersonNavButton.DropDownItems.Add(new PersonNavItem(Trust.GetName(higher.DhtID), higher.DhtID, this, PersonNav_Clicked));
 
-                    List<ulong> adjacentIDs = Links.GetDownlinkIDs(higher.DhtID, SelectedProject, 1);
+                    List<ulong> adjacentIDs = Trust.GetDownlinkIDs(higher.DhtID, SelectedProject, 1);
                     foreach (ulong id in adjacentIDs)
                     {
-                        PersonNavItem item = new PersonNavItem("   " + Links.GetName(id), id, this, PersonNav_Clicked);
+                        PersonNavItem item = new PersonNavItem("   " + Trust.GetName(id), id, this, PersonNav_Clicked);
                         if (id == CommandTree.SelectedLink)
                         {
                             item.Font = BoldFont;
@@ -855,17 +855,17 @@ namespace RiseOp.Interface
                 // if self not added yet, add
                 if (self == null)
                 {
-                    PersonNavItem item = new PersonNavItem(Links.GetName(link.DhtID), link.DhtID, this, PersonNav_Clicked);
+                    PersonNavItem item = new PersonNavItem(Trust.GetName(link.DhtID), link.DhtID, this, PersonNav_Clicked);
                     item.Font = BoldFont;
                     self = item;
                     PersonNavButton.DropDownItems.Add(item);
                 }
 
                 // add downlinks of self
-                List<ulong> downlinkIDs = Links.GetDownlinkIDs(CommandTree.SelectedLink, SelectedProject, 1);
+                List<ulong> downlinkIDs = Trust.GetDownlinkIDs(CommandTree.SelectedLink, SelectedProject, 1);
                 foreach (ulong id in downlinkIDs)
                 {
-                    PersonNavItem item = new PersonNavItem(childspacing + Links.GetName(id), id, this, PersonNav_Clicked);
+                    PersonNavItem item = new PersonNavItem(childspacing + Trust.GetName(id), id, this, PersonNav_Clicked);
 
                     int index = PersonNavButton.DropDownItems.IndexOf(self);
                     PersonNavButton.DropDownItems.Insert(index+1, item);
@@ -881,12 +881,12 @@ namespace RiseOp.Interface
 
 
             // set person's projects
-            ProjectNavButton.Text = Links.GetProjectName(SelectedProject);
+            ProjectNavButton.Text = Trust.GetProjectName(SelectedProject);
 
             if (link != null)
                 foreach (uint project in link.Trust.Links.Keys)
                 {
-                    string name = Links.GetProjectName(project);
+                    string name = Trust.GetProjectName(project);
 
                     string spacing = (project == 0) ? "" : "   ";
 
@@ -1000,14 +1000,14 @@ namespace RiseOp.Interface
 
             ProjectsButton.DropDownItems.Add(new ToolStripMenuItem("New...", null, new EventHandler(ProjectMenu_New)));
 
-            Links.ProjectNames.LockReading(delegate()
+            Trust.ProjectNames.LockReading(delegate()
             {
-                foreach (uint id in Links.ProjectNames.Keys)
-                    if (id != 0 && Links.ProjectRoots.SafeContainsKey(id))
-                        ProjectsButton.DropDownItems.Add(new ProjectItem(Links.ProjectNames[id], id, new EventHandler(ProjectMenu_Click)));
+                foreach (uint id in Trust.ProjectNames.Keys)
+                    if (id != 0 && Trust.ProjectRoots.SafeContainsKey(id))
+                        ProjectsButton.DropDownItems.Add(new ProjectItem(Trust.ProjectNames[id], id, new EventHandler(ProjectMenu_Click)));
             });
 
-            if (ProjectButton != null)
+            if (ProjectButton != null && Trust.LocalTrust.InProject(CommandTree.Project))
             {
                 ProjectsButton.DropDownItems.Add(new ToolStripSeparator());
                 ProjectsButton.DropDownItems.Add(new ToolStripMenuItem("Leave " + ProjectButton.Text, null, new EventHandler(OnProjectLeave)));
@@ -1044,7 +1044,7 @@ namespace RiseOp.Interface
                 SideToolStrip.Items.Remove(ProjectButton);
 
             // create button for project
-            ProjectButton = new ToolStripButton(Links.GetProjectName(ProjectButtonID), null, new EventHandler(ShowProject));
+            ProjectButton = new ToolStripButton(Trust.GetProjectName(ProjectButtonID), null, new EventHandler(ShowProject));
             ProjectButton.TextDirection = ToolStripTextDirection.Vertical90;
             ProjectButton.CheckOnClick = true;
             ProjectButton.Checked = true;
@@ -1063,7 +1063,7 @@ namespace RiseOp.Interface
                 return;
 
             // check project exists
-            if (!Links.ProjectRoots.SafeContainsKey(ProjectButtonID))
+            if (!Trust.ProjectRoots.SafeContainsKey(ProjectButtonID))
             {
                 OperationButton.Checked = true;
                 SideToolStrip.Items.Remove(ProjectButton);
@@ -1139,10 +1139,10 @@ namespace RiseOp.Interface
         private void OnProjectLeave(object sender, EventArgs e)
         {
             if (CommandTree.Project != 0)
-                Links.LeaveProject(CommandTree.Project);
+                Trust.LeaveProject(CommandTree.Project);
 
             // if no roots, remove button change projectid to 0
-            if (!Links.ProjectRoots.SafeContainsKey(CommandTree.Project))
+            if (!Trust.ProjectRoots.SafeContainsKey(CommandTree.Project))
             {
                 SideToolStrip.Items.Remove(ProjectButton);
                 ProjectButton = null;
@@ -1153,7 +1153,7 @@ namespace RiseOp.Interface
         private void OnProjectJoin(object sender, EventArgs e)
         {
             if (CommandTree.Project != 0)
-                Links.JoinProject(CommandTree.Project);
+                Trust.JoinProject(CommandTree.Project);
         }
 
         private void StatusBrowser_Navigating(object sender, WebBrowserNavigatingEventArgs e)
@@ -1279,12 +1279,12 @@ namespace RiseOp.Interface
             item.Text = Core.TimeNow.ToString("h:mm ") + info.Message;
 
             // set color
-            if (Links.IsLowerDirect(info.DhtID, info.ProjectID))
+            if (Trust.IsLowerDirect(info.DhtID, info.ProjectID))
             {
                 item.DisplayColor = Color.LightBlue;
                 item.ForeColor = Color.Blue;
             }
-            else if (Links.IsHigher(info.DhtID, info.ProjectID))
+            else if (Trust.IsHigher(info.DhtID, info.ProjectID))
             {
                 item.DisplayColor = Color.FromArgb(255, 198, 198);
                 item.ForeColor = Color.Red;
@@ -1453,13 +1453,13 @@ namespace RiseOp.Interface
             AddSideViewMenus(SideViewsButton.DropDownItems, 0);
 
             // add project views
-            if(Links.LocalTrust.Links.Count > 1)
+            if(Trust.LocalTrust.Links.Count > 1)
                 SideViewsButton.DropDownItems.Add("-");
 
-            foreach(uint id in Links.LocalTrust.Links.Keys )
-                if(id != 0 && Links.ProjectNames.SafeContainsKey(id))
+            foreach(uint id in Trust.LocalTrust.Links.Keys )
+                if(id != 0 && Trust.ProjectNames.SafeContainsKey(id))
                 {
-                    ToolStripMenuItem projectItem = new ToolStripMenuItem(Links.GetProjectName(id));
+                    ToolStripMenuItem projectItem = new ToolStripMenuItem(Trust.GetProjectName(id));
                     AddSideViewMenus(projectItem.DropDownItems, id);
                     SideViewsButton.DropDownItems.Add(projectItem);
                 }

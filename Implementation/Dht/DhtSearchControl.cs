@@ -182,8 +182,8 @@ namespace RiseOp.Implementation.Dht
                         Active.Add(search);
                         search.Log("Active - Proxy Search");
                     }
-                    
-                    return;
+                   
+                    // continue processing request and send local results
                 }
 
                 // request from proxy server
@@ -203,17 +203,14 @@ namespace RiseOp.Implementation.Dht
 
 
             // forward to proxied nodes
-            //crit if received tcp forward to other proxies, like direct request from patch
-            foreach (TcpConnect connect in Network.TcpControl.Connections)
-                if ( connect.State == TcpState.Connected && 
-                    (connect.Proxy == ProxyType.ClientNAT || connect.Proxy == ProxyType.ClientBlocked))
-                    if(packet.Tcp == null || packet.Tcp != connect)
-                    {
-                        if (packet.Tcp == null)
-                            request.FromAddress = packet.Source;
+            foreach (TcpConnect socket in Network.TcpControl.ProxyClients)
+                // prevents incoming udp from proxy and being forwarded to same host tcp
+                if(socket != packet.Tcp && !(packet.Source.DhtID == socket.DhtID && packet.Source.ClientID == socket.ClientID))
+                {
+                    request.FromAddress = packet.Source;
 
-                        connect.SendPacket(request);
-                    }
+                    socket.SendPacket(request);
+                }
 
             // send ack
             SearchAck ack = new SearchAck();
@@ -223,12 +220,7 @@ namespace RiseOp.Implementation.Dht
 
             // search for connected proxy
             if (Network.TcpControl.ConnectionMap.ContainsKey(request.TargetID))
-            {
-                TcpConnect connection = Network.TcpControl.ConnectionMap[request.TargetID];
-
-                if (connection.Proxy == ProxyType.ClientNAT || connection.Proxy == ProxyType.ClientBlocked)
-                    ack.Proxied = true;
-            }
+                ack.Proxied = true;
 
             if(request.Nodes)
                 ack.ContactList = Routing.Find(request.TargetID, 8);
@@ -257,10 +249,8 @@ namespace RiseOp.Implementation.Dht
                 // if a direct search
                 if (request.SearchID == 0)
                 {
-                    ulong proxyID = packet.Tcp != null ? packet.Tcp.DhtID : 0;
-
                     foreach(byte[] value in results)
-                        Network.Store.Send_StoreReq(packet.Source, proxyID, new DataReq(null, request.Source.DhtID, request.Service, request.DataType, value));
+                        Network.Store.Send_StoreReq(packet.Source, packet.Tcp, new DataReq(null, request.TargetID, request.Service, request.DataType, value));
                     
                     return;
                 }
@@ -290,8 +280,12 @@ namespace RiseOp.Implementation.Dht
 
         private void SendAck(G2ReceivedPacket packet, SearchReq request, SearchAck ack)
         {
-            // if forwarded send back through proxy 
-            if (packet.Tcp != null && (request.Source.Firewall != FirewallType.Open || Core.Firewall == FirewallType.Blocked))
+            // if request came in tcp, send back tcp - scenario happens in these situations
+                // req u-> open t-> fw ack t-> open u-> remote
+                // fw req t-> open ack t-> fw
+                // fw1 req t-> open t-> fw2 ack t-> open t-> fw1
+
+            if (packet.Tcp != null)
             {
                 ack.ToAddress = packet.Source;
                 packet.Tcp.SendPacket(ack);
@@ -329,10 +323,9 @@ namespace RiseOp.Implementation.Dht
                 foreach (DhtSearch search in Active)
                     if (search.SearchID == ack.SearchID)
                     {
-                        lock (search.LookupList)
-                            foreach (DhtLookup lookup in search.LookupList)
-                                if (lookup.Contact.DhtID == ack.Source.DhtID && lookup.Contact.ClientID == ack.Source.ClientID)
-                                    lookup.Status = LookupStatus.Done;
+                        foreach (DhtLookup lookup in search.LookupList)
+                            if (lookup.Contact.DhtID == ack.Source.DhtID && lookup.Contact.ClientID == ack.Source.ClientID)
+                                lookup.Status = LookupStatus.Done;
 
                         if (search.ProxyTcp != null && search.ProxyTcp.Proxy == ProxyType.ClientBlocked)
                         {
@@ -385,16 +378,15 @@ namespace RiseOp.Implementation.Dht
             request.Parameters  = parameters;
             request.Nodes       = false;
 
-            //crit doesnt work with multiple nodes of the same id
+            TcpConnect socket = Network.TcpControl.GetConnection(dest);
 
-            if (Network.TcpControl.ConnectionMap.ContainsKey(dest.DhtID) && 
-                Network.TcpControl.ConnectionMap[dest.DhtID].State == TcpState.Connected)
-                Network.TcpControl.ConnectionMap[dest.DhtID].SendPacket(request);
+            if(socket != null)
+                socket.SendPacket(request);
 
             else if(Core.Firewall == FirewallType.Blocked)
             {
                 request.ToAddress = dest;
-                Network.TcpControl.ProxyPacket(dest.DhtID, request);
+                Network.TcpControl.SendRandomProxy(request);
             }
             else
                 Network.UdpControl.SendTo(dest, request);

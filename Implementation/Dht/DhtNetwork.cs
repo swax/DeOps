@@ -40,14 +40,17 @@ namespace RiseOp.Implementation.Dht
         internal Dictionary<int, LinkedListNode<IPCacheEntry>> IPTable = new Dictionary<int, LinkedListNode<IPCacheEntry>>();
 
         internal bool IsGlobal;
-        internal DateTime NextWebcacheTry;
+        
 
         internal bool Established;
         internal bool Responsive;
         internal int FireStatusChange; // timeout until established is called
         internal StatusChange StatusChange; // operation only
+        
         RetryIntervals Retry;
-
+        internal DateTime NextWebcacheTry;
+        RetryIntervals GlobalSearchInterval;
+        DateTime NextGlobalSearch;
 
         internal RijndaelManaged OriginalCrypt;
         internal RijndaelManaged AugmentedCrypt;
@@ -98,6 +101,7 @@ namespace RiseOp.Implementation.Dht
             Searches    = new DhtSearchControl(this);
 
             Retry = new RetryIntervals(Core);
+            GlobalSearchInterval = new RetryIntervals(Core);
         }
 
         internal void SecondTimer()
@@ -106,6 +110,8 @@ namespace RiseOp.Implementation.Dht
             TcpControl.SecondTimer();
             Routing.SecondTimer();
             Searches.SecondTimer();
+
+            CheckConnectionStatus();
 
             // if unresponsive
             if (!Responsive)
@@ -157,7 +163,7 @@ namespace RiseOp.Implementation.Dht
                 else
                     LogTable[type] = targetLog = new Queue<string>();
 
-                targetLog.Enqueue(message);
+                targetLog.Enqueue(Core.TimeNow.ToString("HH:mm:ss:ff - ") + message);
 
                 int logsize = (Core.Sim == null) ? 500 : 100;
 
@@ -200,9 +206,9 @@ namespace RiseOp.Implementation.Dht
                         NextOnlineCheck = Core.TimeNow.AddSeconds(5);
                     }
             }
-            
 
-            bool AllowWeb = (IPCache.Count == 0 || Core.TimeNow > Retry.Start.AddSeconds(10));
+
+            bool AllowWeb = IsGlobal && (IPCache.Count == 0 || Core.TimeNow > Retry.Start.AddSeconds(10));
 
 
             // give a few seconds at startup to try to connect to Dht networks from the cache
@@ -211,22 +217,28 @@ namespace RiseOp.Implementation.Dht
                 NextWebcacheTry = Retry.NextTry;
 
                 // if not connected to global use web cache
-                if (IsGlobal)
+                if (Core.Sim == null)
                 {
-                    if (Core.Sim == null)
-                    {
-                        Thread dlThread = new Thread(new ThreadStart(DownloadCache));
-                        dlThread.Start();
-                    }
-                    else
-                        Core.Sim.Internet.DownloadCache(this);
+                    Thread dlThread = new Thread(new ThreadStart(DownloadCache));
+                    dlThread.Start();
                 }
-
-                // else find operation nodes through global net
-                else if (Core.GlobalNet != null)
-                    Core.Locations.StartSearch(Core.OpID, 0, true);
+                else
+                    Core.Sim.Internet.DownloadCache(this);
             }
 
+
+            // find operation nodes through global net at expanding intervals
+            // called from operation network's bootstrap
+            if (Core.GlobalNet != null && Core.GlobalNet.Responsive)
+            {
+                GlobalSearchInterval.Timer();
+
+                if (Core.TimeNow > NextGlobalSearch)
+                {
+                    NextGlobalSearch = GlobalSearchInterval.NextTry;
+                    Core.Locations.StartSearch(Core.OpID, 0, true);
+                }
+            }
 
             // send pings to nodes in cache, responses will startup the routing system
             // 10 udp pings per second, 10 min retry
@@ -347,9 +359,20 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
-        internal void SetResponsive(bool value)
+        internal void CheckConnectionStatus()
         {
-            Responsive = value;
+            // dht responsiveness is only reliable if we can accept incoming connections, other wise we might be 
+            // behind a NAT and in that case won't be able to receive traffic from anyone who has not sent us stuff
+            bool connected = (Core.Firewall == FirewallType.Open && Routing.DhtResponsive) || 
+                            TcpControl.ProxyServers.Count > 0 || TcpControl.ProxyClients.Count > 0;
+
+            //crit check here for global proxy flag (if globally proxied and in ping contact with remote?
+
+            if (connected == Responsive)
+                return;
+
+            // else set new value
+            Responsive = connected;
 
             if (Responsive)
             {
@@ -367,7 +390,8 @@ namespace RiseOp.Implementation.Dht
                 Established = false;
 
                 Retry.Reset();
-                NextWebcacheTry = Core.TimeNow.AddMinutes(1);
+                GlobalSearchInterval.Reset();
+                NextWebcacheTry = Core.TimeNow.AddMinutes(1); // only really reset when global network resets
 
                 if (StatusChange != null)
                     StatusChange.Invoke();
@@ -388,17 +412,17 @@ namespace RiseOp.Implementation.Dht
         internal void FirewallChangedtoOpen()
         {
             //close proxy connects
-            lock (TcpControl.Connections)
-                foreach (TcpConnect connection in TcpControl.Connections)
+            lock (TcpControl.SocketList)
+                foreach (TcpConnect connection in TcpControl.SocketList)
                     if (connection.State == TcpState.Connected) // close everything, even unset proxies
-                        connection.CleanClose("Firewall changed to Open");
+                        connection.CleanClose("Firewall changed to Open", true);
         }
 
         internal void FirewallChangedtoNAT()
         {
             //update proxy connects
-            lock (TcpControl.Connections)
-                foreach (TcpConnect connection in TcpControl.Connections)
+            lock (TcpControl.SocketList)
+                foreach (TcpConnect connection in TcpControl.SocketList)
                     if (connection.Proxy == ProxyType.Server)
                     {
                         ProxyReq request = new ProxyReq();
@@ -453,28 +477,26 @@ namespace RiseOp.Implementation.Dht
                     embedded.Source = netPacket.FromAddress;
                 }
 
-                // to - received from proxied node
-                if (netPacket.ToAddress != null)
+                // to - received from proxied node, and not for us
+                if (netPacket.ToAddress != null &&
+                    !(netPacket.ToAddress.DhtID == Core.LocalDhtID && netPacket.ToAddress.ClientID == Core.ClientID))
                 {
                     if (packet.Tcp == null)
                         throw new Exception("To tag set on packet received udp");
                     if (packet.Tcp.Proxy == ProxyType.Server || packet.Tcp.Proxy == ProxyType.Unset)
                         throw new Exception("To tag set on packet received from server");
 
-                    if (netPacket.ToAddress.DhtID != Core.LocalDhtID)
-                    {
-                        DhtAddress address = netPacket.ToAddress;
-                        netPacket.ToAddress = null;
+                    DhtAddress address = netPacket.ToAddress;
+                    netPacket.ToAddress = null;
 
-                        //crit doesnt work for multiple clients with same dht id
-                        if (TcpControl.ConnectionMap.ContainsKey(address.DhtID) &&
-                            TcpControl.ConnectionMap[address.DhtID].State == TcpState.Connected)
-                            TcpControl.ConnectionMap[address.DhtID].SendPacket(netPacket);
-                        else
-                            UdpControl.SendTo(address, netPacket);
-                        
-                        return;
-                    }
+                    TcpConnect direct = TcpControl.GetConnection(address);
+
+                    if (direct != null)
+                        direct.SendPacket(netPacket);
+                    else
+                        UdpControl.SendTo(address, netPacket);
+                    
+                    return;
                 }
 
                 // process
@@ -490,22 +512,28 @@ namespace RiseOp.Implementation.Dht
                 packet.Source.DhtID = commPacket.SenderID;
                 packet.Source.ClientID = commPacket.SenderClient;
 
-                // Also Forward to appropriate node
-                //crit work for multiple clients
-                if(TcpControl.ConnectionMap.ContainsKey(commPacket.TargetID))
+                // For local host
+                if (commPacket.TargetID == Core.LocalDhtID && commPacket.TargetClient == Core.ClientID)
                 {
-                    TcpConnect connection = TcpControl.ConnectionMap[commPacket.TargetID];
+                    if (packet.Tcp != null && commPacket.FromEndPoint != null)
+                        packet.Source = commPacket.FromEndPoint;
 
-                    if (connection.State != TcpState.Connected)
-                        return;
+                    ReceiveCommPacket(packet, commPacket);
+                    return;
+                }  
 
+                // Also Forward to appropriate node
+                TcpConnect socket = TcpControl.GetConnection(commPacket.TargetID, commPacket.TargetClient);
+
+                if (socket != null)
+                {
                     // strip TO flag, add from address
                     commPacket.ToEndPoint = null;
                     commPacket.FromEndPoint = packet.Source;
 
                     commPacket.SenderID = Core.LocalDhtID;
                     commPacket.SenderClient = Core.ClientID;
-                    connection.SendPacket(commPacket);
+                    socket.SendPacket(commPacket);
                     return;
                 }
 
@@ -520,16 +548,6 @@ namespace RiseOp.Implementation.Dht
                     commPacket.SenderClient = Core.ClientID;
                     UdpControl.SendTo(address, commPacket);
                 }
-
-                // For local host
-                if (commPacket.TargetID == Core.LocalDhtID && commPacket.TargetClient == Core.ClientID)
-                {
-                    if (packet.Tcp != null && commPacket.FromEndPoint != null)
-                        packet.Source = commPacket.FromEndPoint;
-
-                    ReceiveCommPacket(packet, commPacket);
-                    return;
-                }  
             }
         }
 
@@ -554,20 +572,6 @@ namespace RiseOp.Implementation.Dht
                 // prevent connection from self
                 if (syn.SenderID == Core.LocalDhtID && syn.ClientID == Core.ClientID)
                     return;
-
-                // get node
-                /*OpNode node = null;
-                
-                // if node known
-                if (Core.OperationNet.Store.Index.ContainsKey(syn.SenderID))
-                    node = Core.OperationNet.Store.Index[syn.SenderID];
-
-                // else create node
-                else
-                {
-                    node = new OpNode(syn.SenderID, Core.Command);
-                    Core.OperationNet.Store.Index[syn.SenderID] = node;
-                }*/
 
 
                 // find connecting session with same or unknown client id
@@ -682,12 +686,15 @@ namespace RiseOp.Implementation.Dht
         {
             Ping ping = Ping.Decode(Core.Protocol, packet);
             
-            // setup pong reply
+            // set local IP
             if(ping.RemoteIP != null)
                 Core.LocalIP = ping.RemoteIP;
 
+            // setup pong reply
             Pong pong = new Pong();
-            pong.Source = GetLocalSource();
+
+            if(ping.Source != null)
+                pong.Source = GetLocalSource();
 
             if (ping.RemoteIP != null)
                 pong.RemoteIP = packet.Source.IP;
@@ -695,21 +702,31 @@ namespace RiseOp.Implementation.Dht
             // if received udp
             if (packet.Tcp == null)
             {
-                if (ping.Source.DhtID == Core.LocalDhtID && ping.Source.ClientID == Core.ClientID) // loop back
-                    return;
-
+                // received udp traffic, we must be behind a NAT at least
                 Core.SetFirewallType(FirewallType.NAT);
 
-                // if firewall flag not set add to routing
-                if (ping.Source.Firewall == FirewallType.Open)
-                    Routing.Add(new DhtContact(ping.Source, packet.Source.IP, Core.TimeNow));
-                
+                if (ping.Source != null)
+                {
+                    if (ping.Source.DhtID == Core.LocalDhtID && ping.Source.ClientID == Core.ClientID) // loop back
+                        return;
+
+                    // if firewall flag not set add to routing
+                    if (ping.Source.Firewall == FirewallType.Open)
+                        Routing.Add(new DhtContact(ping.Source, packet.Source.IP, Core.TimeNow));
+                }
+
                 UdpControl.SendTo(packet.Source, pong);
             }
 
             // received tcp
             else
             {
+                if (ping.Source == null)
+                {
+                    packet.Tcp.SendPacket(pong);
+                    return;
+                }
+
                 if (ping.Source.DhtID == Core.LocalDhtID && ping.Source.ClientID == Core.ClientID) // loopback
                 {
                     packet.Tcp.CleanClose("Loopback connection");
@@ -719,28 +736,33 @@ namespace RiseOp.Implementation.Dht
                 if (ping.Source.Firewall == FirewallType.Open)
                     Routing.Add(new DhtContact(ping.Source, packet.Source.IP, Core.TimeNow));
 
+                // received incoming tcp means we are not firewalled
                 if (!packet.Tcp.Outbound)
-                    Core.SetFirewallType(FirewallType.Open); // received incoming tcp means we are not firewalled
                     // done here to prevent setting open for loopback tcp connection
-
-                if (packet.Tcp.DhtID == 0 || packet.Tcp.ClientID == 0)
+                    Core.SetFirewallType(FirewallType.Open); 
+                    
+                // check if already connected
+                if (packet.Tcp.Proxy == ProxyType.Unset && TcpControl.GetConnection(ping.Source) != null)
                 {
-                    packet.Tcp.DhtID = ping.Source.DhtID;
-                    packet.Tcp.ClientID = ping.Source.ClientID;
-                    packet.Tcp.TcpPort = ping.Source.TcpPort;
-                    packet.Tcp.UdpPort = ping.Source.UdpPort;
-                    TcpControl.ConnectionMap[ping.Source.DhtID] = packet.Tcp;
+                    packet.Tcp.CleanClose("Dupelicate Connection");
+                    return;
                 }
 
-                //crit put in map, if already connected to dht/client disconnect
+                packet.Tcp.DhtID    = ping.Source.DhtID;
+                packet.Tcp.ClientID = ping.Source.ClientID;
+                packet.Tcp.TcpPort  = ping.Source.TcpPort;
+                packet.Tcp.UdpPort  = ping.Source.UdpPort;
 
-                // if requesting a firewall check and havent checked yet
-                if (ping.Source.Firewall != FirewallType.Open && !packet.Tcp.CheckedFirewall)
+                // if inbound connection, to our open host, and haven't checked fw yet
+                if (!packet.Tcp.Outbound && 
+                    ping.Source.Firewall != FirewallType.Open && 
+                    !packet.Tcp.CheckedFirewall)
                 {
                     TcpControl.MakeOutbound(packet.Source, ping.Source.TcpPort, "check firewall");
                     packet.Tcp.CheckedFirewall = true;
                 }
 
+                pong.Direct = true;
                 packet.Tcp.SendPacket(pong);
 
                 // dont send close if proxies maxxed yet, because their id might be closer than current proxies
@@ -759,23 +781,28 @@ namespace RiseOp.Implementation.Dht
             {
                 Core.SetFirewallType(FirewallType.NAT);
 
-                // send bootstrap if Dht cache dead
+                // send bootstrap request for nodes if network not responsive
+                // do tcp connect because if 2 nodes on network then one needs to find out their open
                 if (!Responsive)
+                {
                     Searches.SendUdpRequest(packet.Source, Core.LocalDhtID, 0, Core.DhtServiceID, 0, null);
+                    TcpControl.MakeOutbound(packet.Source, pong.Source.TcpPort, "pong bootstrap");
+                }
 
                 // add to routing
                 // on startup, especially in sim everyone starts blocked so pong source firewall is not set right, but still needs to go into routing
-                if (pong.Source.Firewall == FirewallType.Open || Routing.BucketList.Count == 1)// !Routing.Responsive()) //crit hack
+                if (pong.Source.Firewall == FirewallType.Open)
                     Routing.Add(new DhtContact(pong.Source, packet.Source.IP, Core.TimeNow));
 
-                // forward to proxied nodes
+                // forward to proxied nodes, so that their routing tables are up to date, so they can publish easily
                 if (Core.Firewall == FirewallType.Open)
                 {
                     pong.FromAddress = packet.Source;
                     pong.RemoteIP = null;
+                    pong.Direct = false;
 
-                    lock (TcpControl.Connections)
-                        foreach (TcpConnect connection in TcpControl.Connections)
+                    lock (TcpControl.SocketList)
+                        foreach (TcpConnect connection in TcpControl.SocketList)
                             if (connection.State == TcpState.Connected &&
                                 (connection.Proxy == ProxyType.ClientBlocked || connection.Proxy == ProxyType.ClientNAT))
                                 connection.SendPacket(pong);
@@ -783,27 +810,48 @@ namespace RiseOp.Implementation.Dht
             }
 
             // if received tcp
-            else
+            else if (packet.Tcp != null)
             {
-                if (pong.Source.Firewall == FirewallType.Open)
-                    Routing.Add(new DhtContact(pong.Source, packet.Source.IP, Core.TimeNow));
-
-                // if firewalled
-                if (packet.Tcp.Proxy == ProxyType.Unset && pong.Source.DhtID == packet.Tcp.DhtID)
+                // if regular interval pong 
+                if (pong.Source == null)
                 {
+                    // keep routing entry fresh so connect state remains
+                    if (packet.Tcp.Proxy == ProxyType.Server)
+                        Routing.Add(new DhtContact(packet.Tcp, packet.Tcp.RemoteIP, Core.TimeNow));
+                }
 
-                    if (Core.Firewall != FirewallType.Open && TcpControl.AcceptProxy(ProxyType.Server, pong.Source.DhtID))
+                // else connect pong with source info
+                else
+                {
+                    if (pong.Source.Firewall == FirewallType.Open)
+                        Routing.Add(new DhtContact(pong.Source, packet.Source.IP, Core.TimeNow));
+
+                    // pong's direct flag ensures that tcp connection info (especially client ID) is not set with 
+                    //   information from a pong routed through the remote host, but from the host we're directly connected to
+                    if (pong.Direct)
                     {
-                        // send proxy request
-                        ProxyReq request = new ProxyReq();
-                        request.SenderID = Core.LocalDhtID;
-                        request.Type = (Core.Firewall == FirewallType.Blocked) ? ProxyType.ClientBlocked : ProxyType.ClientNAT;
-                        packet.Tcp.SendPacket(request);
-                    }
+                        packet.Tcp.DhtID = pong.Source.DhtID;
+                        packet.Tcp.ClientID = pong.Source.ClientID;
+                        packet.Tcp.TcpPort = pong.Source.TcpPort;
+                        packet.Tcp.UdpPort = pong.Source.UdpPort;
 
-                    // else ping/pong done, end connect
-                    else
-                    	packet.Tcp.CleanClose("Not in need of a proxy");
+                        // if firewalled
+                        if (packet.Tcp.Outbound && packet.Tcp.Proxy == ProxyType.Unset)
+                        {
+                            if (Core.Firewall != FirewallType.Open && TcpControl.AcceptProxy(ProxyType.Server, pong.Source.DhtID))
+                            {
+                                // send proxy request
+                                ProxyReq request = new ProxyReq();
+                                request.SenderID = Core.LocalDhtID;
+                                request.Type = (Core.Firewall == FirewallType.Blocked) ? ProxyType.ClientBlocked : ProxyType.ClientNAT;
+                                packet.Tcp.SendPacket(request);
+                            }
+
+                            // else ping/pong done, end connect
+                            else
+                                packet.Tcp.CleanClose("Not in need of a proxy");
+                        }
+                    }
                 }
             }
         }
@@ -841,6 +889,8 @@ namespace RiseOp.Implementation.Dht
             {
                 packet.Tcp.Proxy = request.Type;
                 packet.Tcp.SendPacket(ack);
+
+                TcpControl.AddConnection(packet.Tcp);
 
                 // check if a proxy needs to be disconnected now because overflow
                 TcpControl.CheckProxies();
@@ -880,6 +930,8 @@ namespace RiseOp.Implementation.Dht
             {
                 packet.Tcp.Proxy = ProxyType.Server;
 
+                TcpControl.AddConnection(packet.Tcp);
+
                 TcpControl.CheckProxies();
 
                 // location and rudp connections updated after 20 seconds
@@ -906,12 +958,12 @@ namespace RiseOp.Implementation.Dht
                 // Forward to appropriate node
                 if (TcpControl.ConnectionMap.ContainsKey(req.TargetID))
                 {
-                    TcpConnect connection = TcpControl.ConnectionMap[req.TargetID];
+                    /*TcpConnect connection = TcpControl.ConnectionMap[req.TargetID];
 
                     // add so receiving host knows where to send response too
                     req.FromAddress = packet.Source;
 
-                    connection.SendPacket(req);
+                    connection.SendPacket(req);*/
                     return;
                 }
 
@@ -934,8 +986,8 @@ namespace RiseOp.Implementation.Dht
             ack.Depth   = Routing.BucketList.Count;
 
             // proxies as contact list, also need firewall type
-            lock (TcpControl.Connections)
-                foreach (TcpConnect connection in TcpControl.Connections)
+            lock (TcpControl.SocketList)
+                foreach (TcpConnect connection in TcpControl.SocketList)
                     if (connection.State == TcpState.Connected && connection.Proxy != ProxyType.Unset)
                         ack.ProxyList.Add(new DhtContact(connection, connection.RemoteIP, Core.TimeNow));
 

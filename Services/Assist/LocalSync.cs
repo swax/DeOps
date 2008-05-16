@@ -193,7 +193,7 @@ namespace RiseOp.Services.Assist
                 version = CompactNum.ToUInt32(tag, 0, tag.Length);
 
                 if (version < file.Header.Version)
-                    Store.Send_StoreReq(address, 0, new DataReq(null, file.DhtID, ServiceID, DataTypeSync, file.SignedHeader));
+                    Store.Send_StoreReq(address, null, new DataReq(null, file.DhtID, ServiceID, DataTypeSync, file.SignedHeader));
             }
 
             if ((file != null && version > file.Header.Version) ||

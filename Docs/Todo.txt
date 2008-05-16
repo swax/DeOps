@@ -1,27 +1,30 @@
 
-testing
-	test blocked to blocked through single proxy
-		debug why proxy reqs /byes being sent
+testing		
+	test blocked / open again
 	test proxy updates sent and received
 	test connection between 2 blocked
 		remove current proxies, add brand new ones
 	test blocked connected to same proxy can communicate
-	figure out where most of the proxy traffic is coming form
-
-	why did client make multiple proxy reqs?
-	why did server accept multiple proxy reqs?
-	why keep trying web cache?
 	
-	need to make tcp work with multiple clients with same dhtID
-
 	test network of open / blocked - same dhtID
 	test network of all same dhtID open/nat/blocked
+	test proxy failure, routing all over again
+	test IMs, publishing, etc..
+	publishing / updting through 1 open, multiple blocked
 
+	fix crawler
+
+	change established to CanRepublish? map out process
+	
 next
    duplicate users on same proxy, does forwarding work?
    global proxying
+		test 2 op1 blocked, and 1 op2 open, and see if 2 op1s can communicate
+		need to publish on global, or rely on search forward from proxy (probably best)
+			dont replicate proxied global location, proxied host should publish on global net with increasing ttl
 	bandwidth limits / auditing
 		when bandwidth chart, figure out why bandwidth quadrupiles with 30% NATs
+	
 		
 test
 	debug places where searches etc.. are happening, when client knows its not connected
@@ -90,9 +93,8 @@ Interface
 		unload tray icon on exit?
 		alphabetizize component menus, project button, nav bar, project nav drop down
 		dont allow nav bar person switch on mail/chat components
-			
-		animate loader - fade in gradient, logo rises from offscreen into position, rise and op bob indepenently
-		
+		leave join/project by clicking on project node, switching to project auto shows project node in bottom display
+	
 	Internal 
 		expand a little more (names associated with sessions/transfers/searches/publish)
 		browsing using nav bar needs to trigger searches 
@@ -332,6 +334,7 @@ Core
 		detect clients on LAN to connect to
 			add LAN broadcast ping interval to boostrap
 		implement upnp
+		both above need real world testing
 
 	store caching 
 		keep track of when last result was sent
@@ -371,7 +374,8 @@ Core
 		heartbeat from top down with unique key, wont talk to 'unknown' nodes in dht without it
 		if user is ignored, chat invites are ignored as well
 		storage quotas per id to prevent flooding
-		
+		public key kill switch	
+	
 	contact manager? plaxo sync for permanent replicating store that is always accessible
 		probably better if built on top of database component ;)
 		
@@ -404,7 +408,7 @@ quick
 	cache files missing from component header - do in load header
 			dont delete old path in Cache<component> function, until new header saved: move - save headers - delete old files
 	run save headers every 10 secs - every sec is too often, and slows simmy
-			
+	
 
 licensing
 	deops looks for signed license file for proof

@@ -25,8 +25,11 @@ namespace RiseOp.Implementation.Transport
 		
 		internal ushort ListenPort;
 
-		internal List<TcpConnect> Connections = new List<TcpConnect>();
-        internal Dictionary<ulong, TcpConnect> ConnectionMap = new Dictionary<ulong, TcpConnect>();
+		internal List<TcpConnect> SocketList = new List<TcpConnect>();
+        internal List<TcpConnect> ProxyServers = new List<TcpConnect>();
+        internal List<TcpConnect> ProxyClients = new List<TcpConnect>();
+        internal Dictionary<ulong, Dictionary<ushort, TcpConnect>> ConnectionMap = new Dictionary<ulong, Dictionary<ushort, TcpConnect>>();
+
 
 		DateTime LastProxyCheck = new DateTime(0);
 
@@ -81,8 +84,8 @@ namespace RiseOp.Implementation.Transport
 				if(oldSocket != null)
 					oldSocket.Close();
 
-				lock(Connections)
-					foreach(TcpConnect connection in Connections)
+				lock(SocketList)
+					foreach(TcpConnect connection in SocketList)
 						connection.CleanClose("Client shutting down");
 			}
 			catch(Exception ex)
@@ -102,44 +105,49 @@ namespace RiseOp.Implementation.Transport
 				}
 
 			// Run through socket connections
-			ArrayList DeadSockets = new ArrayList();
+			ArrayList deadSockets = new ArrayList();
 
-			lock(Connections)
-				foreach(TcpConnect connection in Connections)
+			lock(SocketList)
+				foreach(TcpConnect socket in SocketList)
 				{
-					connection.SecondTimer();
+					socket.SecondTimer();
 					
 					// only let socket linger in connecting state for 10 secs
-					if( connection.State == TcpState.Closed )
-						DeadSockets.Add(connection);
+					if( socket.State == TcpState.Closed )
+						deadSockets.Add(socket);
 				}
 
-			foreach(TcpConnect connection in DeadSockets)
+			foreach(TcpConnect socket in deadSockets)
 			{
-				string message = "Connection to " + connection.ToString() + " Removed";
-				if(connection.ByeMessage != null)
-					message += ", Reason: " + connection.ByeMessage;
+				string message = "Connection to " + socket.ToString() + " Removed";
+				if(socket.ByeMessage != null)
+					message += ", Reason: " + socket.ByeMessage;
 
 				Network.UpdateLog("Tcp", message);
-				
-				
-				
-				connection.TcpSocket = null;
+								
+				socket.TcpSocket = null;
 
-                //crit problems with multiple clients
-                // especially with firewall tests, multiple connections from same client id
+   
+                lock (SocketList)
+                    SocketList.Remove(socket);
 
-                lock (Connections)
-                {
-                    Connections.Remove(connection);
+                if (ProxyServers.Contains(socket))
+                    ProxyServers.Remove(socket);
 
-                    if(ConnectionMap.ContainsKey(connection.DhtID))
-					    ConnectionMap.Remove(connection.DhtID);
+                if (ProxyClients.Contains(socket))
+                    ProxyClients.Remove(socket);
 
-                    foreach (TcpConnect connect in Connections)
-                        ConnectionMap[connect.DhtID] = connect;
-                    
-				}
+                if(ConnectionMap.ContainsKey(socket.DhtID))
+                    foreach(ushort client in ConnectionMap[socket.DhtID].Keys)
+                        if (ConnectionMap[socket.DhtID][client] == socket)
+                        {
+                            ConnectionMap[socket.DhtID].Remove(client);
+
+                            if (ConnectionMap[socket.DhtID].Count == 0)
+                                ConnectionMap.Remove(socket.DhtID);
+
+                            break;
+                        }
 
                 ArrayList removeList = new ArrayList();
 
@@ -147,7 +155,7 @@ namespace RiseOp.Implementation.Transport
                 lock (Network.Searches.Active)
                     foreach (DhtSearch search in Network.Searches.Active)
 						// if proxytcp == connection
-						if(search.ProxyTcp != null && search.ProxyTcp == connection)
+						if(search.ProxyTcp != null && search.ProxyTcp == socket)
 						{
 							// if proxytcp == client blocked kill search
 							if(search.ProxyTcp.Proxy == ProxyType.ClientBlocked)
@@ -206,8 +214,11 @@ namespace RiseOp.Implementation.Transport
             inbound.TcpPort = (ushort)source.Port;  // zero if internet, actual value if sim
             inbound.SetConnected();
 
-            lock (Connections) 
-                Connections.Add(inbound);
+            // it's not until the host sends us traffic that we can send traffic back because we don't know
+            // connecting node's dhtID (and hence encryption key) until ping is sent
+
+            lock (SocketList) 
+                SocketList.Add(inbound);
 
             Network.UpdateLog("Tcp", "Accepted Connection from " + inbound.ToString());
 
@@ -218,11 +229,29 @@ namespace RiseOp.Implementation.Transport
 		{
 			try
 			{
+                int connecting = 0;
+
+                // check if already connected
+                foreach (TcpConnect socket in SocketList)
+                {
+                    if (socket.State == TcpState.Connecting)
+                        connecting++;
+
+                    if (socket.State != TcpState.Closed && address.IP.Equals(socket.RemoteIP) && tcpPort == socket.TcpPort)
+                        return;
+                }
+
+                if (connecting > 6)
+                {
+                    Debug.Assert(true);
+                    return;
+                }
+
                 TcpConnect outbound = new TcpConnect(this, address, tcpPort);
 				Network.UpdateLog("Tcp", "Attempting Connection to " + address.ToString() + ":" + tcpPort.ToString() + " (" + reason + ")");
 				
-                lock(Connections)
-                    Connections.Add(outbound);
+                lock(SocketList)
+                    SocketList.Add(outbound);
 			}
 			catch(Exception ex)
 			{
@@ -246,11 +275,11 @@ namespace RiseOp.Implementation.Transport
                 // if havent tried in 10 minutes
                 if (Core.TimeNow > contact.NextTryProxy)
                 {
-                    if (Connections.Count == 0)
+                    if (SocketList.Count == 0)
                         attempt = contact;
 
-                    lock (Connections)
-                        foreach (TcpConnect connection in Connections)
+                    lock (SocketList)
+                        foreach (TcpConnect connection in SocketList)
                             if (connection.Proxy == ProxyType.Server && contact.DhtID != connection.DhtID)
                                 // if closer than at least 1 contact
                                 if ((contact.DhtID ^ Core.LocalDhtID) < (connection.DhtID ^ Core.LocalDhtID))
@@ -291,8 +320,8 @@ namespace RiseOp.Implementation.Transport
 		{
 			int count = 0;
 
-			lock(Connections)
-				foreach(TcpConnect connection in Connections)
+			lock(SocketList)
+				foreach(TcpConnect connection in SocketList)
 					if(connection.Proxy == type)
 						count++;
 
@@ -339,8 +368,8 @@ namespace RiseOp.Implementation.Transport
 				return true;
 
 			// else go through proxies, determine if targetid is closer than proxies already hosted
-			lock(Connections)
-				foreach(TcpConnect connection in Connections)
+			lock(SocketList)
+				foreach(TcpConnect connection in SocketList)
 					if(connection.Proxy == type)
 						// if closer than at least 1 contact
                         if ((targetID ^ Core.LocalDhtID) < (connection.DhtID ^ Core.LocalDhtID) || targetID == connection.DhtID)
@@ -364,8 +393,8 @@ namespace RiseOp.Implementation.Transport
 			UInt64     distance = 0;
 			int        count    = 0;
 
-			lock(Connections)
-				foreach(TcpConnect connection in Connections)
+			lock(SocketList)
+				foreach(TcpConnect connection in SocketList)
                     if (connection.Proxy == type)
                     {
                         count++;
@@ -397,24 +426,57 @@ namespace RiseOp.Implementation.Transport
 			
 			// close connection
 			packet.Tcp.Disconnect();
+
+            // reconnect
+            if (bye.Reconnect && NeedProxies(ProxyType.Server))
+                MakeOutbound(packet.Source, packet.Tcp.TcpPort, "Reconnecting");
 		}
 
-        internal void ProxyPacket(ulong dhtID, G2Packet packet)
+        internal void SendRandomProxy(G2Packet packet)
         {
-            if (Network.TcpControl.Connections.Count == 0)
+            if (ProxyServers.Count == 0)
                 return;
 
-            TcpConnect tcp = null;
+            TcpConnect socket = ProxyServers[Core.RndGen.Next(ProxyServers.Count)];
 
-            if (ConnectionMap.ContainsKey(dhtID))
-                tcp = ConnectionMap[dhtID];
+            if(socket != null)
+                socket.SendPacket(packet);
+        }
+
+        internal void AddConnection(TcpConnect socket)
+        {
+            //crit check not connected already as well, before we get to here of course
+
+            if (!ConnectionMap.ContainsKey(socket.DhtID))
+                ConnectionMap[socket.DhtID] = new Dictionary<ushort, TcpConnect>();
+
+            Debug.Assert(!ConnectionMap[socket.DhtID].ContainsKey(socket.ClientID));
+
+            ConnectionMap[socket.DhtID][socket.ClientID] = socket;
+
+            if (socket.Proxy == ProxyType.Server)
+                ProxyServers.Add(socket);
             else
-                tcp = Connections[Core.RndGen.Next(Connections.Count)];
-           
-            if (tcp.Proxy != ProxyType.Server)
-                return; // should only be proxying packets if we're in blocked mode
+                ProxyClients.Add(socket);
+        }
 
-            tcp.SendPacket(packet);
+        internal TcpConnect GetConnection(DhtClient ident)
+        {
+            if (ident == null)
+                return null;
+
+            return GetConnection(ident.DhtID, ident.ClientID);
+        }
+
+        internal TcpConnect GetConnection(ulong dhtid, ushort client)
+        {
+            if (ConnectionMap.ContainsKey(dhtid) &&
+                ConnectionMap[dhtid].ContainsKey(client) &&
+                ConnectionMap[dhtid][client].State == TcpState.Connected &&
+                ConnectionMap[dhtid][client].Proxy != ProxyType.Unset)
+                return ConnectionMap[dhtid][client];
+
+            return null;
         }
     }
 }

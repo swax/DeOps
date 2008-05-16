@@ -791,7 +791,7 @@ namespace RiseOp.Services.Board
                     // remote version is lower, send update
                     if (post.Header.Version > version)
                     {
-                        Store.Send_StoreReq(source, 0, new DataReq(null, dhtid, ServiceID, 0, post.SignedHeader));
+                        Store.Send_StoreReq(source, null, new DataReq(null, dhtid, ServiceID, 0, post.SignedHeader));
                         continue;
                     }
                         

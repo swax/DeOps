@@ -74,8 +74,8 @@ namespace RiseOp.Simulator
         int  FluxIn      = 1;
         int  FluxOut     = 0;
 
-        int PercentNAT = 0;
-        int PercentBlocked = 30;  
+        int PercentNAT = 30;
+        int PercentBlocked = 0;  
 
 
         internal InternetSim(SimForm form)

@@ -28,6 +28,7 @@ namespace RiseOp.Implementation.Dht
         internal Dictionary<ulong, DhtContact> ContactMap = new Dictionary<ulong, DhtContact>();
 
         int NetworkTimeout = 15; // seconds
+        internal bool DhtResponsive;
         internal DateTime LastUpdated    = new DateTime(0);
 		internal DateTime NextSelfSearch = new DateTime(0);
 
@@ -55,7 +56,7 @@ namespace RiseOp.Implementation.Dht
         {
             // if not connected, cache is frozen until re-connected
             // ideally for disconnects around 10 mins, most of cache will still be valid upon reconnect
-            if (!Network.Established)
+            if (!Network.Responsive)
                 return;
 
             // hourly self search
@@ -134,7 +135,7 @@ namespace RiseOp.Implementation.Dht
 			// find youngest, if more than 10 secs old, we are disconnected
             // in this time 10 unique contacts should have been pinged
             if (youngest == null || youngest.LastSeen.AddSeconds(NetworkTimeout) < Core.TimeNow)
-                Network.SetResponsive(false);
+                DhtResponsive = false;
         }
 
         private void RemoveContact(DhtContact target)
@@ -366,9 +367,7 @@ namespace RiseOp.Implementation.Dht
             if (newContact.LastSeen > LastUpdated)
             {
                 LastUpdated = newContact.LastSeen;
-
-                if (!Network.Responsive)
-                    Network.SetResponsive(true);
+                DhtResponsive = true;
             }
 
             // add to ip cache
