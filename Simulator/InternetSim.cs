@@ -75,8 +75,8 @@ namespace RiseOp.Simulator
         int  FluxIn      = 1;
         int  FluxOut     = 0;
 
-        int PercentNAT = 30;
-        int PercentBlocked = 30;  
+        int PercentNAT = 0;
+        int PercentBlocked = 0;  
 
 
         internal InternetSim(SimForm form)
@@ -579,7 +579,7 @@ namespace RiseOp.Simulator
             // add 3 random instances to network
             List<SimInstance> cached = new List<SimInstance>();
 
-            for (int i = 0; i < open.Count || cached.Count > 2; i++)
+            for (int i = 0; i < open.Count || cached.Count < 3; i++)
                 if (RandomCache)
                     cached.Add(open[RndGen.Next(open.Count)]);
                 else
