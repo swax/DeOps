@@ -727,10 +727,10 @@ namespace RiseOp.Simulator
             if (Instance.RealFirewall != FirewallType.Open)
             {
                 if (Instance.Core.GlobalNet != null)
-                    if (Instance.Core.GlobalNet.TcpControl.ConnectionMap.Count == 0)
+                    if (Instance.Core.GlobalNet.TcpControl.ProxyMap.Count == 0)
                         alerts += "Global Proxy, ";
 
-                if (Instance.Core.OperationNet.TcpControl.ConnectionMap.Count == 0)
+                if (Instance.Core.OperationNet.TcpControl.ProxyMap.Count == 0)
                     alerts += "Op Proxy, ";
             }
 

@@ -347,7 +347,7 @@ namespace RiseOp.Simulator
             Dictionary<ulong, Dictionary<ulong, PacketGroup>> UdpTraffic = new Dictionary<ulong,Dictionary<ulong,PacketGroup>>();
             Dictionary<ulong, Dictionary<ulong, PacketGroup>> TcpTraffic = new Dictionary<ulong, Dictionary<ulong, PacketGroup>>();
 
-            lock (Sim.OutPackets)
+            lock (Sim.PacketHandle)
             {
                 foreach (SimPacket packet in Sim.OutPackets)
                     if (SelectedID == 0 || (!ShowInbound && SelectedID == packet.SenderID) || (ShowInbound && SelectedID == packet.Dest.Core.LocalDhtID))

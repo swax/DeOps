@@ -1,24 +1,23 @@
 
 testing		
-	test blocked / open again
-	test proxy updates sent and received
-	test connection between 2 blocked
-		remove current proxies, add brand new ones
-	test blocked connected to same proxy can communicate
-	
-	test network of open / blocked - same dhtID
-	test network of all same dhtID open/nat/blocked
-	test proxy failure, routing all over again
+	start recording test procedures for automated test system
+
 	test IMs, publishing, etc..
 	publishing / updting through 1 open, multiple blocked
 
-	fix crawler
+	fix crawler - make sure reports be, gonna need to crawl global regularly to audit at release
 
 	change established to CanRepublish? map out process
 	
+	user experience good for pickup groups
+		support proxying through global, so 2-5 blocked people can come online and communicate quickly
+		support free 20mb of centrally hosted web cache so people with small groups can store their files and go offline
+	
+	use random/diff global ID still static for user though
+	
 next
-   duplicate users on same proxy, does forwarding work?
    global proxying
+		move iteratively routing, forwarding, ping/pong, search, store, comm
 		test 2 op1 blocked, and 1 op2 open, and see if 2 op1s can communicate
 		need to publish on global, or rely on search forward from proxy (probably best)
 			dont replicate proxied global location, proxied host should publish on global net with increasing ttl
@@ -70,12 +69,12 @@ other
 spring release
 	global proxying
 	invitations
-	web caching - look at using EC2
+	web caching ips/files - look at using EC2
 	auto-update
 	licensing, installer
 	website
 	*** items from todo
-	42 crits
+	31 crits
 	live locations/chat
 	network bandwidth limits - tracking in sim triggers node to start logging bw data
 	multisource downloading 

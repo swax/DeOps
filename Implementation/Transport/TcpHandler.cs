@@ -28,7 +28,7 @@ namespace RiseOp.Implementation.Transport
 		internal List<TcpConnect> SocketList = new List<TcpConnect>();
         internal List<TcpConnect> ProxyServers = new List<TcpConnect>();
         internal List<TcpConnect> ProxyClients = new List<TcpConnect>();
-        internal Dictionary<ulong, Dictionary<ushort, TcpConnect>> ConnectionMap = new Dictionary<ulong, Dictionary<ushort, TcpConnect>>();
+        internal Dictionary<ulong, Dictionary<ushort, TcpConnect>> ProxyMap = new Dictionary<ulong, Dictionary<ushort, TcpConnect>>();
 
 
 		DateTime LastProxyCheck = new DateTime(0);
@@ -117,17 +117,17 @@ namespace RiseOp.Implementation.Transport
 						deadSockets.Add(socket);
 				}
 
-			foreach(TcpConnect socket in deadSockets)
-			{
-				string message = "Connection to " + socket.ToString() + " Removed";
-				if(socket.ByeMessage != null)
-					message += ", Reason: " + socket.ByeMessage;
+            foreach (TcpConnect socket in deadSockets)
+            {
+                string message = "Connection to " + socket.ToString() + " Removed";
+                if (socket.ByeMessage != null)
+                    message += ", Reason: " + socket.ByeMessage;
 
-				Network.UpdateLog("Tcp", message);
-								
-				socket.TcpSocket = null;
+                Network.UpdateLog("Tcp", message);
 
-   
+                socket.TcpSocket = null;
+
+
                 lock (SocketList)
                     SocketList.Remove(socket);
 
@@ -137,45 +137,46 @@ namespace RiseOp.Implementation.Transport
                 if (ProxyClients.Contains(socket))
                     ProxyClients.Remove(socket);
 
-                if(ConnectionMap.ContainsKey(socket.DhtID))
-                    foreach(ushort client in ConnectionMap[socket.DhtID].Keys)
-                        if (ConnectionMap[socket.DhtID][client] == socket)
+                if (ProxyMap.ContainsKey(socket.DhtID))
+                    foreach (ushort client in ProxyMap[socket.DhtID].Keys)
+                        if (ProxyMap[socket.DhtID][client] == socket)
                         {
-                            ConnectionMap[socket.DhtID].Remove(client);
+                            ProxyMap[socket.DhtID].Remove(client);
 
-                            if (ConnectionMap[socket.DhtID].Count == 0)
-                                ConnectionMap.Remove(socket.DhtID);
+                            if (ProxyMap[socket.DhtID].Count == 0)
+                                ProxyMap.Remove(socket.DhtID);
 
                             break;
                         }
 
+
                 ArrayList removeList = new ArrayList();
 
-				// iterate through searches
+                // iterate through searches
                 lock (Network.Searches.Active)
                     foreach (DhtSearch search in Network.Searches.Active)
-						// if proxytcp == connection
-						if(search.ProxyTcp != null && search.ProxyTcp == socket)
-						{
-							// if proxytcp == client blocked kill search
-							if(search.ProxyTcp.Proxy == ProxyType.ClientBlocked)
-								search.FinishSearch("Proxied client disconnected");
-							
-							// else if proxy type is server add back to pending proxy list
-							if(search.ProxyTcp.Proxy == ProxyType.Server)
-							{
-								removeList.Add(search);
-                                Network.Searches.Pending.Add(search);
-								search.Log("Back to Pending, TCP Disconnected");
-							}
+                        // if proxytcp == connection
+                        if (search.ProxyTcp != null && search.ProxyTcp == socket)
+                        {
+                            // if proxytcp == client blocked kill search
+                            if (search.ProxyTcp.Proxy == ProxyType.ClientBlocked)
+                                search.FinishSearch("Proxied client disconnected");
 
-							search.ProxyTcp = null;
-						}
+                            // else if proxy type is server add back to pending proxy list
+                            if (search.ProxyTcp.Proxy == ProxyType.Server)
+                            {
+                                removeList.Add(search);
+                                Network.Searches.Pending.Add(search);
+                                search.Log("Back to Pending, TCP Disconnected");
+                            }
+
+                            search.ProxyTcp = null;
+                        }
 
                 lock (Network.Searches.Active)
-					foreach(DhtSearch search in removeList)
+                    foreach (DhtSearch search in removeList)
                         Network.Searches.Active.Remove(search);
-			}
+            }
 		}
 
 		void ListenSocket_Accept(IAsyncResult asyncResult)
@@ -232,14 +233,15 @@ namespace RiseOp.Implementation.Transport
                 int connecting = 0;
 
                 // check if already connected
-                foreach (TcpConnect socket in SocketList)
-                {
-                    if (socket.State == TcpState.Connecting)
-                        connecting++;
+                lock(SocketList)
+                    foreach (TcpConnect socket in SocketList)
+                    {
+                        if (socket.State == TcpState.Connecting)
+                            connecting++;
 
-                    if (socket.State != TcpState.Closed && address.IP.Equals(socket.RemoteIP) && tcpPort == socket.TcpPort)
-                        return;
-                }
+                        if (socket.State != TcpState.Closed && address.IP.Equals(socket.RemoteIP) && tcpPort == socket.TcpPort)
+                            return;
+                    }
 
                 if (connecting > 6)
                 {
@@ -267,31 +269,28 @@ namespace RiseOp.Implementation.Transport
 			// no Dht contacts, use ip cache will be used to connect tcp/udp in DoBootstrap
 
 			// find if any contacts in list are worth trying (will be skipped if set already)
+            // get closest contact that is not already connected
             foreach (DhtContact contact in Network.Routing.NearXor.Contacts)
-            {
-                if (ConnectionMap.ContainsKey(contact.DhtID))
-                    continue;
-
                 // if havent tried in 10 minutes
                 if (Core.TimeNow > contact.NextTryProxy)
                 {
-                    if (SocketList.Count == 0)
-                        attempt = contact;
+                    bool connected = false;
 
                     lock (SocketList)
-                        foreach (TcpConnect connection in SocketList)
-                            if (connection.Proxy == ProxyType.Server && contact.DhtID != connection.DhtID)
-                                // if closer than at least 1 contact
-                                if ((contact.DhtID ^ Core.LocalDhtID) < (connection.DhtID ^ Core.LocalDhtID))
-                                {
-                                    attempt = contact;
-                                    break;
-                                }
+                        foreach (TcpConnect socket in SocketList)
+                            if (contact.DhtID == socket.DhtID && contact.ClientID == socket.ClientID)
+                            {
+                                connected = true;
+                                break;
+                            }
 
-                    if (attempt != null)
-                        break;
+                    if(connected)
+                        continue;
+
+                    if (attempt == null || (contact.DhtID ^ Core.LocalDhtID) < (attempt.DhtID ^ Core.LocalDhtID))
+                        attempt = contact;
                 }
-            }
+            
 
 			if(attempt != null)
 			{
@@ -389,13 +388,27 @@ namespace RiseOp.Implementation.Transport
 
 		void CheckProxies(ProxyType type, int max)
 		{
+            /*if (type == ProxyType.Server && Core.Sim.RealFirewall != FirewallType.Open)
+            {
+                int x = 0;
+                // count number of connected servers, if too many break
+                foreach (TcpConnect connection in SocketList)
+                    if (connection.Proxy == type)
+                        x++;
+                if (x > 2)
+                {
+                    int y = 0;
+                    y++;
+                }
+            }*/
+
 			TcpConnect furthest = null;
 			UInt64     distance = 0;
 			int        count    = 0;
 
 			lock(SocketList)
 				foreach(TcpConnect connection in SocketList)
-                    if (connection.Proxy == type)
+                    if (connection.State == TcpState.Connected && connection.Proxy == type)
                     {
                         count++;
 
@@ -443,16 +456,14 @@ namespace RiseOp.Implementation.Transport
                 socket.SendPacket(packet);
         }
 
-        internal void AddConnection(TcpConnect socket)
+        internal void AddProxy(TcpConnect socket)
         {
-            //crit check not connected already as well, before we get to here of course
+            if (!ProxyMap.ContainsKey(socket.DhtID))
+                ProxyMap[socket.DhtID] = new Dictionary<ushort, TcpConnect>();
 
-            if (!ConnectionMap.ContainsKey(socket.DhtID))
-                ConnectionMap[socket.DhtID] = new Dictionary<ushort, TcpConnect>();
+            Debug.Assert(!ProxyMap[socket.DhtID].ContainsKey(socket.ClientID));
 
-            Debug.Assert(!ConnectionMap[socket.DhtID].ContainsKey(socket.ClientID));
-
-            ConnectionMap[socket.DhtID][socket.ClientID] = socket;
+            ProxyMap[socket.DhtID][socket.ClientID] = socket;
 
             if (socket.Proxy == ProxyType.Server)
                 ProxyServers.Add(socket);
@@ -460,21 +471,21 @@ namespace RiseOp.Implementation.Transport
                 ProxyClients.Add(socket);
         }
 
-        internal TcpConnect GetConnection(DhtClient ident)
+        internal TcpConnect GetProxy(DhtClient ident)
         {
             if (ident == null)
                 return null;
 
-            return GetConnection(ident.DhtID, ident.ClientID);
+            return GetProxy(ident.DhtID, ident.ClientID);
         }
 
-        internal TcpConnect GetConnection(ulong dhtid, ushort client)
+        internal TcpConnect GetProxy(ulong dhtid, ushort client)
         {
-            if (ConnectionMap.ContainsKey(dhtid) &&
-                ConnectionMap[dhtid].ContainsKey(client) &&
-                ConnectionMap[dhtid][client].State == TcpState.Connected &&
-                ConnectionMap[dhtid][client].Proxy != ProxyType.Unset)
-                return ConnectionMap[dhtid][client];
+            if (ProxyMap.ContainsKey(dhtid) &&
+                ProxyMap[dhtid].ContainsKey(client) &&
+                ProxyMap[dhtid][client].State == TcpState.Connected &&
+                ProxyMap[dhtid][client].Proxy != ProxyType.Unset)
+                return ProxyMap[dhtid][client];
 
             return null;
         }

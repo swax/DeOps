@@ -142,9 +142,7 @@ namespace RiseOp.Implementation.Dht
 
         public override string ToString()
 		{
-			//crit return Address.ToString() + ":" + TcpPort.ToString() + ":" + UdpPort.ToString();
-
-            return LastSeen.ToString() + ":" + Address.ToString() + ":" + TcpPort.ToString() + ":" + UdpPort.ToString(); ;
+            return Address.ToString() + ":" + TcpPort.ToString() + ":" + UdpPort.ToString(); ;
 		}
 
         internal byte[] ToBytes()

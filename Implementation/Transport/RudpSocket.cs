@@ -815,7 +815,7 @@ namespace RiseOp.Implementation.Transport
             {
                 tracked.Packet.ToEndPoint = target.Address;
 
-                TcpConnect proxy = network.TcpControl.GetConnection(target.LocalProxy);
+                TcpConnect proxy = network.TcpControl.GetProxy(target.LocalProxy);
 
                 if (proxy != null)
                     proxy.SendPacket(tracked.Packet);
@@ -882,10 +882,7 @@ namespace RiseOp.Implementation.Transport
                 {
                     // after connection this should immediately be called to find best route
 
-                    PrimaryAddress.Reset = true;
-
-                    foreach (RudpAddress address in AddressMap.Values)
-                        SendPing(address);
+                    CheckRoutes();
 
                     NextCheckRoutes = Core.TimeNow.AddSeconds(30);
                 }
@@ -900,10 +897,10 @@ namespace RiseOp.Implementation.Transport
             // prune addressMap to last 6 addresses seen
             while (AddressMap.Count > 6)
             {
-                RudpAddress lastSeen = PrimaryAddress;
+                RudpAddress lastSeen = null;
 
                 foreach (RudpAddress address in AddressMap.Values)
-                    if (address.LastAck < lastSeen.LastAck)
+                    if (lastSeen == null || address.LastAck < lastSeen.LastAck)
                         lastSeen = address;
 
                 AddressMap.Remove(lastSeen.GetHashCode());
@@ -918,6 +915,14 @@ namespace RiseOp.Implementation.Transport
 			// update bandwidth rate used for determining internal send buffer
 			AvgBytesSent.Next();
 		}
+
+        internal void CheckRoutes()
+        {
+            PrimaryAddress.Reset = true;
+
+            foreach (RudpAddress address in AddressMap.Values)
+                SendPing(address);
+        }
 	}
 
 	internal class TrackPacket

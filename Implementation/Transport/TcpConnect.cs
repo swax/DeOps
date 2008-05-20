@@ -287,7 +287,7 @@ namespace RiseOp.Implementation.Transport
                 }
             }
 
-            State = TcpState.Closed;
+            State = TcpState.Closed; 
         }
 
 		internal void SendPacket(G2Packet packet)

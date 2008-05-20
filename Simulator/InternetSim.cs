@@ -38,6 +38,7 @@ namespace RiseOp.Simulator
         internal Dictionary<IPEndPoint, DhtNetwork> AddressMap = new Dictionary<IPEndPoint, DhtNetwork>();
         Dictionary<IPAddress, SimInstance> SimMap = new Dictionary<IPAddress, SimInstance>();
 
+        internal object PacketHandle = new object(); // in/out packet references switch so use all encompassing handle
         internal List<SimPacket> OutPackets = new List<SimPacket>();
         internal List<SimPacket> InPackets = new List<SimPacket>();
 
@@ -75,7 +76,7 @@ namespace RiseOp.Simulator
         int  FluxOut     = 0;
 
         int PercentNAT = 30;
-        int PercentBlocked = 0;  
+        int PercentBlocked = 30;  
 
 
         internal InternetSim(SimForm form)
@@ -274,59 +275,59 @@ namespace RiseOp.Simulator
                 while (i < pumps)
                 {
                     // clear out buffer by switching with in buffer
-                    lock (OutPackets)
+                    lock (PacketHandle)
                     {
                         tempList = InPackets;
                         InPackets = OutPackets;
                         OutPackets = tempList;
-                    }
 
-                    // send packets
-                    foreach (SimPacket packet in InPackets)
-                    {
-                        switch (packet.Type)
+                        // send packets
+                        foreach (SimPacket packet in InPackets)
                         {
-                            case SimPacketType.Udp:
-                                packet.Dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
-                                packet.Dest.UdpControl.OnReceive(packet.Packet, packet.Packet.Length, packet.Source);
-                                break;
-                            case SimPacketType.TcpConnect:
-                                TcpConnect socket = packet.Dest.TcpControl.OnAccept(null, packet.Source);
+                            switch (packet.Type)
+                            {
+                                case SimPacketType.Udp:
+                                    packet.Dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
+                                    packet.Dest.UdpControl.OnReceive(packet.Packet, packet.Packet.Length, packet.Source);
+                                    break;
+                                case SimPacketType.TcpConnect:
+                                    TcpConnect socket = packet.Dest.TcpControl.OnAccept(null, packet.Source);
 
-                                if (socket != null)
-                                {
-                                    TcpSourcetoDest[packet.Tcp] = socket;
-                                    TcpSourcetoDest[socket] = packet.Tcp;
+                                    if (socket != null)
+                                    {
+                                        TcpSourcetoDest[packet.Tcp] = socket;
+                                        TcpSourcetoDest[socket] = packet.Tcp;
 
-                                    packet.Tcp.OnConnect();
-                                }
+                                        packet.Tcp.OnConnect();
+                                    }
 
-                                break;
-                            case SimPacketType.Tcp:
-                                if (TcpSourcetoDest.ContainsKey(packet.Tcp))
-                                {
-                                    TcpConnect dest = TcpSourcetoDest[packet.Tcp];
+                                    break;
+                                case SimPacketType.Tcp:
+                                    if (TcpSourcetoDest.ContainsKey(packet.Tcp))
+                                    {
+                                        TcpConnect dest = TcpSourcetoDest[packet.Tcp];
 
-                                    dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
+                                        dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
 
-                                    packet.Packet.CopyTo(dest.RecvBuffer, dest.RecvBuffSize);
-                                    dest.OnReceive(packet.Packet.Length);
-                                }
-                                break;
-                            case SimPacketType.TcpClose:
-                                if (TcpSourcetoDest.ContainsKey(packet.Tcp))
-                                {
-                                    TcpConnect dest = TcpSourcetoDest[packet.Tcp];
-                                    dest.OnReceive(0);
+                                        packet.Packet.CopyTo(dest.RecvBuffer, dest.RecvBuffSize);
+                                        dest.OnReceive(packet.Packet.Length);
+                                    }
+                                    break;
+                                case SimPacketType.TcpClose:
+                                    if (TcpSourcetoDest.ContainsKey(packet.Tcp))
+                                    {
+                                        TcpConnect dest = TcpSourcetoDest[packet.Tcp];
+                                        dest.OnReceive(0);
 
-                                    TcpSourcetoDest.Remove(packet.Tcp);
-                                    TcpSourcetoDest.Remove(dest);
-                                }
-                                break;
+                                        TcpSourcetoDest.Remove(packet.Tcp);
+                                        TcpSourcetoDest.Remove(dest);
+                                    }
+                                    break;
+                            }
                         }
-                    }
 
-                    InPackets.Clear();
+                        InPackets.Clear();
+                    }
 
                     // send messages from gui
                     AsyncCoreFunction function = null;
@@ -427,7 +428,7 @@ namespace RiseOp.Simulator
                 for (int i = 0; i < pumps; i++)
                 {
                     // clear out buffer by switching with in buffer
-                    lock (OutPackets)
+                    lock (PacketHandle)
                     {
                         tempList = InPackets;
                         InPackets = OutPackets;
@@ -568,32 +569,21 @@ namespace RiseOp.Simulator
             if (Online.Count == 0)
                 return;
 
-            List<SimInstance> cached = new List<SimInstance>();
+            List<SimInstance> open = new List<SimInstance>();
+
+            foreach (SimInstance instance in Online)
+                // use realfirewall, because if flux not used and a lot loaded they all start out as blocked
+                if (instance.RealFirewall == FirewallType.Open && instance != network.Core.Sim)
+                    open.Add(instance);
 
             // add 3 random instances to network
-            for (int i = 0; i < Online.Count; i++)
-            {
-                SimInstance instance = null;
+            List<SimInstance> cached = new List<SimInstance>();
 
+            for (int i = 0; i < open.Count || cached.Count > 2; i++)
                 if (RandomCache)
-                    instance = Online[RndGen.Next(Online.Count)];
+                    cached.Add(open[RndGen.Next(open.Count)]);
                 else
-                    instance = Online[i];
-
-                if (instance == network.Core.Sim)
-                    continue;
-
-                if (instance.RealFirewall == FirewallType.Open) // use realfirewall, because if flux not used and a lot loaded they all start out as blocked
-                    cached.Add(instance);
-
-                if (cached.Count > 2)
-                    break;
-            }
-
-            // if not enough open nodes get random
-            // simulates if node doesnt get enough cache entries, it adds itself even if natted
-            for (int i = 0; cached.Count < 3 && Online.Count > 0; i++)
-                cached.Add(Online[RndGen.Next(Online.Count)]);
+                    cached.Add(open[i]);
 
 
             foreach (SimInstance entry in cached)
@@ -673,7 +663,7 @@ namespace RiseOp.Simulator
             if (packet != null && packet.Length == 0)
                 Debug.Assert(false, "Empty Packet");
 
-            lock(OutPackets)
+            lock (PacketHandle)
                 OutPackets.Add(new SimPacket(type, source, packet, AddressMap[target], tcp, network.Core.LocalDhtID));
 
             if (packet == null)

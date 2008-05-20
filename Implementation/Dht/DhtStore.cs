@@ -25,9 +25,6 @@ namespace RiseOp.Implementation.Dht
         //super-class
         OpCore Core;
         DhtNetwork Network; 
-        
-        //crit - if middle bucket had one entry would it still be replicated to? maybe should not use maxdistance
-        //internal ulong MaxDistance = ulong.MaxValue;
 
         internal ServiceEvent<StoreHandler> StoreEvent = new ServiceEvent<StoreHandler>();
         internal ServiceEvent<ReplicateHandler> ReplicateEvent = new ServiceEvent<ReplicateHandler>(); // this event doesnt support overloading
@@ -108,7 +105,7 @@ namespace RiseOp.Implementation.Dht
             store.DataType  = publish.DataType;
             store.Data      = publish.Data;
 
-            TcpConnect direct = Network.TcpControl.GetConnection(contact);
+            TcpConnect direct = Network.TcpControl.GetProxy(contact);
 
             if (direct != null)
                 direct.SendPacket(store);

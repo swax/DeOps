@@ -489,7 +489,7 @@ namespace RiseOp.Implementation.Dht
                     DhtAddress address = netPacket.ToAddress;
                     netPacket.ToAddress = null;
 
-                    TcpConnect direct = TcpControl.GetConnection(address);
+                    TcpConnect direct = TcpControl.GetProxy(address);
 
                     if (direct != null)
                         direct.SendPacket(netPacket);
@@ -523,7 +523,7 @@ namespace RiseOp.Implementation.Dht
                 }  
 
                 // Also Forward to appropriate node
-                TcpConnect socket = TcpControl.GetConnection(commPacket.TargetID, commPacket.TargetClient);
+                TcpConnect socket = TcpControl.GetProxy(commPacket.TargetID, commPacket.TargetClient);
 
                 if (socket != null)
                 {
@@ -742,7 +742,7 @@ namespace RiseOp.Implementation.Dht
                     Core.SetFirewallType(FirewallType.Open); 
                     
                 // check if already connected
-                if (packet.Tcp.Proxy == ProxyType.Unset && TcpControl.GetConnection(ping.Source) != null)
+                if (packet.Tcp.Proxy == ProxyType.Unset && TcpControl.GetProxy(ping.Source) != null)
                 {
                     packet.Tcp.CleanClose("Dupelicate Connection");
                     return;
@@ -801,11 +801,8 @@ namespace RiseOp.Implementation.Dht
                     pong.RemoteIP = null;
                     pong.Direct = false;
 
-                    lock (TcpControl.SocketList)
-                        foreach (TcpConnect connection in TcpControl.SocketList)
-                            if (connection.State == TcpState.Connected &&
-                                (connection.Proxy == ProxyType.ClientBlocked || connection.Proxy == ProxyType.ClientNAT))
-                                connection.SendPacket(pong);
+                    foreach (TcpConnect connection in TcpControl.ProxyClients)
+                        connection.SendPacket(pong);
                 }
             }
 
@@ -890,7 +887,7 @@ namespace RiseOp.Implementation.Dht
                 packet.Tcp.Proxy = request.Type;
                 packet.Tcp.SendPacket(ack);
 
-                TcpControl.AddConnection(packet.Tcp);
+                TcpControl.AddProxy(packet.Tcp);
 
                 // check if a proxy needs to be disconnected now because overflow
                 TcpControl.CheckProxies();
@@ -921,7 +918,7 @@ namespace RiseOp.Implementation.Dht
             // received ack udp
             if (packet.Tcp == null)
             {
-                if(!TcpControl.ConnectionMap.ContainsKey(ack.Source.DhtID))
+                if(!TcpControl.ProxyMap.ContainsKey(ack.Source.DhtID))
                     TcpControl.MakeOutbound(packet.Source, ack.Source.TcpPort, "proxy ack recv");
             }
 
@@ -930,7 +927,7 @@ namespace RiseOp.Implementation.Dht
             {
                 packet.Tcp.Proxy = ProxyType.Server;
 
-                TcpControl.AddConnection(packet.Tcp);
+                TcpControl.AddProxy(packet.Tcp);
 
                 TcpControl.CheckProxies();
 
@@ -956,7 +953,7 @@ namespace RiseOp.Implementation.Dht
             if (req.TargetID != Core.LocalDhtID)
             {
                 // Forward to appropriate node
-                if (TcpControl.ConnectionMap.ContainsKey(req.TargetID))
+                if (TcpControl.ProxyMap.ContainsKey(req.TargetID))
                 {
                     /*TcpConnect connection = TcpControl.ConnectionMap[req.TargetID];
 
@@ -1016,7 +1013,7 @@ namespace RiseOp.Implementation.Dht
 
             lock (LoggedPackets)
             {
-                //crit LoggedPackets.Enqueue(logEntry);
+                LoggedPackets.Enqueue(logEntry);
 
                 while (LoggedPackets.Count > 50)
                     LoggedPackets.Dequeue();

@@ -219,7 +219,7 @@ namespace RiseOp.Implementation.Dht
             ack.Service = request.Service;
 
             // search for connected proxy
-            if (Network.TcpControl.ConnectionMap.ContainsKey(request.TargetID))
+            if (Network.TcpControl.ProxyMap.ContainsKey(request.TargetID))
                 ack.Proxied = true;
 
             if(request.Nodes)
@@ -378,7 +378,7 @@ namespace RiseOp.Implementation.Dht
             request.Parameters  = parameters;
             request.Nodes       = false;
 
-            TcpConnect socket = Network.TcpControl.GetConnection(dest);
+            TcpConnect socket = Network.TcpControl.GetProxy(dest);
 
             if(socket != null)
                 socket.SendPacket(request);

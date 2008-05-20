@@ -166,7 +166,7 @@ namespace RiseOp.Services.Location
                                      if (location.TTL == 0)
                                      {
                                          deadClients.Add(location.ClientID);
-                                         affectedUsers.Add(location.Data.DhtID, true);
+                                         affectedUsers[location.Data.DhtID] = true;
                                      }
                                  }
 
@@ -301,9 +301,10 @@ namespace RiseOp.Services.Location
             location.Source = Core.OperationNet.GetLocalSource();
             location.TTL    = LocationData.OP_TTL;
             
-            foreach (TcpConnect connect in Core.OperationNet.TcpControl.SocketList)
-                if (connect.Proxy == ProxyType.Server)
-                    location.Proxies.Add(new DhtAddress(connect.RemoteIP, connect));
+            lock(Core.OperationNet.TcpControl.SocketList)
+                foreach (TcpConnect connect in Core.OperationNet.TcpControl.SocketList)
+                    if (connect.Proxy == ProxyType.Server)
+                        location.Proxies.Add(new DhtAddress(connect.RemoteIP, connect));
 
             location.Place = Core.User.Settings.Location;
             location.GmtOffset = System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes;
@@ -388,8 +389,6 @@ namespace RiseOp.Services.Location
         {
             CryptLoc newLoc = CryptLoc.Decode(Core.Protocol, crypt.Data);
 
-            Debug.Assert(newLoc.TTL > 55);
-            
             if (newLoc == null)
                 return;
 
@@ -453,8 +452,6 @@ namespace RiseOp.Services.Location
 
         private void Process_LocationData(DataReq data, SignedData signed, LocationData location)
         {
-            Debug.Assert(location.TTL < 5);
-
             Core.IndexKey(location.DhtID, ref location.Key);
 
             ClientInfo current = GetLocationInfo(location.DhtID, location.Source.ClientID);
@@ -553,10 +550,11 @@ namespace RiseOp.Services.Location
                 location.Global = true;
                 location.Source = Core.GlobalNet.GetLocalSource();
 
-                foreach (TcpConnect connect in Core.GlobalNet.TcpControl.SocketList)
-                    if (connect.Proxy == ProxyType.Server)
-                        location.Proxies.Add(new DhtAddress(connect.RemoteIP, connect));
-            }
+                lock(Core.GlobalNet.TcpControl.SocketList)
+                    foreach (TcpConnect connect in Core.GlobalNet.TcpControl.SocketList)
+                        if (connect.Proxy == ProxyType.Server)
+                            location.Proxies.Add(new DhtAddress(connect.RemoteIP, connect));
+             }
 
             // else no need to publish ourselves on global
             else
