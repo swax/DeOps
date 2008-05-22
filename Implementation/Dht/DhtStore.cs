@@ -47,7 +47,7 @@ namespace RiseOp.Implementation.Dht
             DataReq store = new DataReq(null, target, service, datatype, data);
 
             // find users closest to publish target
-            if (target == Core.LocalDhtID)
+            if (target == Network.LocalUserID)
             {
                 foreach (DhtContact closest in Network.Routing.GetCacheArea())
                     Send_StoreReq(closest.ToDhtAddress(), null, store);
@@ -122,7 +122,7 @@ namespace RiseOp.Implementation.Dht
 
         internal void Receive_StoreReq(G2ReceivedPacket packet)
         {
-            StoreReq store = StoreReq.Decode(Core.Protocol, packet);
+            StoreReq store = StoreReq.Decode(packet);
 
             if (store.Source.Firewall == FirewallType.Open )
                     // dont need to add to routing if nat/blocked because eventual routing ping by server will auto add
@@ -198,7 +198,7 @@ namespace RiseOp.Implementation.Dht
                 if (patch.Tag.Length + totalSize > 1000)
                 {
                     if (packet.PatchData.Count > 0)
-                        Send_StoreReq(contact.ToDhtAddress(), contact, new DataReq(null, contact.DhtID, 0, 0, packet.Encode(Core.Protocol)));
+                        Send_StoreReq(contact.ToDhtAddress(), contact, new DataReq(null, contact.userID, 0, 0, packet.Encode(Network.Protocol)));
 
                     packet.PatchData.Clear();
                     totalSize = 0;
@@ -209,7 +209,7 @@ namespace RiseOp.Implementation.Dht
             }
 
             if (packet.PatchData.Count > 0)
-                Send_StoreReq(contact.ToDhtAddress(), contact, new DataReq(null, contact.DhtID, 0, 0, packet.Encode(Core.Protocol)));
+                Send_StoreReq(contact.ToDhtAddress(), contact, new DataReq(null, contact.userID, 0, 0, packet.Encode(Network.Protocol)));
 
         }
 
@@ -218,10 +218,10 @@ namespace RiseOp.Implementation.Dht
             // invoke patch
             G2Header root = new G2Header(data);
 
-            if (Core.Protocol.ReadPacket(root))
+            if (G2Protocol.ReadPacket(root))
                 if (root.Name == StorePacket.Patch)
                 {
-                    PatchPacket packet = PatchPacket.Decode(Core.Protocol, root);
+                    PatchPacket packet = PatchPacket.Decode(root);
 
                     if (packet == null)
                         return;
@@ -282,7 +282,7 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
-        internal static PatchPacket Decode(G2Protocol protocol, G2Header root)
+        internal static PatchPacket Decode(G2Header root)
         {
             PatchPacket patch = new PatchPacket();
             G2Header child = new G2Header(root.Data);

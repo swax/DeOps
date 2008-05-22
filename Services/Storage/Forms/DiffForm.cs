@@ -38,7 +38,7 @@ namespace RiseOp.Services.Storage
                 // my/ben's Integrated Changes
                 // my/ben's History from <date>
             
-            string who = (whoID == Core.LocalDhtID) ? "My" : (Core.Links.GetName(whoID) + "'s");
+            string who = (whoID == Core.UserID) ? "My" : (Core.Links.GetName(whoID) + "'s");
 
             WhatLabel.Text = who + " " + what;
 
@@ -138,7 +138,7 @@ namespace RiseOp.Services.Storage
             if (CurrentRadio.Checked)
             {
                 selected = (StorageFile)Info.CurrentFile.Details;
-                selectedID = Info.ParentView.DhtID;
+                selectedID = Info.ParentView.UserID;
                 selectedText = "Current";
             }
 
@@ -165,12 +165,12 @@ namespace RiseOp.Services.Storage
                 ComboFileItem item = (ComboFileItem)HistoryCombo.SelectedItem;
 
                 selected = item.File;
-                selectedID = Info.ParentView.DhtID;
+                selectedID = Info.ParentView.UserID;
                 selectedHistory = HistoryCombo.SelectedIndex != 0;
                 selectedText = "History from " + item.File.Date.ToLocalTime().ToString();
             }
 
-            string who = (selectedID == Core.LocalDhtID) ? "My " : (Core.Links.GetName(selectedID) + "'s ");
+            string who = (selectedID == Core.UserID) ? "My " : (Core.Links.GetName(selectedID) + "'s ");
             selectedText = who + selectedText;
 
             if (selected == null)
@@ -213,9 +213,9 @@ namespace RiseOp.Services.Storage
                 arguments += "/dl \"" + WhatLabel.Text + "\" ";
                 arguments += "/dr \"" + selectedText + "\" ";
 
-                if (TargetID != Core.LocalDhtID || TargetHistory)
+                if (TargetID != Core.UserID || TargetHistory)
                     arguments += "/wl ";
-                if (selectedID != Core.LocalDhtID || selectedHistory)
+                if (selectedID != Core.UserID || selectedHistory)
                     arguments += "/wr ";
 
                 arguments += "\"" + fileA + "\" ";

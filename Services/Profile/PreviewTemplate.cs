@@ -28,7 +28,7 @@ namespace RiseOp.Services.Profile
 
         private void PreviewTemplate_Load(object sender, EventArgs e)
         {
-            Browser.DocumentText = ProfileView.FleshTemplate(Profiles, Profiles.Core.LocalDhtID, 0, Html, EditForm.TextFields, EditForm.FileFields);
+            Browser.DocumentText = ProfileView.FleshTemplate(Profiles, Profiles.Core.UserID, 0, Html, EditForm.TextFields, EditForm.FileFields);
         }
     }
 }

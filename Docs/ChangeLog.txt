@@ -1,4 +1,8 @@
 ﻿
+5/20/08 -	packet reading all static
+			rudp control moved into network
+			ids on global network diff from those on operation
+
 5/16/08 - debugged 1 on 1 open -> nat establishes global/operation network
 5/15/08 - Net/Comm packets send client id
 		  tcp reonnecting

@@ -98,7 +98,7 @@ namespace RiseOp.Services.Storage
                     bool add = true;
 
                     foreach (VisItem item in VisList.Items)
-                        if (item.DhtID == id)
+                        if (item.UserID == id)
                             add = false;
 
                     if (add)
@@ -180,7 +180,7 @@ namespace RiseOp.Services.Storage
 
                 Dictionary<ulong, short> scope = new Dictionary<ulong, short>();
                 foreach (VisItem item in VisList.Items)
-                    scope[item.DhtID] = item.Levels;
+                    scope[item.UserID] = item.Levels;
 
                 try
                 {
@@ -216,13 +216,13 @@ namespace RiseOp.Services.Storage
     internal class VisItem : ContainerListViewItem 
     {
         internal string Name;
-        internal ulong DhtID;
+        internal ulong UserID;
         internal short Levels = -1;
 
         internal VisItem(string name, ulong id, short levels)
         {
             Name = name;
-            DhtID = id;
+            UserID = id;
             Levels = levels;
 
             SubItems.Add("");

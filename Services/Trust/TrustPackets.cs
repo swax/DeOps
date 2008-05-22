@@ -50,7 +50,7 @@ namespace RiseOp.Services.Trust
             }
         }
 
-        internal static TrustHeader Decode(G2Protocol protocol, G2Header root)
+        internal static TrustHeader Decode(G2Header root)
         {
             TrustHeader header = new TrustHeader();
             G2Header child = new G2Header(root.Data);
@@ -127,7 +127,7 @@ namespace RiseOp.Services.Trust
             }
         }
 
-        internal static UplinkRequest Decode(G2Protocol protocol, G2Header root)
+        internal static UplinkRequest Decode(G2Header root)
         {
             UplinkRequest request = new UplinkRequest();
             G2Header child = new G2Header(root.Data);
@@ -188,15 +188,15 @@ namespace RiseOp.Services.Trust
                 G2Frame project = protocol.WritePacket(null, TrustPacket.ProjectData, null);
 
                 protocol.WritePacket(project, Packet_ID, BitConverter.GetBytes(ID));
-                protocol.WritePacket(project, Packet_Name, protocol.UTF.GetBytes(Name));
-                protocol.WritePacket(project, Packet_UserName, protocol.UTF.GetBytes(UserName));
-                protocol.WritePacket(project, Packet_UserTitle, protocol.UTF.GetBytes(UserTitle));
+                protocol.WritePacket(project, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
+                protocol.WritePacket(project, Packet_UserName, UTF8Encoding.UTF8.GetBytes(UserName));
+                protocol.WritePacket(project, Packet_UserTitle, UTF8Encoding.UTF8.GetBytes(UserTitle));
 
                 return protocol.WriteFinish();
             }
         }
 
-        internal static ProjectData Decode(G2Protocol protocol, G2Header root)
+        internal static ProjectData Decode(G2Header root)
         {
             ProjectData project = new ProjectData();
             G2Header child = new G2Header(root.Data);
@@ -213,15 +213,15 @@ namespace RiseOp.Services.Trust
                         break;
 
                     case Packet_Name:
-                        project.Name = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        project.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_UserName:
-                        project.UserName = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        project.UserName = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_UserTitle:
-                        project.UserTitle = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        project.UserTitle = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }
@@ -267,7 +267,7 @@ namespace RiseOp.Services.Trust
             }
         }
 
-        internal static LinkData Decode(G2Protocol protocol, G2Header root)
+        internal static LinkData Decode(G2Header root)
         {
             LinkData link = new LinkData();
             G2Header child = new G2Header(root.Data);

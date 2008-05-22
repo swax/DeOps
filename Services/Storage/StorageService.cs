@@ -73,8 +73,8 @@ namespace RiseOp.Services.Storage
         internal StorageService(OpCore core)
         {
             Core = core;
-            Protocol = core.Protocol;
             Network = core.OperationNet;
+            Protocol = Network.Protocol;
             Store = Network.Store;
             Links = Core.Links;
 
@@ -112,7 +112,7 @@ namespace RiseOp.Services.Storage
             
 
             // load working headers
-            OpStorage local = GetStorage(Core.LocalDhtID);
+            OpStorage local = GetStorage(Core.UserID);
 
             foreach (uint project in Links.LocalTrust.Links.Keys)
             {
@@ -122,7 +122,7 @@ namespace RiseOp.Services.Storage
                 Working[project] = new WorkingStorage(this, project);
 
                 bool doSave = false;
-                foreach (ulong higher in Links.GetAutoInheritIDs(Core.LocalDhtID, project))
+                foreach (ulong higher in Links.GetAutoInheritIDs(Core.UserID, project))
                     if (Working[project].RefreshHigherChanges(higher))
                         doSave = true;
 
@@ -159,7 +159,7 @@ namespace RiseOp.Services.Storage
                 foreach (uint project in Links.ProjectRoots.Keys)
                 {
                     string path = Core.User.RootPath + Path.DirectorySeparatorChar + Links.GetProjectName(project) + " Storage";
-                    string local = Links.GetName(Core.LocalDhtID);
+                    string local = Links.GetName(Core.UserID);
 
                     if (Directory.Exists(path))
                         foreach (string dir in Directory.GetDirectories(path))
@@ -237,12 +237,12 @@ namespace RiseOp.Services.Storage
 
         void Cache_FileRemoved(OpVersionedFile file)
         {
-            OpStorage storage = GetStorage(file.DhtID);
+            OpStorage storage = GetStorage(file.UserID);
 
             if(storage != null)
                 UnloadHeaderFile(GetFilePath(storage), storage.File.Header.FileKey);
 
-            StorageMap.SafeRemove(file.DhtID);
+            StorageMap.SafeRemove(file.UserID);
         }
 
         public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
@@ -289,7 +289,7 @@ namespace RiseOp.Services.Storage
             {
                 PacketStream oldStream = null;
 
-                OpStorage local = GetStorage(Core.LocalDhtID);
+                OpStorage local = GetStorage(Core.UserID);
 
                 if (local != null)
                 {
@@ -338,7 +338,7 @@ namespace RiseOp.Services.Storage
                     {
                         if (g2header.Name == StoragePacket.Root)
                         {
-                            StorageRoot root = StorageRoot.Decode(Protocol, g2header);
+                            StorageRoot root = StorageRoot.Decode(g2header);
 
                             write = (root.ProjectID != project);
                         }
@@ -360,7 +360,7 @@ namespace RiseOp.Services.Storage
                 OpVersionedFile vfile = Cache.UpdateLocal(tempPath, key, BitConverter.GetBytes(Core.TimeNow.ToUniversalTime().ToBinary()));
                 SavingLocal = false;
 
-                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, FileTypeCache, vfile.SignedHeader);
+                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.UserID, ServiceID, FileTypeCache, vfile.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -371,7 +371,7 @@ namespace RiseOp.Services.Storage
         void Cache_FileAquired(OpVersionedFile file)
         {
             // unload old file
-            OpStorage prevStorage = GetStorage(file.DhtID);
+            OpStorage prevStorage = GetStorage(file.UserID);
             if (prevStorage != null)
             {
                 string oldPath = GetFilePath(prevStorage);
@@ -381,7 +381,7 @@ namespace RiseOp.Services.Storage
 
             OpStorage newStorage = new OpStorage(file);
 
-            StorageMap.SafeAdd(file.DhtID, newStorage);
+            StorageMap.SafeAdd(file.UserID, newStorage);
 
 
             LoadHeaderFile(GetFilePath(newStorage), newStorage, false, false);
@@ -391,13 +391,13 @@ namespace RiseOp.Services.Storage
             {
                 foreach (uint project in Links.ProjectRoots.Keys)
                 {
-                    List<ulong> inheritIDs = Links.GetAutoInheritIDs(Core.LocalDhtID, project);
+                    List<ulong> inheritIDs = Links.GetAutoInheritIDs(Core.UserID, project);
 
-                    if (Core.LocalDhtID == newStorage.DhtID || inheritIDs.Contains(newStorage.DhtID))
+                    if (Core.UserID == newStorage.UserID || inheritIDs.Contains(newStorage.UserID))
                         // doesnt get called on startup because working not initialized before headers are loaded
                         if (Working.ContainsKey(project))
                         {
-                            bool doSave = Working[project].RefreshHigherChanges(newStorage.DhtID);
+                            bool doSave = Working[project].RefreshHigherChanges(newStorage.UserID);
 
                             if (!Loading && !SavingLocal)
                                 Working[project].AutoIntegrate(doSave);
@@ -413,27 +413,27 @@ namespace RiseOp.Services.Storage
                 Links.ProjectRoots.LockReading(delegate()
                 {
                     foreach (uint project in Links.ProjectRoots.Keys)
-                        if (newStorage.DhtID == Core.LocalDhtID || Links.IsHigher(newStorage.DhtID, project))
-                            Links.GetLocsBelow(Core.LocalDhtID, project, locations);
+                        if (newStorage.UserID == Core.UserID || Links.IsHigher(newStorage.UserID, project))
+                            Links.GetLocsBelow(Core.UserID, project, locations);
                 });
 
-                Store.PublishDirect(locations, newStorage.DhtID, ServiceID, FileTypeCache, file.SignedHeader);
+                Store.PublishDirect(locations, newStorage.UserID, ServiceID, FileTypeCache, file.SignedHeader);
             }
 
             if (StorageUpdate != null)
                 Core.RunInGuiThread(StorageUpdate, newStorage);
 
-            if (Core.NewsWorthy(newStorage.DhtID, 0, false))
-                Core.MakeNews("Storage updated by " + Links.GetName(newStorage.DhtID), newStorage.DhtID, 0, false, StorageRes.Icon, Menu_View);
+            if (Core.NewsWorthy(newStorage.UserID, 0, false))
+                Core.MakeNews("Storage updated by " + Links.GetName(newStorage.UserID), newStorage.UserID, 0, false, StorageRes.Icon, Menu_View);
 
         }
 
         void Links_LinkUpdate(OpTrust trust)
         {
             // update working projects (add)
-            if (trust.DhtID == Core.LocalDhtID)
+            if (trust.UserID == Core.UserID)
             {
-                OpStorage local = GetStorage(Core.LocalDhtID);
+                OpStorage local = GetStorage(Core.UserID);
 
                 foreach (uint project in Links.LocalTrust.Links.Keys)
                     if (!Working.ContainsKey(project))
@@ -447,11 +447,11 @@ namespace RiseOp.Services.Storage
 
             // remove all higher changes, reload with new highers (cause link changed
             foreach (WorkingStorage working in Working.Values )
-                if (Core.LocalDhtID == trust.DhtID || Links.IsHigher(trust.DhtID, working.ProjectID))
+                if (Core.UserID == trust.UserID || Links.IsHigher(trust.UserID, working.ProjectID))
                 {
                     working.RemoveAllHigherChanges();
 
-                    foreach (ulong uplink in Links.GetAutoInheritIDs(Core.LocalDhtID, working.ProjectID))
+                    foreach (ulong uplink in Links.GetAutoInheritIDs(Core.UserID, working.ProjectID))
                         working.RefreshHigherChanges(uplink);
                 }
         }
@@ -491,7 +491,7 @@ namespace RiseOp.Services.Storage
             StorageMap.LockReading(delegate()
             {
                 foreach (OpStorage storage in StorageMap.Values)
-                    if (Network.Routing.InCacheArea(storage.DhtID))
+                    if (Network.Routing.InCacheArea(storage.UserID))
                         LoadHeaderFile(GetFilePath(storage), storage, true, false);
             });
 
@@ -555,7 +555,7 @@ namespace RiseOp.Services.Storage
                 if (!File.Exists(path))
                     return;
 
-                bool cached = Network.Routing.InCacheArea(storage.DhtID);
+                bool cached = Network.Routing.InCacheArea(storage.UserID);
                 bool local = false;
 
                 RijndaelManaged key = working ? LocalFileKey : storage.File.Header.FileKey;
@@ -572,15 +572,15 @@ namespace RiseOp.Services.Storage
                 {
                     if (!working && header.Name == StoragePacket.Root)
                     {
-                        StorageRoot packet = StorageRoot.Decode(Protocol, header);
+                        StorageRoot packet = StorageRoot.Decode(header);
 
-                        local = GetHigherRegion(storage.DhtID, packet.ProjectID).Contains(Core.LocalDhtID) ||
-                            Links.GetDownlinkIDs(storage.DhtID, packet.ProjectID, 1).Contains(Core.LocalDhtID);
+                        local = GetHigherRegion(storage.UserID, packet.ProjectID).Contains(Core.UserID) ||
+                            Links.GetDownlinkIDs(storage.UserID, packet.ProjectID, 1).Contains(Core.UserID);
                     }
 
                     if (header.Name == StoragePacket.File)
                     {
-                        StorageFile packet = StorageFile.Decode(Protocol, header);
+                        StorageFile packet = StorageFile.Decode(header);
 
                         if (packet == null)
                             continue;
@@ -619,11 +619,11 @@ namespace RiseOp.Services.Storage
                         {
                             // if in local range only store latest 
                             if (local && !historyFile)
-                                DownloadFile(storage.DhtID, packet);
+                                DownloadFile(storage.UserID, packet);
 
                             // if storage is in cache range, download all files
                             else if (Network.Established && cached)
-                                DownloadFile(storage.DhtID, packet);
+                                DownloadFile(storage.UserID, packet);
                         }
 
                         // on link update, if in local range, get latest files
@@ -692,7 +692,7 @@ namespace RiseOp.Services.Storage
                 {
                     if (header.Name == StoragePacket.File)
                     {
-                        StorageFile packet = StorageFile.Decode(Protocol, header);
+                        StorageFile packet = StorageFile.Decode(header);
 
                         if (packet == null)
                             continue;
@@ -1014,7 +1014,7 @@ namespace RiseOp.Services.Storage
             {
                
                 // ask user about local
-                if (dht == Core.LocalDhtID)
+                if (dht == Core.UserID)
                 {
                     errors.Add(new LockError(finalpath, "", true, LockErrorType.Existing, file, history));
 
@@ -1071,7 +1071,7 @@ namespace RiseOp.Services.Storage
 
             file.SetFlag(StorageFlags.Unlocked);
 
-            if (dht != Core.LocalDhtID)
+            if (dht != Core.UserID)
             {
                 //FileInfo info = new FileInfo(finalpath);
                 //info.IsReadOnly = true;
@@ -1287,11 +1287,11 @@ namespace RiseOp.Services.Storage
             File = file;
         }
 
-        internal ulong DhtID
+        internal ulong UserID
         {
             get
             {
-                return File.DhtID;
+                return File.UserID;
             }
         }
 

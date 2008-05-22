@@ -158,7 +158,7 @@ namespace RiseOp.Services.Chat
 
         void UpdateNode(MemberNode node)
         {
-            if (!Room.Members.SafeContains(node.DhtID))
+            if (!Room.Members.SafeContains(node.UserID))
             {
                 if (node.IsLoopRoot)
                     node.Text = "Trust Loop";
@@ -168,25 +168,25 @@ namespace RiseOp.Services.Chat
 
             // get if node is connected
             bool connected = (Room.Active && 
-                            (node.DhtID == Core.LocalDhtID || Core.RudpControl.GetActiveSessions(node.DhtID).Count > 0));
+                            (node.UserID == Core.UserID || Chat.Network.RudpControl.GetActiveSessions(node.UserID).Count > 0));
 
             // get away status
             bool away = false;
 
 
-            foreach (ClientInfo info in Core.Locations.GetClients(node.DhtID))
+            foreach (ClientInfo info in Core.Locations.GetClients(node.UserID))
                 if (info != null && info.Data.Away)
                     away = true;
       
 
-            node.Text = Links.GetName(node.DhtID);
+            node.Text = Links.GetName(node.UserID);
 
             if (away)
                 node.Text += " (away)";
 
 
             // bold if local
-            if (node.DhtID == Core.LocalDhtID)
+            if (node.UserID == Core.UserID)
                 node.Font = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 
 
@@ -204,9 +204,9 @@ namespace RiseOp.Services.Chat
                 string message = "";
 
                 if (connected)
-                    message = Links.GetName(node.DhtID) + " has joined the room";
+                    message = Links.GetName(node.UserID) + " has joined the room";
                 else
-                    message = Links.GetName(node.DhtID) + " has left the room";
+                    message = Links.GetName(node.UserID) + " has left the room";
 
 
                 // dont log
@@ -230,7 +230,7 @@ namespace RiseOp.Services.Chat
             // name, in bold, blue for incoming, red for outgoing
             if (message.System)
                 MessageTextBox.SelectionColor = Color.Black;
-            else if (message.Source == Chat.Core.LocalDhtID && message.ClientID == Core.ClientID)
+            else if (message.Source == Chat.Core.UserID && message.ClientID == Core.OperationNet.ClientID)
                 MessageTextBox.SelectionColor = Color.Red;
             else
                 MessageTextBox.SelectionColor = Color.Blue;
@@ -304,8 +304,8 @@ namespace RiseOp.Services.Chat
             if (node == null)
                 return;
 
-            Core.Links.Research(node.DhtID, 0, false);
-            Core.Locations.Research(node.DhtID);
+            Core.Links.Research(node.UserID, 0, false);
+            Core.Locations.Research(node.UserID);
 
             ContextMenuStripEx treeMenu = new ContextMenuStripEx();
 
@@ -319,18 +319,18 @@ namespace RiseOp.Services.Chat
                     continue;
 
                 // quick
-                List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Quick, node.DhtID, Room.ProjectID);
+                List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Quick, node.UserID, Room.ProjectID);
 
                 if (menuList != null && menuList.Count > 0)
                     foreach (MenuItemInfo info in menuList)
-                        quickMenus.Add(new OpMenuItem(node.DhtID, Room.ProjectID, info.Path, info));
+                        quickMenus.Add(new OpMenuItem(node.UserID, Room.ProjectID, info.Path, info));
 
                 // external
-                menuList = component.GetMenuInfo(InterfaceMenuType.External, node.DhtID, Room.ProjectID);
+                menuList = component.GetMenuInfo(InterfaceMenuType.External, node.UserID, Room.ProjectID);
 
                 if (menuList != null && menuList.Count > 0)
                     foreach (MenuItemInfo info in menuList)
-                        extMenus.Add(new OpMenuItem(node.DhtID, Room.ProjectID, info.Path, info));
+                        extMenus.Add(new OpMenuItem(node.UserID, Room.ProjectID, info.Path, info));
             }
 
             if (quickMenus.Count > 0 || extMenus.Count > 0)
@@ -362,9 +362,9 @@ namespace RiseOp.Services.Chat
             if (node == null)
                 return;
 
-            OpMenuItem info = new OpMenuItem(node.DhtID, 0);
+            OpMenuItem info = new OpMenuItem(node.UserID, 0);
 
-            if (Locations.LocationMap.SafeContainsKey(node.DhtID))
+            if (Locations.LocationMap.SafeContainsKey(node.UserID))
             {
                 IMService IM = Core.GetService("IM") as IMService;
 
@@ -393,14 +393,14 @@ namespace RiseOp.Services.Chat
     internal class MemberNode : TreeListNode
     {
         OpCore Core;
-        internal ulong DhtID;
+        internal ulong UserID;
         internal bool Unset = true;
         internal bool IsLoopRoot;
 
         internal MemberNode(RoomView view, ulong id)
         {
             Core = view.Core;
-            DhtID = id;
+            UserID = id;
 
             //Update();
         }

@@ -35,9 +35,9 @@ namespace RiseOp.Services.Storage
         {
             Storages = storages;
             Core = Storages.Core;
-            Protocol = Core.Protocol;
+            Protocol = storages.Protocol;
 
-            RootPath = Storages.GetRootPath(Core.LocalDhtID, project);
+            RootPath = Storages.GetRootPath(Core.UserID, project);
             ProjectID = project;
 
            
@@ -78,7 +78,7 @@ namespace RiseOp.Services.Storage
 
         private void LoadWorking()
         {
-            OpStorage local = Storages.GetStorage(Core.LocalDhtID);
+            OpStorage local = Storages.GetStorage(Core.UserID);
 
             if (local == null)
                 return;
@@ -120,7 +120,7 @@ namespace RiseOp.Services.Storage
                 {
                     if (header.Name == StoragePacket.Root)
                     {
-                        StorageRoot root = StorageRoot.Decode(Core.Protocol, header);
+                        StorageRoot root = StorageRoot.Decode(header);
 
                         readingProject = (root.ProjectID == ProjectID);
                     }
@@ -129,7 +129,7 @@ namespace RiseOp.Services.Storage
                     {
                         if (header.Name == StoragePacket.Folder)
                         {
-                            StorageFolder folder = StorageFolder.Decode(Core.Protocol, header);
+                            StorageFolder folder = StorageFolder.Decode(header);
 
                             bool added = false;
 
@@ -159,7 +159,7 @@ namespace RiseOp.Services.Storage
 
                         if (header.Name == StoragePacket.File)
                         {
-                            StorageFile file = StorageFile.Decode(Core.Protocol, header);
+                            StorageFile file = StorageFile.Decode(header);
 
                             CurrentFolder.AddFileInfo(file);
                         }
@@ -309,9 +309,9 @@ namespace RiseOp.Services.Storage
         void ReplaceFile(LocalFile file, StorageFile replacement, string dir, bool setModified, List<LockError> errors)
         {
             // this will lock file if it is unlocked
-            bool unlocked = Storages.IsFileUnlocked(Core.LocalDhtID, ProjectID, dir, file.Info, false);
+            bool unlocked = Storages.IsFileUnlocked(Core.UserID, ProjectID, dir, file.Info, false);
 
-            Storages.LockFile(Core.LocalDhtID, ProjectID, dir, file.Info, false);
+            Storages.LockFile(Core.UserID, ProjectID, dir, file.Info, false);
 
             if (setModified)
                 ReadyChange(file, replacement);
@@ -322,7 +322,7 @@ namespace RiseOp.Services.Storage
             }
 
             if (unlocked)
-                Storages.UnlockFile(Core.LocalDhtID, ProjectID, dir, file.Info, false, errors);
+                Storages.UnlockFile(Core.UserID, ProjectID, dir, file.Info, false, errors);
         }
 
         internal void ReplaceFolder(string path, StorageFolder replacement, bool setModified)
@@ -815,7 +815,7 @@ namespace RiseOp.Services.Storage
             folder.Files.LockReading(delegate()
             {
                 foreach (LocalFile file in folder.Files.Values)
-                    Storages.LockFileCompletely(Core.LocalDhtID, ProjectID, dirpath, file.Archived, errors);
+                    Storages.LockFileCompletely(Core.UserID, ProjectID, dirpath, file.Archived, errors);
             });
 
             folder.Info.RemoveFlag(StorageFlags.Unlocked);
@@ -848,7 +848,7 @@ namespace RiseOp.Services.Storage
                 throw new Exception("Name Contains Invalid Characters");
 
             // check that scope includes self
-            if (scope.Count > 0 && !Core.Links.IsInScope(scope, Core.LocalDhtID, ProjectID))
+            if (scope.Count > 0 && !Core.Links.IsInScope(scope, Core.UserID, ProjectID))
                 throw new Exception("Visibility Must Include Yourself");
                 
 
@@ -892,7 +892,7 @@ namespace RiseOp.Services.Storage
                 throw new Exception("Name Contains Invalid Characters");
 
             // check that scope includes self
-            if (scope.Count > 0 && !Core.Links.IsInScope(scope, Core.LocalDhtID, ProjectID))
+            if (scope.Count > 0 && !Core.Links.IsInScope(scope, Core.UserID, ProjectID))
                 throw new Exception("Visibility Must Include Yourself");
 
             string oldName = Path.GetFileName(path);
@@ -1140,7 +1140,7 @@ namespace RiseOp.Services.Storage
             {
                 TaggedStream filex = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(filex, storage.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
                 ulong currentUID = 0;
                 LocalFolder currentFolder = RootFolder;
@@ -1154,7 +1154,7 @@ namespace RiseOp.Services.Storage
                 {
                     if (header.Name == StoragePacket.Root)
                     {
-                        StorageRoot root = StorageRoot.Decode(Core.Protocol, header);
+                        StorageRoot root = StorageRoot.Decode(header);
 
                         readingProject = (root.ProjectID == ProjectID);
                     }
@@ -1163,7 +1163,7 @@ namespace RiseOp.Services.Storage
                     {
                         if (header.Name == StoragePacket.Folder)
                         {
-                            StorageFolder readFolder = StorageFolder.Decode(Core.Protocol, header);
+                            StorageFolder readFolder = StorageFolder.Decode(header);
 
 
                             // if new uid
@@ -1179,7 +1179,7 @@ namespace RiseOp.Services.Storage
 
                                 // check scope
                                 ignoreCurrent = false;
-                                if (readFolder.Scope.Count > 0 && !Core.Links.IsInScope(readFolder.Scope, Core.LocalDhtID, ProjectID))
+                                if (readFolder.Scope.Count > 0 && !Core.Links.IsInScope(readFolder.Scope, Core.UserID, ProjectID))
                                     ignoreCurrent = true;
 
 
@@ -1240,7 +1240,7 @@ namespace RiseOp.Services.Storage
 
                                 if (readFolder.Date >= currentFolder.Info.Date)
                                     if (readFolder.IntegratedID == 0 ||
-                                        readFolder.IntegratedID == Core.LocalDhtID ||
+                                        readFolder.IntegratedID == Core.UserID ||
                                         Core.Links.IsAdjacent(readFolder.IntegratedID, ProjectID))
                                         currentFolder.AddHigherChange(id, readFolder);
                             }
@@ -1249,7 +1249,7 @@ namespace RiseOp.Services.Storage
 
                         if (header.Name == StoragePacket.File)
                         {
-                            StorageFile readFile = StorageFile.Decode(Core.Protocol, header);
+                            StorageFile readFile = StorageFile.Decode(header);
 
                             // if new uid
                             if (currentUID != readFile.UID)
@@ -1266,7 +1266,7 @@ namespace RiseOp.Services.Storage
 
                                 // check scope
                                 ignoreCurrent = false;
-                                if (readFile.Scope.Count > 0 && !Core.Links.IsInScope(readFile.Scope, Core.LocalDhtID, ProjectID))
+                                if (readFile.Scope.Count > 0 && !Core.Links.IsInScope(readFile.Scope, Core.UserID, ProjectID))
                                 {
                                     ignoreCurrent = true;
                                     continue;
@@ -1296,7 +1296,7 @@ namespace RiseOp.Services.Storage
                             {
                                 if (readFile.Date >= currentFile.Info.Date)
                                     if (readFile.IntegratedID == 0 ||
-                                        readFile.IntegratedID == Core.LocalDhtID ||
+                                        readFile.IntegratedID == Core.UserID ||
                                         Core.Links.IsAdjacent(readFile.IntegratedID, ProjectID))
                                         currentFile.AddHigherChange(id, readFile);
                             }
@@ -1361,8 +1361,8 @@ namespace RiseOp.Services.Storage
             // with all changes in loop, but only auto-integrate from our own parent in the loop
 
             InheritIDs = new List<ulong>();
-            InheritIDs.Add(Core.LocalDhtID);
-            InheritIDs.AddRange(Core.Links.GetAutoInheritIDs(Core.LocalDhtID, ProjectID));
+            InheritIDs.Add(Core.UserID);
+            InheritIDs.AddRange(Core.Links.GetAutoInheritIDs(Core.UserID, ProjectID));
 
 
             List<LockError> errors = new List<LockError>();

@@ -62,9 +62,9 @@ namespace RiseOp.Services.Plan
             ReloadGoals();
 
             // make self visible / select
-            if (TreeMap.ContainsKey(View.DhtID))
+            if (TreeMap.ContainsKey(View.UserID))
             {
-                List<GoalNode> list = TreeMap[View.DhtID];
+                List<GoalNode> list = TreeMap[View.UserID];
 
                 list[0].Selected = true;
                 UpdatePlanItems(list[0]);
@@ -77,8 +77,8 @@ namespace RiseOp.Services.Plan
             TreeMap.Clear();
             GoalTree.Nodes.Clear();
             
-            List<ulong> uplinks = Links.GetUplinkIDs(View.DhtID, View.ProjectID);
-            uplinks.Add(View.DhtID);
+            List<ulong> uplinks = Links.GetUplinkIDs(View.UserID, View.ProjectID);
+            uplinks.Add(View.UserID);
 
             // show all branches
             if (!MineOnly.Checked)
@@ -99,7 +99,7 @@ namespace RiseOp.Services.Plan
 
                     if (plan != null && plan.GoalMap.ContainsKey(Head.Ident))
                         foreach (PlanGoal goal in plan.GoalMap[Head.Ident])
-                            if (goal.Person == View.DhtID)
+                            if (goal.Person == View.UserID)
                             {
                                 GoalNode root = CreateNode(goal);
                                 LoadNode(root);
@@ -181,7 +181,7 @@ namespace RiseOp.Services.Plan
                 if (goal.BranchDown == 0 || goal.BranchUp != node.Goal.BranchDown)
                     continue;
 
-                if (CheckGoal(plan.DhtID, goal))
+                if (CheckGoal(plan.UserID, goal))
                     InsertSubNode(node, CreateNode(goal));
             }
         }
@@ -189,9 +189,9 @@ namespace RiseOp.Services.Plan
         bool CheckGoal(ulong higher, PlanGoal goal)
         {
             // if only branch
-            if (MineOnly.Checked && View.DhtID != goal.Person)
-                if (!Links.IsHigher(View.DhtID, goal.Person, View.ProjectID) && // show only if person is higher than self
-                    !Links.IsLower(View.DhtID, goal.Person, View.ProjectID))   // or is lower than self
+            if (MineOnly.Checked && View.UserID != goal.Person)
+                if (!Links.IsHigher(View.UserID, goal.Person, View.ProjectID) && // show only if person is higher than self
+                    !Links.IsLower(View.UserID, goal.Person, View.ProjectID))   // or is lower than self
                     return false;
 
             // only subordinates can have goals assigned
@@ -242,12 +242,12 @@ namespace RiseOp.Services.Plan
 
 
             // set delegate task vis
-            if (Selected.Person == Core.LocalDhtID && Links.HasSubs(Selected.Person, View.ProjectID ))
+            if (Selected.Person == Core.UserID && Links.HasSubs(Selected.Person, View.ProjectID ))
                 DelegateLink.Show();
             else
                 DelegateLink.Hide();
 
-            if (Selected.Person == Core.LocalDhtID)
+            if (Selected.Person == Core.UserID)
             {
                 PlanList.Height = splitContainer1.Panel2.Height - 15;
                 AddItemLink.Show();
@@ -332,7 +332,7 @@ namespace RiseOp.Services.Plan
 
             ContextMenuStripEx menu = new ContextMenuStripEx();
 
-            if (Selected.Person == Core.LocalDhtID)
+            if (Selected.Person == Core.UserID)
             {
                 menu.Items.Add(new PlanMenuItem("Edit", clicked.Item, null, Plan_Edit));
                 menu.Items.Add("-");
@@ -409,7 +409,7 @@ namespace RiseOp.Services.Plan
             bool root = false;
             GoalNode parent = node.ParentNode() as GoalNode;
 
-            if (parent == null && node.Goal.Person == Core.LocalDhtID && Head.Person == Core.LocalDhtID)
+            if (parent == null && node.Goal.Person == Core.UserID && Head.Person == Core.UserID)
                 root = true;
 
             if(owned)
@@ -436,10 +436,10 @@ namespace RiseOp.Services.Plan
         {
             GoalNode parent = node.ParentNode() as GoalNode;
 
-            if (parent != null && parent.Goal.Person == Core.LocalDhtID)
+            if (parent != null && parent.Goal.Person == Core.UserID)
                 return true;
 
-            if (parent == null && node.Goal.Person == Core.LocalDhtID && Head.Person == Core.LocalDhtID)
+            if (parent == null && node.Goal.Person == Core.UserID && Head.Person == Core.UserID)
                 return true;
 
             return false;
@@ -468,13 +468,13 @@ namespace RiseOp.Services.Plan
             if (View.External != null)
                 foreach (ExternalView ext in View.Core.GuiMain.ExternalViews)
                     if (ext.Shell.GetType() == typeof(ScheduleView))
-                        if (((ScheduleView)ext.Shell).DhtID == View.DhtID && ((ScheduleView)ext.Shell).ProjectID == View.ProjectID)
+                        if (((ScheduleView)ext.Shell).UserID == View.UserID && ((ScheduleView)ext.Shell).ProjectID == View.ProjectID)
                         {
                             ext.BringToFront();
                             return;
                         }
 
-            ScheduleView view = new ScheduleView(Plans, View.DhtID, View.ProjectID);
+            ScheduleView view = new ScheduleView(Plans, View.UserID, View.ProjectID);
             view.LoadGoal = item.Goal.Ident;
             view.LoadGoalBranch = item.Goal.BranchUp;
 
@@ -706,7 +706,7 @@ namespace RiseOp.Services.Plan
                     RemoveNode(node, visible);
             }
             
-            List<ulong> myUplinks = Links.GetUplinkIDs(View.DhtID, View.ProjectID);
+            List<ulong> myUplinks = Links.GetUplinkIDs(View.UserID, View.ProjectID);
             List<ulong> linkUplinks = Links.GetUplinkIDs(key, View.ProjectID);
 
             // each uplink from this key can assign goals, we need to see if a re-add is necessary
@@ -721,7 +721,7 @@ namespace RiseOp.Services.Plan
                             foreach(PlanGoal goal in plan.GoalMap[Head.Ident])
                                 if (goal.Person == key && 
                                     treeNode.Goal.BranchDown == goal.BranchUp &&
-                                    CheckGoal(plan.DhtID, goal))
+                                    CheckGoal(plan.UserID, goal))
                                 {
                                     GoalNode node = CreateNode(goal);
                                     
@@ -777,13 +777,13 @@ namespace RiseOp.Services.Plan
 
 
             if (!plan.Loaded)
-                Plans.LoadPlan(plan.DhtID);
+                Plans.LoadPlan(plan.UserID);
 
             // update progress of high levels for updated plan not in tree map because it is hidden
             if (plan.GoalMap.ContainsKey(Head.Ident) || plan.ItemMap.ContainsKey(Head.Ident))
             {
-                List<ulong> uplinks = Links.GetUplinkIDs(plan.DhtID, View.ProjectID);
-                uplinks.Add(plan.DhtID);
+                List<ulong> uplinks = Links.GetUplinkIDs(plan.UserID, View.ProjectID);
+                uplinks.Add(plan.UserID);
 
                 if (uplinks.Contains(Head.Person))
                     foreach (ulong id in uplinks)
@@ -792,15 +792,15 @@ namespace RiseOp.Services.Plan
                                 node.RefreshProgress();
             }
            
-            if (!TreeMap.ContainsKey(plan.DhtID))
+            if (!TreeMap.ContainsKey(plan.UserID))
                 return;
 
             if (MineOnly.Checked)
             {
-                List<ulong> myUplinks = Links.GetUplinkIDs(View.DhtID, View.ProjectID);
-                myUplinks.Add(View.DhtID);
+                List<ulong> myUplinks = Links.GetUplinkIDs(View.UserID, View.ProjectID);
+                myUplinks.Add(View.UserID);
 
-                if (myUplinks.Contains(plan.DhtID))
+                if (myUplinks.Contains(plan.UserID))
                 {
                     ReloadGoals();
                     return;
@@ -815,7 +815,7 @@ namespace RiseOp.Services.Plan
 
             List<ulong> visible = new List<ulong>();
 
-            foreach (GoalNode oldNode in TreeMap[plan.DhtID])
+            foreach (GoalNode oldNode in TreeMap[plan.UserID])
             {
                 // if root
                 if (oldNode.Goal.BranchDown == 0)
@@ -870,7 +870,7 @@ namespace RiseOp.Services.Plan
                             add = false;
                             //crit check this is hit
 
-                    if (add && oldNode.AddSubs && CheckGoal(plan.DhtID, updatedGoal))
+                    if (add && oldNode.AddSubs && CheckGoal(plan.UserID, updatedGoal))
                     {
                         GoalNode node = CreateNode(updatedGoal);
                         
@@ -926,7 +926,7 @@ namespace RiseOp.Services.Plan
             if (Selected == null)
                 return;
 
-            bool local = (Selected.Person == Core.LocalDhtID);
+            bool local = (Selected.Person == Core.UserID);
 
             EditItemMode mode = local ? EditItemMode.Edit : EditItemMode.View;
             EditPlanItem form = new EditPlanItem(mode, Selected, item.Item);
@@ -983,13 +983,13 @@ namespace RiseOp.Services.Plan
             SubItems[0].Text = name;
             SubItems[2].Text = Panel.GetTimeText(goal.End.ToLocalTime() - Panel.Core.TimeNow, goal.End.ToLocalTime(), false);
 
-            if (goal.Person == Panel.View.DhtID)
+            if (goal.Person == Panel.View.UserID)
                 ImageIndex = 1;
             // higher
-            else if (Panel.Links.IsHigher(Panel.View.DhtID, goal.Person, Panel.View.ProjectID))
+            else if (Panel.Links.IsHigher(Panel.View.UserID, goal.Person, Panel.View.ProjectID))
                 ImageIndex = 2;
             // lower
-            else if (Panel.Links.IsHigher(goal.Person, Panel.View.DhtID, Panel.View.ProjectID))
+            else if (Panel.Links.IsHigher(goal.Person, Panel.View.UserID, Panel.View.ProjectID))
                 ImageIndex = 3;
             else
                 ImageIndex = 0;
@@ -1003,7 +1003,7 @@ namespace RiseOp.Services.Plan
 
             while (above != null)
             {
-                if (above.Goal.Person == Panel.View.DhtID)
+                if (above.Goal.Person == Panel.View.UserID)
                     return true;
 
                 above = above.Parent as GoalNode;

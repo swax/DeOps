@@ -93,10 +93,6 @@ namespace RiseOp.Interface.Tools
             LoadComponents(componentsNode);
             coreNode.Nodes.Add(componentsNode);
 
-            // identity
-            coreNode.Nodes.Add(new StructureNode("Rudp", new ShowDelegate(ShowRudp), null));
-
-
             treeStructure.Nodes.Add(coreNode);
             coreNode.Expand();			
 		}
@@ -272,10 +268,7 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
             listValues.Items.Add(new ListViewItem(new string[] { "LocalIP",         xStr(Core.LocalIP) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "LocalDhtID",      IDtoStr(Core.LocalDhtID) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "OpID",            IDtoStr(Core.OpID) })); 
             listValues.Items.Add(new ListViewItem(new string[] { "Firewall",        xStr(Core.Firewall) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "ClientID",        xStr(Core.ClientID) }));
             listValues.Items.Add(new ListViewItem(new string[] { "StartTime",       xStr(Core.StartTime) }));
             listValues.Items.Add(new ListViewItem(new string[] { "NextSaveCache",   xStr(Core.NextSaveCache) }));
         }
@@ -336,8 +329,11 @@ namespace RiseOp.Interface.Tools
             // tcp
             StructureNode connectionsNode = new StructureNode("Tcp", new ShowDelegate(ShowTcp), network);
             AddConnectionNodes(connectionsNode, network);
-            netItem.Nodes.Add(connectionsNode); 
-            
+            netItem.Nodes.Add(connectionsNode);
+
+            // identity
+            netItem.Nodes.Add(new StructureNode("Rudp", new ShowDelegate(ShowRudp), network));
+
             root.Add(netItem);
         }
 
@@ -351,6 +347,9 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Property", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
+            listValues.Items.Add(new ListViewItem(new string[] { "LocalDhtID", IDtoStr(network.LocalUserID) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "ClientID", xStr(network.ClientID) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "OpID", IDtoStr(network.OpID) })); 
             listValues.Items.Add(new ListViewItem(new string[] { "Responsive", xStr(network.Responsive) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Established", xStr(network.Established) }));
             listValues.Items.Add(new ListViewItem(new string[] { "IPCache", xStr(network.IPCache.Count) }));
@@ -382,7 +381,7 @@ namespace RiseOp.Interface.Tools
 					xStr(entry.Address.IP),		
 					xStr(entry.TcpPort),
 					xStr(entry.Address.UdpPort),
-                    xStr(Utilities.IDtoBin(entry.Address.DhtID)),
+                    xStr(Utilities.IDtoBin(entry.Address.userID)),
 					xStr(entry.NextTry),
 					xStr(entry.NextTryTcp)
 				}));
@@ -460,7 +459,7 @@ namespace RiseOp.Interface.Tools
 				{
                     xStr(lookup.Status),
                     xStr(lookup.Age),
-					IDtoStr(lookup.Contact.DhtID),		
+					IDtoStr(lookup.Contact.userID),		
 					xStr(lookup.Contact.ClientID),
 					xStr(lookup.Contact.Address),
 					xStr(lookup.Contact.TcpPort),
@@ -495,11 +494,11 @@ namespace RiseOp.Interface.Tools
                 foreach (ulong opid in Core.Locations.GlobalIndex.Keys)
                     foreach (CryptLoc loc in Core.Locations.GlobalIndex[opid])
                     {
-                        SignedData signed = SignedData.Decode(Core.Protocol, loc.Data);
+                        SignedData signed = SignedData.Decode(loc.Data);
 
                         if (signed != null)
                         {
-                            LocationData data = LocationData.Decode(Core.Protocol, signed.Data);
+                            LocationData data = LocationData.Decode(signed.Data);
 
                             ClientInfo info = new ClientInfo(0);
                             info.Data = data;
@@ -521,19 +520,19 @@ namespace RiseOp.Interface.Tools
                     dict.LockReading(delegate()
                     {
                         foreach (ClientInfo info in dict.Values)
-                            DisplayLoc(Core.OpID, info);
+                            DisplayLoc(Core.OperationNet.OpID, info);
                     });
             });
 
         }
 
-        private void DisplayLoc(ulong opid, ClientInfo info)
+        private void DisplayLoc(ulong opID, ClientInfo info)
         {
             listValues.Items.Add(new ListViewItem(new string[]
 				{
-                    IDtoStr(opid),
+                    xStr(opID),
                     xStr(info.TTL),
-                    IDtoStr(info.Data.DhtID),
+                    IDtoStr(info.Data.UserID),
 					xStr(info.Data.Source.ClientID),		
 					xStr(info.Data.Source.TcpPort),
 					xStr(info.Data.Source.UdpPort),
@@ -596,7 +595,7 @@ namespace RiseOp.Interface.Tools
 			listValues.Items.Add( new ListViewItem( new string[]{"Address",				xStr(connect.RemoteIP)} ) );
 			listValues.Items.Add( new ListViewItem( new string[]{"TcpPort",				xStr(connect.TcpPort)} ) );
 			listValues.Items.Add( new ListViewItem( new string[]{"UdpPort",				xStr(connect.UdpPort)} ) );
-			listValues.Items.Add( new ListViewItem( new string[]{"DhtID",				IDtoStr(connect.DhtID)} ) );
+			listValues.Items.Add( new ListViewItem( new string[]{"DhtID",				IDtoStr(connect.userID)} ) );
 			listValues.Items.Add( new ListViewItem( new string[]{"ClientID",			xStr(connect.ClientID)} ) );
 			listValues.Items.Add( new ListViewItem( new string[]{"TcpSocket",			xStr(connect.TcpSocket)} ) );
 			listValues.Items.Add( new ListViewItem( new string[]{"Age",					xStr(connect.Age)} ) );
@@ -681,7 +680,7 @@ namespace RiseOp.Interface.Tools
 				
 					listValues.Items.Add( new ListViewItem( new string[]
 					{
-						GetLinkName(contact.DhtID),
+						GetLinkName(contact.userID),
 						xStr( Utilities.IDtoBin(contact.RoutingID)),
 		                xStr(contact.ClientID),	
 						xStr(contact.Address),
@@ -696,6 +695,8 @@ namespace RiseOp.Interface.Tools
 
         internal void ShowRudp(object pass)
         {
+            DhtNetwork network = pass as DhtNetwork;
+
 			listValues.Columns.Clear();
 			listValues.Items.Clear();
 
@@ -705,12 +706,12 @@ namespace RiseOp.Interface.Tools
 			listValues.Columns.Add("Status",	100, HorizontalAlignment.Left);
             listValues.Columns.Add("Startup",	100, HorizontalAlignment.Left);
 
-            foreach (List<RudpSession> list in Core.RudpControl.SessionMap.Values)
+            foreach (List<RudpSession> list in network.RudpControl.SessionMap.Values)
                 foreach (RudpSession session in list)
                     listValues.Items.Add(new ListViewItem(new string[]
 					{
 						xStr(session.Name),
-						IDtoStr(session.DhtID),		
+						IDtoStr(session.UserID),		
 						xStr(session.ClientID),
 						xStr(session.Status),
 						xStr(session.Startup)	
@@ -753,7 +754,7 @@ namespace RiseOp.Interface.Tools
                     listValues.Items.Add(new ListViewItem(new string[]
 					{
 						xStr(upload.Session.Name),
-						IDtoStr(upload.Session.DhtID),		
+						IDtoStr(upload.Session.UserID),		
 						xStr(upload.Session.ClientID),
 						xStr(upload.Done),
 						xStr(upload.Request.TransferID),
@@ -811,12 +812,10 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Property", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
-            listValues.Items.Add(new ListViewItem(new string[] { "LocalLink",       xStr(Core.Links.GetName(Core.LocalDhtID)) }));
-
+            listValues.Items.Add(new ListViewItem(new string[] { "LocalLink",       xStr(Core.Links.GetName(Core.UserID)) }));
             listValues.Items.Add(new ListViewItem(new string[] { "ProjectRoots", xStr(Core.Links.ProjectRoots.SafeCount) }));
             listValues.Items.Add(new ListViewItem(new string[] { "LinkMap",         xStr(Core.Links.TrustMap.SafeCount) }));
             listValues.Items.Add(new ListViewItem(new string[] { "ProjectNames",    xStr(Core.Links.ProjectNames.SafeCount) }));
-
             listValues.Items.Add(new ListViewItem(new string[] { "LinkPath",        xStr(Core.Links.LinkPath) }));
         }
 
@@ -864,7 +863,7 @@ namespace RiseOp.Interface.Tools
                         titles += projectName + ": " + link.Title + ", ";
 
                         if (link.Uplink != null)
-                            uplinks += projectName + ": " + GetLinkName(link.Uplink.DhtID) + ", ";
+                            uplinks += projectName + ": " + GetLinkName(link.Uplink.UserID) + ", ";
 
                         if (link.Confirmed.Count > 0)
                         {
@@ -879,7 +878,7 @@ namespace RiseOp.Interface.Tools
                             downlinks += GetProjectName(link.Project) + ": ";
 
                             foreach (OpLink downlink in link.Downlinks)
-                                downlinks += GetLinkName(downlink.DhtID) + ", ";
+                                downlinks += GetLinkName(downlink.UserID) + ", ";
                         }
 
                         if (link.Requests.Count > 0)
@@ -893,8 +892,8 @@ namespace RiseOp.Interface.Tools
 
                     ListViewItem item = new ListViewItem(new string[]
 					{
-						xStr(Core.Links.GetName(trust.DhtID)),		
-						IDtoStr(trust.DhtID),
+						xStr(Core.Links.GetName(trust.UserID)),		
+						IDtoStr(trust.UserID),
                         xStr(trust.Loaded),	
 						xStr(trust.InLocalLinkTree),
 						xStr(trust.Searched),	
@@ -1070,7 +1069,7 @@ namespace RiseOp.Interface.Tools
                 {
                     listValues.Items.Add(new ListViewItem(new string[]
 					{
-						GetLinkName(board.DhtID),
+						GetLinkName(board.UserID),
                         board.Posts.SafeCount.ToString()
 					}));
                 }
@@ -1085,7 +1084,7 @@ namespace RiseOp.Interface.Tools
             Boards.BoardMap.LockReading(delegate()
             {
                 foreach (OpBoard board in Boards.BoardMap.Values)
-                    parentNode.Nodes.Add(new StructureNode(GetLinkName(board.DhtID), new ShowDelegate(ShowTargetBoard), board));
+                    parentNode.Nodes.Add(new StructureNode(GetLinkName(board.UserID), new ShowDelegate(ShowTargetBoard), board));
             });
         }
 
@@ -1168,7 +1167,7 @@ namespace RiseOp.Interface.Tools
                     roots.LockReading(delegate()
                     {
                         foreach (OpLink link in roots)
-                            names += xStr(Core.Links.GetName(link.DhtID)) + ", ";
+                            names += xStr(Core.Links.GetName(link.UserID)) + ", ";
                     });
 
                     listValues.Items.Add(new ListViewItem(new string[] { project, names }));
@@ -1260,7 +1259,7 @@ namespace RiseOp.Interface.Tools
                 foreach (OpProfile profile in Profiles.ProfileMap.Values)
                 {
                     if (!profile.Loaded)
-                        Profiles.LoadProfile(profile.DhtID);
+                        Profiles.LoadProfile(profile.UserID);
 
                     string embedded = "";
                     foreach (ProfileAttachment attach in profile.Attached)
@@ -1268,7 +1267,7 @@ namespace RiseOp.Interface.Tools
 
                     ListViewItem item = new ListViewItem(new string[]
 				{
-					GetLinkName(profile.DhtID),
+					GetLinkName(profile.UserID),
 					"",
 					"",
 					"",

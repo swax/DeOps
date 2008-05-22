@@ -78,7 +78,7 @@ namespace RiseOp.Services.Plan
 
             // force root to self, only if self is not in a loop, in which case anyone in loop can be assigned sub-goals
             //if(!Core.Links.LocalLink.LoopRoot.ContainsKey(Editing.Project)), assignment loops, not obvious behavior
-                add.PersonTree.ForceRootID = Core.LocalDhtID;
+                add.PersonTree.ForceRootID = Core.UserID;
             
             add.PersonTree.HideUnlinked = true;
             add.ProjectCombo.Visible = false;

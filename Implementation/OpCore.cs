@@ -59,10 +59,8 @@ namespace RiseOp.Implementation
 
         // sub-classes
 		internal Identity    User;
-        internal G2Protocol  Protocol;
         internal DhtNetwork  GlobalNet;
         internal DhtNetwork  OperationNet;
-        internal RudpHandler RudpControl;
 
         // services
         internal TrustService    Links;
@@ -77,17 +75,12 @@ namespace RiseOp.Implementation
 
 		// properties
 		internal IPAddress    LocalIP;
-        internal UInt64       LocalDhtID;
+        internal UInt64       UserID { get { return OperationNet.LocalUserID; } }
         internal FirewallType Firewall = FirewallType.Blocked;
-		internal ushort       ClientID;
         internal DateTime     StartTime;
         internal DateTime     NextSaveCache;
-        internal ulong        OpID;
 
         internal Dictionary<ulong, byte[]> KeyMap = new Dictionary<ulong, byte[]>();
-
-        internal Dictionary<ushort, RudpSocket> CommMap = new Dictionary<ushort, RudpSocket>();
-
 
         // events
         internal event TimerHandler SecondTimerEvent;
@@ -106,6 +99,7 @@ namespace RiseOp.Implementation
         internal TrayLock      GuiTray;
         internal ConsoleForm   GuiConsole;
         internal InternalsForm GuiInternal;
+        internal G2Protocol    GuiProtocol;
 
 
         // logs
@@ -145,19 +139,13 @@ namespace RiseOp.Implementation
             StartTime = TimeNow;
             NextSaveCache = TimeNow.AddMinutes(1);
             MinutePoint = RndGen.Next(2, 59);
+            GuiProtocol = new G2Protocol();
 
             ConsoleLog("RiseOp " + Application.ProductVersion);
 
-            Protocol = new G2Protocol();
-            RudpControl = new RudpHandler(this);
-            
             User = new Identity(path, pass, this);
             User.Load(LoadModeType.Settings);
 
-            LocalDhtID = Utilities.KeytoID(User.Settings.KeyPair.ExportParameters(false));
-            ClientID   = (ushort)RndGen.Next(1, ushort.MaxValue);
-            OpID       = Utilities.KeytoID(User.Settings.OpKey.Key);
-            
             OperationNet = new DhtNetwork(this, false);
 
             if (User.Settings.OpAccess != AccessType.Secret)
@@ -347,13 +335,13 @@ namespace RiseOp.Implementation
 
 			try
 			{
-                RudpControl.SecondTimer();
-                
                 // networks
 				GlobalNet.SecondTimer();
                 OperationNet.SecondTimer();
 
                 SecondTimerEvent.Invoke();
+
+                CheckGlobalProxyMode();
 
                 // save cache
                 if (TimeNow > NextSaveCache)
@@ -403,11 +391,7 @@ namespace RiseOp.Implementation
                 OperationNet.FirewallChangedtoOpen();
 
                 if (GlobalNet != null)
-                {
                     GlobalNet.FirewallChangedtoOpen();
-
-                    Locations.PublishGlobal();
-                }
 
 				ConsoleLog("Network Firewall status changed to Open");
 
@@ -647,7 +631,7 @@ namespace RiseOp.Implementation
             //should really be done per compontnt (board only cares about local, mail doesnt care at all, neither does chat)
     
             // if not self, higher, adjacent or lower direct then true
-            if (id == LocalDhtID)
+            if (id == UserID)
                 return false;
 
             if(!localRegionOnly && Links.IsHigher(id, project))
@@ -754,7 +738,33 @@ namespace RiseOp.Implementation
             return function;
         }
 
+        internal bool UseGlobalProxies;
 
+        internal void CheckGlobalProxyMode()
+        {
+            // if blocked/NATed with connected to no op proxies, then we are in global proxy mode
+
+            bool useProxies = ( Firewall != FirewallType.Open &&
+                                TimeNow > StartTime.AddSeconds(15) &&
+                                GlobalNet != null && GlobalNet.TcpControl.ProxyServers.Count > 0 &&
+                                OperationNet.TcpControl.ProxyServers.Count == 0);
+
+  
+            // if no state change return
+            if (useProxies == UseGlobalProxies)
+                return;
+
+            UseGlobalProxies = useProxies;
+
+            if (UseGlobalProxies)
+            {
+                // socket will handle publishing after 15 secs
+            }
+            else
+            {
+                //crit GP - remove global proxies from routing
+            }
+        }
     }
 
     internal class AsyncCoreFunction

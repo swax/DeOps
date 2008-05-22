@@ -24,6 +24,7 @@ namespace RiseOp.Services.Transfer
         public uint ServiceID { get { return 3; } }
 
         internal OpCore Core;
+        DhtNetwork Network;
 
         int ConcurrentDownloads = 5;
 
@@ -42,15 +43,16 @@ namespace RiseOp.Services.Transfer
         internal TransferService(OpCore core)
         {
             Core = core;
+            Network = Core.OperationNet;
             Core.Transfers = this;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
 
             Core.OperationNet.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(Search_Local);
 
-            Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
-            Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
+            Network.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
+            Network.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
+            Network.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
 
             // create and clear transfer dir
             try
@@ -73,9 +75,9 @@ namespace RiseOp.Services.Transfer
 
             Core.OperationNet.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(Search_Local);
 
-            Core.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
-            Core.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
+            Network.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
+            Network.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
+            Network.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
         }
 
         internal int StartDownload( ulong target, FileDetails details, object[] args, EndDownloadHandler endEvent)
@@ -150,7 +152,7 @@ namespace RiseOp.Services.Transfer
 
                 FileDownload transfer = DownloadMap[id];
 
-                byte[] parameters = transfer.Details.Encode(Core.Protocol);
+                byte[] parameters = transfer.Details.Encode(Network.Protocol);
 
                 DhtSearch search = Core.OperationNet.Searches.Start(transfer.Target, "Transfer", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
 
@@ -281,10 +283,10 @@ namespace RiseOp.Services.Transfer
         {
             foreach (FileDownload transfer in DownloadMap.Values)
                 foreach (RudpSession session in transfer.Sessions)
-                    active[session.DhtID] = true;
+                    active[session.UserID] = true;
 
             foreach (RudpSession session in UploadMap.Keys)
-                active[session.DhtID] = true;
+                active[session.UserID] = true;
         }
 
         void Search_Local(ulong key, byte[] parameters, List<byte[]> results)
@@ -295,7 +297,7 @@ namespace RiseOp.Services.Transfer
                 return;
             }
 
-            FileDetails details = FileDetails.Decode(Core.Protocol, parameters);
+            FileDetails details = FileDetails.Decode(parameters);
 
             if (details == null || Core.Locations.LocalLocation == null)
                 return;
@@ -303,7 +305,7 @@ namespace RiseOp.Services.Transfer
             // reply with loc info if a component has the file
             if(FileSearch.Contains(details.Service, details.DataType))
                 if (FileSearch[details.Service, details.DataType].Invoke(key, details))
-                    results.Add(Core.Locations.LocalLocation.Data.Encode(Core.Protocol));
+                    results.Add(Core.Locations.LocalLocation.Data.Encode(Network.Protocol));
         }
 
         void EndSearch(DhtSearch search)
@@ -319,9 +321,9 @@ namespace RiseOp.Services.Transfer
             {
                 try
                 {
-                    LocationData location = LocationData.Decode(Core.Protocol, found.Value);
+                    LocationData location = LocationData.Decode(found.Value);
                     
-                    Core.IndexKey(location.DhtID, ref location.Key);
+                    Core.IndexKey(location.UserID, ref location.Key);
                     download.AddSource(location);
                 }
                 catch (Exception ex)
@@ -341,10 +343,10 @@ namespace RiseOp.Services.Transfer
                 if (!download.Attempted.Contains(i))
                 {
                     // if connected to source
-                    if(Core.RudpControl.IsConnected(download.Sources[i]))
-                        Send_Request(Core.RudpControl.GetActiveSession(download.Sources[i]), download);
+                    if (Network.RudpControl.IsConnected(download.Sources[i]))
+                        Send_Request(Network.RudpControl.GetActiveSession(download.Sources[i]), download);
                     else
-                        Core.RudpControl.Connect(download.Sources[i]);
+                        Network.RudpControl.Connect(download.Sources[i]);
 
                     download.Attempted.Add(i);
                     download.NextAttempt = 5;
@@ -369,7 +371,7 @@ namespace RiseOp.Services.Transfer
                 if(session.Status == SessionStatus.Active)
                     if ( download.Status != DownloadStatus.Done && !download.Sessions.Contains(session))
                             foreach(LocationData source in download.Sources)
-                                if (source.DhtID == session.DhtID && source.Source.ClientID == session.ClientID)
+                                if (source.UserID == session.UserID && source.Source.ClientID == session.ClientID)
                                 {
                                     download.Log("Request sent to " + session.Name);
                                     Send_Request(session, download);
@@ -397,7 +399,7 @@ namespace RiseOp.Services.Transfer
             if(!download.Sessions.Contains(session))
                 download.Sessions.Add(session);
 
-            TransferRequest request = new TransferRequest(download, Core.Protocol);
+            TransferRequest request = new TransferRequest(download, Network.Protocol);
             session.SendData(ServiceID, 0, request, true);
         }
 
@@ -405,20 +407,20 @@ namespace RiseOp.Services.Transfer
         {
             G2Header root = new G2Header(data);
 
-            if(Core.Protocol.ReadPacket(root))
+            if(G2Protocol.ReadPacket(root))
             {
                 switch(root.Name)
                 {
                     case TransferPacket.Request:
-                        Process_Request(session, TransferRequest.Decode(Core.Protocol, root));
+                        Process_Request(session, TransferRequest.Decode(root));
                         break;
 
                     case TransferPacket.Ack:
-                        Process_Ack(session, TransferAck.Decode(Core.Protocol, root));
+                        Process_Ack(session, TransferAck.Decode(root));
                         break;
 
                     case TransferPacket.Data:
-                        Process_Data(session, TransferData.Decode(Core.Protocol, root));
+                        Process_Data(session, TransferData.Decode(root));
                         break;
                 }
             }
@@ -426,7 +428,7 @@ namespace RiseOp.Services.Transfer
 
         private void Process_Request(RudpSession session, TransferRequest request)
         {
-            FileDetails details = FileDetails.Decode(Core.Protocol, request.Details);
+            FileDetails details = FileDetails.Decode(request.Details);
 
             // ask component for path to file
             string path = null;
@@ -671,7 +673,7 @@ namespace RiseOp.Services.Transfer
         internal void AddSource(LocationData location)
         {
             foreach (LocationData source in Sources)
-                if (source.DhtID == location.DhtID && source.Source.ClientID == location.Source.ClientID)
+                if (source.UserID == location.UserID && source.Source.ClientID == location.Source.ClientID)
                     return;
 
             Sources.Add(location);

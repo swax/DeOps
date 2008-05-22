@@ -82,7 +82,7 @@ namespace RiseOp.Implementation.Dht
             if(sockets != null)
                 foreach (TcpConnect socket in sockets)
                 {
-                    DhtAddress address = new DhtAddress(socket.DhtID, socket.ClientID, socket.RemoteIP, socket.UdpPort);
+                    DhtAddress address = new DhtAddress(socket.userID, socket.ClientID, socket.RemoteIP, socket.UdpPort);
                     Searches.SendDirectRequest(address, TargetID, Service, DataType, Parameters);
 
                     DhtLookup host = Add(socket.GetContact());
@@ -124,7 +124,7 @@ namespace RiseOp.Implementation.Dht
 		{
             DhtLookup added = null;
 
-            if (contact.DhtID == Core.LocalDhtID && contact.ClientID == Core.ClientID)
+            if (contact.userID == Network.LocalUserID && contact.ClientID == Network.ClientID)
                 return null;
 
 			if(Finished) // search over
@@ -133,10 +133,10 @@ namespace RiseOp.Implementation.Dht
 			// go through lookup list, add if closer to target
 			foreach(DhtLookup lookup in LookupList)
 			{	
-				if(contact.DhtID == lookup.Contact.DhtID && contact.ClientID == lookup.Contact.ClientID)
+				if(contact.userID == lookup.Contact.userID && contact.ClientID == lookup.Contact.ClientID)
 					return lookup;
 
-				if((contact.DhtID ^ TargetID) < (lookup.Contact.DhtID ^ TargetID))
+				if((contact.userID ^ TargetID) < (lookup.Contact.userID ^ TargetID))
 				{
                     added = new DhtLookup(contact);
                     LookupList.Insert(LookupList.IndexOf(lookup), added);
@@ -155,7 +155,7 @@ namespace RiseOp.Implementation.Dht
 		
 	
 			// at end so we ensure this node is put into list and sent with proxy results
-            if (Service == Core.DhtServiceID && contact.DhtID == TargetID)
+            if (Service == Core.DhtServiceID && contact.userID == TargetID)
 				Found(contact, false);
 
             return added;

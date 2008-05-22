@@ -103,8 +103,8 @@ namespace RiseOp.Services.Profile
         internal ProfileService(OpCore core)
         {
             Core = core;
-            Protocol = core.Protocol;
             Network = core.OperationNet;
+            Protocol = Network.Protocol;
             Store = Network.Store;
             Links = Core.Links;
 
@@ -119,7 +119,7 @@ namespace RiseOp.Services.Profile
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
             Cache.Load();
 
-            if (!ProfileMap.SafeContainsKey(Core.LocalDhtID))
+            if (!ProfileMap.SafeContainsKey(Core.UserID))
                 SaveLocal(DefaultTemplate, null, null);
         }
 
@@ -130,11 +130,11 @@ namespace RiseOp.Services.Profile
             Cache.Dispose();
         }
 
-        internal OpProfile GetProfile(ulong dhtid)
+        internal OpProfile GetProfile(ulong id)
         {
             OpProfile profile = null;
 
-            ProfileMap.SafeTryGetValue(dhtid, out profile);
+            ProfileMap.SafeTryGetValue(id, out profile);
 
             return profile;
         }
@@ -185,7 +185,7 @@ namespace RiseOp.Services.Profile
                 int written = 0;
 
                 // write template info
-                byte[] htmlBytes = Core.Protocol.UTF.GetBytes(template);
+                byte[] htmlBytes = UTF8Encoding.UTF8.GetBytes(template);
                 written += Protocol.WriteToFile(new ProfileAttachment("template", htmlBytes.Length), stream);
                 
 
@@ -202,10 +202,10 @@ namespace RiseOp.Services.Profile
 
                         ProfileField field = new ProfileField();
                         field.Name = pair.Key;
-                        field.Value = Core.Protocol.UTF.GetBytes(pair.Value);
+                        field.Value = UTF8Encoding.UTF8.GetBytes(pair.Value);
                         field.FieldType = ProfileFieldType.Text;
 
-                        byte[] packet = field.Encode(Core.Protocol);
+                        byte[] packet = field.Encode(Network.Protocol);
                         fieldPackets.Add(packet);
                         fieldsTotalSize += packet.Length;
                     }
@@ -218,10 +218,10 @@ namespace RiseOp.Services.Profile
 
                         ProfileField field = new ProfileField();
                         field.Name = pair.Key;
-                        field.Value = Core.Protocol.UTF.GetBytes(Path.GetFileName(pair.Value));
+                        field.Value = UTF8Encoding.UTF8.GetBytes(Path.GetFileName(pair.Value));
                         field.FieldType = ProfileFieldType.File;
 
-                        byte[] packet = field.Encode(Core.Protocol);
+                        byte[] packet = field.Encode(Network.Protocol);
                         fieldPackets.Add(packet);
                         fieldsTotalSize += packet.Length;
                     }
@@ -277,7 +277,7 @@ namespace RiseOp.Services.Profile
 
                 OpVersionedFile vfile = Cache.UpdateLocal(tempPath, key, BitConverter.GetBytes(embeddedStart));
 
-                Store.PublishDirect(Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, DataTypeFile, vfile.SignedHeader);
+                Store.PublishDirect(Links.GetLocsAbove(), Core.UserID, ServiceID, DataTypeFile, vfile.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -288,27 +288,27 @@ namespace RiseOp.Services.Profile
 
         void Cache_FileRemoved(OpVersionedFile file)
         {
-            OpProfile profile = GetProfile(file.DhtID);
+            OpProfile profile = GetProfile(file.UserID);
 
             if (profile != null)
-                ProfileMap.SafeRemove(file.DhtID);
+                ProfileMap.SafeRemove(file.UserID);
         }
 
         private void Cache_FileAquired(OpVersionedFile file)
         {
             // get profile
-            OpProfile prevProfile = GetProfile(file.DhtID);
+            OpProfile prevProfile = GetProfile(file.UserID);
 
             OpProfile newProfile = new OpProfile(file);
 
-            ProfileMap.SafeAdd(file.DhtID, newProfile);
+            ProfileMap.SafeAdd(file.UserID, newProfile);
 
 
-            if (file.DhtID == Core.LocalDhtID)
+            if (file.UserID == Core.UserID)
                 LocalProfile = newProfile;
 
             if ((newProfile == LocalProfile) || (prevProfile != null && prevProfile.Loaded))
-                LoadProfile(newProfile.DhtID);
+                LoadProfile(newProfile.UserID);
 
 
             // update subs
@@ -319,18 +319,18 @@ namespace RiseOp.Services.Profile
                 Links.ProjectRoots.LockReading(delegate()
                 {
                     foreach (uint project in Links.ProjectRoots.Keys)
-                        if (newProfile.DhtID == Core.LocalDhtID || Links.IsHigher(newProfile.DhtID, project))
-                            Links.GetLocsBelow(Core.LocalDhtID, project, locations);
+                        if (newProfile.UserID == Core.UserID || Links.IsHigher(newProfile.UserID, project))
+                            Links.GetLocsBelow(Core.UserID, project, locations);
                 });
 
-                Store.PublishDirect(locations, newProfile.DhtID, ServiceID, 0, file.SignedHeader);
+                Store.PublishDirect(locations, newProfile.UserID, ServiceID, 0, file.SignedHeader);
             }
 
             if (ProfileUpdate != null)
                 Core.RunInGuiThread(ProfileUpdate, newProfile);
 
-            if (Core.NewsWorthy(newProfile.DhtID, 0, false))
-                Core.MakeNews("Profile updated by " + Links.GetName(newProfile.DhtID), newProfile.DhtID, 0, true, ProfileRes.IconX, Menu_View);
+            if (Core.NewsWorthy(newProfile.UserID, 0, false))
+                Core.MakeNews("Profile updated by " + Links.GetName(newProfile.UserID), newProfile.UserID, 0, true, ProfileRes.IconX, Menu_View);
         }
 
         internal void LoadProfile(ulong id)
@@ -351,14 +351,14 @@ namespace RiseOp.Services.Profile
 
                 TaggedStream file = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(file, profile.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;
 
                 while (stream.ReadPacket(ref root))
                     if (root.Name == ProfilePacket.Attachment)
                     {
-                        ProfileAttachment packet = ProfileAttachment.Decode(Core.Protocol, root);
+                        ProfileAttachment packet = ProfileAttachment.Decode(root);
 
                         if (packet == null)
                             continue;
@@ -403,11 +403,11 @@ namespace RiseOp.Services.Profile
             File = file;
         }
 
-        internal ulong DhtID
+        internal ulong UserID
         {
             get
             {
-                return File.DhtID;
+                return File.UserID;
             }
         }
 

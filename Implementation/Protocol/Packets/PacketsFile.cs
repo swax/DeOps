@@ -25,7 +25,7 @@ namespace RiseOp.Implementation.Protocol.File
             }
         }
 
-        internal static FilePacket Decode(G2Protocol protocol, G2Header root)
+        internal static FilePacket Decode(G2Header root)
         {
             FilePacket file = new FilePacket();
 
@@ -42,16 +42,17 @@ namespace RiseOp.Implementation.Protocol.File
     {
         const byte Packet_Operation     = 0x10;
         const byte Packet_ScreenName    = 0x20;
-        const byte Packet_GlobalPortTcp = 0x30;
-        const byte Packet_GlobalPortUdp = 0x40;
-        const byte Packet_OpPortTcp     = 0x50;
-        const byte Packet_OpPortUdp     = 0x60;
-        const byte Packet_OpKey         = 0x70;
-        const byte Packet_OpAccess      = 0x80;
-        const byte Packet_KeyPair       = 0x90;
-        const byte Packet_Location      = 0xA0;
-        const byte Packet_FileKey       = 0xB0;
-        const byte Packet_AwayMsg       = 0xC0;
+        const byte Packet_GlobalID      = 0x30;
+        const byte Packet_GlobalPortTcp = 0x40;
+        const byte Packet_GlobalPortUdp = 0x50;
+        const byte Packet_OpPortTcp     = 0x60;
+        const byte Packet_OpPortUdp     = 0x70;
+        const byte Packet_OpKey         = 0x80;
+        const byte Packet_OpAccess      = 0x90;
+        const byte Packet_KeyPair       = 0xA0;
+        const byte Packet_Location      = 0xB0;
+        const byte Packet_FileKey       = 0xC0;
+        const byte Packet_AwayMsg       = 0xD0;
 
         const byte Key_D        = 0x10;
         const byte Key_DP       = 0x20;
@@ -70,10 +71,13 @@ namespace RiseOp.Implementation.Protocol.File
         internal string AwayMessage = "";
 
         // network
+        internal ulong GlobalID;
+
         internal ushort GlobalPortTcp;
         internal ushort GlobalPortUdp;
         internal ushort OpPortTcp;
         internal ushort OpPortUdp;
+        
 
         // private
         internal RijndaelManaged OpKey = new RijndaelManaged();
@@ -95,14 +99,15 @@ namespace RiseOp.Implementation.Protocol.File
             {
                 G2Frame settings = protocol.WritePacket(null, FilePacket.Settings, null);
 
-                protocol.WritePacket(settings, Packet_Operation,     protocol.UTF.GetBytes(Operation));
-                protocol.WritePacket(settings, Packet_ScreenName,    protocol.UTF.GetBytes(ScreenName));
+                protocol.WritePacket(settings, Packet_Operation,     UTF8Encoding.UTF8.GetBytes(Operation));
+                protocol.WritePacket(settings, Packet_ScreenName,    UTF8Encoding.UTF8.GetBytes(ScreenName));
+                protocol.WritePacket(settings, Packet_GlobalID,      BitConverter.GetBytes(GlobalID));
                 protocol.WritePacket(settings, Packet_GlobalPortTcp, BitConverter.GetBytes(GlobalPortTcp));
                 protocol.WritePacket(settings, Packet_GlobalPortUdp, BitConverter.GetBytes(GlobalPortUdp));
                 protocol.WritePacket(settings, Packet_OpPortTcp,     BitConverter.GetBytes(OpPortTcp));
                 protocol.WritePacket(settings, Packet_OpPortUdp,     BitConverter.GetBytes(OpPortUdp));
-                protocol.WritePacket(settings, Packet_Location,      protocol.UTF.GetBytes(Location));
-                protocol.WritePacket(settings, Packet_AwayMsg,      protocol.UTF.GetBytes(AwayMessage));
+                protocol.WritePacket(settings, Packet_Location,      UTF8Encoding.UTF8.GetBytes(Location));
+                protocol.WritePacket(settings, Packet_AwayMsg,      UTF8Encoding.UTF8.GetBytes(AwayMessage));
 
                 protocol.WritePacket(settings, Packet_FileKey,  FileKey.Key);
                 protocol.WritePacket(settings, Packet_OpKey,    OpKey.Key);
@@ -126,7 +131,7 @@ namespace RiseOp.Implementation.Protocol.File
             }
         }
 
-        internal static SettingsPacket Decode(G2Protocol protocol, G2Header root)
+        internal static SettingsPacket Decode(G2Header root)
         {
             SettingsPacket settings = new SettingsPacket();
 
@@ -136,7 +141,7 @@ namespace RiseOp.Implementation.Protocol.File
             {
                 if (child.Name == Packet_KeyPair)
                 {
-                    DecodeKey(protocol, child, settings);
+                    DecodeKey(child, settings);
                     continue;
                 }
 
@@ -146,11 +151,15 @@ namespace RiseOp.Implementation.Protocol.File
                 switch (child.Name)
                 {
                     case Packet_Operation:
-                        settings.Operation = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        settings.Operation = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_ScreenName:
-                        settings.ScreenName = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        settings.ScreenName = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_GlobalID:
+                        settings.GlobalID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_GlobalPortTcp:
@@ -183,11 +192,11 @@ namespace RiseOp.Implementation.Protocol.File
                         break;
 
                     case Packet_Location:
-                        settings.Location = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        settings.Location = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_AwayMsg:
-                        settings.AwayMessage = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        settings.AwayMessage = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }
@@ -195,7 +204,7 @@ namespace RiseOp.Implementation.Protocol.File
             return settings;
         }
 
-        private static void DecodeKey(G2Protocol protocol, G2Header child, SettingsPacket settings)
+        private static void DecodeKey(G2Header child, SettingsPacket settings)
         {
             G2Header key = new G2Header(child.Data);
 
@@ -270,7 +279,7 @@ namespace RiseOp.Implementation.Protocol.File
             }
         }
 
-        internal static CachePacket Decode(G2Protocol protocol, G2Header root)
+        internal static CachePacket Decode(G2Header root)
         {
             CachePacket cache = new CachePacket(FilePacket.GlobalCache); // type doesnt matter here
 

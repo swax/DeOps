@@ -83,7 +83,7 @@ namespace RiseOp.Services.Board
             }
         }
 
-        internal static PostHeader Decode(G2Protocol protocol, G2Header root)
+        internal static PostHeader Decode(G2Header root)
         {
             PostHeader header = new PostHeader();
             G2Header child = new G2Header(root.Data);
@@ -214,14 +214,14 @@ namespace RiseOp.Services.Board
             {
                 G2Frame info = protocol.WritePacket(null, BoardPacket.PostInfo, null);
 
-                protocol.WritePacket(info, Packet_Subject, protocol.UTF.GetBytes(Subject));
+                protocol.WritePacket(info, Packet_Subject, UTF8Encoding.UTF8.GetBytes(Subject));
                 protocol.WritePacket(info, Packet_Unique, BitConverter.GetBytes(Unique));
 
                 return protocol.WriteFinish();
             }
         }
 
-        internal static PostInfo Decode(G2Protocol protocol, G2Header root)
+        internal static PostInfo Decode(G2Header root)
         {
             PostInfo info = new PostInfo();
             G2Header child = new G2Header(root.Data);
@@ -234,7 +234,7 @@ namespace RiseOp.Services.Board
                 switch (child.Name)
                 {
                     case Packet_Subject:
-                        info.Subject = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        info.Subject = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Unique:
@@ -272,14 +272,14 @@ namespace RiseOp.Services.Board
             {
                 G2Frame file = protocol.WritePacket(null, BoardPacket.PostFile, null);
 
-                protocol.WritePacket(file, Packet_Name, protocol.UTF.GetBytes(Name));
+                protocol.WritePacket(file, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
                 protocol.WritePacket(file, Packet_Size, CompactNum.GetBytes(Size));
 
                 return protocol.WriteFinish();
             }
         }
 
-        internal static PostFile Decode(G2Protocol protocol, G2Header root)
+        internal static PostFile Decode(G2Header root)
         {
             PostFile file = new PostFile();
             G2Header child = new G2Header(root.Data);
@@ -292,7 +292,7 @@ namespace RiseOp.Services.Board
                 switch (child.Name)
                 {
                     case Packet_Name:
-                        file.Name = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        file.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Size:

@@ -22,7 +22,7 @@ namespace RiseOp.Services.Profile
         ProfileService Profiles;
         TrustService Links;
 
-        ulong CurrentDhtID;
+        ulong UserID;
         internal uint ProjectID;
 
         internal Dictionary<string, string> TextFields = new Dictionary<string, string>();
@@ -38,7 +38,7 @@ namespace RiseOp.Services.Profile
             Core = profile.Core;
             Links = Core.Links;
 
-            CurrentDhtID = id;
+            UserID = id;
             ProjectID = project;
         }
 
@@ -48,7 +48,7 @@ namespace RiseOp.Services.Profile
             Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
             Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
             
-            OpProfile profile = Profiles.GetProfile(CurrentDhtID);
+            OpProfile profile = Profiles.GetProfile(UserID);
 
             if (profile == null)
                 DisplayLoading();
@@ -57,7 +57,7 @@ namespace RiseOp.Services.Profile
                 Profile_Update(profile);
 
             List<ulong> ids = new List<ulong>();
-            ids.AddRange(Links.GetUplinkIDs(CurrentDhtID, ProjectID));
+            ids.AddRange(Links.GetUplinkIDs(UserID, ProjectID));
 
             foreach (ulong id in ids)
                 Profiles.Research(id);
@@ -76,7 +76,7 @@ namespace RiseOp.Services.Profile
 
         void Core_GetFocused()
         {
-            Core.Focused.SafeAdd(CurrentDhtID, true);
+            Core.Focused.SafeAdd(UserID, true);
         }
 
         private void DisplayLoading()
@@ -107,10 +107,10 @@ namespace RiseOp.Services.Profile
             if (small)
                 return "Profile";
 
-            if (CurrentDhtID == Profiles.Core.LocalDhtID)
+            if (UserID == Profiles.Core.UserID)
                 return "My Profile";
 
-            return Profiles.Core.Links.GetName(CurrentDhtID) + "'s Profile";
+            return Profiles.Core.Links.GetName(UserID) + "'s Profile";
         }
 
         internal override Size GetDefaultSize()
@@ -126,10 +126,10 @@ namespace RiseOp.Services.Profile
         void Links_Update(ulong key)
         {
             // if updated node is local, or higher, refresh so motd updates
-            if (key != CurrentDhtID && !Core.Links.IsHigher(CurrentDhtID, key, ProjectID))
+            if (key != UserID && !Core.Links.IsHigher(UserID, key, ProjectID))
                 return;
 
-            OpProfile profile = Profiles.GetProfile(CurrentDhtID);
+            OpProfile profile = Profiles.GetProfile(UserID);
 
             if (profile == null)
                 return;
@@ -141,10 +141,10 @@ namespace RiseOp.Services.Profile
         {
             // if self or in uplink chain, update profile
             List<ulong> uplinks = new List<ulong>();
-            uplinks.Add(CurrentDhtID);
-            uplinks.AddRange(Core.Links.GetUplinkIDs(CurrentDhtID, ProjectID));
+            uplinks.Add(UserID);
+            uplinks.AddRange(Core.Links.GetUplinkIDs(UserID, ProjectID));
 
-            if (!uplinks.Contains(profile.DhtID))
+            if (!uplinks.Contains(profile.UserID))
                 return;
 
 
@@ -167,7 +167,7 @@ namespace RiseOp.Services.Profile
                 Directory.CreateDirectory(tempPath);
 
             // get the profile for this display
-            profile = Profiles.GetProfile(CurrentDhtID);
+            profile = Profiles.GetProfile(UserID);
 
             if (profile == null)
                 return;
@@ -198,7 +198,7 @@ namespace RiseOp.Services.Profile
                         </html>";
             }
 
-            string html = FleshTemplate(Profiles, profile.DhtID, ProjectID, template, TextFields, FileFields);
+            string html = FleshTemplate(Profiles, profile.UserID, ProjectID, template, TextFields, FileFields);
 
             // prevents clicking sound when browser navigates
             if (!Browser.DocumentText.Equals(html))
@@ -219,7 +219,7 @@ namespace RiseOp.Services.Profile
                 fileFields.Clear();
            
             if (!profile.Loaded)
-                service.LoadProfile(profile.DhtID);
+                service.LoadProfile(profile.UserID);
             
             try
             {
@@ -268,15 +268,15 @@ namespace RiseOp.Services.Profile
 
                             if (packet.Root.Name == ProfilePacket.Field)
                             {
-                                ProfileField field = ProfileField.Decode(service.Core.Protocol, packet.Root);
+                                ProfileField field = ProfileField.Decode(packet.Root);
 
                                 if (field.Value == null)
                                     continue;
 
                                 if (field.FieldType == ProfileFieldType.Text)
-                                    textFields[field.Name] = service.Core.Protocol.UTF.GetString(field.Value);
+                                    textFields[field.Name] = UTF8Encoding.UTF8.GetString(field.Value);
                                 else if (field.FieldType == ProfileFieldType.File && fileFields != null)
-                                    fileFields[field.Name] = service.Core.Protocol.UTF.GetString(field.Value);
+                                    fileFields[field.Name] = UTF8Encoding.UTF8.GetString(field.Value);
                             }
                         }
                     }
@@ -416,7 +416,7 @@ namespace RiseOp.Services.Profile
                     {
                         if (parts[1] == "start")
                         {
-                            string motd = FleshMotd(service, template, link.DhtID, project);
+                            string motd = FleshMotd(service, template, link.UserID, project);
 
                             int startMotd = final.IndexOf("<?motd:start?>");
                             int endMotd = final.IndexOf("<?motd:end?>");
@@ -500,7 +500,7 @@ namespace RiseOp.Services.Profile
 
         private void RightClickMenu_Opening(object sender, CancelEventArgs e)
         {
-            if (CurrentDhtID != Profiles.Core.LocalDhtID)
+            if (UserID != Profiles.Core.UserID)
             {
                 e.Cancel = true;
                 return;

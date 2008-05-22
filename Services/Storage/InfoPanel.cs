@@ -487,7 +487,7 @@ namespace RiseOp.Services.Storage
             DiffsView = false;
 
             bool unlocked = CurrentItem.IsFlagged(StorageFlags.Unlocked) ||
-                            (IsFile && Storages.IsHistoryUnlocked(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), CurrentFile.Archived));
+                            (IsFile && Storages.IsHistoryUnlocked(ParentView.UserID, ParentView.ProjectID, CurrentFolder.GetPath(), CurrentFile.Archived));
             bool archived = CurrentItem.IsFlagged(StorageFlags.Archived);
             bool temp = IsFile ? file.Temp : folder.Temp;
 
@@ -932,7 +932,7 @@ namespace RiseOp.Services.Storage
 
                         string unlocked = "";
                         if ((i == 1 && CurrentItem.IsFlagged(StorageFlags.Unlocked)) ||
-                            Storages.IsFileUnlocked(ParentView.DhtID, ParentView.ProjectID, CurrentFolder.GetPath(), file, true))
+                            Storages.IsFileUnlocked(ParentView.UserID, ParentView.ProjectID, CurrentFolder.GetPath(), file, true))
                             unlocked = "<a href='http://history.lock." + i.ToString() + "'><img border= 0 src='" + ImgUnlocked + "'></a>";
 
 
@@ -1029,7 +1029,7 @@ namespace RiseOp.Services.Storage
             StorageFile file = null;
             StorageFolder folder = null;
             bool history = false;
-            ulong UserID = ParentView.DhtID;
+            ulong UserID = ParentView.UserID;
 
             if (parts[0] == "cancel")
             {
@@ -1099,7 +1099,7 @@ namespace RiseOp.Services.Storage
 
                 if (parts[1] == "openfolder")
                 {
-                    Utilities.OpenFolder(Storages.GetRootPath(ParentView.DhtID, ParentView.ProjectID) + CurrentFolder.GetPath());
+                    Utilities.OpenFolder(Storages.GetRootPath(ParentView.UserID, ParentView.ProjectID) + CurrentFolder.GetPath());
                 }
 
                 if (parts[1] == "revs")
@@ -1229,7 +1229,7 @@ namespace RiseOp.Services.Storage
                     if (history)
                         what = "History from " + file.Date.ToLocalTime().ToString();
 
-                    DiffForm form = new DiffForm(this, ParentView.DhtID, what, file, history);
+                    DiffForm form = new DiffForm(this, ParentView.UserID, what, file, history);
 
                     form.ShowDialog(this);
                 }

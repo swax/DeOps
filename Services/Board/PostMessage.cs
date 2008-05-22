@@ -16,7 +16,7 @@ namespace RiseOp.Services.Board
         OpCore Core;
         BoardService Board;
 
-        ulong DhtID;
+        ulong UserID;
         uint ProjectID;
 
         bool Reply;
@@ -35,7 +35,7 @@ namespace RiseOp.Services.Board
             Core = board.Core;
             Board = board;
 
-            DhtID = id;
+            UserID = id;
             ProjectID = project;
         }
 
@@ -133,10 +133,10 @@ namespace RiseOp.Services.Board
             {
                 title += "Post to ";
 
-                if (DhtID == Core.LocalDhtID)
+                if (UserID == Core.UserID)
                     title += "My ";
                 else
-                    title += Core.Links.GetName(DhtID) + "'s ";
+                    title += Core.Links.GetName(UserID) + "'s ";
 
                 if (ProjectID != 0)
                     title += Core.Links.GetProjectName(ProjectID) + " ";
@@ -236,7 +236,7 @@ namespace RiseOp.Services.Board
                     subject = msg;
                 }
 
-                Board.PostMessage(DhtID, ProjectID, ParentID, scope, subject, MessageBody.InputBox.Rtf, files, EditPost);
+                Board.PostMessage(UserID, ProjectID, ParentID, scope, subject, MessageBody.InputBox.Rtf, files, EditPost);
             }
             catch (Exception ex)
             {

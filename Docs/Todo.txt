@@ -1,5 +1,65 @@
 
+global proxying
+	entering / leaving global proxy mode
+		when to publish
+
+	need to publish on global, or rely on search forward from proxy (probably best)
+		dont replicate proxied global location, proxied host should publish on global net with increasing ttl
+
+	connect
+		search global
+		find proxied nodes locs
+		cant connect op, change to GP mode
+		publish global proxy address of self
+		try ping global proxied node locs already found
+		pong received, put address in routing
+		op network set to established
+		
+	global searach
+		finds global proxied (GP)
+		pings GP
+		pong from GP puts into routing table
+		
+	if blocked/NATed with connected to no op proxies, then we are in global proxy mode
+		routing table pinged
+		searches go through global
+		comm routed through global
+		basically udp packets will be tagged for global addresses
+			
+	if in global proxy mode
+		global publish self at intervals
+	leave global proxy mode
+		remove global proxies from routing table
+		
+	hanndle
+		move iteratively routing, forwarding, ping/pong, search, store, comm
+
+	ensure if blocked nodes online, and an open node comes online
+		he finds blocked node locations
+		alerts pongs? blocked nodes signalling them to connect
+
+		add global locs to routing, ping regularly
+		ping will tell open node is online, will add to blocked's routing and blocked will connect
+		UseGlobalProxy is then a psuedo-open state in respect to the operation network
+
+	routing add default proven is false, only on pong is routing proven set to true
+		network only responsive if routing is proven
+		
+	dont respond to globally proxied pings, if not UseGlobalProxy (connected to op proxy)
+		causes global proxy locs in routing to expire
+		
+
+	locationData.Proxies if their global or not, not taken into account
+
+	locationData should always include global proxies if not open
+		on UseGlobalProxies add location global proxies to routing, so that connections maintained
+		ex test 2 blocked connected to 1 open on OpNet, and open node disconnecting, blocked should still be able to comm through global
+
+	networks of many natted should be able to be successfully operate through global net with min bw
+
 testing		
+	test 2 op1 blocked, and 1 op2 open, and see if 2 op1s can communicate
+	
 	start recording test procedures for automated test system
 
 	test IMs, publishing, etc..
@@ -9,18 +69,11 @@ testing
 
 	change established to CanRepublish? map out process
 	
-	user experience good for pickup groups
-		support proxying through global, so 2-5 blocked people can come online and communicate quickly
-		support free 20mb of centrally hosted web cache so people with small groups can store their files and go offline
-	
-	use random/diff global ID still static for user though
-	
+	support free 20mb of centrally hosted web cache so people with small groups can store their files and go offline
+
 next
-   global proxying
-		move iteratively routing, forwarding, ping/pong, search, store, comm
-		test 2 op1 blocked, and 1 op2 open, and see if 2 op1s can communicate
-		need to publish on global, or rely on search forward from proxy (probably best)
-			dont replicate proxied global location, proxied host should publish on global net with increasing ttl
+	global replicating
+	
 	bandwidth limits / auditing
 		when bandwidth chart, figure out why bandwidth quadrupiles with 30% NATs
 	
@@ -350,7 +403,8 @@ Core
 		index file hashes on network for files over 10 meg, otherwise file can be multisourced from default replicators of file
 		always get content once found from node closest to SELF, pull content away from source, ensure it doesn't get flooded
 			node publishes data (he is focal point), diseminates to adjacent peers (focal point splits in two, etc..)
-	
+		How to prevent publishing overload? ex. 100 members in op all publishing global loc data at same 8 nodes closest to OpID
+			need publish search type with acks that return current storage volume, publish closest not full
 
 	udp packet throttle especially for patches
 		backlog for packets, for patches, etc.. not for rudp

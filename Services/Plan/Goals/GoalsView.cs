@@ -26,7 +26,7 @@ namespace RiseOp.Services.Plan
         internal PlanService Plans;
         internal TrustService Links;
 
-        internal ulong DhtID;
+        internal ulong UserID;
         internal uint ProjectID;
 
         List<int> SpecialList = new List<int>();
@@ -127,7 +127,7 @@ namespace RiseOp.Services.Plan
             Core = Plans.Core;
             Links = Core.Links;
 
-            DhtID = id;
+            UserID = id;
             ProjectID = project;
 
             toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
@@ -143,10 +143,10 @@ namespace RiseOp.Services.Plan
 
             string title = "";
 
-            if (DhtID == Core.LocalDhtID)
+            if (UserID == Core.UserID)
                 title += "My ";
             else
-                title += Links.GetName(DhtID) + "'s ";
+                title += Links.GetName(UserID) + "'s ";
 
             if (ProjectID != 0)
                 title += Links.GetProjectName(ProjectID) + " ";
@@ -180,7 +180,7 @@ namespace RiseOp.Services.Plan
             
          
             // research highers for assignments
-            List<ulong> ids = Links.GetUplinkIDs(DhtID, ProjectID);
+            List<ulong> ids = Links.GetUplinkIDs(UserID, ProjectID);
 
             foreach (ulong id in ids)
                 Plans.Research(id);
@@ -252,7 +252,7 @@ namespace RiseOp.Services.Plan
             RootList.Clear();
             ArchiveList.Clear();
 
-            Plans.GetAssignedGoals(DhtID, ProjectID, RootList, ArchiveList);
+            Plans.GetAssignedGoals(UserID, ProjectID, RootList, ArchiveList);
 
             string label = RootList.Count.ToString();
             label += (RootList.Count == 1) ? " Goal" : " Goals";
@@ -288,7 +288,7 @@ namespace RiseOp.Services.Plan
             DiscardLink.Visible = false;
             splitContainer1.Height = Height - toolStrip1.Height;
 
-            Plans.LoadPlan(Core.LocalDhtID);
+            Plans.LoadPlan(Core.UserID);
             Plans_Update(Plans.LocalPlan);
         }
 
@@ -313,7 +313,7 @@ namespace RiseOp.Services.Plan
             }
 
             // if local, add create option
-            if (DhtID == Core.LocalDhtID)
+            if (UserID == Core.UserID)
             {
                 SelectGoalButton.DropDownItems.Add(new ToolStripSeparator());
 
@@ -337,7 +337,7 @@ namespace RiseOp.Services.Plan
             PlanGoal goal = new PlanGoal();
             goal.Ident = Core.RndGen.Next();
             goal.Project = ProjectID;
-            goal.Person = Core.LocalDhtID;
+            goal.Person = Core.UserID;
             goal.End = Core.TimeNow.AddDays(30).ToUniversalTime();
 
             EditGoal form = new EditGoal(EditGoalMode.New, this, goal);

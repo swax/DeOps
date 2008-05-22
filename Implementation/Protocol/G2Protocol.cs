@@ -28,16 +28,11 @@ namespace RiseOp.Implementation.Protocol
 		int    FinalSize;
 		byte[] FinalPacket = new byte[MAX_FINAL_SIZE];
 		
-
-		ASCIIEncoding StringEnc = new ASCIIEncoding();
-        internal UTF8Encoding UTF = new UTF8Encoding();
-
         internal object WriteSection = new object();
 
 
 		internal G2Protocol()
 		{
-
 		}
 
 		internal G2Frame WritePacket(G2Frame root, byte name, byte[] payload)
@@ -334,7 +329,7 @@ namespace RiseOp.Implementation.Protocol
 			return ReadNextPacket(child, ref root.NextBytePos, ref root.NextBytesLeft);
 		}
 
-        internal bool ReadPacket(G2Header root)
+        internal static bool ReadPacket(G2Header root)
         {
             int start  = 0;
             int length = root.Data.Length;

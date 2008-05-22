@@ -17,7 +17,7 @@ namespace RiseOp.Implementation.Protocol.Net
 {
     internal class DhtClient
     {
-        internal ulong DhtID;
+        internal ulong userID;
         internal ushort ClientID;
 
         internal DhtClient()
@@ -26,13 +26,13 @@ namespace RiseOp.Implementation.Protocol.Net
 
         internal DhtClient(DhtClient copy)
         {
-            DhtID = copy.DhtID;
+            userID = copy.userID;
             ClientID = copy.ClientID;
         }
 
         internal DhtClient(ulong dht, ushort client)
         {
-            DhtID = dht;
+            userID = dht;
             ClientID = client;
         }
 
@@ -43,12 +43,12 @@ namespace RiseOp.Implementation.Protocol.Net
             if (compare == null)
                 return false ;
 
-            return DhtID == compare.DhtID && ClientID == compare.ClientID;
+            return userID == compare.userID && ClientID == compare.ClientID;
         }
 
         public override int GetHashCode()
         {
-            return DhtID.GetHashCode() ^ ClientID.GetHashCode();
+            return userID.GetHashCode() ^ ClientID.GetHashCode();
         }
     }
 
@@ -64,7 +64,7 @@ namespace RiseOp.Implementation.Protocol.Net
         {
             byte[] bytes = new byte[BYTE_SIZE];
 
-            BitConverter.GetBytes(DhtID).CopyTo(bytes, 0);
+            BitConverter.GetBytes(userID).CopyTo(bytes, 0);
             BitConverter.GetBytes(ClientID).CopyTo(bytes, 8);
             BitConverter.GetBytes(TcpPort).CopyTo(bytes, 10);
             BitConverter.GetBytes(UdpPort).CopyTo(bytes, 12);
@@ -77,7 +77,7 @@ namespace RiseOp.Implementation.Protocol.Net
         {
             DhtSource source = new DhtSource();
 
-            source.DhtID    = BitConverter.ToUInt64(data, pos);
+            source.userID    = BitConverter.ToUInt64(data, pos);
             source.ClientID = BitConverter.ToUInt16(data, pos + 8);
             source.TcpPort  = BitConverter.ToUInt16(data, pos + 10);
             source.UdpPort  = BitConverter.ToUInt16(data, pos + 12);
@@ -88,7 +88,7 @@ namespace RiseOp.Implementation.Protocol.Net
 
         DhtClient GetDhtClient()
         {
-            return new DhtClient(DhtID, ClientID);
+            return new DhtClient(userID, ClientID);
         }
     }
 
@@ -103,24 +103,24 @@ namespace RiseOp.Implementation.Protocol.Net
         {
         }
 
-        internal DhtAddress(ulong dhtid, ushort clientID, IPAddress ip, ushort port)
+        internal DhtAddress(ulong user, ushort client, IPAddress ip, ushort port)
         {
-            DhtID    = dhtid;
-            ClientID = clientID;
+            userID   = user;
+            ClientID = client;
             IP       = ip;
             UdpPort  = port;
         }
 
-        internal DhtAddress(ulong dhtid, IPEndPoint host)
+        internal DhtAddress(ulong user, IPEndPoint host)
         {
-            DhtID = dhtid;
+            userID = user;
             IP    = host.Address;
             UdpPort  = (ushort)host.Port;
         }
 
         internal DhtAddress(IPAddress ip, DhtSource source)
         {
-            DhtID = source.DhtID;
+            userID = source.userID;
             ClientID = source.ClientID;
             IP = ip;
             UdpPort = source.UdpPort;
@@ -135,7 +135,7 @@ namespace RiseOp.Implementation.Protocol.Net
         {
             byte[] bytes = new byte[BYTE_SIZE];
 
-            BitConverter.GetBytes(DhtID).CopyTo(bytes, 0);
+            BitConverter.GetBytes(userID).CopyTo(bytes, 0);
             BitConverter.GetBytes(ClientID).CopyTo(bytes, 8);
             IP.GetAddressBytes().CopyTo(bytes, 10);
             BitConverter.GetBytes(UdpPort).CopyTo(bytes, 14);
@@ -147,7 +147,7 @@ namespace RiseOp.Implementation.Protocol.Net
         {
             DhtAddress address = new DhtAddress();
             
-            address.DhtID = BitConverter.ToUInt64(data, pos);
+            address.userID = BitConverter.ToUInt64(data, pos);
             address.ClientID = BitConverter.ToUInt16(data, pos + 8);
             address.IP = Utilities.BytestoIP(data, pos + 10);
             address.UdpPort = BitConverter.ToUInt16(data, pos + 14);
@@ -162,7 +162,7 @@ namespace RiseOp.Implementation.Protocol.Net
             if (check == null)
                 return false;
 
-            if (DhtID == check.DhtID && ClientID == check.ClientID && IP.Equals(check.IP) && UdpPort == check.UdpPort)
+            if (userID == check.userID && ClientID == check.ClientID && IP.Equals(check.IP) && UdpPort == check.UdpPort)
                 return true;
 
             return false;
@@ -170,12 +170,12 @@ namespace RiseOp.Implementation.Protocol.Net
 
         public override int GetHashCode()
         {
-            return DhtID.GetHashCode() ^ ClientID.GetHashCode() ^ IP.GetHashCode() ^ UdpPort.GetHashCode();
+            return userID.GetHashCode() ^ ClientID.GetHashCode() ^ IP.GetHashCode() ^ UdpPort.GetHashCode();
         }
 
         public override string  ToString()
         {
-            return IP.ToString() + ":" + ClientID.ToString() + ":" + UdpPort.ToString() + ":" + Utilities.IDtoBin(DhtID).Substring(0, 10);
+            return IP.ToString() + ":" + ClientID.ToString() + ":" + UdpPort.ToString() + ":" + Utilities.IDtoBin(userID).Substring(0, 10);
         }
 
 
@@ -258,7 +258,7 @@ namespace RiseOp.Implementation.Protocol.Net
             }
         }
 
-		internal static NetworkPacket Decode(G2Protocol protocol, G2Header root)
+		internal static NetworkPacket Decode(G2Header root)
 		{
 
             NetworkPacket gn = new NetworkPacket();
@@ -344,7 +344,7 @@ namespace RiseOp.Implementation.Protocol.Net
             }
 		}
 
-		internal static SearchReq Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static SearchReq Decode(G2ReceivedPacket packet)
 		{
             SearchReq req = new SearchReq();
 
@@ -438,7 +438,7 @@ namespace RiseOp.Implementation.Protocol.Net
             }
 		}
 
-		internal static SearchAck Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static SearchAck Decode(G2ReceivedPacket packet)
 		{
             SearchAck ack = new SearchAck();
 
@@ -522,7 +522,7 @@ namespace RiseOp.Implementation.Protocol.Net
             }
         }
 
-        internal static StoreReq Decode(G2Protocol protocol, G2ReceivedPacket packet)
+        internal static StoreReq Decode(G2ReceivedPacket packet)
         {
             StoreReq req = new StoreReq();
 
@@ -595,7 +595,7 @@ namespace RiseOp.Implementation.Protocol.Net
             }
 		}
 
-		internal static Ping Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static Ping Decode(G2ReceivedPacket packet)
 		{
 			Ping pi = new Ping();
 
@@ -655,7 +655,7 @@ namespace RiseOp.Implementation.Protocol.Net
             }
 		}
 
-		internal static Pong Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static Pong Decode(G2ReceivedPacket packet)
 		{
 			Pong po = new Pong();
 
@@ -712,7 +712,7 @@ namespace RiseOp.Implementation.Protocol.Net
                     protocol.WritePacket(bye, Packet_Contacts, DhtContact.ToByteList(ContactList));
 
                 if (Message != null)
-                    protocol.WritePacket(bye, Packet_Message, protocol.UTF.GetBytes(Message));
+                    protocol.WritePacket(bye, Packet_Message, UTF8Encoding.UTF8.GetBytes(Message));
 
                 if (Reconnect)
                     protocol.WritePacket(bye, Packet_Reconnect, null);
@@ -724,7 +724,7 @@ namespace RiseOp.Implementation.Protocol.Net
             }
 		}
 
-		internal static Bye Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static Bye Decode(G2ReceivedPacket packet)
 		{
 			Bye bye = new Bye();
 
@@ -751,7 +751,7 @@ namespace RiseOp.Implementation.Protocol.Net
                         break;
 
                     case Packet_Message:
-                        bye.Message = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        bye.Message = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
 			}
@@ -791,7 +791,7 @@ namespace RiseOp.Implementation.Protocol.Net
             }
 		}
 
-		internal static ProxyReq Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static ProxyReq Decode(G2ReceivedPacket packet)
 		{
 			ProxyReq pr = new ProxyReq();
 
@@ -853,7 +853,7 @@ namespace RiseOp.Implementation.Protocol.Net
             }
 		}
 
-		internal static ProxyAck Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static ProxyAck Decode(G2ReceivedPacket packet)
 		{
 			ProxyAck pa = new ProxyAck();
 
@@ -909,7 +909,7 @@ namespace RiseOp.Implementation.Protocol.Net
             }
 		}
 
-		internal static CrawlReq Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static CrawlReq Decode(G2ReceivedPacket packet)
 		{
 			CrawlReq crwlr = new CrawlReq();
 
@@ -959,7 +959,7 @@ namespace RiseOp.Implementation.Protocol.Net
                 G2Frame crwla = protocol.WritePacket(null, NetworkPacket.CrawlAck, null);
 
                 protocol.WritePacket(crwla, Packet_Source, Source.ToBytes());
-                protocol.WritePacket(crwla, Packet_Version, protocol.UTF.GetBytes(Version));
+                protocol.WritePacket(crwla, Packet_Version, UTF8Encoding.UTF8.GetBytes(Version));
                 protocol.WritePacket(crwla, Packet_Uptime, BitConverter.GetBytes(Uptime));
                 protocol.WritePacket(crwla, Packet_Depth, BitConverter.GetBytes(Depth));
 
@@ -973,7 +973,7 @@ namespace RiseOp.Implementation.Protocol.Net
             }
 		}
 
-		internal static CrawlAck Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static CrawlAck Decode(G2ReceivedPacket packet)
 		{
 			CrawlAck crwla = new CrawlAck();
 
@@ -991,7 +991,7 @@ namespace RiseOp.Implementation.Protocol.Net
                         break;
 
                     case Packet_Version:
-                        crwla.Version = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        crwla.Version = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Uptime:
@@ -1027,7 +1027,7 @@ namespace RiseOp.Implementation.Protocol.Net
             }
         }
 
-        internal static CryptPadding Decode(G2Protocol protocol, G2ReceivedPacket packet)
+        internal static CryptPadding Decode(G2ReceivedPacket packet)
         {
             CryptPadding padding = new CryptPadding();
             return padding;
@@ -1044,21 +1044,21 @@ namespace RiseOp.Implementation.Protocol.Net
         {
             lock (protocol.WriteSection)
             {
-                G2Frame earth = protocol.WritePacket(null, "Earth", protocol.UTF.GetBytes("Our Home"));
-                G2Frame america = protocol.WritePacket(earth, "America", protocol.UTF.GetBytes("Where I live"));
-                G2Frame nh = protocol.WritePacket(america, "NH", protocol.UTF.GetBytes("Home"));
+                G2Frame earth = protocol.WritePacket(null, "Earth", UTF8Encoding.UTF8.GetBytes("Our Home"));
+                G2Frame america = protocol.WritePacket(earth, "America", UTF8Encoding.UTF8.GetBytes("Where I live"));
+                G2Frame nh = protocol.WritePacket(america, "NH", UTF8Encoding.UTF8.GetBytes("Home"));
                 protocol.WritePacket(nh, "Nashua", null);
-                protocol.WritePacket(nh, "Concord", protocol.UTF.GetBytes("Capitol"));
-                protocol.WritePacket(america, "Mass", protocol.UTF.GetBytes("Where I go to school"));
-                G2Frame europe = protocol.WritePacket(earth, "Europe", protocol.UTF.GetBytes("Across the ocean"));
-                protocol.WritePacket(europe, "London", protocol.UTF.GetBytes("in england"));
-                protocol.WritePacket(europe, "Paris", protocol.UTF.GetBytes("in france"));
+                protocol.WritePacket(nh, "Concord", UTF8Encoding.UTF8.GetBytes("Capitol"));
+                protocol.WritePacket(america, "Mass", UTF8Encoding.UTF8.GetBytes("Where I go to school"));
+                G2Frame europe = protocol.WritePacket(earth, "Europe", UTF8Encoding.UTF8.GetBytes("Across the ocean"));
+                protocol.WritePacket(europe, "London", UTF8Encoding.UTF8.GetBytes("in england"));
+                protocol.WritePacket(europe, "Paris", UTF8Encoding.UTF8.GetBytes("in france"));
 
                 return protocol.WriteFinish();
             }
         }
 
-        internal static TestPacket Decode(G2Protocol protocol, G2ReceivedPacket packet)
+        internal static TestPacket Decode(G2ReceivedPacket packet)
         {
             TestPacket test = new TestPacket();
 

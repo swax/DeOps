@@ -22,7 +22,7 @@ namespace RiseOp.Services.Plan
         PlanNode Node;
         ScheduleView View;
 
-        ulong DhtID;
+        ulong UserID;
 
         Bitmap DisplayBuffer;
         bool Redraw;
@@ -69,7 +69,7 @@ namespace RiseOp.Services.Plan
             
             Node = node;
             View = node.View;
-            DhtID = node.Link.DhtID;
+            UserID = node.Link.UserID;
 
             SetStyle(ControlStyles.UserPaint, true);
             SetStyle(ControlStyles.AllPaintingInWmPaint, true);
@@ -123,7 +123,7 @@ namespace RiseOp.Services.Plan
             GoalAreas.Clear();
 
 
-            Uplinks = View.Core.Links.GetUnconfirmedUplinkIDs(DhtID, View.ProjectID);
+            Uplinks = View.Core.Links.GetUnconfirmedUplinkIDs(UserID, View.ProjectID);
 
             // upnodes just used for scope calc now
             List<PlanNode> upnodes = new List<PlanNode>();
@@ -147,7 +147,7 @@ namespace RiseOp.Services.Plan
             //foreach (ulong uplink in Uplinks)
             foreach (PlanNode node in upnodes)
             {
-                ulong uplink = node.Link.DhtID;
+                ulong uplink = node.Link.UserID;
 
                 foreach (PlanBlock block in GetBlocks(uplink))
                     // scope -1 everyone or current level 0 highest + scope is >= than current node
@@ -165,7 +165,7 @@ namespace RiseOp.Services.Plan
             List<List<DrawBlock>> layers = new List<List<DrawBlock>>();
 
             // arrange visible blocks
-            foreach (PlanBlock block in GetBlocks(DhtID))
+            foreach (PlanBlock block in GetBlocks(UserID))
                 if(BlockinRange(block, ref tempRect))
                     AddDrawBlock(new DrawBlock(block, tempRect), layers);
 
@@ -196,7 +196,7 @@ namespace RiseOp.Services.Plan
 
                             Rectangle fill = item.Rect;
                             fill.Height = Height - y;
-                            buffer.FillRectangle(GetMask(DhtID, true), fill);
+                            buffer.FillRectangle(GetMask(UserID, true), fill);
 
                             if (item.Block == View.SelectedBlock)
                                 buffer.DrawRectangle(SelectPen, item.Rect);
@@ -222,16 +222,15 @@ namespace RiseOp.Services.Plan
                 //Uplinks.Add(Node.Link.DhtID); // add self to scan
                 upnodes.Add(Node);
 
-                //foreach (ulong dhtid in Uplinks)
                 foreach (PlanNode node in upnodes)
                 {
-                    ulong dhtid = node.Link.DhtID;
-                    OpPlan upPlan = View.Plans.GetPlan(dhtid, true);
+                    ulong userID = node.Link.UserID;
+                    OpPlan upPlan = View.Plans.GetPlan(userID, true);
 
                     if (upPlan != null)
                         if (upPlan.GoalMap.ContainsKey(View.SelectedGoalID))
                             foreach (PlanGoal goal in upPlan.GoalMap[View.SelectedGoalID])
-                                if (goal.Project == View.ProjectID && goal.Person == DhtID)
+                                if (goal.Project == View.ProjectID && goal.Person == UserID)
                                     if (StartTime < goal.End && goal.End < EndTime)
                                     {
                                         int x = (int)((goal.End.Ticks - StartTime.Ticks) / TicksperPixel);
@@ -248,7 +247,7 @@ namespace RiseOp.Services.Plan
                                             buffer.FillRectangle(GreenBrush, new Rectangle(x - 4, 2 + (Height - 4) - progress, 2, progress));
                                         }
 
-                                        buffer.FillPolygon(GetMask(DhtID, false), new Point[] {
+                                        buffer.FillPolygon(GetMask(UserID, false), new Point[] {
                                             new Point(x-6,2), 
                                             new Point(x,2),
                                             new Point(x,Height-2),
@@ -295,7 +294,7 @@ namespace RiseOp.Services.Plan
                 return mask ? HighMask : RedBrush;
 
             // if target is equal to or above key - blue
-            if(key == View.DhtID || Uplinks.Contains(View.DhtID))
+            if(key == View.UserID || Uplinks.Contains(View.UserID))
                 return mask ? LowMask : BlueBrush;
 
             // else black
@@ -433,10 +432,10 @@ namespace RiseOp.Services.Plan
 
         internal void UpdateRow(bool immediate)
         {
-            OpPlan plan = View.Plans.GetPlan(DhtID, true);
+            OpPlan plan = View.Plans.GetPlan(UserID, true);
 
             if (plan != null && !plan.Loaded)
-                View.Plans.LoadPlan(DhtID);
+                View.Plans.LoadPlan(UserID);
 
             Redraw = true;
             Invalidate();
@@ -497,7 +496,7 @@ namespace RiseOp.Services.Plan
 
                     if (area.Local)
                     {
-                        if (DhtID != View.Core.LocalDhtID)
+                        if (UserID != View.Core.UserID)
                             menu.Items.Add(new BlockMenuItem("Details", area.Block, PlanRes.details, new EventHandler(RClickView)));
                         else
                         {
@@ -573,14 +572,14 @@ namespace RiseOp.Services.Plan
             if (View.External != null)
                 foreach(ExternalView ext in View.Core.GuiMain.ExternalViews)
                     if(ext.Shell.GetType() == typeof(GoalsView))
-                        if (((GoalsView)ext.Shell).DhtID == View.DhtID && ((GoalsView)ext.Shell).ProjectID == View.ProjectID)
+                        if (((GoalsView)ext.Shell).UserID == View.UserID && ((GoalsView)ext.Shell).ProjectID == View.ProjectID)
                         {
                             ext.BringToFront();
                             return;
                         }
 
             // switch to goal view
-            GoalsView view = new GoalsView(View.Plans, View.DhtID, View.ProjectID);
+            GoalsView view = new GoalsView(View.Plans, View.UserID, View.ProjectID);
             view.LoadIdent = menu.Goal.Ident;
             view.LoadBranch = menu.Goal.BranchUp;
 
@@ -595,7 +594,7 @@ namespace RiseOp.Services.Plan
             foreach (BlockArea area in BlockAreas)
                 if (area.Local && area.Rect.Contains(e.Location))
                 {
-                    BlockViewMode mode = (DhtID == View.Core.LocalDhtID) ? BlockViewMode.Edit : BlockViewMode.Show;
+                    BlockViewMode mode = (UserID == View.Core.UserID) ? BlockViewMode.Edit : BlockViewMode.Show;
 
                     EditBlock form = new EditBlock(mode, View, area.Block);
                     if (form.ShowDialog(View) == DialogResult.OK && mode == BlockViewMode.Edit)
@@ -617,7 +616,7 @@ namespace RiseOp.Services.Plan
             bool good = false;
             StringBuilder text = new StringBuilder(100);
 
-            text.Append(View.Core.Links.GetName(Node.Link.DhtID));
+            text.Append(View.Core.Links.GetName(Node.Link.UserID));
             //text.Append(" - ");
 
             //DateTime start = View.StartTime;

@@ -50,8 +50,8 @@ namespace RiseOp.Services.Plan
         internal PlanService(OpCore core)
         {
             Core = core;
-            Protocol = core.Protocol;
             Network = core.OperationNet;
+            Protocol = Network.Protocol;
             Store = Network.Store;
             Links = Core.Links;
             
@@ -66,12 +66,12 @@ namespace RiseOp.Services.Plan
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
             Cache.Load();
  
-            if (!PlanMap.SafeContainsKey(Core.LocalDhtID))
+            if (!PlanMap.SafeContainsKey(Core.UserID))
             {
                 LocalPlan = new OpPlan(new OpVersionedFile(Core.User.Settings.KeyPublic));
                 LocalPlan.Init();
                 LocalPlan.Loaded = true;
-                PlanMap.SafeAdd(Core.LocalDhtID, LocalPlan);
+                PlanMap.SafeAdd(Core.UserID, LocalPlan);
             }
         }
 
@@ -142,26 +142,26 @@ namespace RiseOp.Services.Plan
 
         void Cache_FileRemoved(OpVersionedFile file)
         {
-            OpPlan plan = GetPlan(file.DhtID, false);
+            OpPlan plan = GetPlan(file.UserID, false);
 
             if (plan == null)
                 return;
 
-            PlanMap.SafeRemove(file.DhtID);
+            PlanMap.SafeRemove(file.UserID);
         }
 
         private void Cache_FileAquired(OpVersionedFile file)
         {
-            OpPlan prevPlan = GetPlan(file.DhtID, false);
+            OpPlan prevPlan = GetPlan(file.UserID, false);
 
             OpPlan newPlan = new OpPlan(file);
-            PlanMap.SafeAdd(newPlan.DhtID, newPlan);
+            PlanMap.SafeAdd(newPlan.UserID, newPlan);
 
-            if (file.DhtID == Core.LocalDhtID)
+            if (file.UserID == Core.UserID)
                 LocalPlan = newPlan;
 
             if ((newPlan == LocalPlan) || (prevPlan != null && prevPlan.Loaded)) // if loaded, reload
-                LoadPlan(newPlan.DhtID);
+                LoadPlan(newPlan.UserID);
 
 
             // update subs
@@ -172,24 +172,24 @@ namespace RiseOp.Services.Plan
                 Links.ProjectRoots.LockReading(delegate()
                 {
                     foreach (uint project in Links.ProjectRoots.Keys)
-                        if (newPlan.DhtID == Core.LocalDhtID || Links.IsHigher(newPlan.DhtID, project))
-                            Links.GetLocsBelow(Core.LocalDhtID, project, locations);
+                        if (newPlan.UserID == Core.UserID || Links.IsHigher(newPlan.UserID, project))
+                            Links.GetLocsBelow(Core.UserID, project, locations);
                 });
 
-                Store.PublishDirect(locations, newPlan.DhtID, ServiceID, DataTypeFile, newPlan.File.SignedHeader);
+                Store.PublishDirect(locations, newPlan.UserID, ServiceID, DataTypeFile, newPlan.File.SignedHeader);
             }
 
 
             // see if we need to update our own goal estimates
-            if (newPlan.DhtID != Core.LocalDhtID && LocalPlan != null)
+            if (newPlan.UserID != Core.UserID && LocalPlan != null)
                 Links.ProjectRoots.LockReading(delegate()
                 {
                     foreach (uint project in Links.ProjectRoots.Keys)
-                        if (Links.IsLower(Core.LocalDhtID, newPlan.DhtID, project)) // updated plan must be lower than us to have an effect
+                        if (Links.IsLower(Core.UserID, newPlan.UserID, project)) // updated plan must be lower than us to have an effect
                             foreach (int ident in LocalPlan.GoalMap.Keys)
                             {
                                 if (!newPlan.Loaded)
-                                    LoadPlan(newPlan.DhtID);
+                                    LoadPlan(newPlan.UserID);
 
                                 // if updated plan part of the same goal ident, re-estimate our own goals, incorporating update's changes
                                 if (newPlan.GoalMap.ContainsKey(ident) || newPlan.ItemMap.ContainsKey(ident))
@@ -215,8 +215,8 @@ namespace RiseOp.Services.Plan
             if (PlanUpdate != null)
                 Core.RunInGuiThread(PlanUpdate, newPlan);
 
-            if (Core.NewsWorthy(newPlan.DhtID, 0, false))
-                Core.MakeNews("Plan updated by " + Links.GetName(newPlan.DhtID), newPlan.DhtID, 0, false, PlanRes.Schedule, Menu_ScheduleView);
+            if (Core.NewsWorthy(newPlan.UserID, 0, false))
+                Core.MakeNews("Plan updated by " + Links.GetName(newPlan.UserID), newPlan.UserID, 0, false, PlanRes.Schedule, Menu_ScheduleView);
                 
         }
 
@@ -233,7 +233,7 @@ namespace RiseOp.Services.Plan
                 CryptoStream stream = new CryptoStream(tempFile, key.CreateEncryptor(), CryptoStreamMode.Write);
 
                 // write dummy block if nothing to write
-                OpPlan plan = GetPlan(Core.LocalDhtID, true);
+                OpPlan plan = GetPlan(Core.UserID, true);
 
                 if (plan == null ||
                     plan.Blocks == null ||
@@ -266,7 +266,7 @@ namespace RiseOp.Services.Plan
 
                 OpVersionedFile file = Cache.UpdateLocal(tempPath, key, null);
 
-                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.LocalDhtID, ServiceID, DataTypeFile, file.SignedHeader);
+                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.UserID, ServiceID, DataTypeFile, file.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -290,7 +290,7 @@ namespace RiseOp.Services.Plan
             // if local plan file not created yet
             if (plan.File.Header == null)
             {
-                if (plan.DhtID == Core.LocalDhtID)
+                if (plan.UserID == Core.UserID)
                     plan.Init();
 
                 return;
@@ -309,7 +309,7 @@ namespace RiseOp.Services.Plan
 
                 TaggedStream file = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(file, plan.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;
 
@@ -317,7 +317,7 @@ namespace RiseOp.Services.Plan
                 {
                     if (root.Name == PlanPacket.Block)
                     {
-                        PlanBlock block = PlanBlock.Decode(Core.Protocol, root);
+                        PlanBlock block = PlanBlock.Decode(root);
 
                         if (block != null)
                             plan.AddBlock(block);
@@ -325,7 +325,7 @@ namespace RiseOp.Services.Plan
 
                     if (root.Name == PlanPacket.Goal)
                     {
-                        PlanGoal goal = PlanGoal.Decode(Core.Protocol, root);
+                        PlanGoal goal = PlanGoal.Decode(root);
 
                         if (goal != null)
                             plan.AddGoal(goal);
@@ -333,7 +333,7 @@ namespace RiseOp.Services.Plan
 
                     if (root.Name == PlanPacket.Item)
                     {
-                        PlanItem item = PlanItem.Decode(Core.Protocol, root);
+                        PlanItem item = PlanItem.Decode(root);
 
                         if (item != null)
                             plan.AddItem(item);
@@ -501,11 +501,11 @@ namespace RiseOp.Services.Plan
             ItemMap = new Dictionary<int, List<PlanItem>>();
         }
 
-        internal ulong DhtID
+        internal ulong UserID
         {
             get
             {
-                return File.DhtID;
+                return File.UserID;
             }
         }
 

@@ -24,7 +24,7 @@ namespace RiseOp.Services.Board
         BoardService Boards;
         TrustService Links;
 
-        ulong DhtID;
+        ulong UserID;
         uint ProjectID;
 
         ScopeType CurrentScope = ScopeType.All;
@@ -73,10 +73,10 @@ namespace RiseOp.Services.Board
             Links = Core.Links;
             
 
-            DhtID = id;
+            UserID = id;
             ProjectID = project;
 
-            if (DhtID != Core.LocalDhtID)
+            if (UserID != Core.UserID)
             {
                 PostButton.Visible = false;
                 RightSplitter.Visible = false;
@@ -104,7 +104,7 @@ namespace RiseOp.Services.Board
             PostView.NodeExpanding += new EventHandler(OnNodeExpanding);
             PostView.NodeCollapsed += new EventHandler(OnNodeCollapsed);
 
-            Boards.LoadView(this, DhtID);
+            Boards.LoadView(this, UserID);
 
             SelectProject(ProjectID);
         }
@@ -119,7 +119,7 @@ namespace RiseOp.Services.Board
             Boards.PostUpdate -= new PostUpdateHandler(Board_PostUpdate);
             Links.GuiUpdate  -= new LinkGuiUpdateHandler(Links_Update);
 
-            Boards.UnloadView(this, DhtID);
+            Boards.UnloadView(this, UserID);
 
             return true;
         }
@@ -131,10 +131,10 @@ namespace RiseOp.Services.Board
 
             string title = "";
 
-            if (DhtID == Core.LocalDhtID)
+            if (UserID == Core.UserID)
                 title += "My ";
             else
-                title += Core.Links.GetName(DhtID) + "'s ";
+                title += Core.Links.GetName(UserID) + "'s ";
 
             if(ProjectID != 0)
                 title += Core.Links.GetProjectName(ProjectID) + " ";
@@ -225,10 +225,10 @@ namespace RiseOp.Services.Board
             PostView.Nodes.Clear();
             ThreadMap.Clear();
 
-            HighIDs = Boards.GetBoardRegion(DhtID, ProjectID, ScopeType.High);
-            LowIDs = Boards.GetBoardRegion(DhtID, ProjectID, ScopeType.Low);
+            HighIDs = Boards.GetBoardRegion(UserID, ProjectID, ScopeType.High);
+            LowIDs = Boards.GetBoardRegion(UserID, ProjectID, ScopeType.Low);
 
-            Boards.LoadRegion(DhtID, ProjectID);
+            Boards.LoadRegion(UserID, ProjectID);
 
             SetHeader("");
             PostBody.Rtf = "";
@@ -251,7 +251,7 @@ namespace RiseOp.Services.Board
             bool pass = false;
 
             // check if belongs in list
-            if (post.Header.TargetID == DhtID)
+            if (post.Header.TargetID == UserID)
             {
                 if ((post.Header.Scope == ScopeType.High && CurrentScope == ScopeType.Low) ||
                     (post.Header.Scope == ScopeType.Low && CurrentScope == ScopeType.High))
@@ -389,11 +389,11 @@ namespace RiseOp.Services.Board
             // reset high and low scopes, if change detected to refresh
 
             if(CurrentScope != ScopeType.Low &&
-                DetectChange(HighIDs, Boards.GetBoardRegion(DhtID, ProjectID, ScopeType.High)))
+                DetectChange(HighIDs, Boards.GetBoardRegion(UserID, ProjectID, ScopeType.High)))
                 RefreshBoard();
 
             else if (CurrentScope != ScopeType.High &&
-                DetectChange(LowIDs, Boards.GetBoardRegion(DhtID, ProjectID, ScopeType.Low)))
+                DetectChange(LowIDs, Boards.GetBoardRegion(UserID, ProjectID, ScopeType.Low)))
                 RefreshBoard();
         }
 
@@ -457,7 +457,7 @@ namespace RiseOp.Services.Board
             if (!post.Header.Archived)
                 actions += @" <a href='reply:" + parent.Ident.ToString() + "'>Reply</a>";
 
-            if (post.Header.SourceID == Core.LocalDhtID)
+            if (post.Header.SourceID == Core.UserID)
             {
                 if (!post.Header.Archived)
                     actions += @", <a href='edit:" + post.Ident.ToString() + "'>Edit</a>";
@@ -567,7 +567,7 @@ namespace RiseOp.Services.Board
 
         private void PostButton_Click(object sender, EventArgs e)
         {
-            PostMessage post = new PostMessage(Boards, DhtID, ProjectID);
+            PostMessage post = new PostMessage(Boards, UserID, ProjectID);
 
             Core.RunInGuiThread(Core.GuiMain.ShowExternal, post);
 
@@ -576,7 +576,7 @@ namespace RiseOp.Services.Board
 
         private void RefreshButton_Click(object sender, EventArgs e)
         {
-            List<ulong> targets = Boards.GetBoardRegion(DhtID, ProjectID, CurrentScope);
+            List<ulong> targets = Boards.GetBoardRegion(UserID, ProjectID, CurrentScope);
 
             foreach (ulong target in targets)
                 Boards.SearchBoard(target, ProjectID);
@@ -612,7 +612,7 @@ namespace RiseOp.Services.Board
             if (!replyTo.Header.Archived)
                 menu.Items.Add(new PostMenuItem("Reply", replyTo, new EventHandler(Post_Reply)));
 
-            if (node.Post.Header.SourceID == Core.LocalDhtID)
+            if (node.Post.Header.SourceID == Core.UserID)
             {
                 if (!replyTo.Header.Archived)
                 {

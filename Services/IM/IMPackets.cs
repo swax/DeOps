@@ -35,13 +35,13 @@ namespace RiseOp.Services.IM
             {
                 G2Frame msg = protocol.WritePacket(null, IMPacket.Message, null);
 
-                protocol.WritePacket(msg, Packet_Text, protocol.UTF.GetBytes(Text));
+                protocol.WritePacket(msg, Packet_Text, UTF8Encoding.UTF8.GetBytes(Text));
 
                 return protocol.WriteFinish();
             }
         }
 
-        internal static MessageData Decode(G2Protocol protocol, G2Header root)
+        internal static MessageData Decode(G2Header root)
         {
             MessageData msg = new MessageData();
 
@@ -55,7 +55,7 @@ namespace RiseOp.Services.IM
                 switch (child.Name)
                 {
                     case Packet_Text:
-                        msg.Text = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        msg.Text = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }

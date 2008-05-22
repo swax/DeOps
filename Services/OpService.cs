@@ -30,7 +30,7 @@ namespace RiseOp.Services
     internal class NewsItemInfo
     {
         internal string Message;
-        internal ulong DhtID;
+        internal ulong UserID;
         internal uint ProjectID;
         internal bool ShowRemote;
         internal Icon Symbol;
@@ -39,7 +39,7 @@ namespace RiseOp.Services
         internal NewsItemInfo(string message, ulong id, uint project, bool showRemote, Icon symbol, EventHandler onClick)
         {
             Message = message;
-            DhtID = id;
+            UserID = id;
             ProjectID = project;
             Symbol = symbol;
             ShowRemote = showRemote;
@@ -121,20 +121,20 @@ namespace RiseOp.Services
             }
         }
 
-        internal static SignedData Decode(G2Protocol protocol, byte[] data)
+        internal static SignedData Decode(byte[] data)
         {
             G2Header root = new G2Header(data);
 
-            if (!protocol.ReadPacket(root))
+            if (!G2Protocol.ReadPacket(root))
                 return null;
 
             if (root.Name != DataPacket.SignedData)
                 return null;
 
-            return SignedData.Decode(protocol, root);
+            return SignedData.Decode(root);
         }
 
-        internal static SignedData Decode(G2Protocol protocol, G2Header root)
+        internal static SignedData Decode(G2Header root)
         {
             SignedData signed = new SignedData();
             G2Header child = new G2Header(root.Data);

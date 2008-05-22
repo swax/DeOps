@@ -22,7 +22,7 @@ namespace RiseOp.Services.IM
         TrustService     Links;
         OpCore          Core;
         LocationService Locations;
-        internal ulong  DhtID;
+        internal ulong  UserID;
 
         MenuItem TimestampMenu;
         string RemoteName;
@@ -43,7 +43,7 @@ namespace RiseOp.Services.IM
             Links = IM.Core.Links;
             Core  = IM.Core;
             Locations = IM.Core.Locations;
-            DhtID = key;
+            UserID = key;
 
             UpdateName();
             
@@ -60,7 +60,7 @@ namespace RiseOp.Services.IM
 
         private void UpdateName()
         {
-            RemoteName = Links.GetName(DhtID);
+            RemoteName = Links.GetName(UserID);
 
             if(External != null)
                 External.Text = "IM " + RemoteName;
@@ -73,7 +73,7 @@ namespace RiseOp.Services.IM
             InputControl.Focus();
             InputControl.InputBox.Focus();
 
-            IM_StatusUpdate(DhtID);
+            IM_StatusUpdate(UserID);
             DisplayLog();
 
             if (External != null)
@@ -103,7 +103,7 @@ namespace RiseOp.Services.IM
 
         void Core_GetFocused()
         {
-            Core.Focused.SafeAdd(DhtID, true);
+            Core.Focused.SafeAdd(UserID, true);
         }
 
         internal override string GetTitle(bool small)
@@ -111,7 +111,7 @@ namespace RiseOp.Services.IM
             if (small)
                 return "IM";
 
-            return "IM " + Links.GetName(DhtID);
+            return "IM " + Links.GetName(UserID);
         }
 
         internal override Size GetDefaultSize()
@@ -129,24 +129,24 @@ namespace RiseOp.Services.IM
             MessageTextBox.Clear();
 
             IMStatus status = null;
-            if (!IM.IMMap.SafeTryGetValue(DhtID, out status))
+            if (!IM.IMMap.SafeTryGetValue(UserID, out status))
                 return;
 
             status.MessageLog.LockReading(delegate()
             {
                 foreach (InstantMessage message in status.MessageLog)
-                    IM_MessageUpdate(DhtID, message);
+                    IM_MessageUpdate(UserID, message);
             });
         }
 
         private void CheckBackColor()
         {
             // higher
-            if(Links.IsHigher(DhtID, 0))
+            if(Links.IsHigher(UserID, 0))
                 MessageTextBox.BackColor = Color.FromArgb(255, 250, 250);
             
             // lower
-            else if(Links.IsHigher(DhtID, Core.LocalDhtID, 0))
+            else if(Links.IsHigher(UserID, Core.UserID, 0))
                 MessageTextBox.BackColor = Color.FromArgb(250, 250, 255);
             
             else
@@ -155,12 +155,12 @@ namespace RiseOp.Services.IM
 
         internal void InputControl_SendMessage(string message)
         {
-            IM.SendMessage(DhtID, message);
+            IM.SendMessage(UserID, message);
         }
 
         void IM_StatusUpdate(ulong id)
         {
-            if (id != DhtID)
+            if (id != UserID)
                 return;
 
             CheckBackColor();
@@ -191,9 +191,9 @@ namespace RiseOp.Services.IM
             }
         }
 
-        internal void IM_MessageUpdate(ulong dhtid, InstantMessage message)
+        internal void IM_MessageUpdate(ulong id, InstantMessage message)
         {
-            if (dhtid != DhtID)
+            if (id != UserID)
                 return;
 
             int oldStart  = MessageTextBox.SelectionStart;
@@ -205,7 +205,7 @@ namespace RiseOp.Services.IM
             // name, in bold, blue for incoming, red for outgoing
             if(message.System)
                 MessageTextBox.SelectionColor = Color.Black;
-            else if (message.Source == Core.LocalDhtID && message.ClientID == Core.ClientID)
+            else if (message.Source == Core.UserID && message.ClientID == Core.OperationNet.ClientID)
                 MessageTextBox.SelectionColor = Color.Red;
             else
                 MessageTextBox.SelectionColor = Color.Blue;

@@ -137,7 +137,7 @@ namespace RiseOp.Interface
             Core.Locations.GuiUpdate += new LocationGuiUpdateHandler(Location_Update);
             Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
 
-            CommandTree.SelectedLink = Core.LocalDhtID;
+            CommandTree.SelectedLink = Core.UserID;
 
             TopToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
             NavStrip.Renderer = new ToolStripProfessionalRenderer(new NavColorTable());
@@ -156,7 +156,7 @@ namespace RiseOp.Interface
             CommandTree.Init(Trust);
             CommandTree.ShowProject(0);
 
-            OnSelectChange(Core.LocalDhtID, CommandTree.Project);
+            OnSelectChange(Core.UserID, CommandTree.Project);
             UpdateCommandPanel();
 
             if (SideMode)
@@ -389,7 +389,7 @@ namespace RiseOp.Interface
             StatusModeType mode = StatusModeType.Node;
             
             OpLink link = node.Link;
-            CurrentStatusID = link.DhtID;
+            CurrentStatusID = link.UserID;
 
             List<Tuple<string, string>> tuples = new List<Tuple<string, string>>();
 
@@ -416,15 +416,15 @@ namespace RiseOp.Interface
                     {
                         confirmed = downlink.GetHigher(true) == null ? "(unconfirmed)" : "";
 
-                        if (downlink.DhtID == Core.LocalDhtID)
-                            order += " &nbsp&nbsp&nbsp <b>" + Trust.GetName(downlink.DhtID) + "</b> <i>trusts ";
+                        if (downlink.UserID == Core.UserID)
+                            order += " &nbsp&nbsp&nbsp <b>" + Trust.GetName(downlink.UserID) + "</b> <i>trusts ";
                         else
-                            order += " &nbsp&nbsp&nbsp " + Trust.GetName(downlink.DhtID) + " <i>trusts ";
+                            order += " &nbsp&nbsp&nbsp " + Trust.GetName(downlink.UserID) + " <i>trusts ";
 
                         order += confirmed + "</i><br>";
                     }
 
-                    order += " &nbsp&nbsp&nbsp " + Trust.GetName(link.Downlinks[0].DhtID) + "<br>";
+                    order += " &nbsp&nbsp&nbsp " + Trust.GetName(link.Downlinks[0].UserID) + "<br>";
                 }
 
                 content += order + 
@@ -435,9 +435,9 @@ namespace RiseOp.Interface
             else
             {
                 // name
-                name = "<b>" + Trust.GetName(link.DhtID) + "</b>";
+                name = "<b>" + Trust.GetName(link.UserID) + "</b>";
 
-                if (link.DhtID == Core.LocalDhtID)
+                if (link.UserID == Core.UserID)
                     name += "  &nbsp&nbsp  (<a href='edit:local'><font color=white>edit</font></a>)";
 
                 // title
@@ -466,7 +466,7 @@ namespace RiseOp.Interface
 
                 bool online = false;
 
-                 List<ClientInfo> clients = Core.Locations.GetClients(link.DhtID);
+                 List<ClientInfo> clients = Core.Locations.GetClients(link.UserID);
 
                 foreach (ClientInfo info in clients)
                     {
@@ -483,7 +483,7 @@ namespace RiseOp.Interface
                         // last seen stuff here
 
                         online = true;
-                        locations.Add(new Tuple<string, string>(Core.Locations.GetLocationName(link.DhtID, info.ClientID), status));
+                        locations.Add(new Tuple<string, string>(Core.Locations.GetLocationName(link.UserID, info.ClientID), status));
                     }
 
 
@@ -611,18 +611,18 @@ namespace RiseOp.Interface
                     continue;
 
                 // quick
-                List<MenuItemInfo> menuList = service.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, CommandTree.Project);
+                List<MenuItemInfo> menuList = service.GetMenuInfo(InterfaceMenuType.Quick, item.Link.UserID, CommandTree.Project);
 
                 if (menuList != null && menuList.Count > 0)
                     foreach (MenuItemInfo info in menuList)
-                        quickMenus.Add(new OpMenuItem(item.Link.DhtID, CommandTree.Project, info.Path, info));
+                        quickMenus.Add(new OpMenuItem(item.Link.UserID, CommandTree.Project, info.Path, info));
 
                 // external
-                menuList = service.GetMenuInfo(InterfaceMenuType.External, item.Link.DhtID, CommandTree.Project);
+                menuList = service.GetMenuInfo(InterfaceMenuType.External, item.Link.UserID, CommandTree.Project);
 
                 if (menuList != null && menuList.Count > 0)
                     foreach (MenuItemInfo info in menuList)
-                        extMenus.Add(new OpMenuItem(item.Link.DhtID, CommandTree.Project, info.Path, info));
+                        extMenus.Add(new OpMenuItem(item.Link.UserID, CommandTree.Project, info.Path, info));
             }
 
             if (quickMenus.Count > 0 || extMenus.Count > 0)
@@ -647,11 +647,11 @@ namespace RiseOp.Interface
             {
                 List<ToolStripMenuItem> linkMenus = new List<ToolStripMenuItem>();
 
-                List<MenuItemInfo> menuList = Trust.GetMenuInfo(InterfaceMenuType.Quick, item.Link.DhtID, CommandTree.Project);
+                List<MenuItemInfo> menuList = Trust.GetMenuInfo(InterfaceMenuType.Quick, item.Link.UserID, CommandTree.Project);
 
                 if (menuList != null && menuList.Count > 0)
                     foreach (MenuItemInfo info in menuList)
-                        linkMenus.Add(new OpMenuItem(item.Link.DhtID, CommandTree.Project, info.Path, info));
+                        linkMenus.Add(new OpMenuItem(item.Link.UserID, CommandTree.Project, info.Path, info));
 
                 if (linkMenus.Count > 0)
                 {
@@ -676,7 +676,7 @@ namespace RiseOp.Interface
             if (item == null)
                 return;
 
-            OnSelectChange(item.Link.DhtID, CommandTree.Project);
+            OnSelectChange(item.Link.UserID, CommandTree.Project);
         }
 
         private void CommandTree_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -686,9 +686,9 @@ namespace RiseOp.Interface
             if (item == null)
                 return;
 
-            OpMenuItem info = new OpMenuItem(item.Link.DhtID, 0);
+            OpMenuItem info = new OpMenuItem(item.Link.UserID, 0);
 
-            if (Core.Locations.LocationMap.SafeContainsKey(info.DhtID))
+            if (Core.Locations.LocationMap.SafeContainsKey(info.UserID))
             {
                 IMService IM = Core.GetService("IM") as IMService;
 
@@ -729,7 +729,7 @@ namespace RiseOp.Interface
             if (trust == null)
             {
                 trust = Trust.LocalTrust;
-                id = Core.LocalDhtID;
+                id = Core.UserID;
             }
 
             if (!trust.Links.ContainsKey(project))
@@ -742,7 +742,7 @@ namespace RiseOp.Interface
 
 
             // setup toolbar with menu items for user
-            HomeButton.Visible = id != Core.LocalDhtID;
+            HomeButton.Visible = id != Core.UserID;
             HomeSparator.Visible = HomeButton.Visible;
 
             PlanButton.DropDownItems.Clear();
@@ -808,7 +808,7 @@ namespace RiseOp.Interface
                 PersonNavItem person = item as PersonNavItem;
 
                 if (person != null)
-                    Core.Focused.SafeAdd(person.DhtID, true);
+                    Core.Focused.SafeAdd(person.UserID, true);
             }
         }
 
@@ -823,10 +823,10 @@ namespace RiseOp.Interface
 
             if (link != null)
             {
-                if (link.DhtID == Core.LocalDhtID)
+                if (link.UserID == Core.UserID)
                     PersonNavButton.Text = "My";
                 else
-                    PersonNavButton.Text = Trust.GetName(link.DhtID) + "'s";
+                    PersonNavButton.Text = Trust.GetName(link.UserID) + "'s";
 
                 PersonNavItem self = null;
                 
@@ -834,9 +834,9 @@ namespace RiseOp.Interface
                 OpLink higher = link.GetHigher(false);
                 if (higher != null)
                 {
-                    PersonNavButton.DropDownItems.Add(new PersonNavItem(Trust.GetName(higher.DhtID), higher.DhtID, this, PersonNav_Clicked));
+                    PersonNavButton.DropDownItems.Add(new PersonNavItem(Trust.GetName(higher.UserID), higher.UserID, this, PersonNav_Clicked));
 
-                    List<ulong> adjacentIDs = Trust.GetDownlinkIDs(higher.DhtID, SelectedProject, 1);
+                    List<ulong> adjacentIDs = Trust.GetDownlinkIDs(higher.UserID, SelectedProject, 1);
                     foreach (ulong id in adjacentIDs)
                     {
                         PersonNavItem item = new PersonNavItem("   " + Trust.GetName(id), id, this, PersonNav_Clicked);
@@ -855,7 +855,7 @@ namespace RiseOp.Interface
                 // if self not added yet, add
                 if (self == null)
                 {
-                    PersonNavItem item = new PersonNavItem(Trust.GetName(link.DhtID), link.DhtID, this, PersonNav_Clicked);
+                    PersonNavItem item = new PersonNavItem(Trust.GetName(link.UserID), link.UserID, this, PersonNav_Clicked);
                     item.Font = BoldFont;
                     self = item;
                     PersonNavButton.DropDownItems.Add(item);
@@ -918,7 +918,7 @@ namespace RiseOp.Interface
             if (item == null)
                 return;
 
-            OnSelectChange(item.DhtID, SelectedProject);
+            OnSelectChange(item.UserID, SelectedProject);
         }
 
         private void ProjectNav_Clicked(object sender, EventArgs e)
@@ -991,7 +991,7 @@ namespace RiseOp.Interface
 
         private void HomeButton_Click(object sender, EventArgs e)
         {
-            OnSelectChange(Core.LocalDhtID, SelectedProject);
+            OnSelectChange(Core.UserID, SelectedProject);
         }
 
         private void ProjectsButton_DropDownOpening(object sender, EventArgs e)
@@ -1115,7 +1115,7 @@ namespace RiseOp.Interface
 
                 SideMode = true;
 
-                OnSelectChange(Core.LocalDhtID, 0);
+                OnSelectChange(Core.UserID, 0);
             }
 
             else
@@ -1190,7 +1190,7 @@ namespace RiseOp.Interface
                 return;
             }
 
-            if (item.Link.DhtID != Core.LocalDhtID)
+            if (item.Link.UserID != Core.UserID)
             {
                 e.Cancel = true;
                 return;
@@ -1275,16 +1275,16 @@ namespace RiseOp.Interface
 
         void Core_NewsUpdate(NewsItemInfo info)
         {
-            NewsItem item = new NewsItem(info, Core.LocalDhtID); // pop out external view if in messenger mode
+            NewsItem item = new NewsItem(info, Core.UserID); // pop out external view if in messenger mode
             item.Text = Core.TimeNow.ToString("h:mm ") + info.Message;
 
             // set color
-            if (Trust.IsLowerDirect(info.DhtID, info.ProjectID))
+            if (Trust.IsLowerDirect(info.UserID, info.ProjectID))
             {
                 item.DisplayColor = Color.LightBlue;
                 item.ForeColor = Color.Blue;
             }
-            else if (Trust.IsHigher(info.DhtID, info.ProjectID))
+            else if (Trust.IsHigher(info.UserID, info.ProjectID))
             {
                 item.DisplayColor = Color.FromArgb(255, 198, 198);
                 item.ForeColor = Color.Red;
@@ -1474,7 +1474,7 @@ namespace RiseOp.Interface
 
             foreach (OpService service in Core.ServiceMap.Values)
             {
-                List<MenuItemInfo> menuList = service.GetMenuInfo(InterfaceMenuType.Internal, Core.LocalDhtID, project);
+                List<MenuItemInfo> menuList = service.GetMenuInfo(InterfaceMenuType.Internal, Core.UserID, project);
 
                 if (menuList == null || menuList.Count == 0)
                     continue;
@@ -1487,13 +1487,13 @@ namespace RiseOp.Interface
                         continue;
 
                     if (parts[0] == PlanButton.Text)
-                        plansItem.DropDownItems.Add(new OpStripItem(Core.LocalDhtID, project, true, parts[1], info));
+                        plansItem.DropDownItems.Add(new OpStripItem(Core.UserID, project, true, parts[1], info));
 
                     else if (parts[0] == CommButton.Text)
-                        commItem.DropDownItems.Add(new OpStripItem(Core.LocalDhtID, project, true, parts[1], info));
+                        commItem.DropDownItems.Add(new OpStripItem(Core.UserID, project, true, parts[1], info));
 
                     else if (parts[0] == DataButton.Text)
-                        dataItem.DropDownItems.Add(new OpStripItem(Core.LocalDhtID, project, true, parts[1], info));
+                        dataItem.DropDownItems.Add(new OpStripItem(Core.UserID, project, true, parts[1], info));
                 }
             }
 
@@ -1521,7 +1521,7 @@ namespace RiseOp.Interface
 
         public ulong GetKey()
         {
-            return Info.ShowRemote ? Info.DhtID : LocalID;
+            return Info.ShowRemote ? Info.UserID : LocalID;
         }
 
         public uint GetProject()
@@ -1537,7 +1537,7 @@ namespace RiseOp.Interface
 
     class OpStripItem : ToolStripMenuItem, IViewParams
     {
-        internal ulong DhtID;
+        internal ulong UserID;
         internal uint ProjectID;
         internal MenuItemInfo Info;
         bool External;
@@ -1545,7 +1545,7 @@ namespace RiseOp.Interface
         internal OpStripItem(ulong key, uint id, bool external, string text, MenuItemInfo info)
             : base(text, null, info.ClickEvent )
         {
-            DhtID = key;
+            UserID = key;
             ProjectID = id;
             Info = info;
             External = external;
@@ -1555,7 +1555,7 @@ namespace RiseOp.Interface
 
         public ulong GetKey()
         {
-            return DhtID;
+            return UserID;
         }
 
         public uint GetProject()
@@ -1582,20 +1582,20 @@ namespace RiseOp.Interface
 
     class OpMenuItem : ToolStripMenuItem, IViewParams
     {
-        internal ulong DhtID;
+        internal ulong UserID;
         internal uint ProjectID;
         internal MenuItemInfo Info;
 
         internal OpMenuItem(ulong key, uint id)
         {
-            DhtID = key;
+            UserID = key;
             ProjectID = id;
         }
 
         internal OpMenuItem(ulong key, uint id, string text, MenuItemInfo info)
             : base(text, null, info.ClickEvent)
         {
-            DhtID = key;
+            UserID = key;
             ProjectID = id;
             Info = info;
 
@@ -1605,7 +1605,7 @@ namespace RiseOp.Interface
 
         public ulong GetKey()
         {
-            return DhtID;
+            return UserID;
         }
 
         public uint GetProject()
@@ -1622,16 +1622,16 @@ namespace RiseOp.Interface
 
     class PersonNavItem : ToolStripMenuItem
     {
-        internal ulong DhtID;
+        internal ulong UserID;
 
-        internal PersonNavItem(string name, ulong dhtid, MainForm form, EventHandler onClick)
+        internal PersonNavItem(string name, ulong id, MainForm form, EventHandler onClick)
             : base(name, null, onClick)
         {
-            DhtID = dhtid;
+            UserID = id;
 
             Font = new System.Drawing.Font("Tahoma", 8.25F);
 
-            if (DhtID == form.Core.LocalDhtID)
+            if (UserID == form.Core.UserID)
                 Image = InterfaceRes.star;
         }
     }
@@ -1651,14 +1651,14 @@ namespace RiseOp.Interface
 
     class ServiceNavItem : ToolStripMenuItem, IViewParams
     {
-        ulong DhtID;
+        ulong UserID;
         uint ProjectID;
 
         internal ServiceNavItem(MenuItemInfo info, ulong id, uint project, EventHandler onClick)
             : base("", null, onClick)
         {
 
-            DhtID = id;
+            UserID = id;
             ProjectID = project;
 
             string[] parts = info.Path.Split(new char[] { '/' });
@@ -1674,7 +1674,7 @@ namespace RiseOp.Interface
 
         public ulong GetKey()
         {
-            return DhtID;
+            return UserID;
         }
 
         public uint GetProject()

@@ -44,10 +44,10 @@ namespace RiseOp.Services.Plan
                 G2Frame block = protocol.WritePacket(null, PlanPacket.Block, null);
 
                 protocol.WritePacket(block, Packet_ProjectID, BitConverter.GetBytes(ProjectID));
-                protocol.WritePacket(block, Packet_Title, protocol.UTF.GetBytes(Title));
+                protocol.WritePacket(block, Packet_Title, UTF8Encoding.UTF8.GetBytes(Title));
                 protocol.WritePacket(block, Packet_StartTime, BitConverter.GetBytes(StartTime.ToBinary()));
                 protocol.WritePacket(block, Packet_EndTime, BitConverter.GetBytes(EndTime.ToBinary()));
-                protocol.WritePacket(block, Packet_Description, protocol.UTF.GetBytes(Description));
+                protocol.WritePacket(block, Packet_Description, UTF8Encoding.UTF8.GetBytes(Description));
                 protocol.WritePacket(block, Packet_Scope, BitConverter.GetBytes(Scope));
                 protocol.WritePacket(block, Packet_Unique, BitConverter.GetBytes(Unique));
 
@@ -55,20 +55,20 @@ namespace RiseOp.Services.Plan
             }
         }
 
-        internal static PlanBlock Decode(G2Protocol protocol, byte[] data)
+        internal static PlanBlock Decode(byte[] data)
         {
             G2Header root = new G2Header(data);
 
-            if (!protocol.ReadPacket(root))
+            if (!G2Protocol.ReadPacket(root))
                 return null;
 
             if (root.Name != PlanPacket.Block)
                 return null;
 
-            return PlanBlock.Decode(protocol, root);
+            return PlanBlock.Decode(root);
         }
 
-        internal static PlanBlock Decode(G2Protocol protocol, G2Header root)
+        internal static PlanBlock Decode(G2Header root)
         {
             PlanBlock block = new PlanBlock();
             G2Header child = new G2Header(root.Data);
@@ -85,7 +85,7 @@ namespace RiseOp.Services.Plan
                         break;
 
                     case Packet_Title:
-                        block.Title = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        block.Title = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_StartTime:
@@ -97,7 +97,7 @@ namespace RiseOp.Services.Plan
                         break;
 
                     case Packet_Description:
-                        block.Description = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        block.Description = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Scope:
@@ -158,9 +158,9 @@ namespace RiseOp.Services.Plan
                 protocol.WritePacket(goal, Packet_BranchUp, BitConverter.GetBytes(BranchUp));
                 protocol.WritePacket(goal, Packet_BranchDown, BitConverter.GetBytes(BranchDown));
 
-                protocol.WritePacket(goal, Packet_Title, protocol.UTF.GetBytes(Title));
+                protocol.WritePacket(goal, Packet_Title, UTF8Encoding.UTF8.GetBytes(Title));
                 protocol.WritePacket(goal, Packet_End, BitConverter.GetBytes(End.ToBinary()));
-                protocol.WritePacket(goal, Packet_Desc, protocol.UTF.GetBytes(Description));
+                protocol.WritePacket(goal, Packet_Desc, UTF8Encoding.UTF8.GetBytes(Description));
 
                 protocol.WritePacket(goal, Packet_Person, BitConverter.GetBytes(Person));
 
@@ -173,20 +173,20 @@ namespace RiseOp.Services.Plan
             }
         }
 
-        internal static PlanGoal Decode(G2Protocol protocol, byte[] data)
+        internal static PlanGoal Decode(byte[] data)
         {
             G2Header root = new G2Header(data);
 
-            if (!protocol.ReadPacket(root))
+            if (!G2Protocol.ReadPacket(root))
                 return null;
 
             if (root.Name != PlanPacket.Goal)
                 return null;
 
-            return PlanGoal.Decode(protocol, root);
+            return PlanGoal.Decode(root);
         }
 
-        internal static PlanGoal Decode(G2Protocol protocol, G2Header root)
+        internal static PlanGoal Decode(G2Header root)
         {
             PlanGoal goal = new PlanGoal();
             G2Header child = new G2Header(root.Data);
@@ -215,7 +215,7 @@ namespace RiseOp.Services.Plan
                         break;
 
                     case Packet_Title:
-                        goal.Title = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        goal.Title = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_End:
@@ -223,7 +223,7 @@ namespace RiseOp.Services.Plan
                         break;
 
                     case Packet_Desc:
-                        goal.Description = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        goal.Description = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Person:
@@ -284,10 +284,10 @@ namespace RiseOp.Services.Plan
                 protocol.WritePacket(task, Packet_Project, BitConverter.GetBytes(Project));
                 protocol.WritePacket(task, Packet_BranchUp, BitConverter.GetBytes(BranchUp));
 
-                protocol.WritePacket(task, Packet_Title, protocol.UTF.GetBytes(Title));
+                protocol.WritePacket(task, Packet_Title, UTF8Encoding.UTF8.GetBytes(Title));
                 protocol.WritePacket(task, Packet_Start, BitConverter.GetBytes(Start.ToBinary()));
                 protocol.WritePacket(task, Packet_End, BitConverter.GetBytes(End.ToBinary()));
-                protocol.WritePacket(task, Packet_Desc, protocol.UTF.GetBytes(Description));
+                protocol.WritePacket(task, Packet_Desc, UTF8Encoding.UTF8.GetBytes(Description));
 
                 protocol.WritePacket(task, Packet_HoursCompleted, BitConverter.GetBytes(HoursCompleted));
                 protocol.WritePacket(task, Packet_HoursTotal, BitConverter.GetBytes(HoursTotal));
@@ -296,20 +296,20 @@ namespace RiseOp.Services.Plan
             }
         }
 
-        internal static PlanItem Decode(G2Protocol protocol, byte[] data)
+        internal static PlanItem Decode(byte[] data)
         {
             G2Header root = new G2Header(data);
 
-            if (!protocol.ReadPacket(root))
+            if (!G2Protocol.ReadPacket(root))
                 return null;
 
             if (root.Name != PlanPacket.Item)
                 return null;
 
-            return PlanItem.Decode(protocol, root);
+            return PlanItem.Decode(root);
         }
 
-        internal static PlanItem Decode(G2Protocol protocol, G2Header root)
+        internal static PlanItem Decode(G2Header root)
         {
             PlanItem item = new PlanItem();
             G2Header child = new G2Header(root.Data);
@@ -334,7 +334,7 @@ namespace RiseOp.Services.Plan
                         break;
 
                     case Packet_Title:
-                        item.Title = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        item.Title = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Start:
@@ -346,7 +346,7 @@ namespace RiseOp.Services.Plan
                         break;
 
                     case Packet_Desc:
-                        item.Description = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        item.Description = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_HoursCompleted:

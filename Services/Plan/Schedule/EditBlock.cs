@@ -75,7 +75,7 @@ namespace RiseOp.Services.Plan
 
             if (Mode == BlockViewMode.Show)
             {
-                Text = Core.Links.GetName(View.DhtID) + "'s Block";
+                Text = Core.Links.GetName(View.UserID) + "'s Block";
                 OkButton.Hide();
             }
         }

@@ -55,7 +55,7 @@ namespace RiseOp.Services.Trust
             Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
             Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
 
-            SelectedLink = Core.LocalDhtID;
+            SelectedLink = Core.UserID;
 
             SelectedItemChanged += new EventHandler(LinkTree_SelectedItemChanged);
             NodeExpanding += new EventHandler(LinkTree_NodeExpanding);
@@ -157,8 +157,8 @@ namespace RiseOp.Services.Trust
             
             // restore selected
             if (selected != null)
-                if (NodeMap.ContainsKey(selected.Link.DhtID))
-                    Select(NodeMap[selected.Link.DhtID]);
+                if (NodeMap.ContainsKey(selected.Link.UserID))
+                    Select(NodeMap[selected.Link.UserID]);
 
             EndUpdate();
         }
@@ -168,8 +168,8 @@ namespace RiseOp.Services.Trust
             LinkNode node = CreateNode(root);
             LoadRoot(node);
 
-            List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(Core.LocalDhtID, Project);
-            uplinks.Add(Core.LocalDhtID);
+            List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(Core.UserID, Project);
+            uplinks.Add(Core.UserID);
 
             ExpandPath(node, uplinks);
 
@@ -182,8 +182,8 @@ namespace RiseOp.Services.Trust
             LoadNode(node);
 
             // if self or uplinks contains root, put in project
-            if(node.Link.DhtID == Core.LocalDhtID || 
-                Links.IsUnconfirmedHigher(node.Link.DhtID, Project))
+            if(node.Link.UserID == Core.UserID || 
+                Links.IsUnconfirmedHigher(node.Link.UserID, Project))
                 InsertRootNode(ProjectNode, node);
 
             // else put in untrusted
@@ -204,12 +204,12 @@ namespace RiseOp.Services.Trust
             foreach (OpLink link in node.Link.Downlinks)
                 if (!node.Link.IsLoopedTo(link))
                 {
-                    Core.Locations.Research(link.DhtID);
+                    Core.Locations.Research(link.UserID);
 
                     // if doesnt exist search for it
                     if (!link.Trust.Loaded)
                     {
-                        Links.Research(link.DhtID, Project, false);
+                        Links.Research(link.UserID, Project, false);
                         continue;
                     }
 
@@ -254,7 +254,7 @@ namespace RiseOp.Services.Trust
 
         private void ExpandPath(LinkNode node, List<ulong> uplinks)
         {
-            if (!uplinks.Contains(node.Link.DhtID))
+            if (!uplinks.Contains(node.Link.UserID))
                 return;
 
             // expand triggers even loading nodes two levels down, one level shown, the other hidden
@@ -269,7 +269,7 @@ namespace RiseOp.Services.Trust
             bool found = false;
 
             foreach (LinkNode sub in node.Nodes)
-                if (uplinks.Contains(sub.Link.DhtID))
+                if (uplinks.Contains(sub.Link.UserID))
                     found = true;
 
             if (found)
@@ -285,7 +285,7 @@ namespace RiseOp.Services.Trust
         {
             LinkNode node = new LinkNode(link, this, CommandTreeMode.Operation);
 
-            NodeMap[link.DhtID] = node;
+            NodeMap[link.UserID] = node;
 
             return node;
         }
@@ -327,7 +327,7 @@ namespace RiseOp.Services.Trust
         {
             // add parent to focus list
             if (parent.GetType() == typeof(LinkNode))
-                Core.Focused.SafeAdd(((LinkNode)parent).Link.DhtID, true);
+                Core.Focused.SafeAdd(((LinkNode)parent).Link.UserID, true);
 
             // iterate through sub items
             foreach (TreeListNode subitem in parent.Nodes)
@@ -370,7 +370,7 @@ namespace RiseOp.Services.Trust
             if (ForceRootID != 0)
             {
                 // root must be a parent of the updating node
-                if (link.DhtID != ForceRootID && !Links.IsUnconfirmedHigher(link.DhtID, ForceRootID, Project))
+                if (link.UserID != ForceRootID && !Links.IsUnconfirmedHigher(link.UserID, ForceRootID, Project))
                     return;
             }
 
@@ -390,8 +390,8 @@ namespace RiseOp.Services.Trust
                 if (uplink == null)
                     parent = virtualParent;
 
-                else if (NodeMap.ContainsKey(uplink.DhtID))
-                    parent = NodeMap[uplink.DhtID];
+                else if (NodeMap.ContainsKey(uplink.UserID))
+                    parent = NodeMap[uplink.UserID];
 
                 else if (uplink.IsLoopRoot)
                     parent = new TreeListNode(); // ensures that tree is refreshed
@@ -436,8 +436,8 @@ namespace RiseOp.Services.Trust
             if (uplink == null)
                 parent = virtualParent;
 
-            else if (NodeMap.ContainsKey(uplink.DhtID))
-                parent = NodeMap[uplink.DhtID];
+            else if (NodeMap.ContainsKey(uplink.UserID))
+                parent = NodeMap[uplink.UserID];
 
             else if (uplink.IsLoopRoot)
             {
@@ -449,18 +449,18 @@ namespace RiseOp.Services.Trust
             
 
             // self is changing ensure it's visible 
-            if (node.Link.DhtID == Core.LocalDhtID)
+            if (node.Link.UserID == Core.UserID)
             {
                 if (parent == null)
                 {
-                    List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(Core.LocalDhtID, Project);
-                    uplinks.Add(Core.LocalDhtID);
+                    List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(Core.UserID, Project);
+                    uplinks.Add(Core.UserID);
 
                     ExpandPath(node, uplinks);
 
                     // check nodeMap again now that highers added
-                    if (NodeMap.ContainsKey(uplink.DhtID))
-                        parent = NodeMap[uplink.DhtID];
+                    if (NodeMap.ContainsKey(uplink.UserID))
+                        parent = NodeMap[uplink.UserID];
                 }
 
                 if (parent != null)
@@ -483,7 +483,7 @@ namespace RiseOp.Services.Trust
                 if (node.Parent != null)
                 {
                     if (node.IsVisible())
-                        visible.Add(link.DhtID);
+                        visible.Add(link.UserID);
 
                     LinkNode oldParent = node.Parent as LinkNode;
 
@@ -516,10 +516,10 @@ namespace RiseOp.Services.Trust
                 ArrangeRoots();
 
                 // arrange nodes can cause newNode to become invalid, retrieve updated copy
-                if(!NodeMap.ContainsKey(link.DhtID))
+                if(!NodeMap.ContainsKey(link.UserID))
                     return;
 
-                newNode = NodeMap[link.DhtID];
+                newNode = NodeMap[link.UserID];
      
                 if (loadsubs) // if previous node set to add kids
                 {
@@ -573,12 +573,12 @@ namespace RiseOp.Services.Trust
 
         private void ArrangeRoots()
         {
-            List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(Core.LocalDhtID, Project);
-            uplinks.Add(Core.LocalDhtID);
+            List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(Core.UserID, Project);
+            uplinks.Add(Core.UserID);
 
             OpLink highest = Links.GetLink(uplinks[uplinks.Count - 1], Project);
             if (highest.LoopRoot != null)
-                uplinks.Add(highest.LoopRoot.DhtID);
+                uplinks.Add(highest.LoopRoot.UserID);
 
             List<LinkNode> makeUntrusted = new List<LinkNode>();
             List<LinkNode> makeProject = new List<LinkNode>();
@@ -592,10 +592,10 @@ namespace RiseOp.Services.Trust
                     continue;
 
 
-                if(entry == ProjectNode && !uplinks.Contains(node.Link.DhtID))
+                if(entry == ProjectNode && !uplinks.Contains(node.Link.UserID))
                     makeUntrusted.Add(node);
 
-                else if(entry == UnlinkedNode && uplinks.Contains(node.Link.DhtID))
+                else if(entry == UnlinkedNode && uplinks.Contains(node.Link.UserID))
                     makeProject.Add(node);
             }
 
@@ -631,19 +631,19 @@ namespace RiseOp.Services.Trust
         private void RemoveNode(LinkNode node)
         {
             UnloadNode(node, null); // unload subs
-            NodeMap.Remove(node.Link.DhtID); // remove from map
+            NodeMap.Remove(node.Link.UserID); // remove from map
             node.Remove(); // remove from tree
         }
 
         private void UpdateOnline(LinkNode node)
         {
             // if node offline, remove
-            if (!Core.Locations.LocationMap.SafeContainsKey(node.Link.DhtID))
+            if (!Core.Locations.LocationMap.SafeContainsKey(node.Link.UserID))
             {
-                if (NodeMap.ContainsKey(node.Link.DhtID))
+                if (NodeMap.ContainsKey(node.Link.UserID))
                 {
                     node.Remove();
-                    NodeMap.Remove(node.Link.DhtID);
+                    NodeMap.Remove(node.Link.UserID);
                 }
             }
 
@@ -652,7 +652,7 @@ namespace RiseOp.Services.Trust
             {
                 if (node.Parent == null)
                 {
-                    NodeMap[node.Link.DhtID] = node;
+                    NodeMap[node.Link.UserID] = node;
 
                     Utilities.InsertSubNode(OnlineNode, node);
                     OnlineNode.Expand();
@@ -698,10 +698,10 @@ namespace RiseOp.Services.Trust
             node.AddSubs = false;
 
             if (visible != null && node.IsVisible())
-                visible.Add(node.Link.DhtID);
+                visible.Add(node.Link.UserID);
 
-            if (NodeMap.ContainsKey(node.Link.DhtID))
-                NodeMap.Remove(node.Link.DhtID);
+            if (NodeMap.ContainsKey(node.Link.UserID))
+                NodeMap.Remove(node.Link.UserID);
             
             // for each child, call unload node, then clear
             foreach (LinkNode child in node.Nodes)
@@ -715,7 +715,7 @@ namespace RiseOp.Services.Trust
         internal void SelectLink(ulong id, uint project)
         {
             if (!Links.TrustMap.SafeContainsKey(id))
-                id = Core.LocalDhtID;
+                id = Core.UserID;
 
             // unbold current
             if (NodeMap.ContainsKey(SelectedLink))
@@ -742,8 +742,8 @@ namespace RiseOp.Services.Trust
             Project = project;
             RefreshOperationTree();
 
-            if (item != null && NodeMap.ContainsKey(item.Link.DhtID))
-                NodeMap[item.Link.DhtID].Selected = true;
+            if (item != null && NodeMap.ContainsKey(item.Link.UserID))
+                NodeMap[item.Link.UserID].Selected = true;
         }
 
         internal void ShowOnline()
@@ -753,8 +753,8 @@ namespace RiseOp.Services.Trust
             TreeMode = CommandTreeMode.Online;
             SetupOnlineTree();
 
-            if (item != null && NodeMap.ContainsKey(item.Link.DhtID))
-                NodeMap[item.Link.DhtID].Selected = true;
+            if (item != null && NodeMap.ContainsKey(item.Link.UserID))
+                NodeMap[item.Link.UserID].Selected = true;
         }
 
 
@@ -779,8 +779,8 @@ namespace RiseOp.Services.Trust
                 else
                 {
                     LinkNode item = node as LinkNode;
-                    Links.Research(item.Link.DhtID, Project, true);
-                    Core.Locations.Research(item.Link.DhtID);
+                    Links.Research(item.Link.UserID, Project, true);
+                    Core.Locations.Research(item.Link.UserID);
                 }
         }
 
@@ -791,7 +791,7 @@ namespace RiseOp.Services.Trust
             foreach (TreeListNode node in SelectedNodes)
                 if (node.GetType() == typeof(LinkNode))
                     if( !((LinkNode)node).Link.IsLoopRoot )
-                        selected.Add(((LinkNode)node).Link.DhtID);
+                        selected.Add(((LinkNode)node).Link.UserID);
 
             return selected;
         }
@@ -826,7 +826,7 @@ namespace RiseOp.Services.Trust
 
             UpdateName(mode);
 
-            if (main.SelectedLink == Link.DhtID && main.Project == main.SelectedProject)
+            if (main.SelectedLink == Link.UserID && main.Project == main.SelectedProject)
                 Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
         }
 
@@ -838,7 +838,7 @@ namespace RiseOp.Services.Trust
 
             if (mode == CommandTreeMode.Operation)
             {
-                txt += Links.GetName(Link.DhtID);
+                txt += Links.GetName(Link.UserID);
 
                 //if (title != "")
                 //    txt += " - " + title;
@@ -853,20 +853,20 @@ namespace RiseOp.Services.Trust
                     bool confirmed = false;
                     bool requested = false;
 
-                    if (parent.Confirmed.Contains(Link.DhtID))
+                    if (parent.Confirmed.Contains(Link.UserID))
                         confirmed = true;
 
                     foreach (UplinkRequest request in parent.Requests)
-                        if (request.KeyID == Link.DhtID)
+                        if (request.KeyID == Link.UserID)
                             requested = true;
 
                     if (confirmed)
                     { }
-                    else if (requested && parent.DhtID == Links.Core.LocalDhtID)
+                    else if (requested && parent.UserID == Links.Core.UserID)
                         txt += " (Accept Trust?)";
                     else if (requested)
                         txt += " (Trust Requested)";
-                    else if(parent.DhtID == Links.Core.LocalDhtID)
+                    else if(parent.UserID == Links.Core.UserID)
                         txt += " (Trust Denied)";
                     else
                         txt += " (Trust Unconfirmed)";
@@ -879,7 +879,7 @@ namespace RiseOp.Services.Trust
             }
             else
             {
-                txt += Links.GetName(Link.DhtID);
+                txt += Links.GetName(Link.UserID);
 
                 // if (title != "")
                 //     txt += " - " + title;
@@ -895,7 +895,7 @@ namespace RiseOp.Services.Trust
         {
             Color newColor = Color.Black;
 
-            if (Link.DhtID == Links.Core.LocalDhtID || Locations.LocationMap.SafeContainsKey(Link.DhtID))
+            if (Link.UserID == Links.Core.UserID || Locations.LocationMap.SafeContainsKey(Link.UserID))
                 newColor = Color.Black;
             else
                 newColor = Color.DarkGray;

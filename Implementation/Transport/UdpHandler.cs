@@ -96,11 +96,11 @@ namespace RiseOp.Implementation.Transport
 
             if (packet is NetworkPacket)
             {
-                ((NetworkPacket)packet).SourceID = Core.LocalDhtID;
-                ((NetworkPacket)packet).ClientID = Core.ClientID;
+                ((NetworkPacket)packet).SourceID = Network.LocalUserID;
+                ((NetworkPacket)packet).ClientID = Network.ClientID;
             }
 
-            byte[] encoded = packet.Encode(Core.Protocol);
+            byte[] encoded = packet.Encode(Network.Protocol);
 
             PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Udp, DirectionType.Out, address, encoded);
             Network.LogPacket(logEntry);
@@ -112,7 +112,7 @@ namespace RiseOp.Implementation.Transport
             {
                 lock (Network.AugmentedCrypt)
                 {
-                    BitConverter.GetBytes(address.DhtID).CopyTo(Network.AugmentedCrypt.Key, 0);
+                    BitConverter.GetBytes(address.userID).CopyTo(Network.AugmentedCrypt.Key, 0);
 
                     final = Utilities.EncryptBytes(encoded, Network.AugmentedCrypt);
                 }
@@ -209,7 +209,7 @@ namespace RiseOp.Implementation.Transport
 
                 lock (Network.AugmentedCrypt)
                 {
-                    BitConverter.GetBytes(Core.LocalDhtID).CopyTo(Network.AugmentedCrypt.Key, 0);
+                    BitConverter.GetBytes(Network.LocalUserID).CopyTo(Network.AugmentedCrypt.Key, 0);
 
                     finalBuff = Utilities.DecryptBytes(buff, length, Network.AugmentedCrypt);
                     length = finalBuff.Length;
@@ -225,7 +225,7 @@ namespace RiseOp.Implementation.Transport
 			G2ReceivedPacket packet = new G2ReceivedPacket();
             packet.Root = new G2Header(buff);
 
-            if(Core.Protocol.ReadPacket(packet.Root))
+            if(G2Protocol.ReadPacket(packet.Root))
             {
                 packet.Source = new DhtAddress(0, 0, sender.Address, (ushort)sender.Port);
 

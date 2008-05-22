@@ -26,7 +26,7 @@ namespace RiseOp.Services.Plan
         internal PlanService Plans;
         TrustService Links;
 
-        internal ulong DhtID;
+        internal ulong UserID;
         internal uint  ProjectID;
 
         internal DateTime StartTime;
@@ -104,7 +104,7 @@ namespace RiseOp.Services.Plan
             Core = Plans.Core;
             Links = Core.Links;
 
-            DhtID = id;
+            UserID = id;
             ProjectID = project;
 
             StartTime = Core.TimeNow;
@@ -130,10 +130,10 @@ namespace RiseOp.Services.Plan
 
             string title = "";
 
-            if (DhtID == Core.LocalDhtID)
+            if (UserID == Core.UserID)
                 title += "My ";
             else
-                title += Links.GetName(DhtID) + "'s ";
+                title += Links.GetName(UserID) + "'s ";
 
             if (ProjectID != 0)
                 title += Links.GetProjectName(ProjectID) + " ";
@@ -145,7 +145,7 @@ namespace RiseOp.Services.Plan
 
         internal override void Init()
         {
-            if (DhtID != Core.LocalDhtID)
+            if (UserID != Core.UserID)
                 NewButton.Visible = false;
 
             PlanStructure.Columns[1].WidthResized += new EventHandler(PlanStructure_Resized);
@@ -304,11 +304,11 @@ namespace RiseOp.Services.Plan
                 {
                     foreach (OpLink root in roots)
                     {
-                        if (Uplinks.Contains(root.DhtID))
+                        if (Uplinks.Contains(root.UserID))
                         {
                             PlanNode node = CreateNode(root);
 
-                            Plans.Research(root.DhtID);
+                            Plans.Research(root.UserID);
 
                             LoadNode(node);
 
@@ -319,14 +319,14 @@ namespace RiseOp.Services.Plan
 
                         if (root.IsLoopRoot &&
                             root.Downlinks.Count > 0 &&
-                            Uplinks.Contains(root.Downlinks[0].DhtID))
+                            Uplinks.Contains(root.Downlinks[0].UserID))
                         {
                             foreach (OpLink downlink in root.Downlinks)
                                 if (!root.IsLoopedTo(downlink))
                                 {
                                     PlanNode node = CreateNode(downlink);
 
-                                    Plans.Research(downlink.DhtID);
+                                    Plans.Research(downlink.UserID);
 
                                     LoadNode(node);
 
@@ -350,8 +350,8 @@ namespace RiseOp.Services.Plan
 
             // restore selected
             if (selected != null)
-                if (NodeMap.ContainsKey(selected.Link.DhtID))
-                    PlanStructure.Select(NodeMap[selected.Link.DhtID]);
+                if (NodeMap.ContainsKey(selected.Link.UserID))
+                    PlanStructure.Select(NodeMap[selected.Link.UserID]);
 
 
             PlanStructure.EndUpdate();
@@ -367,7 +367,7 @@ namespace RiseOp.Services.Plan
             node.AddSubs = true;
 
             // go through downlinks
-            foreach (ulong id in Links.GetDownlinkIDs(node.Link.DhtID, ProjectID, 1))
+            foreach (ulong id in Links.GetDownlinkIDs(node.Link.UserID, ProjectID, 1))
             {
                 OpLink link = Links.GetLink(id, ProjectID);
 
@@ -377,11 +377,11 @@ namespace RiseOp.Services.Plan
                 // if doesnt exist search for it
                 if (!link.Trust.Loaded)
                 {
-                    Links.Research(link.DhtID, ProjectID, false);
+                    Links.Research(link.UserID, ProjectID, false);
                     continue;
                 }
 
-                Plans.Research(link.DhtID);
+                Plans.Research(link.UserID);
 
                 Utilities.InsertSubNode(node, CreateNode(link));
             }
@@ -389,16 +389,16 @@ namespace RiseOp.Services.Plan
 
         private PlanNode CreateNode(OpLink link)
         {
-            PlanNode node = new PlanNode(this, link, link.DhtID == DhtID);
+            PlanNode node = new PlanNode(this, link, link.UserID == UserID);
 
-            NodeMap[link.DhtID] = node;
+            NodeMap[link.UserID] = node;
 
             return node;
         }
 
         private void ExpandPath(PlanNode node, List<ulong> path)
         {
-            if (!path.Contains(node.Link.DhtID))
+            if (!path.Contains(node.Link.UserID))
                 return;
 
             // expand triggers even loading nodes two levels down, one level shown, the other hidden
@@ -441,8 +441,8 @@ namespace RiseOp.Services.Plan
             if (uplink == null)
                 parent = PlanStructure.virtualParent;
 
-            else if (NodeMap.ContainsKey(uplink.DhtID))
-                parent = NodeMap[uplink.DhtID];
+            else if (NodeMap.ContainsKey(uplink.UserID))
+                parent = NodeMap[uplink.UserID];
 
             else if (uplink.IsLoopRoot)
                 parent = new TreeListNode(); // ensures that tree is refreshed
@@ -587,8 +587,8 @@ namespace RiseOp.Services.Plan
         private void RefreshUplinks()
         {
             Uplinks.Clear();
-            Uplinks.Add(DhtID);
-            Uplinks.AddRange(Links.GetUnconfirmedUplinkIDs(DhtID, ProjectID));
+            Uplinks.Add(UserID);
+            Uplinks.AddRange(Links.GetUnconfirmedUplinkIDs(UserID, ProjectID));
 
             // we show unconfirmed highers, but not unconfirmed lowers
         }
@@ -598,7 +598,7 @@ namespace RiseOp.Services.Plan
             bool found = false;
 
             foreach (PlanNode sub in node.Nodes)
-                if (path.Contains(sub.Link.DhtID))
+                if (path.Contains(sub.Link.UserID))
                     found = true;
 
             if (found)
@@ -613,7 +613,7 @@ namespace RiseOp.Services.Plan
         private void RemoveNode(PlanNode node)
         {
             UnloadNode(node, null); // unload subs
-            NodeMap.Remove(node.Link.DhtID); // remove from map
+            NodeMap.Remove(node.Link.UserID); // remove from map
             node.Remove(); // remove from tree
         }
 
@@ -626,7 +626,7 @@ namespace RiseOp.Services.Plan
         void RecurseFocus(PlanNode node)
         {
             // add parent to focus list
-            Core.Focused.SafeAdd(node.Link.DhtID, true);
+            Core.Focused.SafeAdd(node.Link.UserID, true);
             
             // iterate through sub items
             foreach (PlanNode sub in node.Nodes)
@@ -636,11 +636,11 @@ namespace RiseOp.Services.Plan
         void Plans_Update(OpPlan plan)
         {
             // if node not tracked
-            if(!NodeMap.ContainsKey(plan.DhtID))
+            if(!NodeMap.ContainsKey(plan.UserID))
                 return;
 
             // update this node, and all subs      (visible below)
-            TreeListNode node = (TreeListNode) NodeMap[plan.DhtID];
+            TreeListNode node = (TreeListNode) NodeMap[plan.UserID];
             
             bool done = false;
 
@@ -684,10 +684,10 @@ namespace RiseOp.Services.Plan
                 return;
             }
             // link research
-            Links.Research(node.Link.DhtID, ProjectID, false);
+            Links.Research(node.Link.UserID, ProjectID, false);
 
             // plan research
-            Plans.Research(node.Link.DhtID);
+            Plans.Research(node.Link.UserID);
         }
 
         PlanNode GetSelected()
@@ -747,13 +747,13 @@ namespace RiseOp.Services.Plan
             node.AddSubs = false;
 
             if (visible != null && node.IsVisible())
-                visible.Add(node.Link.DhtID);
+                visible.Add(node.Link.UserID);
 
             // for each child, call unload node, then clear
             foreach (PlanNode child in node.Nodes)
             {
-                if (NodeMap.ContainsKey(child.Link.DhtID))
-                    NodeMap.Remove(child.Link.DhtID);
+                if (NodeMap.ContainsKey(child.Link.UserID))
+                    NodeMap.Remove(child.Link.UserID);
 
                 UnloadNode(child, visible);
             }
@@ -823,7 +823,7 @@ namespace RiseOp.Services.Plan
 
             PlanStructure.Height += 20;
 
-            Plans.LoadPlan(Core.LocalDhtID);
+            Plans.LoadPlan(Core.UserID);
             Plans_Update(Plans.LocalPlan);
         }
 
@@ -858,8 +858,8 @@ namespace RiseOp.Services.Plan
             List<int> assigned = new List<int>();
 
             // foreach self & higher
-            List<ulong> ids = Links.GetUplinkIDs(DhtID, ProjectID);
-            ids.Add(DhtID);
+            List<ulong> ids = Links.GetUplinkIDs(UserID, ProjectID);
+            ids.Add(UserID);
 
             foreach (ulong id in ids)
             {
@@ -875,7 +875,7 @@ namespace RiseOp.Services.Plan
                         if (goal.Project != ProjectID)
                             break;
 
-                        if (goal.Person == DhtID && !assigned.Contains(goal.Ident))
+                        if (goal.Person == UserID && !assigned.Contains(goal.Ident))
                             assigned.Add(goal.Ident);
 
                         if (goal.BranchDown == 0)
@@ -1059,9 +1059,9 @@ namespace RiseOp.Services.Plan
         internal void UpdateName()
         {
             if (Link.Title != "")
-                Text = View.Core.Links.GetName(Link.DhtID) + "\n" + Link.Title;
+                Text = View.Core.Links.GetName(Link.UserID) + "\n" + Link.Title;
             else
-                Text = View.Core.Links.GetName(Link.DhtID);
+                Text = View.Core.Links.GetName(Link.UserID);
         }
 
         internal void UpdateBlock()

@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows.Forms;
 
 using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Transport;
 using RiseOp.Services.Trust;
@@ -22,6 +23,7 @@ namespace RiseOp.Services.Chat
         public uint ServiceID { get { return 6; } }
 
         internal OpCore Core;
+        internal DhtNetwork Network;
         internal TrustService Links;
 
         internal ThreadedDictionary<uint, ChatRoom> RoomMap = new ThreadedDictionary<uint, ChatRoom>();
@@ -35,11 +37,12 @@ namespace RiseOp.Services.Chat
         internal ChatService(OpCore core)
         {
             Core = core;
+            Network = Core.OperationNet;
             Links = core.Links;
 
-            Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
-            Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
+            Network.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
+            Network.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
+            Network.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.GetFocusedCore += new GetFocusedHandler(Core_GetFocusedCore);
@@ -55,9 +58,9 @@ namespace RiseOp.Services.Chat
             if (Refresh != null)
                 throw new Exception("Chat Events not fin'd");
 
-            Core.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
-            Core.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
+            Network.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
+            Network.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
+            Network.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
 
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.GetFocusedCore -= new GetFocusedHandler(Core_GetFocusedCore);
@@ -68,7 +71,7 @@ namespace RiseOp.Services.Chat
 
         public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
         {
-            if (key != Core.LocalDhtID)
+            if (key != Core.UserID)
                 return null;
 
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
@@ -90,7 +93,7 @@ namespace RiseOp.Services.Chat
             if (node == null)
                 return;
 
-            if (node.GetKey() != Core.LocalDhtID)
+            if (node.GetKey() != Core.UserID)
                 return;
 
             // gui creates viewshell, component just passes view object
@@ -129,7 +132,7 @@ namespace RiseOp.Services.Chat
             // once per second
 
             foreach (ulong key in StatusUpdate.Keys)
-                foreach (RudpSession session in Core.RudpControl.GetActiveSessions(key))
+                foreach (RudpSession session in Network.RudpControl.GetActiveSessions(key))
                     SendStatus(session);
 
             StatusUpdate.Clear();
@@ -195,10 +198,10 @@ namespace RiseOp.Services.Chat
 
             // refresh member list of any commmand/live room this person is apart of
             // link would already be added above, this ensures user is removed
-            foreach(ChatRoom room in FindRoom(trust.DhtID))
+            foreach(ChatRoom room in FindRoom(trust.UserID))
                 if(IsCommandRoom(room.Kind))
                     RefreshCommand(room);
-                else if(room.Members.SafeContains(trust.DhtID))
+                else if(room.Members.SafeContains(trust.UserID))
                     Core.RunInGuiThread(room.MembersUpdate);
         }
 
@@ -210,15 +213,15 @@ namespace RiseOp.Services.Chat
             ChatRoom room = new ChatRoom(kind, id, name);
 
             room.Active = true;
-            room.AddMember(Core.LocalDhtID);
+            room.AddMember(Core.UserID);
 
             RoomMap.SafeAdd(id, room);
             
             if (kind == RoomKind.Private)
             {
-                room.Host = Core.LocalDhtID;
-                room.Verified[Core.LocalDhtID] = true;
-                SendInviteRequest(room, Core.LocalDhtID); // send invite to copies of ourself that exist
+                room.Host = Core.UserID;
+                room.Verified[Core.UserID] = true;
+                SendInviteRequest(room, Core.UserID); // send invite to copies of ourself that exist
             }
 
             Core.RunInGuiThread(Refresh);
@@ -235,7 +238,7 @@ namespace RiseOp.Services.Chat
             }
 
             room.Active = true;
-            room.AddMember(Core.LocalDhtID);
+            room.AddMember(Core.UserID);
 
             // for private rooms, send proof of invite first
             if (room.Kind == RoomKind.Private)
@@ -259,7 +262,7 @@ namespace RiseOp.Services.Chat
                 room = new ChatRoom(kind, project);
 
             room.Active = true;
-            room.AddMember(Core.LocalDhtID);
+            room.AddMember(Core.UserID);
 
             RoomMap.SafeAdd(id, room);
 
@@ -280,7 +283,7 @@ namespace RiseOp.Services.Chat
                         Core.Locations.Research(key);
                     else
                         foreach (ClientInfo info in clients)
-                            Core.RudpControl.Connect(info.Data);
+                            Network.RudpControl.Connect(info.Data);
 
                     if (Links.GetTrust(key) == null)
                         Links.Research(key, 0, false);    
@@ -327,18 +330,18 @@ namespace RiseOp.Services.Chat
                     if (localLink.LoopRoot != null)
                     {
                         uplink = localLink.LoopRoot;
-                        room.Host = uplink.DhtID; // use loop id cause 0 is reserved for no root
+                        room.Host = uplink.UserID; // use loop id cause 0 is reserved for no root
                         room.IsLoop = true;
                     }
                     else
                     {
-                        room.Host = uplink.DhtID;
+                        room.Host = uplink.UserID;
                         room.IsLoop = false;
                         room.AddMember(room.Host);
                     }
 
                     foreach (OpLink downlink in uplink.GetLowers(true))
-                        room.AddMember(downlink.DhtID);
+                        room.AddMember(downlink.UserID);
                 }
             }
 
@@ -346,11 +349,11 @@ namespace RiseOp.Services.Chat
             {
                 room.Members = new ThreadedList<ulong>();
 
-                room.Host = Core.LocalDhtID;
+                room.Host = Core.UserID;
                 room.AddMember(room.Host);
 
                 foreach (OpLink downlink in localLink.GetLowers(true))
-                    room.AddMember(downlink.DhtID);
+                    room.AddMember(downlink.UserID);
             }
 
             else if (room.Kind == RoomKind.Live_High)
@@ -398,7 +401,7 @@ namespace RiseOp.Services.Chat
         {
             room.Active = false;
 
-            room.RemoveMember(Core.LocalDhtID);
+            room.RemoveMember(Core.UserID);
 
             SendStatus(room);
 
@@ -444,12 +447,12 @@ namespace RiseOp.Services.Chat
         {
             bool connect = false;
 
-            foreach (ChatRoom room in FindRoom(location.DhtID))
+            foreach (ChatRoom room in FindRoom(location.UserID))
                 if (room.Active)
                     connect = true;
 
             if(connect)
-                Core.RudpControl.Connect(location); // func checks if already connected
+                Network.RudpControl.Connect(location); // func checks if already connected
         }
 
         internal void SendMessage(ChatRoom room, string text)
@@ -473,7 +476,7 @@ namespace RiseOp.Services.Chat
             room.Members.LockReading(delegate()
             {
                foreach (ulong member in room.Members)
-                   foreach (RudpSession session in Core.RudpControl.GetActiveSessions(member))
+                   foreach (RudpSession session in Network.RudpControl.GetActiveSessions(member))
                    {
                        sent = true;
                        session.SendData(ServiceID, 0, message, true);
@@ -490,13 +493,13 @@ namespace RiseOp.Services.Chat
             // remote's command low, is my command high
             // do here otherwise have to send custom roomID packets to selfs/lowers/highers
 
-            if (session.DhtID != Core.LocalDhtID)
+            if (session.UserID != Core.UserID)
             {
                 // if check fails then it is loop node sending data, keep it unchanged
-                if (message.Kind == RoomKind.Command_High && Links.IsLowerDirect(session.DhtID, message.ProjectID))
+                if (message.Kind == RoomKind.Command_High && Links.IsLowerDirect(session.UserID, message.ProjectID))
                     message.Kind = RoomKind.Command_Low;
 
-                else if (message.Kind == RoomKind.Command_Low && Links.IsHigher(session.DhtID, message.ProjectID))
+                else if (message.Kind == RoomKind.Command_Low && Links.IsHigher(session.UserID, message.ProjectID))
                     message.Kind = RoomKind.Command_High;
 
                 else if (message.Kind == RoomKind.Live_High)
@@ -519,7 +522,7 @@ namespace RiseOp.Services.Chat
             }
 
             // if sender not in room
-            if(!room.Members.SafeContains(session.DhtID))
+            if(!room.Members.SafeContains(session.UserID))
                 return;
 
             ProcessMessage(room, new ChatMessage(Core, session, message.Text));
@@ -538,12 +541,12 @@ namespace RiseOp.Services.Chat
                     // if we are host of room and connect hasn't been sent invite
                     foreach (ChatRoom room in RoomMap.Values)
                     {
-                        if (room.NeedSendInvite(session.DhtID, session.ClientID))
+                        if (room.NeedSendInvite(session.UserID, session.ClientID))
                             // invite not sent
-                            if (room.Kind == RoomKind.Public || room.Host == Core.LocalDhtID)
+                            if (room.Kind == RoomKind.Public || room.Host == Core.UserID)
                             {
-                                session.SendData(ServiceID, 0, room.Invites[session.DhtID].First, true);
-                                room.Invites[session.DhtID].Second.Add(session.ClientID);
+                                session.SendData(ServiceID, 0, room.Invites[session.UserID].First, true);
+                                room.Invites[session.UserID].Second.Add(session.ClientID);
                                 AlertInviteSent(room, session);
                                 SendWhoResponse(room, session);
                             }
@@ -555,7 +558,7 @@ namespace RiseOp.Services.Chat
 
                         // ask member who else is in room
                         if ((room.Kind == RoomKind.Public || room.Kind == RoomKind.Private) &&
-                            room.Members.SafeContains(session.DhtID))
+                            room.Members.SafeContains(session.UserID))
                             SendWhoRequest(room, session);
                     }
                 });
@@ -566,7 +569,7 @@ namespace RiseOp.Services.Chat
 
             // if disconnected
             if (session.Status == SessionStatus.Closed)
-                foreach (ChatRoom room in FindRoom(session.DhtID))
+                foreach (ChatRoom room in FindRoom(session.UserID))
                     if (room.Active) 
                         // don't remove from members unless explicitly told in status
                         Core.RunInGuiThread(room.MembersUpdate);
@@ -576,25 +579,25 @@ namespace RiseOp.Services.Chat
         {
             G2Header root = new G2Header(data);
 
-            if (Core.Protocol.ReadPacket(root))
+            if (G2Protocol.ReadPacket(root))
             {
                 if (root.Name == ChatPacket.Data)
                 {
-                    ChatText text = ChatText.Decode(Core.Protocol, root);
+                    ChatText text = ChatText.Decode(root);
 
                     ReceiveMessage(text, session);
                 }
 
                 else if (root.Name == ChatPacket.Status)
                 {
-                    ChatStatus status = ChatStatus.Decode(Core.Protocol, root);
+                    ChatStatus status = ChatStatus.Decode(root);
 
                     ReceiveStatus(status, session);
                 }
 
                 else if (root.Name == ChatPacket.Invite)
                 {
-                    ChatInvite invite = ChatInvite.Decode(Core.Protocol, root);
+                    ChatInvite invite = ChatInvite.Decode(root);
 
                     ReceiveInvite(invite, session);
                 }
@@ -602,7 +605,7 @@ namespace RiseOp.Services.Chat
 
                 else if (root.Name == ChatPacket.Who)
                 {
-                    ChatWho who = ChatWho.Decode(Core.Protocol, root);
+                    ChatWho who = ChatWho.Decode(root);
 
                     ReceiveWho(who, session);
                 }
@@ -644,25 +647,25 @@ namespace RiseOp.Services.Chat
                     bool update = false;
 
                     // remove from room
-                    if (!status.ActiveRooms.Contains(room.RoomID) && room.Members.SafeContains(session.DhtID))
+                    if (!status.ActiveRooms.Contains(room.RoomID) && room.Members.SafeContains(session.UserID))
                     {
                         if(!IsCommandRoom(room.Kind))
-                            room.RemoveMember(session.DhtID);
+                            room.RemoveMember(session.UserID);
                         
                         update = true;
                     }
 
                     // add member to room
-                    if (IsCommandRoom(room.Kind) && room.Members.SafeContains(session.DhtID))
+                    if (IsCommandRoom(room.Kind) && room.Members.SafeContains(session.UserID))
                         update = true;
 
                     else if (status.ActiveRooms.Contains(room.RoomID))
                     {
                         // if room private check that sender is verified
-                        if (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.DhtID))
+                        if (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.UserID))
                             continue;
 
-                        room.AddMember(session.DhtID);
+                        room.AddMember(session.UserID);
                         update = true;
                     }
 
@@ -692,7 +695,7 @@ namespace RiseOp.Services.Chat
                 foreach (ChatRoom room in RoomMap.Values)
                     if (room.Active && !IsCommandRoom(room.Kind))
                     {
-                        if (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.DhtID))
+                        if (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.UserID))
                             continue;
 
                         status.ActiveRooms.Add(room.RoomID);
@@ -724,7 +727,7 @@ namespace RiseOp.Services.Chat
             // if private room sign remote users id with our private key
             if (room.Kind == RoomKind.Private)
             {
-                invite.Host = Core.KeyMap[Core.LocalDhtID];
+                invite.Host = Core.KeyMap[Core.UserID];
 
                 if (!Core.KeyMap.ContainsKey(id))
                     return;
@@ -738,10 +741,10 @@ namespace RiseOp.Services.Chat
 
             // try to conncet to all of id's locations
             foreach (ClientInfo loc in Core.Locations.GetClients(id))
-                Core.RudpControl.Connect(loc.Data);
+                Network.RudpControl.Connect(loc.Data);
 
             // send invite to already connected locations
-            foreach (RudpSession session in Core.RudpControl.GetActiveSessions(id))
+            foreach (RudpSession session in Network.RudpControl.GetActiveSessions(id))
             {
                 session.SendData(ServiceID, 0, invite, true);
                 room.Invites[id].Second.Add(session.ClientID);
@@ -755,7 +758,7 @@ namespace RiseOp.Services.Chat
         {
             // Invite sent to Bob @Home
 
-            ProcessMessage(room, new ChatMessage(Core, "Invite sent to " + Links.GetName(session.DhtID) + LocationSuffix(session.DhtID, session.ClientID), true));
+            ProcessMessage(room, new ChatMessage(Core, "Invite sent to " + Links.GetName(session.UserID) + LocationSuffix(session.UserID, session.ClientID), true));
         }
 
         void SendInviteProof(ChatRoom room)
@@ -763,7 +766,7 @@ namespace RiseOp.Services.Chat
             room.Members.LockReading(delegate()
             {
                 foreach (ulong id in room.Members)
-                    foreach (RudpSession session in Core.RudpControl.GetActiveSessions(id))
+                    foreach (RudpSession session in Network.RudpControl.GetActiveSessions(id))
                         if(room.NeedSendInvite(id, session.ClientID))
                             SendInviteProof(room, session);
             });
@@ -771,15 +774,15 @@ namespace RiseOp.Services.Chat
 
         void SendInviteProof(ChatRoom room, RudpSession session)
         {
-            if (!room.Invites.ContainsKey(Core.LocalDhtID))
+            if (!room.Invites.ContainsKey(Core.UserID))
                 return;
 
             // if already sent proof to client, return
             Tuple<ChatInvite, List<ushort>> tried;
-            if (!room.Invites.TryGetValue(session.DhtID, out tried))
+            if (!room.Invites.TryGetValue(session.UserID, out tried))
             {
                 tried = new Tuple<ChatInvite, List<ushort>>(null, new List<ushort>());
-                room.Invites[session.DhtID] = tried;
+                room.Invites[session.UserID] = tried;
             }
 
             if (tried.Second.Contains(session.ClientID))
@@ -790,7 +793,7 @@ namespace RiseOp.Services.Chat
             ChatInvite invite = new ChatInvite();
             invite.RoomID = room.RoomID;
             invite.Title = room.Title;
-            invite.SignedInvite = room.Invites[Core.LocalDhtID].First.SignedInvite;
+            invite.SignedInvite = room.Invites[Core.UserID].First.SignedInvite;
 
             session.SendData(ServiceID, 0, invite, true);
         }
@@ -808,7 +811,7 @@ namespace RiseOp.Services.Chat
                  room = new ChatRoom(kind, invite.RoomID, invite.Title);
                  room.RoomID = invite.RoomID;
                  room.Kind = kind;
-                 room.AddMember(session.DhtID);
+                 room.AddMember(session.UserID);
 
                  if (invite.Host != null)
                  {
@@ -831,31 +834,31 @@ namespace RiseOp.Services.Chat
 
 
                 // if this is host sending us our verification
-                if (session.DhtID == room.Host)
+                if (session.UserID == room.Host)
                 {
                     // check that host signed our public key with his private
-                    if (!Utilities.CheckSignedData(hostKey, Core.KeyMap[Core.LocalDhtID], invite.SignedInvite))
+                    if (!Utilities.CheckSignedData(hostKey, Core.KeyMap[Core.UserID], invite.SignedInvite))
                         return;
 
-                    if(!room.Invites.ContainsKey(Core.LocalDhtID)) // would fail if a node's dupe on network sends invite back to itself
-                        room.Invites.Add(Core.LocalDhtID, new Tuple<ChatInvite, List<ushort>>(invite, new List<ushort>()));
+                    if(!room.Invites.ContainsKey(Core.UserID)) // would fail if a node's dupe on network sends invite back to itself
+                        room.Invites.Add(Core.UserID, new Tuple<ChatInvite, List<ushort>>(invite, new List<ushort>()));
                 }
 
                 // else this is node in room sending us proof of being invited
                 else
                 {
-                    if (!Core.KeyMap.ContainsKey(session.DhtID))
+                    if (!Core.KeyMap.ContainsKey(session.UserID))
                         return; // key should def be in map, it was added when session was made to sender
 
                     // check that host signed remote's key with host's private
-                    if (!Utilities.CheckSignedData(hostKey, Core.KeyMap[session.DhtID], invite.SignedInvite))
+                    if (!Utilities.CheckSignedData(hostKey, Core.KeyMap[session.UserID], invite.SignedInvite))
                         return;
                 }
 
                 // if not verified yet, add them and send back our own verification
-                if (!room.Verified.ContainsKey(session.DhtID))
+                if (!room.Verified.ContainsKey(session.UserID))
                 {
-                    room.Verified[session.DhtID] = true;
+                    room.Verified[session.UserID] = true;
 
                     if (room.Active)
                     {
@@ -865,11 +868,11 @@ namespace RiseOp.Services.Chat
                 }
             }
 
-            if (!Core.Links.TrustMap.SafeContainsKey(session.DhtID))
-                Links.Research(session.DhtID, 0, false);
+            if (!Core.Links.TrustMap.SafeContainsKey(session.UserID))
+                Links.Research(session.UserID, 0, false);
 
             if(showInvite)
-                Core.RunInGuiThread(Invited, session.DhtID, room);
+                Core.RunInGuiThread(Invited, session.UserID, room);
         }
 
         void SendWhoRequest(ChatRoom room)
@@ -879,7 +882,7 @@ namespace RiseOp.Services.Chat
             room.Members.LockReading(delegate()
            {
                foreach (ulong id in room.Members)
-                   foreach (RudpSession session in Core.RudpControl.GetActiveSessions(id))
+                   foreach (RudpSession session in Network.RudpControl.GetActiveSessions(id))
                         SendWhoRequest(room, session);
            });
         }
@@ -906,7 +909,7 @@ namespace RiseOp.Services.Chat
             room.Members.LockReading(delegate()
             {
                 foreach (ulong id in room.Members)
-                    if (Core.RudpControl.GetActiveSessions(id).Count > 0) // only send members who are connected
+                    if (Network.RudpControl.GetActiveSessions(id).Count > 0) // only send members who are connected
                     {
                         who.Members.Add(id);
 
@@ -938,7 +941,7 @@ namespace RiseOp.Services.Chat
             }
 
             // if room not public, and not from verified private room member or host, igonre
-            if (IsCommandRoom(room.Kind) || (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.DhtID)))
+            if (IsCommandRoom(room.Kind) || (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.UserID)))
                 return;
 
                 
@@ -966,12 +969,12 @@ namespace RiseOp.Services.Chat
             }
         }
 
-        internal string LocationSuffix(ulong dhtID, ushort clientID)
+        internal string LocationSuffix(ulong user, ushort client)
         {
             // only show user's location if more than one are active
 
-            if (Core.Locations.ActiveClientCount(dhtID) > 1)
-                return " @" + Core.Locations.GetLocationName(dhtID, clientID);
+            if (Core.Locations.ActiveClientCount(user) > 1)
+                return " @" + Core.Locations.GetLocationName(user, client);
 
             return "";
         }
@@ -1041,7 +1044,7 @@ namespace RiseOp.Services.Chat
             Members.LockReading(delegate()
             {
                 foreach (ulong user in Members)
-                    if (chat.Core.RudpControl.GetActiveSessions(user).Count > 0)
+                    if (chat.Network.RudpControl.GetActiveSessions(user).Count > 0)
                         count++;
             });
 
@@ -1078,8 +1081,8 @@ namespace RiseOp.Services.Chat
 
         internal ChatMessage(OpCore core, string text, bool system)
         {
-            Source = core.LocalDhtID;
-            ClientID = core.ClientID;
+            Source = core.UserID;
+            ClientID = core.OperationNet.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;
             System = system;
@@ -1087,7 +1090,7 @@ namespace RiseOp.Services.Chat
 
         internal ChatMessage(OpCore core, RudpSession session, string text)
         {
-            Source = session.DhtID;
+            Source = session.UserID;
             ClientID = session.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;

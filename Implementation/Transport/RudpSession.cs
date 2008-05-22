@@ -6,6 +6,7 @@ using System.Text;
 using System.Diagnostics;
 
 using RiseOp.Services.Location;
+using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Comm;
 using RiseOp.Implementation.Protocol.Net;
@@ -18,12 +19,13 @@ namespace RiseOp.Implementation.Transport
     internal class RudpSession
     {
         internal OpCore Core;
-
+        internal DhtNetwork Network;
+        internal RudpHandler RudpControl;
         internal RudpSocket Comm;
 
         internal SessionStatus Status = SessionStatus.Connecting;
 
-        internal ulong DhtID;
+        internal ulong UserID;
         internal ushort ClientID;
         int HashCode;
 
@@ -69,11 +71,13 @@ namespace RiseOp.Implementation.Transport
 
         //FileStream DebugWriter;
         //UTF8Encoding strEnc = new UTF8Encoding();
-        internal RudpSession(OpCore core, ulong dhtID, ushort clientID, bool inbound)
+        internal RudpSession(RudpHandler control, ulong dhtID, ushort clientID, bool inbound)
         {
-			Core     = core;
+			Core     = control.Network.Core;
+            Network = control.Network;
+            RudpControl = control;
 
-            DhtID = dhtID;
+            UserID = dhtID;
             ClientID = clientID;
             HashCode = Core.RndGen.Next();
 
@@ -82,7 +86,7 @@ namespace RiseOp.Implementation.Transport
             NegotiateTimeout = Core.TimeNow.AddSeconds(10);
             Startup = Core.TimeNow;
 
-            Name = Core.Links.GetName(DhtID);
+            Name = Core.Links.GetName(UserID);
 
             //DebugWriter = new FileStream("Log " + Network.Profile.ScreenName + "-" + Buddy.ScreenName + "-" + Comm.PeerID.ToString() + ".txt", FileMode.CreateNew, FileAccess.Write);
 		}
@@ -106,12 +110,12 @@ namespace RiseOp.Implementation.Transport
 
             if (status == SessionStatus.Closed)
             {
-                lock(Core.CommMap)
-                    Core.CommMap.Remove(Comm.PeerID);
+                lock (RudpControl.SocketMap)
+                    RudpControl.SocketMap.Remove(Comm.PeerID);
             }
 
-            if (Core.RudpControl.SessionUpdate != null)
-                Core.RudpControl.SessionUpdate.Invoke(this);
+            if (RudpControl.SessionUpdate != null)
+                RudpControl.SessionUpdate.Invoke(this);
 		}	
 
 		internal bool SendPacket(G2Packet packet, bool expedite)
@@ -119,7 +123,7 @@ namespace RiseOp.Implementation.Transport
             if (Core.InvokeRequired)
                 Debug.Assert(false);
 
-            byte[] final = packet.Encode(Core.Protocol);
+            byte[] final = packet.Encode(Network.Protocol);
 
             if (Comm.State != RudpState.Connected)
                 return false;
@@ -179,7 +183,7 @@ namespace RiseOp.Implementation.Transport
                     EncryptionUpdate eu = new EncryptionUpdate(false);
                     if(paddingNeeded > 3)
                         eu.Padding = new byte[paddingNeeded - 3];
-                    byte[] final = eu.Encode(Core.Protocol);
+                    byte[] final = eu.Encode(Network.Protocol);
 
                     final.CopyTo(SendBuffer, SendBuffSize);
                     SendBuffSize += final.Length;
@@ -304,7 +308,7 @@ namespace RiseOp.Implementation.Transport
 
 		internal void Receive_KeyRequest(G2ReceivedPacket embeddedPacket)
 		{
-			KeyRequest request = KeyRequest.Decode(Core.Protocol, embeddedPacket);
+			KeyRequest request = KeyRequest.Decode(embeddedPacket);
 
             OutboundEnc = new RijndaelManaged();
             OutboundEnc.Key = request.Key;
@@ -327,12 +331,12 @@ namespace RiseOp.Implementation.Transport
 
 		internal void Receive_KeyAck(G2ReceivedPacket embeddedPacket)
 		{
-			KeyAck keyAck = KeyAck.Decode(Core.Protocol, embeddedPacket);
+			KeyAck keyAck = KeyAck.Decode(embeddedPacket);
             Name = keyAck.Name;
 
             Log("Key Ack Received");
 
-            Core.IndexKey(DhtID, ref keyAck.SenderPubKey.Modulus);
+            Core.IndexKey(UserID, ref keyAck.SenderPubKey.Modulus);
 
             // send session request with encrypted current key
             Send_SessionRequest();
@@ -359,7 +363,7 @@ namespace RiseOp.Implementation.Transport
             byte[] sessionKey = new byte[InboundEnc.Key.Length + InboundEnc.IV.Length];
             InboundEnc.Key.CopyTo(sessionKey, 0);
             InboundEnc.IV.CopyTo(sessionKey, InboundEnc.Key.Length);
-            request.EncryptedKey = Utilities.KeytoRsa(Core.KeyMap[DhtID]).Encrypt(sessionKey, false);
+            request.EncryptedKey = Utilities.KeytoRsa(Core.KeyMap[UserID]).Encrypt(sessionKey, false);
 
             Log("Session Request Sent");
 
@@ -368,7 +372,7 @@ namespace RiseOp.Implementation.Transport
 
 		internal void Receive_SessionRequest(G2ReceivedPacket embeddedPacket)
 		{
-			SessionRequest request = SessionRequest.Decode(Core.Protocol, embeddedPacket);
+			SessionRequest request = SessionRequest.Decode(embeddedPacket);
 
             Log("Session Request Received");
 
@@ -398,7 +402,7 @@ namespace RiseOp.Implementation.Transport
             }
 
 			// if internal key null
-			if(!Core.KeyMap.ContainsKey(DhtID))
+			if(!Core.KeyMap.ContainsKey(UserID))
 			{
                 StartEncryption();
 				Send_KeyRequest(request);
@@ -435,7 +439,7 @@ namespace RiseOp.Implementation.Transport
 
 		internal void Receive_SessionAck(G2ReceivedPacket embeddedPacket)
 		{
-			SessionAck ack = SessionAck.Decode(Core.Protocol, embeddedPacket);
+			SessionAck ack = SessionAck.Decode(embeddedPacket);
 
             Log("Session Ack Received");
 
@@ -456,7 +460,7 @@ namespace RiseOp.Implementation.Transport
 
         internal bool SendData(uint service, uint datatype, G2Packet packet, bool expedite)
         {
-            CommData data = new CommData(service, datatype, packet.Encode(Core.Protocol));
+            CommData data = new CommData(service, datatype, packet.Encode(Network.Protocol));
 
             return SendPacket(data, expedite);
         }
@@ -465,11 +469,11 @@ namespace RiseOp.Implementation.Transport
         {
             // 0 is network packet?
 
-            CommData data = CommData.Decode(Core.Protocol, embeddedPacket);
+            CommData data = CommData.Decode(embeddedPacket);
 
             if (data != null)
-                if (Core.RudpControl.SessionData.Contains(data.Service, data.DataType))
-                    Core.RudpControl.SessionData[data.Service, data.DataType].Invoke(this, data.Data);
+                if (RudpControl.SessionData.Contains(data.Service, data.DataType))
+                    RudpControl.SessionData[data.Service, data.DataType].Invoke(this, data.Data);
         }
 
 		internal void Send_Close(string reason)
@@ -487,7 +491,7 @@ namespace RiseOp.Implementation.Transport
 		
 		internal void Receive_Close(G2ReceivedPacket embeddedPacket)
 		{
-			CommClose close = CommClose.Decode(Core.Protocol, embeddedPacket);
+			CommClose close = CommClose.Decode(embeddedPacket);
 			
 			Log("Received Close (" + close.Reason + ")");
 
@@ -508,12 +512,12 @@ namespace RiseOp.Implementation.Transport
 
         internal void Receive_ProxyUpdate(G2ReceivedPacket embeddedPacket)
         {
-            ProxyUpdate update = ProxyUpdate.Decode(Core.Protocol, embeddedPacket);
+            ProxyUpdate update = ProxyUpdate.Decode(embeddedPacket);
 
-            Comm.AddAddress(new RudpAddress(Core, update.Proxy, update.Global));
+            Comm.AddAddress(new RudpAddress(update.Proxy, update.Global));
 
             if(embeddedPacket.Tcp != null)
-                Comm.AddAddress(new RudpAddress(Core, update.Proxy, update.Global, embeddedPacket.Tcp));
+                Comm.AddAddress(new RudpAddress(update.Proxy, update.Global, embeddedPacket.Tcp));
 
             Comm.CheckRoutes();
 
@@ -522,7 +526,7 @@ namespace RiseOp.Implementation.Transport
 
 		internal bool AlreadyActive()
 		{
-			foreach(RudpSession session in Core.RudpControl.SessionMap[DhtID])
+			foreach(RudpSession session in RudpControl.SessionMap[UserID])
 				if(session != this && session.ClientID == ClientID && session.Status == SessionStatus.Active)
 					return true;
 

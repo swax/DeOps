@@ -5,6 +5,7 @@ using System.Text;
 using System.Windows.Forms;
 
 using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Transport;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Services.Trust;
@@ -13,8 +14,8 @@ using RiseOp.Services.Location;
 
 namespace RiseOp.Services.IM
 {
-    internal delegate void IM_MessageHandler(ulong dhtid, InstantMessage message);
-    internal delegate void IM_StatusHandler(ulong dhtid);
+    internal delegate void IM_MessageHandler(ulong id, InstantMessage message);
+    internal delegate void IM_StatusHandler(ulong id);
 
     internal class IMService : OpService
     {
@@ -24,6 +25,7 @@ namespace RiseOp.Services.IM
         const int SessionTimeout = 10;
 
         internal OpCore Core;
+        internal DhtNetwork Network;
         internal TrustService Links;
         internal LocationService Locations;
 
@@ -36,15 +38,16 @@ namespace RiseOp.Services.IM
         internal IMService(OpCore core)
         {
             Core = core;
+            Network = Core.OperationNet;
             Links = core.Links;
             Locations = core.Locations;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.GetFocusedCore += new GetFocusedHandler(Core_GetFocusedCore);
 
-            Core.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
-            Core.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
+            Network.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
+            Network.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
+            Network.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
 
             Core.Links.LinkUpdate += new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate += new LocationUpdateHandler(Location_Update);
@@ -58,9 +61,9 @@ namespace RiseOp.Services.IM
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.GetFocusedCore -= new GetFocusedHandler(Core_GetFocusedCore);
 
-            Core.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
-            Core.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
-            Core.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
+            Network.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
+            Network.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
+            Network.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
 
             Core.Links.LinkUpdate -= new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate -= new LocationUpdateHandler(Location_Update);
@@ -79,11 +82,11 @@ namespace RiseOp.Services.IM
                 {
                     IMStatus status = null;
 
-                    if (IMMap.SafeTryGetValue(view.DhtID, out status))
+                    if (IMMap.SafeTryGetValue(view.UserID, out status))
                         foreach(ushort client in status.TTL.Keys)
                             if (status.TTL[client].Value > 0)
                             {
-                                RudpSession session = Core.RudpControl.GetActiveSession(view.DhtID, client);
+                                RudpSession session = Network.RudpControl.GetActiveSession(view.UserID, client);
 
                                 if (session != null)
                                 {
@@ -132,7 +135,7 @@ namespace RiseOp.Services.IM
 
             if (menuType == InterfaceMenuType.Quick)
             {
-                if (user == Core.LocalDhtID)
+                if (user == Core.UserID)
                     return null;
 
                 if (!Core.Locations.LocationMap.SafeContainsKey(user))
@@ -178,14 +181,14 @@ namespace RiseOp.Services.IM
             }
 
             foreach (ClientInfo loc in Core.Locations.GetClients(key))
-                Core.RudpControl.Connect(loc.Data);
+                Network.RudpControl.Connect(loc.Data);
 
             Update(status);
         }
 
         private void Update(IMStatus status)
         {
-            ulong key = status.DhtID;
+            ulong key = status.UserID;
 
             // connected to jonn smith @home, @work
             // connecting to john smith
@@ -201,8 +204,8 @@ namespace RiseOp.Services.IM
             int activeCount = 0;
 
 
-            if (Core.RudpControl.SessionMap.ContainsKey(key))
-                foreach (RudpSession session in Core.RudpControl.SessionMap[key])
+            if (Network.RudpControl.SessionMap.ContainsKey(key))
+                foreach (RudpSession session in Network.RudpControl.SessionMap[key])
                 {
                     if (session.Status == SessionStatus.Closed)
                         continue;
@@ -255,7 +258,7 @@ namespace RiseOp.Services.IM
                 status.Text = "Disconnected from " + Core.Links.GetName(key);
 
 
-            Core.RunInGuiThread(StatusUpdate, status.DhtID);
+            Core.RunInGuiThread(StatusUpdate, status.UserID);
         }
 
         private IM_View FindView(ulong key)
@@ -263,7 +266,7 @@ namespace RiseOp.Services.IM
             List<IM_View> views = GetViews();
 
             foreach (IM_View view in views)
-                if (view.DhtID == key)
+                if (view.UserID == key)
                     return view;
 
             return null;
@@ -289,35 +292,35 @@ namespace RiseOp.Services.IM
 
         internal void Link_Update(OpTrust trust)
         {
-            if (FindView(trust.DhtID) == null)
+            if (FindView(trust.UserID) == null)
                 return;
 
             IMStatus status = null;
-            if (IMMap.SafeTryGetValue(trust.DhtID, out status))
+            if (IMMap.SafeTryGetValue(trust.UserID, out status))
                 Update(status);
         }
 
         internal void Location_Update(LocationData location)
         {
-            if (FindView(location.DhtID) == null)
+            if (FindView(location.UserID) == null)
                 return;
 
             IMStatus status = null;
-            if (!IMMap.SafeTryGetValue(location.DhtID, out status))
+            if (!IMMap.SafeTryGetValue(location.UserID, out status))
                 return;
 
-            Core.RudpControl.Connect(location);
+            Network.RudpControl.Connect(location);
 
             Update(status);
         }
 
         internal void Session_Update(RudpSession session)
         {
-            if (FindView(session.DhtID) == null)
+            if (FindView(session.UserID) == null)
                 return;
 
             IMStatus status = null;
-            if (!IMMap.SafeTryGetValue(session.DhtID, out status))
+            if (!IMMap.SafeTryGetValue(session.UserID, out status))
                 return;
 
 
@@ -346,7 +349,7 @@ namespace RiseOp.Services.IM
 
             ProcessMessage(status, new InstantMessage(Core, text, false));
 
-            if(!Core.RudpControl.IsConnected(key))
+            if (!Network.RudpControl.IsConnected(key))
             {
                 // run direct, dont log
                 Core.RunInGuiThread(MessageUpdate, key, new InstantMessage(Core, "Could not send message, client disconnected", true));
@@ -355,28 +358,28 @@ namespace RiseOp.Services.IM
 
             MessageData message = new MessageData(text);
 
-            foreach (RudpSession session in Core.RudpControl.GetActiveSessions(key))
+            foreach (RudpSession session in Network.RudpControl.GetActiveSessions(key))
                 session.SendData(ServiceID, 0, message, true);
         }
 
         void Session_Data(RudpSession session, byte[] data)
         {
             IMStatus status = null;
-            if (!IMMap.SafeTryGetValue(session.DhtID, out status))
+            if (!IMMap.SafeTryGetValue(session.UserID, out status))
             {
-                status = new IMStatus(session.DhtID);
-                IMMap.SafeAdd(session.DhtID, status);
+                status = new IMStatus(session.UserID);
+                IMMap.SafeAdd(session.UserID, status);
             }
 
             
 
             G2Header root = new G2Header(data);
 
-            if (Core.Protocol.ReadPacket(root))
+            if (G2Protocol.ReadPacket(root))
             {
                 if (root.Name == IMPacket.Message)
                 {
-                    InstantMessage im = new InstantMessage(Core, session, MessageData.Decode(Core.Protocol, root));
+                    InstantMessage im = new InstantMessage(Core, session, MessageData.Decode(root));
 
                     ProcessMessage(status, im);
                 }
@@ -398,12 +401,12 @@ namespace RiseOp.Services.IM
 
             Core.RunInGuiThread( (MethodInvoker) delegate()
             {
-                IM_View view = FindView(status.DhtID);
+                IM_View view = FindView(status.UserID);
 
                 if (view == null)
-                    CreateView(status.DhtID);
+                    CreateView(status.UserID);
                 else
-                    MessageUpdate(status.DhtID, message);
+                    MessageUpdate(status.UserID, message);
             });
 
             Update(status);
@@ -417,7 +420,7 @@ namespace RiseOp.Services.IM
                      foreach(ushort client in status.TTL.Keys)
                          if (status.TTL[client].Value > 0)
                          {
-                             active[status.DhtID] = true;
+                             active[status.UserID] = true;
                              break;
                          }  
             });
@@ -436,8 +439,8 @@ namespace RiseOp.Services.IM
         // local / system message
         internal InstantMessage(OpCore core, string text, bool system)
         {
-            Source = core.LocalDhtID;
-            ClientID = core.ClientID;
+            Source = core.UserID;
+            ClientID = core.OperationNet.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;
             System = system;
@@ -445,7 +448,7 @@ namespace RiseOp.Services.IM
 
         internal InstantMessage(OpCore core, RudpSession session, MessageData message)
         {
-            Source = session.DhtID;
+            Source = session.UserID;
             ClientID = session.ClientID;
             TimeStamp = core.TimeNow;
             Text = message.Text;
@@ -454,7 +457,7 @@ namespace RiseOp.Services.IM
 
     internal class IMStatus
     {
-        internal ulong DhtID;
+        internal ulong UserID;
         internal Dictionary<ushort, BoxInt> TTL = new Dictionary<ushort, BoxInt>();
   
         internal string Text = "";
@@ -466,7 +469,7 @@ namespace RiseOp.Services.IM
         
         internal IMStatus(ulong id)
         {
-            DhtID = id;
+            UserID = id;
         }
 
         internal void SetTTL(ushort client, int ttl)

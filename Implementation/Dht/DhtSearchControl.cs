@@ -145,10 +145,10 @@ namespace RiseOp.Implementation.Dht
 
         internal void ReceiveRequest(G2ReceivedPacket packet)
         {
-            SearchReq request = SearchReq.Decode(Core.Protocol, packet);
+            SearchReq request = SearchReq.Decode(packet);
 
             // loopback
-            if (request.Source.DhtID == Core.LocalDhtID && request.Source.ClientID == Core.ClientID)
+            if (request.Source.userID == Network.LocalUserID && request.Source.ClientID == Network.ClientID)
                 return;
 
             
@@ -205,7 +205,7 @@ namespace RiseOp.Implementation.Dht
             // forward to proxied nodes
             foreach (TcpConnect socket in Network.TcpControl.ProxyClients)
                 // prevents incoming udp from proxy and being forwarded to same host tcp
-                if(socket != packet.Tcp && !(packet.Source.DhtID == socket.DhtID && packet.Source.ClientID == socket.ClientID))
+                if(socket != packet.Tcp && !(packet.Source.userID == socket.userID && packet.Source.ClientID == socket.ClientID))
                 {
                     request.FromAddress = packet.Source;
 
@@ -296,10 +296,10 @@ namespace RiseOp.Implementation.Dht
 
         internal void ReceiveAck(G2ReceivedPacket packet)
         {
-            SearchAck ack = SearchAck.Decode(Core.Protocol, packet);
+            SearchAck ack = SearchAck.Decode(packet);
 
             // loopback
-            if (ack.Source.DhtID == Core.LocalDhtID && ack.Source.ClientID == Core.ClientID)
+            if (ack.Source.userID == Network.LocalUserID && ack.Source.ClientID == Network.ClientID)
                 return;
 
             // if response to crawl
@@ -312,7 +312,7 @@ namespace RiseOp.Implementation.Dht
             }
 
             // crit ackid and ack ip might not match if ack sent through proxy
-            if (packet.Tcp == null && ack.Source.Firewall == FirewallType.Open && packet.Source.DhtID == ack.Source.DhtID)
+            if (packet.Tcp == null && ack.Source.Firewall == FirewallType.Open && packet.Source.userID == ack.Source.userID)
                 Routing.Add(new DhtContact(ack.Source, packet.Source.IP, Core.TimeNow));
 
             foreach (DhtContact contact in ack.ContactList)
@@ -324,7 +324,7 @@ namespace RiseOp.Implementation.Dht
                     if (search.SearchID == ack.SearchID)
                     {
                         foreach (DhtLookup lookup in search.LookupList)
-                            if (lookup.Contact.DhtID == ack.Source.DhtID && lookup.Contact.ClientID == ack.Source.ClientID)
+                            if (lookup.Contact.userID == ack.Source.userID && lookup.Contact.ClientID == ack.Source.ClientID)
                                 lookup.Status = LookupStatus.Done;
 
                         if (search.ProxyTcp != null && search.ProxyTcp.Proxy == ProxyType.ClientBlocked)

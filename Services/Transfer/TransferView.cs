@@ -28,7 +28,7 @@ namespace RiseOp.Services.Transfer
             RefreshView();
 
 
-            Text = Transfers.Core.Links.GetName(Transfers.Core.LocalDhtID) + "'s Transfers";
+            Text = Transfers.Core.Links.GetName(Transfers.Core.UserID) + "'s Transfers";
         }
 
         private void FastTimer_Tick(object sender, EventArgs e)

@@ -30,8 +30,10 @@ namespace RiseOp.Implementation.Dht
         internal OpCore Core; 
 
         // sub-class
+        internal G2Protocol Protocol;
         internal TcpHandler TcpControl;
         internal UdpHandler UdpControl;
+        internal RudpHandler RudpControl;
         internal DhtRouting Routing;
         internal DhtStore   Store;
         internal DhtSearchControl Searches;
@@ -39,18 +41,20 @@ namespace RiseOp.Implementation.Dht
         internal LinkedList<IPCacheEntry> IPCache = new LinkedList<IPCacheEntry>();
         internal Dictionary<int, LinkedListNode<IPCacheEntry>> IPTable = new Dictionary<int, LinkedListNode<IPCacheEntry>>();
 
-        internal bool IsGlobal;
-        
+        internal bool   IsGlobal;
+        internal ulong  LocalUserID;
+        internal ushort ClientID;
+        internal ulong  OpID;
 
         internal bool Established;
         internal bool Responsive;
-        internal int FireStatusChange; // timeout until established is called
+        internal int  FireStatusChange; // timeout until established is called
         internal StatusChange StatusChange; // operation only
         
-        RetryIntervals Retry;
+        RetryIntervals    Retry;
         internal DateTime NextWebcacheTry;
-        RetryIntervals GlobalSearchInterval;
-        DateTime NextGlobalSearch;
+        RetryIntervals    GlobalSearchInterval;
+        DateTime          NextGlobalSearch;
 
         internal RijndaelManaged OriginalCrypt;
         internal RijndaelManaged AugmentedCrypt;
@@ -63,13 +67,17 @@ namespace RiseOp.Implementation.Dht
         // gui
         internal PacketsForm GuiPackets;
         internal CrawlerForm GuiCrawler;
-        internal GraphForm GuiGraph;
+        internal GraphForm   GuiGraph;
 
 
         internal DhtNetwork(OpCore core, bool isGlobal)
         {
             Core = core;
             IsGlobal = isGlobal;
+
+            LocalUserID = IsGlobal ? Core.User.Settings.GlobalID : Utilities.KeytoID(Core.User.Settings.KeyPair.ExportParameters(false));
+            ClientID = (ushort) new Random().Next(1, ushort.MaxValue);
+            OpID = IsGlobal ? 0 : Utilities.KeytoID(Core.User.Settings.OpKey.Key);
 
             // load ip cache, addlast so in same order it was saved in
             List<IPCacheEntry> cache = IsGlobal ? Core.User.GlobalCache : Core.User.OpCache;
@@ -93,9 +101,10 @@ namespace RiseOp.Implementation.Dht
             AugmentedCrypt = new RijndaelManaged();
             AugmentedCrypt.Key = (byte[]) OriginalCrypt.Key.Clone();
 
-
+            Protocol = new G2Protocol();
             TcpControl  = new TcpHandler(this);
             UdpControl  = new UdpHandler(this);
+            RudpControl = new RudpHandler(this);
             Routing     = new DhtRouting(this);
             Store       = new DhtStore(this);
             Searches    = new DhtSearchControl(this);
@@ -108,6 +117,7 @@ namespace RiseOp.Implementation.Dht
         {
             // timers
             TcpControl.SecondTimer();
+            RudpControl.SecondTimer();   
             Routing.SecondTimer();
             Searches.SecondTimer();
 
@@ -115,8 +125,15 @@ namespace RiseOp.Implementation.Dht
 
             // if unresponsive
             if (!Responsive)
-                DoBootstrap(); 
-            
+            {
+                Retry.Timer();
+
+                if (IsGlobal)
+                    GlobalBootstrap();
+                else
+                    OpBootstrap();
+            }
+
             // ip cache
             lock (IPCache)
                 while (IPCache.Count > MAX_CACHE)
@@ -175,7 +192,7 @@ namespace RiseOp.Implementation.Dht
         int ThinkOnline = 0;
         DateTime NextOnlineCheck;
 
-        void DoBootstrap()
+        void GlobalBootstrap()
         {
             // only called if network not responsive
 
@@ -183,14 +200,12 @@ namespace RiseOp.Implementation.Dht
             // reset increment when disconnected
             // dont try web cache for first 10 seconds
 
-            Retry.Timer();
-
 
             // ensure that if re-connected at anytime then re-connect to network is fast
             if (Core.Sim == null)
-            {               
+            {
                 // ThinkOnline state changed to connected then retry timers reset
-                if (IsGlobal && Core.TimeNow > NextOnlineCheck)
+                if (Core.TimeNow > NextOnlineCheck)
                     if (ThinkOnline > 0)
                     {
                         // check online status by pinging google/yahoo/microsoft every 60 secs
@@ -208,7 +223,7 @@ namespace RiseOp.Implementation.Dht
             }
 
 
-            bool AllowWeb = IsGlobal && (IPCache.Count == 0 || Core.TimeNow > Retry.Start.AddSeconds(10));
+            bool AllowWeb = (IPCache.Count == 0 || Core.TimeNow > Retry.Start.AddSeconds(10));
 
 
             // give a few seconds at startup to try to connect to Dht networks from the cache
@@ -226,7 +241,11 @@ namespace RiseOp.Implementation.Dht
                     Core.Sim.Internet.DownloadCache(this);
             }
 
+            TryFromCache();
+        }
 
+        void OpBootstrap()
+        {
             // find operation nodes through global net at expanding intervals
             // called from operation network's bootstrap
             if (Core.GlobalNet != null && Core.GlobalNet.Responsive)
@@ -236,10 +255,15 @@ namespace RiseOp.Implementation.Dht
                 if (Core.TimeNow > NextGlobalSearch)
                 {
                     NextGlobalSearch = GlobalSearchInterval.NextTry;
-                    Core.Locations.StartSearch(Core.OpID, 0, true);
+                    Core.Locations.StartSearch(OpID, 0, true);
                 }
             }
 
+            TryFromCache();
+        }
+
+        private void TryFromCache()
+        {
             // send pings to nodes in cache, responses will startup the routing system
             // 10 udp pings per second, 10 min retry
             int pings = 0;
@@ -258,12 +282,11 @@ namespace RiseOp.Implementation.Dht
                     if (pings >= 10)
                         break;
                 }
-                    
+
 
             // if blocked and go through cache and mark as tcp tried
             // 1 outbound tcp per second, 10 min retry
             if (Core.Firewall == FirewallType.Blocked)
-
                 lock (IPCache)
                     foreach (IPCacheEntry entry in IPCache)
                     {
@@ -426,7 +449,7 @@ namespace RiseOp.Implementation.Dht
                     if (connection.Proxy == ProxyType.Server)
                     {
                         ProxyReq request = new ProxyReq();
-                        request.SenderID = Core.LocalDhtID;
+                        request.SenderID = LocalUserID;
                         request.Type = ProxyType.ClientNAT;
                         connection.SendPacket(request);
                     }
@@ -436,8 +459,8 @@ namespace RiseOp.Implementation.Dht
         {
             DhtSource source = new DhtSource();
 
-            source.DhtID    = Core.LocalDhtID;
-            source.ClientID = Core.ClientID;
+            source.userID    = LocalUserID;
+            source.ClientID = ClientID;
             source.TcpPort  = TcpControl.ListenPort;
             source.UdpPort  = UdpControl.ListenPort;
             source.Firewall = Core.Firewall;
@@ -447,7 +470,7 @@ namespace RiseOp.Implementation.Dht
 
         internal DhtContact GetLocalContact()
         {
-            return new DhtContact(Core.LocalDhtID, Core.ClientID, Core.LocalIP, TcpControl.ListenPort, UdpControl.ListenPort, Core.TimeNow);
+            return new DhtContact(LocalUserID, ClientID, Core.LocalIP, TcpControl.ListenPort, UdpControl.ListenPort, Core.TimeNow);
         }
 
 
@@ -457,12 +480,12 @@ namespace RiseOp.Implementation.Dht
             // Network packet
             if (packet.Root.Name == RootPacket.Network)
             {
-                NetworkPacket netPacket = NetworkPacket.Decode(Core.Protocol, packet.Root);
+                NetworkPacket netPacket = NetworkPacket.Decode(packet.Root);
 
                 G2ReceivedPacket embedded = new G2ReceivedPacket();
                 embedded.Tcp    = packet.Tcp;
                 embedded.Source = packet.Source;
-                embedded.Source.DhtID = netPacket.SourceID;
+                embedded.Source.userID = netPacket.SourceID;
                 embedded.Source.ClientID = netPacket.ClientID;
                 embedded.Root   = new G2Header(netPacket.InternalData);
 
@@ -479,7 +502,7 @@ namespace RiseOp.Implementation.Dht
 
                 // to - received from proxied node, and not for us
                 if (netPacket.ToAddress != null &&
-                    !(netPacket.ToAddress.DhtID == Core.LocalDhtID && netPacket.ToAddress.ClientID == Core.ClientID))
+                    !(netPacket.ToAddress.userID == LocalUserID && netPacket.ToAddress.ClientID == ClientID))
                 {
                     if (packet.Tcp == null)
                         throw new Exception("To tag set on packet received udp");
@@ -500,20 +523,20 @@ namespace RiseOp.Implementation.Dht
                 }
 
                 // process
-                if(Core.Protocol.ReadPacket(embedded.Root))
+                if(G2Protocol.ReadPacket(embedded.Root))
                     ReceiveNetworkPacket(embedded);
             }
 
             // Communication Packet
             if (packet.Root.Name == RootPacket.Comm)
             {
-                RudpPacket commPacket = RudpPacket.Decode(Core.Protocol, packet);
+                RudpPacket commPacket = RudpPacket.Decode(packet);
 
-                packet.Source.DhtID = commPacket.SenderID;
+                packet.Source.userID = commPacket.SenderID;
                 packet.Source.ClientID = commPacket.SenderClient;
 
                 // For local host
-                if (commPacket.TargetID == Core.LocalDhtID && commPacket.TargetClient == Core.ClientID)
+                if (commPacket.TargetID == LocalUserID && commPacket.TargetClient == ClientID)
                 {
                     if (packet.Tcp != null && commPacket.FromEndPoint != null)
                         packet.Source = commPacket.FromEndPoint;
@@ -531,8 +554,8 @@ namespace RiseOp.Implementation.Dht
                     commPacket.ToEndPoint = null;
                     commPacket.FromEndPoint = packet.Source;
 
-                    commPacket.SenderID = Core.LocalDhtID;
-                    commPacket.SenderClient = Core.ClientID;
+                    commPacket.SenderID = LocalUserID;
+                    commPacket.SenderClient = ClientID;
                     socket.SendPacket(commPacket);
                     return;
                 }
@@ -544,8 +567,8 @@ namespace RiseOp.Implementation.Dht
 
                     commPacket.ToEndPoint = null; // strip TO flag
 
-                    commPacket.SenderID = Core.LocalDhtID;
-                    commPacket.SenderClient = Core.ClientID;
+                    commPacket.SenderID = LocalUserID;
+                    commPacket.SenderClient = ClientID;
                     UdpControl.SendTo(address, commPacket);
                 }
             }
@@ -556,10 +579,10 @@ namespace RiseOp.Implementation.Dht
             try
             {
                 // if a socket already set up
-                lock (Core.CommMap)
-                    if (Core.CommMap.ContainsKey(packet.PeerID))
+                lock (RudpControl.SocketMap)
+                    if (RudpControl.SocketMap.ContainsKey(packet.PeerID))
                     {
-                        Core.CommMap[packet.PeerID].RudpReceive(raw, packet, IsGlobal);
+                        RudpControl.SocketMap[packet.PeerID].RudpReceive(raw, packet, IsGlobal);
                         return;
                     }
 
@@ -570,13 +593,13 @@ namespace RiseOp.Implementation.Dht
                 RudpSyn syn = new RudpSyn(packet.Payload);
 
                 // prevent connection from self
-                if (syn.SenderID == Core.LocalDhtID && syn.ClientID == Core.ClientID)
+                if (syn.SenderID == LocalUserID && syn.ClientID == ClientID)
                     return;
 
 
                 // find connecting session with same or unknown client id
-                if (Core.RudpControl.SessionMap.ContainsKey(syn.SenderID))
-                    foreach (RudpSession session in Core.RudpControl.SessionMap[syn.SenderID])
+                if (RudpControl.SessionMap.ContainsKey(syn.SenderID))
+                    foreach (RudpSession session in RudpControl.SessionMap[syn.SenderID])
                     {
                         if (session.ClientID == syn.ClientID)
                         {
@@ -602,12 +625,12 @@ namespace RiseOp.Implementation.Dht
 
 
                 // if clientid not in session, create new session
-                RudpSession newSession = new RudpSession(Core, syn.SenderID, syn.ClientID, true);
+                RudpSession newSession = new RudpSession(RudpControl, syn.SenderID, syn.ClientID, true);
 
-                if (!Core.RudpControl.SessionMap.ContainsKey(syn.SenderID))
-                    Core.RudpControl.SessionMap[syn.SenderID] = new List<RudpSession>();
+                if (!RudpControl.SessionMap.ContainsKey(syn.SenderID))
+                    RudpControl.SessionMap[syn.SenderID] = new List<RudpSession>();
 
-                Core.RudpControl.SessionMap[syn.SenderID].Add(newSession);
+                RudpControl.SessionMap[syn.SenderID].Add(newSession);
                
                 // send ack before sending our own syn (connect)
                 // ack tells remote which address is good so that our syn's ack comes back quickly
@@ -684,7 +707,7 @@ namespace RiseOp.Implementation.Dht
 
         void Receive_Ping(G2ReceivedPacket packet)
         {
-            Ping ping = Ping.Decode(Core.Protocol, packet);
+            Ping ping = Ping.Decode(packet);
             
             // set local IP
             if(ping.RemoteIP != null)
@@ -707,7 +730,7 @@ namespace RiseOp.Implementation.Dht
 
                 if (ping.Source != null)
                 {
-                    if (ping.Source.DhtID == Core.LocalDhtID && ping.Source.ClientID == Core.ClientID) // loop back
+                    if (ping.Source.userID == LocalUserID && ping.Source.ClientID == ClientID) // loop back
                         return;
 
                     // if firewall flag not set add to routing
@@ -727,7 +750,7 @@ namespace RiseOp.Implementation.Dht
                     return;
                 }
 
-                if (ping.Source.DhtID == Core.LocalDhtID && ping.Source.ClientID == Core.ClientID) // loopback
+                if (ping.Source.userID == LocalUserID && ping.Source.ClientID == ClientID) // loopback
                 {
                     packet.Tcp.CleanClose("Loopback connection");
                     return;
@@ -748,7 +771,7 @@ namespace RiseOp.Implementation.Dht
                     return;
                 }
 
-                packet.Tcp.DhtID    = ping.Source.DhtID;
+                packet.Tcp.userID    = ping.Source.userID;
                 packet.Tcp.ClientID = ping.Source.ClientID;
                 packet.Tcp.TcpPort  = ping.Source.TcpPort;
                 packet.Tcp.UdpPort  = ping.Source.UdpPort;
@@ -771,7 +794,7 @@ namespace RiseOp.Implementation.Dht
 
         void Receive_Pong(G2ReceivedPacket packet)
         {
-            Pong pong = Pong.Decode(Core.Protocol, packet);
+            Pong pong = Pong.Decode(packet);
 
             if (pong.RemoteIP != null)
                 Core.LocalIP = pong.RemoteIP;
@@ -785,7 +808,7 @@ namespace RiseOp.Implementation.Dht
                 // do tcp connect because if 2 nodes on network then one needs to find out their open
                 if (!Responsive)
                 {
-                    Searches.SendUdpRequest(packet.Source, Core.LocalDhtID, 0, Core.DhtServiceID, 0, null);
+                    Searches.SendUdpRequest(packet.Source, LocalUserID, 0, Core.DhtServiceID, 0, null);
                     TcpControl.MakeOutbound(packet.Source, pong.Source.TcpPort, "pong bootstrap");
                 }
 
@@ -827,7 +850,7 @@ namespace RiseOp.Implementation.Dht
                     //   information from a pong routed through the remote host, but from the host we're directly connected to
                     if (pong.Direct)
                     {
-                        packet.Tcp.DhtID = pong.Source.DhtID;
+                        packet.Tcp.userID = pong.Source.userID;
                         packet.Tcp.ClientID = pong.Source.ClientID;
                         packet.Tcp.TcpPort = pong.Source.TcpPort;
                         packet.Tcp.UdpPort = pong.Source.UdpPort;
@@ -835,11 +858,11 @@ namespace RiseOp.Implementation.Dht
                         // if firewalled
                         if (packet.Tcp.Outbound && packet.Tcp.Proxy == ProxyType.Unset)
                         {
-                            if (Core.Firewall != FirewallType.Open && TcpControl.AcceptProxy(ProxyType.Server, pong.Source.DhtID))
+                            if (Core.Firewall != FirewallType.Open && TcpControl.AcceptProxy(ProxyType.Server, pong.Source.userID))
                             {
                                 // send proxy request
                                 ProxyReq request = new ProxyReq();
-                                request.SenderID = Core.LocalDhtID;
+                                request.SenderID = LocalUserID;
                                 request.Type = (Core.Firewall == FirewallType.Blocked) ? ProxyType.ClientBlocked : ProxyType.ClientNAT;
                                 packet.Tcp.SendPacket(request);
                             }
@@ -855,13 +878,13 @@ namespace RiseOp.Implementation.Dht
 
         internal void Receive_ProxyRequest(G2ReceivedPacket packet)
         {
-            ProxyReq request = ProxyReq.Decode(Core.Protocol, packet);
+            ProxyReq request = ProxyReq.Decode(packet);
 
             ProxyAck ack = new ProxyAck();
             ack.Source = GetLocalSource();
 
             // check if there is space for type required
-            if (Core.Firewall == FirewallType.Open  && TcpControl.AcceptProxy(request.Type, ack.Source.DhtID))
+            if (Core.Firewall == FirewallType.Open  && TcpControl.AcceptProxy(request.Type, ack.Source.userID))
             {
                 ack.Accept = true;
             }
@@ -896,7 +919,7 @@ namespace RiseOp.Implementation.Dht
 
         internal void Receive_ProxyAck(G2ReceivedPacket packet)
         {
-            ProxyAck ack = ProxyAck.Decode(Core.Protocol, packet);
+            ProxyAck ack = ProxyAck.Decode(packet);
 
             // update routing
             if (packet.Tcp == null && ack.Source.Firewall == FirewallType.Open)
@@ -918,7 +941,7 @@ namespace RiseOp.Implementation.Dht
             // received ack udp
             if (packet.Tcp == null)
             {
-                if(!TcpControl.ProxyMap.ContainsKey(ack.Source.DhtID))
+                if(!TcpControl.ProxyMap.ContainsKey(ack.Source.userID))
                     TcpControl.MakeOutbound(packet.Source, ack.Source.TcpPort, "proxy ack recv");
             }
 
@@ -940,17 +963,17 @@ namespace RiseOp.Implementation.Dht
             CrawlReq req = new CrawlReq();
 
             req.Source = GetLocalSource();
-            req.TargetID = address.DhtID;
+            req.TargetID = address.userID;
 
             UdpControl.SendTo(address, req);
         }
 
         internal void Receive_CrawlRequest(G2ReceivedPacket packet)
         {
-            CrawlReq req = CrawlReq.Decode(Core.Protocol, packet);
+            CrawlReq req = CrawlReq.Decode(packet);
 
             // Not meant for local host, forward along
-            if (req.TargetID != Core.LocalDhtID)
+            if (req.TargetID != LocalUserID)
             {
                 // Forward to appropriate node
                 if (TcpControl.ProxyMap.ContainsKey(req.TargetID))
@@ -999,7 +1022,7 @@ namespace RiseOp.Implementation.Dht
 
         internal void Receive_CrawlAck(G2ReceivedPacket packet)
         {
-            CrawlAck ack = CrawlAck.Decode(Core.Protocol, packet);
+            CrawlAck ack = CrawlAck.Decode(packet);
 
             if (GuiCrawler != null)
                 GuiCrawler.BeginInvoke(GuiCrawler.CrawlAck, ack, packet);
@@ -1031,7 +1054,7 @@ namespace RiseOp.Implementation.Dht
             G2ReceivedPacket packet = new G2ReceivedPacket();
             packet.Root = new G2Header(logEntry.Data);
 
-            if(Core.Protocol.ReadPacket(packet.Root))
+            if(G2Protocol.ReadPacket(packet.Root))
                 message += ", type " + packet.Root.Name;*/
         }
     }
@@ -1059,7 +1082,7 @@ namespace RiseOp.Implementation.Dht
         internal IPCacheEntry(DhtContact contact)
         {
             Address.IP    = contact.Address;
-            Address.DhtID = contact.DhtID;
+            Address.userID = contact.userID;
             Address.UdpPort  = contact.UdpPort;
             TcpPort       = contact.TcpPort;
         }

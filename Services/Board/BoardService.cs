@@ -54,9 +54,8 @@ namespace RiseOp.Services.Board
         internal BoardService(OpCore core )
         {
             Core       = core;
-
-            Protocol = Core.Protocol;
-            Network  = Core.OperationNet;
+            Network = Core.OperationNet;
+            Protocol = Network.Protocol;
             Store    = Network.Store;
             Links = Core.Links;
 
@@ -96,7 +95,7 @@ namespace RiseOp.Services.Board
 
                 ulong id = BitConverter.ToUInt64(Utilities.HextoBytes(dir), 0);
 
-                targets[Core.LocalDhtID ^ id] = id;
+                targets[Core.UserID ^ id] = id;
             }
 
             // load closest targets
@@ -160,16 +159,16 @@ namespace RiseOp.Services.Board
                 {
                     List<ulong> localRegion = new List<ulong>();
                     foreach (uint project in Core.Links.LocalTrust.Links.Keys )
-                        localRegion.AddRange(GetBoardRegion(Core.LocalDhtID, project, ScopeType.All));
+                        localRegion.AddRange(GetBoardRegion(Core.UserID, project, ScopeType.All));
 
                     foreach (OpBoard board in BoardMap.Values)
-                        if (board.DhtID != Core.LocalDhtID &&
-                            !Network.Routing.InCacheArea(board.DhtID) &&
-                            !Core.Focused.SafeContainsKey(board.DhtID) &&
-                            !WindowMap.SafeContainsKey(board.DhtID) &&
-                            !localRegion.Contains(board.DhtID))
+                        if (board.UserID != Core.UserID &&
+                            !Network.Routing.InCacheArea(board.UserID) &&
+                            !Core.Focused.SafeContainsKey(board.UserID) &&
+                            !WindowMap.SafeContainsKey(board.UserID) &&
+                            !localRegion.Contains(board.UserID))
                         {
-                            removeBoards.Add(board.DhtID);
+                            removeBoards.Add(board.UserID);
                         }
                 }
             });
@@ -180,10 +179,10 @@ namespace RiseOp.Services.Board
                     while (removeBoards.Count > 0 && BoardMap.Count > PruneSize / 2)
                     {
                         // find furthest id
-                        ulong furthest = Core.LocalDhtID;
+                        ulong furthest = Core.UserID;
 
                         foreach (ulong id in removeBoards)
-                            if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                            if ((id ^ Core.UserID) > (furthest ^ Core.UserID))
                                 furthest = id;
 
                         // remove
@@ -217,11 +216,11 @@ namespace RiseOp.Services.Board
             {
                 while (map.Count > 0 && map.Count > PruneSize)
                 {
-                    ulong furthest = Core.LocalDhtID;
+                    ulong furthest = Core.UserID;
 
                     // get furthest id
                     foreach (ulong id in map.Keys)
-                        if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                        if ((id ^ Core.UserID) > (furthest ^ Core.UserID))
                             furthest = id;
 
                     // remove one 
@@ -241,8 +240,8 @@ namespace RiseOp.Services.Board
                         board.Posts.LockReading(delegate()
                         {
                             foreach (OpPost post in board.Posts.Values)
-                                if (post.Unique && Network.Routing.InCacheArea(board.DhtID))
-                                    Store.PublishNetwork(board.DhtID, ServiceID, 0, post.SignedHeader);
+                                if (post.Unique && Network.Routing.InCacheArea(board.UserID))
+                                    Store.PublishNetwork(board.UserID, ServiceID, 0, post.SignedHeader);
                         });
                 });
 
@@ -284,20 +283,20 @@ namespace RiseOp.Services.Board
 
                 FileStream file = new FileStream(path, FileMode.Open);
                 CryptoStream crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;
 
                 while (stream.ReadPacket(ref root))
                     if (root.Name == DataPacket.SignedData)
                     {
-                        SignedData signed = SignedData.Decode(Core.Protocol, root);
+                        SignedData signed = SignedData.Decode(root);
                         G2Header embedded = new G2Header(signed.Data);
 
                         // figure out data contained
-                        if (Core.Protocol.ReadPacket(embedded))
+                        if (G2Protocol.ReadPacket(embedded))
                             if (embedded.Name == BoardPacket.PostHeader)
-                                Process_PostHeader(null, signed, PostHeader.Decode(Core.Protocol, embedded));
+                                Process_PostHeader(null, signed, PostHeader.Decode(embedded));
                     }
 
                 stream.Close();
@@ -386,7 +385,7 @@ namespace RiseOp.Services.Board
             PostHeader header = new PostHeader();
             
             header.Source = Core.User.Settings.KeyPublic;
-            header.SourceID = Core.LocalDhtID;
+            header.SourceID = Core.UserID;
 
             header.Target = Core.KeyMap[id];
             header.TargetID = id;
@@ -424,7 +423,7 @@ namespace RiseOp.Services.Board
             // write post file
             written += Protocol.WriteToFile(new PostInfo(subject, Core.RndGen), stream);
 
-            byte[] msgBytes = Core.Protocol.UTF.GetBytes(message);
+            byte[] msgBytes = UTF8Encoding.UTF8.GetBytes(message);
             written += Protocol.WriteToFile(new PostFile("body", msgBytes.Length), stream);
 
             foreach (AttachedFile attached in files)
@@ -524,7 +523,7 @@ namespace RiseOp.Services.Board
         {
             // getting published to - search results - patch
 
-            SignedData signed = SignedData.Decode(Core.Protocol, store.Data);
+            SignedData signed = SignedData.Decode(store.Data);
 
             if (signed == null)
                 return;
@@ -532,10 +531,10 @@ namespace RiseOp.Services.Board
             G2Header embedded = new G2Header(signed.Data);
 
             // figure out data contained
-            if (Core.Protocol.ReadPacket(embedded))
+            if (G2Protocol.ReadPacket(embedded))
             {
                 if (embedded.Name == BoardPacket.PostHeader)
-                    Process_PostHeader(store, signed, PostHeader.Decode(Core.Protocol, embedded));
+                    Process_PostHeader(store, signed, PostHeader.Decode(embedded));
             }
         }
 
@@ -616,7 +615,7 @@ namespace RiseOp.Services.Board
 
             post = new OpPost();
             post.Header = header;
-            post.SignedHeader = signedHeader.Encode(Core.Protocol);
+            post.SignedHeader = signedHeader.Encode(Network.Protocol);
             post.Ident = header.TargetID.GetHashCode() ^ uid.GetHashCode();
             post.Unique = Loading;
 
@@ -634,7 +633,7 @@ namespace RiseOp.Services.Board
                 board.UpdateReplies(post);
             else
             {
-                PostUID parentUid = new PostUID(board.DhtID, post.Header.ProjectID, post.Header.ParentID);
+                PostUID parentUid = new PostUID(board.UserID, post.Header.ProjectID, post.Header.ParentID);
                 OpPost parentPost = board.GetPost(parentUid);
 
                 if (parentPost != null)
@@ -742,7 +741,7 @@ namespace RiseOp.Services.Board
             BoardMap.LockReading(delegate()
             {
                 foreach (OpBoard board in BoardMap.Values)
-                    if (Network.Routing.InCacheArea(board.DhtID))
+                    if (Network.Routing.InCacheArea(board.UserID))
                     {
                         
                         board.Posts.LockReading(delegate()
@@ -751,7 +750,7 @@ namespace RiseOp.Services.Board
                             {
                                 byte[] patch = new byte[PatchEntrySize];
 
-                                BitConverter.GetBytes(board.DhtID).CopyTo(patch, 0);
+                                BitConverter.GetBytes(board.UserID).CopyTo(patch, 0);
 
                                 uid.ToBytes().CopyTo(patch, 8);
                                 BitConverter.GetBytes(board.Posts[uid].Header.Version).CopyTo(patch, 24);
@@ -775,23 +774,23 @@ namespace RiseOp.Services.Board
 
             for (int i = 0; i < data.Length; i += PatchEntrySize)
             {
-                ulong dhtid = BitConverter.ToUInt64(data, i);
+                ulong user = BitConverter.ToUInt64(data, i);
                 PostUID uid = PostUID.FromBytes(data, i + 8);
                 ushort version = BitConverter.ToUInt16(data, i + 24);
 
                 offset += PatchEntrySize;
 
-                if (!Network.Routing.InCacheArea(dhtid))
+                if (!Network.Routing.InCacheArea(user))
                     continue;
 
-                OpPost post = GetPost(dhtid, uid);
+                OpPost post = GetPost(user, uid);
 
                 if (post != null)
                 {
                     // remote version is lower, send update
                     if (post.Header.Version > version)
                     {
-                        Store.Send_StoreReq(source, null, new DataReq(null, dhtid, ServiceID, 0, post.SignedHeader));
+                        Store.Send_StoreReq(source, null, new DataReq(null, user, ServiceID, 0, post.SignedHeader));
                         continue;
                     }
                         
@@ -806,14 +805,14 @@ namespace RiseOp.Services.Board
 
                 // download cause we dont have it or its a higher version 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, dhtid, ServiceID, 0, uid.ToBytes());
+                    Network.Searches.SendDirectRequest(source, user, ServiceID, 0, uid.ToBytes());
                 else
                 {
                     List<PostUID> list = null;
-                    if (!DownloadLater.SafeTryGetValue(dhtid, out list))
+                    if (!DownloadLater.SafeTryGetValue(user, out list))
                     {
                         list = new List<PostUID>();
-                        DownloadLater.SafeAdd(dhtid, list);
+                        DownloadLater.SafeAdd(user, list);
                     }
 
                     list.Add(uid);
@@ -1051,17 +1050,17 @@ namespace RiseOp.Services.Board
 
                     TaggedStream file = new TaggedStream(path);
                     CryptoStream crypto = new CryptoStream(file, post.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                    PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                    PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                     G2Header root = null;
 
                     while (stream.ReadPacket(ref root))
                     {
                         if (root.Name == BoardPacket.PostInfo)
-                            post.Info = PostInfo.Decode(Core.Protocol, root);
+                            post.Info = PostInfo.Decode(root);
 
                         else if (root.Name == BoardPacket.PostFile)
-                            post.Attached.Add(PostFile.Decode(Core.Protocol, root));
+                            post.Attached.Add(PostFile.Decode(root));
                     }
 
                     stream.Close();
@@ -1138,9 +1137,9 @@ namespace RiseOp.Services.Board
 
                     if (parent != null)
                     {
-                        targets.Add(parent.DhtID);
+                        targets.Add(parent.UserID);
 
-                        targets.AddRange(Links.GetDownlinkIDs(parent.DhtID, project, 1));
+                        targets.AddRange(Links.GetDownlinkIDs(parent.UserID, project, 1));
 
                         targets.Remove(id); // remove self
                     }
@@ -1228,7 +1227,7 @@ namespace RiseOp.Services.Board
 
 
             // do search for thread
-            ThreadSearch(board.DhtID, parent.Header.ProjectID, parent.Header.PostID);
+            ThreadSearch(board.UserID, parent.Header.ProjectID, parent.Header.PostID);
         }
 
 
@@ -1312,7 +1311,7 @@ namespace RiseOp.Services.Board
 
     internal class OpBoard
     {
-        internal ulong DhtID;
+        internal ulong UserID;
         internal byte[] Key;    // make sure reference is the same as main key list
 
         internal ThreadedDictionary<PostUID, OpPost> Posts = new ThreadedDictionary<PostUID, OpPost>();
@@ -1322,7 +1321,7 @@ namespace RiseOp.Services.Board
         internal OpBoard(byte[] key)
         {
             Key = key;
-            DhtID = Utilities.KeytoID(key);
+            UserID = Utilities.KeytoID(key);
         }
 
         internal OpPost GetPost(PostUID uid)

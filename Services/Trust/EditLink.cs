@@ -37,10 +37,10 @@ namespace RiseOp.Services.Trust
 
         private void EditLink_Load(object sender, EventArgs e)
         {
-            NameBox.Text = Links.GetName(Core.LocalDhtID);
+            NameBox.Text = Links.GetName(Core.UserID);
             LocationBox.Text = Links.Core.User.Settings.Location;
 
-            OpLink link = Links.GetLink(Core.LocalDhtID, ProjectID);
+            OpLink link = Links.GetLink(Core.UserID, ProjectID);
 
             if (link != null)
                 TitleBox.Text = link.Title;
@@ -55,7 +55,7 @@ namespace RiseOp.Services.Trust
 
             Links.LocalTrust.Name = NameBox.Text;
 
-            OpLink link = Links.GetLink(Core.LocalDhtID, ProjectID);
+            OpLink link = Links.GetLink(Core.UserID, ProjectID);
 
             if (link != null)
                 link.Title = TitleBox.Text;

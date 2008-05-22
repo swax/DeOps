@@ -27,7 +27,7 @@ namespace RiseOp.Services.Storage
         internal StorageService Storages;
         internal TrustService Links;
 
-        internal ulong DhtID;
+        internal ulong UserID;
         internal uint ProjectID;
 
         internal WorkingStorage Working;
@@ -71,12 +71,12 @@ namespace RiseOp.Services.Storage
             Core = Storages.Core;
             Links = Core.Links;
 
-            DhtID = id;
+            UserID = id;
             ProjectID = project;
 
             splitContainer1.Height = Height - toolStrip1.Height;
 
-            if (DhtID == Core.LocalDhtID)
+            if (UserID == Core.UserID)
                 if (Storages.Working.ContainsKey(ProjectID))
                 {
                     Working = Storages.Working[ProjectID];
@@ -103,7 +103,7 @@ namespace RiseOp.Services.Storage
             if (IsLocal)
                 title += "My ";
             else
-                title += Links.GetName(DhtID) + "'s ";
+                title += Links.GetName(UserID) + "'s ";
 
             if (ProjectID != 0)
                 title += Links.GetProjectName(ProjectID) + " ";
@@ -166,10 +166,10 @@ namespace RiseOp.Services.Storage
 
             // research higher / lowers
             List<ulong> ids = new List<ulong>();
-            ids.Add(DhtID);
-            ids.AddRange(Links.GetUplinkIDs(DhtID, ProjectID));
-            ids.AddRange(Links.GetAdjacentIDs(DhtID, ProjectID));
-            ids.AddRange(Links.GetDownlinkIDs(DhtID, ProjectID, 1));
+            ids.Add(UserID);
+            ids.AddRange(Links.GetUplinkIDs(UserID, ProjectID));
+            ids.AddRange(Links.GetAdjacentIDs(UserID, ProjectID));
+            ids.AddRange(Links.GetDownlinkIDs(UserID, ProjectID, 1));
 
             foreach (ulong id in ids)
                 Storages.Research(id);
@@ -228,14 +228,14 @@ namespace RiseOp.Services.Storage
 
         private void DiffCombo_SelectedIndexChanged(object sender, EventArgs e)
         {
-            HigherIDs = Storages.GetHigherRegion(DhtID, ProjectID);
+            HigherIDs = Storages.GetHigherRegion(UserID, ProjectID);
 
             CurrentDiffs.Clear();
 
             if (DiffCombo.Text == "Local")
             {
                 CurrentDiffs.AddRange(HigherIDs);
-                CurrentDiffs.AddRange(Links.GetDownlinkIDs(DhtID, ProjectID, 1));
+                CurrentDiffs.AddRange(Links.GetDownlinkIDs(UserID, ProjectID, 1));
             }
 
             else if (DiffCombo.Text == "Higher")
@@ -245,7 +245,7 @@ namespace RiseOp.Services.Storage
 
             else if (DiffCombo.Text == "Lower")
             {
-                CurrentDiffs.AddRange(Links.GetDownlinkIDs(DhtID, ProjectID, 1));
+                CurrentDiffs.AddRange(Links.GetDownlinkIDs(UserID, ProjectID, 1));
             }
 
             else if (DiffCombo.Text == "Custom...")
@@ -286,7 +286,7 @@ namespace RiseOp.Services.Storage
                 RootFolder = new FolderNode(this, root, FolderTreeView.virtualParent, false);
                 FolderTreeView.Nodes.Add(RootFolder);
 
-                OpStorage storage = Storages.GetStorage(DhtID);
+                OpStorage storage = Storages.GetStorage(UserID);
 
                 if (storage != null)
                     LoadHeader(Storages.GetFilePath(storage), storage.File.Header.FileKey);
@@ -360,7 +360,7 @@ namespace RiseOp.Services.Storage
             {
                 TaggedStream filex = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(filex, storage.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
 
                 ulong remoteUID = 0;
                 FolderNode currentFolder = RootFolder;
@@ -372,7 +372,7 @@ namespace RiseOp.Services.Storage
                 {
                     if (header.Name == StoragePacket.Root)
                     {
-                        StorageRoot root = StorageRoot.Decode(Core.Protocol, header);
+                        StorageRoot root = StorageRoot.Decode(header);
 
                         readingProject = (root.ProjectID == ProjectID);
                     }
@@ -381,7 +381,7 @@ namespace RiseOp.Services.Storage
                     {
                         if (header.Name == StoragePacket.Folder)
                         {
-                            StorageFolder folder = StorageFolder.Decode(Core.Protocol, header);
+                            StorageFolder folder = StorageFolder.Decode(header);
 
                             // if new UID 
                             if (remoteUID == folder.UID)
@@ -391,7 +391,7 @@ namespace RiseOp.Services.Storage
 
                             // check scope
                             bool ignore = false;
-                            if (folder.Scope.Count > 0 && !Links.IsInScope(folder.Scope, DhtID, ProjectID))
+                            if (folder.Scope.Count > 0 && !Links.IsInScope(folder.Scope, UserID, ProjectID))
                                 ignore = true;
 
                             bool added = false;
@@ -454,7 +454,7 @@ namespace RiseOp.Services.Storage
 
                         if (header.Name == StoragePacket.File)
                         {
-                            StorageFile file = StorageFile.Decode(Core.Protocol, header);
+                            StorageFile file = StorageFile.Decode(header);
 
                             // if new UID 
                             if (remoteUID == file.UID)
@@ -463,7 +463,7 @@ namespace RiseOp.Services.Storage
                             remoteUID = file.UID;
 
                             // check scope
-                            if (file.Scope.Count > 0 && !Links.IsInScope(file.Scope, DhtID, ProjectID))
+                            if (file.Scope.Count > 0 && !Links.IsInScope(file.Scope, UserID, ProjectID))
                                 continue;
 
                             FileItem currentFile = null;
@@ -619,19 +619,19 @@ namespace RiseOp.Services.Storage
 
             // check if command structure has changed
             List<ulong> check = new List<ulong>();
-            List<ulong> highers = Storages.GetHigherRegion(DhtID, ProjectID);
+            List<ulong> highers = Storages.GetHigherRegion(UserID, ProjectID);
 
             if (DiffCombo.Text == "Local")
             {
                 check.AddRange(HigherIDs);
-                check.AddRange(Links.GetDownlinkIDs(DhtID, ProjectID, 1));
+                check.AddRange(Links.GetDownlinkIDs(UserID, ProjectID, 1));
             }
 
             else if (DiffCombo.Text == "Higher")
                 check.AddRange(HigherIDs);
 
             else if (DiffCombo.Text == "Lower")
-                check.AddRange(Links.GetDownlinkIDs(DhtID, ProjectID, 1));
+                check.AddRange(Links.GetDownlinkIDs(UserID, ProjectID, 1));
 
             else // custom
                 return;
@@ -661,19 +661,19 @@ namespace RiseOp.Services.Storage
 
         private void Storages_StorageUpdate(OpStorage storage)
         {
-            if (storage.DhtID == DhtID)
+            if (storage.UserID == UserID)
                 RefreshView();
 
             // re-apply diff
-            if (CurrentDiffs.Contains(storage.DhtID))
+            if (CurrentDiffs.Contains(storage.UserID))
             {
-                RemoveDiff(storage.DhtID, RootFolder);
-                ApplyDiff(storage.DhtID);
+                RemoveDiff(storage.UserID, RootFolder);
+                ApplyDiff(storage.UserID);
 
                 bool high = false, low = false;
                 AnalyzeChanges(RootFolder, false, ref high, ref low);
 
-                SelectedInfo.UpdateDiffView(storage.DhtID);
+                SelectedInfo.UpdateDiffView(storage.UserID);
 
                 RefreshFileList();
             }
@@ -691,7 +691,7 @@ namespace RiseOp.Services.Storage
             {
                 TaggedStream filex = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(filex, key.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
 
                 FolderNode currentFolder = RootFolder;
                 bool readingProject = false;
@@ -702,7 +702,7 @@ namespace RiseOp.Services.Storage
                 {
                     if (header.Name == StoragePacket.Root)
                     {
-                        StorageRoot root = StorageRoot.Decode(Core.Protocol, header);
+                        StorageRoot root = StorageRoot.Decode(header);
 
                         readingProject = (root.ProjectID == ProjectID);
                     }
@@ -713,7 +713,7 @@ namespace RiseOp.Services.Storage
                     {
                         if (header.Name == StoragePacket.Folder)
                         {
-                            StorageFolder folder = StorageFolder.Decode(Core.Protocol, header);
+                            StorageFolder folder = StorageFolder.Decode(header);
 
                             bool added = false;
 
@@ -747,7 +747,7 @@ namespace RiseOp.Services.Storage
 
                         if (header.Name == StoragePacket.File)
                         {
-                            StorageFile file = StorageFile.Decode(Core.Protocol, header);
+                            StorageFile file = StorageFile.Decode(header);
 
                             currentFolder.AddFileInfo(file, false);
                         }
@@ -1748,7 +1748,7 @@ namespace RiseOp.Services.Storage
                         continue;
                     }
 
-                    Storages.LockFileCompletely(DhtID, ProjectID, item.Folder.GetPath(), item.Archived, errors);
+                    Storages.LockFileCompletely(UserID, ProjectID, item.Folder.GetPath(), item.Archived, errors);
                 }
             }
 
@@ -1800,7 +1800,7 @@ namespace RiseOp.Services.Storage
                         continue;
                     }
 
-                    Storages.UnlockFile(DhtID, ProjectID, item.Folder.GetPath(), (StorageFile)item.Details, false, errors);
+                    Storages.UnlockFile(UserID, ProjectID, item.Folder.GetPath(), (StorageFile)item.Details, false, errors);
                 }
             }
 
@@ -1834,7 +1834,7 @@ namespace RiseOp.Services.Storage
         {
             List<LockError> errors = new List<LockError>();
 
-            string path = Storages.UnlockFile(DhtID, ProjectID, file.Folder.GetPath(), (StorageFile)file.Details, false, errors);
+            string path = Storages.UnlockFile(UserID, ProjectID, file.Folder.GetPath(), (StorageFile)file.Details, false, errors);
 
             LockMessage.Alert(this, errors);
 
@@ -1848,7 +1848,7 @@ namespace RiseOp.Services.Storage
         {
             List<LockError> errors = new List<LockError>();
 
-            Storages.LockFileCompletely(DhtID, ProjectID, file.Folder.GetPath(), file.Archived, errors);
+            Storages.LockFileCompletely(UserID, ProjectID, file.Folder.GetPath(), file.Archived, errors);
 
             LockMessage.Alert(this, errors);
 
@@ -1923,14 +1923,14 @@ namespace RiseOp.Services.Storage
         {
             string path = folder.GetPath();
 
-            string wholepath = Storages.GetRootPath(DhtID, ProjectID) + path;
+            string wholepath = Storages.GetRootPath(UserID, ProjectID) + path;
 
             List<string> stillLocked = new List<string>();
 
             foreach (FileItem file in folder.Files.Values)
                 if (!file.Temp)
                 {
-                    Storages.LockFileCompletely(DhtID, ProjectID, path, file.Archived, errors);
+                    Storages.LockFileCompletely(UserID, ProjectID, path, file.Archived, errors);
 
                     string filepath = wholepath + Path.DirectorySeparatorChar + file.Details.Name;
                     if (File.Exists(filepath))
@@ -1951,7 +1951,7 @@ namespace RiseOp.Services.Storage
         internal void UnlockFolder(FolderNode folder, bool subs, List<LockError> errors)
         {
             string path = folder.GetPath();
-            string root = Storages.GetRootPath(DhtID, ProjectID);
+            string root = Storages.GetRootPath(UserID, ProjectID);
 
             if(!Storages.CreateFolder(root + path, errors, subs))
                 return;
@@ -1965,7 +1965,7 @@ namespace RiseOp.Services.Storage
                 // unlock files
                 foreach (FileItem file in folder.Files.Values)
                     if (!file.Temp && !file.Details.IsFlagged(StorageFlags.Archived))
-                        Storages.UnlockFile(DhtID, ProjectID, path, (StorageFile)file.Details, false, errors);
+                        Storages.UnlockFile(UserID, ProjectID, path, (StorageFile)file.Details, false, errors);
 
                 // unlock subfolders
                 if (subs)
@@ -2047,7 +2047,7 @@ namespace RiseOp.Services.Storage
             {
                 TaggedStream filex = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(filex, storage.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
 
                 ulong remoteUID = 0;
                 FolderNode currentFolder = RootFolder;
@@ -2062,7 +2062,7 @@ namespace RiseOp.Services.Storage
                 {
                     if (header.Name == StoragePacket.Root)
                     {
-                        StorageRoot root = StorageRoot.Decode(Core.Protocol, header);
+                        StorageRoot root = StorageRoot.Decode(header);
 
                         readingProject = (root.ProjectID == ProjectID);
                     }
@@ -2071,7 +2071,7 @@ namespace RiseOp.Services.Storage
                     {
                         if (header.Name == StoragePacket.Folder)
                         {
-                            StorageFolder folder = StorageFolder.Decode(Core.Protocol, header);
+                            StorageFolder folder = StorageFolder.Decode(header);
 
                             // if new UID 
                             if (remoteUID == folder.UID)
@@ -2124,7 +2124,7 @@ namespace RiseOp.Services.Storage
 
                         if (header.Name == StoragePacket.File)
                         {
-                            StorageFile file = StorageFile.Decode(Core.Protocol, header);
+                            StorageFile file = StorageFile.Decode(header);
 
                             // if new UID 
                             if (remoteUID == file.UID)
@@ -2240,7 +2240,7 @@ namespace RiseOp.Services.Storage
             {
                 if (file.Temp)
                 {
-                    Utilities.OpenFolder(Storages.GetRootPath(DhtID, ProjectID) + file.Folder.GetPath());
+                    Utilities.OpenFolder(Storages.GetRootPath(UserID, ProjectID) + file.Folder.GetPath());
                     return;
                 }
 
@@ -2258,7 +2258,7 @@ namespace RiseOp.Services.Storage
 
             else
             {
-                Storages.DownloadFile(DhtID, (StorageFile)file.Details);
+                Storages.DownloadFile(UserID, (StorageFile)file.Details);
 
                
                 UpdateListItems();
@@ -2312,7 +2312,7 @@ namespace RiseOp.Services.Storage
 
                 // local temp file
                 else
-                    path = Storages.GetRootPath(DhtID, ProjectID) + file.GetPath();
+                    path = Storages.GetRootPath(UserID, ProjectID) + file.GetPath();
             }
 
             // non temp file
@@ -2594,7 +2594,7 @@ namespace RiseOp.Services.Storage
                 int i = 0;
                 foreach (FolderNode node in FolderTreeView.SelectedNodes)
                 {
-                    paths[i] = Storages.GetRootPath(DhtID, ProjectID) + node.GetPath();
+                    paths[i] = Storages.GetRootPath(UserID, ProjectID) + node.GetPath();
                     i++;
                 }
             }
@@ -2606,7 +2606,7 @@ namespace RiseOp.Services.Storage
                 foreach (FileItem item in FileListView.SelectedItems)
                     if (item.Text != "..")
                     {
-                        paths[i] = Storages.GetRootPath(DhtID, ProjectID) + item.GetPath();
+                        paths[i] = Storages.GetRootPath(UserID, ProjectID) + item.GetPath();
                         i++;
                     }
             }
@@ -3011,7 +3011,7 @@ namespace RiseOp.Services.Storage
         internal bool IsUnlocked()
         {
             return Details.IsFlagged(StorageFlags.Unlocked) ||
-                View.Storages.IsHistoryUnlocked(View.DhtID, View.ProjectID, Folder.GetPath(), Archived);
+                View.Storages.IsHistoryUnlocked(View.UserID, View.ProjectID, Folder.GetPath(), Archived);
         }
 
         internal string GetPath()

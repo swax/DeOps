@@ -122,7 +122,7 @@ namespace RiseOp.Interface.Tools
 
 			buffer.FillEllipse( new SolidBrush(Color.Black), GetBoundingBox(centerPoint, maxRadius));
 
-			uint localID = IDto32(Core.LocalDhtID);
+			uint localID = IDto32(Network.LocalUserID);
 
             List<Rectangle> contactPoints = new List<Rectangle>();
             List<Rectangle> cachePoints = new List<Rectangle>();
@@ -180,10 +180,10 @@ namespace RiseOp.Interface.Tools
 
 					foreach(DhtContact contact in bucket.ContactList)
                     {
-						contactPoints.Add(GetBoundingBox(GetCircumPoint(centerPoint, maxRadius, IDto32(contact.DhtID)), 4));
+						contactPoints.Add(GetBoundingBox(GetCircumPoint(centerPoint, maxRadius, IDto32(contact.userID)), 4));
 
-                        if(Routing.InCacheArea(contact.DhtID))
-                            cachePoints.Add(GetBoundingBox(GetCircumPoint(centerPoint, maxRadius, IDto32(contact.DhtID)), 1));
+                        if(Routing.InCacheArea(contact.userID))
+                            cachePoints.Add(GetBoundingBox(GetCircumPoint(centerPoint, maxRadius, IDto32(contact.userID)), 1));
                     }
 
 					sweepAngle /= 2;
@@ -202,10 +202,10 @@ namespace RiseOp.Interface.Tools
                 foreach (TcpConnect connection in Network.TcpControl.SocketList)
 				{
 					if(connection.Proxy == ProxyType.Server)
-						buffer.FillEllipse(new SolidBrush(Color.Green), GetBoundingBox(GetCircumPoint(centerPoint, maxRadius, IDto32(connection.DhtID)), 4));
+						buffer.FillEllipse(new SolidBrush(Color.Green), GetBoundingBox(GetCircumPoint(centerPoint, maxRadius, IDto32(connection.userID)), 4));
 					
 					if(connection.Proxy == ProxyType.ClientNAT || connection.Proxy == ProxyType.ClientBlocked)
-						buffer.FillEllipse(new SolidBrush(Color.Red), GetBoundingBox(GetCircumPoint(centerPoint, maxRadius, IDto32(connection.DhtID)), 4));
+						buffer.FillEllipse(new SolidBrush(Color.Red), GetBoundingBox(GetCircumPoint(centerPoint, maxRadius, IDto32(connection.userID)), 4));
 				}
 
 			// draw self

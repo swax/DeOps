@@ -81,7 +81,7 @@ namespace RiseOp.Implementation.Transport
             RemoteIP = address.IP;
             TcpPort  = tcpPort;
             UdpPort  = address.UdpPort;
-            DhtID    = address.DhtID;
+            userID    = address.userID;
 
             try
             {
@@ -138,18 +138,19 @@ namespace RiseOp.Implementation.Transport
             if (Proxy == ProxyType.Server)
                 if (Age == 5)
                 {
-                    Core.RudpControl.AnnounceProxy(this);
+                    Network.RudpControl.AnnounceProxy(this);
                 }
-                else if (Age == 20)
+                else if (Age == 15)
                 {
                     if (Network.IsGlobal)
-                        Core.Locations.PublishGlobal();
+                    {
+                        if(Core.UseGlobalProxies)
+                            Core.Locations.PublishGlobal();
+                    }
                     else
                         Core.Locations.UpdateLocation();
                 }
-
-            
-
+  
 			// send ping if dead for x secs
             if (SecondsDead > 30 && SecondsDead % 5 == 0)
 			{
@@ -209,7 +210,7 @@ namespace RiseOp.Implementation.Transport
             {
                 Network.AugmentedCrypt.GenerateIV();
                 Network.AugmentedCrypt.Padding = PaddingMode.None;
-                BitConverter.GetBytes(DhtID).CopyTo(Network.AugmentedCrypt.Key, 0);
+                BitConverter.GetBytes(userID).CopyTo(Network.AugmentedCrypt.Key, 0);
 
                 Encryptor = Network.AugmentedCrypt.CreateEncryptor();
 
@@ -257,8 +258,8 @@ namespace RiseOp.Implementation.Transport
 
                 Bye bye = new Bye();
 
-                bye.SenderID = Core.LocalDhtID;
-                bye.ContactList = Network.Routing.Find(DhtID, 8);
+                bye.SenderID = Network.LocalUserID;
+                bye.ContactList = Network.Routing.Find(userID, 8);
                 bye.Message = reason;
                 bye.Reconnect = reconnect;
 
@@ -303,12 +304,12 @@ namespace RiseOp.Implementation.Transport
 			{
                 if (packet is NetworkPacket)
                 {
-                    ((NetworkPacket)packet).SourceID = Core.LocalDhtID;
-                    ((NetworkPacket)packet).ClientID = Core.ClientID;
+                    ((NetworkPacket)packet).SourceID = Network.LocalUserID;
+                    ((NetworkPacket)packet).ClientID = Network.ClientID;
                 }
 
-				byte[] encoded = packet.Encode(Core.Protocol);
-                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tcp, DirectionType.Out, new DhtAddress(DhtID, ClientID, RemoteIP, TcpPort), encoded);
+				byte[] encoded = packet.Encode(Network.Protocol);
+                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tcp, DirectionType.Out, new DhtAddress(userID, ClientID, RemoteIP, TcpPort), encoded);
                 Network.LogPacket(logEntry);
 
                 lock(FinalSendBuffer)
@@ -333,7 +334,7 @@ namespace RiseOp.Implementation.Transport
                             if (fillerNeeded > 2)
                                 padding.Filler = new byte[fillerNeeded - 2];
 
-                            encoded = padding.Encode(Core.Protocol);
+                            encoded = padding.Encode(Network.Protocol);
                             encoded.CopyTo(SendBuffer, SendBuffSize);
                             SendBuffSize += encoded.Length;
                         }
@@ -474,7 +475,7 @@ namespace RiseOp.Implementation.Transport
                     {
                         Network.AugmentedCrypt.IV = Utilities.ExtractBytes(RecvBuffer, 0, ivlen);
                         Network.AugmentedCrypt.Padding = PaddingMode.None;
-                        BitConverter.GetBytes(Core.LocalDhtID).CopyTo(Network.AugmentedCrypt.Key, 0);
+                        BitConverter.GetBytes(Network.LocalUserID).CopyTo(Network.AugmentedCrypt.Key, 0);
 
                         Decryptor = Network.AugmentedCrypt.CreateDecryptor();
                     }
@@ -576,7 +577,7 @@ namespace RiseOp.Implementation.Transport
 
 		internal DhtContact GetContact()
 		{
-			return new DhtContact(DhtID, ClientID, RemoteIP, TcpPort, UdpPort, Core.TimeNow);
+			return new DhtContact(userID, ClientID, RemoteIP, TcpPort, UdpPort, Core.TimeNow);
 		}
 
         public override string ToString()

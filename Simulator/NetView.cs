@@ -139,30 +139,33 @@ namespace RiseOp.Simulator
             Dictionary<ulong, DhtNetwork> networks = new Dictionary<ulong, DhtNetwork>();
 
             foreach (SimInstance instance in Sim.Online)
-                if (instance.Core != null &&
-                    (instance.Core.OpID == OpID || (OpID == 0 && instance.Core.GlobalNet != null)))
+                if (instance.Core != null)
                 {
-                    int nodeRadius = (instance.Core.Firewall == FirewallType.Open) ? maxRadius - 30 : maxRadius;
+                    DhtNetwork network = (OpID == 0) ? instance.Core.GlobalNet : instance.Core.OperationNet;
 
-                    NodePoints[instance.Core.LocalDhtID] = GetCircumPoint(centerPoint, nodeRadius, IDto32(instance.Core.LocalDhtID));
-
-                    networks[instance.Core.LocalDhtID] = (OpID == 0) ? instance.Core.GlobalNet : instance.Core.OperationNet;
-
-                    if (TrackHash != null)
+                    if (network != null)
                     {
-                        if (IsTracked(instance.Core))
-                            TrackPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(instance.Core.LocalDhtID)));
-                        else if (IsTransferring(instance.Core))
-                            TransferPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(instance.Core.LocalDhtID)));
+                        int nodeRadius = (instance.Core.Firewall == FirewallType.Open) ? maxRadius - 30 : maxRadius;
+
+                        NodePoints[network.LocalUserID] = GetCircumPoint(centerPoint, nodeRadius, IDto32(network.LocalUserID));
+
+                        networks[network.LocalUserID] = network;
+
+                        if (TrackHash != null)
+                        {
+                            if (IsTracked(instance.Core))
+                                TrackPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.LocalUserID)));
+                            else if (IsTransferring(instance.Core))
+                                TransferPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.LocalUserID)));
+                        }
                     }
                 }
-
             // draw lines for tcp between points
             foreach(DhtNetwork network in networks.Values)
                 lock(network.TcpControl.SocketList)
                     foreach(TcpConnect connect in network.TcpControl.SocketList)
-                        if(connect.State == TcpState.Connected && NodePoints.ContainsKey(connect.DhtID))
-                            buffer.DrawLine(BluePen, NodePoints[network.Core.LocalDhtID], NodePoints[connect.DhtID]);
+                        if(connect.State == TcpState.Connected && NodePoints.ContainsKey(connect.userID))
+                            buffer.DrawLine(BluePen, NodePoints[network.LocalUserID], NodePoints[connect.userID]);
 
             // draw traffic lines
             DrawTraffic(buffer);
@@ -201,7 +204,7 @@ namespace RiseOp.Simulator
                 buffer.DrawEllipse(BlackPen, selectBox);
 
                 string name = networks[SelectedID].Core.User.Settings.ScreenName;
-                name += " " + Utilities.IDtoBin(networks[SelectedID].Core.LocalDhtID);
+                name += " " + Utilities.IDtoBin(networks[SelectedID].LocalUserID);
                 name += ShowInbound ? " Inbound Traffic" : " Outbound Traffic";
 
                 buffer.DrawString(name, TahomaFont, BlackBrush, new PointF(3, 37));
@@ -350,18 +353,18 @@ namespace RiseOp.Simulator
             lock (Sim.PacketHandle)
             {
                 foreach (SimPacket packet in Sim.OutPackets)
-                    if (SelectedID == 0 || (!ShowInbound && SelectedID == packet.SenderID) || (ShowInbound && SelectedID == packet.Dest.Core.LocalDhtID))
-                        if ((packet.Dest.IsGlobal && OpID == 0) || (!packet.Dest.IsGlobal && packet.Dest.Core.OpID == OpID))
+                    if (SelectedID == 0 || (!ShowInbound && SelectedID == packet.SenderID) || (ShowInbound && SelectedID == packet.Dest.LocalUserID))
+                        if ((packet.Dest.IsGlobal && OpID == 0) || (!packet.Dest.IsGlobal && packet.Dest.OpID == OpID))
                         {
                             Dictionary<ulong, Dictionary<ulong, PacketGroup>> TrafficGroup = packet.Tcp != null ? TcpTraffic : UdpTraffic;
 
                             if (!TrafficGroup.ContainsKey(packet.SenderID))
                                 TrafficGroup[packet.SenderID] = new Dictionary<ulong, PacketGroup>();
 
-                            if (!TrafficGroup[packet.SenderID].ContainsKey(packet.Dest.Core.LocalDhtID))
-                                TrafficGroup[packet.SenderID][packet.Dest.Core.LocalDhtID] = new PacketGroup(packet.SenderID, packet.Dest.Core.LocalDhtID);
+                            if (!TrafficGroup[packet.SenderID].ContainsKey(packet.Dest.LocalUserID))
+                                TrafficGroup[packet.SenderID][packet.Dest.LocalUserID] = new PacketGroup(packet.SenderID, packet.Dest.LocalUserID);
 
-                            TrafficGroup[packet.SenderID][packet.Dest.Core.LocalDhtID].Add(packet);
+                            TrafficGroup[packet.SenderID][packet.Dest.LocalUserID].Add(packet);
                         }
 
                 DrawGroup(buffer, UdpTraffic, false);
@@ -420,7 +423,7 @@ namespace RiseOp.Simulator
                         else
                         {
                             G2Header root = new G2Header(packet);
-                            Protocol.ReadPacket(root);
+                            G2Protocol.ReadPacket(root);
 
                             double controlLen = (root.InternalPos > 0) ? root.InternalPos - root.PacketPos : packet.Length;
 
@@ -430,9 +433,9 @@ namespace RiseOp.Simulator
                                 TrafficPen.Color = Legend.PicNet.BackColor;
                                 buffer.DrawLine(TrafficPen, group.GetPoint(pos), group.GetPoint(pos + controlLen));
 
-                                NetworkPacket netPacket = NetworkPacket.Decode(Protocol, root);
+                                NetworkPacket netPacket = NetworkPacket.Decode(root);
                                 G2Header internalRoot = new G2Header(netPacket.InternalData);
-                                Protocol.ReadPacket(internalRoot);
+                                G2Protocol.ReadPacket(internalRoot);
 
                                 G2ReceivedPacket recvedPacket = new G2ReceivedPacket();
                                 recvedPacket.Root = internalRoot;
@@ -442,7 +445,7 @@ namespace RiseOp.Simulator
 
                                 if (internalRoot.Name == NetworkPacket.SearchRequest)
                                 {
-                                    SearchReq req = SearchReq.Decode(Protocol, recvedPacket);
+                                    SearchReq req = SearchReq.Decode(recvedPacket);
 
                                     int paramLen = req.Parameters == null ? 10 : req.Parameters.Length;
 
@@ -455,7 +458,7 @@ namespace RiseOp.Simulator
 
                                 else if (internalRoot.Name == NetworkPacket.SearchAck)
                                 {
-                                    SearchAck ack = SearchAck.Decode(Protocol, recvedPacket);
+                                    SearchAck ack = SearchAck.Decode(recvedPacket);
 
                                     int valLen = 10;
 
@@ -475,7 +478,7 @@ namespace RiseOp.Simulator
 
                                 else if (internalRoot.Name == NetworkPacket.StoreRequest)
                                 {
-                                    StoreReq req = StoreReq.Decode(Protocol, recvedPacket);
+                                    StoreReq req = StoreReq.Decode(recvedPacket);
 
                                     int dataLen = req.Data == null ? 10 : req.Data.Length;
 
@@ -564,11 +567,12 @@ namespace RiseOp.Simulator
                         string name = "Unknown";
 
                         foreach (SimInstance instance in Sim.Online)
-                            if (instance.Core != null && instance.Core.LocalDhtID == id)
-                            {
-                                name = instance.Core.User.Settings.ScreenName;
-                                break;
-                            }
+                            if (instance.Core != null)
+                                if (instance.Core.UserID == id || (instance.Core.GlobalNet != null && instance.Core.GlobalNet.LocalUserID == id))
+                                {
+                                    name = instance.Core.User.Settings.ScreenName;
+                                    break;
+                                }
 
                         NodeTip.Show(name, this, client.X, client.Y);
 

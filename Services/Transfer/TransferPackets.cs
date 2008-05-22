@@ -81,20 +81,20 @@ namespace RiseOp.Services.Transfer
             }
         }
 
-        internal static FileDetails Decode(G2Protocol protocol, byte[] data)
+        internal static FileDetails Decode(byte[] data)
         {
             G2Header root = new G2Header(data);
 
-            if (!protocol.ReadPacket(root))
+            if (!G2Protocol.ReadPacket(root))
                 return null;
 
             if (root.Name != TransferPacket.Params)
                 return null;
 
-            return FileDetails.Decode(protocol, root);
+            return FileDetails.Decode(root);
         }
 
-        internal static FileDetails Decode(G2Protocol protocol, G2Header root)
+        internal static FileDetails Decode(G2Header root)
         {
             FileDetails packet = new FileDetails();
             G2Header child = new G2Header(root.Data);
@@ -172,7 +172,7 @@ namespace RiseOp.Services.Transfer
             }
         }
 
-        internal static TransferRequest Decode(G2Protocol protocol, G2Header root)
+        internal static TransferRequest Decode(G2Header root)
         {
             TransferRequest tr = new TransferRequest();
 
@@ -237,7 +237,7 @@ namespace RiseOp.Services.Transfer
             }
         }
 
-        internal static TransferAck Decode(G2Protocol protocol, G2Header root)
+        internal static TransferAck Decode(G2Header root)
         {
             TransferAck ta = new TransferAck();
 
@@ -307,7 +307,7 @@ namespace RiseOp.Services.Transfer
             }
         }
 
-        internal static TransferData Decode(G2Protocol protocol, G2Header root)
+        internal static TransferData Decode(G2Header root)
         {
             TransferData td = new TransferData();
 

@@ -48,7 +48,7 @@ namespace RiseOp.Services.Location
         internal string AwayMessage = "";
 
 
-        internal ulong DhtID;
+        internal ulong UserID;
 
         internal override byte[] Encode(G2Protocol protocol)
         {
@@ -61,12 +61,12 @@ namespace RiseOp.Services.Location
                 protocol.WritePacket(loc, Packet_Global, BitConverter.GetBytes(Global));
                 protocol.WritePacket(loc, Packet_IP, IP.GetAddressBytes());
                 protocol.WritePacket(loc, Packet_Proxies, DhtAddress.ToByteList(Proxies));
-                protocol.WritePacket(loc, Packet_Place, protocol.UTF.GetBytes(Place));
+                protocol.WritePacket(loc, Packet_Place, UTF8Encoding.UTF8.GetBytes(Place));
                 protocol.WritePacket(loc, Packet_TTL, BitConverter.GetBytes(TTL));
                 protocol.WritePacket(loc, Packet_Version, CompactNum.GetBytes(Version));
                 protocol.WritePacket(loc, Packet_GMTOffset, BitConverter.GetBytes(GmtOffset));
                 protocol.WritePacket(loc, Packet_Away, BitConverter.GetBytes(Away));
-                protocol.WritePacket(loc, Packet_AwayMsg, protocol.UTF.GetBytes(AwayMessage));
+                protocol.WritePacket(loc, Packet_AwayMsg, UTF8Encoding.UTF8.GetBytes(AwayMessage));
                     
                 foreach(PatchTag tag in Tags)
                     protocol.WritePacket(loc, Packet_Tag, tag.ToBytes());
@@ -75,11 +75,11 @@ namespace RiseOp.Services.Location
             }
         }
 
-        internal static LocationData Decode(G2Protocol protocol, byte[] data)
+        internal static LocationData Decode(byte[] data)
         {
             G2Header root = new G2Header(data);
 
-            protocol.ReadPacket(root);
+            G2Protocol.ReadPacket(root);
 
             if (root.Name != LocPacket.LocationData)
                 return null;
@@ -96,7 +96,7 @@ namespace RiseOp.Services.Location
                 {
                     case Packet_Key:
                         loc.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        loc.DhtID = Utilities.KeytoID(loc.Key);
+                        loc.UserID = Utilities.KeytoID(loc.Key);
                         break;
 
                     case Packet_Source:
@@ -116,7 +116,7 @@ namespace RiseOp.Services.Location
                         break;
 
                     case Packet_Place:
-                        loc.Place = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        loc.Place = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_TTL:
@@ -136,7 +136,7 @@ namespace RiseOp.Services.Location
                         break;
 
                     case Packet_AwayMsg:
-                        loc.AwayMessage = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        loc.AwayMessage = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Tag:
@@ -181,20 +181,20 @@ namespace RiseOp.Services.Location
             }
         }
 
-        internal static CryptLoc Decode(G2Protocol protocol, byte[] data)
+        internal static CryptLoc Decode(byte[] data)
         {
             G2Header root = new G2Header(data);
 
-            if (!protocol.ReadPacket(root))
+            if (!G2Protocol.ReadPacket(root))
                 return null;
 
             if (root.Name != LocPacket.CryptLoc)
                 return null;
 
-            return CryptLoc.Decode(protocol, root);
+            return CryptLoc.Decode(root);
         }
 
-        internal static CryptLoc Decode(G2Protocol protocol, G2Header root)
+        internal static CryptLoc Decode(G2Header root)
         {
             CryptLoc wrap = new CryptLoc();
             G2Header child = new G2Header(root.Data);

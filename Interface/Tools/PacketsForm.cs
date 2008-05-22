@@ -306,7 +306,7 @@ namespace RiseOp.Interface.Tools
 
 			G2Header root = new G2Header(logEntry.Data);
 			
-            if (Protocol.ReadPacket(root))
+            if (G2Protocol.ReadPacket(root))
             {
                 if(logEntry.Protocol == TransportProtocol.Rudp)
                 {
@@ -316,7 +316,7 @@ namespace RiseOp.Interface.Tools
 
                     if (root.Name == CommPacket.Data)
                     {
-                        CommData data = CommData.Decode(Protocol, root);
+                        CommData data = CommData.Decode(root);
 
                         name += " - " + Network.Core.GetServiceName(data.Service); 
                     }
@@ -328,17 +328,17 @@ namespace RiseOp.Interface.Tools
 
                     if (root.Name == RootPacket.Comm)
                     {
-                        RudpPacket commPacket = RudpPacket.Decode(Protocol, root);
+                        RudpPacket commPacket = RudpPacket.Decode(root);
 
                         name += GetVariableName(typeof(RudpPacketType), commPacket.PacketType);
                     }
 
                     if (root.Name == RootPacket.Network)
                     {
-                        NetworkPacket netPacket = NetworkPacket.Decode(Protocol, root);
+                        NetworkPacket netPacket = NetworkPacket.Decode(root);
 
                         G2Header internalRoot = new G2Header(netPacket.InternalData);
-                        if (Protocol.ReadPacket(internalRoot))
+                        if (G2Protocol.ReadPacket(internalRoot))
                         {
                             name += GetVariableName(typeof(NetworkPacket), internalRoot.Name);
 
@@ -349,19 +349,19 @@ namespace RiseOp.Interface.Tools
                             // search request / search acks / stores have component types
                             if (internalRoot.Name == NetworkPacket.SearchRequest)
                             {
-                                SearchReq req = SearchReq.Decode(Protocol, wrap);
+                                SearchReq req = SearchReq.Decode(wrap);
                                 id = req.Service;
                             }
 
                             if (internalRoot.Name == NetworkPacket.SearchAck)
                             {
-                                SearchAck ack = SearchAck.Decode(Protocol, wrap);
+                                SearchAck ack = SearchAck.Decode(wrap);
                                 id = ack.Service;
                             }
 
                             if (internalRoot.Name == NetworkPacket.StoreRequest)
                             {
-                                StoreReq store = StoreReq.Decode(Protocol, wrap);
+                                StoreReq store = StoreReq.Decode(wrap);
                                 id = store.Service;
                             }
 
@@ -415,7 +415,7 @@ namespace RiseOp.Interface.Tools
 
             G2Header root = new G2Header(selected.LogEntry.Data);
 
-            if (Protocol.ReadPacket(root))
+            if (G2Protocol.ReadPacket(root))
             {
                 if (selected.LogEntry.Protocol == TransportProtocol.Rudp)
                 {
@@ -476,7 +476,7 @@ namespace RiseOp.Interface.Tools
                         ReadChildren(root, rootNode, typeof(NetworkPacket));
 
                         G2Header payloadRoot = new G2Header(payloadNode.Data);
-                        if (payloadNode.Data != null && Protocol.ReadPacket(payloadRoot))
+                        if (payloadNode.Data != null && G2Protocol.ReadPacket(payloadRoot))
                         {
                             name = payloadRoot.Name.ToString() + " : " + GetVariableName(typeof(NetworkPacket), payloadRoot.Name);
                             TreeNode netNode = payloadNode.Nodes.Add(name);

@@ -37,7 +37,7 @@ namespace RiseOp.Services.Storage
             Type = type;
             Errors = errors;
 
-            RootPath = view.Storages.GetRootPath(view.DhtID, view.ProjectID);
+            RootPath = view.Storages.GetRootPath(view.UserID, view.ProjectID);
         }
 
         internal static void Alert(StorageView view, List<LockError> errors)
@@ -238,7 +238,7 @@ namespace RiseOp.Services.Storage
 
                         // unlock new file / retry
                         string path = Path.GetDirectoryName(error.Path);
-                        Storages.UnlockFile(ParentView.DhtID, ParentView.ProjectID, path.Replace(RootPath, ""), error.File, error.History, NewErrors);
+                        Storages.UnlockFile(ParentView.UserID, ParentView.ProjectID, path.Replace(RootPath, ""), error.File, error.History, NewErrors);
                     }
                     Cursor = Cursors.Default;
 
@@ -288,7 +288,7 @@ namespace RiseOp.Services.Storage
                         if (error.IsFile)
                         {
                             string path = Path.GetDirectoryName(error.Path);
-                            Storages.UnlockFile(ParentView.DhtID, ParentView.ProjectID, path.Replace(RootPath, ""), error.File, error.History, NewErrors);
+                            Storages.UnlockFile(ParentView.UserID, ParentView.ProjectID, path.Replace(RootPath, ""), error.File, error.History, NewErrors);
                         }
                         // dont know to unlock subs or not
                         else
@@ -323,7 +323,7 @@ namespace RiseOp.Services.Storage
                     //button2.Text = "Download";
 
                     foreach (LockError error in Errors)
-                        Storages.DownloadFile(ParentView.DhtID, error.File);
+                        Storages.DownloadFile(ParentView.UserID, error.File);
 
                     ParentView.WatchTransfers = true;
 

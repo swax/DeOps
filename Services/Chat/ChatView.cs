@@ -153,7 +153,7 @@ namespace RiseOp.Services.Chat
                 LeaveButton.Visible = Custom.Active;
 
                 InviteButton.Visible = (Custom.Active && 
-                                        (Custom.Kind == RoomKind.Public || Custom.Host == Chat.Core.LocalDhtID));
+                                        (Custom.Kind == RoomKind.Public || Custom.Host == Chat.Core.UserID));
             }
 
             LocalButton.ForeColor = RoomsActive(RoomKind.Command_High, RoomKind.Command_Low) ? Color.Black : Color.DimGray;

@@ -83,13 +83,13 @@ namespace RiseOp.Services.Trust
             LoadUplinkReqs();
 
 
-            LocalTrust = GetTrust(Core.LocalDhtID);
+            LocalTrust = GetTrust(Core.UserID);
 
 
             if (LocalTrust == null)
             {
                 LocalTrust = new OpTrust(new OpVersionedFile(Core.User.Settings.KeyPublic));
-                TrustMap.SafeAdd(Core.LocalDhtID, LocalTrust);
+                TrustMap.SafeAdd(Core.UserID, LocalTrust);
             }
 
             if (!LocalTrust.Loaded)
@@ -130,10 +130,10 @@ namespace RiseOp.Services.Trust
                 return menus;
 
             // linkup
-            if (Core.LocalDhtID != user &&
+            if (Core.UserID != user &&
                 (localLink == null || 
                  localLink.Uplink == null || 
-                 localLink.Uplink.DhtID != user)) // not already linked to
+                 localLink.Uplink.UserID != user)) // not already linked to
                 menus.Add(new MenuItemInfo("Trust", LinkRes.link, new EventHandler(Menu_Linkup)));
 
             if (localLink == null)
@@ -150,7 +150,7 @@ namespace RiseOp.Services.Trust
 
             // unlink
             if ((unlink && localLink.Confirmed.Contains(user)) ||
-                (localLink.Uplink != null && localLink.Uplink.DhtID == user))
+                (localLink.Uplink != null && localLink.Uplink.UserID == user))
                 menus.Add(new MenuItemInfo("Revoke Trust", LinkRes.unlink, new EventHandler(Menu_Unlink)));
 
 
@@ -175,7 +175,7 @@ namespace RiseOp.Services.Trust
             // get user confirmation if nullifying previous uplink
             if (localLink.Uplink != null)
             {
-                string who = GetName(localLink.Uplink.DhtID);
+                string who = GetName(localLink.Uplink.UserID);
                 string message = "Transfer trust from " + who + " to " + GetName(remoteKey) + "?";
 
                 if (MessageBox.Show(Core.GuiMain, message, "Confirm Trust", MessageBoxButtons.YesNo) == DialogResult.No)
@@ -198,9 +198,9 @@ namespace RiseOp.Services.Trust
                     throw new Exception("Already Trusting " + GetName(remoteKey));
 
                 //check for loop
-                if (IsHigher(remoteLink.DhtID, Core.LocalDhtID, project, false))
+                if (IsHigher(remoteLink.UserID, Core.UserID, project, false))
                 {
-                    string who = GetName(remoteLink.DhtID);
+                    string who = GetName(remoteLink.UserID);
                     string message = "Trusting " + who + " will create a loop. Is this your intention?";
 
                     if (MessageBox.Show(Core.GuiMain, message, "Loop Warning", MessageBoxButtons.YesNo) == DialogResult.No)
@@ -233,22 +233,22 @@ namespace RiseOp.Services.Trust
             request.LinkVersion = LocalTrust.File.Header.Version;
             request.TargetVersion = remoteLink.Trust.File.Header.Version;
             request.Key = LocalTrust.File.Key;
-            request.KeyID = LocalTrust.DhtID;
+            request.KeyID = LocalTrust.UserID;
             request.Target = remoteLink.Trust.File.Key;
-            request.TargetID = remoteLink.DhtID;
+            request.TargetID = remoteLink.UserID;
 
-            byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, request);
+            byte[] signed = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, request);
 
             if(Network.Established)
                 Store.PublishNetwork(request.TargetID, ServiceID, DataTypeFile, signed);
 
             // store locally
-            Process_UplinkReq(null, new SignedData(Core.Protocol, Core.User.Settings.KeyPair, request), request);
+            Process_UplinkReq(null, new SignedData(Network.Protocol, Core.User.Settings.KeyPair, request), request);
 
             // publish at neighbors so they are aware of request status
             List<LocationData> locations = new List<LocationData>();
-            GetLocs(Core.LocalDhtID, remoteLink.Project, 1, 1, locations);
-            GetLocsBelow(Core.LocalDhtID, remoteLink.Project, locations);
+            GetLocs(Core.UserID, remoteLink.Project, 1, 1, locations);
+            GetLocsBelow(Core.UserID, remoteLink.Project, locations);
             Store.PublishDirect(locations, request.TargetID, ServiceID, DataTypeFile, signed);
         }
 
@@ -271,8 +271,8 @@ namespace RiseOp.Services.Trust
                 if (!localLink.Downlinks.Contains(remoteLink))
                     throw new Exception(GetName(key) + " does not trust you");
 
-                if (!localLink.Confirmed.Contains(remoteLink.DhtID))
-                    localLink.Confirmed.Add(remoteLink.DhtID);
+                if (!localLink.Confirmed.Contains(remoteLink.UserID))
+                    localLink.Confirmed.Add(remoteLink.UserID);
 
                 SaveLocal();
             }
@@ -305,7 +305,7 @@ namespace RiseOp.Services.Trust
                 if (localLink.Uplink != null && localLink.Uplink == remoteLink)
                     unlinkUp = true;
 
-                if (localLink.Confirmed.Contains(remoteLink.DhtID))
+                if (localLink.Confirmed.Contains(remoteLink.UserID))
                     unlinkDown = true;
 
                 if (!unlinkUp && !unlinkDown)
@@ -319,7 +319,7 @@ namespace RiseOp.Services.Trust
 
                 if (unlinkUp)
                 {
-                    GetLocs(Core.LocalDhtID, project, 1, 1, locations);
+                    GetLocs(Core.UserID, project, 1, 1, locations);
 
                     parent = localLink.Uplink;
                     localLink.ResetUplink();
@@ -329,7 +329,7 @@ namespace RiseOp.Services.Trust
                 // remove node from downlinks
                 if (unlinkDown)
                 {
-                    localLink.Confirmed.Remove(remoteLink.DhtID);
+                    localLink.Confirmed.Remove(remoteLink.UserID);
 
                     // removal of uplink requests done when version is updated by updatelocal
                 }
@@ -340,9 +340,9 @@ namespace RiseOp.Services.Trust
                 // notify old links of change
                 Core.RunInCoreAsync(delegate()
                 {
-                    OpVersionedFile file = Cache.GetFile(Core.LocalDhtID);
+                    OpVersionedFile file = Cache.GetFile(Core.UserID);
 
-                    Store.PublishDirect(locations, Core.LocalDhtID, ServiceID, 0, file.SignedHeader);
+                    Store.PublishDirect(locations, Core.UserID, ServiceID, 0, file.SignedHeader);
                 });
             }
             catch (Exception ex)
@@ -396,11 +396,11 @@ namespace RiseOp.Services.Trust
             {
                 foreach (OpTrust trust in TrustMap.Values)
                     if (trust.InLocalLinkTree)
-                        Core.Focused.SafeAdd(trust.DhtID, true);
+                        Core.Focused.SafeAdd(trust.UserID, true);
 
                     // if in bounds, set highers of node to focused
                     // because if highers removed, they will just be re-added when inbounds link cache is refreshed
-                    else if (Network.Routing.InCacheArea(trust.DhtID))
+                    else if (Network.Routing.InCacheArea(trust.UserID))
                         foreach(OpLink link in trust.Links.Values)
                             foreach(ulong id in link.GetHighers())
                                 Core.Focused.SafeAdd(id, true);
@@ -413,7 +413,7 @@ namespace RiseOp.Services.Trust
 
         void Cache_FileRemoved(OpVersionedFile file)
         {
-            OpTrust trust = GetTrust(file.DhtID);
+            OpTrust trust = GetTrust(file.UserID);
 
             if (trust == null)
                 return;
@@ -427,13 +427,13 @@ namespace RiseOp.Services.Trust
 
             trust.Reset();
             trust.Loaded = false;
-            TrustMap.SafeRemove(file.DhtID);
+            TrustMap.SafeRemove(file.UserID);
             
             // alert services/gui
             if (LinkUpdate != null)
                 LinkUpdate.Invoke(trust);
 
-            Core.RunInGuiThread(GuiUpdate, trust.DhtID);
+            Core.RunInGuiThread(GuiUpdate, trust.UserID);
         }
 
         void RefreshLinked()
@@ -454,7 +454,7 @@ namespace RiseOp.Services.Trust
                     MarkBranchLinked(link, 2);
 
                     // TraverseDown 1 from all parents above self
-                    List<ulong> uplinks = GetUplinkIDs(LocalTrust.DhtID, project, false);
+                    List<ulong> uplinks = GetUplinkIDs(LocalTrust.UserID, project, false);
 
                     foreach (ulong id in uplinks)
                     {
@@ -488,7 +488,7 @@ namespace RiseOp.Services.Trust
 
             if (!link.Trust.Searched)
             {
-                Core.Locations.StartSearch(link.DhtID, 0, false);
+                Core.Locations.StartSearch(link.UserID, 0, false);
 
                 link.Trust.Searched = true;
             }
@@ -527,9 +527,9 @@ namespace RiseOp.Services.Trust
                 foreach (OpLink downlink in link.Downlinks)
                 {
                     if (searchDownlinks)
-                        searchList.Add(downlink.DhtID);
+                        searchList.Add(downlink.UserID);
 
-                    downlinks.Add(downlink.DhtID);
+                    downlinks.Add(downlink.UserID);
                 }
 
                 foreach (ulong id in link.Confirmed)
@@ -581,7 +581,7 @@ namespace RiseOp.Services.Trust
         {
             // getting published to - search results - patch
 
-            SignedData signed = SignedData.Decode(Core.Protocol, store.Data);
+            SignedData signed = SignedData.Decode(store.Data);
 
             if (signed == null)
                 return;
@@ -589,9 +589,9 @@ namespace RiseOp.Services.Trust
             G2Header embedded = new G2Header(signed.Data);
 
             // figure out data contained
-            if (Core.Protocol.ReadPacket(embedded))
+            if (G2Protocol.ReadPacket(embedded))
                 if (embedded.Name == TrustPacket.UplinkReq)
-                    Process_UplinkReq(store, signed, UplinkRequest.Decode(Core.Protocol, embedded));
+                    Process_UplinkReq(store, signed, UplinkRequest.Decode(embedded));
         }
 
         internal void SaveLocal()
@@ -621,7 +621,7 @@ namespace RiseOp.Services.Trust
 
                         project.UserTitle = link.Title;
 
-                        byte[] packet = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, project);
+                        byte[] packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, project);
                         stream.Write(packet, 0, packet.Length);
 
 
@@ -629,16 +629,16 @@ namespace RiseOp.Services.Trust
                         if (link.Uplink != null)
                         {
                             LinkData data = new LinkData(link.Project, link.Uplink.Trust.File.Key, true);
-                            packet = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, data);
+                            packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, data);
                             stream.Write(packet, 0, packet.Length);
                         }
 
                         // downlinks
                         foreach (OpLink downlink in link.Downlinks)
-                            if (link.Confirmed.Contains(downlink.DhtID))
+                            if (link.Confirmed.Contains(downlink.UserID))
                             {
                                 LinkData data = new LinkData(link.Project, downlink.Trust.File.Key, false);
-                                packet = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, data);
+                                packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, data);
                                 stream.Write(packet, 0, packet.Length);
                             }
                     }
@@ -650,7 +650,7 @@ namespace RiseOp.Services.Trust
 
                 OpVersionedFile file = Cache.UpdateLocal(tempPath, key, null);
 
-                Store.PublishDirect(GetLocsAbove(), Core.LocalDhtID, ServiceID, DataTypeFile, file.SignedHeader);
+                Store.PublishDirect(GetLocsAbove(), Core.UserID, ServiceID, DataTypeFile, file.SignedHeader);
 
                 SaveUplinkReqs();
             }
@@ -703,20 +703,20 @@ namespace RiseOp.Services.Trust
 
                 FileStream file = new FileStream(path, FileMode.Open);
                 CryptoStream crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;
 
                 while (stream.ReadPacket(ref root))
                     if (root.Name == DataPacket.SignedData)
                     {
-                        SignedData signed = SignedData.Decode(Core.Protocol, root);
+                        SignedData signed = SignedData.Decode(root);
                         G2Header embedded = new G2Header(signed.Data);
 
                         // figure out data contained
-                        if (Core.Protocol.ReadPacket(embedded))
+                        if (G2Protocol.ReadPacket(embedded))
                             if (embedded.Name == TrustPacket.UplinkReq)
-                                Process_UplinkReq(null, signed, UplinkRequest.Decode(Core.Protocol, embedded));
+                                Process_UplinkReq(null, signed, UplinkRequest.Decode(embedded));
                     }
 
                 stream.Close();
@@ -752,7 +752,7 @@ namespace RiseOp.Services.Trust
             if (targetTrust.Loaded && targetTrust.File.Header.Version > request.TargetVersion)
                 return;
 
-            request.Signed = signed.Encode(Core.Protocol); // so we can send it in results / save, later on
+            request.Signed = signed.Encode(Network.Protocol); // so we can send it in results / save, later on
 
             // check for duplicate requests
             OpLink targetLink = targetTrust.GetLink(request.ProjectID);
@@ -774,10 +774,10 @@ namespace RiseOp.Services.Trust
 
 
             // if target is marked as linked or focused, update link of target and sender
-            if (targetTrust.Loaded && (targetTrust.InLocalLinkTree || Core.Focused.SafeContainsKey(targetTrust.DhtID)))
+            if (targetTrust.Loaded && (targetTrust.InLocalLinkTree || Core.Focused.SafeContainsKey(targetTrust.UserID)))
             {
                 if (targetTrust.File.Header.Version < request.TargetVersion)
-                    Cache.Research(targetTrust.DhtID);
+                    Cache.Research(targetTrust.UserID);
 
                 if (requesterTrust == null)
                 {
@@ -787,7 +787,7 @@ namespace RiseOp.Services.Trust
 
                 // once new version of requester's link file has been downloaded, interface will be updated
                 if (!requesterTrust.Loaded || (requesterTrust.File.Header.Version < request.LinkVersion))
-                    Cache.Research(requesterTrust.DhtID);
+                    Cache.Research(requesterTrust.UserID);
             }
 
             RunSaveUplinks = true;
@@ -801,12 +801,12 @@ namespace RiseOp.Services.Trust
 
                 // get link directly, even if in unloaded state we need the same reference
                 OpTrust trust = null;
-                TrustMap.SafeTryGetValue(cachefile.DhtID, out trust);
+                TrustMap.SafeTryGetValue(cachefile.UserID, out trust);
 
                 if (trust == null)
                 {
                     trust = new OpTrust(cachefile);
-                    TrustMap.SafeAdd(cachefile.DhtID, trust);
+                    TrustMap.SafeAdd(cachefile.UserID, trust);
                 }
                 else
                     trust.File = cachefile;
@@ -830,7 +830,7 @@ namespace RiseOp.Services.Trust
                             roots.LockReading(delegate()
                             {
                                 foreach (OpLink root in roots)
-                                    if (root.DhtID == link.LoopRoot.DhtID)
+                                    if (root.UserID == link.LoopRoot.UserID)
                                     {
                                         roots.SafeRemove(root); // root is a loop node
 
@@ -850,24 +850,24 @@ namespace RiseOp.Services.Trust
                 // load data from link file
                 TaggedStream file = new TaggedStream(Cache.GetFilePath(cachefile.Header));
                 CryptoStream crypto = new CryptoStream(file, cachefile.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header packetRoot = null;
 
                 while (stream.ReadPacket(ref packetRoot))
                     if (packetRoot.Name == DataPacket.SignedData)
                     {
-                        SignedData signed = SignedData.Decode(Core.Protocol, packetRoot);
+                        SignedData signed = SignedData.Decode(packetRoot);
                         G2Header embedded = new G2Header(signed.Data);
 
                         // figure out data contained
-                        if (Core.Protocol.ReadPacket(embedded))
+                        if (G2Protocol.ReadPacket(embedded))
                         {
                             if (embedded.Name == TrustPacket.ProjectData)
-                                Process_ProjectData(trust, signed, ProjectData.Decode(Core.Protocol, embedded));
+                                Process_ProjectData(trust, signed, ProjectData.Decode(embedded));
 
                             else if (embedded.Name == TrustPacket.LinkData)
-                                Process_LinkData(trust, signed, LinkData.Decode(Core.Protocol, embedded));
+                                Process_LinkData(trust, signed, LinkData.Decode(embedded));
                         }
                     }
 
@@ -895,8 +895,8 @@ namespace RiseOp.Services.Trust
                         OpLink loop = new OpTrust(project, (ulong)Core.RndGen.Next()).GetLink(project);
                         loop.IsLoopRoot = true;
 
-                        List<ulong> uplinks = GetUnconfirmedUplinkIDs(trust.DhtID, project);
-                        uplinks.Add(trust.DhtID);
+                        List<ulong> uplinks = GetUnconfirmedUplinkIDs(trust.UserID, project);
+                        uplinks.Add(trust.UserID);
 
                         foreach (ulong uplink in uplinks)
                         {
@@ -908,7 +908,7 @@ namespace RiseOp.Services.Trust
                             member.LoopRoot = loop;
 
                             loop.Downlinks.Add(member);
-                            loop.Confirmed.Add(member.DhtID); //needed for getlowers
+                            loop.Confirmed.Add(member.UserID); //needed for getlowers
                         }
 
                         AddRoot(loop);
@@ -921,8 +921,8 @@ namespace RiseOp.Services.Trust
                 if (LinkUpdate != null)
                     LinkUpdate.Invoke(trust);
 
-                if (Core.NewsWorthy(trust.DhtID, 0, false))
-                    Core.MakeNews("Trust updated by " + GetName(trust.DhtID), trust.DhtID, 0, true, LinkRes.link, null);
+                if (Core.NewsWorthy(trust.UserID, 0, false))
+                    Core.MakeNews("Trust updated by " + GetName(trust.UserID), trust.UserID, 0, true, LinkRes.link, null);
 
 
                 // update subs
@@ -933,19 +933,19 @@ namespace RiseOp.Services.Trust
                     ProjectRoots.LockReading(delegate()
                     {
                         foreach (uint project in ProjectRoots.Keys)
-                            if (Core.LocalDhtID == trust.DhtID || IsHigher(trust.DhtID, project))
-                                GetLocsBelow(Core.LocalDhtID, project, locations);
+                            if (Core.UserID == trust.UserID || IsHigher(trust.UserID, project))
+                                GetLocsBelow(Core.UserID, project, locations);
                     });
 
-                    Store.PublishDirect(locations, trust.DhtID, ServiceID, 0, cachefile.SignedHeader);
+                    Store.PublishDirect(locations, trust.UserID, ServiceID, 0, cachefile.SignedHeader);
                 }
 
                 // update interface node
-                Core.RunInGuiThread(GuiUpdate, trust.DhtID);
+                Core.RunInGuiThread(GuiUpdate, trust.UserID);
 
                 foreach (OpLink link in trust.Links.Values)
                     foreach (OpLink downlink in link.Downlinks)
-                        Core.RunInGuiThread(GuiUpdate, downlink.DhtID);
+                        Core.RunInGuiThread(GuiUpdate, downlink.UserID);
 
             }
             catch (Exception ex)
@@ -1019,7 +1019,7 @@ namespace RiseOp.Services.Trust
 
                 // always know a link's trust structure to the top
                 if (!targetTrust.Loaded)
-                    Cache.Research(targetTrust.DhtID);
+                    Cache.Research(targetTrust.UserID);
 
                 if (targetLink.Uplink == null)
                     AddRoot(targetLink);
@@ -1027,7 +1027,7 @@ namespace RiseOp.Services.Trust
 
             else
             {
-                localLink.Confirmed.Add(targetLink.DhtID);
+                localLink.Confirmed.Add(targetLink.UserID);
             }
         }
 
@@ -1064,8 +1064,8 @@ namespace RiseOp.Services.Trust
 
             // update local peers we are leaving
             List<LocationData> locations = new List<LocationData>();
-            GetLocs(Core.LocalDhtID, project, 1, 1, locations);
-            GetLocsBelow(Core.LocalDhtID, project, locations);
+            GetLocs(Core.UserID, project, 1, 1, locations);
+            GetLocsBelow(Core.UserID, project, locations);
 
             LocalTrust.RemoveProject(project);
 
@@ -1074,8 +1074,8 @@ namespace RiseOp.Services.Trust
             // update links in old project of update
             Core.RunInCoreAsync(delegate()
             {
-                OpVersionedFile file = Cache.GetFile(Core.LocalDhtID);
-                Store.PublishDirect(locations, Core.LocalDhtID, ServiceID, 0, file.SignedHeader);
+                OpVersionedFile file = Cache.GetFile(Core.UserID);
+                Store.PublishDirect(locations, Core.UserID, ServiceID, 0, file.SignedHeader);
             });
         }
 
@@ -1144,8 +1144,8 @@ namespace RiseOp.Services.Trust
 
             if (link != null)
                 foreach (OpLink child in link.Downlinks)
-                    if (child.DhtID != root && !AddLinkLocations(child, locations))
-                        GetLocsBelow(child.DhtID, project, locations);
+                    if (child.UserID != root && !AddLinkLocations(child, locations))
+                        GetLocsBelow(child.UserID, project, locations);
         }
         private void GetLinkLocs(OpLink parent, int depth, List<LocationData> locations)
         {
@@ -1159,11 +1159,11 @@ namespace RiseOp.Services.Trust
 
         private bool AddLinkLocations(OpLink link, List<LocationData> locations)
         {
-            List<ClientInfo> clients = Core.Locations.GetClients(link.DhtID);
+            List<ClientInfo> clients = Core.Locations.GetClients(link.UserID);
 
             foreach (ClientInfo info in clients)
             {
-                if (info.Data.DhtID == Core.LocalDhtID && info.Data.Source.ClientID == Core.ClientID)
+                if (info.Data.UserID == Core.UserID && info.Data.Source.ClientID == Core.OperationNet.ClientID)
                     continue;
 
                 if (!locations.Contains(info.Data))
@@ -1181,7 +1181,7 @@ namespace RiseOp.Services.Trust
             ProjectRoots.LockReading(delegate()
             {
                 foreach (uint project in ProjectRoots.Keys)
-                    GetLocs(Core.LocalDhtID, project, 1, 1, locations);  // below done by cacheplan
+                    GetLocs(Core.UserID, project, 1, 1, locations);  // below done by cacheplan
             });
 
             return locations;
@@ -1213,12 +1213,12 @@ namespace RiseOp.Services.Trust
 
         internal bool IsHigher(ulong key, uint project)
         {
-            return IsHigher(Core.LocalDhtID, key, project, true);
+            return IsHigher(Core.UserID, key, project, true);
         }
 
         internal bool IsUnconfirmedHigher(ulong key, uint project)
         {
-            return IsHigher(Core.LocalDhtID, key, project, false);
+            return IsHigher(Core.UserID, key, project, false);
         }
 
         internal bool IsHigher(ulong localID, ulong key, uint project)
@@ -1251,7 +1251,7 @@ namespace RiseOp.Services.Trust
 
             if (highest != null && 
                 highest.LoopRoot != null && 
-                highest.LoopRoot.DhtID == higherID)
+                highest.LoopRoot.UserID == higherID)
                 return true;
 
             return false;
@@ -1282,10 +1282,10 @@ namespace RiseOp.Services.Trust
                     return true;
 
                 // if there is a loop higher up, but link is not in it, return
-                if (list.Contains(uplink.DhtID))
+                if (list.Contains(uplink.UserID))
                     return false;
 
-                list.Add(uplink.DhtID);
+                list.Add(uplink.UserID);
 
                 uplink = uplink.GetHigher(false);
             }
@@ -1319,10 +1319,10 @@ namespace RiseOp.Services.Trust
             while (uplink != null)
             {
                 // if looping, return
-                if (uplink.DhtID == local || list.Contains(uplink.DhtID))
+                if (uplink.UserID == local || list.Contains(uplink.UserID))
                     return list;
 
-                list.Add(uplink.DhtID);
+                list.Add(uplink.UserID);
 
                 uplink = uplink.GetHigher(confirmed);
             }
@@ -1357,7 +1357,7 @@ namespace RiseOp.Services.Trust
                 return list;
 
             foreach (OpLink sub in uplink.GetLowers(true))
-                list.Add(sub.DhtID);
+                list.Add(sub.UserID);
 
             list.Remove(id);
 
@@ -1377,12 +1377,12 @@ namespace RiseOp.Services.Trust
 
             foreach (OpLink downlink in link.Downlinks)
                 if (!link.IsLoopedTo(downlink))
-                    if (link.Confirmed.Contains(downlink.DhtID))
+                    if (link.Confirmed.Contains(downlink.UserID))
                     {
-                        list.Add(downlink.DhtID);
+                        list.Add(downlink.UserID);
 
                         if (levels > 0)
-                            list.AddRange(GetDownlinkIDs(downlink.DhtID, project, levels));
+                            list.AddRange(GetDownlinkIDs(downlink.UserID, project, levels));
                     }
 
             return list;
@@ -1397,7 +1397,7 @@ namespace RiseOp.Services.Trust
             if (link != null)
                 foreach (OpLink downlink in link.Downlinks)
                     if (!link.IsLoopedTo(downlink))
-                        if (link.Confirmed.Contains(downlink.DhtID))
+                        if (link.Confirmed.Contains(downlink.UserID))
                             count++;
 
             return count > 0;
@@ -1415,7 +1415,7 @@ namespace RiseOp.Services.Trust
             if (higher != null && higher.Confirmed.Contains(id))
                 foreach (OpLink downlink in higher.Downlinks)
                     if (!higher.IsLoopedTo(downlink))
-                        if (downlink.DhtID == id)
+                        if (downlink.UserID == id)
                             return true;
 
             return false;
@@ -1428,7 +1428,7 @@ namespace RiseOp.Services.Trust
             if (link != null && link.Confirmed.Contains(id))
                 foreach (OpLink downlink in link.Downlinks)
                     if (!link.IsLoopedTo(downlink))
-                        if (downlink.DhtID == id)
+                        if (downlink.UserID == id)
                             return true;
 
             return false;
@@ -1446,7 +1446,7 @@ namespace RiseOp.Services.Trust
             if (uplink == null || link.IsLoopedTo(uplink))
                 return false;
 
-            return uplink.DhtID == id;
+            return uplink.UserID == id;
         }
 
         internal bool IsInScope(Dictionary<ulong, short> scope, ulong testID, uint project)
@@ -1526,11 +1526,11 @@ namespace RiseOp.Services.Trust
             File = file;
         }
 
-        internal ulong DhtID
+        internal ulong UserID
         {
             get
             {
-                return (File == null) ? LoopID : File.DhtID;
+                return (File == null) ? LoopID : File.UserID;
             }
         }
 
@@ -1642,11 +1642,11 @@ namespace RiseOp.Services.Trust
         internal List<ulong> Confirmed = new List<ulong>();
         internal List<UplinkRequest> Requests = new List<UplinkRequest>();
 
-        internal ulong DhtID
+        internal ulong UserID
         {
             get
             {
-                return Trust.DhtID;
+                return Trust.UserID;
             }
         }
 
@@ -1695,7 +1695,7 @@ namespace RiseOp.Services.Trust
                 return Uplink;
 
             // if we are one of the uplinks confirmed downlinks then return trusted uplink
-            if (Uplink.Confirmed.Contains(DhtID))
+            if (Uplink.Confirmed.Contains(UserID))
                 return Uplink;
 
             return null;
@@ -1707,7 +1707,7 @@ namespace RiseOp.Services.Trust
 
             foreach (OpLink downlink in Downlinks)
                 if (IsLoopRoot || !IsLoopedTo(downlink)) // chat uses getlowers on looproot
-                    if (!confirmed || Confirmed.Contains(downlink.DhtID))
+                    if (!confirmed || Confirmed.Contains(downlink.UserID))
                         lowers.Add(downlink);
 
             return lowers;
@@ -1727,7 +1727,7 @@ namespace RiseOp.Services.Trust
             // uplink requests are invalidated on verion update also
             // not the local ones, but the ones this link issued to previous uplink
             foreach (UplinkRequest request in Requests)
-                if (request.KeyID == downlink.DhtID)
+                if (request.KeyID == downlink.UserID)
                 {
                     Requests.Remove(request);
                     break;
@@ -1746,7 +1746,7 @@ namespace RiseOp.Services.Trust
 
             while (uplink != null)
             {
-                list.Add(uplink.DhtID);
+                list.Add(uplink.UserID);
 
                 uplink = uplink.GetHigher(true);
 

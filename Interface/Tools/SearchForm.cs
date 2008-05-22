@@ -45,7 +45,7 @@ namespace RiseOp.Interface.Tools
                 foreach (SimInstance instance in Sim.Instances)
                     if (instance.Core.User.Settings.ScreenName == TextSearch.Text)
                     {
-                        TargetID = instance.Core.LocalDhtID;
+                        TargetID = Network.IsGlobal ? instance.Core.GlobalNet.LocalUserID : instance.Core.OperationNet.LocalUserID;
                         break;
                     }
             
@@ -53,7 +53,7 @@ namespace RiseOp.Interface.Tools
                 foreach (SimInstance instance in Sim.Instances)
                     if (instance.Core.User.Settings.Operation == TextSearch.Text)
                     {
-                        TargetID = instance.Core.OpID;
+                        TargetID = instance.Core.OperationNet.OpID;
                         break;
                     }
 
@@ -97,7 +97,7 @@ namespace RiseOp.Interface.Tools
             foreach (DhtLookup lookup in search.LookupList)
                 ListResults.Items.Add(new ListViewItem(new string[]
 					{
-						Utilities.IDtoBin(lookup.Contact.DhtID),
+						Utilities.IDtoBin(lookup.Contact.userID),
 						lookup.Contact.ClientID.ToString()		
 					}));
 

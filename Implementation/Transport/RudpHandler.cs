@@ -4,6 +4,7 @@ using System.Text;
 
 using RiseOp.Services;
 using RiseOp.Services.Location;
+using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol.Net;
 
 namespace RiseOp.Implementation.Transport
@@ -20,17 +21,18 @@ namespace RiseOp.Implementation.Transport
         // notify components on connection changes (event)
         // remove connections when components no longer interested in node (timer)
 
-        internal OpCore Core;
+        internal DhtNetwork Network;
 
         internal Dictionary<ulong, List<RudpSession>> SessionMap = new Dictionary<ulong, List<RudpSession>>();
+        internal Dictionary<ushort, RudpSocket> SocketMap = new Dictionary<ushort, RudpSocket>();
 
         internal SessionUpdateHandler SessionUpdate;
         internal ServiceEvent<SessionDataHandler> SessionData = new ServiceEvent<SessionDataHandler>();
         internal KeepActiveHandler KeepActive;
 
-        internal RudpHandler(OpCore core)
+        internal RudpHandler(DhtNetwork network)
         {
-            Core = core;
+            Network = network;
         }
 
         internal void SecondTimer()
@@ -54,14 +56,14 @@ namespace RiseOp.Implementation.Transport
                     list.Remove(session);
 
                 if (list.Count == 0)
-                    removeKeys.Add(removeSessions[0].DhtID);
+                    removeKeys.Add(removeSessions[0].UserID);
             }
 
             foreach (ulong key in removeKeys)
                 SessionMap.Remove(key);
 
             // every 10 secs check for sessions no longer in use
-            if (Core.TimeNow.Second % 10 != 0)
+            if (Network.Core.TimeNow.Second % 10 != 0)
                 return;
 
             Dictionary<ulong, bool> active = new Dictionary<ulong, bool>();
@@ -80,29 +82,29 @@ namespace RiseOp.Implementation.Transport
 
         internal void Connect(LocationData location)
         {
-            if (location.DhtID == Core.LocalDhtID && location.Source.ClientID == Core.ClientID)
+            if (location.UserID == Network.LocalUserID && location.Source.ClientID == Network.ClientID)
                 return;
 
             if (IsConnected(location))
                 return;
 
-            if (!SessionMap.ContainsKey(location.DhtID))
-                SessionMap[location.DhtID] = new List<RudpSession>();
+            if (!SessionMap.ContainsKey(location.UserID))
+                SessionMap[location.UserID] = new List<RudpSession>();
 
-            RudpSession session = new RudpSession(Core, location.DhtID, location.Source.ClientID, false);
-            SessionMap[location.DhtID].Add(session);
+            RudpSession session = new RudpSession(this, location.UserID, location.Source.ClientID, false);
+            SessionMap[location.UserID].Add(session);
 
-            session.Comm.AddAddress(new RudpAddress(Core, new DhtAddress(location.IP, location.Source), location.Global));
+            session.Comm.AddAddress(new RudpAddress(new DhtAddress(location.IP, location.Source), location.Global));
 
             foreach (DhtAddress address in location.Proxies)
-                session.Comm.AddAddress(new RudpAddress(Core, address, location.Global));
+                session.Comm.AddAddress(new RudpAddress(address, location.Global));
 
             session.Connect(); 
         }
 
         internal RudpSession GetActiveSession(LocationData location)
         {
-            return GetActiveSession(location.DhtID, location.Source.ClientID);
+            return GetActiveSession(location.UserID, location.Source.ClientID);
         }
 
         internal RudpSession GetActiveSession(ulong key, ushort client)
@@ -155,7 +157,7 @@ namespace RiseOp.Implementation.Transport
 
         internal void Add(RudpSession rudp)
         {
-            Add(rudp.DhtID, rudp.ClientID);
+            Add(rudp.UserID, rudp.ClientID);
         }
 
         internal void Add(ulong key, ushort id)
@@ -177,13 +179,13 @@ namespace RiseOp.Implementation.Transport
 
         internal bool Contains(RudpSession rudp)
         {
-            if (AllSessions.Contains(rudp.DhtID))
+            if (AllSessions.Contains(rudp.UserID))
                 return true;
 
-            if (!Sessions.ContainsKey(rudp.DhtID))
+            if (!Sessions.ContainsKey(rudp.UserID))
                 return false;
 
-            if (Sessions[rudp.DhtID].Contains(rudp.ClientID))
+            if (Sessions[rudp.UserID].Contains(rudp.ClientID))
                 return true;
 
             return false;

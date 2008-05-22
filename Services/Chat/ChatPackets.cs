@@ -43,14 +43,14 @@ namespace RiseOp.Services.Chat
                 protocol.WritePacket(chat, Packet_RoomID, BitConverter.GetBytes(RoomID));
 
                 if (Text.Length > 0)
-                    protocol.WritePacket(chat, Packet_Text, protocol.UTF.GetBytes(Text));
+                    protocol.WritePacket(chat, Packet_Text, UTF8Encoding.UTF8.GetBytes(Text));
                 
 
                 return protocol.WriteFinish();
             }
         }
 
-        internal static ChatText Decode(G2Protocol protocol, G2Header root)
+        internal static ChatText Decode(G2Header root)
         {
             ChatText chat = new ChatText();
 
@@ -74,7 +74,7 @@ namespace RiseOp.Services.Chat
                         break;
 
                     case Packet_Text:
-                        chat.Text = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        chat.Text = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_RoomID:
@@ -116,7 +116,7 @@ namespace RiseOp.Services.Chat
         }
 
 
-        internal static ChatStatus Decode(G2Protocol protocol, G2Header root)
+        internal static ChatStatus Decode(G2Header root)
         {
             ChatStatus status = new ChatStatus();
 
@@ -186,13 +186,13 @@ namespace RiseOp.Services.Chat
                     protocol.WritePacket(invite, Packet_SignedInvite, SignedInvite);
 
                 if (Title.Length > 0)
-                    protocol.WritePacket(invite, Packet_Title, protocol.UTF.GetBytes(Title));
+                    protocol.WritePacket(invite, Packet_Title, UTF8Encoding.UTF8.GetBytes(Title));
 
                 return protocol.WriteFinish();
             }
         }
 
-        internal static ChatInvite Decode(G2Protocol protocol, G2Header root)
+        internal static ChatInvite Decode(G2Header root)
         {
             ChatInvite invite = new ChatInvite();
 
@@ -212,7 +212,7 @@ namespace RiseOp.Services.Chat
                         break;
 
                     case Packet_Title:
-                        invite.Title = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        invite.Title = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Host:
@@ -268,7 +268,7 @@ namespace RiseOp.Services.Chat
         }
 
 
-        internal static ChatWho Decode(G2Protocol protocol, G2Header root)
+        internal static ChatWho Decode(G2Header root)
         {
             ChatWho who = new ChatWho();
 

@@ -39,14 +39,14 @@ namespace RiseOp.Services.Profile
             {
                 G2Frame header = protocol.WritePacket(null, ProfilePacket.Attachment, null);
 
-                protocol.WritePacket(header, Packet_Name, protocol.UTF.GetBytes(Name));
+                protocol.WritePacket(header, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
                 protocol.WritePacket(header, Packet_Size, CompactNum.GetBytes(Size));
 
                 return protocol.WriteFinish();
             }
         }
 
-        internal static ProfileAttachment Decode(G2Protocol protocol, G2Header root)
+        internal static ProfileAttachment Decode(G2Header root)
         {
             ProfileAttachment file = new ProfileAttachment();
             G2Header child = new G2Header(root.Data);
@@ -59,7 +59,7 @@ namespace RiseOp.Services.Profile
                 switch (child.Name)
                 {
                     case Packet_Name:
-                        file.Name = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        file.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Size:
@@ -94,14 +94,14 @@ namespace RiseOp.Services.Profile
                 G2Frame header = protocol.WritePacket(null, ProfilePacket.Field, null);
 
                 protocol.WritePacket(header, Packet_Type, BitConverter.GetBytes((byte)FieldType));
-                protocol.WritePacket(header, Packet_Name, protocol.UTF.GetBytes(Name));
+                protocol.WritePacket(header, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
                 protocol.WritePacket(header, Packet_Value, Value);
 
                 return protocol.WriteFinish();
             }
         }
 
-        internal static ProfileField Decode(G2Protocol protocol, G2Header root)
+        internal static ProfileField Decode(G2Header root)
         {
             ProfileField field = new ProfileField();
             G2Header child = new G2Header(root.Data);
@@ -118,7 +118,7 @@ namespace RiseOp.Services.Profile
                         break;
 
                     case Packet_Name:
-                        field.Name = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        field.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Value:

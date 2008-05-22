@@ -132,7 +132,7 @@ namespace RiseOp.Services.Assist
         {
             // clean download later map
             if (!Network.Established)
-                Utilities.PruneMap(DownloadLater, Core.LocalDhtID, PruneSize);
+                Utilities.PruneMap(DownloadLater, Core.UserID, PruneSize);
 
             // save headers
             if (RunSaveHeaders)
@@ -164,10 +164,10 @@ namespace RiseOp.Services.Assist
                     if (FileMap.Count > PruneSize)
                         foreach (OpVersionedFile vfile in FileMap.Values)
                         {
-                            if (vfile.DhtID != Core.LocalDhtID &&
-                                !Core.Focused.SafeContainsKey(vfile.DhtID) &&
-                                !Network.Routing.InCacheArea(vfile.DhtID))
-                                removeIDs.Add(vfile.DhtID);
+                            if (vfile.UserID != Core.UserID &&
+                                !Core.Focused.SafeContainsKey(vfile.UserID) &&
+                                !Network.Routing.InCacheArea(vfile.UserID))
+                                removeIDs.Add(vfile.UserID);
                         }
                 });
 
@@ -176,11 +176,11 @@ namespace RiseOp.Services.Assist
                 {
                     while (removeIDs.Count > 0 && FileMap.Count > PruneSize / 2)
                     {
-                        ulong furthest = Core.LocalDhtID;
+                        ulong furthest = Core.UserID;
                         OpVersionedFile vfile = FileMap[furthest];
 
                         foreach (ulong id in removeIDs)
-                            if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                            if ((id ^ Core.UserID) > (furthest ^ Core.UserID))
                                 furthest = id;
 
                         vfile = FileMap[furthest];
@@ -207,8 +207,8 @@ namespace RiseOp.Services.Assist
                     FileMap.LockReading(delegate()
                     {
                         foreach (OpVersionedFile vfile in FileMap.Values)
-                            if (vfile.Unique && Network.Routing.InCacheArea(vfile.DhtID))
-                                Store.PublishNetwork(vfile.DhtID, Service, DataType, vfile.SignedHeader);
+                            if (vfile.Unique && Network.Routing.InCacheArea(vfile.UserID))
+                                Store.PublishNetwork(vfile.UserID, Service, DataType, vfile.SignedHeader);
                     });
 
                 // only download those objects in our local area
@@ -241,21 +241,21 @@ namespace RiseOp.Services.Assist
 
                 FileStream file = new FileStream(path, FileMode.Open);
                 CryptoStream crypto = new CryptoStream(file, LocalKey.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;
 
                 while (stream.ReadPacket(ref root))
                     if (root.Name == DataPacket.SignedData)
                     {
-                        SignedData signed = SignedData.Decode(Core.Protocol, root);
+                        SignedData signed = SignedData.Decode(root);
                         G2Header embedded = new G2Header(signed.Data);
 
 
                         // figure out data contained
-                        if (Core.Protocol.ReadPacket(embedded))
+                        if (G2Protocol.ReadPacket(embedded))
                             if (embedded.Name == DataPacket.VersionedFile)
-                                Process_VersionedFile(null, signed, VersionedFileHeader.Decode(Core.Protocol, embedded));
+                                Process_VersionedFile(null, signed, VersionedFileHeader.Decode(embedded));
                     }
 
                 stream.Close();
@@ -308,7 +308,7 @@ namespace RiseOp.Services.Assist
                 return vfile;
             }
 
-            vfile = GetFile(Core.LocalDhtID);
+            vfile = GetFile(Core.UserID);
 
             VersionedFileHeader header = null;
             if (vfile != null)
@@ -323,7 +323,7 @@ namespace RiseOp.Services.Assist
 
 
             header.Key = Core.User.Settings.KeyPublic;
-            header.KeyID = Core.LocalDhtID; // set so keycheck works
+            header.KeyID = Core.UserID; // set so keycheck works
             header.Version++;
             header.FileKey = key;
             header.Extra = extra;
@@ -339,7 +339,7 @@ namespace RiseOp.Services.Assist
                 File.Move(tempPath, finalPath);
             }
 
-            CacheFile(new SignedData(Core.Protocol, Core.User.Settings.KeyPair, header), header);
+            CacheFile(new SignedData(Network.Protocol, Core.User.Settings.KeyPair, header), header);
 
             SaveHeaders();
 
@@ -347,12 +347,12 @@ namespace RiseOp.Services.Assist
                 try { File.Delete(oldFile); }
                 catch { }
 
-            vfile = GetFile(Core.LocalDhtID);
+            vfile = GetFile(Core.UserID);
 
             if (UseLocalSync)
                 Core.Sync.UpdateLocal();
             else if (Network.Established)
-                Store.PublishNetwork(Core.LocalDhtID, Service, DataType, vfile.SignedHeader);
+                Store.PublishNetwork(Core.UserID, Service, DataType, vfile.SignedHeader);
             else
                 vfile.Unique = true; // publish when connected
 
@@ -373,7 +373,7 @@ namespace RiseOp.Services.Assist
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.DhtID, Service, DataType, current.SignedHeader));
+                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.UserID, Service, DataType, current.SignedHeader));
 
                     return;
                 }
@@ -430,7 +430,7 @@ namespace RiseOp.Services.Assist
 
                 // set new header
                 newFile.Header = header;
-                newFile.SignedHeader = signedHeader.Encode(Core.Protocol);
+                newFile.SignedHeader = signedHeader.Encode(Network.Protocol);
                 newFile.Unique = !Network.Established;
 
                 FileMap.SafeAdd(header.KeyID, newFile);
@@ -512,7 +512,7 @@ namespace RiseOp.Services.Assist
         {
             // getting published to - search results - patch
 
-            SignedData signed = SignedData.Decode(Core.Protocol, store.Data);
+            SignedData signed = SignedData.Decode(store.Data);
 
             if (signed == null)
                 return;
@@ -520,9 +520,9 @@ namespace RiseOp.Services.Assist
             G2Header embedded = new G2Header(signed.Data);
 
             // figure out data contained
-            if (Core.Protocol.ReadPacket(embedded))
+            if (G2Protocol.ReadPacket(embedded))
                 if (embedded.Name == DataPacket.VersionedFile)
-                    Process_VersionedFile(null, signed, VersionedFileHeader.Decode(Core.Protocol, signed.Data));
+                    Process_VersionedFile(null, signed, VersionedFileHeader.Decode(signed.Data));
         }
 
         List<byte[]> Store_Replicate(DhtContact contact)
@@ -535,10 +535,10 @@ namespace RiseOp.Services.Assist
             FileMap.LockReading(delegate()
             {
                 foreach (OpVersionedFile vfile in FileMap.Values)
-                    if (Network.Routing.InCacheArea(vfile.DhtID))
+                    if (Network.Routing.InCacheArea(vfile.UserID))
                     {
 
-                        byte[] id = BitConverter.GetBytes(vfile.DhtID);
+                        byte[] id = BitConverter.GetBytes(vfile.UserID);
                         byte[] ver = CompactNum.GetBytes(vfile.Header.Version);
 
                         byte[] patch = new byte[id.Length + ver.Length];
@@ -557,20 +557,20 @@ namespace RiseOp.Services.Assist
             if (data.Length < 9)
                 return;
 
-            ulong dhtid = BitConverter.ToUInt64(data, 0);
+            ulong user = BitConverter.ToUInt64(data, 0);
 
-            if (!Network.Routing.InCacheArea(dhtid))
+            if (!Network.Routing.InCacheArea(user))
                 return;
 
             uint version = CompactNum.ToUInt32(data, 8, data.Length - 8);
 
-            OpVersionedFile vfile = GetFile(dhtid);
+            OpVersionedFile vfile = GetFile(user);
 
             if (vfile != null && vfile.Header != null)
             {
                 if (vfile.Header.Version > version)
                 {
-                    Store.Send_StoreReq(source, null, new DataReq(null, vfile.DhtID, Service, DataType, vfile.SignedHeader));
+                    Store.Send_StoreReq(source, null, new DataReq(null, vfile.UserID, Service, DataType, vfile.SignedHeader));
                     return;
                 }
 
@@ -584,9 +584,9 @@ namespace RiseOp.Services.Assist
 
 
             if (Network.Established)
-                Network.Searches.SendDirectRequest(source, dhtid, Service, DataType, BitConverter.GetBytes(version));
+                Network.Searches.SendDirectRequest(source, user, Service, DataType, BitConverter.GetBytes(version));
             else
-                DownloadLater[dhtid] = version;
+                DownloadLater[user] = version;
         }
 
         internal void Research(ulong key)
@@ -645,7 +645,7 @@ namespace RiseOp.Services.Assist
 
         byte[] LocalSync_GetTag()
         {
-            OpVersionedFile file = GetFile(Core.LocalDhtID);
+            OpVersionedFile file = GetFile(Core.UserID);
 
             return (file != null) ? CompactNum.GetBytes(file.Header.Version) : null;
         }
@@ -683,7 +683,7 @@ namespace RiseOp.Services.Assist
 
     internal class OpVersionedFile
     {
-        internal ulong    DhtID;
+        internal ulong    UserID;
         internal byte[]   Key;    // make sure reference is the same as main key list (saves memory)
         internal bool     Unique;
 
@@ -693,7 +693,7 @@ namespace RiseOp.Services.Assist
         internal OpVersionedFile(byte[] key)
         {
             Key = key;
-            DhtID = Utilities.KeytoID(key);
+            UserID = Utilities.KeytoID(key);
         }
     }
 
@@ -739,20 +739,20 @@ namespace RiseOp.Services.Assist
             }
         }
 
-        internal static VersionedFileHeader Decode(G2Protocol protocol, byte[] data)
+        internal static VersionedFileHeader Decode(byte[] data)
         {
             G2Header root = new G2Header(data);
 
-            if (!protocol.ReadPacket(root))
+            if (!G2Protocol.ReadPacket(root))
                 return null;
 
             if (root.Name != DataPacket.VersionedFile)
                 return null;
 
-            return VersionedFileHeader.Decode(protocol, root);
+            return VersionedFileHeader.Decode(root);
         }
 
-        internal static VersionedFileHeader Decode(G2Protocol protocol, G2Header root)
+        internal static VersionedFileHeader Decode(G2Header root)
         {
             VersionedFileHeader header = new VersionedFileHeader();
             G2Header child = new G2Header(root.Data);

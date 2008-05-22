@@ -104,8 +104,8 @@ namespace RiseOp.Services.Mail
         internal MailService(OpCore core)
         {
             Core = core;
-            Protocol = Core.Protocol;
             Network = core.OperationNet;
+            Protocol = Network.Protocol;
             Store = Network.Store;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
@@ -228,11 +228,11 @@ namespace RiseOp.Services.Mail
 
                 while (removeIds.Count > 0 && MailMap.Count > PruneSize / 2)
                 {
-                    ulong furthest = Core.LocalDhtID;
+                    ulong furthest = Core.UserID;
                     List<CachedMail> mails = MailMap[furthest];
 
                     foreach (ulong id in removeIds)
-                        if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                        if ((id ^ Core.UserID) > (furthest ^ Core.UserID))
                             furthest = id;
 
                     mails = MailMap[furthest];
@@ -268,10 +268,10 @@ namespace RiseOp.Services.Mail
 
                 while (removeIds.Count > 0 && AckMap.Count > PruneSize / 2)
                 {
-                    ulong furthest = Core.LocalDhtID;
+                    ulong furthest = Core.UserID;
 
                     foreach (ulong id in removeIds)
-                        if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                        if ((id ^ Core.UserID) > (furthest ^ Core.UserID))
                             furthest = id;
 
                     AckMap.Remove(furthest);
@@ -283,10 +283,10 @@ namespace RiseOp.Services.Mail
 
         void PendingCache_FileRemoved(OpVersionedFile file)
         {
-            CachedPending pending = FindPending(file.DhtID);
+            CachedPending pending = FindPending(file.UserID);
 
             if (pending != null)
-                PendingMap.Remove(file.DhtID);
+                PendingMap.Remove(file.UserID);
         }
 
         private void PruneMap(Dictionary<ulong, List<MailIdent>> map)
@@ -298,11 +298,11 @@ namespace RiseOp.Services.Mail
 
             while (map.Count > 0 && map.Count > PruneSize)
             {
-                ulong furthest = Core.LocalDhtID;
+                ulong furthest = Core.UserID;
 
                 // get furthest id
                 foreach (ulong id in map.Keys)
-                    if ((id ^ Core.LocalDhtID) > (furthest ^ Core.LocalDhtID))
+                    if ((id ^ Core.UserID) > (furthest ^ Core.UserID))
                         furthest = id;
 
                 // remove one 
@@ -407,24 +407,24 @@ namespace RiseOp.Services.Mail
 
                 FileStream file = new FileStream(path, FileMode.Open);
                 CryptoStream crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;
 
                 while (stream.ReadPacket(ref root))
                     if (root.Name == DataPacket.SignedData)
                     {
-                        SignedData signed = SignedData.Decode(Core.Protocol, root);
+                        SignedData signed = SignedData.Decode(root);
                         G2Header embedded = new G2Header(signed.Data);
 
                         // figure out data contained
-                        if (Core.Protocol.ReadPacket(embedded))
+                        if (G2Protocol.ReadPacket(embedded))
                         {
                             if (embedded.Name == MailPacket.MailHeader)
-                                Process_MailHeader(null, signed, MailHeader.Decode(Core.Protocol, embedded));
+                                Process_MailHeader(null, signed, MailHeader.Decode(embedded));
 
                             else if (embedded.Name == MailPacket.Ack)
-                                Process_MailAck(null, signed, MailAck.Decode(Core.Protocol, embedded), true);
+                                Process_MailAck(null, signed, MailAck.Decode(embedded), true);
                         }
                     }
 
@@ -463,7 +463,7 @@ namespace RiseOp.Services.Mail
                 {
                     foreach (LocalMail local in mailList)
                     {
-                        byte[] encoded = local.Header.Encode(Core.Protocol, true);
+                        byte[] encoded = local.Header.Encode(Network.Protocol, true);
                         stream.Write(encoded, 0, encoded.Length);
                     }
                 });
@@ -498,14 +498,14 @@ namespace RiseOp.Services.Mail
 
                     FileStream file = new FileStream(path, FileMode.Open);
                     CryptoStream crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
-                    PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                    PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                     G2Header root = null;
 
                     while (stream.ReadPacket(ref root))
                         if (root.Name == MailPacket.MailHeader)
                         {
-                            MailHeader header = MailHeader.Decode(Core.Protocol, root);
+                            MailHeader header = MailHeader.Decode(root);
 
                             if (header == null)
                                 continue;
@@ -555,18 +555,18 @@ namespace RiseOp.Services.Mail
 
                 TaggedStream file = new TaggedStream(path);
                 CryptoStream crypto = new CryptoStream(file, header.LocalKey.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Core.Protocol, FileAccess.Read);
+                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;
 
                 while (stream.ReadPacket(ref root))
                 {
                     if (root.Name == MailPacket.MailInfo)
-                        local.Info = MailInfo.Decode(Core.Protocol, root);
+                        local.Info = MailInfo.Decode(root);
 
                     else if (root.Name == MailPacket.MailDest)
                     {
-                        MailDestination dest = MailDestination.Decode(Core.Protocol, root);
+                        MailDestination dest = MailDestination.Decode(root);
                         Core.IndexKey(dest.KeyID, ref dest.Key);
 
                         if (dest.CC)
@@ -576,7 +576,7 @@ namespace RiseOp.Services.Mail
                     }
 
                     else if (root.Name == MailPacket.MailFile)
-                        local.Attached.Add( MailFile.Decode(Core.Protocol, root));
+                        local.Attached.Add( MailFile.Decode(root));
                 }
 
                 stream.Close();
@@ -598,14 +598,14 @@ namespace RiseOp.Services.Mail
 
             if (menuType == InterfaceMenuType.Quick)
             {
-                if (user == Core.LocalDhtID)
+                if (user == Core.UserID)
                     return null;
 
                 menus.Add(new MenuItemInfo("Send Mail", MailRes.SendMail, new EventHandler(QuickMenu_View)));
                 return menus;
             }
 
-            if (user != Core.LocalDhtID)
+            if (user != Core.UserID)
                 return null;
 
             if (menuType == InterfaceMenuType.Internal)
@@ -640,7 +640,7 @@ namespace RiseOp.Services.Mail
             if (node == null)
                 return;
 
-            if (node.GetKey() != Core.LocalDhtID)
+            if (node.GetKey() != Core.UserID)
                 return;
 
             MailView view = new MailView(this);
@@ -659,7 +659,7 @@ namespace RiseOp.Services.Mail
             // exception handled by compose mail interface
             MailHeader header = new MailHeader();
             header.Source = Core.User.Settings.KeyPublic;
-            header.SourceID = Core.LocalDhtID;
+            header.SourceID = Core.UserID;
             header.LocalKey.GenerateKey();
             header.LocalKey.IV = new byte[header.LocalKey.IV.Length];
             header.Read = true;
@@ -676,7 +676,7 @@ namespace RiseOp.Services.Mail
             foreach (ulong id in to)
                 written += Protocol.WriteToFile(new MailDestination(Core.KeyMap[id], false), stream);
 
-            byte[] bodyBytes = Core.Protocol.UTF.GetBytes(body);
+            byte[] bodyBytes = UTF8Encoding.UTF8.GetBytes(body);
             written += Protocol.WriteToFile(new MailFile("body", bodyBytes.Length), stream);
 
             foreach (AttachedFile attached in files)
@@ -717,7 +717,7 @@ namespace RiseOp.Services.Mail
 
 
             // move file, overwrite if need be, local id used so filename is the same for all targets
-            string finalPath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, Core.LocalDhtID, header.FileHash);
+            string finalPath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, Core.UserID, header.FileHash);
             File.Move(tempPath, finalPath);
 
             // write header to outbound file
@@ -753,7 +753,7 @@ namespace RiseOp.Services.Mail
             
             SavePending();
 
-            CachedPending local = FindPending(Core.LocalDhtID);
+            CachedPending local = FindPending(Core.UserID);
             header.SourceVersion = (local != null) ? local.Header.Version : 0;
 
             // publish to targets
@@ -767,7 +767,7 @@ namespace RiseOp.Services.Mail
                 if (PendingMap.ContainsKey(id))
                     header.TargetVersion = PendingMap[id].Header.Version;
 
-                byte[] signed = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, header.Encode(Core.Protocol, false) );
+                byte[] signed = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, header.Encode(Network.Protocol, false) );
 
                 if(Network.Established)
                     Core.OperationNet.Store.PublishNetwork(id, ServiceID, DataTypeMail, signed);
@@ -801,12 +801,12 @@ namespace RiseOp.Services.Mail
             fileStart = BitConverter.ToUInt64(decoded, fileKey.Key.Length);
         }
 
-        internal byte[] GetMailID(ulong hashID, ulong dhtID)
+        internal byte[] GetMailID(ulong hashID, ulong userID)
         {
             byte[] buffer = new byte[16];
 
             BitConverter.GetBytes(hashID).CopyTo(buffer, 0);
-            BitConverter.GetBytes(dhtID).CopyTo(buffer, 8);
+            BitConverter.GetBytes(userID).CopyTo(buffer, 8);
 
             ICryptoTransform transform = MailIDKey.CreateEncryptor();
             buffer = transform.TransformFinalBlock(buffer, 0, buffer.Length);
@@ -902,7 +902,7 @@ namespace RiseOp.Services.Mail
         {
             // getting published to - search results - patch
 
-            SignedData signed = SignedData.Decode(Core.Protocol, store.Data);
+            SignedData signed = SignedData.Decode(store.Data);
 
             if (signed == null)
                 return;
@@ -910,16 +910,16 @@ namespace RiseOp.Services.Mail
             G2Header embedded = new G2Header(signed.Data);
 
             // figure out data contained
-            if (Core.Protocol.ReadPacket(embedded))
+            if (G2Protocol.ReadPacket(embedded))
                 if (embedded.Name == MailPacket.MailHeader)
-                    Process_MailHeader(store, signed, MailHeader.Decode(Core.Protocol, embedded));
+                    Process_MailHeader(store, signed, MailHeader.Decode(embedded));
         }
 
         void Store_LocalAck(DataReq store)
         {
             // getting published to - search results - patch
 
-            SignedData signed = SignedData.Decode(Core.Protocol, store.Data);
+            SignedData signed = SignedData.Decode(store.Data);
 
             if (signed == null)
                 return;
@@ -927,9 +927,9 @@ namespace RiseOp.Services.Mail
             G2Header embedded = new G2Header(signed.Data);
 
             // figure out data contained
-            if (Core.Protocol.ReadPacket(embedded))
+            if (G2Protocol.ReadPacket(embedded))
                 if (embedded.Name == MailPacket.Ack)
-                    Process_MailAck(store, signed, MailAck.Decode(Core.Protocol, embedded), false);
+                    Process_MailAck(store, signed, MailAck.Decode(embedded), false);
         }
 
         List<byte[]> Store_ReplicateMail(DhtContact contact)
@@ -976,7 +976,7 @@ namespace RiseOp.Services.Mail
                 MailIdent ident = MailIdent.Decode(data, i);
                 offset += MailIdent.SIZE;
 
-                if (!Network.Routing.InCacheArea(ident.DhtID))
+                if (!Network.Routing.InCacheArea(ident.UserID))
                     continue;
 
                 CachedMail mail = FindMail(ident);
@@ -988,13 +988,13 @@ namespace RiseOp.Services.Mail
                 }
 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, ident.DhtID, ServiceID, DataTypeMail, ident.Encode());
+                    Network.Searches.SendDirectRequest(source, ident.UserID, ServiceID, DataTypeMail, ident.Encode());
                 else
                 {
-                    if (!DownloadMailLater.ContainsKey(ident.DhtID))
-                        DownloadMailLater[ident.DhtID] = new List<MailIdent>();
+                    if (!DownloadMailLater.ContainsKey(ident.UserID))
+                        DownloadMailLater[ident.UserID] = new List<MailIdent>();
 
-                    DownloadMailLater[ident.DhtID].Add(ident);
+                    DownloadMailLater[ident.UserID].Add(ident);
                 }
             }
         }
@@ -1010,7 +1010,7 @@ namespace RiseOp.Services.Mail
                 MailIdent ident = MailIdent.Decode(data, i);
                 offset += MailIdent.SIZE;
 
-                if (!Network.Routing.InCacheArea(ident.DhtID))
+                if (!Network.Routing.InCacheArea(ident.UserID))
                     continue;
 
                 CachedAck ack = FindAck(ident);
@@ -1022,21 +1022,21 @@ namespace RiseOp.Services.Mail
                 }
 
                 if (Network.Established)
-                    Network.Searches.SendDirectRequest(source, ident.DhtID, ServiceID, DataTypeAck, ident.Encode());
+                    Network.Searches.SendDirectRequest(source, ident.UserID, ServiceID, DataTypeAck, ident.Encode());
                 else
                 {
-                    if (!DownloadAcksLater.ContainsKey(ident.DhtID))
-                        DownloadAcksLater[ident.DhtID] = new List<MailIdent>();
+                    if (!DownloadAcksLater.ContainsKey(ident.UserID))
+                        DownloadAcksLater[ident.UserID] = new List<MailIdent>();
 
-                    DownloadAcksLater[ident.DhtID].Add(ident);
+                    DownloadAcksLater[ident.UserID].Add(ident);
                 }
             }
         }
 
         CachedMail FindMail(MailIdent ident)
         {
-            if (MailMap.ContainsKey(ident.DhtID))
-                foreach (CachedMail cached in MailMap[ident.DhtID])
+            if (MailMap.ContainsKey(ident.UserID))
+                foreach (CachedMail cached in MailMap[ident.UserID])
                     if (Utilities.MemCompare(cached.Header.MailID, 0, ident.Data, 0, 4))
                         return cached;
 
@@ -1045,8 +1045,8 @@ namespace RiseOp.Services.Mail
 
         CachedAck FindAck(MailIdent ident)
         {
-            if (AckMap.ContainsKey(ident.DhtID))
-                foreach (CachedAck cached in AckMap[ident.DhtID])
+            if (AckMap.ContainsKey(ident.UserID))
+                foreach (CachedAck cached in AckMap[ident.UserID])
                     if (Utilities.MemCompare(cached.Ack.MailID, 0, ident.Data, 0, 4))
                         return cached;
 
@@ -1179,7 +1179,7 @@ namespace RiseOp.Services.Mail
                     return;
                 }
 
-                if(header.TargetID == Core.LocalDhtID)
+                if(header.TargetID == Core.UserID)
                 {
                     ReceiveMail(path, signed, header);
                     return;
@@ -1191,7 +1191,7 @@ namespace RiseOp.Services.Mail
                 CachedMail mail = new CachedMail() ;
 
                 mail.Header = header;
-                mail.SignedHeader = signed.Encode(Core.Protocol);
+                mail.SignedHeader = signed.Encode(Network.Protocol);
                 mail.Unique = !Network.Established;
 
                 MailMap[header.TargetID].Add(mail);
@@ -1239,7 +1239,7 @@ namespace RiseOp.Services.Mail
             MailAck ack  = new MailAck();
             ack.MailID   = header.MailID;
             ack.Source   = Core.User.Settings.KeyPublic;
-            ack.SourceID = Core.LocalDhtID;
+            ack.SourceID = Core.UserID;
             ack.Target   = header.Source;
             ack.TargetID = header.TargetID; 
             ack.TargetVersion = header.SourceVersion;
@@ -1249,13 +1249,13 @@ namespace RiseOp.Services.Mail
                 PendingAcks[ack.TargetID] = new List<byte[]>();
             PendingAcks[ack.TargetID].Add(ack.MailID);
 
-            CachedPending local = FindPending(Core.LocalDhtID);
+            CachedPending local = FindPending(Core.UserID);
             ack.SourceVersion = (local != null) ? local.Header.Version : 0;
             
             SavePending(); // also publishes
 
             // send 
-            byte[] signedAck = SignedData.Encode(Core.Protocol, Core.User.Settings.KeyPair, ack.Encode(Core.Protocol));
+            byte[] signedAck = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, ack.Encode(Network.Protocol));
             
             if(Network.Established)
                 Core.OperationNet.Store.PublishNetwork(header.SourceID, ServiceID, DataTypeAck, signedAck);
@@ -1364,7 +1364,7 @@ namespace RiseOp.Services.Mail
                     return;
 
             // check if local
-            if(ack.TargetID == Core.LocalDhtID)
+            if(ack.TargetID == Core.UserID)
             {
                 ReceiveAck(ack);
                 return;
@@ -1409,25 +1409,25 @@ namespace RiseOp.Services.Mail
                 if (!AckMap.ContainsKey(ack.TargetID))
                     AckMap[ack.TargetID] = new List<CachedAck>();
 
-                AckMap[ack.TargetID].Add(new CachedAck(signed.Encode(Core.Protocol), ack, !Network.Established));
+                AckMap[ack.TargetID].Add(new CachedAck(signed.Encode(Network.Protocol), ack, !Network.Established));
             }
         }
 
         private void ReceiveAck(MailAck ack)
         {
-            ulong hashID, dhtID;
-            DecodeMailID(ack.MailID, out hashID, out dhtID);
+            ulong hashID, userID;
+            DecodeMailID(ack.MailID, out hashID, out userID);
 
-            if (dhtID != ack.SourceID)
+            if (userID != ack.SourceID)
                 return;
 
             if (!PendingMail.ContainsKey(hashID))
                 return;
 
-            if (!PendingMail[hashID].Contains(dhtID))
+            if (!PendingMail[hashID].Contains(userID))
                 return;
 
-            PendingMail[hashID].Remove(dhtID);
+            PendingMail[hashID].Remove(userID);
 
             if (PendingMail[hashID].Count == 0)
                 PendingMail.Remove(hashID);
@@ -1452,10 +1452,10 @@ namespace RiseOp.Services.Mail
         {
             try
             {
-                if (!PendingMap.ContainsKey(cachedfile.DhtID))
-                    PendingMap[cachedfile.DhtID] = new CachedPending(cachedfile);
+                if (!PendingMap.ContainsKey(cachedfile.UserID))
+                    PendingMap[cachedfile.UserID] = new CachedPending(cachedfile);
 
-                CachedPending pending = PendingMap[cachedfile.DhtID];
+                CachedPending pending = PendingMap[cachedfile.UserID];
 
                 List<byte[]> pendingMailIDs = new List<byte[]>();
                 List<byte[]> pendingAckIDs = new List<byte[]>();
@@ -1496,20 +1496,20 @@ namespace RiseOp.Services.Mail
 
 
                 // if the local pending file that we are loading
-                if (cachedfile.DhtID == Core.LocalDhtID)
+                if (cachedfile.UserID == Core.UserID)
                 {
                     // setup local mail pending
                     PendingMail.Clear();
 
                     foreach (byte[] id in pendingMailIDs)
                     {
-                        ulong hashID, dhtID;
-                        DecodeMailID(id, out hashID, out dhtID);
+                        ulong hashID, userID;
+                        DecodeMailID(id, out hashID, out userID);
 
                         if (!PendingMail.ContainsKey(hashID))
                             PendingMail[hashID] = new List<ulong>();
 
-                        PendingMail[hashID].Add(dhtID);
+                        PendingMail[hashID].Add(userID);
                     }
 
                     // setup local acks pending
@@ -1556,13 +1556,13 @@ namespace RiseOp.Services.Mail
             }
         }
 
-        private void DecodeMailID(byte[] encrypted, out ulong hashID, out ulong dhtID)
+        private void DecodeMailID(byte[] encrypted, out ulong hashID, out ulong userID)
         {
             ICryptoTransform transform = MailIDKey.CreateDecryptor();
             encrypted = transform.TransformFinalBlock(encrypted, 0, encrypted.Length);
 
             hashID = BitConverter.ToUInt64(encrypted, 0);
-            dhtID  = BitConverter.ToUInt64(encrypted, 8);
+            userID  = BitConverter.ToUInt64(encrypted, 8);
         }
 
         private void CheckCache(CachedPending pending, List<byte[]> mailIDs, List<byte[]> ackIDs)
@@ -1758,9 +1758,9 @@ namespace RiseOp.Services.Mail
 
                 // write pending mail
                 foreach(ulong hashID in PendingMail.Keys)
-                    foreach (ulong dhtID in PendingMail[hashID])
+                    foreach (ulong userID in PendingMail[hashID])
                     {
-                        buffer = GetMailID(hashID, dhtID);
+                        buffer = GetMailID(hashID, userID);
                         stream.Write(buffer, 0, buffer.Length);
                     }
 
@@ -1950,16 +1950,16 @@ namespace RiseOp.Services.Mail
     {
         internal const int SIZE = 12;
 
-        internal ulong  DhtID;
+        internal ulong  UserID;
         internal byte[] Data;
 
         internal MailIdent()
         { 
         }
 
-        internal MailIdent(ulong dhtid, byte[] data)
+        internal MailIdent(ulong id, byte[] data)
         {
-            DhtID  = dhtid;
+            UserID  = id;
             Data   = data;
         }
 
@@ -1967,7 +1967,7 @@ namespace RiseOp.Services.Mail
         {
             byte[] encoded = new byte[SIZE];
 
-            BitConverter.GetBytes(DhtID).CopyTo(encoded, 0);
+            BitConverter.GetBytes(UserID).CopyTo(encoded, 0);
             Data.CopyTo(encoded, 8);
 
             return encoded;
@@ -1977,7 +1977,7 @@ namespace RiseOp.Services.Mail
         {
             MailIdent ident = new MailIdent();
 
-            ident.DhtID  = BitConverter.ToUInt64(data, offset);
+            ident.UserID  = BitConverter.ToUInt64(data, offset);
             ident.Data   = Utilities.ExtractBytes(data, offset + 8, 4);
 
             return ident;

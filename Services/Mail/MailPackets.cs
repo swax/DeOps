@@ -91,7 +91,7 @@ namespace RiseOp.Services.Mail
             }
         }
 
-        internal static MailHeader Decode(G2Protocol protocol, G2Header root)
+        internal static MailHeader Decode(G2Header root)
         {
             MailHeader header = new MailHeader();
             G2Header child = new G2Header(root.Data);
@@ -186,7 +186,7 @@ namespace RiseOp.Services.Mail
             {
                 G2Frame info = protocol.WritePacket(null, MailPacket.MailInfo, null);
 
-                protocol.WritePacket(info, Packet_Subject, protocol.UTF.GetBytes(Subject));
+                protocol.WritePacket(info, Packet_Subject, UTF8Encoding.UTF8.GetBytes(Subject));
                 protocol.WritePacket(info, Packet_Date, BitConverter.GetBytes(Date.ToBinary()));
                 protocol.WritePacket(info, Packet_Attachments, BitConverter.GetBytes(Attachments));
 
@@ -194,7 +194,7 @@ namespace RiseOp.Services.Mail
             }
         }
 
-        internal static MailInfo Decode(G2Protocol protocol, G2Header root)
+        internal static MailInfo Decode(G2Header root)
         {
             MailInfo info = new MailInfo();
             G2Header child = new G2Header(root.Data);
@@ -207,7 +207,7 @@ namespace RiseOp.Services.Mail
                 switch (child.Name)
                 {
                     case Packet_Subject:
-                        info.Subject = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        info.Subject = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Date:
@@ -257,7 +257,7 @@ namespace RiseOp.Services.Mail
             }
         }
 
-        internal static MailDestination Decode(G2Protocol protocol, G2Header root)
+        internal static MailDestination Decode(G2Header root)
         {
             MailDestination dest = new MailDestination();
             G2Header child = new G2Header(root.Data);
@@ -310,14 +310,14 @@ namespace RiseOp.Services.Mail
             {
                 G2Frame file = protocol.WritePacket(null, MailPacket.MailFile, null);
 
-                protocol.WritePacket(file, Packet_Name, protocol.UTF.GetBytes(Name));
+                protocol.WritePacket(file, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
                 protocol.WritePacket(file, Packet_Size, CompactNum.GetBytes(Size));
 
                 return protocol.WriteFinish();
             }
         }
 
-        internal static MailFile Decode(G2Protocol protocol, G2Header root)
+        internal static MailFile Decode(G2Header root)
         {
             MailFile file = new MailFile();
             G2Header child = new G2Header(root.Data);
@@ -330,7 +330,7 @@ namespace RiseOp.Services.Mail
                 switch (child.Name)
                 {
                     case Packet_Name:
-                        file.Name = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        file.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Size:
@@ -376,7 +376,7 @@ namespace RiseOp.Services.Mail
             }
         }
 
-        internal static MailAck Decode(G2Protocol protocol, G2Header root)
+        internal static MailAck Decode(G2Header root)
         {
             MailAck ack = new MailAck();
             G2Header child = new G2Header(root.Data);

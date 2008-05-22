@@ -49,9 +49,9 @@ namespace RiseOp.Services.Profile
             Templates.Clear();
 
             // list chain of command first
-            List<ulong> highers = Links.GetUplinkIDs(Core.LocalDhtID, 0);
+            List<ulong> highers = Links.GetUplinkIDs(Core.UserID, 0);
             highers.Reverse();
-            highers.Add(Links.LocalTrust.DhtID);
+            highers.Add(Links.LocalTrust.UserID);
 
             // list higher level users, indent also
             // dont repeat names using same template+
@@ -112,7 +112,7 @@ namespace RiseOp.Services.Profile
                 TemplateCombo.Items.Add(template);
 
             // select local template
-            ProfileTemplate local = GetTemplate(Core.LocalDhtID);
+            ProfileTemplate local = GetTemplate(Core.UserID);
 
             if(local != null)
                 foreach (ProfileTemplate template in TemplateCombo.Items)
@@ -137,7 +137,7 @@ namespace RiseOp.Services.Profile
             template.FileKey  = profile.File.Header.FileKey;
 
             if (!profile.Loaded)
-                Profiles.LoadProfile(profile.DhtID);
+                Profiles.LoadProfile(profile.UserID);
             
             try
             {
@@ -160,7 +160,7 @@ namespace RiseOp.Services.Profile
                         byte[] html = new byte[attach.Size];
                         crypto.Read(html, 0, (int)attach.Size);
 
-                        template.Html = Core.Protocol.UTF.GetString(html);
+                        template.Html = UTF8Encoding.UTF8.GetString(html);
                         SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider();
                         template.Hash = sha1.ComputeHash(html);
 

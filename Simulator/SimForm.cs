@@ -740,8 +740,8 @@ namespace RiseOp.Simulator
 
             
             SubItems[1].Text = Instance.Core.User.Settings.Operation;
-            SubItems[2].Text = Utilities.IDtoBin(Instance.Core.LocalDhtID);
-            SubItems[3].Text = Instance.RealIP.ToString() + "/" + Instance.Core.ClientID.ToString(); 
+            SubItems[2].Text = Utilities.IDtoBin(Instance.Core.OperationNet.LocalUserID);
+            SubItems[3].Text = Instance.RealIP.ToString() + "/" + Instance.Core.OperationNet.ClientID.ToString(); 
             SubItems[4].Text = Instance.RealFirewall.ToString();
             SubItems[5].Text = alerts;
 
@@ -762,8 +762,8 @@ namespace RiseOp.Simulator
                 foreach(TcpConnect connect in control.SocketList)
                     if(connect.State == TcpState.Connected)
                         if (connect.Proxy == ProxyType.ClientBlocked || connect.Proxy == ProxyType.ClientNAT)
-                            if(Instance.Internet.UserNames.ContainsKey(connect.DhtID))
-                                summary.Append(Instance.Internet.UserNames[connect.DhtID] + ", ");
+                            if(Instance.Internet.UserNames.ContainsKey(connect.userID))
+                                summary.Append(Instance.Internet.UserNames[connect.userID] + ", ");
 
             return summary.ToString();
         }

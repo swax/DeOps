@@ -60,7 +60,7 @@ namespace RiseOp.Services.Assist
             Cache.Load();
 
             // if sync file for ourselves does not exist create
-            if (!Cache.FileMap.SafeContainsKey(Core.LocalDhtID))
+            if (!Cache.FileMap.SafeContainsKey(Core.UserID))
                 UpdateLocal();
         }
 
@@ -104,7 +104,7 @@ namespace RiseOp.Services.Assist
                     }
                 }
 
-            Cache.UpdateLocal("", null, data.Encode(Core.Protocol));
+            Cache.UpdateLocal("", null, data.Encode(Network.Protocol));
         }
 
         void InvokeTags(ulong user, ServiceData data)
@@ -116,23 +116,23 @@ namespace RiseOp.Services.Assist
 
         void Cache_FileAquired(OpVersionedFile file)
         {
-            ServiceData data = ServiceData.Decode(Core.Protocol, file.Header.Extra);
+            ServiceData data = ServiceData.Decode(file.Header.Extra);
 
-            if (Network.Routing.InCacheArea(file.DhtID))
-                InRange[file.DhtID] = data;
+            if (Network.Routing.InCacheArea(file.UserID))
+                InRange[file.UserID] = data;
             else
-                OutofRange[file.DhtID] = data;
+                OutofRange[file.UserID] = data;
 
-            InvokeTags(file.DhtID, data);
+            InvokeTags(file.UserID, data);
         }
 
         void Cache_FileRemoved(OpVersionedFile file)
         {
-            if(InRange.ContainsKey(file.DhtID))
-                InRange.Remove(file.DhtID);
+            if(InRange.ContainsKey(file.UserID))
+                InRange.Remove(file.UserID);
 
-            if (OutofRange.ContainsKey(file.DhtID))
-                OutofRange.Remove(file.DhtID);
+            if (OutofRange.ContainsKey(file.UserID))
+                OutofRange.Remove(file.UserID);
         }
 
         List<byte[]> Store_Replicate(DhtContact contact)
@@ -174,7 +174,7 @@ namespace RiseOp.Services.Assist
 
         byte[] Locations_GetTag()
         {
-            OpVersionedFile file = Cache.GetFile(Core.LocalDhtID);
+            OpVersionedFile file = Cache.GetFile(Core.UserID);
 
             return (file != null) ? CompactNum.GetBytes(file.Header.Version) : null;
         }
@@ -193,7 +193,7 @@ namespace RiseOp.Services.Assist
                 version = CompactNum.ToUInt32(tag, 0, tag.Length);
 
                 if (version < file.Header.Version)
-                    Store.Send_StoreReq(address, null, new DataReq(null, file.DhtID, ServiceID, DataTypeSync, file.SignedHeader));
+                    Store.Send_StoreReq(address, null, new DataReq(null, file.UserID, ServiceID, DataTypeSync, file.SignedHeader));
             }
 
             if ((file != null && version > file.Header.Version) ||
@@ -241,11 +241,11 @@ namespace RiseOp.Services.Assist
             }
         }
 
-        internal static ServiceData Decode(G2Protocol protocol, byte[] data)
+        internal static ServiceData Decode(byte[] data)
         {
             G2Header root = new G2Header(data);
 
-            protocol.ReadPacket(root);
+            G2Protocol.ReadPacket(root);
 
             if (root.Name != LocPacket.LocationData)
                 return null;

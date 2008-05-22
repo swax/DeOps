@@ -39,7 +39,7 @@ namespace RiseOp.Services.Storage
             }
         }
 
-        internal static StorageRoot Decode(G2Protocol protocol, G2Header header)
+        internal static StorageRoot Decode(G2Header header)
         {
             StorageRoot root = new StorageRoot();
             G2Header child = new G2Header(header.Data);
@@ -121,14 +121,14 @@ namespace RiseOp.Services.Storage
 
                 protocol.WritePacket(folder, Packet_UID, BitConverter.GetBytes(UID));
                 protocol.WritePacket(folder, Packet_ParentUID, BitConverter.GetBytes(ParentUID));
-                protocol.WritePacket(folder, Packet_Name, protocol.UTF.GetBytes(Name));
+                protocol.WritePacket(folder, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
                 protocol.WritePacket(folder, Packet_Date, BitConverter.GetBytes(Date.ToBinary()));
 
                 StorageFlags netFlags = Flags & ~(StorageFlags.Modified | StorageFlags.Unlocked);
                 protocol.WritePacket(folder, Packet_Flags, BitConverter.GetBytes((ushort)netFlags));
 
                 if(Note != null)
-                    protocol.WritePacket(folder, Packet_Note, protocol.UTF.GetBytes(Note));
+                    protocol.WritePacket(folder, Packet_Note, UTF8Encoding.UTF8.GetBytes(Note));
 
                 protocol.WritePacket(folder, Packet_Revs, BitConverter.GetBytes(Revs));
                 protocol.WritePacket(folder, Packet_Integrated, BitConverter.GetBytes(IntegratedID));
@@ -147,20 +147,20 @@ namespace RiseOp.Services.Storage
         }
 
 
-        internal static StorageFolder Decode(G2Protocol protocol, byte[] data)
+        internal static StorageFolder Decode(byte[] data)
         {
             G2Header root = new G2Header(data);
 
-            if (!protocol.ReadPacket(root))
+            if (!G2Protocol.ReadPacket(root))
                 return null;
 
             if (root.Name != StoragePacket.Folder)
                 return null;
 
-            return StorageFolder.Decode(protocol, root);
+            return StorageFolder.Decode(root);
         }
 
-        internal static StorageFolder Decode(G2Protocol protocol, G2Header root)
+        internal static StorageFolder Decode(G2Header root)
         {
             StorageFolder folder = new StorageFolder();
             G2Header child = new G2Header(root.Data);
@@ -181,7 +181,7 @@ namespace RiseOp.Services.Storage
                         break;
 
                     case Packet_Name:
-                        folder.Name = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        folder.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Date:
@@ -193,7 +193,7 @@ namespace RiseOp.Services.Storage
                         break;
 
                     case Packet_Note:
-                        folder.Note = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        folder.Note = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Revs:
@@ -270,7 +270,7 @@ namespace RiseOp.Services.Storage
                 G2Frame file = protocol.WritePacket(null, StoragePacket.File, null);
 
                 protocol.WritePacket(file, Packet_UID, BitConverter.GetBytes(UID));
-                protocol.WritePacket(file, Packet_Name, protocol.UTF.GetBytes(Name));
+                protocol.WritePacket(file, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
                 protocol.WritePacket(file, Packet_Date, BitConverter.GetBytes(Date.ToBinary()));
 
                 StorageFlags netFlags = Flags & ~(StorageFlags.Unlocked); // allow modified for working
@@ -294,26 +294,26 @@ namespace RiseOp.Services.Storage
                 }
 
                 if (Note != null)
-                    protocol.WritePacket(file, Packet_Note, protocol.UTF.GetBytes(Note));
+                    protocol.WritePacket(file, Packet_Note, UTF8Encoding.UTF8.GetBytes(Note));
 
                 return protocol.WriteFinish();
             }
         }
 
-        internal static StorageFile Decode(G2Protocol protocol, byte[] data)
+        internal static StorageFile Decode(byte[] data)
         {
             G2Header root = new G2Header(data);
 
-            if (!protocol.ReadPacket(root))
+            if (!G2Protocol.ReadPacket(root))
                 return null;
 
             if (root.Name != StoragePacket.File)
                 return null;
 
-            return StorageFile.Decode(protocol, root);
+            return StorageFile.Decode(root);
         }
 
-        internal static StorageFile Decode(G2Protocol protocol, G2Header root)
+        internal static StorageFile Decode(G2Header root)
         {
             StorageFile file = new StorageFile();
             G2Header child = new G2Header(root.Data);
@@ -330,7 +330,7 @@ namespace RiseOp.Services.Storage
                         break;
 
                     case Packet_Name:
-                        file.Name = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        file.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Date:
@@ -342,7 +342,7 @@ namespace RiseOp.Services.Storage
                         break;
 
                     case Packet_Note:
-                        file.Note = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        file.Note = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Revs:

@@ -99,12 +99,12 @@ namespace RiseOp.Implementation.Protocol.Comm
             }
 		}
 
-        internal static RudpPacket Decode(G2Protocol protocol, G2ReceivedPacket packet)
+        internal static RudpPacket Decode(G2ReceivedPacket packet)
         {
-            return Decode(protocol, packet.Root);
+            return Decode(packet.Root);
         }
 
-        internal static RudpPacket Decode(G2Protocol protocol, G2Header root)
+        internal static RudpPacket Decode(G2Header root)
 		{
             RudpPacket gc = new RudpPacket();
 
@@ -254,7 +254,7 @@ namespace RiseOp.Implementation.Protocol.Comm
             }
 		}
 
-		internal static SessionRequest Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static SessionRequest Decode(G2ReceivedPacket packet)
 		{
 			SessionRequest sr = new SessionRequest();
 
@@ -298,7 +298,7 @@ namespace RiseOp.Implementation.Protocol.Comm
             }
 		}
 
-		internal static SessionAck Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static SessionAck Decode(G2ReceivedPacket packet)
 		{
 			SessionAck sa = new SessionAck();
 
@@ -346,7 +346,7 @@ namespace RiseOp.Implementation.Protocol.Comm
             }
         }
 
-        internal static EncryptionUpdate Decode(G2Protocol protocol, G2ReceivedPacket packet)
+        internal static EncryptionUpdate Decode(G2ReceivedPacket packet)
 		{
             // not decrypted
             EncryptionUpdate eu = new EncryptionUpdate(false);
@@ -376,7 +376,7 @@ namespace RiseOp.Implementation.Protocol.Comm
             {
                 G2Frame kr = protocol.WritePacket(null, CommPacket.KeyRequest, null);
 
-                protocol.WritePacket(kr, Packet_Encryption, protocol.UTF.GetBytes(Encryption));
+                protocol.WritePacket(kr, Packet_Encryption, UTF8Encoding.UTF8.GetBytes(Encryption));
                 protocol.WritePacket(kr, Packet_Key, Key);
                 protocol.WritePacket(kr, Packet_IV, IV);
 
@@ -384,7 +384,7 @@ namespace RiseOp.Implementation.Protocol.Comm
             }
 		}
 
-		internal static KeyRequest Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static KeyRequest Decode(G2ReceivedPacket packet)
 		{
 			KeyRequest kr = new KeyRequest();
 
@@ -394,7 +394,7 @@ namespace RiseOp.Implementation.Protocol.Comm
 			{
                 if (child.Name == Packet_Encryption)
                     if (G2Protocol.ReadPayload(child))
-                        kr.Encryption = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        kr.Encryption = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
 
                 if (child.Name == Packet_Key)
                     if (G2Protocol.ReadPayload(child))
@@ -430,7 +430,7 @@ namespace RiseOp.Implementation.Protocol.Comm
             {
                 G2Frame ka = protocol.WritePacket(null, CommPacket.KeyAck, null);
 
-                protocol.WritePacket(ka, Packet_Name, protocol.UTF.GetBytes(Name));
+                protocol.WritePacket(ka, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
                 protocol.WritePacket(ka, Packet_Mod, SenderPubKey.Modulus);
                 protocol.WritePacket(ka, Packet_Exp, SenderPubKey.Exponent);
 
@@ -438,7 +438,7 @@ namespace RiseOp.Implementation.Protocol.Comm
             }
 		}
 
-		internal static KeyAck Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static KeyAck Decode(G2ReceivedPacket packet)
 		{
 			KeyAck ka = new KeyAck();
 
@@ -448,7 +448,7 @@ namespace RiseOp.Implementation.Protocol.Comm
 			{
                 if (child.Name == Packet_Name)
                     if (G2Protocol.ReadPayload(child))
-                        ka.Name = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        ka.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
 
                 if (child.Name == Packet_Mod)
 					if( G2Protocol.ReadPayload(child) )
@@ -499,12 +499,12 @@ namespace RiseOp.Implementation.Protocol.Comm
             }
         }
 
-        internal static CommData Decode(G2Protocol protocol, G2ReceivedPacket packet)
+        internal static CommData Decode(G2ReceivedPacket packet)
         {
-            return Decode(protocol, packet.Root);
+            return Decode(packet.Root);
         }
 
-        internal static CommData Decode(G2Protocol protocol, G2Header root)
+        internal static CommData Decode(G2Header root)
         {
             CommData data = new CommData();
 
@@ -562,7 +562,7 @@ namespace RiseOp.Implementation.Protocol.Comm
             }
         }
 
-        internal static ProxyUpdate Decode(G2Protocol protocol, G2ReceivedPacket packet)
+        internal static ProxyUpdate Decode(G2ReceivedPacket packet)
         {
             ProxyUpdate update = new ProxyUpdate();
 
@@ -605,13 +605,13 @@ namespace RiseOp.Implementation.Protocol.Comm
             {
                 G2Frame close = protocol.WritePacket(null, CommPacket.Close, null);
 
-                protocol.WritePacket(close, Packet_Message, protocol.UTF.GetBytes(Reason));
+                protocol.WritePacket(close, Packet_Message, UTF8Encoding.UTF8.GetBytes(Reason));
 
                 return protocol.WriteFinish();
             }
 		}
 
-		internal static CommClose Decode(G2Protocol protocol, G2ReceivedPacket packet)
+		internal static CommClose Decode(G2ReceivedPacket packet)
 		{
 			CommClose close = new CommClose();
 			
@@ -621,7 +621,7 @@ namespace RiseOp.Implementation.Protocol.Comm
 			{
                 if (child.Name == Packet_Message)
 					if( G2Protocol.ReadPayload(child) )
-                        close.Reason = protocol.UTF.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        close.Reason = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
 			}
 
 			return close;

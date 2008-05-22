@@ -42,7 +42,7 @@ namespace RiseOp.Implementation.Dht
 			Routing.Core.StrongRndGen.GetBytes(eightBytes);
 			UInt64 randomID = BitConverter.ToUInt64(eightBytes, 0);
 
-			UInt64 localID = Routing.Core.LocalDhtID;
+			UInt64 localID = Routing.Network.LocalUserID;
 
             // ex.. Dht id 00000
             // depth 0, 1...
@@ -87,7 +87,7 @@ namespace RiseOp.Implementation.Dht
         // high/low/xor cache area is still fair and balanced
         internal ulong RoutingID
         {
-            get { return DhtID ^ ClientID; }
+            get { return userID ^ ClientID; }
         }
 
         const int BYTE_SIZE = 18;
@@ -100,10 +100,10 @@ namespace RiseOp.Implementation.Dht
         internal DateTime NextTry;
         internal DateTime  NextTryProxy; // required because attempts more spaced out
 
-        internal DhtContact(UInt64 Dhtid, ushort clientID, IPAddress address, ushort tcpPort, ushort udpPort, DateTime lastSeen)
+        internal DhtContact(UInt64 user, ushort client, IPAddress address, ushort tcpPort, ushort udpPort, DateTime lastSeen)
 		{
-			DhtID     = Dhtid;
-			ClientID  = clientID;
+			userID     = user;
+			ClientID  = client;
 			Address   = address;
 			TcpPort   = tcpPort;
 			UdpPort   = udpPort;
@@ -114,7 +114,7 @@ namespace RiseOp.Implementation.Dht
 
         internal DhtContact(DhtSource Dht, IPAddress address, DateTime lastSeen)
         {
-            DhtID = Dht.DhtID;
+            userID = Dht.userID;
             ClientID = Dht.ClientID;
             Address = address;
             TcpPort = Dht.TcpPort;
@@ -125,7 +125,7 @@ namespace RiseOp.Implementation.Dht
 
         internal bool Equals(DhtContact compare)
 		{
-			if( DhtID    == compare.DhtID    &&
+			if( userID    == compare.userID    &&
 				ClientID == compare.ClientID && 
 				TcpPort  == compare.TcpPort  &&
 				UdpPort  == compare.UdpPort  &&
@@ -137,7 +137,7 @@ namespace RiseOp.Implementation.Dht
 
         internal DhtAddress ToDhtAddress()
         {
-            return new DhtAddress(DhtID, ClientID, Address, UdpPort);
+            return new DhtAddress(userID, ClientID, Address, UdpPort);
         }
 
         public override string ToString()
@@ -149,7 +149,7 @@ namespace RiseOp.Implementation.Dht
         {
             byte[] buffer = new byte[BYTE_SIZE];
 
-            BitConverter.GetBytes(DhtID).CopyTo(buffer, 0);
+            BitConverter.GetBytes(userID).CopyTo(buffer, 0);
             BitConverter.GetBytes(ClientID).CopyTo(buffer, 8);
             Address.GetAddressBytes().CopyTo(buffer, 10);
             BitConverter.GetBytes(TcpPort).CopyTo(buffer, 14);
@@ -160,13 +160,13 @@ namespace RiseOp.Implementation.Dht
 
         internal static DhtContact FromBytes(byte[] data, int pos)
         {
-            UInt64      Dhtid       = BitConverter.ToUInt64(data, pos);
-            ushort      clientID    = BitConverter.ToUInt16(data, pos + 8);
+            UInt64      user       = BitConverter.ToUInt64(data, pos);
+            ushort      client    = BitConverter.ToUInt16(data, pos + 8);
             IPAddress   address     = Utilities.BytestoIP(data, pos + 10);
             ushort      tcpport     = BitConverter.ToUInt16(data, pos + 14);
             ushort      udpport     = BitConverter.ToUInt16(data, pos + 16);
 
-            DhtContact contact = new DhtContact(Dhtid, clientID, address, tcpport, udpport, new DateTime(0));
+            DhtContact contact = new DhtContact(user, client, address, tcpport, udpport, new DateTime(0));
 
             return contact;
         }

@@ -47,7 +47,7 @@ namespace RiseOp
         internal Identity(string filepath, string password, OpCore core)
         {
             Core = core;
-            Protocol = core.Protocol;
+            Protocol = Core.GuiProtocol;
 
             Init(filepath, password);
         }
@@ -74,6 +74,9 @@ namespace RiseOp
             Settings.OpPortTcp = NextRandPort();
             Settings.OpPortUdp = NextRandPort();
 
+            byte[] id = new byte[8];
+            RndGen.NextBytes(id);
+            Settings.GlobalID = BitConverter.ToUInt64(id, 0);
 		}
 
         List<ushort> UsedPorts = new List<ushort>();
@@ -100,7 +103,7 @@ namespace RiseOp
 			{
                 readStream = new FileStream(ProfilePath, FileMode.Open);
                 CryptoStream decStream = new CryptoStream(readStream, Password.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(decStream, Core.Protocol, FileAccess.Read);
+                PacketStream stream = new PacketStream(decStream, Protocol, FileAccess.Read);
 
                 G2Header root = null;
 
@@ -109,14 +112,14 @@ namespace RiseOp
                     // cached ips
                     if (root.Name == RootPacket.File)
                     {
-                        FilePacket file = FilePacket.Decode(Protocol, root);
+                        FilePacket file = FilePacket.Decode(root);
                         G2Header embedded = new G2Header(file.Embedded);
 
-                        if (Protocol.ReadPacket(embedded))
+                        if (G2Protocol.ReadPacket(embedded))
                         {
                             if (loadMode == LoadModeType.Settings)
                                 if (embedded.Name == FilePacket.Settings)
-                                    Settings = SettingsPacket.Decode(Protocol, embedded);
+                                    Settings = SettingsPacket.Decode(embedded);
 
                             if (loadMode == LoadModeType.Cache && Core != null)
                             {
@@ -142,7 +145,7 @@ namespace RiseOp
 
         void LoadCache(G2Header root, DhtNetwork network)
         {
-            CachePacket packet = CachePacket.Decode(Protocol, root);
+            CachePacket packet = CachePacket.Decode(root);
 
             if (packet.IPs.Length == 0)
                 return;
