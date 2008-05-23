@@ -19,6 +19,9 @@ namespace RiseOp
     class TestFile
     {
 
+       
+
+
 
         
     }
@@ -31,7 +34,17 @@ namespace RiseOp
 	{
 		internal Test()
         {
+            /*IPAddress address = IPAddress.Parse("1.2.3.4");
 
+            byte[] transmit = address.GetAddressBytes();
+
+            IPAddress check = new IPAddress(transmit);
+
+            IPAddress address6 = IPAddress.Parse("2001:db8::1428:57ab");
+
+            byte[] transmit6 = address6.GetAddressBytes();
+
+            IPAddress check6 = new IPAddress(transmit6);*/
 		}
 
         /*void TestSigning()

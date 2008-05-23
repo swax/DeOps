@@ -286,9 +286,9 @@ namespace RiseOp.Implementation.Transport
             // proxied first because that packet has highest chance of being received, no need for retry
             // also allows quick udp hole punching
             if (raw.Tcp != null)
-                AddAddress(new RudpAddress(raw.Source, global, raw.Tcp));
+                AddAddress(new RudpAddress(raw.Source, raw.Tcp));
 
-            AddAddress( new RudpAddress(raw.Source, global) );
+            AddAddress( new RudpAddress(raw.Source) );
 
             // received syn, ident 5, from 1001 over tcp
             /*string log = "Received " + packet.PacketType.ToString();
@@ -801,7 +801,7 @@ namespace RiseOp.Implementation.Transport
             log +=  " to " + Utilities.IDtoBin(tracked.Packet.TargetID).Substring(0, 10);
             log += " target address " + target.Address.ToString();*/
 
-            DhtNetwork network = target.Global ? Core.GlobalNet : Core.OperationNet;
+            DhtNetwork network = Core.OperationNet; //crit target.Global ? Core.GlobalNet : Core.OperationNet;
 
             if (network == null)
                 return;
@@ -954,27 +954,25 @@ namespace RiseOp.Implementation.Transport
     {
         internal DhtAddress Address;
         internal DhtClient  LocalProxy; // NAT -> proxy -> host, NAT will only recv packets from specific proxy
-        internal bool       Global;
         internal uint       Ident;
         internal DateTime   LastAck; // so not removed from address list when added
         internal bool       Reset;
 
-        internal RudpAddress(DhtAddress address, bool global)
+        internal RudpAddress(DhtAddress address)
         {
-            Init(address, global);
+            Init(address);
         }
 
-        internal RudpAddress(DhtAddress address, bool global, TcpConnect proxy)
+        internal RudpAddress(DhtAddress address, TcpConnect proxy)
         {
             LocalProxy = new DhtClient(proxy);
 
-            Init(address, global);
+            Init(address);
         }
 
-        void Init(DhtAddress address, bool global)
+        void Init(DhtAddress address)
         {
             Address = address;
-            Global = global;
 
             Ident = (uint) new Random().Next();
         }
@@ -986,7 +984,7 @@ namespace RiseOp.Implementation.Transport
             if (check == null)
                 return false;
 
-            if (Address.Equals(check.Address) && Global == check.Global && LocalProxy.Equals(check.LocalProxy))
+            if (Address.Equals(check.Address) && LocalProxy.Equals(check.LocalProxy))
                 return true;
 
             return false;
@@ -994,7 +992,7 @@ namespace RiseOp.Implementation.Transport
 
         public override int GetHashCode()
         {
-            int hash = Address.GetHashCode() ^ Global.GetHashCode();
+            int hash = Address.GetHashCode();
             
             if(LocalProxy != null)
                 hash = hash ^ LocalProxy.GetHashCode();

@@ -50,7 +50,7 @@ namespace RiseOp.Implementation.Dht
             if (target == Network.LocalUserID)
             {
                 foreach (DhtContact closest in Network.Routing.GetCacheArea())
-                    Send_StoreReq(closest.ToDhtAddress(), null, store);
+                    Send_StoreReq(closest, null, store);
             }
             else
             {
@@ -68,7 +68,7 @@ namespace RiseOp.Implementation.Dht
             // need to carry over componentid that wanted search also so store works
 
             foreach (DhtLookup node in search.LookupList)
-                Send_StoreReq(node.Contact.ToDhtAddress(), null, publish);
+                Send_StoreReq(node.Contact, null, publish);
         }
 
         internal void PublishDirect(List<LocationData> locations, ulong target, uint service, uint datatype, byte[] data)
@@ -198,7 +198,7 @@ namespace RiseOp.Implementation.Dht
                 if (patch.Tag.Length + totalSize > 1000)
                 {
                     if (packet.PatchData.Count > 0)
-                        Send_StoreReq(contact.ToDhtAddress(), contact, new DataReq(null, contact.userID, 0, 0, packet.Encode(Network.Protocol)));
+                        Send_StoreReq(contact, contact, new DataReq(null, contact.UserID, 0, 0, packet.Encode(Network.Protocol)));
 
                     packet.PatchData.Clear();
                     totalSize = 0;
@@ -209,7 +209,7 @@ namespace RiseOp.Implementation.Dht
             }
 
             if (packet.PatchData.Count > 0)
-                Send_StoreReq(contact.ToDhtAddress(), contact, new DataReq(null, contact.userID, 0, 0, packet.Encode(Network.Protocol)));
+                Send_StoreReq(contact, contact, new DataReq(null, contact.UserID, 0, 0, packet.Encode(Network.Protocol)));
 
         }
 

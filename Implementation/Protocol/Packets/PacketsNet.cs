@@ -17,7 +17,7 @@ namespace RiseOp.Implementation.Protocol.Net
 {
     internal class DhtClient
     {
-        internal ulong userID;
+        internal ulong UserID;
         internal ushort ClientID;
 
         internal DhtClient()
@@ -26,13 +26,13 @@ namespace RiseOp.Implementation.Protocol.Net
 
         internal DhtClient(DhtClient copy)
         {
-            userID = copy.userID;
+            UserID = copy.UserID;
             ClientID = copy.ClientID;
         }
 
         internal DhtClient(ulong dht, ushort client)
         {
-            userID = dht;
+            UserID = dht;
             ClientID = client;
         }
 
@@ -43,84 +43,120 @@ namespace RiseOp.Implementation.Protocol.Net
             if (compare == null)
                 return false ;
 
-            return userID == compare.userID && ClientID == compare.ClientID;
+            return UserID == compare.UserID && ClientID == compare.ClientID;
         }
 
         public override int GetHashCode()
         {
-            return userID.GetHashCode() ^ ClientID.GetHashCode();
+            return UserID.GetHashCode() ^ ClientID.GetHashCode();
         }
     }
 
     internal class DhtSource : DhtClient
 	{
-        internal const int BYTE_SIZE = 15;
+        internal const int PAYLOAD_SIZE = 15;
+
+        const int Packet_Global = 0x01;
 
 		internal ushort TcpPort;
 		internal ushort UdpPort;
         internal FirewallType Firewall;
+        internal ulong GlobalProxy;
 
-        internal byte[] ToBytes()
+        internal DhtSource()
         {
-            byte[] bytes = new byte[BYTE_SIZE];
-
-            BitConverter.GetBytes(userID).CopyTo(bytes, 0);
-            BitConverter.GetBytes(ClientID).CopyTo(bytes, 8);
-            BitConverter.GetBytes(TcpPort).CopyTo(bytes, 10);
-            BitConverter.GetBytes(UdpPort).CopyTo(bytes, 12);
-            bytes[14] = (byte)Firewall;
-
-            return bytes;
         }
 
-        internal static DhtSource FromBytes(byte[] data, int pos)
+        internal DhtSource(DhtAddress address)
         {
+        }
+
+        internal void WritePacket(G2Protocol protocol, G2Frame root, byte name)
+        {
+            byte[] payload = new byte[PAYLOAD_SIZE];
+
+            BitConverter.GetBytes(UserID).CopyTo(payload, 0);
+            BitConverter.GetBytes(ClientID).CopyTo(payload, 8);
+            BitConverter.GetBytes(TcpPort).CopyTo(payload, 10);
+            BitConverter.GetBytes(UdpPort).CopyTo(payload, 12);
+            payload[14] = (byte)Firewall;
+
+            G2Frame source = protocol.WritePacket(root, name, payload);
+
+            if (GlobalProxy > 0)
+                protocol.WritePacket(source, Packet_Global, BitConverter.GetBytes(GlobalProxy));
+        }
+
+        internal static DhtSource ReadPacket(G2Header root)
+        {
+            // read payload
             DhtSource source = new DhtSource();
 
-            source.userID    = BitConverter.ToUInt64(data, pos);
-            source.ClientID = BitConverter.ToUInt16(data, pos + 8);
-            source.TcpPort  = BitConverter.ToUInt16(data, pos + 10);
-            source.UdpPort  = BitConverter.ToUInt16(data, pos + 12);
-            source.Firewall = (FirewallType)data[pos + 14];
+            source.UserID = BitConverter.ToUInt64(root.Data, root.PayloadPos);
+            source.ClientID = BitConverter.ToUInt16(root.Data, root.PayloadPos + 8);
+            source.TcpPort = BitConverter.ToUInt16(root.Data, root.PayloadPos + 10);
+            source.UdpPort = BitConverter.ToUInt16(root.Data, root.PayloadPos + 12);
+            source.Firewall = (FirewallType)root.Data[root.PayloadPos + 14];
+
+            // read packets
+            G2Protocol.ResetPacket(root);
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_Global:
+                        source.GlobalProxy = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+                }
+            }
 
             return source;
-        }
-
-        DhtClient GetDhtClient()
-        {
-            return new DhtClient(userID, ClientID);
         }
     }
 
     internal class DhtAddress : DhtClient
     {
-        internal const int BYTE_SIZE = 16;
+        internal const int PAYLOAD_SIZE = 12;
+
+        const byte Packet_IP = 0x01;
+        const byte Packet_Global = 0x02;
 
         internal IPAddress IP;
         internal ushort    UdpPort;
+        internal ulong     GlobalProxy;
+
 
         internal DhtAddress()
         {
         }
 
-        internal DhtAddress(ulong user, ushort client, IPAddress ip, ushort port)
+        internal DhtAddress(ulong user, ushort client, IPAddress ip, ushort port, ulong globalProxy)
         {
-            userID   = user;
+            UserID   = user;
             ClientID = client;
             IP       = ip;
             UdpPort  = port;
+            GlobalProxy = globalProxy;
         }
 
-        internal DhtAddress(ulong user, IPEndPoint host)
+        internal DhtAddress(IPAddress ip, DhtSource source, ulong globalProxy)
         {
-            userID = user;
-            IP    = host.Address;
-            UdpPort  = (ushort)host.Port;
+            UserID = source.UserID;
+            ClientID = source.ClientID;
+            IP = ip;
+            UdpPort = source.UdpPort;
+            GlobalProxy = globalProxy;
         }
 
         internal DhtAddress(IPAddress ip, DhtSource source)
         {
-            userID = source.userID;
+            UserID = source.UserID;
             ClientID = source.ClientID;
             IP = ip;
             UdpPort = source.UdpPort;
@@ -131,26 +167,52 @@ namespace RiseOp.Implementation.Protocol.Net
             return new IPEndPoint(IP, UdpPort);
         }
 
-        internal byte[] ToBytes()
+        internal void WritePacket(G2Protocol protocol, G2Frame root, byte name)
         {
-            byte[] bytes = new byte[BYTE_SIZE];
+            byte[] payload = new byte[PAYLOAD_SIZE];
 
-            BitConverter.GetBytes(userID).CopyTo(bytes, 0);
-            BitConverter.GetBytes(ClientID).CopyTo(bytes, 8);
-            IP.GetAddressBytes().CopyTo(bytes, 10);
-            BitConverter.GetBytes(UdpPort).CopyTo(bytes, 14);
+            BitConverter.GetBytes(UserID).CopyTo(payload, 0);
+            BitConverter.GetBytes(ClientID).CopyTo(payload, 8);
+            BitConverter.GetBytes(UdpPort).CopyTo(payload, 10);
 
-            return bytes;
+            G2Frame address = protocol.WritePacket(root, name, payload);
+
+            protocol.WritePacket(address, Packet_IP, IP.GetAddressBytes());
+
+            if (GlobalProxy > 0)
+                protocol.WritePacket(address, Packet_Global, BitConverter.GetBytes(GlobalProxy));
         }
 
-        internal static DhtAddress FromBytes(byte[] data, int pos)
+        internal static DhtAddress ReadPacket(G2Header root)
         {
+            // read payload
             DhtAddress address = new DhtAddress();
-            
-            address.userID = BitConverter.ToUInt64(data, pos);
-            address.ClientID = BitConverter.ToUInt16(data, pos + 8);
-            address.IP = Utilities.BytestoIP(data, pos + 10);
-            address.UdpPort = BitConverter.ToUInt16(data, pos + 14);
+
+            address.UserID = BitConverter.ToUInt64(root.Data, root.PayloadPos);
+            address.ClientID = BitConverter.ToUInt16(root.Data, root.PayloadPos + 8);
+            address.UdpPort = BitConverter.ToUInt16(root.Data, root.PayloadPos + 10);
+
+            // read packets
+            G2Protocol.ResetPacket(root);
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_IP:
+                        address.IP = new IPAddress(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
+                        break;
+
+                    case Packet_Global:
+                        address.GlobalProxy = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+                }
+            }
 
             return address;
         }
@@ -160,9 +222,14 @@ namespace RiseOp.Implementation.Protocol.Net
             DhtAddress check = obj as DhtAddress;
 
             if (check == null)
+
                 return false;
 
-            if (userID == check.userID && ClientID == check.ClientID && IP.Equals(check.IP) && UdpPort == check.UdpPort)
+            if (UserID == check.UserID && 
+                ClientID == check.ClientID && 
+                IP.Equals(check.IP) && 
+                UdpPort == check.UdpPort &&
+                GlobalProxy == check.GlobalProxy)
                 return true;
 
             return false;
@@ -170,43 +237,12 @@ namespace RiseOp.Implementation.Protocol.Net
 
         public override int GetHashCode()
         {
-            return userID.GetHashCode() ^ ClientID.GetHashCode() ^ IP.GetHashCode() ^ UdpPort.GetHashCode();
+            return UserID.GetHashCode() ^ ClientID.GetHashCode() ^ IP.GetHashCode() ^ UdpPort.GetHashCode() ^ GlobalProxy.GetHashCode();
         }
 
         public override string  ToString()
         {
-            return IP.ToString() + ":" + ClientID.ToString() + ":" + UdpPort.ToString() + ":" + Utilities.IDtoBin(userID).Substring(0, 10);
-        }
-
-
-        internal static byte[] ToByteList(List<DhtAddress> list)
-        {
-            if (list == null || list.Count == 0)
-                return null;
-
-            byte[] result = new byte[BYTE_SIZE * list.Count];
-
-            int offset = 0;
-            foreach (DhtAddress address in list)
-            {
-                address.ToBytes().CopyTo(result, offset);
-                offset += BYTE_SIZE;
-            }
-
-            return result;
-        }
-
-        internal static List<DhtAddress> FromByteList(byte[] data, int pos, int size)
-        {
-            if (data == null || (size % BYTE_SIZE != 0))
-                return null;
-
-            List<DhtAddress> results = new List<DhtAddress>();
-
-            for (int i = pos; i < pos + size; i += BYTE_SIZE)
-                results.Add(DhtAddress.FromBytes(data, i));
-
-            return results;
+            return IP.ToString() + ":" + ClientID.ToString() + ":" + UdpPort.ToString() + ":" + Utilities.IDtoBin(UserID).Substring(0, 10);
         }
     }
 
@@ -248,11 +284,10 @@ namespace RiseOp.Implementation.Protocol.Net
                 protocol.WritePacket(gn, Packet_ClientID, BitConverter.GetBytes(ClientID));
 
                 if (ToAddress != null)
-                    protocol.WritePacket(gn, Packet_To, ToAddress.ToBytes());
+                    ToAddress.WritePacket(protocol, gn, Packet_To);
 
                 if (FromAddress != null)
-                    protocol.WritePacket(gn, Packet_From, FromAddress.ToBytes());
-
+                    FromAddress.WritePacket(protocol, gn, Packet_From);
 
                 return protocol.WriteFinish();
             }
@@ -287,11 +322,11 @@ namespace RiseOp.Implementation.Protocol.Net
                         break;
 
                     case Packet_To:
-                        gn.ToAddress = DhtAddress.FromBytes(child.Data, child.PayloadPos);
+                        gn.ToAddress = DhtAddress.ReadPacket(child);
                         break;
 
                     case Packet_From:
-                        gn.FromAddress = DhtAddress.FromBytes(child.Data, child.PayloadPos);
+                        gn.FromAddress = DhtAddress.ReadPacket(child);
                         break;
                 }
             }
@@ -327,7 +362,7 @@ namespace RiseOp.Implementation.Protocol.Net
             {
                 G2Frame req = protocol.WritePacket(null, NetworkPacket.SearchRequest, null);
 
-                protocol.WritePacket(req, Packet_Source,    Source.ToBytes());
+                Source.WritePacket(protocol, req, Packet_Source);
                 protocol.WritePacket(req, Packet_Nodes, BitConverter.GetBytes(Nodes));
                 protocol.WritePacket(req, Packet_SearchID,  BitConverter.GetBytes(SearchID));
                 protocol.WritePacket(req, Packet_Target,    BitConverter.GetBytes(TargetID));
@@ -358,7 +393,7 @@ namespace RiseOp.Implementation.Protocol.Net
                 switch (child.Name)
                 {
                     case Packet_Source:
-                        req.Source = DhtSource.FromBytes(child.Data, child.PayloadPos);
+                        req.Source = DhtSource.ReadPacket(child);
                         break;
 
                     case Packet_SearchID:
@@ -418,7 +453,7 @@ namespace RiseOp.Implementation.Protocol.Net
             {
                 G2Frame ack = protocol.WritePacket(null, NetworkPacket.SearchAck, null);
 
-                protocol.WritePacket(ack, Packet_Source, Source.ToBytes());
+                Source.WritePacket(protocol, ack, Packet_Source);
 
                 protocol.WritePacket(ack, Packet_SearchID, BitConverter.GetBytes(SearchID));
                 protocol.WritePacket(ack, Packet_Service, CompactNum.GetBytes(Service));
@@ -426,8 +461,8 @@ namespace RiseOp.Implementation.Protocol.Net
                 if (Proxied)
                     protocol.WritePacket(ack, Packet_Proxied, null);
 
-                if (ContactList.Count > 0)
-                    protocol.WritePacket(ack, Packet_Contacts, DhtContact.ToByteList(ContactList));
+                foreach (DhtContact contact in ContactList)
+                    contact.WritePacket(protocol, ack, Packet_Contacts);
 
                 foreach (byte[] value in ValueList)
                     protocol.WritePacket(ack, Packet_Values, value);
@@ -458,7 +493,7 @@ namespace RiseOp.Implementation.Protocol.Net
                 switch (child.Name)
                 {
                     case Packet_Source:
-                        ack.Source = DhtSource.FromBytes(child.Data, child.PayloadPos);
+                        ack.Source = DhtSource.ReadPacket(child);
                         break;
 
                     case Packet_SearchID:
@@ -466,7 +501,7 @@ namespace RiseOp.Implementation.Protocol.Net
                         break;
 
                     case Packet_Contacts:
-                        ack.ContactList = DhtContact.FromByteList(child.Data, child.PayloadPos, child.PayloadSize);
+                        ack.ContactList.Add( DhtContact.ReadPacket(child) );
                         break;
 
                     case Packet_Service:
@@ -507,7 +542,7 @@ namespace RiseOp.Implementation.Protocol.Net
             {
                 G2Frame req = protocol.WritePacket(null, NetworkPacket.StoreRequest, null);
 
-                protocol.WritePacket(req, Packet_Source, Source.ToBytes());
+                Source.WritePacket(protocol, req, Packet_Source);
 
                 protocol.WritePacket(req, Packet_Key, BitConverter.GetBytes(Key));
                 protocol.WritePacket(req, Packet_Service, CompactNum.GetBytes(Service));
@@ -536,7 +571,7 @@ namespace RiseOp.Implementation.Protocol.Net
                 switch (child.Name)
                 {
                     case Packet_Source:
-                        req.Source = DhtSource.FromBytes(child.Data, child.PayloadPos);
+                        req.Source = DhtSource.ReadPacket(child);
                         break;
 
                     case Packet_Key:
@@ -583,7 +618,7 @@ namespace RiseOp.Implementation.Protocol.Net
                 G2Frame pi = protocol.WritePacket(null, NetworkPacket.Ping, null);
 
                 if(Source != null)
-                    protocol.WritePacket(pi, Packet_Source, Source.ToBytes());
+                    Source.WritePacket(protocol, pi, Packet_Source);
 
                 if (RemoteIP != null)
                     protocol.WritePacket(pi, Packet_RemoteIP, RemoteIP.GetAddressBytes());
@@ -609,11 +644,11 @@ namespace RiseOp.Implementation.Protocol.Net
                 switch (child.Name)
                 {
                     case Packet_Source:
-                        pi.Source = DhtSource.FromBytes(child.Data, child.PayloadPos);
+                        pi.Source = DhtSource.ReadPacket(child);
                         break;
 
                     case Packet_RemoteIP:
-                        pi.RemoteIP = Utilities.BytestoIP(child.Data, child.PayloadPos);
+                        pi.RemoteIP = new IPAddress(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
                         break;
                 }
 			}
@@ -640,7 +675,7 @@ namespace RiseOp.Implementation.Protocol.Net
                 G2Frame po = protocol.WritePacket(null, NetworkPacket.Pong, null);
 
                 if(Source != null)
-                    protocol.WritePacket(po, Packet_Source, Source.ToBytes());
+                    Source.WritePacket(protocol, po, Packet_Source);
 
                 if (RemoteIP != null)
                     protocol.WritePacket(po, Packet_RemoteIP, RemoteIP.GetAddressBytes());
@@ -674,11 +709,11 @@ namespace RiseOp.Implementation.Protocol.Net
                 switch (child.Name)
                 {
                     case Packet_Source:
-                        po.Source = DhtSource.FromBytes(child.Data, child.PayloadPos);
+                        po.Source = DhtSource.ReadPacket(child);
                         break;
 
                     case Packet_RemoteIP:
-                        po.RemoteIP = Utilities.BytestoIP(child.Data, child.PayloadPos);
+                        po.RemoteIP = new IPAddress(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
                         break;
                 }			
 			}
@@ -708,8 +743,8 @@ namespace RiseOp.Implementation.Protocol.Net
 
                 protocol.WritePacket(bye, Packet_Source, BitConverter.GetBytes(SenderID));
 
-                if (ContactList.Count > 0)
-                    protocol.WritePacket(bye, Packet_Contacts, DhtContact.ToByteList(ContactList));
+                foreach (DhtContact contact in ContactList)
+                    contact.WritePacket(protocol, bye, Packet_Contacts);
 
                 if (Message != null)
                     protocol.WritePacket(bye, Packet_Message, UTF8Encoding.UTF8.GetBytes(Message));
@@ -747,7 +782,7 @@ namespace RiseOp.Implementation.Protocol.Net
                         break;
 
                     case Packet_Contacts:
-                        bye.ContactList = DhtContact.FromByteList(child.Data, child.PayloadPos, child.PayloadSize);
+                        bye.ContactList.Add( DhtContact.ReadPacket(child));
                         break;
 
                     case Packet_Message:
@@ -838,13 +873,13 @@ namespace RiseOp.Implementation.Protocol.Net
             {
                 G2Frame pa = protocol.WritePacket(null, NetworkPacket.ProxyAck, null);
 
-                protocol.WritePacket(pa, Packet_Source, Source.ToBytes());
+                Source.WritePacket(protocol, pa, Packet_Source);
 
                 if (Accept)
                     protocol.WritePacket(pa, Packet_Accept, null);
 
-                if (ContactList.Count > 0)
-                    protocol.WritePacket(pa, Packet_Contacts, DhtContact.ToByteList(ContactList));
+                foreach (DhtContact contact in ContactList)
+                    contact.WritePacket(protocol, pa, Packet_Contacts);
 
                 // network packet
                 InternalData = protocol.WriteFinish();
@@ -865,7 +900,7 @@ namespace RiseOp.Implementation.Protocol.Net
                 {
                     case Packet_Source:
                         if (G2Protocol.ReadPayload(child))
-                            pa.Source = DhtSource.FromBytes(child.Data, child.PayloadPos);
+                            pa.Source = DhtSource.ReadPacket(child);
                         break;
 
                     case Packet_Accept:
@@ -874,7 +909,7 @@ namespace RiseOp.Implementation.Protocol.Net
 
                     case Packet_Contacts:
                         if (G2Protocol.ReadPayload(child))
-                            pa.ContactList = DhtContact.FromByteList(child.Data, child.PayloadPos, child.PayloadSize);
+                            pa.ContactList.Add( DhtContact.ReadPacket(child));
                         break;
                 }
 			}
@@ -899,7 +934,7 @@ namespace RiseOp.Implementation.Protocol.Net
             {
                 G2Frame crwlr = protocol.WritePacket(null, NetworkPacket.CrawlRequest, null);
 
-                protocol.WritePacket(crwlr, Packet_Source, Source.ToBytes());
+                Source.WritePacket(protocol, crwlr, Packet_Source);
                 protocol.WritePacket(crwlr, Packet_Target, BitConverter.GetBytes(TargetID));
 
                 // network packet
@@ -923,7 +958,7 @@ namespace RiseOp.Implementation.Protocol.Net
                 switch (child.Name)
                 {
                     case Packet_Source:
-                        crwlr.Source = DhtSource.FromBytes(child.Data, child.PayloadPos);
+                        crwlr.Source = DhtSource.ReadPacket(child);
                         break;
 
                     case Packet_Target:
@@ -958,13 +993,13 @@ namespace RiseOp.Implementation.Protocol.Net
             {
                 G2Frame crwla = protocol.WritePacket(null, NetworkPacket.CrawlAck, null);
 
-                protocol.WritePacket(crwla, Packet_Source, Source.ToBytes());
+                Source.WritePacket(protocol, crwla, Packet_Source);
                 protocol.WritePacket(crwla, Packet_Version, UTF8Encoding.UTF8.GetBytes(Version));
                 protocol.WritePacket(crwla, Packet_Uptime, BitConverter.GetBytes(Uptime));
                 protocol.WritePacket(crwla, Packet_Depth, BitConverter.GetBytes(Depth));
 
-                if (ProxyList.Count > 0)
-                    protocol.WritePacket(crwla, Packet_Proxies, DhtContact.ToByteList(ProxyList));
+                foreach (DhtContact proxy in ProxyList)
+                    proxy.WritePacket(protocol, crwla, Packet_Proxies);
 
                 // network packet
                 InternalData = protocol.WriteFinish();
@@ -987,7 +1022,7 @@ namespace RiseOp.Implementation.Protocol.Net
                 switch (child.Name)
                 {
                     case Packet_Source:
-                        crwla.Source = DhtSource.FromBytes(child.Data, child.PayloadPos);
+                        crwla.Source = DhtSource.ReadPacket(child);
                         break;
 
                     case Packet_Version:
@@ -1003,7 +1038,7 @@ namespace RiseOp.Implementation.Protocol.Net
                         break;
 
                     case Packet_Proxies:
-                        crwla.ProxyList = DhtContact.FromByteList(child.Data, child.PayloadPos, child.PayloadSize);
+                        crwla.ProxyList.Add( DhtContact.ReadPacket(child));
                         break;
                 }						
 			}

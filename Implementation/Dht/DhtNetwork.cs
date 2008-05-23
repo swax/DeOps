@@ -38,8 +38,8 @@ namespace RiseOp.Implementation.Dht
         internal DhtStore   Store;
         internal DhtSearchControl Searches;
 
-        internal LinkedList<IPCacheEntry> IPCache = new LinkedList<IPCacheEntry>();
-        internal Dictionary<int, LinkedListNode<IPCacheEntry>> IPTable = new Dictionary<int, LinkedListNode<IPCacheEntry>>();
+        internal LinkedList<DhtContact> IPCache = new LinkedList<DhtContact>();
+        internal Dictionary<int, LinkedListNode<DhtContact>> IPTable = new Dictionary<int, LinkedListNode<DhtContact>>();
 
         internal bool   IsGlobal;
         internal ulong  LocalUserID;
@@ -80,9 +80,9 @@ namespace RiseOp.Implementation.Dht
             OpID = IsGlobal ? 0 : Utilities.KeytoID(Core.User.Settings.OpKey.Key);
 
             // load ip cache, addlast so in same order it was saved in
-            List<IPCacheEntry> cache = IsGlobal ? Core.User.GlobalCache : Core.User.OpCache;
+            List<DhtContact> cache = IsGlobal ? Core.User.GlobalCache : Core.User.OpCache;
             lock(IPCache)
-                foreach (IPCacheEntry entry in cache)
+                foreach (DhtContact entry in cache)
                     IPTable.Add(entry.GetHashCode(), IPCache.AddLast(entry));
 
             // load encryption
@@ -138,7 +138,7 @@ namespace RiseOp.Implementation.Dht
             lock (IPCache)
                 while (IPCache.Count > MAX_CACHE)
                 {
-                    IPCacheEntry entry = IPCache.Last.Value;
+                    DhtContact entry = IPCache.Last.Value;
                     IPTable.Remove(entry.GetHashCode());
                     IPCache.RemoveLast();
                 }
@@ -158,7 +158,7 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
-        internal void AddCacheEntry(IPCacheEntry entry)
+        internal void AddCacheEntry(DhtContact entry)
         {
             lock (IPCache)
             {
@@ -269,12 +269,12 @@ namespace RiseOp.Implementation.Dht
             int pings = 0;
 
             lock (IPCache)
-                foreach (IPCacheEntry entry in IPCache)
+                foreach (DhtContact entry in IPCache)
                 {
                     if (Core.TimeNow < entry.NextTry)
                         continue;
 
-                    Send_Ping(entry.Address);
+                    Send_Ping(entry);
 
                     entry.NextTry = Retry.NextTry;
 
@@ -288,14 +288,14 @@ namespace RiseOp.Implementation.Dht
             // 1 outbound tcp per second, 10 min retry
             if (Core.Firewall == FirewallType.Blocked)
                 lock (IPCache)
-                    foreach (IPCacheEntry entry in IPCache)
+                    foreach (DhtContact entry in IPCache)
                     {
-                        if (Core.TimeNow < entry.NextTryTcp)
+                        if (Core.TimeNow < entry.NextTryProxy)
                             continue;
 
-                        TcpControl.MakeOutbound(entry.Address, entry.TcpPort, "ip cache");
+                        TcpControl.MakeOutbound(entry, entry.TcpPort, "ip cache");
 
-                        entry.NextTryTcp = Retry.NextTry;
+                        entry.NextTryProxy = Retry.NextTry;
                         break;
                     }
         }
@@ -327,10 +327,10 @@ namespace RiseOp.Implementation.Dht
                     Retry.Reset();
                     NextWebcacheTry = new DateTime(0);
 
-                    foreach (IPCacheEntry entry in IPCache)
+                    foreach (DhtContact entry in IPCache)
                     {
                         entry.NextTry = new DateTime(0);
-                        entry.NextTryTcp = new DateTime(0);
+                        entry.NextTryProxy = new DateTime(0);
                     }
                 }
 
@@ -459,7 +459,7 @@ namespace RiseOp.Implementation.Dht
         {
             DhtSource source = new DhtSource();
 
-            source.userID    = LocalUserID;
+            source.UserID    = LocalUserID;
             source.ClientID = ClientID;
             source.TcpPort  = TcpControl.ListenPort;
             source.UdpPort  = UdpControl.ListenPort;
@@ -485,7 +485,7 @@ namespace RiseOp.Implementation.Dht
                 G2ReceivedPacket embedded = new G2ReceivedPacket();
                 embedded.Tcp    = packet.Tcp;
                 embedded.Source = packet.Source;
-                embedded.Source.userID = netPacket.SourceID;
+                embedded.Source.UserID = netPacket.SourceID;
                 embedded.Source.ClientID = netPacket.ClientID;
                 embedded.Root   = new G2Header(netPacket.InternalData);
 
@@ -502,7 +502,7 @@ namespace RiseOp.Implementation.Dht
 
                 // to - received from proxied node, and not for us
                 if (netPacket.ToAddress != null &&
-                    !(netPacket.ToAddress.userID == LocalUserID && netPacket.ToAddress.ClientID == ClientID))
+                    !(netPacket.ToAddress.UserID == LocalUserID && netPacket.ToAddress.ClientID == ClientID))
                 {
                     if (packet.Tcp == null)
                         throw new Exception("To tag set on packet received udp");
@@ -532,7 +532,7 @@ namespace RiseOp.Implementation.Dht
             {
                 RudpPacket commPacket = RudpPacket.Decode(packet);
 
-                packet.Source.userID = commPacket.SenderID;
+                packet.Source.UserID = commPacket.SenderID;
                 packet.Source.ClientID = commPacket.SenderClient;
 
                 // For local host
@@ -730,7 +730,7 @@ namespace RiseOp.Implementation.Dht
 
                 if (ping.Source != null)
                 {
-                    if (ping.Source.userID == LocalUserID && ping.Source.ClientID == ClientID) // loop back
+                    if (ping.Source.UserID == LocalUserID && ping.Source.ClientID == ClientID) // loop back
                         return;
 
                     // if firewall flag not set add to routing
@@ -750,7 +750,7 @@ namespace RiseOp.Implementation.Dht
                     return;
                 }
 
-                if (ping.Source.userID == LocalUserID && ping.Source.ClientID == ClientID) // loopback
+                if (ping.Source.UserID == LocalUserID && ping.Source.ClientID == ClientID) // loopback
                 {
                     packet.Tcp.CleanClose("Loopback connection");
                     return;
@@ -771,7 +771,7 @@ namespace RiseOp.Implementation.Dht
                     return;
                 }
 
-                packet.Tcp.userID    = ping.Source.userID;
+                packet.Tcp.UserID    = ping.Source.UserID;
                 packet.Tcp.ClientID = ping.Source.ClientID;
                 packet.Tcp.TcpPort  = ping.Source.TcpPort;
                 packet.Tcp.UdpPort  = ping.Source.UdpPort;
@@ -850,7 +850,7 @@ namespace RiseOp.Implementation.Dht
                     //   information from a pong routed through the remote host, but from the host we're directly connected to
                     if (pong.Direct)
                     {
-                        packet.Tcp.userID = pong.Source.userID;
+                        packet.Tcp.UserID = pong.Source.UserID;
                         packet.Tcp.ClientID = pong.Source.ClientID;
                         packet.Tcp.TcpPort = pong.Source.TcpPort;
                         packet.Tcp.UdpPort = pong.Source.UdpPort;
@@ -858,7 +858,7 @@ namespace RiseOp.Implementation.Dht
                         // if firewalled
                         if (packet.Tcp.Outbound && packet.Tcp.Proxy == ProxyType.Unset)
                         {
-                            if (Core.Firewall != FirewallType.Open && TcpControl.AcceptProxy(ProxyType.Server, pong.Source.userID))
+                            if (Core.Firewall != FirewallType.Open && TcpControl.AcceptProxy(ProxyType.Server, pong.Source.UserID))
                             {
                                 // send proxy request
                                 ProxyReq request = new ProxyReq();
@@ -884,7 +884,7 @@ namespace RiseOp.Implementation.Dht
             ack.Source = GetLocalSource();
 
             // check if there is space for type required
-            if (Core.Firewall == FirewallType.Open  && TcpControl.AcceptProxy(request.Type, ack.Source.userID))
+            if (Core.Firewall == FirewallType.Open  && TcpControl.AcceptProxy(request.Type, ack.Source.UserID))
             {
                 ack.Accept = true;
             }
@@ -941,7 +941,7 @@ namespace RiseOp.Implementation.Dht
             // received ack udp
             if (packet.Tcp == null)
             {
-                if(!TcpControl.ProxyMap.ContainsKey(ack.Source.userID))
+                if(!TcpControl.ProxyMap.ContainsKey(ack.Source.UserID))
                     TcpControl.MakeOutbound(packet.Source, ack.Source.TcpPort, "proxy ack recv");
             }
 
@@ -963,7 +963,7 @@ namespace RiseOp.Implementation.Dht
             CrawlReq req = new CrawlReq();
 
             req.Source = GetLocalSource();
-            req.TargetID = address.userID;
+            req.TargetID = address.UserID;
 
             UdpControl.SendTo(address, req);
         }
@@ -1056,65 +1056,6 @@ namespace RiseOp.Implementation.Dht
 
             if(G2Protocol.ReadPacket(packet.Root))
                 message += ", type " + packet.Root.Name;*/
-        }
-    }
-
-
-    internal class IPCacheEntry
-    {
-        internal static int BYTE_SIZE = 16;
-
-        internal DhtAddress Address = new DhtAddress();
-        internal ushort     TcpPort;
-        internal DateTime   NextTry    = new DateTime(0);
-        internal DateTime   NextTryTcp = new DateTime(0);
-
-        IPCacheEntry()
-        {
-        }
-
-        internal IPCacheEntry(DhtAddress address, ushort tcpPort)
-        {
-            Address = address;
-            TcpPort = tcpPort;
-        }
-
-        internal IPCacheEntry(DhtContact contact)
-        {
-            Address.IP    = contact.Address;
-            Address.userID = contact.userID;
-            Address.UdpPort  = contact.UdpPort;
-            TcpPort       = contact.TcpPort;
-        }
-
-        public override int GetHashCode()
-        {
-            return Address.GetHashCode() ^ TcpPort.GetHashCode();
-        }
-
-        public override string ToString()
-        {
-            return Address.IP.ToString() + ":" + TcpPort.ToString() + ":" + Address.UdpPort.ToString();
-        }
-
-        internal byte[] ToBytes()
-        {
-            byte[] bytes = new byte[BYTE_SIZE];
-
-            Address.ToBytes().CopyTo(bytes, 0);
-            BitConverter.GetBytes(TcpPort).CopyTo(bytes, 14);
-
-            return bytes;
-        }
-
-        internal static IPCacheEntry FromBytes(byte[] data, int pos)
-        {
-            IPCacheEntry entry = new IPCacheEntry();
-
-            entry.Address = DhtAddress.FromBytes(data, pos);
-            entry.TcpPort = BitConverter.ToUInt16(data, pos + 14);
-
-            return entry;
         }
     }
 

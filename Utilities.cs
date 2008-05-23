@@ -172,45 +172,6 @@ namespace RiseOp
 			return ascii.ToString();
 		}	
 
-		internal static IPAddress BytestoIP(byte[] data, int startPos)
-		{
-			// we need this because IPAddress constructor in 1.1 is bugged
-
-			if(data.Length - startPos < 4) 
-				return IPAddress.Parse("0.0.0.0");
-
-			string address = "";
-
-			for(int i = startPos; i < startPos + 4; i++)
-				address += data[i].ToString() + ".";
-
-			return IPAddress.Parse( address.TrimEnd('.') );
-		}
-
-		internal static ArrayList DecodeAddresses(byte[] data)
-		{	
-			return DecodeAddresses(data, 0, data.Length);
-		}
-
-		internal static ArrayList DecodeAddresses(byte[] data, int payloadPos, int payloadSize)
-		{
-			ArrayList addresses = new ArrayList();
-
-			int offset = 0;
-
-			while(offset < payloadSize)
-			{	
-				IPAddress ip   = Utilities.BytestoIP( data, payloadPos + offset);
-				ushort    port = BitConverter.ToUInt16(data, payloadPos + offset + 4);
-				
-				addresses.Add( new IPEndPoint(ip, port));
-
-				offset += 6;
-			}
-
-			return addresses;
-		}
-
         internal static UInt64 KeytoID(RSAParameters pubParams)
         {
             return Utilities.KeytoID(pubParams.Modulus);

@@ -148,7 +148,7 @@ namespace RiseOp.Implementation.Dht
             SearchReq request = SearchReq.Decode(packet);
 
             // loopback
-            if (request.Source.userID == Network.LocalUserID && request.Source.ClientID == Network.ClientID)
+            if (request.Source.UserID == Network.LocalUserID && request.Source.ClientID == Network.ClientID)
                 return;
 
             
@@ -205,7 +205,7 @@ namespace RiseOp.Implementation.Dht
             // forward to proxied nodes
             foreach (TcpConnect socket in Network.TcpControl.ProxyClients)
                 // prevents incoming udp from proxy and being forwarded to same host tcp
-                if(socket != packet.Tcp && !(packet.Source.userID == socket.userID && packet.Source.ClientID == socket.ClientID))
+                if(socket != packet.Tcp && !(packet.Source.UserID == socket.UserID && packet.Source.ClientID == socket.ClientID))
                 {
                     request.FromAddress = packet.Source;
 
@@ -299,7 +299,7 @@ namespace RiseOp.Implementation.Dht
             SearchAck ack = SearchAck.Decode(packet);
 
             // loopback
-            if (ack.Source.userID == Network.LocalUserID && ack.Source.ClientID == Network.ClientID)
+            if (ack.Source.UserID == Network.LocalUserID && ack.Source.ClientID == Network.ClientID)
                 return;
 
             // if response to crawl
@@ -312,7 +312,7 @@ namespace RiseOp.Implementation.Dht
             }
 
             // crit ackid and ack ip might not match if ack sent through proxy
-            if (packet.Tcp == null && ack.Source.Firewall == FirewallType.Open && packet.Source.userID == ack.Source.userID)
+            if (packet.Tcp == null && ack.Source.Firewall == FirewallType.Open && packet.Source.UserID == ack.Source.UserID)
                 Routing.Add(new DhtContact(ack.Source, packet.Source.IP, Core.TimeNow));
 
             foreach (DhtContact contact in ack.ContactList)
@@ -324,7 +324,7 @@ namespace RiseOp.Implementation.Dht
                     if (search.SearchID == ack.SearchID)
                     {
                         foreach (DhtLookup lookup in search.LookupList)
-                            if (lookup.Contact.userID == ack.Source.userID && lookup.Contact.ClientID == ack.Source.ClientID)
+                            if (lookup.Contact.UserID == ack.Source.UserID && lookup.Contact.ClientID == ack.Source.ClientID)
                                 lookup.Status = LookupStatus.Done;
 
                         if (search.ProxyTcp != null && search.ProxyTcp.Proxy == ProxyType.ClientBlocked)

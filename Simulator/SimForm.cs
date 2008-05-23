@@ -762,8 +762,8 @@ namespace RiseOp.Simulator
                 foreach(TcpConnect connect in control.SocketList)
                     if(connect.State == TcpState.Connected)
                         if (connect.Proxy == ProxyType.ClientBlocked || connect.Proxy == ProxyType.ClientNAT)
-                            if(Instance.Internet.UserNames.ContainsKey(connect.userID))
-                                summary.Append(Instance.Internet.UserNames[connect.userID] + ", ");
+                            if(Instance.Internet.UserNames.ContainsKey(connect.UserID))
+                                summary.Append(Instance.Internet.UserNames[connect.UserID] + ", ");
 
             return summary.ToString();
         }

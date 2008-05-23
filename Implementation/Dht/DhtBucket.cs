@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography;
 
+using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
+
 
 namespace RiseOp.Implementation.Dht
 {
@@ -79,7 +81,7 @@ namespace RiseOp.Implementation.Dht
 		}
 	}
 
-	internal class DhtContact : DhtClient
+	internal class DhtContact : DhtAddress
 	{
         
         // RoutingID: slightly mod the user's lower bits so that dhtid is unique (max 64k uniques)
@@ -87,118 +89,125 @@ namespace RiseOp.Implementation.Dht
         // high/low/xor cache area is still fair and balanced
         internal ulong RoutingID
         {
-            get { return userID ^ ClientID; }
+            get { return UserID ^ ClientID; }
         }
 
-        const int BYTE_SIZE = 18;
+        new const int PAYLOAD_SIZE = 14;
 
-        internal IPAddress Address;
+        const byte Packet_IP = 0x01;
+        const byte Packet_Global = 0x02;
+
+
         internal ushort    TcpPort;
-        internal ushort    UdpPort;
+
         internal DateTime  LastSeen;
         internal int       Attempts;
         internal DateTime NextTry;
         internal DateTime  NextTryProxy; // required because attempts more spaced out
 
+
+        internal DhtContact() { }
+
         internal DhtContact(UInt64 user, ushort client, IPAddress address, ushort tcpPort, ushort udpPort, DateTime lastSeen)
 		{
-			userID     = user;
+			UserID     = user;
 			ClientID  = client;
-			Address   = address;
+			IP   = address;
 			TcpPort   = tcpPort;
 			UdpPort   = udpPort;
 			LastSeen  = lastSeen;
-            NextTry = new DateTime(0); 
-			NextTryProxy = new DateTime(0);
 		}
+
+        // used to add global proxies
+        internal DhtContact(DhtAddress address, DateTime lastSeen)
+        {
+            UserID = address.UserID;
+            ClientID = address.ClientID;
+            IP = address.IP;
+            TcpPort = 0;
+            UdpPort = address.UdpPort;
+            LastSeen = lastSeen;
+            GlobalProxy = address.GlobalProxy;
+        }
 
         internal DhtContact(DhtSource Dht, IPAddress address, DateTime lastSeen)
         {
-            userID = Dht.userID;
+            UserID = Dht.UserID;
             ClientID = Dht.ClientID;
-            Address = address;
+            IP = address;
             TcpPort = Dht.TcpPort;
             UdpPort = Dht.UdpPort;
             LastSeen = lastSeen;
-            NextTryProxy = new DateTime(0);
         }
 
         internal bool Equals(DhtContact compare)
 		{
-			if( userID    == compare.userID    &&
+			if( UserID    == compare.UserID    &&
 				ClientID == compare.ClientID && 
 				TcpPort  == compare.TcpPort  &&
 				UdpPort  == compare.UdpPort  &&
-				Address.Equals(compare.Address))
+				IP.Equals(compare.IP) &&
+                GlobalProxy == compare.GlobalProxy)
 				return true;
 
 			return false;
 		}
 
-        internal DhtAddress ToDhtAddress()
-        {
-            return new DhtAddress(userID, ClientID, Address, UdpPort);
-        }
-
         public override string ToString()
 		{
-            return Address.ToString() + ":" + TcpPort.ToString() + ":" + UdpPort.ToString(); ;
+            return IP.ToString() + ":" + TcpPort.ToString() + ":" + UdpPort.ToString(); ;
 		}
 
-        internal byte[] ToBytes()
+        internal new void WritePacket(G2Protocol protocol, G2Frame root, byte name)
         {
-            byte[] buffer = new byte[BYTE_SIZE];
+            byte[] payload = new byte[PAYLOAD_SIZE];
 
-            BitConverter.GetBytes(userID).CopyTo(buffer, 0);
-            BitConverter.GetBytes(ClientID).CopyTo(buffer, 8);
-            Address.GetAddressBytes().CopyTo(buffer, 10);
-            BitConverter.GetBytes(TcpPort).CopyTo(buffer, 14);
-            BitConverter.GetBytes(UdpPort).CopyTo(buffer, 16);
+            BitConverter.GetBytes(UserID).CopyTo(payload, 0);
+            BitConverter.GetBytes(ClientID).CopyTo(payload, 8);
+            BitConverter.GetBytes(UdpPort).CopyTo(payload, 10);
+            BitConverter.GetBytes(TcpPort).CopyTo(payload, 12);
 
-            return buffer;
+            G2Frame address = protocol.WritePacket(root, name, payload);
+
+            protocol.WritePacket(address, Packet_IP, IP.GetAddressBytes());
+
+            if (GlobalProxy > 0)
+                protocol.WritePacket(address, Packet_Global, BitConverter.GetBytes(GlobalProxy));
         }
 
-        internal static DhtContact FromBytes(byte[] data, int pos)
+        internal static new DhtContact ReadPacket(G2Header root)
         {
-            UInt64      user       = BitConverter.ToUInt64(data, pos);
-            ushort      client    = BitConverter.ToUInt16(data, pos + 8);
-            IPAddress   address     = Utilities.BytestoIP(data, pos + 10);
-            ushort      tcpport     = BitConverter.ToUInt16(data, pos + 14);
-            ushort      udpport     = BitConverter.ToUInt16(data, pos + 16);
+            // read payload
+            DhtContact contact = new DhtContact();
 
-            DhtContact contact = new DhtContact(user, client, address, tcpport, udpport, new DateTime(0));
+            contact.UserID = BitConverter.ToUInt64(root.Data, root.PayloadPos);
+            contact.ClientID = BitConverter.ToUInt16(root.Data, root.PayloadPos + 8);
+            contact.UdpPort = BitConverter.ToUInt16(root.Data, root.PayloadPos + 10);
+            contact.TcpPort = BitConverter.ToUInt16(root.Data, root.PayloadPos + 12);
 
-            return contact;
-        }
+            // read packets
+            G2Protocol.ResetPacket(root);
 
-        internal static byte[] ToByteList(List<DhtContact> list)
-        {
-            if (list == null || list.Count == 0)
-                return null;
+            G2Header child = new G2Header(root.Data);
 
-            byte[] result = new byte[BYTE_SIZE * list.Count];
-
-            int offset = 0;
-            foreach (DhtContact contact in list)
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
-                contact.ToBytes().CopyTo(result, offset);
-                offset += BYTE_SIZE;
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_IP:
+                        contact.IP = new IPAddress(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
+                        break;
+
+                    case Packet_Global:
+                        contact.GlobalProxy = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+                }
             }
 
-            return result;
-        }
-
-        internal static List<DhtContact> FromByteList(byte[] data, int pos, int size)
-        {
-            if (data == null || (size % BYTE_SIZE != 0))
-                return null;
-
-            List<DhtContact> results = new List<DhtContact>();
-
-            for (int i = pos; i < pos + size; i += BYTE_SIZE)
-                results.Add(DhtContact.FromBytes(data, i));
-
-            return results;
+            return contact;
         }
 
         internal void Alive(DateTime latest)

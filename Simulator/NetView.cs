@@ -164,8 +164,8 @@ namespace RiseOp.Simulator
             foreach(DhtNetwork network in networks.Values)
                 lock(network.TcpControl.SocketList)
                     foreach(TcpConnect connect in network.TcpControl.SocketList)
-                        if(connect.State == TcpState.Connected && NodePoints.ContainsKey(connect.userID))
-                            buffer.DrawLine(BluePen, NodePoints[network.LocalUserID], NodePoints[connect.userID]);
+                        if(connect.State == TcpState.Connected && NodePoints.ContainsKey(connect.UserID))
+                            buffer.DrawLine(BluePen, NodePoints[network.LocalUserID], NodePoints[connect.UserID]);
 
             // draw traffic lines
             DrawTraffic(buffer);

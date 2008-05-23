@@ -20,22 +20,20 @@ namespace RiseOp.Services.Location
         internal const int OP_TTL = 4;
 
 
-        const byte Packet_Key = 0x10;
-        const byte Packet_Source = 0x20;
-        const byte Packet_Global = 0x30;
-        const byte Packet_IP = 0x40;
-        const byte Packet_Proxies = 0x50;
-        const byte Packet_Place = 0x60;
-        const byte Packet_Version = 0x70;
-        const byte Packet_TTL = 0xA0;
-        const byte Packet_GMTOffset = 0xB0;
-        const byte Packet_Away = 0xC0;
-        const byte Packet_AwayMsg = 0xD0;
-        const byte Packet_Tag = 0xE0;
+        const byte Packet_Key       = 0x10;
+        const byte Packet_Source    = 0x20;
+        const byte Packet_IP        = 0x30;
+        const byte Packet_Proxies   = 0x40;
+        const byte Packet_Place     = 0x50;
+        const byte Packet_Version   = 0x60;
+        const byte Packet_TTL       = 0x70;
+        const byte Packet_GMTOffset = 0x80;
+        const byte Packet_Away      = 0x90;
+        const byte Packet_AwayMsg   = 0xA0;
+        const byte Packet_Tag       = 0xB0;
 
         internal byte[] Key;
         internal DhtSource Source;
-        internal bool Global;
         internal IPAddress IP;
         internal List<DhtAddress> Proxies = new List<DhtAddress>();
         internal string Place = "";
@@ -57,10 +55,8 @@ namespace RiseOp.Services.Location
                 G2Frame loc = protocol.WritePacket(null, LocPacket.LocationData, null);
 
                 protocol.WritePacket(loc, Packet_Key, Key);
-                protocol.WritePacket(loc, Packet_Source, Source.ToBytes());
-                protocol.WritePacket(loc, Packet_Global, BitConverter.GetBytes(Global));
+                Source.WritePacket(protocol, loc, Packet_Source);
                 protocol.WritePacket(loc, Packet_IP, IP.GetAddressBytes());
-                protocol.WritePacket(loc, Packet_Proxies, DhtAddress.ToByteList(Proxies));
                 protocol.WritePacket(loc, Packet_Place, UTF8Encoding.UTF8.GetBytes(Place));
                 protocol.WritePacket(loc, Packet_TTL, BitConverter.GetBytes(TTL));
                 protocol.WritePacket(loc, Packet_Version, CompactNum.GetBytes(Version));
@@ -68,6 +64,9 @@ namespace RiseOp.Services.Location
                 protocol.WritePacket(loc, Packet_Away, BitConverter.GetBytes(Away));
                 protocol.WritePacket(loc, Packet_AwayMsg, UTF8Encoding.UTF8.GetBytes(AwayMessage));
                     
+                foreach(DhtAddress proxy in Proxies)
+                    proxy.WritePacket(protocol, loc, Packet_Proxies);
+
                 foreach(PatchTag tag in Tags)
                     protocol.WritePacket(loc, Packet_Tag, tag.ToBytes());
 
@@ -100,19 +99,15 @@ namespace RiseOp.Services.Location
                         break;
 
                     case Packet_Source:
-                        loc.Source = DhtSource.FromBytes(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_Global:
-                        loc.Global = BitConverter.ToBoolean(child.Data, child.PayloadPos);
+                        loc.Source = DhtSource.ReadPacket(child);
                         break;
 
                     case Packet_IP:
-                        loc.IP = Utilities.BytestoIP(child.Data, child.PayloadPos);
+                        loc.IP = new IPAddress(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
                         break;
 
                     case Packet_Proxies:
-                        loc.Proxies = DhtAddress.FromByteList(child.Data, child.PayloadPos, child.PayloadSize);
+                        loc.Proxies.Add( DhtAddress.ReadPacket(child) );
                         break;
 
                     case Packet_Place:

@@ -40,8 +40,8 @@ namespace RiseOp
 
         internal SettingsPacket Settings = new SettingsPacket();
 
-        internal List<IPCacheEntry> GlobalCache = new List<IPCacheEntry>();
-        internal List<IPCacheEntry> OpCache = new List<IPCacheEntry>();
+        internal List<DhtContact> GlobalCache = new List<DhtContact>();
+        internal List<DhtContact> OpCache = new List<DhtContact>();
 
 
         internal Identity(string filepath, string password, OpCore core)
@@ -109,26 +109,21 @@ namespace RiseOp
 
                 while (stream.ReadPacket(ref root))
                 {
-                    // cached ips
-                    if (root.Name == RootPacket.File)
-                    {
-                        FilePacket file = FilePacket.Decode(root);
-                        G2Header embedded = new G2Header(file.Embedded);
-
-                        if (G2Protocol.ReadPacket(embedded))
+                    if(loadMode == LoadModeType.Settings)
+                        if(root.Name ==  IdentityPacket.Settings)
                         {
-                            if (loadMode == LoadModeType.Settings)
-                                if (embedded.Name == FilePacket.Settings)
-                                    Settings = SettingsPacket.Decode(embedded);
-
-                            if (loadMode == LoadModeType.Cache && Core != null)
-                            {
-                                if (embedded.Name == FilePacket.GlobalCache)
-                                    LoadCache(embedded, Core.GlobalNet);
-                                if (embedded.Name == FilePacket.OperationCache)
-                                    LoadCache(embedded, Core.OperationNet);
-                            }
+                            Settings = SettingsPacket.Decode(root);
+                            break;
                         }
+
+                    if (loadMode == LoadModeType.Cache)
+                    {
+                        if (root.Name == IdentityPacket.GlobalCache)
+                            if (Core.GlobalNet != null)
+                                Core.GlobalNet.AddCacheEntry(ContactPacket.Decode(root).Contact);
+
+                        if (root.Name == IdentityPacket.OperationCache)
+                            Core.OperationNet.AddCacheEntry(ContactPacket.Decode(root).Contact);
                     }
                 }
 
@@ -143,24 +138,6 @@ namespace RiseOp
 			}
 		}
 
-        void LoadCache(G2Header root, DhtNetwork network)
-        {
-            CachePacket packet = CachePacket.Decode(root);
-
-            if (packet.IPs.Length == 0)
-                return;
-
-            if (packet.IPs.Length % IPCacheEntry.BYTE_SIZE != 0)
-                return;
-
-            int offset = 0;
-            while(offset < packet.IPs.Length)
-            {
-                network.AddCacheEntry(IPCacheEntry.FromBytes(packet.IPs, offset));
-                offset += IPCacheEntry.BYTE_SIZE;
-            }
-        }
-
         internal void Save()
         {
             string backupPath = ProfilePath.Replace(".dop", ".bak");
@@ -171,23 +148,25 @@ namespace RiseOp
             try
             {
                 // Attach to crypto stream and write file
-                FileStream writeStream = new FileStream(ProfilePath, FileMode.Create);
-                CryptoStream encStream = new CryptoStream(writeStream, Password.CreateEncryptor(), CryptoStreamMode.Write);
+                FileStream file = new FileStream(ProfilePath, FileMode.Create);
+                CryptoStream crypto = new CryptoStream(file, Password.CreateEncryptor(), CryptoStreamMode.Write);
+                PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Write);
 
-                byte[] packet = Settings.Encode(Protocol);
+                stream.WritePacket(Settings);
 
-                encStream.Write(packet, 0, packet.Length);
-
-                // cache
                 if (Core != null)
                 {
-                    SaveCache(encStream, Core.GlobalNet.IPCache, FilePacket.GlobalCache);
-                    SaveCache(encStream, Core.OperationNet.IPCache, FilePacket.OperationCache);
+                    if (Core.GlobalNet != null)
+                        lock (Core.GlobalNet.IPCache)
+                            foreach (DhtContact entry in Core.GlobalNet.IPCache)
+                                stream.WritePacket(new ContactPacket(IdentityPacket.GlobalCache, entry));
+
+                    lock (Core.OperationNet.IPCache)
+                        foreach (DhtContact entry in Core.OperationNet.IPCache)
+                            stream.WritePacket(new ContactPacket(IdentityPacket.OperationCache, entry));
                 }
 
-
-                encStream.FlushFinalBlock();
-                encStream.Close();
+                stream.Close();
             }
 
             catch (Exception ex)
@@ -203,39 +182,6 @@ namespace RiseOp
             }
 
             File.Delete(backupPath);
-        }
-
-        void SaveCache(CryptoStream encStream, LinkedList<IPCacheEntry> source, byte type)
-        {
-            // convert source to bytes
-            int offset = 0;
-            byte[] IPs = new byte[IPCacheEntry.BYTE_SIZE * source.Count];
-
-            
-            lock (source)
-                foreach (IPCacheEntry host in source)
-                {
-                    host.ToBytes().CopyTo(IPs, offset);
-                    offset += IPCacheEntry.BYTE_SIZE;
-                }
-
-            // make packets
-            CachePacket cache = new CachePacket(type);
-
-            offset = 0;
-            int chunkSize = IPCacheEntry.BYTE_SIZE * 64;
-
-            while(offset < IPs.Length)
-            {
-                int copySize = (IPs.Length-offset) < chunkSize ? (IPs.Length-offset) : chunkSize;
-
-                cache.IPs = Utilities.ExtractBytes(IPs, offset, copySize);
-                offset += copySize;
-
-                byte[] packet = cache.Encode(Protocol);
-                encStream.Write(packet, 0, packet.Length);
-            }
-
         }
 
         internal void SaveInvite(string path)
@@ -254,6 +200,261 @@ namespace RiseOp
 
             xmlWriter.Close();
             writeStream.Close();*/
+        }
+    }
+
+    internal class ContactPacket : G2Packet
+    {
+        internal byte Name;
+        internal DhtContact Contact;
+
+
+        internal ContactPacket() { }
+
+        internal ContactPacket(byte name, DhtContact contact)
+        {
+            Name = name;
+            Contact = contact;
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                Contact.WritePacket(protocol, null, Name);
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static ContactPacket Decode(G2Header root)
+        {
+            ContactPacket wrap = new ContactPacket();
+
+            wrap.Contact = DhtContact.ReadPacket(root);
+
+            return wrap;
+        }
+    }
+
+    internal class IdentityPacket
+    {
+        internal const byte Settings = 0x10;
+        internal const byte GlobalCache = 0x20;
+        internal const byte OperationCache = 0x30;
+    }
+
+    internal class SettingsPacket : G2Packet
+    {
+        const byte Packet_Operation = 0x10;
+        const byte Packet_ScreenName = 0x20;
+        const byte Packet_GlobalID = 0x30;
+        const byte Packet_GlobalPortTcp = 0x40;
+        const byte Packet_GlobalPortUdp = 0x50;
+        const byte Packet_OpPortTcp = 0x60;
+        const byte Packet_OpPortUdp = 0x70;
+        const byte Packet_OpKey = 0x80;
+        const byte Packet_OpAccess = 0x90;
+        const byte Packet_KeyPair = 0xA0;
+        const byte Packet_Location = 0xB0;
+        const byte Packet_FileKey = 0xC0;
+        const byte Packet_AwayMsg = 0xD0;
+
+        const byte Key_D = 0x10;
+        const byte Key_DP = 0x20;
+        const byte Key_DQ = 0x30;
+        const byte Key_Exponent = 0x40;
+        const byte Key_InverseQ = 0x50;
+        const byte Key_Modulus = 0x60;
+        const byte Key_P = 0x70;
+        const byte Key_Q = 0x80;
+
+
+        // general
+        internal string Operation;
+        internal string ScreenName;
+        internal string Location = "";
+        internal string AwayMessage = "";
+
+        // network
+        internal ulong GlobalID;
+
+        internal ushort GlobalPortTcp;
+        internal ushort GlobalPortUdp;
+        internal ushort OpPortTcp;
+        internal ushort OpPortUdp;
+
+
+        // private
+        internal RijndaelManaged OpKey = new RijndaelManaged();
+        internal AccessType OpAccess;
+
+        internal RSACryptoServiceProvider KeyPair = new RSACryptoServiceProvider();
+        internal byte[] KeyPublic;
+
+        internal RijndaelManaged FileKey = new RijndaelManaged();
+
+
+        internal SettingsPacket()
+        {
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame settings = protocol.WritePacket(null, IdentityPacket.Settings, null);
+
+                protocol.WritePacket(settings, Packet_Operation, UTF8Encoding.UTF8.GetBytes(Operation));
+                protocol.WritePacket(settings, Packet_ScreenName, UTF8Encoding.UTF8.GetBytes(ScreenName));
+                protocol.WritePacket(settings, Packet_GlobalID, BitConverter.GetBytes(GlobalID));
+                protocol.WritePacket(settings, Packet_GlobalPortTcp, BitConverter.GetBytes(GlobalPortTcp));
+                protocol.WritePacket(settings, Packet_GlobalPortUdp, BitConverter.GetBytes(GlobalPortUdp));
+                protocol.WritePacket(settings, Packet_OpPortTcp, BitConverter.GetBytes(OpPortTcp));
+                protocol.WritePacket(settings, Packet_OpPortUdp, BitConverter.GetBytes(OpPortUdp));
+                protocol.WritePacket(settings, Packet_Location, UTF8Encoding.UTF8.GetBytes(Location));
+                protocol.WritePacket(settings, Packet_AwayMsg, UTF8Encoding.UTF8.GetBytes(AwayMessage));
+
+                protocol.WritePacket(settings, Packet_FileKey, FileKey.Key);
+                protocol.WritePacket(settings, Packet_OpKey, OpKey.Key);
+                protocol.WritePacket(settings, Packet_OpAccess, BitConverter.GetBytes((byte)OpAccess));
+
+                RSAParameters rsa = KeyPair.ExportParameters(true);
+                G2Frame key = protocol.WritePacket(settings, Packet_KeyPair, null);
+                protocol.WritePacket(key, Key_D, rsa.D);
+                protocol.WritePacket(key, Key_DP, rsa.DP);
+                protocol.WritePacket(key, Key_DQ, rsa.DQ);
+                protocol.WritePacket(key, Key_Exponent, rsa.Exponent);
+                protocol.WritePacket(key, Key_InverseQ, rsa.InverseQ);
+                protocol.WritePacket(key, Key_Modulus, rsa.Modulus);
+                protocol.WritePacket(key, Key_P, rsa.P);
+                protocol.WritePacket(key, Key_Q, rsa.Q);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static SettingsPacket Decode(G2Header root)
+        {
+            SettingsPacket settings = new SettingsPacket();
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (child.Name == Packet_KeyPair)
+                {
+                    DecodeKey(child, settings);
+                    continue;
+                }
+
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_Operation:
+                        settings.Operation = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_ScreenName:
+                        settings.ScreenName = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_GlobalID:
+                        settings.GlobalID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_GlobalPortTcp:
+                        settings.GlobalPortTcp = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_GlobalPortUdp:
+                        settings.GlobalPortUdp = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_OpPortTcp:
+                        settings.OpPortTcp = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_OpPortUdp:
+                        settings.OpPortUdp = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_OpKey:
+                        settings.OpKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_FileKey:
+                        settings.FileKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        settings.FileKey.IV = new byte[settings.FileKey.IV.Length]; // set zeros
+                        break;
+
+                    case Packet_OpAccess:
+                        settings.OpAccess = (AccessType)child.Data[child.PayloadPos];
+                        break;
+
+                    case Packet_Location:
+                        settings.Location = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_AwayMsg:
+                        settings.AwayMessage = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+                }
+            }
+
+            return settings;
+        }
+
+        private static void DecodeKey(G2Header child, SettingsPacket settings)
+        {
+            G2Header key = new G2Header(child.Data);
+
+            RSAParameters rsa = new RSAParameters();
+
+            while (G2Protocol.ReadNextChild(child, key) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(key))
+                    continue;
+
+                switch (key.Name)
+                {
+                    case Key_D:
+                        rsa.D = Utilities.ExtractBytes(key.Data, key.PayloadPos, key.PayloadSize);
+                        break;
+
+                    case Key_DP:
+                        rsa.DP = Utilities.ExtractBytes(key.Data, key.PayloadPos, key.PayloadSize);
+                        break;
+
+                    case Key_DQ:
+                        rsa.DQ = Utilities.ExtractBytes(key.Data, key.PayloadPos, key.PayloadSize);
+                        break;
+
+                    case Key_Exponent:
+                        rsa.Exponent = Utilities.ExtractBytes(key.Data, key.PayloadPos, key.PayloadSize);
+                        break;
+
+                    case Key_InverseQ:
+                        rsa.InverseQ = Utilities.ExtractBytes(key.Data, key.PayloadPos, key.PayloadSize);
+                        break;
+
+                    case Key_Modulus:
+                        rsa.Modulus = Utilities.ExtractBytes(key.Data, key.PayloadPos, key.PayloadSize);
+                        break;
+
+                    case Key_P:
+                        rsa.P = Utilities.ExtractBytes(key.Data, key.PayloadPos, key.PayloadSize);
+                        break;
+
+                    case Key_Q:
+                        rsa.Q = Utilities.ExtractBytes(key.Data, key.PayloadPos, key.PayloadSize);
+                        break;
+                }
+            }
+
+            settings.KeyPair.ImportParameters(rsa);
+            settings.KeyPublic = rsa.Modulus;
         }
     }
 }

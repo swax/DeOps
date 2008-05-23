@@ -137,14 +137,14 @@ namespace RiseOp.Implementation.Transport
                 if (ProxyClients.Contains(socket))
                     ProxyClients.Remove(socket);
 
-                if (ProxyMap.ContainsKey(socket.userID))
-                    foreach (ushort client in ProxyMap[socket.userID].Keys)
-                        if (ProxyMap[socket.userID][client] == socket)
+                if (ProxyMap.ContainsKey(socket.UserID))
+                    foreach (ushort client in ProxyMap[socket.UserID].Keys)
+                        if (ProxyMap[socket.UserID][client] == socket)
                         {
-                            ProxyMap[socket.userID].Remove(client);
+                            ProxyMap[socket.UserID].Remove(client);
 
-                            if (ProxyMap[socket.userID].Count == 0)
-                                ProxyMap.Remove(socket.userID);
+                            if (ProxyMap[socket.UserID].Count == 0)
+                                ProxyMap.Remove(socket.UserID);
 
                             break;
                         }
@@ -278,7 +278,7 @@ namespace RiseOp.Implementation.Transport
 
                     lock (SocketList)
                         foreach (TcpConnect socket in SocketList)
-                            if (contact.userID == socket.userID && contact.ClientID == socket.ClientID)
+                            if (contact.UserID == socket.UserID && contact.ClientID == socket.ClientID)
                             {
                                 connected = true;
                                 break;
@@ -287,7 +287,7 @@ namespace RiseOp.Implementation.Transport
                     if(connected)
                         continue;
 
-                    if (attempt == null || (contact.userID ^ Network.LocalUserID) < (attempt.userID ^ Network.LocalUserID))
+                    if (attempt == null || (contact.UserID ^ Network.LocalUserID) < (attempt.UserID ^ Network.LocalUserID))
                         attempt = contact;
                 }
             
@@ -298,8 +298,8 @@ namespace RiseOp.Implementation.Transport
 				if(Core.Firewall == FirewallType.Blocked)
 				{
 					// continue attempted to test nat with pings which are small
-                    Network.Send_Ping(attempt.ToDhtAddress());
-					MakeOutbound( attempt.ToDhtAddress(), attempt.TcpPort, "try proxy");
+                    Network.Send_Ping(attempt);
+					MakeOutbound( attempt, attempt.TcpPort, "try proxy");
 				}
 
 				// if natted do udp proxy request first before connect
@@ -308,7 +308,7 @@ namespace RiseOp.Implementation.Transport
 					ProxyReq request = new ProxyReq();
                     request.SenderID = Network.LocalUserID;
 					request.Type     = ProxyType.ClientNAT;
-					Network.UdpControl.SendTo( attempt.ToDhtAddress(), request);
+					Network.UdpControl.SendTo( attempt, request);
 				}
 
                 attempt.NextTryProxy = Core.TimeNow.AddMinutes(10);
@@ -371,7 +371,7 @@ namespace RiseOp.Implementation.Transport
 				foreach(TcpConnect connection in SocketList)
 					if(connection.Proxy == type)
 						// if closer than at least 1 contact
-                        if ((targetID ^ Network.LocalUserID) < (connection.userID ^ Network.LocalUserID) || targetID == connection.userID)
+                        if ((targetID ^ Network.LocalUserID) < (connection.UserID ^ Network.LocalUserID) || targetID == connection.UserID)
 						{
 							return true;
 						}
@@ -412,9 +412,9 @@ namespace RiseOp.Implementation.Transport
                     {
                         count++;
 
-                        if ((connection.userID ^ Network.LocalUserID) > distance)
+                        if ((connection.UserID ^ Network.LocalUserID) > distance)
                         {
-                            distance = connection.userID ^ Network.LocalUserID;
+                            distance = connection.UserID ^ Network.LocalUserID;
                             furthest = connection;
                         }
                     }
@@ -458,12 +458,12 @@ namespace RiseOp.Implementation.Transport
 
         internal void AddProxy(TcpConnect socket)
         {
-            if (!ProxyMap.ContainsKey(socket.userID))
-                ProxyMap[socket.userID] = new Dictionary<ushort, TcpConnect>();
+            if (!ProxyMap.ContainsKey(socket.UserID))
+                ProxyMap[socket.UserID] = new Dictionary<ushort, TcpConnect>();
 
-            Debug.Assert(!ProxyMap[socket.userID].ContainsKey(socket.ClientID));
+            Debug.Assert(!ProxyMap[socket.UserID].ContainsKey(socket.ClientID));
 
-            ProxyMap[socket.userID][socket.ClientID] = socket;
+            ProxyMap[socket.UserID][socket.ClientID] = socket;
 
             if (socket.Proxy == ProxyType.Server)
                 ProxyServers.Add(socket);
@@ -476,7 +476,7 @@ namespace RiseOp.Implementation.Transport
             if (ident == null)
                 return null;
 
-            return GetProxy(ident.userID, ident.ClientID);
+            return GetProxy(ident.UserID, ident.ClientID);
         }
 
         internal TcpConnect GetProxy(ulong user, ushort client)

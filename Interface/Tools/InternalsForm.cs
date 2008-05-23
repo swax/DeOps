@@ -375,15 +375,15 @@ namespace RiseOp.Interface.Tools
 			listValues.Columns.Add("NextTryTcp",150, HorizontalAlignment.Left);
 
 
-            foreach (IPCacheEntry entry in network.IPCache)
+            foreach (DhtContact entry in network.IPCache)
 				listValues.Items.Add( new ListViewItem( new string[]
 				{
-					xStr(entry.Address.IP),		
+					xStr(entry.IP),		
 					xStr(entry.TcpPort),
-					xStr(entry.Address.UdpPort),
-                    xStr(Utilities.IDtoBin(entry.Address.userID)),
+					xStr(entry.UdpPort),
+                    xStr(Utilities.IDtoBin(entry.UserID)),
 					xStr(entry.NextTry),
-					xStr(entry.NextTryTcp)
+					xStr(entry.NextTryProxy)
 				}));
 			
 		}
@@ -459,9 +459,9 @@ namespace RiseOp.Interface.Tools
 				{
                     xStr(lookup.Status),
                     xStr(lookup.Age),
-					IDtoStr(lookup.Contact.userID),		
+					IDtoStr(lookup.Contact.UserID),		
 					xStr(lookup.Contact.ClientID),
-					xStr(lookup.Contact.Address),
+					xStr(lookup.Contact.IP),
 					xStr(lookup.Contact.TcpPort),
 					xStr(lookup.Contact.UdpPort),		
 					xStr(lookup.Contact.LastSeen),
@@ -595,7 +595,7 @@ namespace RiseOp.Interface.Tools
 			listValues.Items.Add( new ListViewItem( new string[]{"Address",				xStr(connect.RemoteIP)} ) );
 			listValues.Items.Add( new ListViewItem( new string[]{"TcpPort",				xStr(connect.TcpPort)} ) );
 			listValues.Items.Add( new ListViewItem( new string[]{"UdpPort",				xStr(connect.UdpPort)} ) );
-			listValues.Items.Add( new ListViewItem( new string[]{"DhtID",				IDtoStr(connect.userID)} ) );
+			listValues.Items.Add( new ListViewItem( new string[]{"DhtID",				IDtoStr(connect.UserID)} ) );
 			listValues.Items.Add( new ListViewItem( new string[]{"ClientID",			xStr(connect.ClientID)} ) );
 			listValues.Items.Add( new ListViewItem( new string[]{"TcpSocket",			xStr(connect.TcpSocket)} ) );
 			listValues.Items.Add( new ListViewItem( new string[]{"Age",					xStr(connect.Age)} ) );
@@ -680,10 +680,10 @@ namespace RiseOp.Interface.Tools
 				
 					listValues.Items.Add( new ListViewItem( new string[]
 					{
-						GetLinkName(contact.userID),
+						GetLinkName(contact.UserID),
 						xStr( Utilities.IDtoBin(contact.RoutingID)),
 		                xStr(contact.ClientID),	
-						xStr(contact.Address),
+						xStr(contact.IP),
 						xStr(contact.TcpPort),
 						xStr(contact.UdpPort),		
 						xStr(contact.LastSeen),

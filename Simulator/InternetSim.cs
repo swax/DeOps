@@ -75,8 +75,8 @@ namespace RiseOp.Simulator
         int  FluxIn      = 1;
         int  FluxOut     = 0;
 
-        int PercentNAT = 0;
-        int PercentBlocked = 0;  
+        int PercentNAT = 30;
+        int PercentBlocked = 30;  
 
 
         internal InternetSim(SimForm form)
@@ -124,7 +124,7 @@ namespace RiseOp.Simulator
 
             // ip
             byte[] ipbytes = new byte[4] { (byte)RndGen.Next(99), (byte)RndGen.Next(99), (byte)RndGen.Next(99), (byte)RndGen.Next(99) };
-            instance.RealIP = Utilities.BytestoIP(ipbytes, 0);
+            instance.RealIP = new IPAddress(ipbytes);
 
             // firewall
             instance.RealFirewall = FirewallType.Open;
@@ -589,8 +589,8 @@ namespace RiseOp.Simulator
             foreach (SimInstance entry in cached)
             {
                 DhtContact contact = entry.Core.GlobalNet.GetLocalContact();
-                contact.Address = entry.RealIP;
-                network.AddCacheEntry(new IPCacheEntry(contact));
+                contact.IP = entry.RealIP;
+                network.AddCacheEntry(contact);
             }
         }
 

@@ -82,7 +82,7 @@ namespace RiseOp.Implementation.Dht
             if(sockets != null)
                 foreach (TcpConnect socket in sockets)
                 {
-                    DhtAddress address = new DhtAddress(socket.userID, socket.ClientID, socket.RemoteIP, socket.UdpPort);
+                    DhtAddress address = new DhtAddress(socket.RemoteIP, socket);
                     Searches.SendDirectRequest(address, TargetID, Service, DataType, Parameters);
 
                     DhtLookup host = Add(socket.GetContact());
@@ -124,7 +124,7 @@ namespace RiseOp.Implementation.Dht
 		{
             DhtLookup added = null;
 
-            if (contact.userID == Network.LocalUserID && contact.ClientID == Network.ClientID)
+            if (contact.UserID == Network.LocalUserID && contact.ClientID == Network.ClientID)
                 return null;
 
 			if(Finished) // search over
@@ -133,10 +133,10 @@ namespace RiseOp.Implementation.Dht
 			// go through lookup list, add if closer to target
 			foreach(DhtLookup lookup in LookupList)
 			{	
-				if(contact.userID == lookup.Contact.userID && contact.ClientID == lookup.Contact.ClientID)
+				if(contact.UserID == lookup.Contact.UserID && contact.ClientID == lookup.Contact.ClientID)
 					return lookup;
 
-				if((contact.userID ^ TargetID) < (lookup.Contact.userID ^ TargetID))
+				if((contact.UserID ^ TargetID) < (lookup.Contact.UserID ^ TargetID))
 				{
                     added = new DhtLookup(contact);
                     LookupList.Insert(LookupList.IndexOf(lookup), added);
@@ -155,7 +155,7 @@ namespace RiseOp.Implementation.Dht
 		
 	
 			// at end so we ensure this node is put into list and sent with proxy results
-            if (Service == Core.DhtServiceID && contact.userID == TargetID)
+            if (Service == Core.DhtServiceID && contact.UserID == TargetID)
 				Found(contact, false);
 
             return added;
@@ -194,7 +194,7 @@ namespace RiseOp.Implementation.Dht
                     if (lookup.Age == 3)
                     {
                         //Log("Sending Request to " + lookup.Contact.Address.ToString() + " (" + Utilities.IDtoBin(lookup.Contact.DhtID) + ")");
-                        Network.Searches.SendUdpRequest(lookup.Contact.ToDhtAddress(), TargetID, SearchID, Service, DataType, Parameters);
+                        Network.Searches.SendUdpRequest(lookup.Contact, TargetID, SearchID, Service, DataType, Parameters);
                     }
 
                     // drop after 6
@@ -206,7 +206,7 @@ namespace RiseOp.Implementation.Dht
                 if (lookup.Status == LookupStatus.None && searching < SEARCH_ALPHA)
                 {
                     //Log("Sending Request to " + lookup.Contact.Address.ToString() + " (" + Utilities.IDtoBin(lookup.Contact.DhtID) + ")");
-                    Network.Searches.SendUdpRequest(lookup.Contact.ToDhtAddress(), TargetID, SearchID, Service, DataType, Parameters);
+                    Network.Searches.SendUdpRequest(lookup.Contact, TargetID, SearchID, Service, DataType, Parameters);
 
                     lookup.Status = LookupStatus.Searching;
                 }

@@ -501,8 +501,6 @@ namespace RiseOp.Implementation.Transport
         internal void Send_ProxyUpdate(TcpConnect tcp)
         {
             ProxyUpdate update = new ProxyUpdate();
-
-            update.Global = tcp.Network.IsGlobal;
             update.Proxy = new DhtAddress(tcp.RemoteIP, tcp);
 
             Log("Sent Proxy Update (" + update.Proxy + ")");
@@ -514,10 +512,10 @@ namespace RiseOp.Implementation.Transport
         {
             ProxyUpdate update = ProxyUpdate.Decode(embeddedPacket);
 
-            Comm.AddAddress(new RudpAddress(update.Proxy, update.Global));
+            Comm.AddAddress(new RudpAddress(update.Proxy));
 
             if(embeddedPacket.Tcp != null)
-                Comm.AddAddress(new RudpAddress(update.Proxy, update.Global, embeddedPacket.Tcp));
+                Comm.AddAddress(new RudpAddress(update.Proxy, embeddedPacket.Tcp));
 
             Comm.CheckRoutes();
 

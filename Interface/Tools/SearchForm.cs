@@ -97,7 +97,7 @@ namespace RiseOp.Interface.Tools
             foreach (DhtLookup lookup in search.LookupList)
                 ListResults.Items.Add(new ListViewItem(new string[]
 					{
-						Utilities.IDtoBin(lookup.Contact.userID),
+						Utilities.IDtoBin(lookup.Contact.UserID),
 						lookup.Contact.ClientID.ToString()		
 					}));
 

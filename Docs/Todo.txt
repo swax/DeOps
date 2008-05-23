@@ -1,4 +1,7 @@
 
+get ping globally proxied
+	write psuedo of path
+
 global proxying
 	entering / leaving global proxy mode
 		when to publish
@@ -41,14 +44,14 @@ global proxying
 		add global locs to routing, ping regularly
 		ping will tell open node is online, will add to blocked's routing and blocked will connect
 		UseGlobalProxy is then a psuedo-open state in respect to the operation network
-
+			until true open finds them and they downgrade
+			
 	routing add default proven is false, only on pong is routing proven set to true
 		network only responsive if routing is proven
 		
 	dont respond to globally proxied pings, if not UseGlobalProxy (connected to op proxy)
 		causes global proxy locs in routing to expire
 		
-
 	locationData.Proxies if their global or not, not taken into account
 
 	locationData should always include global proxies if not open
@@ -56,6 +59,16 @@ global proxying
 		ex test 2 blocked connected to 1 open on OpNet, and open node disconnecting, blocked should still be able to comm through global
 
 	networks of many natted should be able to be successfully operate through global net with min bw
+
+	ensure 2 global NAT udp hole punch with operation key
+
+after login show connecting screen
+	visual aid so people can watch the connection process, entertaining, embed in main panel?
+	show ring with global in middle and ring with op name in middle
+	show routing table nodes, and packets being sent
+	route nodes dark green, search nodes blue, show self red/orage/green, rudp sockets purple
+	visual, cool looking, shows user direct lack of centralization, most of functionality already implemented
+	
 
 testing		
 	test 2 op1 blocked, and 1 op2 open, and see if 2 op1s can communicate
@@ -66,12 +79,20 @@ testing
 	publishing / updting through 1 open, multiple blocked
 
 	fix crawler - make sure reports be, gonna need to crawl global regularly to audit at release
+		easily report percent of network that is NAT/Blocked -> export to csv
+		know really quickly if waaay to many nats/blocked
 
 	change established to CanRepublish? map out process
 	
 	support free 20mb of centrally hosted web cache so people with small groups can store their files and go offline
 
+	know diff between fw open on LAN and on internet
+
 next
+	use packetstream instead of protocl.writetofile	
+	put stream closing calls in finally block
+	delete PacketsFile.cs from svn
+	
 	global replicating
 	
 	bandwidth limits / auditing
@@ -118,13 +139,22 @@ other
 	test clients with different local times, init random gmt offsets
 	graphics - darker invite, news icon update, take border off pacman guy
 
+	should simulate local net screwing up firewall settings and its effect on connecting with the outside	
+		10.0.0.0 - 10.255.255.255
+		172.16.0.0 - 172.31.255.255
+		192.168.0.0 - 192.168.255.255
+	if firewalled/NAT 
+		display in big letters forward TCP/UDP ports xxxx
+		by default set TCP/UDP ports equal
+
 
 spring release
 	global proxying
 	invitations
-	web caching ips/files - look at using EC2
-	auto-update
 	licensing, installer
+	auto-update
+	web caching ips/files - look at using EC2
+		run crawler once a day, upload highest uptime nodes to webcache site
 	website
 	*** items from todo
 	31 crits
@@ -372,16 +402,29 @@ Core
 			file also passworded
 
 		private 
-		   Invite file contains sender's address on the global network
-			Sender stores contact info at an invite ID address on the global network
-			Opening invite file connects to global network, and finds invite ID info if it exists
-				unencrypts to get senders location info, OpID, OpID only exposed if invite still published
-			Sender contacted by invitee, people can IM, sender can choose to authorize invite
-			Authorization sends OpID to new user
-			file passworded as well
+			time-expire invite
+				(store encrypted opID at random position on global network)
+				invitation is riseop://network:<position/decrypt>
+				
+				prevents time expired from being exploited
+				   Invite file contains sender's address on the global network
+					Sender stores contact info at an invite ID address on the global network
+					Opening invite file connects to global network, and finds invite ID info if it exists
+						unencrypts to get senders location info, OpID, OpID only exposed if invite still published
+					Sender contacted by invitee, people can IM, sender can choose to authorize invite
+					Authorization sends OpID to new user
+					file passworded as well
 
 		public
 			opID is embedded in link riseop://network:opid
+
+		alternate invitation packet - alphanumeric encoded
+			optional password encrypted - tell user to relay password over the phone
+			operation ID - for public / private this is enough to find network
+			web cache - for secret
+			IPs - of static nodes (optional)
+			starting new network easy from old network because secure IM established
+				msg members new riseop:// link and give password
 
 		detect clients on LAN to connect to
 			add LAN broadcast ping interval to boostrap

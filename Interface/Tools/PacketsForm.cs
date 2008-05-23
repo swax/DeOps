@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Drawing;
 using System.Collections;
 using System.ComponentModel;
+using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Windows.Forms;
@@ -721,7 +722,7 @@ namespace RiseOp.Interface.Tools
                 return;
 
             if (node.Data.Length == 4)
-                node.Text = Utilities.BytestoIP(node.Data, 0).ToString();
+                node.Text = new IPAddress(node.Data).ToString();
         }
 
         private void ClearMenuItem_Click(object sender, EventArgs e)

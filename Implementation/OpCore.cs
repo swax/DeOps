@@ -759,10 +759,12 @@ namespace RiseOp.Implementation
             if (UseGlobalProxies)
             {
                 // socket will handle publishing after 15 secs
+
+                //crit how to republish GP loc
             }
             else
             {
-                //crit GP - remove global proxies from routing
+                // global proxies should remove themselves from routing by timing out
             }
         }
     }

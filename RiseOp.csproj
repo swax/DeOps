@@ -737,7 +737,7 @@
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>IMRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>DeOps.Services.IM</CustomToolNamespace>
+      <CustomToolNamespace>RiseOp.Services.IM</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\IM\IM_View.resx">
       <SubType>Designer</SubType>

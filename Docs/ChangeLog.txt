@@ -1,4 +1,6 @@
 ﻿
+5/22/08 - revised contact/source/address from static byte encoded to packet (supports ipv6 and global proxy)
+
 5/20/08 -	packet reading all static
 			rudp control moved into network
 			ids on global network diff from those on operation

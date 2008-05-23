@@ -476,10 +476,14 @@ namespace RiseOp.Services.Location
 
             
             // if open and not global, add to routing
-            if (location.Source.Firewall == FirewallType.Open && !location.Global)
+            if (location.Source.Firewall == FirewallType.Open)
                 Core.OperationNet.Routing.Add(new DhtContact(location.Source, location.IP, Core.TimeNow));
 
-            //crit add global addr/global proxies to global routing and op routing?
+            // add global proxies (they would only be included in location packet if source was not directly connected to OP
+            foreach(DhtAddress proxy in location.Proxies)
+                if (proxy.GlobalProxy > 0)
+                    Core.OperationNet.Routing.Add(new DhtContact(proxy, Core.TimeNow));
+            
 
             if (LocationUpdate != null)
                 LocationUpdate.Invoke(current.Data);
@@ -523,23 +527,14 @@ namespace RiseOp.Services.Location
             location.IP = Core.LocalIP;
             location.TTL = LocationData.OP_TTL;
 
+            location.Source = Core.OperationNet.GetLocalSource();
 
-            // if everyone on network behind firewall publish location of global proxies
-            if (Core.UseGlobalProxies)
-            {
-                location.Global = true;
-                location.Source = Core.GlobalNet.GetLocalSource();
-
+            if(Core.UseGlobalProxies && Core.Firewall != FirewallType.Open)
                 foreach (TcpConnect socket in Core.GlobalNet.TcpControl.ProxyServers)
-                    location.Proxies.Add(new DhtAddress(socket.RemoteIP, socket));
-            }
-            else
-            {
-                location.Source = Core.OperationNet.GetLocalSource();
+                    location.Proxies.Add(new DhtAddress(socket.RemoteIP, socket, Core.GlobalNet.LocalUserID));
 
-                foreach (TcpConnect connect in Core.OperationNet.TcpControl.ProxyServers)
-                    location.Proxies.Add(new DhtAddress(connect.RemoteIP, connect));
-            }
+            foreach (TcpConnect socket in Core.OperationNet.TcpControl.ProxyServers)
+                location.Proxies.Add(new DhtAddress(socket.RemoteIP, socket));
 
             location.Place = Core.User.Settings.Location;
             location.GmtOffset = System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes;
@@ -652,8 +647,6 @@ namespace RiseOp.Services.Location
 
         internal List<ClientInfo> GetClients(ulong user)
         {
-            //crit needs to change when global proxying implemented
-
             List<ClientInfo> results = new List<ClientInfo>();
             
             ThreadedDictionary<ushort, ClientInfo> clients = null;
@@ -664,8 +657,7 @@ namespace RiseOp.Services.Location
             clients.LockReading(delegate()
             {
                 foreach (ClientInfo info in clients.Values)
-                    if (!info.Data.Global)
-                        results.Add(info);
+                    results.Add(info);
             });
 
             return results;

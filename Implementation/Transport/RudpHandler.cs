@@ -94,10 +94,10 @@ namespace RiseOp.Implementation.Transport
             RudpSession session = new RudpSession(this, location.UserID, location.Source.ClientID, false);
             SessionMap[location.UserID].Add(session);
 
-            session.Comm.AddAddress(new RudpAddress(new DhtAddress(location.IP, location.Source), location.Global));
+            session.Comm.AddAddress(new RudpAddress(new DhtAddress(location.IP, location.Source)));
 
             foreach (DhtAddress address in location.Proxies)
-                session.Comm.AddAddress(new RudpAddress(address, location.Global));
+                session.Comm.AddAddress(new RudpAddress(address));
 
             session.Connect(); 
         }

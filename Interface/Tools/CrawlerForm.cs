@@ -232,8 +232,8 @@ namespace RiseOp.Interface.Tools
 				lock(Routing.BucketList)
 					foreach(DhtBucket bucket in Routing.BucketList)
 						foreach(DhtContact contact in bucket.ContactList)
-                            if (!CrawlMap.Contains(contact.userID))
-                                CrawlMap.Add(contact.userID, new CrawlNode(contact));
+                            if (!CrawlMap.Contains(contact.UserID))
+                                CrawlMap.Add(contact.UserID, new CrawlNode(contact));
 			
 				Status = CrawlStatus.Active;
 				buttonControl.Text = "Pause";
@@ -288,7 +288,7 @@ namespace RiseOp.Interface.Tools
 					else
 						targetNode = node.Proxy; // else send through proxy
 
-                    Network.Send_CrawlRequest(targetNode.Contact.ToDhtAddress());
+                    Network.Send_CrawlRequest(targetNode.Contact);
 					
 					
 					sendPackets--;
@@ -299,7 +299,7 @@ namespace RiseOp.Interface.Tools
 
 				if(node.LookupContacts && !node.Searched)
 				{
-                    Network.Searches.SendUdpRequest(node.Contact.ToDhtAddress(), node.Contact.userID + 1, 0, Network.Core.DhtServiceID, 0, null);
+                    Network.Searches.SendUdpRequest(node.Contact, node.Contact.UserID + 1, 0, Network.Core.DhtServiceID, 0, null);
 
 					node.Searched = true;
 					sendPackets--;
@@ -314,32 +314,32 @@ namespace RiseOp.Interface.Tools
 		{
             DhtContact source = new DhtContact(ack.Source, packet.Source.IP, Network.Core.TimeNow);
 			
-			if( !CrawlMap.Contains(source.userID) )
-				CrawlMap.Add(source.userID, source);
+			if( !CrawlMap.Contains(source.UserID) )
+				CrawlMap.Add(source.UserID, source);
 
 			foreach(DhtContact contact in ack.ContactList)
-				if( !CrawlMap.Contains(contact.userID) )
-					CrawlMap.Add(contact.userID, new CrawlNode(contact));
+				if( !CrawlMap.Contains(contact.UserID) )
+					CrawlMap.Add(contact.UserID, new CrawlNode(contact));
 		}
 
 		internal void AsyncCrawlAck(CrawlAck ack, G2ReceivedPacket packet)
 		{
-			if( !CrawlMap.Contains(ack.Source.userID) )
+			if( !CrawlMap.Contains(ack.Source.UserID) )
 				return;
 
-			CrawlNode node = (CrawlNode) CrawlMap[ack.Source.userID];
+			CrawlNode node = (CrawlNode) CrawlMap[ack.Source.UserID];
 
 			node.Ack = ack;
 
 
 			foreach(DhtContact contact in ack.ProxyList)
-				if( !CrawlMap.Contains(contact.userID) )
+				if( !CrawlMap.Contains(contact.UserID) )
 				{
 					CrawlNode newNode = new CrawlNode(contact);
 					newNode.LookupContacts = false;
 					newNode.Proxy = node;
 
-					CrawlMap.Add(contact.userID, newNode);
+					CrawlMap.Add(contact.UserID, newNode);
 				}
 		}
 
@@ -354,8 +354,8 @@ namespace RiseOp.Interface.Tools
 				{
 					listViewNodes.Items.Add( new ListViewItem( new string[]
 					{
-								Utilities.IDtoBin(node.Contact.userID),
-								node.Contact.Address.ToString(),
+								Utilities.IDtoBin(node.Contact.UserID),
+								node.Contact.IP.ToString(),
 								node.Contact.ClientID.ToString(),
 								node.Contact.TcpPort.ToString() + " / " + node.Contact.UdpPort.ToString(),
 								node.Ack.Version,
@@ -380,7 +380,7 @@ namespace RiseOp.Interface.Tools
 
 			string idList = "";
 			foreach(DhtContact contact  in node.Ack.ProxyList)
-				idList += contact.userID + ", ";
+				idList += contact.UserID + ", ";
 
 			if(idList.Length > 0)
 				idList = idList.Substring(0, idList.Length - 2);

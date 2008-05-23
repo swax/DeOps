@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -21,9 +22,9 @@ namespace RiseOp.Implementation.Protocol
 
 		int    WriteOffset;
 		byte[] WriteData = new byte[MAX_WRITE_SIZE];
-		
 
-		ArrayList Frames = new ArrayList();
+
+        LinkedList<G2Frame> Frames = new LinkedList<G2Frame>();
 
 		int    FinalSize;
 		byte[] FinalPacket = new byte[MAX_FINAL_SIZE];
@@ -78,40 +79,43 @@ namespace RiseOp.Implementation.Protocol
 				WriteOffset += payload.Length;
 			}
 
-			Frames.Add(packet);
+			Frames.AddLast(packet);
 
 			return packet;
 		}
 
 		internal byte[] WriteFinish()
 		{
-			// Reverse iterate through packet structure, set lengths
-			Frames.Reverse();
-			foreach(G2Frame packet in Frames)
-			{		
-				if(packet.InternalLength > 0 && packet.PayloadLength > 0)
-					packet.InternalLength += 1; // For endstream byte
+            // Reverse iterate through packet structure backwards, set lengths
+            LinkedListNode<G2Frame> current = Frames.Last;
+            while(current != null)
+            {
+                G2Frame packet = current.Value;
 
-				packet.PayloadOffset   =  packet.InternalLength;
-				packet.InternalLength  += packet.PayloadLength;
+                if (packet.InternalLength > 0 && packet.PayloadLength > 0)
+                    packet.InternalLength += 1; // For endstream byte
 
-				packet.LenLen = 0;
-				while(packet.InternalLength >= Math.Pow(256, packet.LenLen) )
-					packet.LenLen++;
+                packet.PayloadOffset = packet.InternalLength;
+                packet.InternalLength += packet.PayloadLength;
 
-				Debug.Assert(packet.LenLen < 8);
+                packet.LenLen = 0;
+                while (packet.InternalLength >= Math.Pow(256, packet.LenLen))
+                    packet.LenLen++;
 
-				packet.HeaderLength = 1 + packet.LenLen + 1;
+                Debug.Assert(packet.LenLen < 8);
 
-				if( packet.Parent != null)
-				{
-					packet.Parent.InternalLength += packet.HeaderLength + packet.InternalLength;	
-					packet.Parent.Compound = 1;
-				}
-			}
+                packet.HeaderLength = 1 + packet.LenLen + 1;
 
-			// Iterate through packet stucture, build packet
-			Frames.Reverse(); // back to forwards
+                if (packet.Parent != null)
+                {
+                    packet.Parent.InternalLength += packet.HeaderLength + packet.InternalLength;
+                    packet.Parent.Compound = 1;
+                }
+
+                current = current.Previous; 
+            }
+
+			// Iterate through packet stucture forwards, build packet
 			foreach(G2Frame packet in Frames)
 			{
 				int nextByte = 0;
@@ -470,7 +474,8 @@ namespace RiseOp.Implementation.Protocol
 
         internal void Close()
         {
-            Utilities.ReadtoEnd(ParentStream);
+            if(Access == FileAccess.Read)
+                Utilities.ReadtoEnd(ParentStream);
 
             ParentStream.Close();
         }

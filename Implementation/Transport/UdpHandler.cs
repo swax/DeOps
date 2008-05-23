@@ -112,7 +112,7 @@ namespace RiseOp.Implementation.Transport
             {
                 lock (Network.AugmentedCrypt)
                 {
-                    BitConverter.GetBytes(address.userID).CopyTo(Network.AugmentedCrypt.Key, 0);
+                    BitConverter.GetBytes(address.UserID).CopyTo(Network.AugmentedCrypt.Key, 0);
 
                     final = Utilities.EncryptBytes(encoded, Network.AugmentedCrypt);
                 }
@@ -227,7 +227,7 @@ namespace RiseOp.Implementation.Transport
 
             if(G2Protocol.ReadPacket(packet.Root))
             {
-                packet.Source = new DhtAddress(0, 0, sender.Address, (ushort)sender.Port);
+                packet.Source = new DhtAddress(0, 0, sender.Address, (ushort)sender.Port, 0);
 
                 byte[] packetData = copied ? buff : Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize);
                 

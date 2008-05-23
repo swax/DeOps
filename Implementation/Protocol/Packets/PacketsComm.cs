@@ -90,10 +90,10 @@ namespace RiseOp.Implementation.Protocol.Comm
                     protocol.WritePacket(bdy, Packet_Ident, BitConverter.GetBytes(Ident));
 
                 if (ToEndPoint != null)
-                    protocol.WritePacket(bdy, Packet_To, ToEndPoint.ToBytes());
+                    ToEndPoint.WritePacket(protocol, bdy, Packet_To);
 
                 if (FromEndPoint != null)
-                    protocol.WritePacket(bdy, Packet_From, FromEndPoint.ToBytes());
+                    FromEndPoint.WritePacket(protocol, bdy, Packet_From);
 
                 return protocol.WriteFinish();
             }
@@ -152,11 +152,11 @@ namespace RiseOp.Implementation.Protocol.Comm
                         break;
 
                     case Packet_To:
-                        gc.ToEndPoint = DhtAddress.FromBytes(child.Data, child.PayloadPos);
+                        gc.ToEndPoint = DhtAddress.ReadPacket(child);
                         break;
 
                     case Packet_From:
-                        gc.FromEndPoint = DhtAddress.FromBytes(child.Data, child.PayloadPos);
+                        gc.FromEndPoint = DhtAddress.ReadPacket(child);
                         break;
 
                     case Packet_Ident:
@@ -537,11 +537,8 @@ namespace RiseOp.Implementation.Protocol.Comm
 
     internal class ProxyUpdate : G2Packet
     {
-        const byte Packet_Global = 0x10;
-        const byte Packet_Proxy = 0x20;
+        const byte Packet_Proxy = 0x10;
 
-
-        internal bool Global;
         internal DhtAddress Proxy;
 
 
@@ -555,8 +552,7 @@ namespace RiseOp.Implementation.Protocol.Comm
             {
                 G2Frame update = protocol.WritePacket(null, CommPacket.ProxyUpdate, null);
 
-                protocol.WritePacket(update, Packet_Global, BitConverter.GetBytes(Global));
-                protocol.WritePacket(update, Packet_Proxy, Proxy.ToBytes());
+                Proxy.WritePacket(protocol, update, Packet_Proxy);
 
                 return protocol.WriteFinish();
             }
@@ -575,12 +571,8 @@ namespace RiseOp.Implementation.Protocol.Comm
 
                 switch (child.Name)
                 {
-                    case Packet_Global:
-                        update.Global = BitConverter.ToBoolean(child.Data, child.PayloadPos);
-                        break;
-
                     case Packet_Proxy:
-                        update.Proxy = DhtAddress.FromBytes(child.Data, child.PayloadPos);
+                        update.Proxy = DhtAddress.ReadPacket(child);
                         break;
                 }
             }
