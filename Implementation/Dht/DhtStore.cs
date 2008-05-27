@@ -51,6 +51,9 @@ namespace RiseOp.Implementation.Dht
             {
                 foreach (DhtContact closest in Network.Routing.GetCacheArea())
                     Send_StoreReq(closest, null, store);
+
+                foreach (TcpConnect socket in Network.TcpControl.ProxyClients)
+                    Send_StoreReq(new DhtAddress(socket.RemoteIP, socket), null, store);
             }
             else
             {
@@ -93,7 +96,7 @@ namespace RiseOp.Implementation.Dht
                     Send_StoreReq(proxy, null, req);
             }
         }
-        internal void Send_StoreReq(DhtAddress address, DhtClient contact, DataReq publish)
+        internal void Send_StoreReq(DhtAddress address, DhtClient localProxy, DataReq publish)
         {
             if (address == null)
                 return;
@@ -105,16 +108,24 @@ namespace RiseOp.Implementation.Dht
             store.DataType  = publish.DataType;
             store.Data      = publish.Data;
 
-            TcpConnect direct = Network.TcpControl.GetProxy(contact);
+
+            TcpConnect direct = Network.TcpControl.GetProxy(address);
 
             if (direct != null)
                 direct.SendPacket(store);
+
 
             // if blocked send tcp with to tag
             else if (Core.Firewall == FirewallType.Blocked)
             {
                 store.ToAddress = address;
-                Network.TcpControl.SendRandomProxy(store);
+
+                TcpConnect proxy = Network.TcpControl.GetProxy(localProxy);
+
+                if (proxy != null)
+                    proxy.SendPacket(store);
+                else
+                    Network.TcpControl.SendRandomProxy(store);
             }
             else
                 Network.UdpControl.SendTo(address, store);
@@ -126,7 +137,7 @@ namespace RiseOp.Implementation.Dht
 
             if (store.Source.Firewall == FirewallType.Open )
                     // dont need to add to routing if nat/blocked because eventual routing ping by server will auto add
-                    Network.Routing.Add(new DhtContact(store.Source, packet.Source.IP, Core.TimeNow));
+                    Network.Routing.Add(new DhtContact(store.Source, packet.Source.IP));
 
 
             // forward to proxied nodes - only replicate data to blocked nodes on operation network
@@ -145,7 +156,7 @@ namespace RiseOp.Implementation.Dht
             DataReq data = new DataReq(new List<DhtAddress>(), store.Key, store.Service, store.DataType, store.Data);
             data.Sources.Add( packet.Source);
             
-            if(packet.Tcp != null)
+            if(packet.Tcp != null && packet.Tcp.Proxy == ProxyType.Server)
                 data.LocalProxy = new DhtClient(packet.Tcp);
 
             if(data.Service == 0)

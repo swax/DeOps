@@ -477,13 +477,16 @@ namespace RiseOp.Services.Location
             
             // if open and not global, add to routing
             if (location.Source.Firewall == FirewallType.Open)
-                Core.OperationNet.Routing.Add(new DhtContact(location.Source, location.IP, Core.TimeNow));
+                Core.OperationNet.Routing.Add(new DhtContact(location.Source, location.IP));
 
             // add global proxies (they would only be included in location packet if source was not directly connected to OP
             foreach(DhtAddress proxy in location.Proxies)
                 if (proxy.GlobalProxy > 0)
-                    Core.OperationNet.Routing.Add(new DhtContact(proxy, Core.TimeNow));
+                    Core.OperationNet.Routing.Add(new DhtContact(proxy));
             
+
+            //crit if known online nodes is low, search for trust of loc
+
 
             if (LocationUpdate != null)
                 LocationUpdate.Invoke(current.Data);

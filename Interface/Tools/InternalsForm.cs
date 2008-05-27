@@ -356,7 +356,6 @@ namespace RiseOp.Interface.Tools
             listValues.Items.Add(new ListViewItem(new string[] { "IPTable", xStr(network.IPTable.Count) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Searches Pending", xStr(network.Searches.Pending.Count) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Searches Active", xStr(network.Searches.Active.Count) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "Routing LastUpdated", xStr(network.Routing.LastUpdated) }));
         }
 
 
@@ -641,7 +640,6 @@ namespace RiseOp.Interface.Tools
             listValues.Items.Add(new ListViewItem(new string[] { "NearHigh", xStr(routing.NearHigh.Contacts.Count) }));
             listValues.Items.Add(new ListViewItem(new string[] { "NearLow", xStr(routing.NearLow.Contacts.Count) }));
             listValues.Items.Add(new ListViewItem(new string[] { "ContactMap", xStr(routing.ContactMap.Count) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "LastUpdated", xStr(routing.LastUpdated) }));
             listValues.Items.Add(new ListViewItem(new string[] { "NextSelfSearch", xStr(routing.NextSelfSearch) }));
 
 

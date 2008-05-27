@@ -386,7 +386,7 @@ namespace RiseOp.Implementation.Dht
         {
             // dht responsiveness is only reliable if we can accept incoming connections, other wise we might be 
             // behind a NAT and in that case won't be able to receive traffic from anyone who has not sent us stuff
-            bool connected = (Core.Firewall == FirewallType.Open && Routing.DhtResponsive) || 
+            bool connected = (Routing.DhtEnabled && Routing.DhtResponsive) || 
                             TcpControl.ProxyServers.Count > 0 || TcpControl.ProxyClients.Count > 0;
 
             //crit check here for global proxy flag (if globally proxied and in ping contact with remote?
@@ -470,7 +470,7 @@ namespace RiseOp.Implementation.Dht
 
         internal DhtContact GetLocalContact()
         {
-            return new DhtContact(LocalUserID, ClientID, Core.LocalIP, TcpControl.ListenPort, UdpControl.ListenPort, Core.TimeNow);
+            return new DhtContact(LocalUserID, ClientID, Core.LocalIP, TcpControl.ListenPort, UdpControl.ListenPort);
         }
 
 
@@ -647,13 +647,15 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
-        internal void Send_Ping(DhtAddress address)
+        internal void Send_Ping(DhtContact contact)
         {
             Ping ping = new Ping();
             ping.Source = GetLocalSource();
-            ping.RemoteIP = address.IP;
+            ping.RemoteIP = contact.IP;
+            ping.Ident = contact.Ident = (ushort) Core.RndGen.Next(ushort.MaxValue);
 
-            UdpControl.SendTo(address, ping);   
+            // always send udp, tcp pings are sent manually
+            UdpControl.SendTo(contact, ping);   
         }
 
         internal void ReceiveNetworkPacket(G2ReceivedPacket packet)
@@ -735,7 +737,7 @@ namespace RiseOp.Implementation.Dht
 
                     // if firewall flag not set add to routing
                     if (ping.Source.Firewall == FirewallType.Open)
-                        Routing.Add(new DhtContact(ping.Source, packet.Source.IP, Core.TimeNow));
+                        Routing.Add(new DhtContact(ping.Source, packet.Source.IP));
                 }
 
                 UdpControl.SendTo(packet.Source, pong);
@@ -757,7 +759,7 @@ namespace RiseOp.Implementation.Dht
                 }
 
                 if (ping.Source.Firewall == FirewallType.Open)
-                    Routing.Add(new DhtContact(ping.Source, packet.Source.IP, Core.TimeNow));
+                    Routing.Add(new DhtContact(ping.Source, packet.Source.IP));
 
                 // received incoming tcp means we are not firewalled
                 if (!packet.Tcp.Outbound)
@@ -805,17 +807,17 @@ namespace RiseOp.Implementation.Dht
                 Core.SetFirewallType(FirewallType.NAT);
 
                 // send bootstrap request for nodes if network not responsive
-                // do tcp connect because if 2 nodes on network then one needs to find out their open
+                // do tcp connect because if 2 nodes on network then one needs to find out they're open
                 if (!Responsive)
                 {
-                    Searches.SendUdpRequest(packet.Source, LocalUserID, 0, Core.DhtServiceID, 0, null);
+                    Searches.SendRequest(packet.Source, LocalUserID, 0, Core.DhtServiceID, 0, null);
                     TcpControl.MakeOutbound(packet.Source, pong.Source.TcpPort, "pong bootstrap");
                 }
 
                 // add to routing
                 // on startup, especially in sim everyone starts blocked so pong source firewall is not set right, but still needs to go into routing
                 if (pong.Source.Firewall == FirewallType.Open)
-                    Routing.Add(new DhtContact(pong.Source, packet.Source.IP, Core.TimeNow));
+                    Routing.Add(new DhtContact(pong.Source, packet.Source.IP), true);
 
                 // forward to proxied nodes, so that their routing tables are up to date, so they can publish easily
                 if (Core.Firewall == FirewallType.Open)
@@ -837,14 +839,15 @@ namespace RiseOp.Implementation.Dht
                 {
                     // keep routing entry fresh so connect state remains
                     if (packet.Tcp.Proxy == ProxyType.Server)
-                        Routing.Add(new DhtContact(packet.Tcp, packet.Tcp.RemoteIP, Core.TimeNow));
+                        Routing.Add(new DhtContact(packet.Tcp, packet.Tcp.RemoteIP), true);
                 }
 
                 // else connect pong with source info
                 else
                 {
+                    // usually a proxied pong from somewhere else to keep our routing fresh
                     if (pong.Source.Firewall == FirewallType.Open)
-                        Routing.Add(new DhtContact(pong.Source, packet.Source.IP, Core.TimeNow));
+                        Routing.Add(new DhtContact(pong.Source, packet.Source.IP), true);
 
                     // pong's direct flag ensures that tcp connection info (especially client ID) is not set with 
                     //   information from a pong routed through the remote host, but from the host we're directly connected to
@@ -923,7 +926,7 @@ namespace RiseOp.Implementation.Dht
 
             // update routing
             if (packet.Tcp == null && ack.Source.Firewall == FirewallType.Open)
-                Routing.Add(new DhtContact(ack.Source, packet.Source.IP, Core.TimeNow));
+                Routing.Add(new DhtContact(ack.Source, packet.Source.IP));
 
             foreach (DhtContact contact in ack.ContactList)
                 Routing.Add(contact);
@@ -1009,7 +1012,7 @@ namespace RiseOp.Implementation.Dht
             lock (TcpControl.SocketList)
                 foreach (TcpConnect connection in TcpControl.SocketList)
                     if (connection.State == TcpState.Connected && connection.Proxy != ProxyType.Unset)
-                        ack.ProxyList.Add(new DhtContact(connection, connection.RemoteIP, Core.TimeNow));
+                        ack.ProxyList.Add(new DhtContact(connection, connection.RemoteIP));
 
             if (packet.Tcp != null)
             {

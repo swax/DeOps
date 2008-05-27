@@ -608,14 +608,14 @@ namespace RiseOp.Implementation.Protocol.Net
 
         internal DhtSource Source;
         internal IPAddress RemoteIP;
-
+        internal ushort  Ident;
 
 		internal override byte[] Encode(G2Protocol protocol)
 		{
             lock (protocol.WriteSection)
             {
                 // ping packet
-                G2Frame pi = protocol.WritePacket(null, NetworkPacket.Ping, null);
+                G2Frame pi = protocol.WritePacket(null, NetworkPacket.Ping, BitConverter.GetBytes(Ident));
 
                 if(Source != null)
                     Source.WritePacket(protocol, pi, Packet_Source);
@@ -633,6 +633,11 @@ namespace RiseOp.Implementation.Protocol.Net
 		internal static Ping Decode(G2ReceivedPacket packet)
 		{
 			Ping pi = new Ping();
+
+            if(G2Protocol.ReadPayload(packet.Root))
+                pi.Ident = BitConverter.ToUInt16(packet.Root.Data, packet.Root.PayloadPos);
+
+            G2Protocol.ResetPacket(packet.Root);
 
 			G2Header child = new G2Header(packet.Root.Data);
 

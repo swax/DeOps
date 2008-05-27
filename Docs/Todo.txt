@@ -1,6 +1,28 @@
 
+test network, 2 blocked hosts on op1, 2 open hosts on op2
+
+receiving pong only sets NAT, and only if true udp and not global proxy source
+
+
+make comment like, if GP is online, and open comes online then
+	open finds GP, pings GP through global nework
+	GP finds out about open, connects to it, and GP cache entry expires
+	dont reply to pings if GP is not active
+
+
 get ping globally proxied
-	write psuedo of path
+	if global proxy id > 0
+		encrypt network packet ping with destinations op key
+		encapsulate in tunnel packet, TO set to ProxyID
+		send over udp global to address
+		global proxy receies and forwards, adding FROM IP
+		blocked recieves tunneled packet
+			if came from another global proxied
+				source dht address = global net packet's userID/clientID (global proxy ID) and FROM (IP/Port)
+				op net packet's userID/clientID is the op source
+				
+		
+		packet source needs to contain IP/udp port/user ID/ 
 
 global proxying
 	entering / leaving global proxy mode
@@ -60,6 +82,8 @@ global proxying
 
 	networks of many natted should be able to be successfully operate through global net with min bw
 
+	have sim print warning in status if global proxy nodes exist in routing table, to ensure they're weeded out
+
 	ensure 2 global NAT udp hole punch with operation key
 
 after login show connecting screen
@@ -74,6 +98,9 @@ testing
 	test 2 op1 blocked, and 1 op2 open, and see if 2 op1s can communicate
 	
 	start recording test procedures for automated test system
+		staggard come online blocked then open, open then blocked, networks of blocked/open, nat/open, blocked/nat/open
+		each test uses profiles with fresh set
+		maybe a a list<testScenario> that is run through, results / warnings kept for each, can be run individually
 
 	test IMs, publishing, etc..
 	publishing / updting through 1 open, multiple blocked

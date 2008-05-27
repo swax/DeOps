@@ -83,11 +83,11 @@ namespace RiseOp.Implementation.Dht
                 foreach (TcpConnect socket in sockets)
                 {
                     DhtAddress address = new DhtAddress(socket.RemoteIP, socket);
-                    Searches.SendDirectRequest(address, TargetID, Service, DataType, Parameters);
+                    Network.Searches.SendRequest(address, TargetID, SearchID, Service, DataType, Parameters);
 
                     DhtLookup host = Add(socket.GetContact());
                     if (host != null)
-                        host.Status = LookupStatus.Done;
+                        host.Status = LookupStatus.Searching;
                 }					
 
 			// if blocked send proxy search request to 1 proxy, record and wait
@@ -194,7 +194,7 @@ namespace RiseOp.Implementation.Dht
                     if (lookup.Age == 3)
                     {
                         //Log("Sending Request to " + lookup.Contact.Address.ToString() + " (" + Utilities.IDtoBin(lookup.Contact.DhtID) + ")");
-                        Network.Searches.SendUdpRequest(lookup.Contact, TargetID, SearchID, Service, DataType, Parameters);
+                        Network.Searches.SendRequest(lookup.Contact, TargetID, SearchID, Service, DataType, Parameters);
                     }
 
                     // drop after 6
@@ -206,7 +206,7 @@ namespace RiseOp.Implementation.Dht
                 if (lookup.Status == LookupStatus.None && searching < SEARCH_ALPHA)
                 {
                     //Log("Sending Request to " + lookup.Contact.Address.ToString() + " (" + Utilities.IDtoBin(lookup.Contact.DhtID) + ")");
-                    Network.Searches.SendUdpRequest(lookup.Contact, TargetID, SearchID, Service, DataType, Parameters);
+                    Network.Searches.SendRequest(lookup.Contact, TargetID, SearchID, Service, DataType, Parameters);
 
                     lookup.Status = LookupStatus.Searching;
                 }

@@ -131,11 +131,12 @@ namespace RiseOp.Implementation.Transport
             // replicate
             if (Age == 15 && !Network.IsGlobal)
             {
-                Network.Store.Replicate(new DhtContact(this, RemoteIP, Core.TimeNow));
+                Network.Store.Replicate(new DhtContact(this, RemoteIP));
             }
 
             // new global proxy
             if (Proxy == ProxyType.Server)
+            {
                 if (Age == 5)
                 {
                     Network.RudpControl.AnnounceProxy(this);
@@ -144,13 +145,21 @@ namespace RiseOp.Implementation.Transport
                 {
                     if (Network.IsGlobal)
                     {
-                        if(Core.UseGlobalProxies)
+                        if (Core.UseGlobalProxies)
                             Core.Locations.PublishGlobal();
                     }
                     else
                         Core.Locations.UpdateLocation();
                 }
-  
+            }
+            // new proxied host
+            else if(Age == 15)
+            {
+                // proxied replicates to server naturally by adding server to routing table
+                // server replicates to proxy here
+                Network.Store.Replicate(new DhtContact(this, RemoteIP));
+            }
+
 			// send ping if dead for x secs
             if (SecondsDead > 30 && SecondsDead % 5 == 0)
 			{
@@ -200,7 +209,7 @@ namespace RiseOp.Implementation.Transport
 
                 // if we made connection to the node its not firewalled
                 if (Outbound)
-                    Network.Routing.Add(new DhtContact(this, RemoteIP, Core.TimeNow));
+                    Network.Routing.Add(new DhtContact(this, RemoteIP));
             });
         }
 
@@ -577,7 +586,7 @@ namespace RiseOp.Implementation.Transport
 
 		internal DhtContact GetContact()
 		{
-			return new DhtContact(UserID, ClientID, RemoteIP, TcpPort, UdpPort, Core.TimeNow);
+			return new DhtContact(UserID, ClientID, RemoteIP, TcpPort, UdpPort);
 		}
 
         public override string ToString()

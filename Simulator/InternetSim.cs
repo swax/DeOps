@@ -579,11 +579,12 @@ namespace RiseOp.Simulator
             // add 3 random instances to network
             List<SimInstance> cached = new List<SimInstance>();
 
-            for (int i = 0; i < open.Count || cached.Count < 3; i++)
-                if (RandomCache)
-                    cached.Add(open[RndGen.Next(open.Count)]);
-                else
-                    cached.Add(open[i]);
+            if(open.Count > 0)
+                for (int i = 0; i < open.Count || cached.Count < 3; i++)
+                    if (RandomCache)
+                        cached.Add(open[RndGen.Next(open.Count)]);
+                    else
+                        cached.Add(open[i]);
 
 
             foreach (SimInstance entry in cached)

@@ -451,7 +451,7 @@ namespace RiseOp.Implementation
 						UInt64 kid = BitConverter.ToUInt64(hash, 0);
 
 						// create random contact
-						DhtContact contact = new DhtContact(kid, 0, new IPAddress(0), 0, 0, TimeNow);
+						DhtContact contact = new DhtContact(kid, 0, new IPAddress(0), 0, 0);
 						
 						// add to routing
 						GlobalNet.Routing.Add(contact);

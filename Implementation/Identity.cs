@@ -157,13 +157,9 @@ namespace RiseOp
                 if (Core != null)
                 {
                     if (Core.GlobalNet != null)
-                        lock (Core.GlobalNet.IPCache)
-                            foreach (DhtContact entry in Core.GlobalNet.IPCache)
-                                stream.WritePacket(new ContactPacket(IdentityPacket.GlobalCache, entry));
+                        SaveCache(stream, Core.GlobalNet.IPCache, IdentityPacket.GlobalCache);
 
-                    lock (Core.OperationNet.IPCache)
-                        foreach (DhtContact entry in Core.OperationNet.IPCache)
-                            stream.WritePacket(new ContactPacket(IdentityPacket.OperationCache, entry));
+                    SaveCache(stream, Core.OperationNet.IPCache, IdentityPacket.OperationCache);
                 }
 
                 stream.Close();
@@ -182,6 +178,14 @@ namespace RiseOp
             }
 
             File.Delete(backupPath);
+        }
+
+        private void SaveCache(PacketStream stream, LinkedList<DhtContact> cache, byte type)
+        {
+            lock (cache)
+                foreach (DhtContact entry in cache)
+                    if (entry.GlobalProxy == 0) 
+                        stream.WritePacket(new ContactPacket(type, entry));
         }
 
         internal void SaveInvite(string path)

@@ -448,10 +448,11 @@ namespace RiseOp.Implementation.Protocol
             return false;
         }
 
-        internal void WritePacket(G2Packet packet)
+        internal int WritePacket(G2Packet packet)
         {
             byte[] data = packet.Encode(Protocol);
             ParentStream.Write(data, 0, data.Length);
+            return data.Length;
         }
 
         internal byte[] Break()

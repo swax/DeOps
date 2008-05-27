@@ -299,7 +299,7 @@ namespace RiseOp.Interface.Tools
 
 				if(node.LookupContacts && !node.Searched)
 				{
-                    Network.Searches.SendUdpRequest(node.Contact, node.Contact.UserID + 1, 0, Network.Core.DhtServiceID, 0, null);
+                    Network.Searches.SendRequest(node.Contact, node.Contact.UserID + 1, 0, Network.Core.DhtServiceID, 0, null);
 
 					node.Searched = true;
 					sendPackets--;
@@ -312,7 +312,7 @@ namespace RiseOp.Interface.Tools
 
 		internal void AsyncSearchAck(SearchAck ack, G2ReceivedPacket packet)
 		{
-            DhtContact source = new DhtContact(ack.Source, packet.Source.IP, Network.Core.TimeNow);
+            DhtContact source = new DhtContact(ack.Source, packet.Source.IP);
 			
 			if( !CrawlMap.Contains(source.UserID) )
 				CrawlMap.Add(source.UserID, source);

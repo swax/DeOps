@@ -129,7 +129,7 @@ namespace RiseOp.Implementation.Dht
             return search;
         }
 
-        internal void SendUdpRequest(DhtAddress address, UInt64 targetID, uint searchID, uint service, uint datatype, byte[] parameters)
+        internal void SendRequest(DhtAddress address, UInt64 targetID, uint searchID, uint service, uint datatype, byte[] parameters)
         {
             SearchReq request = new SearchReq();
 
@@ -140,7 +140,12 @@ namespace RiseOp.Implementation.Dht
             request.DataType = datatype;
             request.Parameters = parameters;
 
-            Network.UdpControl.SendTo(address, request);
+            TcpConnect direct = Network.TcpControl.GetProxy(address);
+
+            if (direct != null)
+                direct.SendPacket(request);
+            else
+                Network.UdpControl.SendTo(address, request);
         }
 
         internal void ReceiveRequest(G2ReceivedPacket packet)
@@ -199,7 +204,7 @@ namespace RiseOp.Implementation.Dht
 
        
             if (request.Source.Firewall == FirewallType.Open)
-                Routing.Add(new DhtContact(request.Source, packet.Source.IP, Core.TimeNow));
+                Routing.Add(new DhtContact(request.Source, packet.Source.IP));
 
 
             // forward to proxied nodes
@@ -222,13 +227,16 @@ namespace RiseOp.Implementation.Dht
             if (Network.TcpControl.ProxyMap.ContainsKey(request.TargetID))
                 ack.Proxied = true;
 
-            if(request.Nodes)
+            // only send nodes from proxy server routing table
+            if(request.Nodes && packet.Tcp != null)
                 ack.ContactList = Routing.Find(request.TargetID, 8);
 
-
+           
+            // dont send an ack if behind a proxy server and no results
             if (!SearchEvent.Contains(request.Service, request.DataType))
             {
-                SendAck(packet, request, ack);
+                if(packet.Tcp != null)
+                    SendAck(packet, request, ack);
             }
 
             else
@@ -240,7 +248,7 @@ namespace RiseOp.Implementation.Dht
                 // if nothing found, still send ack with closer contacts
                 if (results == null || results.Count == 0)
                 {
-                    if(request.SearchID != 0)
+                    if (request.SearchID != 0 && packet.Tcp != null)
                         SendAck(packet, request, ack);
 
                     return;
@@ -313,7 +321,7 @@ namespace RiseOp.Implementation.Dht
 
             // crit ackid and ack ip might not match if ack sent through proxy
             if (packet.Tcp == null && ack.Source.Firewall == FirewallType.Open && packet.Source.UserID == ack.Source.UserID)
-                Routing.Add(new DhtContact(ack.Source, packet.Source.IP, Core.TimeNow));
+                Routing.Add(new DhtContact(ack.Source, packet.Source.IP));
 
             foreach (DhtContact contact in ack.ContactList)
                 Routing.Add(contact); // function calls back into seach system, adding closer nodes
@@ -338,7 +346,7 @@ namespace RiseOp.Implementation.Dht
                             search.Found(value, packet.Source);
 
                         if (ack.Proxied)
-                            search.Found(new DhtContact(ack.Source, packet.Source.IP, Core.TimeNow), true);
+                            search.Found(new DhtContact(ack.Source, packet.Source.IP), true);
 
                         if (!search.Finished && search.FoundValues.Count > search.TargetResults)
                             search.FinishSearch("Max Values Found");
@@ -366,7 +374,8 @@ namespace RiseOp.Implementation.Dht
                     }
         }
 
-
+        // sends a direct request, no acks are returned, if  host has what is requested it sends a store request as a reply
+        // make sure whatevers calling this handles the resulting store request
         internal void SendDirectRequest(DhtAddress dest, ulong target, uint service, uint datatype, byte[] parameters)
         {
             SearchReq request = new SearchReq();

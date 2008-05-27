@@ -102,42 +102,39 @@ namespace RiseOp.Implementation.Dht
 
         internal DateTime  LastSeen;
         internal int       Attempts;
-        internal DateTime NextTry;
+        internal DateTime  NextTry;
         internal DateTime  NextTryProxy; // required because attempts more spaced out
-
+        internal ushort    Ident;
 
         internal DhtContact() { }
 
-        internal DhtContact(UInt64 user, ushort client, IPAddress address, ushort tcpPort, ushort udpPort, DateTime lastSeen)
+        internal DhtContact(UInt64 user, ushort client, IPAddress address, ushort tcpPort, ushort udpPort)
 		{
 			UserID     = user;
 			ClientID  = client;
 			IP   = address;
 			TcpPort   = tcpPort;
 			UdpPort   = udpPort;
-			LastSeen  = lastSeen;
 		}
 
         // used to add global proxies
-        internal DhtContact(DhtAddress address, DateTime lastSeen)
+        internal DhtContact(DhtAddress address)
         {
             UserID = address.UserID;
             ClientID = address.ClientID;
             IP = address.IP;
             TcpPort = 0;
             UdpPort = address.UdpPort;
-            LastSeen = lastSeen;
             GlobalProxy = address.GlobalProxy;
         }
 
-        internal DhtContact(DhtSource Dht, IPAddress address, DateTime lastSeen)
+        internal DhtContact(DhtSource Dht, IPAddress address)
         {
             UserID = Dht.UserID;
             ClientID = Dht.ClientID;
             IP = address;
             TcpPort = Dht.TcpPort;
             UdpPort = Dht.UdpPort;
-            LastSeen = lastSeen;
         }
 
         internal bool Equals(DhtContact compare)
