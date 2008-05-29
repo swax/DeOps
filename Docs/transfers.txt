@@ -1,0 +1,145 @@
+﻿
+
+multi-source d/l
+	show file's distribution over network
+	file download interface
+		main: hash, size, parts graphic
+		subs: name, status (pending / 5kb/s), parts graphic
+		
+	analyze current algorithm
+		how to pause re-request file transfers? encapsulate in g2?
+		are there different 'streams' for file transfers control and data?
+
+	should there be a difference between uploads and downloads?
+
+	current algorithm dl/ul
+		Start d/l puts file in pending queue
+		Move to active when less than 5 active
+		New active searches for target
+
+	a transfer doesn't keep track of more than 20 peers
+		peer list like mini-dht every 2 slots is xor closer to local
+		empty slots are filled with closest xor nodes, 2 up, and 2 down
+		a node will always be gaurenteed a community in file transfer
+		support web cache in mesh
+		
+		
+	on connection
+		peers exchange caches of those close to each other
+		peers exhcange bitfields
+		keep master bytefield of rarity of parts, add/subtract to it as need be
+		part hashes if requested
+		
+	client starts sending remote rarest piece remote doesnt have
+		remote acknowledges and starts writing, or cancles transfer if receiving already from faster source
+		cancel message includes preference for particular or no piece at all
+		
+	who to send to 
+		clients are sent chunks round robin to who needs them
+		no need to client to signal choked, server decides when to send based on if remote is interested
+		give u/l pref to files being downloaded
+		
+	what do we know
+		we know our send rate total and per node based on acknowledgements
+		we know we want 5kb/s at least as overhead for network comm
+		we know if remote is dropping packets because they are re-requested
+		
+	bandwidth test
+		once connected to network
+		select 10 closests nodes
+		send at full speed to all hosts for 10 seconds
+		record u/l speed
+		re-test every hour
+	
+		once u/l speed determined 
+			if > 10kb/s ensure transfers remain at that level minus 7kb/s
+			if < 10kb/s transfers remain at half determined speed
+		
+	how many and how fast to send to
+		slot speed set at 7 so 256kb block transferred in 30secs slowest
+		transfer slots maxed at u/l speed / 7
+		if u/l speed < 85% of determined max allow another slot
+		stop allowing more slots if average u/l speed < 4kbs
+		
+		transfer control is aware of pending transfers
+		when slot avaialable transfer is selected by component (round robin), then FCFS for multiple transfers in component
+			transfer awarded slot, transfers chunk
+			when finished requests from control to keep slot
+
+	securing files
+		encrypt file to temp
+		hash 256kb parts and total
+		attachlist of parts to end of file
+		attached encypted size to end of file
+		
+		when decrypting file back size read to figure how much to decrypt
+		transfer reads back of file for size/parts and sends to client when requested
+
+		large partial files should be saved between runs
+
+	if blocked favor open hosts, dont want to double bw d/ling from NAT/blocked
+
+	testing 
+		in network view, seed file and watch, implement bw limits in simulator
+		each node shows a progress bar of the files completion
+		optimize for max propagation through network
+		
+OLD multi-source d/l
+	a transfer doesn't keep track of more than 20 peers
+		peer list like mini-dht every 2 slots is xor closer to local
+		empty slots are filled with closest xor nodes, 2 up, and 2 down
+		a node will always be gaurenteed a community in file transfer
+		
+	on connection
+		peers exchange caches of those close to each other
+		peers exhcange bitfields
+		
+	client starts sending remote rarest piece remote doesnt have
+		remote acknowledges and starts writing, or cancles transfer if receiving already from faster source
+		cancel message includes preference for particular or no piece at all
+		
+	who to send to 
+		clients are sent chunks round robin to who needs them
+		no need to client to signal choked, server decides when to send based on if remote is interested
+		
+	what do we know
+		we know our send rate total and per node based on acknowledgements
+		we know we want 5kb/s at least as overhead for network comm
+		we know if remote is dropping packets because they are re-requested
+		
+	bandwidth test
+		once connected to network
+		select 10 closests nodes
+		send at full speed to all hosts for 10 seconds
+		record u/l speed
+		re-test every hour
+	
+		once u/l speed determined 
+			if > 10kb/s ensure transfers remain at that level minus 7kb/s
+			if < 10kb/s transfers remain at half determined speed
+		
+	how many and how fast to send to
+		slot speed set at 7 so 256kb block transferred in 30secs slowest
+		transfer slots maxed at u/l speed / 7
+		if u/l speed < 85% of determined max allow another slot
+		stop allowing more slots if average u/l speed < 4kbs
+		
+		transfer control is aware of pending transfers
+		when slot avaialable transfer is selected by component (round robin), then FCFS for multiple transfers in component
+			transfer awarded slot, transfers chunk
+			when finished requests from control to keep slot
+
+	securing files
+		encrypt file to temp
+		hash 256kb parts and total
+		attachlist of parts to end of file
+		attached encypted size to end of file
+		
+		when decrypting file back size read to figure how much to decrypt
+		transfer reads back of file for size/parts and sends to client when requested
+
+	testing 
+		seed large file at 20 hosts
+		watch test node d/l the file
+	
+	

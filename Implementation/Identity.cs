@@ -184,7 +184,7 @@ namespace RiseOp
         {
             lock (cache)
                 foreach (DhtContact entry in cache)
-                    if (entry.GlobalProxy == 0) 
+                    if (entry.TunnelClient == null) 
                         stream.WritePacket(new ContactPacket(type, entry));
         }
 

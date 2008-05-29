@@ -101,7 +101,10 @@ namespace RiseOp.Implementation.Transport
         internal void AddAddress(RudpAddress address)
         {
             if (!AddressMap.ContainsKey(address.GetHashCode()))
+            {
+                address.Ident = (uint) Core.RndGen.Next();
                 AddressMap[address.GetHashCode()] = address;
+            }
 
             if (PrimaryAddress == null)
                 PrimaryAddress = address;
@@ -285,7 +288,7 @@ namespace RiseOp.Implementation.Transport
             // add proxied and direct addresses
             // proxied first because that packet has highest chance of being received, no need for retry
             // also allows quick udp hole punching
-            if (raw.Tcp != null)
+            if (raw.ReceivedTcp)
                 AddAddress(new RudpAddress(raw.Source, raw.Tcp));
 
             AddAddress( new RudpAddress(raw.Source) );
@@ -363,7 +366,7 @@ namespace RiseOp.Implementation.Transport
                 syn.PeerID = 0;
                 syn.PacketType = RudpPacketType.Syn;
                 syn.Sequence = CurrentSeq++;
-                syn.Payload = RudpSyn.Encode(1, Network.LocalUserID, Network.ClientID, PeerID);
+                syn.Payload = RudpSyn.Encode(1, Network.Local.UserID, Network.Local.ClientID, PeerID);
 
                 SendPacketMap.Enqueue(new TrackPacket(syn));
             }
@@ -771,8 +774,8 @@ namespace RiseOp.Implementation.Transport
             LastSend = Core.TimeNow;
             tracked.TimeSent = Core.TimeNow.Ticks;
             tracked.Target = target;
-            tracked.Packet.SenderID = Network.LocalUserID;
-            tracked.Packet.SenderClient = Network.ClientID;
+            tracked.Packet.SenderID = Network.Local.UserID;
+            tracked.Packet.SenderClient = Network.Local.ClientID;
 
 
             if (tracked.Packet.PacketType != RudpPacketType.Syn)
@@ -801,28 +804,25 @@ namespace RiseOp.Implementation.Transport
             log +=  " to " + Utilities.IDtoBin(tracked.Packet.TargetID).Substring(0, 10);
             log += " target address " + target.Address.ToString();*/
 
-            DhtNetwork network = Core.OperationNet; //crit target.Global ? Core.GlobalNet : Core.OperationNet;
-
-            if (network == null)
-                return;
-
+ 
             if (Core.Firewall != FirewallType.Blocked && target.LocalProxy == null)
             {
-                network.UdpControl.SendTo(target.Address, tracked.Packet);
-                //log += " udp";
+                Network.SendPacket(target.Address, tracked.Packet);
             }
 
+            else if (target.Address.TunnelClient != null)
+                Network.SendTunnelPacket(target.Address, tracked.Packet);
 
             else
             {
                 tracked.Packet.ToEndPoint = target.Address;
 
-                TcpConnect proxy = network.TcpControl.GetProxy(target.LocalProxy);
+                TcpConnect proxy = Network.TcpControl.GetProxy(target.LocalProxy);
 
                 if (proxy != null)
                     proxy.SendPacket(tracked.Packet);
                 else
-                    network.TcpControl.SendRandomProxy(tracked.Packet);
+                    Network.TcpControl.SendRandomProxy(tracked.Packet);
 
                 //log += " proxied by local tcp";
             }
@@ -960,22 +960,15 @@ namespace RiseOp.Implementation.Transport
 
         internal RudpAddress(DhtAddress address)
         {
-            Init(address);
+            Address = address;
         }
 
         internal RudpAddress(DhtAddress address, TcpConnect proxy)
         {
-            LocalProxy = new DhtClient(proxy);
-
-            Init(address);
-        }
-
-        void Init(DhtAddress address)
-        {
             Address = address;
-
-            Ident = (uint) new Random().Next();
+            LocalProxy = new DhtClient(proxy);
         }
+
 
         public override bool Equals(object obj)
         {

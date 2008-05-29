@@ -31,6 +31,9 @@ namespace RiseOp.Services.Location
         const byte Packet_Away      = 0x90;
         const byte Packet_AwayMsg   = 0xA0;
         const byte Packet_Tag       = 0xB0;
+        const byte Packet_TunnelClient  = 0xC0;
+        const byte Packet_TunnelServers = 0xD0;
+
 
         internal byte[] Key;
         internal DhtSource Source;
@@ -40,6 +43,9 @@ namespace RiseOp.Services.Location
         internal uint TTL;
         internal uint Version;
         internal List<PatchTag> Tags = new List<PatchTag>();
+
+        internal DhtClient TunnelClient;
+        internal List<DhtAddress> TunnelServers = new List<DhtAddress>();
 
         internal int GmtOffset;
         internal bool Away;
@@ -69,6 +75,12 @@ namespace RiseOp.Services.Location
 
                 foreach(PatchTag tag in Tags)
                     protocol.WritePacket(loc, Packet_Tag, tag.ToBytes());
+
+                if (TunnelClient != null)
+                    protocol.WritePacket(loc, Packet_TunnelClient, TunnelClient.ToBytes());
+
+                foreach (DhtAddress server in TunnelServers)
+                    server.WritePacket(protocol, loc, Packet_TunnelServers);
 
                 return protocol.WriteFinish();
             }
@@ -136,6 +148,14 @@ namespace RiseOp.Services.Location
 
                     case Packet_Tag:
                         loc.Tags.Add(PatchTag.FromBytes(child.Data, child.PayloadPos, child.PayloadSize));
+                        break;
+
+                    case Packet_TunnelClient:
+                        loc.TunnelClient = DhtClient.FromBytes(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_TunnelServers:
+                        loc.TunnelServers.Add(DhtAddress.ReadPacket(child));
                         break;
                 }
             }

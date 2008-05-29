@@ -1,0 +1,279 @@
+﻿
+Nodes that say they proxy for node x have signed auth from x
+Ping includes auth test for id
+variable internal / private key schemes and sizes, ECC
+linear contact merging / split system?
+customizable logo/icons/password reqs (length, numerics, case)
+good leadership/management guide
+web based problem simulation, people assigned roles, sim starts, try to solve, katrina sim ;)
+database to storage system (for use with bug trackers, inventories, etc..)
+detect when computer changes then prompt user for location string update
+project/op name and other settings should be taken from whoever is the root node of self, info in projectdata
+quota storage space per node, interface to show, per component storage req as well as over all memory auditing interface
+voice chat in rooms / IM using skype API - can get to land lines
+load goal/board/mail archives serperately to speed load / reduce memory usage
+put all strings in resource file, mass convert using google translate, let user on run choose flag/language from upper left corner
+	autodetect lang on OS as well
+purchase through website, allows user to sign in, take their any of their project files, have it signed as registered, and returned to them
+	online signature could also include keys to unlock purchased components
+	registered version ONLY on usb key
+	master riseOp public key put on hardware key, never known, used to authenticate licensed components
+	anyone can go to website, and if they have an account secure their third party component so that only people with pro
+		version can use it
+	orgs could upgrade to fully secured, replace their free versions with secured ones, == big business for us
+	orgs would want unqiue physical keys per person, people *could* have multiple orgs on the same key, or use multiple keys
+	loosing keys also means $$ for us, piggy back off hardware sales, like apple lolz
+	
+de-ops urls boards storages chats anything, extendable
+	peoples emails, profiles, etc.. can include <links>
+
+security
+	able to change Op ID in client - for project forks or if project is majorly compramised
+		new Op ID can be secure mailed to entire org, or pointer can be put in link file (went to op id x)
+		
+	signed invitation files - so that if bad people get in, we know who signed them in
+
+	periodic heart beat with secuity key sent from to all trusted nodes, key transmitted during all ops
+		keeps untrusted from being sent any storage information, if kicked out of trusted tree		
+	
+	on load private key / sync encypt and store that in memory
+		when something needs to be signed / decrypted use sync key to decrypt private on fly
+		minimize the amount of time private the key stays in memeory
+
+VPN
+	each node assigned a IP from above, static/dynamic, only changes when hierarchy above changes
+	each level assigns large blocks to level below
+	resolving an IP searches up/down network - finds key
+	communication needs to be RUDP 'session', but unreliable (let host apps handle reliability)
+		just send data with negotiated encryption key from RUDP session
+	
+web-node
+	php script
+		user configs into script password so that it can be admined
+		through admin 
+			user can generate passkey, copy pasted into RiseOp
+			check bandwidth
+			set shutdown at bandwidth x trigger
+			max cache file size
+			max cache size
+		webnode's have no idea the contents of file being posted, just the hash
+		script keeps track of total cached files, oldest purged when space limit hit
+		if cache compramised, passkey can be changed and redistributed to trusted nodes
+	
+	in riseOp user puts in link file webnode address / passkey
+		clients who trust the node record the webnode / passkey	then tested
+		storing data
+			post to webnode with hash of file being posted
+		searching data
+			get to webnode with hash of file being requested
+		startup 
+			get to webnode with hashes of cached info
+			webnode replies with hashes it is not caching
+			post to webnode the files cache is missing
+
+
+server mode
+	increase prune object amounts accross all services
+	increase bucket sizes
+	
+huge part of project is allowing companies to sell licensense (applications) throughout network
+	subs auto inherit purchased apps, never be anywhere without apps, look at encryption techniques to make this work
+
+mobile 
+	uses proxy mode be default
+	core can be tested by setting proxy mode in desktop version
+	desktop to mobile core should be direct port
+	interface uses linked in source files
+
+components
+	auto component distribution to lowers if they dont have it
+	
+	
+	visual 
+		user can inherit or create new canvases
+		default background is transparent so overlays easy
+		zoom in/out infinite, images created on 'planes' z-axis coordinate
+			zooming out if other regions in view, their sub-regions are found
+			affiliate zoom with levels down so that people know on what level to draw
+		node inherits higher's images which overlay lower's drawings
+			ie higher can create bounds that lower fills in
+		node can define regions for lowers to draw in
+			lowers by default see this region when they open visuals not the whole canvas
+		interface - basic paint operations with copy/paste, show transparent zones (off by default)
+		layers for putting down map img/ people img and being able to edit it easily
+		3d component uses imported models from any souce, sketch up ? 
+		lower corner box shows zoomed out view
+		samples - geographical area, flow chart, blueprints
+	
+		provide a facility in which large amounts of users can bring info into system and analyze it collaboratively
+		overlay chat on top of visual
+		
+		tools
+			bitmap paint (default)
+			simple vector shapes
+			web browser view real-time updating but can be drawn over etc.. 
+			file icons - links to actual files
+	
+	database 
+		holder of database can create dashboards, custom views into data for highers ups to understand
+		lowers to aggregate data, example - call center statistics, support database with issues
+		nodes post sql commands to database, sort of like mail, send, receive, ack, once processed into db
+		db entries peer reviewed at host (holder of db), db's can be replicated and hosted somewhere else, exported, imported
+		sql express backend? should work on phones as well
+	
+	audio 
+		speex bsd licensed audio codec
+		headphones/speakers, left side is lowers, right side is higher/adjacents	
+			on mono prefix high/low beep before audio clip to signal what level talker is from
+			save last x voice messages received for playback
+		push to talk attached to each ear (or on pda), for talking to higher/lower side
+		fastest human to human comunication possilbe, questions go as far up and then down as they need to go instantaneously
+		if people are off line, or voice is off, voice network auto-configurse to fill in missing links
+			higher node turns into who up the tree is online
+			helps people who don't know each other get to know each other
+				leads to eventual re-organization as those never on  are re-arranged into lower positions
+			everyone on the network is connected through high/low to someone else by voice
+			also used for chat
+			another reason is that it presueds people to make well structured orgs, not base  a structure
+				on what would have people around to talk to (lots of downlinks)
+				with this setup for voice/chat there is always a group in range for real-time comm
+		
+	stats 
+		how many people in org, follow link tree
+		% active in last x, crawl persistant locs
+		balance of tree at diff levels, also could do graphical reresentation
+			like sequoia view showing where most people are and who follows them
+		security, show all ips and resolve their hosts
+
+	portal 
+		links 2 organizatinos between a single point of trust
+		portal manaages information flow
+		how would something like a credit card work?
+			i trust credit company
+			business trusts credit company
+			portal process credit transaction?
+		seperate global network for portal communication, so a orgs OpID isnt exposed
+			Ops have portalID that can change, and is published on portal network
+			Sending mail for example would be bob <userID@portalID>
+				enc with portal ID, and signed with bob's user ID
+				published on portal network until picked up by bob's operation network
+	
+	commendations
+		people want to be acknowledged/rewarded for progress
+		commendation is a signed/and issued by someone to someone else for anything
+			dated, details, image
+		good canidate for an opensource plugin
+			
+	devices
+		access to facilities on local device
+			camera, certain applications, controls of sorts, etc...
+		access can be granted to certain people / levels
+		if mobile user had a camera phone then highers could see what the user sees - live reporting
+		pipes - user could temporarily grant access to others devices
+			ex. higher views camera of lower, and gives access to all his lowers so everyone can see
+		In an office environment people could share printers for example 
+			have them accessible throughout the network
+			because devices are directly tied to a person there is always someone responsible to talk to (distributed support)
+	
+	security
+		keeps dns resolved list of online contacts
+		can crawl network, list all dns
+
+	credits / Resources
+		user decides to be the 'banker' publishes x # of signed credits say 1,000,000
+		users can trade credits arbitrarily, credits signed over and re-signed as passes through system
+			prevents forge, on forge instant conflict, to diagnose, go to the fork in the road
+		if new 'banker' comes in he can re-initialize the credits with his own signature, starting a new round
+		advantages - keeper of currency in system is trusted independently
+			issuers of currency can change over time
+			inflation proof? currency can not be created (pirated), and it is, instant inflation, credits should never lose value
+			everyone always knows what a credit is worth, auto-adjusts, no fear of inflation
+		initial collection of credits can be held by the banker or given all to the top leader, whatever, options open for custom systems
+		larger systems could benefit from using credits to motivate subs
+		
+		idea for going open source ? 
+			start personally with 500,000 credits thinking this year im going to make $500,000.
+			Give them out during the year to people who contribute with them knowing each credit if worth $1 if the product makes $500,000
+			personally motivated to not give out so much to leave me with less than $60,000
+			
+		meshes well with trust tree, if me the issuer of 500,000 doesnt do a good job (hoarding money to myself)
+			people replace my credit system with someother bankers, who will fairly cash in the old credits
+			
+		closed source (invite only) though invites don't need to be protected that highly, just want to prevent quick rip-off jobs
+			and end of year credits are cashed in and payouts made
+			
+		in this system (everyone) would be motivated optimally to create the greatest growth
+		
+		great thing is if $$$ isnt given out fairly new banker can be created
+		**demo banking system
+			banker chosen to be one experience, has own banking project
+			subs in banker project are allocated funds to distribute on inititalization
+			because credits have to be signed to pass on, its easy to find conflict and who the duplicator was 
+			
+		if SA used this system who knows what credits would do to it, how it would motivate people to create!!!
+		
+		charities operation differntly
+			the total credit pool could represent total put into system by donors
+			#of credits subs have represent how much they would be compenstated at the end of the cycle
+			say system setup where 1 credit = 1$
+			
+		interseting artifact
+			companies generate value to up the credit/$ ratio as more business is done over the period
+			charties people work their hardest to be more investment to give their credits more value
+
+		in gicantic 6 billion person de-ops
+			command is the trust structure
+			the projects/companies/charities work to distribute the $$$
+			our complex society system completely simplified
+		
+		unit generic as representing resources
+			i can create 6 cows and be my own banker for them, give them out
+			give them their own unit type, same with land
+			exchanges can be made between units with third parties (trusted higher)
+			
+	sentry
+		security plug-in
+		monitors IPs, network size, untrusted nodes
+
+	time
+		uses samples of UTC time from nodes on network to determine mean time, with certian confidence
+		alerts user if local time looks like its an outlier from the network
+		posts, changes, etc.. uses this time to tag packets instead of computers own time
+		trial versions, invite expirations, etc.. can also use network time as opposed to system time
+
+	bootable riseOp
+		uses minimal linux distro/VM on USB key
+		doesnt allow any apps to be installed, just riseOp
+		protect from key loggers, or other malicious apps
+
+	plug in manager
+		should detect service id conflicts
+		distributed as source or signed executables so they do not rip internal private keys for example
+
+	'keeper' a process that contains only the user's public key, cannot sign anything
+		takes orders for master or superiors to him based on settings
+		good for running remote computers, phones, devices, etc.. without risking private key
+		would be cool if hooked to phone then any superior can get live video feed for security, or montoring something
+			or gps info, say the device was specific to a vehical, the superior couuld remote control, stats, etc..
+			main point is that assets are controlled and accounted for by organization
+
+	name server component for trusted lookup of data provider making url/x work
+
+Compartmentalization
+	sign with level key, mark with level version of key signed
+	when link version updated
+		if subordinates removed
+			create new level key
+			level version set to current link file version
+		encrypt and sign level key with each of the sub ordinates key
+	compartmentalized data is encrypted with level key
+	only sub-ordinates at the time of specific objects compartmentalization have access to level
+	board - post contains reply key to simplify many needed level keys
+	level key for high / low
+	
+	branch compart
+		branch key encoded with level key
+		lower links encode higher branch keys with their level key to lowers
+		branch version same as level?
+		
+	'set permissions dialog' that all components can implement, user can click 'permissions..' button to set

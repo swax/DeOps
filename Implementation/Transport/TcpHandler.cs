@@ -272,7 +272,7 @@ namespace RiseOp.Implementation.Transport
             // get closest contact that is not already connected
             foreach (DhtContact contact in Network.Routing.NearXor.Contacts)
                 // if havent tried in 10 minutes
-                if (Core.TimeNow > contact.NextTryProxy)
+                if (Core.TimeNow > contact.NextTryProxy && contact.TunnelClient == null)
                 {
                     bool connected = false;
 
@@ -287,7 +287,7 @@ namespace RiseOp.Implementation.Transport
                     if(connected)
                         continue;
 
-                    if (attempt == null || (contact.UserID ^ Network.LocalUserID) < (attempt.UserID ^ Network.LocalUserID))
+                    if (attempt == null || (contact.UserID ^ Network.Local.UserID) < (attempt.UserID ^ Network.Local.UserID))
                         attempt = contact;
                 }
             
@@ -306,7 +306,7 @@ namespace RiseOp.Implementation.Transport
 				else if(Core.Firewall == FirewallType.NAT)
 				{
 					ProxyReq request = new ProxyReq();
-                    request.SenderID = Network.LocalUserID;
+                    request.SenderID = Network.Local.UserID;
 					request.Type     = ProxyType.ClientNAT;
 					Network.UdpControl.SendTo( attempt, request);
 				}
@@ -371,7 +371,7 @@ namespace RiseOp.Implementation.Transport
 				foreach(TcpConnect connection in SocketList)
 					if(connection.Proxy == type)
 						// if closer than at least 1 contact
-                        if ((targetID ^ Network.LocalUserID) < (connection.UserID ^ Network.LocalUserID) || targetID == connection.UserID)
+                        if ((targetID ^ Network.Local.UserID) < (connection.UserID ^ Network.Local.UserID) || targetID == connection.UserID)
 						{
 							return true;
 						}
@@ -412,9 +412,9 @@ namespace RiseOp.Implementation.Transport
                     {
                         count++;
 
-                        if ((connection.UserID ^ Network.LocalUserID) > distance)
+                        if ((connection.UserID ^ Network.Local.UserID) > distance)
                         {
-                            distance = connection.UserID ^ Network.LocalUserID;
+                            distance = connection.UserID ^ Network.Local.UserID;
                             furthest = connection;
                         }
                     }
@@ -445,12 +445,17 @@ namespace RiseOp.Implementation.Transport
                 MakeOutbound(packet.Source, packet.Tcp.TcpPort, "Reconnecting");
 		}
 
-        internal void SendRandomProxy(G2Packet packet)
+        internal TcpConnect GetRandomProxy()
         {
             if (ProxyServers.Count == 0)
-                return;
+                return null;
 
-            TcpConnect socket = ProxyServers[Core.RndGen.Next(ProxyServers.Count)];
+            return ProxyServers[Core.RndGen.Next(ProxyServers.Count)];
+        }
+
+        internal void SendRandomProxy(G2Packet packet)
+        {
+            TcpConnect socket = GetRandomProxy();
 
             if(socket != null)
                 socket.SendPacket(packet);
@@ -486,6 +491,18 @@ namespace RiseOp.Implementation.Transport
                 ProxyMap[user][client].State == TcpState.Connected &&
                 ProxyMap[user][client].Proxy != ProxyType.Unset)
                 return ProxyMap[user][client];
+
+            return null;
+        }
+
+        internal TcpConnect GetProxyServer(IPAddress ip)
+        {
+            if (ip == null)
+                return null;
+
+            foreach (TcpConnect server in ProxyServers)
+                if (server.RemoteIP.Equals(ip))
+                    return server;
 
             return null;
         }

@@ -94,10 +94,12 @@ namespace RiseOp.Implementation.Transport
             if (Core.InvokeRequired)
                 Debug.Assert(false);
 
+            Debug.Assert(address.UdpPort != 0);
+
             if (packet is NetworkPacket)
             {
-                ((NetworkPacket)packet).SourceID = Network.LocalUserID;
-                ((NetworkPacket)packet).ClientID = Network.ClientID;
+                ((NetworkPacket)packet).SourceID = Network.Local.UserID;
+                ((NetworkPacket)packet).ClientID = Network.Local.ClientID;
             }
 
             byte[] encoded = packet.Encode(Network.Protocol);
@@ -209,7 +211,7 @@ namespace RiseOp.Implementation.Transport
 
                 lock (Network.AugmentedCrypt)
                 {
-                    BitConverter.GetBytes(Network.LocalUserID).CopyTo(Network.AugmentedCrypt.Key, 0);
+                    BitConverter.GetBytes(Network.Local.UserID).CopyTo(Network.AugmentedCrypt.Key, 0);
 
                     finalBuff = Utilities.DecryptBytes(buff, length, Network.AugmentedCrypt);
                     length = finalBuff.Length;
@@ -227,7 +229,7 @@ namespace RiseOp.Implementation.Transport
 
             if(G2Protocol.ReadPacket(packet.Root))
             {
-                packet.Source = new DhtAddress(0, 0, sender.Address, (ushort)sender.Port, 0);
+                packet.Source = new DhtContact(0, 0, sender.Address, 0, (ushort)sender.Port);
 
                 byte[] packetData = copied ? buff : Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize);
                 
@@ -235,25 +237,7 @@ namespace RiseOp.Implementation.Transport
 				Network.LogPacket(logEntry);
 
 
-                if (Core.Sim == null || Core.Sim.Internet.TestCoreThread)
-                {
-                    lock (Network.IncomingPackets)
-                        if (Network.IncomingPackets.Count < 100)
-                            Network.IncomingPackets.Enqueue(new PacketCopy(packet, packetData, Network.IsGlobal));
-
-                    Core.ProcessEvent.Set();
-                }
-                else
-                {
-                    try
-                    {
-                        Network.ReceivePacket(packet);
-                    }
-                    catch (Exception ex)
-                    {
-                        Network.UpdateLog("Exception", "UdpHandler::ParsePacket: " + ex.Message);
-                    }
-                }
+                Network.IncomingPacket(packet);
 			}
 		}
 	}

@@ -347,8 +347,8 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Property", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
-            listValues.Items.Add(new ListViewItem(new string[] { "LocalDhtID", IDtoStr(network.LocalUserID) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "ClientID", xStr(network.ClientID) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "LocalDhtID", IDtoStr(network.Local.UserID) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "ClientID", xStr(network.Local.ClientID) }));
             listValues.Items.Add(new ListViewItem(new string[] { "OpID", IDtoStr(network.OpID) })); 
             listValues.Items.Add(new ListViewItem(new string[] { "Responsive", xStr(network.Responsive) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Established", xStr(network.Established) }));

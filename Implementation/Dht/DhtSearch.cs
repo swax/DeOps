@@ -82,8 +82,8 @@ namespace RiseOp.Implementation.Dht
             if(sockets != null)
                 foreach (TcpConnect socket in sockets)
                 {
-                    DhtAddress address = new DhtAddress(socket.RemoteIP, socket);
-                    Network.Searches.SendRequest(address, TargetID, SearchID, Service, DataType, Parameters);
+                    DhtContact contact = new DhtContact(socket, socket.RemoteIP);
+                    Network.Searches.SendRequest(contact, TargetID, SearchID, Service, DataType, Parameters);
 
                     DhtLookup host = Add(socket.GetContact());
                     if (host != null)
@@ -91,7 +91,7 @@ namespace RiseOp.Implementation.Dht
                 }					
 
 			// if blocked send proxy search request to 1 proxy, record and wait
-            if (Core.Firewall == FirewallType.Blocked)
+            if (Core.Firewall == FirewallType.Blocked && !Core.UseGlobalProxies)
 			{
 				// pick random proxy server
                 if (Network.TcpControl.ProxyServers.Count == 0)
@@ -124,7 +124,7 @@ namespace RiseOp.Implementation.Dht
 		{
             DhtLookup added = null;
 
-            if (contact.UserID == Network.LocalUserID && contact.ClientID == Network.ClientID)
+            if (contact.UserID == Network.Local.UserID && contact.ClientID == Network.Local.ClientID)
                 return null;
 
 			if(Finished) // search over

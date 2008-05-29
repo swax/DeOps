@@ -122,7 +122,7 @@ namespace RiseOp.Interface.Tools
 
 			buffer.FillEllipse( new SolidBrush(Color.Black), GetBoundingBox(centerPoint, maxRadius));
 
-			uint localID = IDto32(Network.LocalUserID);
+			uint localID = IDto32(Network.Local.UserID);
 
             List<Rectangle> contactPoints = new List<Rectangle>();
             List<Rectangle> cachePoints = new List<Rectangle>();

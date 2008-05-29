@@ -1082,7 +1082,7 @@ namespace RiseOp.Services.Chat
         internal ChatMessage(OpCore core, string text, bool system)
         {
             Source = core.UserID;
-            ClientID = core.OperationNet.ClientID;
+            ClientID = core.OperationNet.Local.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;
             System = system;

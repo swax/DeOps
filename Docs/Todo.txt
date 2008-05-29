@@ -1,7 +1,10 @@
 
-test network, 2 blocked hosts on op1, 2 open hosts on op2
 
-receiving pong only sets NAT, and only if true udp and not global proxy source
+test network
+	2 blocked hosts on op1, 1 open hsot on op2
+	2 dupe blocked hosts on op1, proxying through same open global node on op2
+	2 blocked hosts on op1, 2 open hosts on op2
+	full network 5 op1 blocked, 5 op2 open, op1 functional?
 
 
 make comment like, if GP is online, and open comes online then
@@ -177,6 +180,7 @@ other
 
 spring release
 	global proxying
+	crawler
 	invitations
 	licensing, installer
 	auto-update
@@ -420,6 +424,12 @@ Core
 			location data needs to be stored when user is offline for this to work
 
 	connecting
+		security
+			level 1 - operation key
+			level 2 - secure routing (only routing to trust linked nodes)
+			level 3 - compartmentalization
+			level 4 - p2p comm links
+	
 		secret
 			prevent connection to global network
 			there needs to be stable points for invite to talk to
@@ -444,6 +454,7 @@ Core
 
 		public
 			opID is embedded in link riseop://network:opid
+			
 
 		alternate invitation packet - alphanumeric encoded
 			optional password encrypted - tell user to relay password over the phone

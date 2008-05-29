@@ -38,7 +38,7 @@ using RiseOp.Simulator;
 namespace RiseOp.Implementation
 {
 	internal enum FirewallType { Blocked, NAT, Open };
-    internal enum TransportProtocol { Tcp, Udp, Rudp };
+    internal enum TransportProtocol { Tcp, Udp, Rudp, Tunnel };
 
 
     internal delegate void LoadHandler();
@@ -75,7 +75,7 @@ namespace RiseOp.Implementation
 
 		// properties
 		internal IPAddress    LocalIP;
-        internal UInt64       UserID { get { return OperationNet.LocalUserID; } }
+        internal UInt64       UserID { get { return OperationNet.Local.UserID; } }
         internal FirewallType Firewall = FirewallType.Blocked;
         internal DateTime     StartTime;
         internal DateTime     NextSaveCache;

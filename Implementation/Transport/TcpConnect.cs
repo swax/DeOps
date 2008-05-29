@@ -267,7 +267,7 @@ namespace RiseOp.Implementation.Transport
 
                 Bye bye = new Bye();
 
-                bye.SenderID = Network.LocalUserID;
+                bye.SenderID = Network.Local.UserID;
                 bye.ContactList = Network.Routing.Find(UserID, 8);
                 bye.Message = reason;
                 bye.Reconnect = reconnect;
@@ -313,8 +313,8 @@ namespace RiseOp.Implementation.Transport
 			{
                 if (packet is NetworkPacket)
                 {
-                    ((NetworkPacket)packet).SourceID = Network.LocalUserID;
-                    ((NetworkPacket)packet).ClientID = Network.ClientID;
+                    ((NetworkPacket)packet).SourceID = Network.Local.UserID;
+                    ((NetworkPacket)packet).ClientID = Network.Local.ClientID;
                 }
 
 				byte[] encoded = packet.Encode(Network.Protocol);
@@ -484,7 +484,7 @@ namespace RiseOp.Implementation.Transport
                     {
                         Network.AugmentedCrypt.IV = Utilities.ExtractBytes(RecvBuffer, 0, ivlen);
                         Network.AugmentedCrypt.Padding = PaddingMode.None;
-                        BitConverter.GetBytes(Network.LocalUserID).CopyTo(Network.AugmentedCrypt.Key, 0);
+                        BitConverter.GetBytes(Network.Local.UserID).CopyTo(Network.AugmentedCrypt.Key, 0);
 
                         Decryptor = Network.AugmentedCrypt.CreateDecryptor();
                     }
@@ -543,32 +543,13 @@ namespace RiseOp.Implementation.Transport
 					break;
 
 				packet.Tcp       = this;
-				packet.Source = new DhtAddress(RemoteIP, this);
+				packet.Source = new DhtContact(this, RemoteIP);
 
                 byte[] packetData = Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize);
                 PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tcp, DirectionType.In, packet.Source, packetData);
                 Network.LogPacket(logEntry);
 
-
-                if (Core.Sim == null || Core.Sim.Internet.TestCoreThread)
-                {
-                    lock (Network.IncomingPackets)
-                        if (Network.IncomingPackets.Count < 100)
-                            Network.IncomingPackets.Enqueue(new PacketCopy(packet, packetData, Network.IsGlobal));
-
-                    Core.ProcessEvent.Set();
-                }
-                else
-                {
-                    try
-                    {
-                        Network.ReceivePacket(packet);
-                    }
-                    catch (Exception ex)
-                    {
-                        LogException("ReceivePackets", ex.Message + "\n" + ex.StackTrace);
-                    }
-                }
+                Network.IncomingPacket(packet);
 			}
 
             // re-align buffer

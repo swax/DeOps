@@ -82,7 +82,7 @@ namespace RiseOp.Implementation.Transport
 
         internal void Connect(LocationData location)
         {
-            if (location.UserID == Network.LocalUserID && location.Source.ClientID == Network.ClientID)
+            if (location.UserID == Network.Local.UserID && location.Source.ClientID == Network.Local.ClientID)
                 return;
 
             if (IsConnected(location))
@@ -98,6 +98,9 @@ namespace RiseOp.Implementation.Transport
 
             foreach (DhtAddress address in location.Proxies)
                 session.Comm.AddAddress(new RudpAddress(address));
+
+            foreach (DhtAddress server in location.TunnelServers)
+                session.Comm.AddAddress(new RudpAddress(new DhtContact(location.Source, location.IP, location.TunnelClient, server)));
 
             session.Connect(); 
         }

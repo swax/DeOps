@@ -136,8 +136,8 @@ namespace RiseOp.Implementation.Dht
             request.Source     = Network.GetLocalSource();
             request.SearchID   = searchID;
             request.TargetID   = targetID;
-            request.Service  = service;
-            request.DataType = datatype;
+            request.Service    = service;
+            request.DataType   = datatype;
             request.Parameters = parameters;
 
             TcpConnect direct = Network.TcpControl.GetProxy(address);
@@ -145,7 +145,7 @@ namespace RiseOp.Implementation.Dht
             if (direct != null)
                 direct.SendPacket(request);
             else
-                Network.UdpControl.SendTo(address, request);
+                Network.SendPacket(address, request);
         }
 
         internal void ReceiveRequest(G2ReceivedPacket packet)
@@ -153,11 +153,11 @@ namespace RiseOp.Implementation.Dht
             SearchReq request = SearchReq.Decode(packet);
 
             // loopback
-            if (request.Source.UserID == Network.LocalUserID && request.Source.ClientID == Network.ClientID)
+            if (Network.Local.Equals(request.Source))
                 return;
 
-            
-            if (packet.Tcp != null && request.SearchID != 0 )
+
+            if (packet.ReceivedTcp && request.SearchID != 0)
             {
                 // request from blocked node
                 if (packet.Tcp.Proxy == ProxyType.ClientBlocked)
@@ -217,7 +217,11 @@ namespace RiseOp.Implementation.Dht
                     socket.SendPacket(request);
                 }
 
+
+
             // send ack
+            bool sendNoResults = (request.SearchID != 0 && (packet.ReceivedUdp || packet.Tunneled));
+
             SearchAck ack = new SearchAck();
             ack.Source = Network.GetLocalSource();
             ack.SearchID = request.SearchID;
@@ -228,14 +232,14 @@ namespace RiseOp.Implementation.Dht
                 ack.Proxied = true;
 
             // only send nodes from proxy server routing table
-            if(request.Nodes && packet.Tcp != null)
+            if (request.Nodes && (packet.ReceivedUdp || packet.Tunneled))
                 ack.ContactList = Routing.Find(request.TargetID, 8);
 
            
             // dont send an ack if behind a proxy server and no results
             if (!SearchEvent.Contains(request.Service, request.DataType))
             {
-                if(packet.Tcp != null)
+                if (sendNoResults)
                     SendAck(packet, request, ack);
             }
 
@@ -248,7 +252,7 @@ namespace RiseOp.Implementation.Dht
                 // if nothing found, still send ack with closer contacts
                 if (results == null || results.Count == 0)
                 {
-                    if (request.SearchID != 0 && packet.Tcp != null)
+                    if (sendNoResults)
                         SendAck(packet, request, ack);
 
                     return;
@@ -293,13 +297,13 @@ namespace RiseOp.Implementation.Dht
                 // fw req t-> open ack t-> fw
                 // fw1 req t-> open t-> fw2 ack t-> open t-> fw1
 
-            if (packet.Tcp != null)
+            if (packet.ReceivedTcp)
             {
                 ack.ToAddress = packet.Source;
                 packet.Tcp.SendPacket(ack);
             }
             else
-                Network.UdpControl.SendTo(packet.Source, ack);
+                Network.SendPacket(packet.Source, ack);
         }
 
         internal void ReceiveAck(G2ReceivedPacket packet)
@@ -307,7 +311,7 @@ namespace RiseOp.Implementation.Dht
             SearchAck ack = SearchAck.Decode(packet);
 
             // loopback
-            if (ack.Source.UserID == Network.LocalUserID && ack.Source.ClientID == Network.ClientID)
+            if (Network.Local.Equals(ack.Source))
                 return;
 
             // if response to crawl
@@ -319,8 +323,7 @@ namespace RiseOp.Implementation.Dht
                 return;
             }
 
-            // crit ackid and ack ip might not match if ack sent through proxy
-            if (packet.Tcp == null && ack.Source.Firewall == FirewallType.Open && packet.Source.UserID == ack.Source.UserID)
+            if (ack.Source.Firewall == FirewallType.Open)
                 Routing.Add(new DhtContact(ack.Source, packet.Source.IP));
 
             foreach (DhtContact contact in ack.ContactList)
@@ -389,10 +392,13 @@ namespace RiseOp.Implementation.Dht
 
             TcpConnect socket = Network.TcpControl.GetProxy(dest);
 
-            if(socket != null)
+            if (socket != null)
                 socket.SendPacket(request);
 
-            else if(Core.Firewall == FirewallType.Blocked)
+            else if (dest.TunnelClient != null)
+                Network.SendTunnelPacket(dest, request);
+
+            else if (Core.Firewall == FirewallType.Blocked)
             {
                 request.ToAddress = dest;
                 Network.TcpControl.SendRandomProxy(request);

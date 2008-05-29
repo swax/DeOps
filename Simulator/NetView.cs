@@ -141,22 +141,29 @@ namespace RiseOp.Simulator
             foreach (SimInstance instance in Sim.Online)
                 if (instance.Core != null)
                 {
-                    DhtNetwork network = (OpID == 0) ? instance.Core.GlobalNet : instance.Core.OperationNet;
+                    DhtNetwork network = null;
+                    
+                    if(OpID == 0)
+                        network = instance.Core.GlobalNet;
+                    
+                    else if(OpID == instance.Core.OperationNet.OpID)
+                        network = instance.Core.OperationNet;
+
 
                     if (network != null)
                     {
                         int nodeRadius = (instance.Core.Firewall == FirewallType.Open) ? maxRadius - 30 : maxRadius;
 
-                        NodePoints[network.LocalUserID] = GetCircumPoint(centerPoint, nodeRadius, IDto32(network.LocalUserID));
+                        NodePoints[network.Local.UserID] = GetCircumPoint(centerPoint, nodeRadius, IDto32(network.Local.UserID));
 
-                        networks[network.LocalUserID] = network;
+                        networks[network.Local.UserID] = network;
 
                         if (TrackHash != null)
                         {
                             if (IsTracked(instance.Core))
-                                TrackPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.LocalUserID)));
+                                TrackPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.Local.UserID)));
                             else if (IsTransferring(instance.Core))
-                                TransferPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.LocalUserID)));
+                                TransferPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.Local.UserID)));
                         }
                     }
                 }
@@ -165,7 +172,7 @@ namespace RiseOp.Simulator
                 lock(network.TcpControl.SocketList)
                     foreach(TcpConnect connect in network.TcpControl.SocketList)
                         if(connect.State == TcpState.Connected && NodePoints.ContainsKey(connect.UserID))
-                            buffer.DrawLine(BluePen, NodePoints[network.LocalUserID], NodePoints[connect.UserID]);
+                            buffer.DrawLine(BluePen, NodePoints[network.Local.UserID], NodePoints[connect.UserID]);
 
             // draw traffic lines
             DrawTraffic(buffer);
@@ -204,7 +211,7 @@ namespace RiseOp.Simulator
                 buffer.DrawEllipse(BlackPen, selectBox);
 
                 string name = networks[SelectedID].Core.User.Settings.ScreenName;
-                name += " " + Utilities.IDtoBin(networks[SelectedID].LocalUserID);
+                name += " " + Utilities.IDtoBin(networks[SelectedID].Local.UserID);
                 name += ShowInbound ? " Inbound Traffic" : " Outbound Traffic";
 
                 buffer.DrawString(name, TahomaFont, BlackBrush, new PointF(3, 37));
@@ -353,7 +360,7 @@ namespace RiseOp.Simulator
             lock (Sim.PacketHandle)
             {
                 foreach (SimPacket packet in Sim.OutPackets)
-                    if (SelectedID == 0 || (!ShowInbound && SelectedID == packet.SenderID) || (ShowInbound && SelectedID == packet.Dest.LocalUserID))
+                    if (SelectedID == 0 || (!ShowInbound && SelectedID == packet.SenderID) || (ShowInbound && SelectedID == packet.Dest.Local.UserID))
                         if ((packet.Dest.IsGlobal && OpID == 0) || (!packet.Dest.IsGlobal && packet.Dest.OpID == OpID))
                         {
                             Dictionary<ulong, Dictionary<ulong, PacketGroup>> TrafficGroup = packet.Tcp != null ? TcpTraffic : UdpTraffic;
@@ -361,10 +368,10 @@ namespace RiseOp.Simulator
                             if (!TrafficGroup.ContainsKey(packet.SenderID))
                                 TrafficGroup[packet.SenderID] = new Dictionary<ulong, PacketGroup>();
 
-                            if (!TrafficGroup[packet.SenderID].ContainsKey(packet.Dest.LocalUserID))
-                                TrafficGroup[packet.SenderID][packet.Dest.LocalUserID] = new PacketGroup(packet.SenderID, packet.Dest.LocalUserID);
+                            if (!TrafficGroup[packet.SenderID].ContainsKey(packet.Dest.Local.UserID))
+                                TrafficGroup[packet.SenderID][packet.Dest.Local.UserID] = new PacketGroup(packet.SenderID, packet.Dest.Local.UserID);
 
-                            TrafficGroup[packet.SenderID][packet.Dest.LocalUserID].Add(packet);
+                            TrafficGroup[packet.SenderID][packet.Dest.Local.UserID].Add(packet);
                         }
 
                 DrawGroup(buffer, UdpTraffic, false);
@@ -568,7 +575,7 @@ namespace RiseOp.Simulator
 
                         foreach (SimInstance instance in Sim.Online)
                             if (instance.Core != null)
-                                if (instance.Core.UserID == id || (instance.Core.GlobalNet != null && instance.Core.GlobalNet.LocalUserID == id))
+                                if (instance.Core.UserID == id || (instance.Core.GlobalNet != null && instance.Core.GlobalNet.Local.UserID == id))
                                 {
                                     name = instance.Core.User.Settings.ScreenName;
                                     break;

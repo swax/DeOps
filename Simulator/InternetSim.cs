@@ -157,7 +157,7 @@ namespace RiseOp.Simulator
             core.OperationNet.IPTable.Clear();
 
             // set name
-            UserNames[core.OperationNet.LocalUserID] = core.User.Settings.ScreenName;
+            UserNames[core.OperationNet.Local.UserID] = core.User.Settings.ScreenName;
             OpNames[core.OperationNet.OpID] = core.User.Settings.Operation;
 
             // hook instance into maps
@@ -665,7 +665,7 @@ namespace RiseOp.Simulator
                 Debug.Assert(false, "Empty Packet");
 
             lock (PacketHandle)
-                OutPackets.Add(new SimPacket(type, source, packet, AddressMap[target], tcp, network.LocalUserID));
+                OutPackets.Add(new SimPacket(type, source, packet, AddressMap[target], tcp, network.Local.UserID));
 
             if (packet == null)
                 return 0;

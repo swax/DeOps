@@ -47,6 +47,7 @@ namespace RiseOp.Interface.Tools
         private MenuItem MenuItemRudp;
         private ColumnHeader columnHeaderTime;
         private MenuItem ClearMenuItem;
+        private MenuItem MenuItemTunnel;
         private IContainer components;
 
         internal PacketsForm(string name, DhtNetwork network)
@@ -102,11 +103,12 @@ namespace RiseOp.Interface.Tools
             this.columnHeaderHash = new System.Windows.Forms.ColumnHeader();
             this.mainMenu1 = new System.Windows.Forms.MainMenu(this.components);
             this.menuItemCommands = new System.Windows.Forms.MenuItem();
+            this.ClearMenuItem = new System.Windows.Forms.MenuItem();
             this.menuItemPause = new System.Windows.Forms.MenuItem();
             this.MenuItemTcp = new System.Windows.Forms.MenuItem();
             this.MenuItemUdp = new System.Windows.Forms.MenuItem();
             this.MenuItemRudp = new System.Windows.Forms.MenuItem();
-            this.ClearMenuItem = new System.Windows.Forms.MenuItem();
+            this.MenuItemTunnel = new System.Windows.Forms.MenuItem();
             this.SuspendLayout();
             // 
             // TreeViewPacket
@@ -194,8 +196,15 @@ namespace RiseOp.Interface.Tools
             this.menuItemPause,
             this.MenuItemTcp,
             this.MenuItemUdp,
-            this.MenuItemRudp});
+            this.MenuItemRudp,
+            this.MenuItemTunnel});
             this.menuItemCommands.Text = "Commands";
+            // 
+            // ClearMenuItem
+            // 
+            this.ClearMenuItem.Index = 0;
+            this.ClearMenuItem.Text = "Clear";
+            this.ClearMenuItem.Click += new System.EventHandler(this.ClearMenuItem_Click);
             // 
             // menuItemPause
             // 
@@ -224,11 +233,12 @@ namespace RiseOp.Interface.Tools
             this.MenuItemRudp.Text = "Rudp";
             this.MenuItemRudp.Click += new System.EventHandler(this.MenuItemRudp_Click);
             // 
-            // ClearMenuItem
+            // MenuItemTunnel
             // 
-            this.ClearMenuItem.Index = 0;
-            this.ClearMenuItem.Text = "Clear";
-            this.ClearMenuItem.Click += new System.EventHandler(this.ClearMenuItem_Click);
+            this.MenuItemTunnel.Checked = true;
+            this.MenuItemTunnel.Index = 5;
+            this.MenuItemTunnel.Text = "Tunnel";
+            this.MenuItemTunnel.Click += new System.EventHandler(this.MenuItemTunnel_Click);
             // 
             // PacketsForm
             // 
@@ -273,7 +283,8 @@ namespace RiseOp.Interface.Tools
         {
             if ((logEntry.Protocol == TransportProtocol.Tcp && MenuItemTcp.Checked) ||
                 (logEntry.Protocol == TransportProtocol.Udp && MenuItemUdp.Checked) ||
-                (logEntry.Protocol == TransportProtocol.Rudp && MenuItemRudp.Checked))
+                (logEntry.Protocol == TransportProtocol.Rudp && MenuItemRudp.Checked) ||
+                (logEntry.Protocol == TransportProtocol.Tunnel && MenuItemTunnel.Checked))
                 ListViewPackets.Items.Add(PackettoItem(logEntry));
             
         }
@@ -294,6 +305,9 @@ namespace RiseOp.Interface.Tools
                     break;
                 case TransportProtocol.Rudp:
                     protocol = "rudp";
+                    break;
+                case TransportProtocol.Tunnel:
+                    protocol = "tunnel";
                     break;
             }
 
@@ -472,6 +486,11 @@ namespace RiseOp.Interface.Tools
                         ReadChildren(root, rootNode, typeof(RudpPacket));
                     }
 
+                    if (root.Name == RootPacket.Tunnel)
+                    {
+                        ReadChildren(root, rootNode, typeof(RudpPacket));
+                    }
+
                     if (root.Name == RootPacket.Network)
                     {
                         ReadChildren(root, rootNode, typeof(NetworkPacket));
@@ -632,6 +651,17 @@ namespace RiseOp.Interface.Tools
 
             else
                 MenuItemRudp.Checked = true;
+
+            RefreshView();
+        }
+
+        private void MenuItemTunnel_Click(object sender, EventArgs e)
+        {
+            if (MenuItemTunnel.Checked)
+                MenuItemTunnel.Checked = false;
+
+            else
+                MenuItemTunnel.Checked = true;
 
             RefreshView();
         }

@@ -514,7 +514,7 @@ namespace RiseOp.Implementation.Transport
 
             Comm.AddAddress(new RudpAddress(update.Proxy));
 
-            if(embeddedPacket.Tcp != null)
+            if (embeddedPacket.ReceivedTcp)
                 Comm.AddAddress(new RudpAddress(update.Proxy, embeddedPacket.Tcp));
 
             Comm.CheckRoutes();

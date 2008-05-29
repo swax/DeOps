@@ -45,7 +45,7 @@ namespace RiseOp.Interface.Tools
                 foreach (SimInstance instance in Sim.Instances)
                     if (instance.Core.User.Settings.ScreenName == TextSearch.Text)
                     {
-                        TargetID = Network.IsGlobal ? instance.Core.GlobalNet.LocalUserID : instance.Core.OperationNet.LocalUserID;
+                        TargetID = Network.IsGlobal ? instance.Core.GlobalNet.Local.UserID : instance.Core.OperationNet.Local.UserID;
                         break;
                     }
             

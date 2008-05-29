@@ -121,10 +121,10 @@ namespace RiseOp.Services.Location
                 {
                     while (GlobalIndex.Count > PruneGlobalKeys / 2)
                     {
-                        ulong furthest = Core.GlobalNet.LocalUserID;
+                        ulong furthest = Core.GlobalNet.Local.UserID;
 
                         foreach (ulong id in GlobalIndex.Keys)
-                            if ((id ^ Core.GlobalNet.LocalUserID) > (furthest ^ Core.GlobalNet.LocalUserID))
+                            if ((id ^ Core.GlobalNet.Local.UserID) > (furthest ^ Core.GlobalNet.Local.UserID))
                                 furthest = id;
 
                         GlobalIndex.Remove(furthest);
@@ -420,6 +420,11 @@ namespace RiseOp.Services.Location
         {
             Core.IndexKey(location.UserID, ref location.Key);
 
+            Debug.Assert(location.UserID == location.Source.UserID);
+            if (location.UserID != location.Source.UserID)
+                return;
+
+
             ClientInfo current = GetLocationInfo(location.UserID, location.Source.ClientID);
            
             // check location version
@@ -469,7 +474,7 @@ namespace RiseOp.Services.Location
             current.Data = location;
             current.SignedData = signed.Encode(Core.OperationNet.Protocol);
 
-            if (current.Data.UserID == Core.UserID && current.Data.Source.ClientID == Core.OperationNet.ClientID)
+            if (current.Data.UserID == Core.UserID && current.Data.Source.ClientID == Core.OperationNet.Local.ClientID)
                 LocalLocation = current;
 
             current.TTL = location.TTL;
@@ -480,14 +485,9 @@ namespace RiseOp.Services.Location
                 Core.OperationNet.Routing.Add(new DhtContact(location.Source, location.IP));
 
             // add global proxies (they would only be included in location packet if source was not directly connected to OP
-            foreach(DhtAddress proxy in location.Proxies)
-                if (proxy.GlobalProxy > 0)
-                    Core.OperationNet.Routing.Add(new DhtContact(proxy));
-            
-
-            //crit if known online nodes is low, search for trust of loc
-
-
+            foreach(DhtAddress server in location.TunnelServers)
+                Core.OperationNet.Routing.Add(new DhtContact(location.Source, location.IP, location.TunnelClient, server));
+    
             if (LocationUpdate != null)
                 LocationUpdate.Invoke(current.Data);
 
@@ -532,9 +532,13 @@ namespace RiseOp.Services.Location
 
             location.Source = Core.OperationNet.GetLocalSource();
 
-            if(Core.UseGlobalProxies && Core.Firewall != FirewallType.Open)
+            if (Core.UseGlobalProxies && Core.Firewall != FirewallType.Open)
+            {
+                location.TunnelClient = Core.GlobalNet.Local;
+
                 foreach (TcpConnect socket in Core.GlobalNet.TcpControl.ProxyServers)
-                    location.Proxies.Add(new DhtAddress(socket.RemoteIP, socket, Core.GlobalNet.LocalUserID));
+                    location.TunnelServers.Add(new DhtAddress(socket.RemoteIP, socket));
+            }
 
             foreach (TcpConnect socket in Core.OperationNet.TcpControl.ProxyServers)
                 location.Proxies.Add(new DhtAddress(socket.RemoteIP, socket));

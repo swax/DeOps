@@ -44,7 +44,7 @@ namespace RiseOp.Implementation.Dht
 			Routing.Core.StrongRndGen.GetBytes(eightBytes);
 			UInt64 randomID = BitConverter.ToUInt64(eightBytes, 0);
 
-			UInt64 localID = Routing.Network.LocalUserID;
+			UInt64 localID = Routing.Network.Local.UserID;
 
             // ex.. Dht id 00000
             // depth 0, 1...
@@ -64,10 +64,7 @@ namespace RiseOp.Implementation.Dht
 
 		internal bool Add(DhtContact newContact)
 		{
-            // if already here update last seen
-            foreach (DhtContact contact in ContactList)
-                if (contact.Equals(newContact))
-                    return true;
+            // duplicate already checked for in routing.add
 
             // check if bucket full
             if (ContactList.Count >= Routing.ContactsPerBucket)
@@ -94,8 +91,9 @@ namespace RiseOp.Implementation.Dht
 
         new const int PAYLOAD_SIZE = 14;
 
-        const byte Packet_IP = 0x01;
-        const byte Packet_Global = 0x02;
+        const byte Packet_IP = 0x10;
+        const byte Packet_Server = 0x20;
+        const byte Packet_Client = 0x30;
 
 
         internal ushort    TcpPort;
@@ -117,38 +115,36 @@ namespace RiseOp.Implementation.Dht
 			UdpPort   = udpPort;
 		}
 
-        // used to add global proxies
         internal DhtContact(DhtAddress address)
         {
             UserID = address.UserID;
             ClientID = address.ClientID;
             IP = address.IP;
-            TcpPort = 0;
             UdpPort = address.UdpPort;
-            GlobalProxy = address.GlobalProxy;
         }
 
-        internal DhtContact(DhtSource Dht, IPAddress address)
+
+        // used to add global proxies
+        internal DhtContact(DhtSource opHost, IPAddress opIP, DhtClient client, DhtAddress server)
         {
-            UserID = Dht.UserID;
-            ClientID = Dht.ClientID;
-            IP = address;
-            TcpPort = Dht.TcpPort;
-            UdpPort = Dht.UdpPort;
+            UserID = opHost.UserID;
+            ClientID = opHost.ClientID;
+            IP = opIP;
+            TcpPort = opHost.TcpPort;
+            UdpPort = opHost.UdpPort;
+
+            TunnelServer = new DhtAddress(server.UserID, server.ClientID, server.IP, server.UdpPort);
+            TunnelClient = client;
         }
 
-        internal bool Equals(DhtContact compare)
-		{
-			if( UserID    == compare.UserID    &&
-				ClientID == compare.ClientID && 
-				TcpPort  == compare.TcpPort  &&
-				UdpPort  == compare.UdpPort  &&
-				IP.Equals(compare.IP) &&
-                GlobalProxy == compare.GlobalProxy)
-				return true;
-
-			return false;
-		}
+        internal DhtContact(DhtSource source, IPAddress ip)
+        {
+            UserID = source.UserID;
+            ClientID = source.ClientID;
+            IP = ip;
+            TcpPort = source.TcpPort;
+            UdpPort = source.UdpPort;
+        }
 
         public override string ToString()
 		{
@@ -168,8 +164,11 @@ namespace RiseOp.Implementation.Dht
 
             protocol.WritePacket(address, Packet_IP, IP.GetAddressBytes());
 
-            if (GlobalProxy > 0)
-                protocol.WritePacket(address, Packet_Global, BitConverter.GetBytes(GlobalProxy));
+            if (TunnelServer != null)
+                TunnelServer.WritePacket(protocol, address, Packet_Server);
+
+            if (TunnelClient != null)
+                protocol.WritePacket(address, Packet_Client, TunnelClient.ToBytes());
         }
 
         internal static new DhtContact ReadPacket(G2Header root)
@@ -198,8 +197,12 @@ namespace RiseOp.Implementation.Dht
                         contact.IP = new IPAddress(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
                         break;
 
-                    case Packet_Global:
-                        contact.GlobalProxy = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                    case Packet_Server:
+                        contact.TunnelServer = DhtAddress.ReadPacket(child);
+                        break;
+
+                    case Packet_Client:
+                        contact.TunnelClient = DhtClient.FromBytes(child.Data, child.PayloadPos);
                         break;
                 }
             }

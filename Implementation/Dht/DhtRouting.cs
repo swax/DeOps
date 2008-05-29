@@ -6,6 +6,7 @@ using System.Net;
 
 using RiseOp.Simulator;
 using RiseOp.Services;
+using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
 
 namespace RiseOp.Implementation.Dht
@@ -45,7 +46,7 @@ namespace RiseOp.Implementation.Dht
             if (Core.Sim != null)
                 ContactsPerBucket = 8;
 
-            LocalRoutingID = Network.LocalUserID ^ Network.ClientID;
+            LocalRoutingID = Network.Local.UserID ^ Network.Local.ClientID;
 
 			BucketList.Add( new DhtBucket(this, 0, true) );
 		}
@@ -204,7 +205,7 @@ namespace RiseOp.Implementation.Dht
                     DhtContact furthest = NearXor.Contacts[NearXor.Max - 1];
 
                     NearXor.SetBounds(LocalRoutingID ^ furthest.RoutingID,
-                                  Network.LocalUserID ^ furthest.UserID);
+                                  Network.Local.UserID ^ furthest.UserID);
 
                     // ensure node being replicated to hasnt already been replicated to through another list
                     if (!NearHigh.Contacts.Contains(furthest) &&
@@ -312,20 +313,20 @@ namespace RiseOp.Implementation.Dht
         {
             // modify lower bits so user on xor/high/low routing ID specific client boundary wont be rejected 
 
-            if (user == Network.LocalUserID)
+            if (user == Network.Local.UserID)
                 return true;
 
             // xor is primary
-            if ((Network.LocalUserID ^ user) <= NearXor.UserBound)
+            if ((Network.Local.UserID ^ user) <= NearXor.UserBound)
                 return true;
 
             // high/low is backup, a continuous cache, to keep data from being lost by grouped nodes in xor
             // boundaries are xor'd with client id these need to be modified to work with an user id
 
-            if (NearLow.UserBound <= user && user <= Network.LocalUserID)
+            if (NearLow.UserBound <= user && user <= Network.Local.UserID)
                 return true;
 
-            if (Network.LocalUserID <= user && user <= NearHigh.UserBound)
+            if (Network.Local.UserID <= user && user <= NearHigh.UserBound)
                 return true;
 
             return false;
@@ -361,6 +362,26 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
+        internal void TryAdd(G2ReceivedPacket packet, DhtSource source)
+        {
+            TryAdd(packet, source, false);
+        }
+
+        internal void TryAdd(G2ReceivedPacket packet, DhtSource source, bool pong)
+        {
+            // packet has IP and tunnel info
+            // source has operational info
+
+            // if firewall flag not set add to routing
+            if (source.Firewall == FirewallType.Open)
+                Add(new DhtContact(source, packet.Source.IP), pong);
+
+            // if tunneled source doesnt have op reachable IP, must go over global
+            else if (packet.Tunneled)
+                Add(new DhtContact(source, packet.Source.IP, packet.Source.TunnelClient, packet.Source.TunnelServer), pong);
+
+        }
+
         internal void Add(DhtContact newContact)
         {
             Add(newContact, false);
@@ -374,7 +395,7 @@ namespace RiseOp.Implementation.Dht
 				return;
 			}
 
-            if (newContact.UserID == Network.LocalUserID && newContact.ClientID == Network.ClientID)
+            if (newContact.UserID == Network.Local.UserID && newContact.ClientID == Network.Local.ClientID)
 			{
                 // happens because nodes will include ourselves in returnes to search requests
                 //Network.UpdateLog("Routing", "Self add attempt");
@@ -386,7 +407,7 @@ namespace RiseOp.Implementation.Dht
 
             
             // test to check if non open hosts being added to routing table through simulation
-            if (Core.Sim != null)
+            if (Core.Sim != null && newContact.TunnelClient == null)
             {
                 IPEndPoint address = new IPEndPoint(newContact.IP, newContact.UdpPort);
 
@@ -394,8 +415,8 @@ namespace RiseOp.Implementation.Dht
                 {
                     DhtNetwork checkNet = Core.Sim.Internet.AddressMap[address];
 
-                    if (checkNet.LocalUserID != newContact.UserID ||
-                        checkNet.ClientID != newContact.ClientID ||
+                    if (checkNet.Local.UserID != newContact.UserID ||
+                        checkNet.Local.ClientID != newContact.ClientID ||
                         checkNet.TcpControl.ListenPort != newContact.TcpPort ||
                         checkNet.Core.Sim.RealFirewall != FirewallType.Open)
                         throw new Exception("Routing add mismatch");
@@ -419,22 +440,19 @@ namespace RiseOp.Implementation.Dht
             }
 
             if (ContactMap.ContainsKey(newContact.RoutingID))
-                return;
-
-            /* Move to special pong response
-
-            // add to ip cache
-            if (newContact.LastSeen.AddMinutes(1) > Core.TimeNow)
-                Network.AddCacheEntry(newContact);
-
-
-            // if contact already in bucket/high/low list
-            if (ContactMap.ContainsKey(newContact.RoutingID))
             {
-                ContactMap[newContact.RoutingID].Alive(newContact.LastSeen);
-                return;
-            }*/
+                DhtContact dupe = ContactMap[newContact.RoutingID];
 
+                // tunnel may change from pong / location update etc.. reflect in routing
+                // once host is open and in routing, prevent it from being maliciously set back to tunneled
+                if (dupe.TunnelServer != null)
+                {
+                    dupe.TunnelServer = newContact.TunnelServer;
+                    dupe.TunnelClient = newContact.TunnelClient;
+                }
+
+                return;
+            }
 
             // add to searches
             foreach (DhtSearch search in Network.Searches.Active)
@@ -532,7 +550,7 @@ namespace RiseOp.Implementation.Dht
                 // set bound to furthest contact in range
                 if (NearXor.Contacts.Count == NearXor.Max)
                     NearXor.SetBounds( LocalRoutingID ^ NearXor.Contacts[NearXor.Max - 1].RoutingID,
-                                    Network.LocalUserID ^ NearXor.Contacts[NearXor.Max - 1].UserID);
+                                    Network.Local.UserID ^ NearXor.Contacts[NearXor.Max - 1].UserID);
 
                 return true;
             }
@@ -720,6 +738,8 @@ namespace RiseOp.Implementation.Dht
 
             return results;*/
         }
+
+   
     }
 
     internal class DhtBound

@@ -304,11 +304,17 @@ namespace RiseOp.Simulator
                 operation.MenuItems.Add(new MenuItem("Packets", new EventHandler(Click_OpPackets)));
                 operation.MenuItems.Add(new MenuItem("Search", new EventHandler(Click_OpSearch)));
 
+                MenuItem firewall = new MenuItem("Firewall");
+                firewall.MenuItems.Add(new MenuItem("Open", new EventHandler(Click_FwOpen)));
+                firewall.MenuItems.Add(new MenuItem("NAT", new EventHandler(Click_FwNAT)));
+                firewall.MenuItems.Add(new MenuItem("Blocked", new EventHandler(Click_FwBlocked)));
+
                 menu.MenuItems.Add(new MenuItem("Main", new EventHandler(Click_Main)));
                 menu.MenuItems.Add(new MenuItem("Internal", new EventHandler(Click_Internal)));
                 menu.MenuItems.Add(new MenuItem("Transfers", new EventHandler(Click_Transfers)));
                 menu.MenuItems.Add(global);
                 menu.MenuItems.Add(operation);
+                menu.MenuItems.Add(firewall);
                 menu.MenuItems.Add(new MenuItem("Console", new EventHandler(Click_Console)));
                 menu.MenuItems.Add(new MenuItem("-"));
                 menu.MenuItems.Add(new MenuItem("Bring Offline", new EventHandler(Click_Disconnect)));
@@ -336,6 +342,33 @@ namespace RiseOp.Simulator
 
                 core.GuiMain.Show();
                 core.GuiMain.Activate();
+            }
+        }
+        
+        private void Click_FwOpen(object sender, EventArgs e)
+        {
+            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            {
+                item.Instance.RealFirewall = FirewallType.Open;
+                OnInstanceChange(item.Instance, InstanceChangeType.Update);
+            }
+        }
+
+        private void Click_FwNAT(object sender, EventArgs e)
+        {
+            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            {
+                item.Instance.RealFirewall = FirewallType.NAT;
+                OnInstanceChange(item.Instance, InstanceChangeType.Update);
+            }
+        }
+
+        private void Click_FwBlocked(object sender, EventArgs e)
+        {
+            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            {
+                item.Instance.RealFirewall = FirewallType.Blocked;
+                OnInstanceChange(item.Instance, InstanceChangeType.Update);
             }
         }
 
@@ -740,8 +773,8 @@ namespace RiseOp.Simulator
 
             
             SubItems[1].Text = Instance.Core.User.Settings.Operation;
-            SubItems[2].Text = Utilities.IDtoBin(Instance.Core.OperationNet.LocalUserID);
-            SubItems[3].Text = Instance.RealIP.ToString() + "/" + Instance.Core.OperationNet.ClientID.ToString(); 
+            SubItems[2].Text = Utilities.IDtoBin(Instance.Core.OperationNet.Local.UserID);
+            SubItems[3].Text = Instance.RealIP.ToString() + "/" + Instance.Core.OperationNet.Local.ClientID.ToString(); 
             SubItems[4].Text = Instance.RealFirewall.ToString();
             SubItems[5].Text = alerts;
 

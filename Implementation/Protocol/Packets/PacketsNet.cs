@@ -50,18 +50,32 @@ namespace RiseOp.Implementation.Protocol.Net
         {
             return UserID.GetHashCode() ^ ClientID.GetHashCode();
         }
+
+        // fix later, dont want inherited classes using this function thinking something else
+        internal byte[] ToBytes()
+        {
+            byte[] bytes = new byte[10];
+            BitConverter.GetBytes(UserID).CopyTo(bytes, 0);
+            BitConverter.GetBytes(ClientID).CopyTo(bytes, 8);
+            return bytes;
+        }
+
+        internal static DhtClient FromBytes(byte[] data, int start)
+        {
+            DhtClient result = new DhtClient();
+            result.UserID = BitConverter.ToUInt64(data, start);
+            result.ClientID = BitConverter.ToUInt16(data, start + 8);
+            return result;
+        }
     }
 
     internal class DhtSource : DhtClient
 	{
         internal const int PAYLOAD_SIZE = 15;
 
-        const int Packet_Global = 0x01;
-
 		internal ushort TcpPort;
 		internal ushort UdpPort;
         internal FirewallType Firewall;
-        internal ulong GlobalProxy;
 
         internal DhtSource()
         {
@@ -82,9 +96,6 @@ namespace RiseOp.Implementation.Protocol.Net
             payload[14] = (byte)Firewall;
 
             G2Frame source = protocol.WritePacket(root, name, payload);
-
-            if (GlobalProxy > 0)
-                protocol.WritePacket(source, Packet_Global, BitConverter.GetBytes(GlobalProxy));
         }
 
         internal static DhtSource ReadPacket(G2Header root)
@@ -101,21 +112,6 @@ namespace RiseOp.Implementation.Protocol.Net
             // read packets
             G2Protocol.ResetPacket(root);
 
-            G2Header child = new G2Header(root.Data);
-
-            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                switch (child.Name)
-                {
-                    case Packet_Global:
-                        source.GlobalProxy = BitConverter.ToUInt64(child.Data, child.PayloadPos);
-                        break;
-                }
-            }
-
             return source;
         }
     }
@@ -125,35 +121,27 @@ namespace RiseOp.Implementation.Protocol.Net
         internal const int PAYLOAD_SIZE = 12;
 
         const byte Packet_IP = 0x01;
-        const byte Packet_Global = 0x02;
+
 
         internal IPAddress IP;
         internal ushort    UdpPort;
-        internal ulong     GlobalProxy;
+
+        internal DhtAddress TunnelServer;
+        internal DhtClient TunnelClient;
 
 
         internal DhtAddress()
         {
         }
 
-        internal DhtAddress(ulong user, ushort client, IPAddress ip, ushort port, ulong globalProxy)
+        internal DhtAddress(ulong user, ushort client, IPAddress ip, ushort port)
         {
             UserID   = user;
             ClientID = client;
             IP       = ip;
             UdpPort  = port;
-            GlobalProxy = globalProxy;
         }
-
-        internal DhtAddress(IPAddress ip, DhtSource source, ulong globalProxy)
-        {
-            UserID = source.UserID;
-            ClientID = source.ClientID;
-            IP = ip;
-            UdpPort = source.UdpPort;
-            GlobalProxy = globalProxy;
-        }
-
+        
         internal DhtAddress(IPAddress ip, DhtSource source)
         {
             UserID = source.UserID;
@@ -178,9 +166,6 @@ namespace RiseOp.Implementation.Protocol.Net
             G2Frame address = protocol.WritePacket(root, name, payload);
 
             protocol.WritePacket(address, Packet_IP, IP.GetAddressBytes());
-
-            if (GlobalProxy > 0)
-                protocol.WritePacket(address, Packet_Global, BitConverter.GetBytes(GlobalProxy));
         }
 
         internal static DhtAddress ReadPacket(G2Header root)
@@ -207,10 +192,6 @@ namespace RiseOp.Implementation.Protocol.Net
                     case Packet_IP:
                         address.IP = new IPAddress(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
                         break;
-
-                    case Packet_Global:
-                        address.GlobalProxy = BitConverter.ToUInt64(child.Data, child.PayloadPos);
-                        break;
                 }
             }
 
@@ -228,8 +209,7 @@ namespace RiseOp.Implementation.Protocol.Net
             if (UserID == check.UserID && 
                 ClientID == check.ClientID && 
                 IP.Equals(check.IP) && 
-                UdpPort == check.UdpPort &&
-                GlobalProxy == check.GlobalProxy)
+                UdpPort == check.UdpPort)
                 return true;
 
             return false;
@@ -237,7 +217,15 @@ namespace RiseOp.Implementation.Protocol.Net
 
         public override int GetHashCode()
         {
-            return UserID.GetHashCode() ^ ClientID.GetHashCode() ^ IP.GetHashCode() ^ UdpPort.GetHashCode() ^ GlobalProxy.GetHashCode();
+            int hash = UserID.GetHashCode() ^ ClientID.GetHashCode() ^ IP.GetHashCode() ^ UdpPort.GetHashCode();
+
+            if (TunnelClient != null)
+                hash = hash ^ TunnelClient.GetHashCode();
+
+            if (TunnelServer != null)
+                hash = hash ^ TunnelServer.GetHashCode();
+
+            return hash;
         }
 
         public override string  ToString()
@@ -334,6 +322,79 @@ namespace RiseOp.Implementation.Protocol.Net
 			return gn;
 		}
 	}
+
+    internal class TunnelPacket : G2Packet
+    {
+        const byte Packet_Source = 0x10;
+        const byte Packet_Target = 0x20;
+        const byte Packet_SourceServer = 0x30;
+        const byte Packet_TargetServer = 0x40;
+
+
+        internal DhtClient Source;
+        internal DhtClient Target;
+        internal DhtAddress SourceServer;
+        internal DhtAddress TargetServer;
+
+        internal byte[] Payload;
+
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            G2Frame tunnel = protocol.WritePacket(null, RootPacket.Tunnel, Payload);
+
+            protocol.WritePacket(tunnel, Packet_Source, Source.ToBytes());
+            protocol.WritePacket(tunnel, Packet_Target, Target.ToBytes());
+
+            if (SourceServer != null)
+                SourceServer.WritePacket(protocol, tunnel, Packet_SourceServer);
+            
+            if (TargetServer != null)
+                TargetServer.WritePacket(protocol, tunnel, Packet_TargetServer);
+
+            return protocol.WriteFinish();
+        }
+
+        internal static TunnelPacket Decode(G2Header root)
+        {
+            TunnelPacket tunnel = new TunnelPacket();
+
+            if (G2Protocol.ReadPayload(root))
+                tunnel.Payload = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
+
+            G2Protocol.ResetPacket(root);
+
+
+			G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_Source:
+                        tunnel.Source = DhtClient.FromBytes(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Target:
+                        tunnel.Target = DhtClient.FromBytes(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_SourceServer:
+                        tunnel.SourceServer = DhtAddress.ReadPacket(child);
+                        break;
+
+                    case Packet_TargetServer:
+                        tunnel.TargetServer = DhtAddress.ReadPacket(child);
+                        break;
+                }
+            }
+
+            return tunnel;
+        }
+    }
 
     internal class SearchReq : NetworkPacket
 	{
@@ -1062,7 +1123,7 @@ namespace RiseOp.Implementation.Protocol.Net
         {
             lock (protocol.WriteSection)
             {
-                protocol.WritePacket(null, RootPacket.CryptPadding, Filler);
+                protocol.WritePacket(null, RootPacket.Padding, Filler);
                 return protocol.WriteFinish();
             }
         }

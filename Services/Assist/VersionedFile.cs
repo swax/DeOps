@@ -673,10 +673,23 @@ namespace RiseOp.Services.Assist
             if ((file != null && version > file.Header.Version) ||
                 (file == null && Network.Routing.InCacheArea(user)))
             {
+                //crit verify this works through global proxy by commenting out below
                 StartSearch(user, version); // this could be called from a patch given to another user, direct connect not gauranteed
 
+                // node is in our local cache area, so not flooding by directly connecting
                 foreach (ClientInfo client in Core.Locations.GetClients(user))
-                    Network.Searches.SendDirectRequest(new DhtAddress(client.Data.IP, client.Data.Source), user, Service, DataType, BitConverter.GetBytes(version));
+                    if (client.Data.TunnelClient == null)
+                    {
+                        Network.Searches.SendDirectRequest(new DhtAddress(client.Data.IP, client.Data.Source), user, Service, DataType, BitConverter.GetBytes(version));
+                    }
+                    else
+                    {
+                        foreach (DhtAddress server in client.Data.TunnelServers)
+                        {
+                            DhtContact contact = new DhtContact(client.Data.Source, client.Data.IP, client.Data.TunnelClient, server);
+                            Network.Searches.SendDirectRequest(contact, user, Service, DataType, BitConverter.GetBytes(version));
+                        }
+                    }
             }
         }
     }

@@ -47,7 +47,7 @@ namespace RiseOp.Implementation.Dht
             DataReq store = new DataReq(null, target, service, datatype, data);
 
             // find users closest to publish target
-            if (target == Network.LocalUserID)
+            if (target == Network.Local.UserID)
             {
                 foreach (DhtContact closest in Network.Routing.GetCacheArea())
                     Send_StoreReq(closest, null, store);
@@ -114,6 +114,8 @@ namespace RiseOp.Implementation.Dht
             if (direct != null)
                 direct.SendPacket(store);
 
+            else if (address.TunnelClient != null)
+                Network.SendTunnelPacket(address, store);
 
             // if blocked send tcp with to tag
             else if (Core.Firewall == FirewallType.Blocked)
@@ -146,7 +148,7 @@ namespace RiseOp.Implementation.Dht
                 foreach (TcpConnect socket in Network.TcpControl.ProxyClients)
                     if (packet.Tcp != socket)
                     {
-                        if (packet.Tcp == null)
+                        if (packet.ReceivedUdp)
                             store.FromAddress = packet.Source;
 
                         socket.SendPacket(store);
@@ -155,8 +157,8 @@ namespace RiseOp.Implementation.Dht
             // pass to components
             DataReq data = new DataReq(new List<DhtAddress>(), store.Key, store.Service, store.DataType, store.Data);
             data.Sources.Add( packet.Source);
-            
-            if(packet.Tcp != null && packet.Tcp.Proxy == ProxyType.Server)
+
+            if (packet.ReceivedTcp && packet.Tcp.Proxy == ProxyType.Server)
                 data.LocalProxy = new DhtClient(packet.Tcp);
 
             if(data.Service == 0)
