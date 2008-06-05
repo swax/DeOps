@@ -500,6 +500,8 @@ namespace RiseOp.Implementation.Transport
 
         internal void Send_ProxyUpdate(TcpConnect tcp)
         {
+            //crit handle special if tcp is global
+
             ProxyUpdate update = new ProxyUpdate();
             update.Proxy = new DhtAddress(tcp.RemoteIP, tcp);
 

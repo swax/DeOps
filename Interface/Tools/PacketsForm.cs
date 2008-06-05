@@ -533,7 +533,7 @@ namespace RiseOp.Interface.Tools
                                     packetType = typeof(ProxyAck);
                                     break;
                                 case NetworkPacket.CrawlRequest:
-                                    packetType = typeof(CrawlReq);
+                                    packetType = typeof(CrawlRequest);
                                     break;
                                 case NetworkPacket.CrawlAck:
                                     packetType = typeof(CrawlAck);

@@ -21,5 +21,11 @@ Threading
 		dont need to lock inside op stucture if only interface accesses it
 		when someone is editing/wring a new opPlan and a new plan gets loaded there wont be a conflict
 
+security
+	level 1 - operation key
+	level 2 - secure routing (only routing to trust linked nodes)
+	level 3 - compartmentalization
+	level 4 - p2p comm links
+	
 chat
 	pure p2p everyone connected to everyone else, rudp should have low overhead 100bytes/min max, 100 users would be 1,000/6 bps

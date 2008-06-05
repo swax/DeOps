@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Forms;
 
@@ -19,10 +20,11 @@ namespace RiseOp.Interface.Tools
 	/// </summary>
 	internal class CrawlerForm : System.Windows.Forms.Form
 	{
+        OpCore Core;
 		DhtNetwork Network;
 		DhtRouting Routing;
 
-		Hashtable CrawlMap = new Hashtable();
+        Dictionary<ulong, CrawlNode> CrawlMap = new Dictionary<ulong, CrawlNode>();
 
 		CrawlStatus Status = CrawlStatus.Paused;
 
@@ -34,21 +36,19 @@ namespace RiseOp.Interface.Tools
 
 		private ListViewColumnSorter lvwColumnSorter = new ListViewColumnSorter();
 
-		private System.Windows.Forms.ListView listViewNodes;
-		private System.Windows.Forms.Button buttonRefresh;
-        private System.Windows.Forms.ColumnHeader columnHeaderKidBin;
-		private System.Windows.Forms.ColumnHeader columnHeaderIP;
-		private System.Windows.Forms.ColumnHeader columnHeaderClientID;
-		private System.Windows.Forms.ColumnHeader columnHeaderPorts;
+		private System.Windows.Forms.ListView NodeList;
+		private System.Windows.Forms.Button RefreshButton;
+        private System.Windows.Forms.ColumnHeader columnHeaderRouting;
+        private System.Windows.Forms.ColumnHeader columnHeaderIP;
 		private System.Windows.Forms.ColumnHeader columnHeaderVersion;
 		private System.Windows.Forms.ColumnHeader columnHeaderFirewall;
-		private System.Windows.Forms.ColumnHeader columnHeaderUptime;
-		private System.Windows.Forms.ColumnHeader columnHeaderDepth;
+        private System.Windows.Forms.ColumnHeader columnHeaderUptime;
 		private System.Windows.Forms.ColumnHeader columnHeaderProxied;
 		private System.Windows.Forms.ColumnHeader columnHeaderServers;
-		private System.Windows.Forms.Button buttonControl;
-        private System.Windows.Forms.Timer timerSecond;
+		private System.Windows.Forms.Button StartButton;
+        private System.Windows.Forms.Timer SecondTimer;
 		private System.Windows.Forms.Label labelCount;
+        private ColumnHeader columnHeaderBandwidth;
 		private System.ComponentModel.IContainer components;
 
         internal CrawlerForm(string name, DhtNetwork network)
@@ -58,15 +58,16 @@ namespace RiseOp.Interface.Tools
 			//
 			InitializeComponent();
 
+            Core = network.Core;
             Network = network;
             Routing = Network.Routing;
 
-			SearchAck = new SearchAckHandler(AsyncSearchAck);
-			CrawlAck  = new CrawlAckHandler(AsyncCrawlAck);
+            SearchAck = new SearchAckHandler(Receive_SearchAck);
+			CrawlAck  = new CrawlAckHandler(Receive_CrawlAck);
 
-            Text = name + " Crawler (" + Network.Core.User.Settings.ScreenName + ")";
+            Text = name + " Crawler (" + Core.User.Settings.ScreenName + ")";
 
-			listViewNodes.ListViewItemSorter = lvwColumnSorter;
+			NodeList.ListViewItemSorter = lvwColumnSorter;
 		}
 
 		/// <summary>
@@ -93,112 +94,102 @@ namespace RiseOp.Interface.Tools
 		{
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CrawlerForm));
-            this.listViewNodes = new System.Windows.Forms.ListView();
-            this.columnHeaderKidBin = new System.Windows.Forms.ColumnHeader();
+            this.NodeList = new System.Windows.Forms.ListView();
+            this.columnHeaderRouting = new System.Windows.Forms.ColumnHeader();
             this.columnHeaderIP = new System.Windows.Forms.ColumnHeader();
-            this.columnHeaderClientID = new System.Windows.Forms.ColumnHeader();
-            this.columnHeaderPorts = new System.Windows.Forms.ColumnHeader();
             this.columnHeaderVersion = new System.Windows.Forms.ColumnHeader();
             this.columnHeaderFirewall = new System.Windows.Forms.ColumnHeader();
             this.columnHeaderUptime = new System.Windows.Forms.ColumnHeader();
-            this.columnHeaderDepth = new System.Windows.Forms.ColumnHeader();
             this.columnHeaderProxied = new System.Windows.Forms.ColumnHeader();
             this.columnHeaderServers = new System.Windows.Forms.ColumnHeader();
-            this.buttonControl = new System.Windows.Forms.Button();
-            this.buttonRefresh = new System.Windows.Forms.Button();
-            this.timerSecond = new System.Windows.Forms.Timer(this.components);
+            this.StartButton = new System.Windows.Forms.Button();
+            this.RefreshButton = new System.Windows.Forms.Button();
+            this.SecondTimer = new System.Windows.Forms.Timer(this.components);
             this.labelCount = new System.Windows.Forms.Label();
+            this.columnHeaderBandwidth = new System.Windows.Forms.ColumnHeader();
             this.SuspendLayout();
             // 
-            // listViewNodes
+            // NodeList
             // 
-            this.listViewNodes.AllowColumnReorder = true;
-            this.listViewNodes.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            this.NodeList.AllowColumnReorder = true;
+            this.NodeList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.listViewNodes.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.columnHeaderKidBin,
-            this.columnHeaderIP,
-            this.columnHeaderClientID,
-            this.columnHeaderPorts,
-            this.columnHeaderVersion,
+            this.NodeList.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.columnHeaderRouting,
             this.columnHeaderFirewall,
+            this.columnHeaderIP,
+            this.columnHeaderBandwidth,
+            this.columnHeaderVersion,
             this.columnHeaderUptime,
-            this.columnHeaderDepth,
             this.columnHeaderProxied,
             this.columnHeaderServers});
-            this.listViewNodes.FullRowSelect = true;
-            this.listViewNodes.Location = new System.Drawing.Point(0, 40);
-            this.listViewNodes.Name = "listViewNodes";
-            this.listViewNodes.Size = new System.Drawing.Size(696, 312);
-            this.listViewNodes.TabIndex = 0;
-            this.listViewNodes.UseCompatibleStateImageBehavior = false;
-            this.listViewNodes.View = System.Windows.Forms.View.Details;
-            this.listViewNodes.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listViewNodes_ColumnClick);
+            this.NodeList.FullRowSelect = true;
+            this.NodeList.Location = new System.Drawing.Point(0, 40);
+            this.NodeList.Name = "NodeList";
+            this.NodeList.Size = new System.Drawing.Size(696, 312);
+            this.NodeList.TabIndex = 0;
+            this.NodeList.UseCompatibleStateImageBehavior = false;
+            this.NodeList.View = System.Windows.Forms.View.Details;
+            this.NodeList.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listViewNodes_ColumnClick);
             // 
-            // columnHeaderKidBin
+            // columnHeaderRouting
             // 
-            this.columnHeaderKidBin.Text = "KID Bin";
+            this.columnHeaderRouting.Text = "Routing";
             // 
             // columnHeaderIP
             // 
+            this.columnHeaderIP.DisplayIndex = 1;
             this.columnHeaderIP.Text = "IP";
-            // 
-            // columnHeaderClientID
-            // 
-            this.columnHeaderClientID.Text = "ClientID";
-            // 
-            // columnHeaderPorts
-            // 
-            this.columnHeaderPorts.Text = "Ports T/U";
             // 
             // columnHeaderVersion
             // 
+            this.columnHeaderVersion.DisplayIndex = 2;
             this.columnHeaderVersion.Text = "Version";
             // 
             // columnHeaderFirewall
             // 
+            this.columnHeaderFirewall.DisplayIndex = 3;
             this.columnHeaderFirewall.Text = "Firewall";
             // 
             // columnHeaderUptime
             // 
+            this.columnHeaderUptime.DisplayIndex = 4;
             this.columnHeaderUptime.Text = "Uptime";
-            // 
-            // columnHeaderDepth
-            // 
-            this.columnHeaderDepth.Text = "Depth";
             // 
             // columnHeaderProxied
             // 
+            this.columnHeaderProxied.DisplayIndex = 5;
             this.columnHeaderProxied.Text = "Proxied";
             // 
             // columnHeaderServers
             // 
+            this.columnHeaderServers.DisplayIndex = 6;
             this.columnHeaderServers.Text = "Servers";
             // 
-            // buttonControl
+            // StartButton
             // 
-            this.buttonControl.Location = new System.Drawing.Point(8, 8);
-            this.buttonControl.Name = "buttonControl";
-            this.buttonControl.Size = new System.Drawing.Size(75, 23);
-            this.buttonControl.TabIndex = 1;
-            this.buttonControl.Text = "Start";
-            this.buttonControl.Click += new System.EventHandler(this.buttonControl_Click);
+            this.StartButton.Location = new System.Drawing.Point(8, 8);
+            this.StartButton.Name = "StartButton";
+            this.StartButton.Size = new System.Drawing.Size(75, 23);
+            this.StartButton.TabIndex = 1;
+            this.StartButton.Text = "Start";
+            this.StartButton.Click += new System.EventHandler(this.StartButton_Click);
             // 
-            // buttonRefresh
+            // RefreshButton
             // 
-            this.buttonRefresh.Location = new System.Drawing.Point(96, 8);
-            this.buttonRefresh.Name = "buttonRefresh";
-            this.buttonRefresh.Size = new System.Drawing.Size(75, 23);
-            this.buttonRefresh.TabIndex = 2;
-            this.buttonRefresh.Text = "Refresh";
-            this.buttonRefresh.Click += new System.EventHandler(this.buttonRefresh_Click);
+            this.RefreshButton.Location = new System.Drawing.Point(96, 8);
+            this.RefreshButton.Name = "RefreshButton";
+            this.RefreshButton.Size = new System.Drawing.Size(75, 23);
+            this.RefreshButton.TabIndex = 2;
+            this.RefreshButton.Text = "Refresh";
+            this.RefreshButton.Click += new System.EventHandler(this.RefreshButton_Click);
             // 
-            // timerSecond
+            // SecondTimer
             // 
-            this.timerSecond.Enabled = true;
-            this.timerSecond.Interval = 1000;
-            this.timerSecond.Tick += new System.EventHandler(this.timerSecond_Tick);
+            this.SecondTimer.Enabled = true;
+            this.SecondTimer.Interval = 1000;
+            this.SecondTimer.Tick += new System.EventHandler(this.SecondTimer_Tick);
             // 
             // labelCount
             // 
@@ -207,14 +198,19 @@ namespace RiseOp.Interface.Tools
             this.labelCount.Size = new System.Drawing.Size(248, 16);
             this.labelCount.TabIndex = 3;
             // 
+            // columnHeaderBandwidth
+            // 
+            this.columnHeaderBandwidth.DisplayIndex = 7;
+            this.columnHeaderBandwidth.Text = "Bandwidth";
+            // 
             // CrawlerForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(696, 350);
             this.Controls.Add(this.labelCount);
-            this.Controls.Add(this.buttonRefresh);
-            this.Controls.Add(this.buttonControl);
-            this.Controls.Add(this.listViewNodes);
+            this.Controls.Add(this.RefreshButton);
+            this.Controls.Add(this.StartButton);
+            this.Controls.Add(this.NodeList);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "CrawlerForm";
             this.Text = "Crawler";
@@ -224,31 +220,30 @@ namespace RiseOp.Interface.Tools
 		}
 		#endregion
 
-		private void buttonControl_Click(object sender, System.EventArgs e)
+		private void StartButton_Click(object sender, System.EventArgs e)
 		{
-			if(buttonControl.Text == "Start")
+			if(StartButton.Text == "Start")
 			{
 				// copy all nodes from routing to crawl map
 				lock(Routing.BucketList)
-					foreach(DhtBucket bucket in Routing.BucketList)
-						foreach(DhtContact contact in bucket.ContactList)
-                            if (!CrawlMap.Contains(contact.UserID))
-                                CrawlMap.Add(contact.UserID, new CrawlNode(contact));
+					foreach(DhtContact contact in Routing.ContactMap.Values)
+                        if (!CrawlMap.ContainsKey(contact.RoutingID))
+                            CrawlMap[contact.RoutingID] = new CrawlNode(contact);
 			
 				Status = CrawlStatus.Active;
-				buttonControl.Text = "Pause";
+				StartButton.Text = "Pause";
 			}
 
-			else if(buttonControl.Text == "Pause")
+			else if(StartButton.Text == "Pause")
 			{
 				Status = CrawlStatus.Paused;
-				buttonControl.Text = "Resume";
+				StartButton.Text = "Resume";
 			}
 
-			else if(buttonControl.Text == "Resume")
+			else if(StartButton.Text == "Resume")
 			{
 				Status = CrawlStatus.Active;
-				buttonControl.Text = "Pause";
+				StartButton.Text = "Pause";
 			}
 		}
 
@@ -257,7 +252,7 @@ namespace RiseOp.Interface.Tools
             Network.GuiCrawler = null;
 		}
 
-		private void timerSecond_Tick(object sender, System.EventArgs e)
+		private void SecondTimer_Tick(object sender, System.EventArgs e)
 		{
 			if(Status != CrawlStatus.Active)
 				return;
@@ -275,31 +270,33 @@ namespace RiseOp.Interface.Tools
 			// Send Packets
 			int sendPackets = 20;
 
-			foreach(CrawlNode node in CrawlMap.Values)
+			foreach(CrawlNode nodeX in CrawlMap.Values)
 			{
+                // if async funcs called with nodeX, then they get reset with each loop, give node its own object
+                CrawlNode node = nodeX; 
+
 				// send crawl request
-				if( node.Ack == null && node.Attempts < 3 && DateTime.Now > node.NextTry)
+				if( node.Ack == null && node.Attempts < 3 && Core.TimeNow > node.NextTry)
 				{		
-					CrawlNode targetNode;
-					
-					if(node.LookupContacts)
-						targetNode = node; // send direct
+					CrawlNode targetNode = node.OpenConnection ? node : node.Proxy;
 
-					else
-						targetNode = node.Proxy; // else send through proxy
-
-                    Network.Send_CrawlRequest(targetNode.Contact);
-					
+                    Core.RunInCoreAsync(delegate()
+                    {
+                        Network.Send_CrawlRequest(targetNode.Contact, node.Contact);
+                    });
 					
 					sendPackets--;
 
 					node.Attempts++;
-					node.NextTry = DateTime.Now.AddSeconds(15);
+                    node.NextTry = Core.TimeNow.AddSeconds(15);
 				}
 
-				if(node.LookupContacts && !node.Searched)
+                if (node.OpenConnection && !node.Searched)
 				{
-                    Network.Searches.SendRequest(node.Contact, node.Contact.UserID + 1, 0, Network.Core.DhtServiceID, 0, null);
+                    Core.RunInCoreAsync(delegate()
+                    {
+                        Network.Searches.SendRequest(node.Contact, node.Contact.UserID + 1, 0, Core.DhtServiceID, 0, null);
+                    });
 
 					node.Searched = true;
 					sendPackets--;
@@ -310,76 +307,77 @@ namespace RiseOp.Interface.Tools
 			}
 		}
 
-		internal void AsyncSearchAck(SearchAck ack, G2ReceivedPacket packet)
+        internal void Receive_SearchAck(SearchAck ack, G2ReceivedPacket packet)
 		{
             DhtContact source = new DhtContact(ack.Source, packet.Source.IP);
 			
-			if( !CrawlMap.Contains(source.UserID) )
-				CrawlMap.Add(source.UserID, source);
+			if( !CrawlMap.ContainsKey(source.RoutingID) )
+                CrawlMap[source.RoutingID] = new CrawlNode(source);
 
 			foreach(DhtContact contact in ack.ContactList)
-				if( !CrawlMap.Contains(contact.UserID) )
-					CrawlMap.Add(contact.UserID, new CrawlNode(contact));
+                if (!CrawlMap.ContainsKey(contact.RoutingID))
+                    CrawlMap[contact.RoutingID] = new CrawlNode(contact);
 		}
 
-		internal void AsyncCrawlAck(CrawlAck ack, G2ReceivedPacket packet)
+		internal void  Receive_CrawlAck(CrawlAck ack, G2ReceivedPacket packet)
 		{
-			if( !CrawlMap.Contains(ack.Source.UserID) )
+            DhtContact source = new DhtContact(ack.Source, packet.Source.IP);
+
+            if (!CrawlMap.ContainsKey(source.RoutingID))
 				return;
 
-			CrawlNode node = (CrawlNode) CrawlMap[ack.Source.UserID];
+			CrawlNode node = CrawlMap[source.RoutingID];
 
 			node.Ack = ack;
 
+            foreach(DhtContact contact in ack.ProxyServers)
+                if (!CrawlMap.ContainsKey(contact.RoutingID))
+                    CrawlMap[contact.RoutingID] = new CrawlNode(contact);
 
-			foreach(DhtContact contact in ack.ProxyList)
-				if( !CrawlMap.Contains(contact.UserID) )
+			foreach(DhtContact contact in ack.ProxyClients)
+                if (!CrawlMap.ContainsKey(contact.RoutingID))
 				{
 					CrawlNode newNode = new CrawlNode(contact);
-					newNode.LookupContacts = false;
 					newNode.Proxy = node;
 
-					CrawlMap.Add(contact.UserID, newNode);
+                    CrawlMap[contact.RoutingID] = newNode;
 				}
+
+
 		}
 
-		private void buttonRefresh_Click(object sender, System.EventArgs e)
+		private void RefreshButton_Click(object sender, System.EventArgs e)
 		{
-			listViewNodes.BeginUpdate();
+			NodeList.BeginUpdate();
 
-			listViewNodes.Items.Clear();
+			NodeList.Items.Clear();
 
 			foreach(CrawlNode node in CrawlMap.Values)
 				if(node.Ack != null)
 				{
-					listViewNodes.Items.Add( new ListViewItem( new string[]
+					NodeList.Items.Add( new ListViewItem( new string[]
 					{
-								Utilities.IDtoBin(node.Contact.UserID),
+								Utilities.IDtoBin(node.Contact.RoutingID),
 								node.Contact.IP.ToString(),
-								node.Contact.ClientID.ToString(),
-								node.Contact.TcpPort.ToString() + " / " + node.Contact.UdpPort.ToString(),
 								node.Ack.Version,
 								(node.Ack.Source.Firewall).ToString(),
 								new TimeSpan(0, 0, 0, node.Ack.Uptime, 0).ToString(),
-								node.Ack.Depth.ToString(),
 								GetProxyIDs(true, node),
-								GetProxyIDs(false, node)
+								GetProxyIDs(false, node), 
+                                ""
 					}));
 				}
 
-			listViewNodes.EndUpdate();
+			NodeList.EndUpdate();
 		}
 
 		string GetProxyIDs(bool server, CrawlNode node)
 		{
-			if(server && node.Ack.Source.Firewall != FirewallType.Open)
-				return "";
 
-            if (!server && node.Ack.Source.Firewall == FirewallType.Open)
-				return "";
+            List<DhtContact> list = server ? node.Ack.ProxyClients : node.Ack.ProxyServers;
 
 			string idList = "";
-			foreach(DhtContact contact  in node.Ack.ProxyList)
+            foreach (DhtContact contact in list)
 				idList += contact.UserID + ", ";
 
 			if(idList.Length > 0)
@@ -407,7 +405,7 @@ namespace RiseOp.Interface.Tools
 			}
 
 			// Perform the sort with these new sort options.
-			listViewNodes.Sort();
+			NodeList.Sort();
 		}
 	}
 
@@ -418,18 +416,19 @@ namespace RiseOp.Interface.Tools
 
 		// crawl
 		internal CrawlAck  Ack;
-		internal int		 Attempts;
+		internal int	   Attempts;
 		internal DateTime  NextTry = new DateTime(0);
+
 		internal CrawlNode Proxy;
+        internal bool OpenConnection { get { return Proxy == null; } }
 
 		// routing
-		internal bool LookupContacts;
 		internal bool Searched;
+
 
 		internal CrawlNode(DhtContact contact)
 		{
 			Contact  = contact;
-			LookupContacts = true;
 		}
 	}
 

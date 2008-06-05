@@ -100,7 +100,7 @@ namespace RiseOp.Services.Location
         void Core_SecondTimer()
         {
             // global publish
-            if (Core.Firewall == FirewallType.Open && 
+            if ((Core.Firewall == FirewallType.Open || Core.UseGlobalProxies) && 
                 Core.GlobalNet != null && 
                 Core.GlobalNet.Responsive && 
                 Core.TimeNow > NextGlobalPublish)
@@ -485,6 +485,7 @@ namespace RiseOp.Services.Location
                 Core.OperationNet.Routing.Add(new DhtContact(location.Source, location.IP));
 
             // add global proxies (they would only be included in location packet if source was not directly connected to OP
+            // even if open add the GP because pinging them will let host know of an open node on the network to connect to
             foreach(DhtAddress server in location.TunnelServers)
                 Core.OperationNet.Routing.Add(new DhtContact(location.Source, location.IP, location.TunnelClient, server));
     

@@ -742,7 +742,11 @@ namespace RiseOp.Implementation
 
         internal void CheckGlobalProxyMode()
         {
-            // if blocked/NATed with connected to no op proxies, then we are in global proxy mode
+            // if blocked/NATed connected to global but not the op, then we are in global proxy mode
+            // global proxy mode removed once connection to op is established
+            // global proxies are published with location data so that communication can be tunneled
+            // hosts in global proxy mode are psuedo-open meaning they act similarly to open hosts in that 
+            // they are added to the routing table and they conduct search/store like an open node
 
             bool useProxies = ( Firewall != FirewallType.Open &&
                                 TimeNow > StartTime.AddSeconds(15) &&
@@ -758,9 +762,7 @@ namespace RiseOp.Implementation
 
             if (UseGlobalProxies)
             {
-                // socket will handle publishing after 15 secs
-
-                //crit how to republish GP loc
+                // socket will handle publishing after 15 secs, location timer handles re-publishing
             }
             else
             {

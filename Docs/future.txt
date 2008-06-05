@@ -71,6 +71,35 @@ web-node
 			webnode replies with hashes it is not caching
 			post to webnode the files cache is missing
 
+	ip-cache
+		in link info cache type (file/ip) is specified, password keys for each published
+		php encryption available
+
+	web node component
+		d/l web cache script
+		install on web server
+			setup admin password
+			gen encryption key
+			mode ip/files
+			storage/bandwidth maxes
+		open riseOp
+			activate web-cache component
+			add web-cache address/encrytion key
+			web-cache info is published in localsync? OR
+			publish webcache info at certain location on network?
+				so everyone can find web-caches
+				able to find new global web-caches if main cache goes down or is flooded
+			
+		other nodes
+			how is network notified of web-cache?
+			do nodes update cache directly with their ip?
+				web admin doesnt have to be online to work
+				
+			ask web-cache for ips on startup
+			
+			search requests asks web-cache
+				closest cache is searched first
+				implement multi-source during implementation of file cache
 
 server mode
 	increase prune object amounts accross all services
@@ -120,7 +149,8 @@ components
 		nodes post sql commands to database, sort of like mail, send, receive, ack, once processed into db
 		db entries peer reviewed at host (holder of db), db's can be replicated and hosted somewhere else, exported, imported
 		sql express backend? should work on phones as well
-	
+		cylinder icon
+		
 	audio 
 		speex bsd licensed audio codec
 		headphones/speakers, left side is lowers, right side is higher/adjacents	

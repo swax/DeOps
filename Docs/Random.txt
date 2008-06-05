@@ -151,6 +151,9 @@ selling points
 	we need organized crowds of people systematically and concertedly breaking the tethers on consumer technology
 		http://www.alternet.org/columnists/story/86205/    
 	
+	smart phones arent secure on corporate network
+		http://www.computerworld.com/action/article.do?command=viewArticleBasic&articleId=9091778
+	
 	Andy Tanenbaum: The problem is co-ordinating things. Projects like GNU, MINIX, or LINUX only hold together if one person is in charge. 
 	Linus Torvalds: Yes, coordination is a big problem, and I don't think linux will move away from me as "head surgeon" for some time..
 	

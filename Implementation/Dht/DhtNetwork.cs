@@ -391,7 +391,6 @@ namespace RiseOp.Implementation.Dht
             bool connected = (Routing.DhtEnabled && Routing.DhtResponsive) || 
                             TcpControl.ProxyServers.Count > 0 || TcpControl.ProxyClients.Count > 0;
 
-            //crit check here for global proxy flag (if globally proxied and in ping contact with remote?
 
             if (connected == Responsive)
                 return;
@@ -750,6 +749,9 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
+        // nodes in global proxy mode are psuedo-open, instead of udp they send tunneled packets
+        // tunnel packets include routing information to the global target as well as
+        // the encrytped operation packet embedded in the payload
         internal void SendTunnelPacket(DhtAddress contact, G2Packet embed)
         {
             Debug.Assert(contact.TunnelClient != null && contact.TunnelServer != null);
@@ -886,6 +888,7 @@ namespace RiseOp.Implementation.Dht
 
             // dont send back pong if received tunneled and no longer need to use global proxies
             // remote would only send tunneled ping if UseGlobalProxies published info on network
+            // let our global address expire from remote's routing table
             if (packet.Tunneled && !Core.UseGlobalProxies)
                 return;
 
@@ -1126,58 +1129,54 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
-        internal void Send_CrawlRequest(DhtAddress address)
+        internal void Send_CrawlRequest(DhtAddress address, DhtClient target)
         {
-            CrawlReq req = new CrawlReq();
+            CrawlRequest request = new CrawlRequest();
 
-            req.Source = GetLocalSource();
-            req.TargetID = address.UserID;
+            request.Target = target;
 
-            UdpControl.SendTo(address, req);
+            SendPacket(address, request);
         }
 
         internal void Receive_CrawlRequest(G2ReceivedPacket packet)
         {
-            CrawlReq req = CrawlReq.Decode(packet);
+            CrawlRequest request = CrawlRequest.Decode(packet);
 
-            // Not meant for local host, forward along
-            if (req.TargetID != Local.UserID)
+
+            if (Local.Equals(request.Target))
             {
-                // Forward to appropriate node
-                if (TcpControl.ProxyMap.ContainsKey(req.TargetID))
-                {
-                    /*TcpConnect connection = TcpControl.ConnectionMap[req.TargetID];
-
-                    // add so receiving host knows where to send response too
-                    req.FromAddress = packet.Source;
-
-                    connection.SendPacket(req);*/
-                    return;
-                }
-
-                return;
+                Send_CrawlAck(request, packet);
             }
 
+            // Forward to appropriate node
+            else
+            {
+                TcpConnect client = TcpControl.GetProxy(request.Target);
 
-            // Send Ack Reply
-            Send_CrawlAck(req, packet);
+                if (client != null)
+                {
+                    request.FromAddress = packet.Source; // add so receiving host knows where to send response too
 
+                    client.SendPacket(request);
+                }
+            }
         }
 
-        internal void Send_CrawlAck(CrawlReq req, G2ReceivedPacket packet)
+        internal void Send_CrawlAck(CrawlRequest req, G2ReceivedPacket packet)
         {
             CrawlAck ack = new CrawlAck();
 
             ack.Source  = GetLocalSource();
             ack.Version = System.Windows.Forms.Application.ProductVersion;
             ack.Uptime  = (Core.TimeNow - Core.StartTime).Seconds;
-            ack.Depth   = Routing.BucketList.Count;
 
-            // proxies as contact list, also need firewall type
-            lock (TcpControl.SocketList)
-                foreach (TcpConnect connection in TcpControl.SocketList)
-                    if (connection.State == TcpState.Connected && connection.Proxy != ProxyType.Unset)
-                        ack.ProxyList.Add(new DhtContact(connection, connection.RemoteIP));
+
+            foreach (TcpConnect connection in TcpControl.ProxyServers)
+                ack.ProxyServers.Add(new DhtContact(connection, connection.RemoteIP));
+
+            foreach (TcpConnect connection in TcpControl.ProxyClients)
+                ack.ProxyClients.Add(new DhtContact(connection, connection.RemoteIP));
+
 
             if (packet.ReceivedTcp)
             {
@@ -1185,7 +1184,7 @@ namespace RiseOp.Implementation.Dht
                 packet.Tcp.SendPacket(ack);
             }
             else
-                UdpControl.SendTo(packet.Source, ack);
+                SendPacket(packet.Source, ack);
         }
 
         internal void Receive_CrawlAck(G2ReceivedPacket packet)

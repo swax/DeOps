@@ -139,7 +139,9 @@ namespace RiseOp.Implementation.Transport
             {
                 if (Age == 5)
                 {
-                    Network.RudpControl.AnnounceProxy(this);
+                    // announce to rudp connections new proxy if blocked/nat, or using a global proxy
+                    if( !Network.IsGlobal || Core.UseGlobalProxies)
+                        Network.RudpControl.AnnounceProxy(this);
                 }
                 else if (Age == 15)
                 {

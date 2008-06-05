@@ -1,129 +1,112 @@
 
+manage button with icon (bow tie / glasses)
+	Settings, Invite, Tools | Sign In, Sign Off
+should be able to select project name in tree
+right click project name gives manage menu options
+use file cabinent for data icon
+use folder for storage (rename to Files)
+remove search lable, put search icon next to input box
+new profile icon
+side view
+	white search button
+	put manage menu in item list
+when home button is active, manage button is not
 
-test network
-	2 blocked hosts on op1, 1 open hsot on op2
-	2 dupe blocked hosts on op1, proxying through same open global node on op2
-	2 blocked hosts on op1, 2 open hosts on op2
-	full network 5 op1 blocked, 5 op2 open, op1 functional?
+new / join functionality
+invite button functionality
 
+how to open multiple intances and test in sim
+	support multiple networks
+	share global, open same instance
 
-make comment like, if GP is online, and open comes online then
-	open finds GP, pings GP through global nework
-	GP finds out about open, connects to it, and GP cache entry expires
-	dont reply to pings if GP is not active
+use sim with network
+	open node interface
+	select manage Sign In
+	or create new user with invite to test
+	select another user and load
+	Sim Interface shows networks a user has loaded Global/fire/fire/xyz.. etc.. alerts are network-alert
+	can test invites across multiple cores through the sim
+		replace instance with computer and make instance a network/service shell
 
+new splash image, new icon
+put images all in right services directories
 
-get ping globally proxied
-	if global proxy id > 0
-		encrypt network packet ping with destinations op key
-		encapsulate in tunnel packet, TO set to ProxyID
-		send over udp global to address
-		global proxy receies and forwards, adding FROM IP
-		blocked recieves tunneled packet
-			if came from another global proxied
-				source dht address = global net packet's userID/clientID (global proxy ID) and FROM (IP/Port)
-				op net packet's userID/clientID is the op source
-				
+Invites
+	interface 
+		tools menu (settings, invite, signoff, signon, transfers)
+		trust tool buttons to bottom corner panel that changes per selection
 		
-		packet source needs to contain IP/udp port/user ID/ 
+	single instance - balance resources across many dhts
+		ensure clicking on file / link opens new sign-on window
+		create shell class across services and network, OpInstance
+		create processing thread per network
+		use a packet outbound queue, similar to incoming one used in core thread
+			outbound packets throttled there over multiple networks
+		test functioning multiple nets in sim
 
-global proxying
-	entering / leaving global proxy mode
-		when to publish
-
-	need to publish on global, or rely on search forward from proxy (probably best)
-		dont replicate proxied global location, proxied host should publish on global net with increasing ttl
-
-	connect
-		search global
-		find proxied nodes locs
-		cant connect op, change to GP mode
-		publish global proxy address of self
-		try ping global proxied node locs already found
-		pong received, put address in routing
-		op network set to established
+	secret
+		not connected to global network
+		invite is passworded routing table IPs, opID, web caches
+		password is auto-generated to prevent weakness
+		riseop://secret/alpha-encoded
 		
-	global searach
-		finds global proxied (GP)
-		pings GP
-		pong from GP puts into routing table
+	private 
+		invitation packet encypted and stored on global network at invite ID with timeout
+		invite itself is invite ID/decyption key
+		passworded as well
+		riseop://private/alpha-encoded
+
+	public
+		riseop://networkname
+		opID is hashed network name
 		
-	if blocked/NATed with connected to no op proxies, then we are in global proxy mode
-		routing table pinged
-		searches go through global
-		comm routed through global
-		basically udp packets will be tagged for global addresses
-			
-	if in global proxy mode
-		global publish self at intervals
-	leave global proxy mode
-		remove global proxies from routing table
+	have default global network riseop://global as startup option
 		
-	hanndle
-		move iteratively routing, forwarding, ping/pong, search, store, comm
-
-	ensure if blocked nodes online, and an open node comes online
-		he finds blocked node locations
-		alerts pongs? blocked nodes signalling them to connect
-
-		add global locs to routing, ping regularly
-		ping will tell open node is online, will add to blocked's routing and blocked will connect
-		UseGlobalProxy is then a psuedo-open state in respect to the operation network
-			until true open finds them and they downgrade
-			
-	routing add default proven is false, only on pong is routing proven set to true
-		network only responsive if routing is proven
-		
-	dont respond to globally proxied pings, if not UseGlobalProxy (connected to op proxy)
-		causes global proxy locs in routing to expire
-		
-	locationData.Proxies if their global or not, not taken into account
-
-	locationData should always include global proxies if not open
-		on UseGlobalProxies add location global proxies to routing, so that connections maintained
-		ex test 2 blocked connected to 1 open on OpNet, and open node disconnecting, blocked should still be able to comm through global
-
-	networks of many natted should be able to be successfully operate through global net with min bw
-
-	have sim print warning in status if global proxy nodes exist in routing table, to ensure they're weeded out
-
-	ensure 2 global NAT udp hole punch with operation key
-
-after login show connecting screen
-	visual aid so people can watch the connection process, entertaining, embed in main panel?
-	show ring with global in middle and ring with op name in middle
-	show routing table nodes, and packets being sent
-	route nodes dark green, search nodes blue, show self red/orage/green, rudp sockets purple
-	visual, cool looking, shows user direct lack of centralization, most of functionality already implemented
+	16 byte salt beginning of op file is combined with password hash to decrypt op file
+	let user know safest way to send invite / password is over riseOp IM public or phone
 	
 
-testing		
-	test 2 op1 blocked, and 1 op2 open, and see if 2 op1s can communicate
-	
-	start recording test procedures for automated test system
-		staggard come online blocked then open, open then blocked, networks of blocked/open, nat/open, blocked/nat/open
-		each test uses profiles with fresh set
-		maybe a a list<testScenario> that is run through, results / warnings kept for each, can be run individually
-
-	test IMs, publishing, etc..
-	publishing / updting through 1 open, multiple blocked
-
-	fix crawler - make sure reports be, gonna need to crawl global regularly to audit at release
-		easily report percent of network that is NAT/Blocked -> export to csv
-		know really quickly if waaay to many nats/blocked
-
-	change established to CanRepublish? map out process
-	
-	support free 20mb of centrally hosted web cache so people with small groups can store their files and go offline
+Dealing with LANs
+	detect clients on LAN to connect to
+		add LAN broadcast ping interval to boostrap
+	implement upnp
+	both above need real world testing		
 
 	know diff between fw open on LAN and on internet
+	should simulate local net screwing up firewall settings and its effect on connecting with the outside	
+		10.0.0.0 - 10.255.255.255
+		172.16.0.0 - 172.31.255.255
+		192.168.0.0 - 192.168.255.255
+	if firewalled/NAT 
+		display in big letters forward TCP/UDP ports xxxx
+		by default set TCP/UDP ports equal
+	if can ping open sites ms/google/etc.. only change to fw open on connect from non-private IP
+
+global proxying
+	have sim print warning in status if global proxy nodes exist in routing table, to ensure they're weeded out
+	any way to replace published location with a new version?
+	replicating - after knowing all global data types (invites)
+	ensure 2 global proxied NATs udp hole punch rudp
+
+test network
+	global proxy
+		2 blocked hosts on op1, 1 open hsot on op2
+		2 dupe blocked hosts on op1, proxying through same open global node on op2
+		2 blocked hosts on op1, 2 open hosts on op2
+		full network 5 op1 blocked, 5 op2 open, op1 functional?
+		global proxy location entries expire once node connects to real network
+		2 global proxied online then open comes online, ensure all nodes set useGlobalProxies to false
+		2 blocked connected to 1 open on op, and open node disconnecting, blocked should global proxy
+
+	automated test system
+		automation script - load x hosts, type, timeouts, run, stop, pause, check status, etc..
+		maybe a a list<testScenario> that is run through, results / warnings kept for each, can be run individually
 
 next
 	use packetstream instead of protocl.writetofile	
 	put stream closing calls in finally block
 	delete PacketsFile.cs from svn
-	
-	global replicating
+	rename versionedcache in svn
 	
 	bandwidth limits / auditing
 		when bandwidth chart, figure out why bandwidth quadrupiles with 30% NATs
@@ -132,7 +115,9 @@ next
 test
 	debug places where searches etc.. are happening, when client knows its not connected
 	prevent searches from piling up in disconnected state
+	
 	combine responsive / established - might want to do with proxying to ensure stuff is published over proxy
+	change established to CanRepublish? map out process
 	
 	ensure search for lastest version of service doesnt get hung up on old versions and return prematurely
 	a superior 5 levels up, on other side of network, updating plan should reflect on lower on next location update
@@ -151,7 +136,7 @@ other
 	use last seen date in localSync - show day, not time
 	alert user of desyncs detected in localSync, maybe as news alert,
 		if local versions are newer than those specified in localSync
-	rename versionedcache in svn
+	
 	turn packet/error logging back on after tests - ensure mem usage at mim - let user right click turn logging on/off
 	
 	chat
@@ -162,6 +147,7 @@ other
 	publishing / pruing / re-publishing / replicating uplink requests
 	posts, outbound mail re-published on startup?
 	use common assist for posts/mail/uplinkReqs?
+	crawler - bandwidth, location storage load
 
 	nav bar work with loops?
 	fix vertical scroll bar in link/chat window once and for all
@@ -169,33 +155,23 @@ other
 	test clients with different local times, init random gmt offsets
 	graphics - darker invite, news icon update, take border off pacman guy
 
-	should simulate local net screwing up firewall settings and its effect on connecting with the outside	
-		10.0.0.0 - 10.255.255.255
-		172.16.0.0 - 172.31.255.255
-		192.168.0.0 - 192.168.255.255
-	if firewalled/NAT 
-		display in big letters forward TCP/UDP ports xxxx
-		by default set TCP/UDP ports equal
-
 
 spring release
-	global proxying
-	crawler
 	invitations
-	licensing, installer
 	auto-update
 	web caching ips/files - look at using EC2
 		run crawler once a day, upload highest uptime nodes to webcache site
+	licensing, installer
 	website
 	*** items from todo
 	31 crits
 	live locations/chat
 	network bandwidth limits - tracking in sim triggers node to start logging bw data
+	store caching
 	multisource downloading 
 		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
 		right click to cancel, increase/decrease priority
 	
-	store caching
 
 
 Interface
@@ -208,6 +184,13 @@ Interface
 		dont allow nav bar person switch on mail/chat components
 		leave join/project by clicking on project node, switching to project auto shows project node in bottom display
 	
+	connecting entertainment
+		visual aid so people can watch the connection process, entertaining, embed in main panel?
+		show ring with global in middle and ring with op name in middle
+		show routing table nodes, and packets being sent
+		route nodes dark green, search nodes blue, show self red/orage/green, rudp sockets purple
+		visual, cool looking, shows user direct lack of centralization, most of functionality already implemented
+		
 	Internal 
 		expand a little more (names associated with sessions/transfers/searches/publish)
 		browsing using nav bar needs to trigger searches 
@@ -422,52 +405,6 @@ Core
 			so local area can update for everyone on login to the network
 			storage, plans, profile - need latest fetched data of local area
 			location data needs to be stored when user is offline for this to work
-
-	connecting
-		security
-			level 1 - operation key
-			level 2 - secure routing (only routing to trust linked nodes)
-			level 3 - compartmentalization
-			level 4 - p2p comm links
-	
-		secret
-			prevent connection to global network
-			there needs to be stable points for invite to talk to
-			outstanding invites are accepted incoming encryption keys
-			   removing invite, removes key
-			similar to private, but contact address points directly to sender
-			file also passworded
-
-		private 
-			time-expire invite
-				(store encrypted opID at random position on global network)
-				invitation is riseop://network:<position/decrypt>
-				
-				prevents time expired from being exploited
-				   Invite file contains sender's address on the global network
-					Sender stores contact info at an invite ID address on the global network
-					Opening invite file connects to global network, and finds invite ID info if it exists
-						unencrypts to get senders location info, OpID, OpID only exposed if invite still published
-					Sender contacted by invitee, people can IM, sender can choose to authorize invite
-					Authorization sends OpID to new user
-					file passworded as well
-
-		public
-			opID is embedded in link riseop://network:opid
-			
-
-		alternate invitation packet - alphanumeric encoded
-			optional password encrypted - tell user to relay password over the phone
-			operation ID - for public / private this is enough to find network
-			web cache - for secret
-			IPs - of static nodes (optional)
-			starting new network easy from old network because secure IM established
-				msg members new riseop:// link and give password
-
-		detect clients on LAN to connect to
-			add LAN broadcast ping interval to boostrap
-		implement upnp
-		both above need real world testing
 
 	store caching 
 		keep track of when last result was sent

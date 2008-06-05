@@ -984,24 +984,21 @@ namespace RiseOp.Implementation.Protocol.Net
 		}
 	}
 
-    internal class CrawlReq : NetworkPacket
+    internal class CrawlRequest : NetworkPacket
 	{
-        const byte Packet_Source = 0x10;
-        const byte Packet_Target = 0x20;
-        const byte Packet_From   = 0x30;
+        const byte Packet_Target = 0x10;
 
 
-		internal DhtSource Source = new DhtSource();
-		internal UInt64 TargetID;
+		internal DhtClient Target;
+
 
 		internal override byte[] Encode(G2Protocol protocol)
 		{
             lock (protocol.WriteSection)
             {
-                G2Frame crwlr = protocol.WritePacket(null, NetworkPacket.CrawlRequest, null);
+                G2Frame request = protocol.WritePacket(null, NetworkPacket.CrawlRequest, null);
 
-                Source.WritePacket(protocol, crwlr, Packet_Source);
-                protocol.WritePacket(crwlr, Packet_Target, BitConverter.GetBytes(TargetID));
+                protocol.WritePacket(request, Packet_Target, Target.ToBytes());
 
                 // network packet
                 InternalData = protocol.WriteFinish();
@@ -1010,9 +1007,9 @@ namespace RiseOp.Implementation.Protocol.Net
             }
 		}
 
-		internal static CrawlReq Decode(G2ReceivedPacket packet)
+		internal static CrawlRequest Decode(G2ReceivedPacket packet)
 		{
-			CrawlReq crwlr = new CrawlReq();
+			CrawlRequest request = new CrawlRequest();
 
 			G2Header child = new G2Header(packet.Root.Data);
 
@@ -1023,17 +1020,14 @@ namespace RiseOp.Implementation.Protocol.Net
 
                 switch (child.Name)
                 {
-                    case Packet_Source:
-                        crwlr.Source = DhtSource.ReadPacket(child);
-                        break;
 
                     case Packet_Target:
-                        crwlr.TargetID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        request.Target = DhtClient.FromBytes(child.Data, child.PayloadPos);
                         break;
                 }
 			}
 
-			return crwlr;
+			return request;
 		}
 	}
 
@@ -1042,30 +1036,32 @@ namespace RiseOp.Implementation.Protocol.Net
         const byte Packet_Source   = 0x10;
         const byte Packet_Version = 0x20;
         const byte Packet_Uptime = 0x30;
-        const byte Packet_Depth = 0x40;
-        const byte Packet_Proxies = 0x50;
-
+        const byte Packet_ProxyServers = 0x50;
+        const byte Packet_ProxyClients = 0x60;
 
 		internal DhtSource	Source = new DhtSource();
 		internal string		Version;
-		internal int			Uptime;
-		internal int			Depth;
-        internal List<DhtContact> ProxyList = new List<DhtContact>();
+		internal int		Uptime;
+
+        internal List<DhtContact> ProxyServers = new List<DhtContact>();
+        internal List<DhtContact> ProxyClients = new List<DhtContact>();
 		
 
 		internal override byte[] Encode(G2Protocol protocol)
 		{
             lock (protocol.WriteSection)
             {
-                G2Frame crwla = protocol.WritePacket(null, NetworkPacket.CrawlAck, null);
+                G2Frame ack = protocol.WritePacket(null, NetworkPacket.CrawlAck, null);
 
-                Source.WritePacket(protocol, crwla, Packet_Source);
-                protocol.WritePacket(crwla, Packet_Version, UTF8Encoding.UTF8.GetBytes(Version));
-                protocol.WritePacket(crwla, Packet_Uptime, BitConverter.GetBytes(Uptime));
-                protocol.WritePacket(crwla, Packet_Depth, BitConverter.GetBytes(Depth));
+                Source.WritePacket(protocol, ack, Packet_Source);
+                protocol.WritePacket(ack, Packet_Version, UTF8Encoding.UTF8.GetBytes(Version));
+                protocol.WritePacket(ack, Packet_Uptime, BitConverter.GetBytes(Uptime));
+  
+                foreach (DhtContact proxy in ProxyServers)
+                    proxy.WritePacket(protocol, ack, Packet_ProxyServers);
 
-                foreach (DhtContact proxy in ProxyList)
-                    proxy.WritePacket(protocol, crwla, Packet_Proxies);
+                foreach (DhtContact proxy in ProxyClients)
+                    proxy.WritePacket(protocol, ack, Packet_ProxyClients);
 
                 // network packet
                 InternalData = protocol.WriteFinish();
@@ -1076,7 +1072,7 @@ namespace RiseOp.Implementation.Protocol.Net
 
 		internal static CrawlAck Decode(G2ReceivedPacket packet)
 		{
-			CrawlAck crwla = new CrawlAck();
+			CrawlAck ack = new CrawlAck();
 
 			G2Header child = new G2Header(packet.Root.Data);
 
@@ -1088,28 +1084,28 @@ namespace RiseOp.Implementation.Protocol.Net
                 switch (child.Name)
                 {
                     case Packet_Source:
-                        crwla.Source = DhtSource.ReadPacket(child);
+                        ack.Source = DhtSource.ReadPacket(child);
                         break;
 
                     case Packet_Version:
-                        crwla.Version = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        ack.Version = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Uptime:
-                        crwla.Uptime = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        ack.Uptime = BitConverter.ToInt32(child.Data, child.PayloadPos);
                         break;
 
-                    case Packet_Depth:
-                        crwla.Depth = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                    case Packet_ProxyServers:
+                        ack.ProxyServers.Add( DhtContact.ReadPacket(child));
                         break;
 
-                    case Packet_Proxies:
-                        crwla.ProxyList.Add( DhtContact.ReadPacket(child));
+                    case Packet_ProxyClients:
+                        ack.ProxyClients.Add(DhtContact.ReadPacket(child));
                         break;
                 }						
 			}
 
-			return crwla;
+			return ack;
 		}
 	}
 
