@@ -69,12 +69,12 @@ namespace RiseOp.Interface.Views
         }
 
         void Menu_Exit(object sender, EventArgs e)
-        {
+        {     
+            Tray.Visible = false;
+            Core.GuiTray = null;
+         
             if (Core.Sim == null)
-                Application.Exit();
-            else
-                Core.Sim.Internet.BringOffline(Core.Sim);
-
+                Core.Exit(); 
         }
     }
 }

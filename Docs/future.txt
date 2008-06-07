@@ -87,6 +87,7 @@ web-node
 			add web-cache address/encrytion key
 			web-cache info is published in localsync? OR
 			publish webcache info at certain location on network?
+				published to 3 equally spaced locs, nodes search 1 of 3 randomly for updates
 				so everyone can find web-caches
 				able to find new global web-caches if main cache goes down or is flooded
 			

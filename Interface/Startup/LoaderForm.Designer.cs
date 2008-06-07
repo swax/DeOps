@@ -1,6 +1,6 @@
 namespace RiseOp.Interface
 {
-    partial class LoaderForm
+    partial class LoginForm
     {
         /// <summary>
         /// Required designer variable.
@@ -28,15 +28,13 @@ namespace RiseOp.Interface
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LoaderForm));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LoginForm));
             this.label1 = new System.Windows.Forms.Label();
             this.LinkIdentity = new System.Windows.Forms.LinkLabel();
             this.label2 = new System.Windows.Forms.Label();
             this.TextPassword = new System.Windows.Forms.TextBox();
             this.ButtonLoad = new System.Windows.Forms.Button();
             this.ButtonExit = new System.Windows.Forms.Button();
-            this.TimerMain = new System.Windows.Forms.Timer(this.components);
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.LinkNew = new System.Windows.Forms.LinkLabel();
             this.LinkSearch = new System.Windows.Forms.LinkLabel();
@@ -112,12 +110,6 @@ namespace RiseOp.Interface
             this.ButtonExit.UseVisualStyleBackColor = true;
             this.ButtonExit.Click += new System.EventHandler(this.ButtonExit_Click);
             // 
-            // TimerMain
-            // 
-            this.TimerMain.Enabled = true;
-            this.TimerMain.Interval = 1000;
-            this.TimerMain.Tick += new System.EventHandler(this.TimerMain_Tick);
-            // 
             // pictureBox1
             // 
             this.pictureBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
@@ -171,7 +163,7 @@ namespace RiseOp.Interface
             this.EnterSimLink.Text = "Launch Sim";
             this.EnterSimLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.EnterSimLink_LinkClicked);
             // 
-            // LoaderForm
+            // LoginForm
             // 
             this.AcceptButton = this.ButtonLoad;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -193,7 +185,7 @@ namespace RiseOp.Interface
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Name = "LoaderForm";
+            this.Name = "LoginForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "RiseOp";
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
@@ -211,7 +203,6 @@ namespace RiseOp.Interface
         private System.Windows.Forms.TextBox TextPassword;
         private System.Windows.Forms.Button ButtonLoad;
         private System.Windows.Forms.Button ButtonExit;
-        private System.Windows.Forms.Timer TimerMain;
         private System.Windows.Forms.LinkLabel LinkNew;
         private System.Windows.Forms.LinkLabel LinkSearch;
         private System.Windows.Forms.LinkLabel EnterSimLink;

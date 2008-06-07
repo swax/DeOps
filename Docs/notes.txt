@@ -21,6 +21,12 @@ Threading
 		dont need to lock inside op stucture if only interface accesses it
 		when someone is editing/wring a new opPlan and a new plan gets loaded there wont be a conflict
 
+single instance
+	scenario user part of multiple public networks, or surfing public networks quickly
+	global network remains established across all, only one global net
+	prevent global net connection for each instance of riseOp
+	will all loaded cores managed by single instance, bandwidth can be managed more efficiently
+
 security
 	level 1 - operation key
 	level 2 - secure routing (only routing to trust linked nodes)

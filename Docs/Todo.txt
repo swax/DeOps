@@ -1,48 +1,31 @@
 
-manage button with icon (bow tie / glasses)
-	Settings, Invite, Tools | Sign In, Sign Off
-should be able to select project name in tree
-right click project name gives manage menu options
-use file cabinent for data icon
-use folder for storage (rename to Files)
-remove search lable, put search icon next to input box
-new profile icon
-side view
-	white search button
-	put manage menu in item list
-when home button is active, manage button is not
+move global net/core out into own context var
+share global net, remove references
+rename operation net to network
+move isglobal to core
+hook timer to global core
+thread issues now open between comm between op core and global core
 
+check global (called on core start / exit)
+	if public cores exist, sign into global
+	else destroy global context
+	
 new / join functionality
 invite button functionality
-
-how to open multiple intances and test in sim
-	support multiple networks
-	share global, open same instance
+warning if already signed into op from same path
+test mix of public / non-public networks
 
 use sim with network
-	open node interface
-	select manage Sign In
 	or create new user with invite to test
-	select another user and load
-	Sim Interface shows networks a user has loaded Global/fire/fire/xyz.. etc.. alerts are network-alert
 	can test invites across multiple cores through the sim
-		replace instance with computer and make instance a network/service shell
-
-new splash image, new icon
-put images all in right services directories
+		
 
 Invites
-	interface 
-		tools menu (settings, invite, signoff, signon, transfers)
-		trust tool buttons to bottom corner panel that changes per selection
-		
 	single instance - balance resources across many dhts
 		ensure clicking on file / link opens new sign-on window
-		create shell class across services and network, OpInstance
-		create processing thread per network
 		use a packet outbound queue, similar to incoming one used in core thread
 			outbound packets throttled there over multiple networks
-		test functioning multiple nets in sim
+			implement when bandwidth management is done
 
 	secret
 		not connected to global network
@@ -60,11 +43,17 @@ Invites
 		riseop://networkname
 		opID is hashed network name
 		
-	have default global network riseop://global as startup option
+	have default global network have unique ID so that no rise://name will conflict
 		
 	16 byte salt beginning of op file is combined with password hash to decrypt op file
 	let user know safest way to send invite / password is over riseOp IM public or phone
 	
+graphics
+	data, profile, files, bolder side search button
+	new splash image, new icon (trees)
+	plans (telescope) comm (?) data (?)
+	put images all in right services directories
+
 
 Dealing with LANs
 	detect clients on LAN to connect to
@@ -107,6 +96,8 @@ next
 	put stream closing calls in finally block
 	delete PacketsFile.cs from svn
 	rename versionedcache in svn
+	rename loader form to login form
+	tet build from fresh checkout
 	
 	bandwidth limits / auditing
 		when bandwidth chart, figure out why bandwidth quadrupiles with 30% NATs
@@ -127,6 +118,7 @@ test
 
 other
 	news message when connected / disconnected from op
+	if news area too small for update, scroll across
 	test32 nodes 3 lvls down disposing trust of adjacent link node
 	location signoff tag
 	assert in deconstructors that events are set back to null
@@ -158,7 +150,7 @@ other
 
 spring release
 	invitations
-	auto-update
+	auto-update, exception catching/reporting
 	web caching ips/files - look at using EC2
 		run crawler once a day, upload highest uptime nodes to webcache site
 	licensing, installer
@@ -182,8 +174,8 @@ Interface
 		unload tray icon on exit?
 		alphabetizize component menus, project button, nav bar, project nav drop down
 		dont allow nav bar person switch on mail/chat components
-		leave join/project by clicking on project node, switching to project auto shows project node in bottom display
-	
+		trust info box - options like trust, IM, mail, leave/join project
+		
 	connecting entertainment
 		visual aid so people can watch the connection process, entertaining, embed in main panel?
 		show ring with global in middle and ring with op name in middle

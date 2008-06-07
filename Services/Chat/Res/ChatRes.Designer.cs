@@ -74,6 +74,13 @@ namespace RiseOp.Services.Chat {
             }
         }
         
+        internal static System.Drawing.Bitmap invite {
+            get {
+                object obj = ResourceManager.GetObject("invite", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Bitmap yellowled {
             get {
                 object obj = ResourceManager.GetObject("yellowled", resourceCulture);

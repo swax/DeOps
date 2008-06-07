@@ -15,18 +15,24 @@ using RiseOp.Simulator;
 
 namespace RiseOp.Interface
 {
-    internal partial class LoaderForm : Form
+    internal partial class LoginForm : Form
     {
-        OpCore Core;
+        RiseOpContext Context;
 
-        internal LoaderForm(string[] args)
+
+        internal LoginForm(RiseOpContext context, string[] args)
         {
+            Context = context;
+
             InitializeComponent();
 
             RegisterType();
 
+            if (Context.Sim != null) // prevent sim recursion
+                EnterSimLink.Visible = false;    
+
             // if launched from .dop file
-            if (args.Length > 0 && args[0].IndexOf(".dop") != -1)
+            if (args != null && args.Length > 0 && args[0].IndexOf(".dop") != -1)
             {
                 if (IsInvite(args[0]))
                 {
@@ -127,12 +133,11 @@ namespace RiseOp.Interface
         {
             try
             {
-                Core = new OpCore(this, LinkIdentity.Text, TextPassword.Text);
+                OpCore core = new OpCore(Context, LinkIdentity.Text, TextPassword.Text);
 
-                Hide();
+                Context.ShowCore(core);
 
-                Core.GuiMain = new MainForm(Core);
-                Core.GuiMain.Show();
+                Close();
             }
             catch
             {
@@ -142,12 +147,6 @@ namespace RiseOp.Interface
             }
 
             TextPassword.Clear();
-        }
-
-        private void TimerMain_Tick(object sender, EventArgs e)
-        {
-            if (Core != null)
-                Core.SecondTimer();
         }
 
         private bool IsInvite(string path)
@@ -191,9 +190,8 @@ namespace RiseOp.Interface
 
         private void EnterSimLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            Hide();
-            SimForm sim = new SimForm();
-            sim.ShowDialog();
+            Context.ShowSimulator();
+            Close();
         }
     }
 }

@@ -34,6 +34,7 @@ namespace RiseOp.Interface
             this.CommandSplit = new System.Windows.Forms.SplitContainer();
             this.SideNavStrip = new System.Windows.Forms.ToolStrip();
             this.SideViewsButton = new System.Windows.Forms.ToolStripDropDownButton();
+            this.SideSearchButton = new System.Windows.Forms.ToolStripButton();
             this.SideNewsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.StatusBrowser = new System.Windows.Forms.WebBrowser();
             this.RightClickMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
@@ -47,15 +48,22 @@ namespace RiseOp.Interface
             this.InternalPanel = new System.Windows.Forms.Panel();
             this.TopToolStrip = new System.Windows.Forms.ToolStrip();
             this.HomeButton = new System.Windows.Forms.ToolStripButton();
-            this.HomeSparator = new System.Windows.Forms.ToolStripSeparator();
+            this.ManageButton = new System.Windows.Forms.ToolStripDropDownButton();
+            this.settingsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.inviteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
+            this.signOnToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.signOffToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ToolSeparator = new System.Windows.Forms.ToolStripSeparator();
             this.PlanButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.calanderToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.personalToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.CommButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.mailToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.chatToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripTextBox1 = new System.Windows.Forms.ToolStripTextBox();
-            this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
+            this.SearchButton = new System.Windows.Forms.ToolStripButton();
+            this.SearchBox = new System.Windows.Forms.ToolStripTextBox();
             this.DataButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.commonToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.personalToolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
@@ -68,7 +76,7 @@ namespace RiseOp.Interface
             this.LockButton = new System.Windows.Forms.ToolStripButton();
             this.TreeImageList = new System.Windows.Forms.ImageList(this.components);
             this.NewsTimer = new System.Windows.Forms.Timer(this.components);
-            CommandTree = new RiseOp.Services.Trust.LinkTree();
+            this.CommandTree = new RiseOp.Services.Trust.LinkTree();
             this.MainSplit.Panel1.SuspendLayout();
             this.MainSplit.Panel2.SuspendLayout();
             this.MainSplit.SuspendLayout();
@@ -100,7 +108,7 @@ namespace RiseOp.Interface
             this.MainSplit.Panel2.Controls.Add(this.NavStrip);
             this.MainSplit.Panel2.Controls.Add(this.InternalPanel);
             this.MainSplit.Panel2.Controls.Add(this.TopToolStrip);
-            this.MainSplit.Size = new System.Drawing.Size(674, 445);
+            this.MainSplit.Size = new System.Drawing.Size(706, 445);
             this.MainSplit.SplitterDistance = 171;
             this.MainSplit.TabIndex = 1;
             // 
@@ -125,7 +133,7 @@ namespace RiseOp.Interface
             this.CommandSplit.Panel2.Controls.Add(this.StatusBrowser);
             this.CommandSplit.Panel2.ForeColor = System.Drawing.SystemColors.ControlText;
             this.CommandSplit.Size = new System.Drawing.Size(171, 445);
-            this.CommandSplit.SplitterDistance = 277;
+            this.CommandSplit.SplitterDistance = 324;
             this.CommandSplit.TabIndex = 4;
             // 
             // SideNavStrip
@@ -134,6 +142,7 @@ namespace RiseOp.Interface
             this.SideNavStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.SideNavStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.SideViewsButton,
+            this.SideSearchButton,
             this.SideNewsButton});
             this.SideNavStrip.Location = new System.Drawing.Point(0, 0);
             this.SideNavStrip.Name = "SideNavStrip";
@@ -152,6 +161,17 @@ namespace RiseOp.Interface
             this.SideViewsButton.Size = new System.Drawing.Size(29, 22);
             this.SideViewsButton.Text = "Views";
             this.SideViewsButton.DropDownOpening += new System.EventHandler(this.SideViewsButton_DropDownOpening);
+            // 
+            // SideSearchButton
+            // 
+            this.SideSearchButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.SideSearchButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.SideSearchButton.Image = ((System.Drawing.Image)(resources.GetObject("SideSearchButton.Image")));
+            this.SideSearchButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.SideSearchButton.Name = "SideSearchButton";
+            this.SideSearchButton.Size = new System.Drawing.Size(23, 22);
+            this.SideSearchButton.Text = "toolStripButton1";
+            this.SideSearchButton.Click += new System.EventHandler(this.SideSearchButton_Click);
             // 
             // SideNewsButton
             // 
@@ -185,13 +205,13 @@ namespace RiseOp.Interface
             this.CommandTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.CommandTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandTree.ShowLines = true;
-            this.CommandTree.Size = new System.Drawing.Size(171, 249);
+            this.CommandTree.Size = new System.Drawing.Size(171, 296);
             this.CommandTree.SmallImageList = null;
             this.CommandTree.StateImageList = null;
             this.CommandTree.TabIndex = 0;
             this.CommandTree.Text = "treeListViewEx1";
-            this.CommandTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseDoubleClick);
             this.CommandTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseClick);
+            this.CommandTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseDoubleClick);
             this.CommandTree.SelectedItemChanged += new System.EventHandler(this.CommandTree_SelectedItemChanged);
             // 
             // StatusBrowser
@@ -203,11 +223,11 @@ namespace RiseOp.Interface
             this.StatusBrowser.Location = new System.Drawing.Point(0, 0);
             this.StatusBrowser.MinimumSize = new System.Drawing.Size(20, 20);
             this.StatusBrowser.Name = "StatusBrowser";
+            this.StatusBrowser.ScriptErrorsSuppressed = true;
             this.StatusBrowser.ScrollBarsEnabled = false;
-            this.StatusBrowser.Size = new System.Drawing.Size(171, 164);
+            this.StatusBrowser.Size = new System.Drawing.Size(171, 117);
             this.StatusBrowser.TabIndex = 0;
             this.StatusBrowser.WebBrowserShortcutsEnabled = false;
-            this.StatusBrowser.ScriptErrorsSuppressed = true;
             this.StatusBrowser.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.StatusBrowser_Navigating);
             // 
             // RightClickMenu
@@ -240,7 +260,7 @@ namespace RiseOp.Interface
             this.NavStrip.Name = "NavStrip";
             this.NavStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
             this.NavStrip.ShowItemToolTips = false;
-            this.NavStrip.Size = new System.Drawing.Size(499, 25);
+            this.NavStrip.Size = new System.Drawing.Size(531, 25);
             this.NavStrip.TabIndex = 3;
             this.NavStrip.Paint += new System.Windows.Forms.PaintEventHandler(this.NavStrip_Paint);
             this.NavStrip.MouseClick += new System.Windows.Forms.MouseEventHandler(this.NavStrip_MouseClick);
@@ -310,7 +330,7 @@ namespace RiseOp.Interface
             this.InternalPanel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.InternalPanel.Location = new System.Drawing.Point(0, 56);
             this.InternalPanel.Name = "InternalPanel";
-            this.InternalPanel.Size = new System.Drawing.Size(499, 389);
+            this.InternalPanel.Size = new System.Drawing.Size(531, 389);
             this.InternalPanel.TabIndex = 2;
             // 
             // TopToolStrip
@@ -318,16 +338,17 @@ namespace RiseOp.Interface
             this.TopToolStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.TopToolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.HomeButton,
-            this.HomeSparator,
+            this.ManageButton,
+            this.ToolSeparator,
             this.PlanButton,
             this.CommButton,
-            this.toolStripTextBox1,
-            this.toolStripLabel1,
+            this.SearchButton,
+            this.SearchBox,
             this.DataButton});
             this.TopToolStrip.Location = new System.Drawing.Point(0, 0);
             this.TopToolStrip.Name = "TopToolStrip";
             this.TopToolStrip.ShowItemToolTips = false;
-            this.TopToolStrip.Size = new System.Drawing.Size(499, 31);
+            this.TopToolStrip.Size = new System.Drawing.Size(531, 31);
             this.TopToolStrip.TabIndex = 0;
             this.TopToolStrip.Text = "MainToolstrip";
             // 
@@ -342,10 +363,60 @@ namespace RiseOp.Interface
             this.HomeButton.Text = "My Home";
             this.HomeButton.Click += new System.EventHandler(this.HomeButton_Click);
             // 
-            // HomeSparator
+            // ManageButton
             // 
-            this.HomeSparator.Name = "HomeSparator";
-            this.HomeSparator.Size = new System.Drawing.Size(6, 31);
+            this.ManageButton.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.settingsToolStripMenuItem,
+            this.inviteToolStripMenuItem,
+            this.toolsToolStripMenuItem,
+            this.toolStripMenuItem1,
+            this.signOnToolStripMenuItem,
+            this.signOffToolStripMenuItem});
+            this.ManageButton.Image = ((System.Drawing.Image)(resources.GetObject("ManageButton.Image")));
+            this.ManageButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.ManageButton.Name = "ManageButton";
+            this.ManageButton.Size = new System.Drawing.Size(74, 28);
+            this.ManageButton.Text = "Manage";
+            // 
+            // settingsToolStripMenuItem
+            // 
+            this.settingsToolStripMenuItem.Name = "settingsToolStripMenuItem";
+            this.settingsToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.settingsToolStripMenuItem.Text = "Settings";
+            // 
+            // inviteToolStripMenuItem
+            // 
+            this.inviteToolStripMenuItem.Name = "inviteToolStripMenuItem";
+            this.inviteToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.inviteToolStripMenuItem.Text = "Invite";
+            // 
+            // toolsToolStripMenuItem
+            // 
+            this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
+            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.toolsToolStripMenuItem.Text = "Tools";
+            // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(121, 6);
+            // 
+            // signOnToolStripMenuItem
+            // 
+            this.signOnToolStripMenuItem.Name = "signOnToolStripMenuItem";
+            this.signOnToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.signOnToolStripMenuItem.Text = "Sign On";
+            // 
+            // signOffToolStripMenuItem
+            // 
+            this.signOffToolStripMenuItem.Name = "signOffToolStripMenuItem";
+            this.signOffToolStripMenuItem.Size = new System.Drawing.Size(124, 22);
+            this.signOffToolStripMenuItem.Text = "Sign Off";
+            // 
+            // ToolSeparator
+            // 
+            this.ToolSeparator.Name = "ToolSeparator";
+            this.ToolSeparator.Size = new System.Drawing.Size(6, 31);
             // 
             // PlanButton
             // 
@@ -398,19 +469,21 @@ namespace RiseOp.Interface
             this.chatToolStripMenuItem.Size = new System.Drawing.Size(108, 22);
             this.chatToolStripMenuItem.Text = "Chat";
             // 
-            // toolStripTextBox1
+            // SearchButton
             // 
-            this.toolStripTextBox1.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.toolStripTextBox1.Name = "toolStripTextBox1";
-            this.toolStripTextBox1.Size = new System.Drawing.Size(100, 31);
+            this.SearchButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.SearchButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.SearchButton.Image = ((System.Drawing.Image)(resources.GetObject("SearchButton.Image")));
+            this.SearchButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.SearchButton.Name = "SearchButton";
+            this.SearchButton.Size = new System.Drawing.Size(23, 28);
+            this.SearchButton.Text = "toolStripButton1";
             // 
-            // toolStripLabel1
+            // SearchBox
             // 
-            this.toolStripLabel1.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.toolStripLabel1.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.toolStripLabel1.Name = "toolStripLabel1";
-            this.toolStripLabel1.Size = new System.Drawing.Size(46, 28);
-            this.toolStripLabel1.Text = "Search";
+            this.SearchBox.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.SearchBox.Name = "SearchBox";
+            this.SearchBox.Size = new System.Drawing.Size(100, 31);
             // 
             // DataButton
             // 
@@ -546,15 +619,15 @@ namespace RiseOp.Interface
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlLight;
-            this.ClientSize = new System.Drawing.Size(701, 445);
+            this.ClientSize = new System.Drawing.Size(733, 445);
             this.Controls.Add(this.MainSplit);
             this.Controls.Add(this.SideToolStrip);
             this.DoubleBuffered = true;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MainForm";
             this.Text = "RiseOp";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.Load += new System.EventHandler(this.MainForm_Load);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.MainSplit.Panel1.ResumeLayout(false);
             this.MainSplit.Panel2.ResumeLayout(false);
             this.MainSplit.Panel2.PerformLayout();
@@ -583,9 +656,8 @@ namespace RiseOp.Interface
         private System.Windows.Forms.ImageList TreeImageList;
         private System.Windows.Forms.ToolStrip TopToolStrip;
         private System.Windows.Forms.ToolStripButton HomeButton;
-        private System.Windows.Forms.ToolStripSeparator HomeSparator;
-        private System.Windows.Forms.ToolStripTextBox toolStripTextBox1;
-        private System.Windows.Forms.ToolStripLabel toolStripLabel1;
+        private System.Windows.Forms.ToolStripSeparator ToolSeparator;
+        private System.Windows.Forms.ToolStripTextBox SearchBox;
         private System.Windows.Forms.SplitContainer CommandSplit;
         private System.Windows.Forms.ToolStrip SideToolStrip;
         private System.Windows.Forms.ToolStripButton OperationButton;
@@ -618,5 +690,14 @@ namespace RiseOp.Interface
         private System.Windows.Forms.ToolStrip SideNavStrip;
         private System.Windows.Forms.ToolStripDropDownButton SideViewsButton;
         private System.Windows.Forms.ToolStripDropDownButton SideNewsButton;
+        private System.Windows.Forms.ToolStripDropDownButton ManageButton;
+        private System.Windows.Forms.ToolStripButton SearchButton;
+        private System.Windows.Forms.ToolStripMenuItem settingsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem inviteToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem signOnToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem signOffToolStripMenuItem;
+        private System.Windows.Forms.ToolStripButton SideSearchButton;
     }
 }

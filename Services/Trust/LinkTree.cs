@@ -774,14 +774,17 @@ namespace RiseOp.Services.Trust
         void LinkTree_SelectedItemChanged(object sender, EventArgs e)
         {
             foreach (TreeListNode node in SelectedNodes)
-                if (node.GetType() != typeof(LinkNode))
+            {
+                if (node.Text == "")
                     node.Selected = false;
-                else
+
+                if (node.GetType() == typeof(LinkNode))
                 {
                     LinkNode item = node as LinkNode;
                     Links.Research(item.Link.UserID, Project, true);
                     Core.Locations.Research(item.Link.UserID);
                 }
+            }
         }
 
         internal List<ulong> GetSelectedIDs()

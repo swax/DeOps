@@ -81,6 +81,13 @@ namespace RiseOp.Interface {
             }
         }
         
+        internal static System.Drawing.Bitmap manage {
+            get {
+                object obj = ResourceManager.GetObject("manage", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Bitmap news {
             get {
                 object obj = ResourceManager.GetObject("news", resourceCulture);
@@ -109,9 +116,23 @@ namespace RiseOp.Interface {
             }
         }
         
+        internal static System.Drawing.Bitmap settings {
+            get {
+                object obj = ResourceManager.GetObject("settings", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Bitmap star {
             get {
                 object obj = ResourceManager.GetObject("star", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap tools {
+            get {
+                object obj = ResourceManager.GetObject("tools", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

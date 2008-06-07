@@ -14,6 +14,7 @@ using RiseOp.Implementation.Dht;
 
 using RiseOp.Services;
 using RiseOp.Services.Trust;
+using RiseOp.Services.Chat;
 using RiseOp.Services.IM;
 using RiseOp.Services.Mail;
 using RiseOp.Services.Location;
@@ -209,10 +210,7 @@ namespace RiseOp.Interface
             }
 
             if (Core.Sim == null)
-            {
                 Core.Exit();
-                Application.Exit();
-            }
         }
 
         bool LockForm;
@@ -565,19 +563,11 @@ namespace RiseOp.Interface
             // project menu
             if (clicked == CommandTree.ProjectNode && e.Button == MouseButtons.Right)
             {
-                /*ContextMenu treeMenu = new ContextMenu();
+                ContextMenuStripEx manage = new ContextMenuStripEx();
 
-                treeMenu.MenuItems.Add(new MenuItem("Properties", new EventHandler(OnProjectProperties)));
+                FillManageMenu(manage.Items, CommandTree.Project);
 
-                if (CommandTree.Project != 0)
-                {
-                    if (Links.LocalLink.Projects.Contains(CommandTree.Project))
-                        treeMenu.MenuItems.Add(new MenuItem("Leave", new EventHandler(OnProjectLeave)));
-                    else
-                        treeMenu.MenuItems.Add(new MenuItem("Join", new EventHandler(OnProjectJoin)));
-                }
-
-                treeMenu.Show(CommandTree, e.Location);*/
+                manage.Show(CommandTree, e.Location);
 
                 return;
             }
@@ -668,6 +658,63 @@ namespace RiseOp.Interface
                 treeMenu.Show(CommandTree, e.Location);
         }
 
+#region Manage Menu
+
+        private void FillManageMenu(ToolStripItemCollection items, uint project)
+        {
+            items.Add("Settings", InterfaceRes.settings, ManageMenu_Settings);
+            items.Add("Invite", ChatRes.invite, ManageMenu_Invite);
+            items.Add("Tools", InterfaceRes.tools, ManageMenu_Tools);
+            items.Add(new ToolStripSeparator());
+
+            if (project != 0)
+            {
+                if(Trust.LocalTrust.Links.ContainsKey(project))
+                    items.Add("Leave Project", IMRes.redled, new EventHandler(OnProjectLeave));
+                else
+                    items.Add("Join Project", IMRes.greenled, new EventHandler(OnProjectJoin));
+            }
+            else
+            {
+                items.Add("Sign On", IMRes.greenled, ManageMenu_SignOn);
+                items.Add("Sign Off", IMRes.redled, ManageMenu_SignOff);
+            }
+        }
+
+        void ManageMenu_Settings(object sender, EventArgs e)
+        {
+
+        }
+
+        void ManageMenu_Invite(object sender, EventArgs e)
+        {
+
+        }
+
+        void ManageMenu_Tools(object sender, EventArgs e)
+        {
+
+        }
+
+        void ManageMenu_SignOn(object sender, EventArgs e)
+        {
+            Core.Context.ShowLogin(null);
+        }
+
+        void ManageMenu_SignOff(object sender, EventArgs e)
+        {
+            Core.Context.ShowLogin(null);
+            Close();
+        }
+
+
+#endregion
+
+
+        
+
+
+
         void TreeMenu_Select(object sender, EventArgs e)
         {
 
@@ -742,8 +789,11 @@ namespace RiseOp.Interface
 
 
             // setup toolbar with menu items for user
-            HomeButton.Visible = id != Core.UserID;
-            HomeSparator.Visible = HomeButton.Visible;
+            HomeButton.Visible = (id != Core.UserID);
+            ManageButton.Visible = (id == Core.UserID);
+
+            ManageButton.DropDownItems.Clear();
+            FillManageMenu(ManageButton.DropDownItems, 0);
 
             PlanButton.DropDownItems.Clear();
             CommButton.DropDownItems.Clear();
@@ -1226,6 +1276,8 @@ namespace RiseOp.Interface
             ResumeLayout();
         }
 
+        #region News
+
         private void NewsTimer_Tick(object sender, EventArgs e)
         {
             if (NewsPending.Count == 0)
@@ -1369,7 +1421,7 @@ namespace RiseOp.Interface
 
         private void SideModeStrip_Paint(object sender, PaintEventArgs e)
         {
-            PaintNewsStrip(e, SideViewsButton, SideNewsButton);   
+            PaintNewsStrip(e, SideViewsButton, SideNewsButton);
         }
 
         void PaintNewsStrip(PaintEventArgs e, ToolStripItem leftButton, ToolStripItem rightButton)
@@ -1404,7 +1456,7 @@ namespace RiseOp.Interface
 
             NewsArea = new Rectangle(x, 5, reqWidth, 9);
         }
-      
+
         private void NavStrip_MouseMove(object sender, MouseEventArgs e)
         {
             NewsMouseMove(e);
@@ -1444,17 +1496,24 @@ namespace RiseOp.Interface
             }
         }
 
+#endregion
+
         private void SideViewsButton_DropDownOpening(object sender, EventArgs e)
         {
             SideViewsButton.DropDownItems.Clear();
 
+            // Manage
+            ToolStripMenuItem manage = new ToolStripMenuItem("Manage", InterfaceRes.manage);
+            FillManageMenu(manage.DropDownItems, 0);
+            SideViewsButton.DropDownItems.Add(manage);
+            SideViewsButton.DropDownItems.Add(new ToolStripSeparator());
 
             // add command views
             AddSideViewMenus(SideViewsButton.DropDownItems, 0);
 
             // add project views
             if(Trust.LocalTrust.Links.Count > 1)
-                SideViewsButton.DropDownItems.Add("-");
+                SideViewsButton.DropDownItems.Add(new ToolStripSeparator());
 
             foreach(uint id in Trust.LocalTrust.Links.Keys )
                 if(id != 0 && Trust.ProjectNames.SafeContainsKey(id))
@@ -1463,6 +1522,7 @@ namespace RiseOp.Interface
                     AddSideViewMenus(projectItem.DropDownItems, id);
                     SideViewsButton.DropDownItems.Add(projectItem);
                 }
+
         }
 
         private void AddSideViewMenus(ToolStripItemCollection collection, uint project)
@@ -1501,6 +1561,11 @@ namespace RiseOp.Interface
             collection.Add(plansItem);
             collection.Add(commItem);
             collection.Add(dataItem);
+        }
+
+        private void SideSearchButton_Click(object sender, EventArgs e)
+        {
+
         }
 
     }

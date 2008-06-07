@@ -138,21 +138,21 @@ namespace RiseOp.Simulator
             TransferPoints.Clear();
             Dictionary<ulong, DhtNetwork> networks = new Dictionary<ulong, DhtNetwork>();
 
-            foreach (SimInstance instance in Sim.Online)
-                if (instance.Core != null)
+            foreach (SimInstance instance in Sim.Instances)
+                foreach(OpCore core in instance.Context.Cores)
                 {
                     DhtNetwork network = null;
                     
                     if(OpID == 0)
-                        network = instance.Core.GlobalNet;
+                        network = core.GlobalNet;
                     
-                    else if(OpID == instance.Core.OperationNet.OpID)
-                        network = instance.Core.OperationNet;
+                    else if(OpID == core.OperationNet.OpID)
+                        network = core.OperationNet;
 
 
                     if (network != null)
                     {
-                        int nodeRadius = (instance.Core.Firewall == FirewallType.Open) ? maxRadius - 30 : maxRadius;
+                        int nodeRadius = (core.Firewall == FirewallType.Open) ? maxRadius - 30 : maxRadius;
 
                         NodePoints[network.Local.UserID] = GetCircumPoint(centerPoint, nodeRadius, IDto32(network.Local.UserID));
 
@@ -160,9 +160,9 @@ namespace RiseOp.Simulator
 
                         if (TrackHash != null)
                         {
-                            if (IsTracked(instance.Core))
+                            if (IsTracked(core))
                                 TrackPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.Local.UserID)));
-                            else if (IsTransferring(instance.Core))
+                            else if (IsTransferring(core))
                                 TransferPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.Local.UserID)));
                         }
                     }
@@ -573,11 +573,11 @@ namespace RiseOp.Simulator
                     {
                         string name = "Unknown";
 
-                        foreach (SimInstance instance in Sim.Online)
-                            if (instance.Core != null)
-                                if (instance.Core.UserID == id || (instance.Core.GlobalNet != null && instance.Core.GlobalNet.Local.UserID == id))
+                        foreach (SimInstance instance in Sim.Instances)
+                            foreach(OpCore core in instance.Context.Cores)
+                                if (core.UserID == id || (core.GlobalNet != null && core.GlobalNet.Local.UserID == id))
                                 {
-                                    name = instance.Core.User.Settings.ScreenName;
+                                    name = core.User.Settings.ScreenName;
                                     break;
                                 }
 

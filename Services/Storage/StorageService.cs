@@ -250,10 +250,10 @@ namespace RiseOp.Services.Storage
             List<MenuItemInfo> menus = new List<MenuItemInfo>();
 
             if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Data/Storage", StorageRes.Icon, new EventHandler(Menu_View)));
+                menus.Add(new MenuItemInfo("Data/Files", StorageRes.Icon, new EventHandler(Menu_View)));
 
             if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Storage", StorageRes.Icon, new EventHandler(Menu_View)));
+                menus.Add(new MenuItemInfo("Files", StorageRes.Icon, new EventHandler(Menu_View)));
 
 
             return menus;

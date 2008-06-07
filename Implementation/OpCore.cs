@@ -54,7 +54,7 @@ namespace RiseOp.Implementation
 	internal class OpCore
 	{
         // super-classes
-        internal LoaderForm  Loader;
+        internal RiseOpContext Context;
         internal SimInstance Sim;
 
         // sub-classes
@@ -120,22 +120,11 @@ namespace RiseOp.Implementation
 
 
 
-        internal OpCore(LoaderForm loader, string path, string pass)
+        internal OpCore(RiseOpContext context, string path, string pass)
         {
-            Loader = loader;
+            Context = context;
+            Sim = context.Sim;
 
-            Init(path, pass);
-        }
-
-        internal OpCore(SimInstance sim, string path, string pass)
-        {
-            Sim = sim;
-
-            Init(path, pass);
-        }
-
-        void Init(string path, string pass)
-        {
             StartTime = TimeNow;
             NextSaveCache = TimeNow.AddMinutes(1);
             MinutePoint = RndGen.Next(2, 59);
@@ -183,9 +172,6 @@ namespace RiseOp.Implementation
             AddService(new StorageService(this));
 
             
-
-
-
             CoreThread = new Thread(RunCore);
             
             if (Sim == null || Sim.Internet.TestCoreThread)
@@ -671,6 +657,8 @@ namespace RiseOp.Implementation
                 service.Dispose();
 
             ServiceMap.Clear();
+
+            Context.CoreExited(this);
         }
 
 

@@ -517,10 +517,10 @@ namespace RiseOp.Services.Plan
             Slide_EndTick = EndTick;
 
             if (LeftArrowPressed)
-                MoveSlider(4);
+                MoveSlider(8);
 
             if (RightArrowPressed)
-                MoveSlider(-4);
+                MoveSlider(-8);
         }
     }
 }

@@ -43,19 +43,21 @@ namespace RiseOp.Interface.Tools
             // find Dht id or user or operation
             if (RadioUser.Checked)
                 foreach (SimInstance instance in Sim.Instances)
-                    if (instance.Core.User.Settings.ScreenName == TextSearch.Text)
-                    {
-                        TargetID = Network.IsGlobal ? instance.Core.GlobalNet.Local.UserID : instance.Core.OperationNet.Local.UserID;
-                        break;
-                    }
+                    foreach(OpCore core in instance.Context.Cores)
+                        if (core.User.Settings.ScreenName == TextSearch.Text)
+                        {
+                            TargetID = Network.IsGlobal ? core.GlobalNet.Local.UserID : core.OperationNet.Local.UserID;
+                            break;
+                        }
             
             if(RadioOp.Checked)
                 foreach (SimInstance instance in Sim.Instances)
-                    if (instance.Core.User.Settings.Operation == TextSearch.Text)
-                    {
-                        TargetID = instance.Core.OperationNet.OpID;
-                        break;
-                    }
+                    foreach (OpCore core in instance.Context.Cores)
+                        if (core.User.Settings.Operation == TextSearch.Text)
+                        {
+                            TargetID = core.OperationNet.OpID;
+                            break;
+                        }
 
             if (TargetID == 0)
             {

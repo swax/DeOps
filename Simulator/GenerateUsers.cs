@@ -115,8 +115,9 @@ namespace RiseOp.Simulator
                 string filename = OpNames[index] + " - " + name;
                 string path = OutputFolderLink.Text + Path.DirectorySeparatorChar + filename + Path.DirectorySeparatorChar + filename + ".dop";
                 Directory.CreateDirectory(OutputFolderLink.Text + Path.DirectorySeparatorChar + filename);
+                string password = name.Split(' ')[0].ToLower(); // lower case first name is password
 
-                Identity ident = new Identity(path, name, Protocol);
+                Identity ident = new Identity(path, password, Protocol);
 
                 ident.Settings.Operation = OpNames[index];
                 ident.Settings.ScreenName = name;

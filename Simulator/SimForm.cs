@@ -135,7 +135,7 @@ namespace RiseOp.Simulator
                 string[] paths = Directory.GetFiles(dir, "*.dop");
 
                 foreach (string path in paths)
-                    Sim.AddInstance(path);
+                    Sim.StartInstance(path);
 
                 LoadProgress.Value = LoadProgress.Value + 1;
                 Application.DoEvents();
@@ -149,7 +149,8 @@ namespace RiseOp.Simulator
             Sim.Pause();
 
             foreach (SimInstance instance in Sim.Instances)
-                instance.Core.User.Save();
+                foreach(OpCore core in instance.Context.Cores)
+                    core.User.Save();
 
             MessageBox.Show(this, "Nodes Saved");
         }
@@ -179,15 +180,18 @@ namespace RiseOp.Simulator
             // add
             if (type == InstanceChangeType.Add)
             {
-                listInstances.Items.Add(new ListInstanceItem(instance));
+                AddItem(instance);
             }
 
             // refresh
             else if (type == InstanceChangeType.Refresh)
             {
                 listInstances.Items.Clear();
-                foreach(SimInstance inst in Sim.Instances)
-                    listInstances.Items.Add(new ListInstanceItem(inst));
+
+                foreach (SimInstance inst in Sim.Instances)
+                    AddItem(inst);
+
+                LabelInstances.Text = Sim.Instances.Count.ToString() + " Instances";
             }
 
             // update
@@ -211,6 +215,15 @@ namespace RiseOp.Simulator
                         break;
                     }
             }
+        }
+
+        private void AddItem(SimInstance instance)
+        {
+            foreach (OpCore core in instance.Context.Cores)
+                listInstances.Items.Add(new ListInstanceItem(core));
+
+            if (instance.Context.Cores.Count == 0)
+                listInstances.Items.Add(new ListInstanceItem(instance));
         }
 
         DateTime LastSimTime = new DateTime(2006, 1, 1, 0, 0, 0);
@@ -288,8 +301,8 @@ namespace RiseOp.Simulator
 
             ContextMenu menu = new ContextMenu();
 
-            if(item.Instance.Core == null)
-                menu.MenuItems.Add(new MenuItem("Bring Online", new EventHandler(Click_Connect)));
+            if(item.Core == null)
+                menu.MenuItems.Add(new MenuItem("Login", new EventHandler(Click_Connect)));
             else
             {
                 MenuItem global = new MenuItem("Global");
@@ -317,7 +330,7 @@ namespace RiseOp.Simulator
                 menu.MenuItems.Add(firewall);
                 menu.MenuItems.Add(new MenuItem("Console", new EventHandler(Click_Console)));
                 menu.MenuItems.Add(new MenuItem("-"));
-                menu.MenuItems.Add(new MenuItem("Bring Offline", new EventHandler(Click_Disconnect)));
+                menu.MenuItems.Add(new MenuItem("Logout", new EventHandler(Click_Disconnect)));
             }
 
             menu.Show(listInstances, e.Location);
@@ -332,10 +345,13 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                OpCore core = item.Instance.Core;
+                OpCore core = item.Core;
 
                 if (core == null)
+                {
+                    item.Instance.Context.ShowLogin(null);
                     return;
+                }
 
                 if (core.GuiMain == null)
                     core.GuiMain = new MainForm(core);
@@ -376,7 +392,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                OpCore core = item.Instance.Core;
+                OpCore core = item.Core;
 
                 if (core.GuiConsole == null)
                     core.GuiConsole = new ConsoleForm(core);
@@ -390,7 +406,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                OpCore core = item.Instance.Core;
+                OpCore core = item.Core;
 
                 
                 if (core.GuiInternal == null)
@@ -405,7 +421,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                OpCore core = item.Instance.Core;
+                OpCore core = item.Core;
 
                 TransferView view = new TransferView(core.Transfers);
                 view.Show(this);
@@ -416,7 +432,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                OpCore core = item.Instance.Core;
+                OpCore core = item.Core;
 
                 DhtNetwork network = core.GlobalNet;
 
@@ -432,7 +448,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                OpCore core = item.Instance.Core;
+                OpCore core = item.Core;
 
                 DhtNetwork network = core.GlobalNet;
 
@@ -448,7 +464,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                OpCore core = item.Instance.Core;
+                OpCore core = item.Core;
 
                 DhtNetwork network = core.GlobalNet;
 
@@ -464,7 +480,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                SearchForm form = new SearchForm("Global", this, item.Instance.Core.GlobalNet);
+                SearchForm form = new SearchForm("Global", this, item.Core.GlobalNet);
 
                 form.Show();
             }
@@ -474,7 +490,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                OpCore core = item.Instance.Core;
+                OpCore core = item.Core;
 
                 DhtNetwork network = core.OperationNet;
 
@@ -490,7 +506,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                OpCore core = item.Instance.Core;
+                OpCore core = item.Core;
 
                 DhtNetwork network = core.OperationNet;
 
@@ -506,7 +522,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                OpCore core = item.Instance.Core;
+                OpCore core = item.Core;
 
                 DhtNetwork network = core.OperationNet;
 
@@ -522,7 +538,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                SearchForm form = new SearchForm("Operation", this, item.Instance.Core.OperationNet);
+                SearchForm form = new SearchForm("Operation", this, item.Core.OperationNet);
                 form.Show();
             }
         }
@@ -530,15 +546,22 @@ namespace RiseOp.Simulator
         private void Click_Connect(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
-                if(item.Instance.Core == null)
-                    Sim.BringOnline(item.Instance);
+                if(item.Core == null)
+                    Sim.Login(item.Instance);
+
+            OnInstanceChange(null, InstanceChangeType.Refresh);
         }
 
         private void Click_Disconnect(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
-                if(item.Instance.Core != null)
-                    Sim.BringOffline(item.Instance);
+                if (item.Core != null)
+                {
+                    OpCore core = item.Core;
+                    item.Core = null; // remove list item reference
+
+                    Sim.Logout(core);
+                }
         }
 
         private void listInstances_ColumnClick(object sender, ColumnClickEventArgs e)
@@ -565,11 +588,12 @@ namespace RiseOp.Simulator
 
         private void LinkUpdate_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            lock(Sim.Instances)
-                foreach (SimInstance instance in Sim.Instances)
-                    OnInstanceChange(instance, InstanceChangeType.Update);
 
-            LabelInstances.Text = Sim.Instances.Count.ToString() + " Instances";
+            OnInstanceChange(null, InstanceChangeType.Refresh);
+
+            //lock(Sim.Instances)
+            //    foreach (SimInstance instance in Sim.Instances)
+            //        OnInstanceChange(instance, InstanceChangeType.Update);
         }
 
         private void ViewMenu_DropDownOpening(object sender, EventArgs e)
@@ -697,10 +721,20 @@ namespace RiseOp.Simulator
     internal class ListInstanceItem : ListViewItem
     {
         internal SimInstance Instance;
+        internal OpCore Core;
 
         internal ListInstanceItem(SimInstance instance)
         {
+            // empty context
             Instance = instance;
+
+            Refresh();
+        }
+
+        internal ListInstanceItem(OpCore core)
+        {
+            Core = core;
+            Instance = core.Sim;
 
             Refresh();
         }
@@ -712,9 +746,9 @@ namespace RiseOp.Simulator
             while (SubItems.Count < SUBITEM_COUNT)
                 SubItems.Add("");
 
-            if (Instance.Core == null)
+            if (Core == null)
             {
-                Text = Path.GetFileNameWithoutExtension(Instance.Path);
+                Text = "Login: " + Path.GetFileNameWithoutExtension(Instance.Path);
                 ForeColor = Color.Gray;
 
                 SubItems[1].Text = ""; SubItems[2].Text = ""; SubItems[3].Text = ""; SubItems[4].Text = "";
@@ -724,7 +758,7 @@ namespace RiseOp.Simulator
             }
 
 
-            Text = Instance.Core.User.Settings.ScreenName;
+            Text = Core.User.Settings.ScreenName;
             ForeColor = Color.Black;
             
             // 0 user
@@ -741,47 +775,47 @@ namespace RiseOp.Simulator
             string alerts = "";
             
             // firewall incorrect
-            if (Instance.RealFirewall != Instance.Core.Firewall)
+            if (Instance.RealFirewall != Core.Firewall)
                 alerts += "Firewall, ";
 
             // ip incorrect
-            if (Instance.Core.LocalIP != null && !Instance.RealIP.Equals(Instance.Core.LocalIP))
+            if (Core.LocalIP != null && !Instance.RealIP.Equals(Core.LocalIP))
                 alerts += "IP Mismatch, ";
 
             // routing unresponsive global/op
-            if(Instance.Core.GlobalNet != null)
-                if(!Instance.Core.GlobalNet.Responsive)
+            if(Core.GlobalNet != null)
+                if(!Core.GlobalNet.Responsive)
                     alerts += "Global Routing, ";
 
-            if (!Instance.Core.OperationNet.Responsive)
+            if (!Core.OperationNet.Responsive)
                 alerts += "Op Routing, ";
 
             // not proxied global/op
             if (Instance.RealFirewall != FirewallType.Open)
             {
-                if (Instance.Core.GlobalNet != null)
-                    if (Instance.Core.GlobalNet.TcpControl.ProxyMap.Count == 0)
+                if (Core.GlobalNet != null)
+                    if (Core.GlobalNet.TcpControl.ProxyMap.Count == 0)
                         alerts += "Global Proxy, ";
 
-                if (Instance.Core.OperationNet.TcpControl.ProxyMap.Count == 0)
+                if (Core.OperationNet.TcpControl.ProxyMap.Count == 0)
                     alerts += "Op Proxy, ";
             }
 
             // locations
-            if (Instance.Core.Locations.LocationMap.SafeCount <= 1)
+            if (Core.Locations.LocationMap.SafeCount <= 1)
                 alerts += "Locs, ";
 
             
-            SubItems[1].Text = Instance.Core.User.Settings.Operation;
-            SubItems[2].Text = Utilities.IDtoBin(Instance.Core.OperationNet.Local.UserID);
-            SubItems[3].Text = Instance.RealIP.ToString() + "/" + Instance.Core.OperationNet.Local.ClientID.ToString(); 
+            SubItems[1].Text = Core.User.Settings.Operation;
+            SubItems[2].Text = Utilities.IDtoBin(Core.OperationNet.Local.UserID);
+            SubItems[3].Text = Instance.RealIP.ToString() + "/" + Core.OperationNet.Local.ClientID.ToString();
             SubItems[4].Text = Instance.RealFirewall.ToString();
             SubItems[5].Text = alerts;
 
-            if(Instance.Core.GlobalNet != null)
+            if(Core.GlobalNet != null)
             {
-                SubItems[6].Text = ProxySummary(Instance.Core.GlobalNet.TcpControl);
-                SubItems[7].Text = NotesSummary(Instance.Core);
+                SubItems[6].Text = ProxySummary(Core.GlobalNet.TcpControl);
+                SubItems[7].Text = NotesSummary();
             }
 
             SubItems[8].Text = Instance.BytesRecvd.ToString() + " in / " + Instance.BytesSent.ToString() + " out";
@@ -795,26 +829,26 @@ namespace RiseOp.Simulator
                 foreach(TcpConnect connect in control.SocketList)
                     if(connect.State == TcpState.Connected)
                         if (connect.Proxy == ProxyType.ClientBlocked || connect.Proxy == ProxyType.ClientNAT)
-                            if(Instance.Internet.UserNames.ContainsKey(connect.UserID))
+                            if (Instance.Internet.UserNames.ContainsKey(connect.UserID))
                                 summary.Append(Instance.Internet.UserNames[connect.UserID] + ", ");
 
             return summary.ToString();
         }
 
-        private string NotesSummary(OpCore core)
+        private string NotesSummary()
         {
             //crit change store to other column at end total searches and transfers to detect backlogs
 
 
             StringBuilder summary = new StringBuilder();
 
-            summary.Append(core.Links.TrustMap.SafeCount.ToString() + " links, ");
+            summary.Append(Core.Links.TrustMap.SafeCount.ToString() + " links, ");
 
-            summary.Append(core.Locations.LocationMap.SafeCount.ToString() + " locs, ");
+            summary.Append(Core.Locations.LocationMap.SafeCount.ToString() + " locs, ");
 
-            summary.Append(core.OperationNet.Searches.Pending.Count.ToString() + " searches, ");
+            summary.Append(Core.OperationNet.Searches.Pending.Count.ToString() + " searches, ");
 
-            summary.Append(core.Transfers.Pending.Count.ToString() + " transfers");
+            summary.Append(Core.Transfers.Pending.Count.ToString() + " transfers");
 
             //foreach (ulong key in store.Index.Keys)
             //    foreach (StoreData data in store.Index[key])

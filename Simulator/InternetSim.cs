@@ -25,9 +25,6 @@ namespace RiseOp.Simulator
 
         internal List<SimInstance> Instances = new List<SimInstance>();
 
-        internal List<SimInstance> Online  = new List<SimInstance>();
-        internal List<SimInstance> Offline = new List<SimInstance>();
-
         Random RndGen = new Random(unchecked((int)DateTime.Now.Ticks));
 
         
@@ -72,8 +69,8 @@ namespace RiseOp.Simulator
         internal bool TestCoreThread = false; // sleepTime needs to be set with this so packets have time to process ayncronously
 
         bool Flux        = false;
-        int  FluxIn      = 1;
-        int  FluxOut     = 0;
+        //int  FluxIn      = 1;
+        //int  FluxOut     = 0;
 
         int PercentNAT = 30;
         int PercentBlocked = 30;  
@@ -87,40 +84,11 @@ namespace RiseOp.Simulator
             TimeNow = StartTime;
         }
 
-        internal void AddInstance(string path)
+        internal void StartInstance(string path)
         {
             SimInstance instance = new SimInstance(this, path);
 
-            if (LoadOnline)
-                BringOnline(instance);
-            else
-                Offline.Add(instance);
-
-            lock (Instances) 
-                Instances.Add(instance);
-            
-            Interface.BeginInvoke(InstanceChange, instance, InstanceChangeType.Add);
-        }
-
-        internal void DoFlux()
-        {
-            // run flux once per minute
-            if (TimeNow.Second % 5 != 0) 
-                return;
-
-            // influx
-            for (int i = 0; i < FluxIn && Offline.Count > 0; i++)
-                BringOnline(Offline[RndGen.Next(Offline.Count)]);
-         
-            // outflux
-            for (int i = 0; i < FluxOut && Online.Count > 0; i++)
-                BringOffline(Online[RndGen.Next(Online.Count)]);
-        }
-
-        internal void BringOnline(SimInstance instance)
-        {
-            string name = Path.GetFileNameWithoutExtension(instance.Path);
-            string[] user = name.Split(new char[] { '-' });
+            instance.Context = new RiseOpContext(instance);
 
             // ip
             byte[] ipbytes = new byte[4] { (byte)RndGen.Next(99), (byte)RndGen.Next(99), (byte)RndGen.Next(99), (byte)RndGen.Next(99) };
@@ -136,11 +104,44 @@ namespace RiseOp.Simulator
             else if (num < PercentBlocked + PercentNAT)
                 instance.RealFirewall = FirewallType.NAT;
 
+            // hook instance into maps
+            SimMap[instance.RealIP] = instance;
+
+            if (LoadOnline)
+                Login(instance);
+
+            lock (Instances) 
+                Instances.Add(instance);
+            
+            Interface.BeginInvoke(InstanceChange, instance, InstanceChangeType.Add);
+        }
+
+        internal void DoFlux()
+        {
+            // run flux once per minute
+            /*if (TimeNow.Second % 5 != 0) 
+                return;
+
+            // influx
+            for (int i = 0; i < FluxIn && Offline.Count > 0; i++)
+                BringOnline(Offline[RndGen.Next(Offline.Count)]);
+         
+            // outflux
+            for (int i = 0; i < FluxOut && Online.Count > 0; i++)
+                BringOffline(Online[RndGen.Next(Online.Count)]);*/
+        }
+
+        internal void Login(SimInstance instance)
+        {
+            string name = Path.GetFileNameWithoutExtension(instance.Path);
+            string[] user = name.Split(new char[] { '-' });
+
             OpCore core = null;
 
             try
             {
-                core = new OpCore(instance, instance.Path, user[1].Trim());
+                string pass = user[1].Trim().Split(' ')[0].ToLower(); // lowercase firstname
+                core = new OpCore(instance.Context, instance.Path, pass);
             }
             catch (Exception ex)
             {
@@ -148,7 +149,7 @@ namespace RiseOp.Simulator
                 return;
             }
 
-            instance.Core = core;
+            instance.Context.Cores.Add(core);
 
             // clear caches so sim relies on simed boot process
             core.GlobalNet.IPCache.Clear();
@@ -160,8 +161,6 @@ namespace RiseOp.Simulator
             UserNames[core.OperationNet.Local.UserID] = core.User.Settings.ScreenName;
             OpNames[core.OperationNet.OpID] = core.User.Settings.Operation;
 
-            // hook instance into maps
-            SimMap[instance.RealIP] = instance;
 
             lock (AddressMap)
             {
@@ -172,40 +171,27 @@ namespace RiseOp.Simulator
                 AddAddress(new IPEndPoint(instance.RealIP, core.User.Settings.OpPortUdp), core.OperationNet);
             }
 
-            lock (Online)
-                Online.Add(instance);
-
-            lock (Offline)
-                if (Offline.Contains(instance))
-                    Offline.Remove(instance);
-
             Interface.BeginInvoke(InstanceChange, instance, InstanceChangeType.Update);
         }
 
-        internal void BringOffline(SimInstance instance)
+        internal void Logout(OpCore core)
         {
-            lock(Offline)
-                Offline.Add(instance);
+            SimInstance instance = core.Sim;
 
-            lock(Online)
-                if (Online.Contains(instance))
-                    Online.Remove(instance);
+            AddressMap.Remove(new IPEndPoint(instance.RealIP, core.User.Settings.GlobalPortTcp));
+            AddressMap.Remove(new IPEndPoint(instance.RealIP, core.User.Settings.GlobalPortUdp));
 
-            AddressMap.Remove(new IPEndPoint(instance.RealIP, instance.Core.User.Settings.GlobalPortTcp));
-            AddressMap.Remove(new IPEndPoint(instance.RealIP, instance.Core.User.Settings.GlobalPortUdp));
-
-            AddressMap.Remove(new IPEndPoint(instance.RealIP, instance.Core.User.Settings.OpPortTcp));
-            AddressMap.Remove(new IPEndPoint(instance.RealIP, instance.Core.User.Settings.OpPortUdp));
+            AddressMap.Remove(new IPEndPoint(instance.RealIP, core.User.Settings.OpPortTcp));
+            AddressMap.Remove(new IPEndPoint(instance.RealIP, core.User.Settings.OpPortUdp));
 
             SimMap.Remove(instance.RealIP);
 
-            if (instance.Core.GuiMain != null)
-                instance.Core.GuiMain.Close();
+            if (core.GuiMain != null)
+                core.GuiMain.Close();
 
-            instance.Core.Exit();
-            instance.Core = null;
-            
-            Interface.BeginInvoke(InstanceChange, instance, InstanceChangeType.Update);
+            core.Exit();
+
+            Interface.BeginInvoke(InstanceChange, core.Sim, InstanceChangeType.Update);
         }
 
         internal void AddAddress(IPEndPoint address, DhtNetwork network)
@@ -364,9 +350,9 @@ namespace RiseOp.Simulator
                 // instance timer
                 if (i == pumps) // stepping would cause second timer to run every 250ms without this
                 {
-                    lock (Online)
-                        foreach (SimInstance instance in Online)
-                            instance.Core.SecondTimer();
+                    lock (Instances)
+                        foreach (SimInstance instance in Instances)
+                            instance.Context.SecondTimer_Tick(null, null);
 
                     i = 0;
                 }
@@ -480,9 +466,9 @@ namespace RiseOp.Simulator
                 {
                     Monitor.Wait(TimerLock);
 
-                    lock (Online)
-                        foreach (SimInstance instance in Online)
-                            instance.Core.SecondTimer();
+                    lock (Instances)
+                        foreach (SimInstance instance in Instances)
+                            instance.Context.SecondTimer_Tick(null, null);
 
                     WaitHandles[0].Set();
                 }
@@ -566,14 +552,13 @@ namespace RiseOp.Simulator
         {
             WebCacheHits++;
 
-            if (Online.Count == 0)
-                return;
-
             List<SimInstance> open = new List<SimInstance>();
 
-            foreach (SimInstance instance in Online)
+            foreach (SimInstance instance in Instances)
                 // use realfirewall, because if flux not used and a lot loaded they all start out as blocked
-                if (instance.RealFirewall == FirewallType.Open && instance != network.Core.Sim)
+                if (instance.RealFirewall == FirewallType.Open && 
+                    //instance.Context.Global != null && 
+                    instance != network.Core.Sim)
                     open.Add(instance);
 
             // add 3 random instances to network
@@ -589,7 +574,7 @@ namespace RiseOp.Simulator
 
             foreach (SimInstance entry in cached)
             {
-                DhtContact contact = entry.Core.GlobalNet.GetLocalContact();
+                DhtContact contact = entry.Context.Cores[0].GlobalNet.GetLocalContact();
                 contact.IP = entry.RealIP;
                 network.AddCacheEntry(contact);
             }
@@ -680,10 +665,10 @@ namespace RiseOp.Simulator
             foreach(ManualResetEvent handle in WaitHandles)
                 handle.Set();
 
-            while(Online.Count > 0)
-            {
-                BringOffline(Online[0]);
-            }
+            foreach (SimInstance instance in Instances)
+                while (instance.Context.Cores.Count > 0)
+                    Logout(instance.Context.Cores[0]);
+            
         }
     }
 
@@ -712,7 +697,8 @@ namespace RiseOp.Simulator
     internal class SimInstance
     {
         internal InternetSim Internet;
-        internal OpCore Core;
+
+        internal RiseOpContext Context;
 
         internal string Path;
 

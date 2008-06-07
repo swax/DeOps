@@ -601,6 +601,9 @@
     <Content Include="Docs\ChangeLog.txt" />
     <Content Include="Docs\future.txt" />
     <Content Include="Docs\transfers.txt" />
+    <None Include="Interface\Res\settings.png" />
+    <None Include="Interface\Res\tools.png" />
+    <None Include="Interface\Res\manage.png" />
     <Content Include="Services\Board\Board.txt" />
     <None Include="Services\Chat\Res\chat.ico" />
     <None Include="Services\Board\Res\lower.png" />
@@ -616,6 +619,7 @@
     <None Include="Services\IM\Res\redled.png" />
     <None Include="Services\IM\Res\greenled.png" />
     <None Include="Services\IM\Res\yellowled.png" />
+    <None Include="Services\Chat\Res\invite.png" />
     <Content Include="Services\Trust\Link.txt" />
     <None Include="Services\Trust\Res\unlink.ico" />
     <Content Include="Services\Location\Location.txt" />
