@@ -1,4 +1,7 @@
-﻿5/28/08	-   global proxying implementation fully working
+﻿
+		cores share global cache which are dated and combined
+
+5/28/08	-   global proxying implementation fully working
 5/26/08 -	routing responsive status revised
 			small scale networks debugged
 5/22/08 -	revised contact/source/address from static byte encoded to packet (supports ipv6 and global proxy)

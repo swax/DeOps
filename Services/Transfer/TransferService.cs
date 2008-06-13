@@ -43,12 +43,12 @@ namespace RiseOp.Services.Transfer
         internal TransferService(OpCore core)
         {
             Core = core;
-            Network = Core.OperationNet;
+            Network = Core.Network;
             Core.Transfers = this;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
 
-            Core.OperationNet.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(Search_Local);
+            Core.Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(Search_Local);
 
             Network.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
             Network.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
@@ -73,7 +73,7 @@ namespace RiseOp.Services.Transfer
         {
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
 
-            Core.OperationNet.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(Search_Local);
+            Core.Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(Search_Local);
 
             Network.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
             Network.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
@@ -154,7 +154,7 @@ namespace RiseOp.Services.Transfer
 
                 byte[] parameters = transfer.Details.Encode(Network.Protocol);
 
-                DhtSearch search = Core.OperationNet.Searches.Start(transfer.Target, "Transfer", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
+                DhtSearch search = Core.Network.Searches.Start(transfer.Target, "Transfer", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
 
                 if (search != null)
                 {
@@ -293,7 +293,7 @@ namespace RiseOp.Services.Transfer
         {
             if (parameters == null)
             {
-                Core.OperationNet.UpdateLog("Transfers", "Search Recieved with null parameters");
+                Core.Network.UpdateLog("Transfers", "Search Recieved with null parameters");
                 return;
             }
 
@@ -328,7 +328,7 @@ namespace RiseOp.Services.Transfer
                 }
                 catch (Exception ex)
                 {
-                    Core.OperationNet.UpdateLog("Transfer", "Search Results error " + ex.Message);
+                    Core.Network.UpdateLog("Transfer", "Search Results error " + ex.Message);
                 }
             }
             

@@ -58,7 +58,11 @@ namespace RiseOp.Interface.Tools
             Mail = core.GetService("Mail") as MailService;
             Profiles = core.GetService("Profile") as ProfileService;
 
-			Text = "Internal (" + Core.User.Settings.ScreenName + ")";
+            if (Core.User == null)
+                Text = "Global Internals (" + Core.Context.LocalIP.ToString() + ")";
+            else
+                Text = "Internals (" + Core.User.Settings.UserName + ")";
+
 			
 			treeStructure.Nodes.Add( new StructureNode("", new ShowDelegate(ShowNone), null));
 			
@@ -85,8 +89,10 @@ namespace RiseOp.Interface.Tools
             coreNode.Nodes.Add( new StructureNode(".Identity", new ShowDelegate(ShowIdentity), null));
 
             // networks
-            LoadNetwork(coreNode.Nodes, "Global", Core.GlobalNet);
-            LoadNetwork(coreNode.Nodes, "Operation", Core.OperationNet);
+            if(Core.Context.Global != null)
+                LoadNetwork(coreNode.Nodes, "Global", Core.Context.Global.Network);
+            
+            LoadNetwork(coreNode.Nodes, "Operation", Core.Network);
 
             // components
             StructureNode componentsNode = new StructureNode("Components", new ShowDelegate(ShowNone), null);
@@ -267,10 +273,9 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Property", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
-            listValues.Items.Add(new ListViewItem(new string[] { "LocalIP",         xStr(Core.LocalIP) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "Firewall",        xStr(Core.Firewall) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "LocalIP",         xStr(Core.Context.LocalIP) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "Firewall",        xStr(Core.Context.Firewall) }));
             listValues.Items.Add(new ListViewItem(new string[] { "StartTime",       xStr(Core.StartTime) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "NextSaveCache",   xStr(Core.NextSaveCache) }));
         }
 
 
@@ -284,11 +289,9 @@ namespace RiseOp.Interface.Tools
 
             listValues.Items.Add(new ListViewItem(new string[] { "ProfilePath", xStr(Core.User.ProfilePath) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Operation", xStr(Core.User.Settings.Operation) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "ScreenName", xStr(Core.User.Settings.ScreenName) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "GlobalPortTcp", xStr(Core.User.Settings.GlobalPortTcp) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "GlobalPortUdp", xStr(Core.User.Settings.GlobalPortUdp) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "OpPortTcp", xStr(Core.User.Settings.OpPortTcp) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "OpPortUdp", xStr(Core.User.Settings.OpPortUdp) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "ScreenName", xStr(Core.User.Settings.UserName) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "OpPortTcp", xStr(Core.User.Settings.TcpPort) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "OpPortUdp", xStr(Core.User.Settings.UdpPort) }));
             listValues.Items.Add(new ListViewItem(new string[] { "OpAccess", xStr(Core.User.Settings.OpAccess) }));
         }
 
@@ -479,7 +482,6 @@ namespace RiseOp.Interface.Tools
 
             listValues.Items.Add(new ListViewItem(new string[] { "LocationVersion", xStr(Core.Locations.LocationVersion) }));
             listValues.Items.Add(new ListViewItem(new string[] { "NextLocationUpdate", xStr(Core.Locations.NextLocationUpdate) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "GlobalIndex", xStr(Core.Locations.GlobalIndex.SafeCount) }));
             listValues.Items.Add(new ListViewItem(new string[] { "LocationMap", xStr(Core.Locations.LocationMap.SafeCount) }));
             
         }
@@ -488,10 +490,15 @@ namespace RiseOp.Interface.Tools
         {
             SetupLocationList();
 
-            Core.Locations.GlobalIndex.LockReading(delegate()
+            if (Core.Context.Global == null)
+                return;
+
+            GlobalService globalLocs = (GlobalService)Core.Context.Global.ServiceMap[2];
+
+            globalLocs.GlobalIndex.LockReading(delegate()
             {
-                foreach (ulong opid in Core.Locations.GlobalIndex.Keys)
-                    foreach (CryptLoc loc in Core.Locations.GlobalIndex[opid])
+                foreach (ulong opid in globalLocs.GlobalIndex.Keys)
+                    foreach (CryptLoc loc in globalLocs.GlobalIndex[opid])
                     {
                         SignedData signed = SignedData.Decode(loc.Data);
 
@@ -519,7 +526,7 @@ namespace RiseOp.Interface.Tools
                     dict.LockReading(delegate()
                     {
                         foreach (ClientInfo info in dict.Values)
-                            DisplayLoc(Core.OperationNet.OpID, info);
+                            DisplayLoc(Core.Network.OpID, info);
                     });
             });
 

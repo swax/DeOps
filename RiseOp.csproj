@@ -136,11 +136,24 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Implementation\Transport\UPnP.cs" />
+    <Compile Include="Interface\Init\CreateUser.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Init\CreateUser.Designer.cs">
+      <DependentUpon>CreateUser.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Init\JoinOp.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Init\JoinOp.Designer.cs">
+      <DependentUpon>JoinOp.cs</DependentUpon>
+    </Compile>
     <Compile Include="Services\Assist\VersionedFile.cs" />
     <Compile Include="Services\Board\BoardService.cs" />
     <Compile Include="Services\Chat\ChatService.cs" />
     <Compile Include="Services\IM\IMService.cs" />
     <Compile Include="Services\Assist\LocalSync.cs" />
+    <Compile Include="Services\Location\GlobalService.cs" />
     <Compile Include="Services\Location\LocationService.cs" />
     <Compile Include="Services\Mail\MailService.cs" />
     <Compile Include="Services\OpService.cs" />
@@ -393,7 +406,7 @@
     <Compile Include="Implementation\Protocol\Packets\PacketsNet.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Implementation\Protocol\Packets\PacketsFile.cs" />
+    <Compile Include="Implementation\Protocol\Packets\PacketsSpecial.cs" />
     <Compile Include="Implementation\Transport\RudpHandler.cs" />
     <Compile Include="Implementation\Transport\RudpSession.cs" />
     <Compile Include="Implementation\Transport\RudpSocket.cs" />
@@ -445,10 +458,10 @@
     <Compile Include="Interface\Views\ContextMenuStripEx.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Interface\GetTextDialog.cs">
+    <Compile Include="Interface\Views\GetTextDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Interface\GetTextDialog.Designer.cs">
+    <Compile Include="Interface\Views\GetTextDialog.Designer.cs">
       <DependentUpon>GetTextDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="Interface\NewProjectForm.cs">
@@ -517,10 +530,10 @@
     <Compile Include="Interface\Tools\PacketsForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Interface\InviteForm.cs">
+    <Compile Include="Interface\Init\InviteForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Interface\InviteForm.Designer.cs">
+    <Compile Include="Interface\Init\InviteForm.Designer.cs">
       <DependentUpon>InviteForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Interface\MainForm.cs">
@@ -529,17 +542,17 @@
     <Compile Include="Interface\MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Interface\Startup\LoaderForm.cs">
+    <Compile Include="Interface\LoginForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Interface\Startup\LoaderForm.Designer.cs">
-      <DependentUpon>LoaderForm.cs</DependentUpon>
+    <Compile Include="Interface\LoginForm.Designer.cs">
+      <DependentUpon>LoginForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Interface\Startup\NewOpForm.cs">
+    <Compile Include="Interface\Init\CreateOp.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Interface\Startup\NewOpForm.Designer.cs">
-      <DependentUpon>NewOpForm.cs</DependentUpon>
+    <Compile Include="Interface\Init\CreateOp.Designer.cs">
+      <DependentUpon>CreateOp.cs</DependentUpon>
     </Compile>
     <Compile Include="Interface\Tools\SearchForm.cs">
       <SubType>Form</SubType>
@@ -701,6 +714,14 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <EmbeddedResource Include="Interface\Init\CreateUser.resx">
+      <DependentUpon>CreateUser.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Init\JoinOp.resx">
+      <DependentUpon>JoinOp.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Services\Board\Res\BoardRes.resx">
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
@@ -882,7 +903,7 @@
       <SubType>Designer</SubType>
       <DependentUpon>TransferView.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\GetTextDialog.resx">
+    <EmbeddedResource Include="Interface\Views\GetTextDialog.resx">
       <SubType>Designer</SubType>
       <DependentUpon>GetTextDialog.cs</DependentUpon>
     </EmbeddedResource>
@@ -940,21 +961,21 @@
       <DependentUpon>PacketsForm.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\InviteForm.resx">
+    <EmbeddedResource Include="Interface\Init\InviteForm.resx">
       <SubType>Designer</SubType>
       <DependentUpon>InviteForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Startup\LoaderForm.resx">
+    <EmbeddedResource Include="Interface\LoginForm.resx">
       <SubType>Designer</SubType>
-      <DependentUpon>LoaderForm.cs</DependentUpon>
+      <DependentUpon>LoginForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\MainForm.resx">
       <SubType>Designer</SubType>
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Startup\NewOpForm.resx">
+    <EmbeddedResource Include="Interface\Init\CreateOp.resx">
       <SubType>Designer</SubType>
-      <DependentUpon>NewOpForm.cs</DependentUpon>
+      <DependentUpon>CreateOp.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\Tools\SearchForm.resx">
       <SubType>Designer</SubType>

@@ -37,7 +37,7 @@ namespace RiseOp.Services.Chat
         internal ChatService(OpCore core)
         {
             Core = core;
-            Network = Core.OperationNet;
+            Network = Core.Network;
             Links = core.Links;
 
             Network.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
@@ -1082,7 +1082,7 @@ namespace RiseOp.Services.Chat
         internal ChatMessage(OpCore core, string text, bool system)
         {
             Source = core.UserID;
-            ClientID = core.OperationNet.Local.ClientID;
+            ClientID = core.Network.Local.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;
             System = system;

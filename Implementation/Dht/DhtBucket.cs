@@ -40,9 +40,7 @@ namespace RiseOp.Implementation.Dht
 	
 		internal UInt64 GetRandomBucketID()
 		{
-			byte[] eightBytes = new byte[8];
-			Routing.Core.StrongRndGen.GetBytes(eightBytes);
-			UInt64 randomID = BitConverter.ToUInt64(eightBytes, 0);
+			UInt64 randomID = Utilities.StrongRandUInt64(Routing.Core.StrongRndGen);
 
 			UInt64 localID = Routing.Network.Local.UserID;
 
@@ -125,7 +123,7 @@ namespace RiseOp.Implementation.Dht
 
 
         // used to add global proxies
-        internal DhtContact(DhtSource opHost, IPAddress opIP, DhtClient client, DhtAddress server)
+        internal DhtContact(DhtSource opHost, IPAddress opIP, TunnelAddress client, DhtAddress server)
         {
             UserID = opHost.UserID;
             ClientID = opHost.ClientID;
@@ -202,7 +200,7 @@ namespace RiseOp.Implementation.Dht
                         break;
 
                     case Packet_Client:
-                        contact.TunnelClient = DhtClient.FromBytes(child.Data, child.PayloadPos);
+                        contact.TunnelClient = TunnelAddress.FromBytes(child.Data, child.PayloadPos);
                         break;
                 }
             }

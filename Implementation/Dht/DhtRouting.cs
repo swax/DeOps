@@ -79,7 +79,7 @@ namespace RiseOp.Implementation.Dht
                     // a re-search is almost always immediately done to bring it back up
                     if (bucket.ContactList.Count != 0 &&
                         bucket.ContactList.Count < ContactsPerBucket / 2 &&
-                        Core.Firewall == FirewallType.Open &&
+                        Core.Context.Firewall == FirewallType.Open &&
                         Core.TimeNow > bucket.NextRefresh)
                     {
                         // search on random id in bucket
@@ -158,7 +158,10 @@ namespace RiseOp.Implementation.Dht
             // reset attempts when re-entering responsive mode
             if (responsive)
                 foreach (DhtContact contact in ContactMap.Values)
+                {
                     contact.Attempts = 0;
+                    contact.NextTry = Core.TimeNow;
+                }
 
             DhtResponsive = responsive;
         }
@@ -357,8 +360,8 @@ namespace RiseOp.Implementation.Dht
         {
             get
             {
-                return Core.Firewall == FirewallType.Open ||
-                    (Network == Core.OperationNet && Core.UseGlobalProxies);
+                // dht enable if node is open, or psuedo-open as signaled by using global proxies
+                return Core.Context.Firewall == FirewallType.Open || Network.UseGlobalProxies;
             }
         }
 
@@ -411,9 +414,9 @@ namespace RiseOp.Implementation.Dht
             {
                 IPEndPoint address = new IPEndPoint(newContact.IP, newContact.UdpPort);
 
-                if (Core.Sim.Internet.AddressMap.ContainsKey(address))
+                if (Core.Sim.Internet.UdpEndPoints.ContainsKey(address))
                 {
-                    DhtNetwork checkNet = Core.Sim.Internet.AddressMap[address];
+                    DhtNetwork checkNet = Core.Sim.Internet.UdpEndPoints[address];
 
                     if (checkNet.Local.UserID != newContact.UserID ||
                         checkNet.Local.ClientID != newContact.ClientID ||
@@ -423,9 +426,6 @@ namespace RiseOp.Implementation.Dht
                 }
             }
 
-            
-            Network.AddCacheEntry(newContact);
-            
             // if dht enabled routing entries are set alive by pong
             // many things call add, like the location service, but don't want to falsely report being responsive
             // so only trigger dht responsive when a direct pong comes in
@@ -438,7 +438,9 @@ namespace RiseOp.Implementation.Dht
 
                 SetResponsive(true);
             }
-
+            
+            Network.AddCacheEntry(newContact);
+            
             if (ContactMap.ContainsKey(newContact.RoutingID))
             {
                 DhtContact dupe = ContactMap[newContact.RoutingID];

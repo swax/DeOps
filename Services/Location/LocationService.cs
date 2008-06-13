@@ -35,7 +35,6 @@ namespace RiseOp.Services.Location
         internal DateTime NextGlobalPublish;
 
         internal ClientInfo LocalLocation;
-        internal ThreadedDictionary<ulong, LinkedList<CryptLoc>> GlobalIndex = new ThreadedDictionary<ulong, LinkedList<CryptLoc>>();
         internal ThreadedDictionary<ulong, ThreadedDictionary<ushort, ClientInfo>> LocationMap = new ThreadedDictionary<ulong, ThreadedDictionary<ushort, ClientInfo>>();
 
         Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
@@ -46,13 +45,8 @@ namespace RiseOp.Services.Location
         internal ServiceEvent<GetLocationTagHandler> GetTag = new ServiceEvent<GetLocationTagHandler>();
         internal ServiceEvent<LocationTagReceivedHandler> TagReceived = new ServiceEvent<LocationTagReceivedHandler>();
 
-
-        int PruneGlobalKeys    = 64;
-        int PruneGlobalEntries = 16;
         int PruneLocations = 64;
-        
         int MaxClientsperUser = 10;
-
         internal bool LocalAway;
 
 
@@ -64,19 +58,12 @@ namespace RiseOp.Services.Location
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
-            Core.GlobalNet.Store.StoreEvent[ServiceID, 0] += new StoreHandler(GlobalStore_Local);
-            Core.GlobalNet.Store.ReplicateEvent[ServiceID, 0] += new ReplicateHandler(GlobalStore_Replicate);
-            Core.GlobalNet.Store.PatchEvent[ServiceID, 0] += new PatchHandler(GlobalStore_Patch);
-            Core.GlobalNet.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(GlobalSearch_Local);
-
-            Core.OperationNet.Store.StoreEvent[ServiceID, 0] += new StoreHandler(OperationStore_Local);
-            Core.OperationNet.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(OperationSearch_Local);
+            Core.Network.Store.StoreEvent[ServiceID, 0] += new StoreHandler(OperationStore_Local);
+            Core.Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(OperationSearch_Local);
 
 
             if (Core.Sim != null)
             {
-                PruneGlobalKeys    = 16;
-                PruneGlobalEntries = 4;
                 PruneLocations     = 16;
             }
         }
@@ -88,26 +75,23 @@ namespace RiseOp.Services.Location
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.SecondTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
-            Core.GlobalNet.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(GlobalStore_Local);
-            Core.GlobalNet.Store.ReplicateEvent[ServiceID, 0] -= new ReplicateHandler(GlobalStore_Replicate);
-            Core.GlobalNet.Store.PatchEvent[ServiceID, 0] -= new PatchHandler(GlobalStore_Patch);
-            Core.GlobalNet.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(GlobalSearch_Local);
-
-            Core.OperationNet.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(OperationStore_Local);
-            Core.OperationNet.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(OperationSearch_Local);
+            Core.Network.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(OperationStore_Local);
+            Core.Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(OperationSearch_Local);
         }
 
         void Core_SecondTimer()
         {
+            OpCore global = Core.Context.Global;
+
             // global publish
-            if ((Core.Firewall == FirewallType.Open || Core.UseGlobalProxies) && 
-                Core.GlobalNet != null && 
-                Core.GlobalNet.Responsive && 
+            if ((Core.Context.Firewall == FirewallType.Open || Core.Network.UseGlobalProxies) &&
+                global != null &&
+                global.Network.Responsive &&
                 Core.TimeNow > NextGlobalPublish)
                 PublishGlobal();
 
             // operation publish
-            if (Core.OperationNet.Responsive && Core.TimeNow > NextLocationUpdate)
+            if (Core.Network.Responsive && Core.TimeNow > NextLocationUpdate)
                 UpdateLocation();
 
             // run code below every quarter second
@@ -115,82 +99,54 @@ namespace RiseOp.Services.Location
             if (second % 15 != 0)
                 return;
 
-            // prune global keys
-            if (GlobalIndex.SafeCount > PruneGlobalKeys)
-                GlobalIndex.LockWriting(delegate()
-                {
-                    while (GlobalIndex.Count > PruneGlobalKeys / 2)
-                    {
-                        ulong furthest = Core.GlobalNet.Local.UserID;
 
-                        foreach (ulong id in GlobalIndex.Keys)
-                            if ((id ^ Core.GlobalNet.Local.UserID) > (furthest ^ Core.GlobalNet.Local.UserID))
-                                furthest = id;
+            // operation ttl 
+            Dictionary<ulong, bool> affectedUsers = new Dictionary<ulong, bool>();
+            List<ushort> deadClients = new List<ushort>();
 
-                        GlobalIndex.Remove(furthest);
-                    }
-                });
-
-            // prune global entries
-            GlobalIndex.LockReading(delegate()
+            LocationMap.LockReading(delegate()
             {
-                foreach (LinkedList<CryptLoc> list in GlobalIndex.Values)
-                    if (list.Count > PruneGlobalEntries)
-                        while (list.Count > PruneGlobalEntries / 2)
-                            list.RemoveLast();
+                foreach (ThreadedDictionary<ushort, ClientInfo> clients in LocationMap.Values)
+                {
+                    deadClients.Clear();
+
+                    clients.LockReading(delegate()
+                    {
+                        foreach (ClientInfo location in clients.Values)
+                        {
+                            if (second == 60)
+                            {
+                                if (location.TTL > 0)
+                                    location.TTL--;
+
+                                if (location.TTL == 0)
+                                {
+                                    deadClients.Add(location.ClientID);
+                                    affectedUsers[location.Data.UserID] = true;
+                                }
+                            }
+
+                            //crit hack - last 30 and 15 secs before loc destroyed do searches (working pretty good through...)
+                            if (location.TTL == 1 && (second == 15 || second == 30))
+                                StartSearch(location.Data.UserID, 0);
+                        }
+                    });
+
+                    foreach (ushort dead in deadClients)
+                        clients.SafeRemove(dead);
+                }
             });
 
-            
-       
-            // operation ttl (similar as above, but not the same)
-            if (second % 15 == 0)
+            LocationMap.LockWriting(delegate()
             {
-                Dictionary<ulong, bool> affectedUsers = new Dictionary<ulong, bool>();
-                List<ushort> deadClients = new List<ushort>();
-
-                LocationMap.LockReading(delegate()
-                {
-                     foreach (ThreadedDictionary<ushort, ClientInfo> clients in LocationMap.Values)
-                     {
-                         deadClients.Clear();
-
-                         clients.LockReading(delegate()
-                         {
-                             foreach (ClientInfo location in clients.Values)
-                             {
-                                 if (second == 60)
-                                 {
-                                     if (location.TTL > 0)
-                                         location.TTL--;
-
-                                     if (location.TTL == 0)
-                                     {
-                                         deadClients.Add(location.ClientID);
-                                         affectedUsers[location.Data.UserID] = true;
-                                     }
-                                 }
-
-                                 //crit hack - last 30 and 15 secs before loc destroyed do searches (working pretty good through...)
-                                 if (location.TTL == 1 && (second == 15 || second == 30))
-                                     StartSearch(location.Data.UserID, 0, false);
-                             }
-                         });
-
-                         foreach (ushort dead in deadClients)
-                             clients.SafeRemove(dead);
-                     }                    
-                });
-
-                LocationMap.LockWriting(delegate()
-                {
-                    foreach (ulong id in affectedUsers.Keys)
-                        if (LocationMap[id].SafeCount == 0)
-                            LocationMap.Remove(id);
-                });
-
                 foreach (ulong id in affectedUsers.Keys)
-                    Core.RunInGuiThread(GuiUpdate, id);
-            }
+                    if (LocationMap[id].SafeCount == 0)
+                        LocationMap.Remove(id);
+            });
+
+            foreach (ulong id in affectedUsers.Keys)
+                Core.RunInGuiThread(GuiUpdate, id);
+
         }
 
         void Core_MinuteTimer()
@@ -207,7 +163,7 @@ namespace RiseOp.Services.Location
                     if (LocationMap.Count > PruneLocations &&
                         id != Core.UserID &&
                         !Core.Focused.SafeContainsKey(id) &&
-                        !Core.OperationNet.Routing.InCacheArea(id))
+                        !Core.Network.Routing.InCacheArea(id))
                         removeIDs.Add(id);
                 }
             });
@@ -229,44 +185,7 @@ namespace RiseOp.Services.Location
                     }
                 });
 
-           
-
-            // global ttl, once per minute
-            removeIDs.Clear();
-
-            GlobalIndex.LockReading(delegate()
-            {
-                List<CryptLoc> removeList = new List<CryptLoc>();
-
-                foreach (ulong key in GlobalIndex.Keys)
-                {
-                    removeList.Clear();
-
-                    foreach (CryptLoc loc in GlobalIndex[key])
-                    {
-                        if (loc.TTL > 0)
-                            loc.TTL--;
-
-                        if (loc.TTL == 0)
-                            removeList.Add(loc);
-                    }
-
-                    foreach (CryptLoc loc in removeList)
-                        GlobalIndex[key].Remove(loc);
-
-                    if (GlobalIndex[key].Count == 0)
-                        removeIDs.Add(key);
-                }
-
-
-            });
-
-            GlobalIndex.LockWriting(delegate()
-            {
-                foreach (ulong key in removeIDs)
-                    GlobalIndex.Remove(key);
-            });
-
+   
             // clean research map
             removeIDs.Clear();
 
@@ -284,6 +203,33 @@ namespace RiseOp.Services.Location
             return null;
         }
 
+        internal void PublishGlobal()
+        {
+            // should be auto-set like a second after tcp connect
+            // this isnt called until 15s after tcp connect
+            if (Core.Context.LocalIP == null)
+                return;
+
+            // set next publish time 55 mins
+            NextGlobalPublish = Core.TimeNow.AddMinutes(55);
+
+            LocationData location = GetLocalLocation();
+
+
+            // location packet is encrypted inside global loc packet
+            // this embedded has OP TTL, while wrapper (CryptLoc) has global TTL
+
+            byte[] data = SignedData.Encode(Core.Network.Protocol, Core.User.Settings.KeyPair, location);
+
+            if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
+                data = Utilities.EncryptBytes(data, Core.Network.OriginalCrypt);
+
+            data = new CryptLoc(LocationData.GLOBAL_TTL, data).Encode(Core.Network.Protocol);
+
+            GlobalService service = (GlobalService) Core.Context.Global.ServiceMap[2];
+            service.Publish(Core.Network.OpID, data);
+        }
+
         internal void UpdateLocation()
         {
             if (Core.InvokeRequired)
@@ -297,21 +243,19 @@ namespace RiseOp.Services.Location
 
             LocationData location = GetLocalLocation();
             
-            byte[] signed = SignedData.Encode(Core.OperationNet.Protocol, Core.User.Settings.KeyPair, location);
+            byte[] signed = SignedData.Encode(Core.Network.Protocol, Core.User.Settings.KeyPair, location);
 
             Debug.Assert(location.TTL < 5);
-            Core.OperationNet.Store.PublishNetwork(Core.UserID, ServiceID, 0, signed);
+            Core.Network.Store.PublishNetwork(Core.UserID, ServiceID, 0, signed);
 
             OperationStore_Local(new DataReq(null, Core.UserID, ServiceID, 0, signed));
         }
 
-        internal void StartSearch(ulong id, uint version, bool global)
+        internal void StartSearch(ulong id, uint version)
         {
-            DhtNetwork network = global ? Core.GlobalNet : Core.OperationNet;
-
             byte[] parameters = BitConverter.GetBytes(version);
 
-            DhtSearch search = network.Searches.Start(id, "Location", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Core.Network.Searches.Start(id, "Location", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -323,22 +267,11 @@ namespace RiseOp.Services.Location
             {
                 DataReq store = new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value);
 
-                if (search.Network.IsGlobal)
-                    GlobalStore_Local(store);
-                else
-                    OperationStore_Local(store);
+                OperationStore_Local(store);
             }
         }
 
-        void GlobalSearch_Local(ulong key, byte[] parameters, List<byte[]> results)
-        {
-            GlobalIndex.LockReading(delegate()
-            {
-                if (GlobalIndex.ContainsKey(key))
-                    foreach (CryptLoc loc in GlobalIndex[key])
-                        results.Add(loc.Encode(Core.GlobalNet.Protocol));
-            });
-        }
+        
 
         void OperationSearch_Local(ulong key, byte[] parameters, List<byte[]> results)
         {
@@ -351,50 +284,7 @@ namespace RiseOp.Services.Location
                     results.Add(info.SignedData);
         }
 
-        void GlobalStore_Local(DataReq crypt)
-        {
-            CryptLoc newLoc = CryptLoc.Decode(crypt.Data);
-
-            if (newLoc == null)
-                return;
-
-            // check if data is for our operation, if it is use it
-            if (crypt.Target == Core.OperationNet.OpID)
-            {
-                DataReq store = new DataReq(null, Core.OperationNet.OpID, ServiceID, 0, newLoc.Data);
-
-                if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
-                    store.Data = Utilities.DecryptBytes(store.Data, store.Data.Length, Core.OperationNet.OriginalCrypt);
-
-                store.Sources = null; // dont pass global sources to operation store 
-
-                OperationStore_Local(store);
-            }
-
-            // index location 
-            LinkedList<CryptLoc> locations = null;
-
-            if (GlobalIndex.SafeTryGetValue(crypt.Target, out locations))
-            {
-                foreach (CryptLoc location in locations)
-                    if (Utilities.MemCompare(crypt.Data, location.Data))
-                    {
-                        if (newLoc.TTL > location.TTL)
-                            location.TTL = newLoc.TTL;
-
-                        return;
-                    }
-            }
-            else
-            {
-                locations = new LinkedList<CryptLoc>();
-                GlobalIndex.SafeAdd(crypt.Target, locations);
-            }
-
-            locations.AddFirst(newLoc);
-        }
-
-        void OperationStore_Local(DataReq store)
+        internal void OperationStore_Local(DataReq store)
         {
             // getting published to - search results - patch
 
@@ -402,7 +292,7 @@ namespace RiseOp.Services.Location
 
             if (signed == null)
                 return;
-            
+
             G2Header embedded = new G2Header(signed.Data);
 
             // figure out data contained
@@ -437,14 +327,14 @@ namespace RiseOp.Services.Location
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Core.OperationNet.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Data.UserID, ServiceID, 0, current.SignedData));
+                            Core.Network.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Data.UserID, ServiceID, 0, current.SignedData));
 
                     return;
                 }
             }
 
             
-            // notify components of new versions
+            // notify components of new versions (usually just localsync service signed up for this)
             DhtAddress address = new DhtAddress(location.IP, location.Source);
 
             foreach (PatchTag tag in location.Tags)
@@ -472,9 +362,9 @@ namespace RiseOp.Services.Location
             }
 
             current.Data = location;
-            current.SignedData = signed.Encode(Core.OperationNet.Protocol);
+            current.SignedData = signed.Encode(Core.Network.Protocol);
 
-            if (current.Data.UserID == Core.UserID && current.Data.Source.ClientID == Core.OperationNet.Local.ClientID)
+            if (current.Data.UserID == Core.UserID && current.Data.Source.ClientID == Core.Network.Local.ClientID)
                 LocalLocation = current;
 
             current.TTL = location.TTL;
@@ -482,12 +372,12 @@ namespace RiseOp.Services.Location
             
             // if open and not global, add to routing
             if (location.Source.Firewall == FirewallType.Open)
-                Core.OperationNet.Routing.Add(new DhtContact(location.Source, location.IP));
+                Core.Network.Routing.Add(new DhtContact(location.Source, location.IP));
 
             // add global proxies (they would only be included in location packet if source was not directly connected to OP
             // even if open add the GP because pinging them will let host know of an open node on the network to connect to
             foreach(DhtAddress server in location.TunnelServers)
-                Core.OperationNet.Routing.Add(new DhtContact(location.Source, location.IP, location.TunnelClient, server));
+                Core.Network.Routing.Add(new DhtContact(location.Source, location.IP, location.TunnelClient, server));
     
             if (LocationUpdate != null)
                 LocationUpdate.Invoke(current.Data);
@@ -495,53 +385,25 @@ namespace RiseOp.Services.Location
             Core.RunInGuiThread(GuiUpdate, current.Data.UserID);
         }
 
-        internal void PublishGlobal()
-        {
-            // should be auto-set like a second after tcp connect
-            // this isnt called until 15s after tcp connect
-            if (Core.LocalIP == null)
-                return;
-
-            // set next publish time 55 mins
-            NextGlobalPublish = Core.TimeNow.AddMinutes(55);
-
-            LocationData location = GetLocalLocation();
-
-            
-            // location packet is encrypted inside global loc packet
-            // this embedded has OP TTL, while wrapper (CryptLoc) has global TTL
-
-            byte[] data = SignedData.Encode(Core.GlobalNet.Protocol, Core.User.Settings.KeyPair, location);
-
-            if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
-                data = Utilities.EncryptBytes(data, Core.OperationNet.OriginalCrypt);
-
-            data = new CryptLoc(LocationData.GLOBAL_TTL, data).Encode(Core.GlobalNet.Protocol);
-
-            Core.GlobalNet.Store.PublishNetwork(Core.OperationNet.OpID, ServiceID, 0, data);
-
-            GlobalStore_Local(new DataReq(null, Core.OperationNet.OpID, ServiceID, 0, data));
-        }
-
-        private LocationData GetLocalLocation()
+        internal LocationData GetLocalLocation()
         {
             LocationData location = new LocationData();
 
             location.Key = Core.User.Settings.KeyPublic;
-            location.IP = Core.LocalIP;
+            location.IP = Core.Context.LocalIP;
             location.TTL = LocationData.OP_TTL;
 
-            location.Source = Core.OperationNet.GetLocalSource();
+            location.Source = Core.Network.GetLocalSource();
 
-            if (Core.UseGlobalProxies && Core.Firewall != FirewallType.Open)
+            if (Core.Network.UseGlobalProxies && Core.Context.Firewall != FirewallType.Open)
             {
-                location.TunnelClient = Core.GlobalNet.Local;
+                location.TunnelClient = new TunnelAddress(Core.Context.Global.Network.Local, Core.TunnelID);
 
-                foreach (TcpConnect socket in Core.GlobalNet.TcpControl.ProxyServers)
+                foreach (TcpConnect socket in Core.Context.Global.Network.TcpControl.ProxyServers)
                     location.TunnelServers.Add(new DhtAddress(socket.RemoteIP, socket));
             }
 
-            foreach (TcpConnect socket in Core.OperationNet.TcpControl.ProxyServers)
+            foreach (TcpConnect socket in Core.Network.TcpControl.ProxyServers)
                 location.Proxies.Add(new DhtAddress(socket.RemoteIP, socket));
 
             location.Place = Core.User.Settings.Location;
@@ -570,20 +432,6 @@ namespace RiseOp.Services.Location
                 }
 
             return location;
-        }
-
-
-        List<byte[]> GlobalStore_Replicate(DhtContact contact)
-        {
-            //crit
-            // just send little piece of first 8 bytes, if remote doesnt have it, it is requested through params with those 8 bytes
-
-            return null;
-        }
-
-        void GlobalStore_Patch(DhtAddress source, byte[] data)
-        {
-
         }
 
         internal ClientInfo GetLocationInfo(ulong user, ushort client)
@@ -623,7 +471,7 @@ namespace RiseOp.Services.Location
                 return;
             }
 
-            if (!Core.OperationNet.Responsive)
+            if (!Core.Network.Responsive)
                 return;
 
             // limit re-search to once per 30 secs
@@ -633,7 +481,7 @@ namespace RiseOp.Services.Location
                 if (Core.TimeNow < timeout)
                     return;
 
-            StartSearch(user, 0, false);
+            StartSearch(user, 0);
 
             NextResearch[user] = Core.TimeNow.AddSeconds(30);
         }

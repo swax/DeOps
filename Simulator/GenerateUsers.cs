@@ -110,17 +110,17 @@ namespace RiseOp.Simulator
                 name = FirstNames[Rnd.Next(FirstNames.Count)] + " " + LastNames[Rnd.Next(LastNames.Count)];
 
                 // create profile
-                int index = Rnd.Next(0, orgs-1);
+                int index = Rnd.Next(0, orgs);
 
                 string filename = OpNames[index] + " - " + name;
-                string path = OutputFolderLink.Text + Path.DirectorySeparatorChar + filename + Path.DirectorySeparatorChar + filename + ".dop";
+                string path = OutputFolderLink.Text + Path.DirectorySeparatorChar + filename + Path.DirectorySeparatorChar + filename + ".rop";
                 Directory.CreateDirectory(OutputFolderLink.Text + Path.DirectorySeparatorChar + filename);
                 string password = name.Split(' ')[0].ToLower(); // lower case first name is password
 
                 Identity ident = new Identity(path, password, Protocol);
 
                 ident.Settings.Operation = OpNames[index];
-                ident.Settings.ScreenName = name;
+                ident.Settings.UserName = name;
                 ident.Settings.KeyPair = new RSACryptoServiceProvider(1024);
                 ident.Settings.OpKey = OpKeys[index];
                 ident.Settings.OpAccess = AccessType.Public;

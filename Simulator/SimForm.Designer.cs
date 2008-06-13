@@ -71,6 +71,7 @@ namespace RiseOp.Simulator
             this.ElapsedLabel = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.LoadProgress = new System.Windows.Forms.ProgressBar();
+            this.columnHeader10 = new System.Windows.Forms.ColumnHeader();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -100,7 +101,7 @@ namespace RiseOp.Simulator
             // 
             this.labelTime.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.labelTime.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.labelTime.Location = new System.Drawing.Point(387, 15);
+            this.labelTime.Location = new System.Drawing.Point(420, 15);
             this.labelTime.Name = "labelTime";
             this.labelTime.Size = new System.Drawing.Size(130, 13);
             this.labelTime.TabIndex = 2;
@@ -113,6 +114,7 @@ namespace RiseOp.Simulator
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.listInstances.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.columnHeader10,
             this.columnHeader1,
             this.columnHeader3,
             this.columnHeader2,
@@ -125,7 +127,7 @@ namespace RiseOp.Simulator
             this.listInstances.FullRowSelect = true;
             this.listInstances.Location = new System.Drawing.Point(12, 142);
             this.listInstances.Name = "listInstances";
-            this.listInstances.Size = new System.Drawing.Size(525, 284);
+            this.listInstances.Size = new System.Drawing.Size(558, 284);
             this.listInstances.TabIndex = 3;
             this.listInstances.UseCompatibleStateImageBehavior = false;
             this.listInstances.View = System.Windows.Forms.View.Details;
@@ -189,7 +191,7 @@ namespace RiseOp.Simulator
             // 
             this.LinkUpdate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.LinkUpdate.AutoSize = true;
-            this.LinkUpdate.Location = new System.Drawing.Point(495, 429);
+            this.LinkUpdate.Location = new System.Drawing.Point(528, 429);
             this.LinkUpdate.Name = "LinkUpdate";
             this.LinkUpdate.Size = new System.Drawing.Size(42, 13);
             this.LinkUpdate.TabIndex = 6;
@@ -207,7 +209,7 @@ namespace RiseOp.Simulator
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.menuStrip1.Size = new System.Drawing.Size(549, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(582, 24);
             this.menuStrip1.TabIndex = 8;
             this.menuStrip1.Text = "MainMenu";
             // 
@@ -330,7 +332,7 @@ namespace RiseOp.Simulator
             // TimeLabel
             // 
             this.TimeLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.TimeLabel.Location = new System.Drawing.Point(390, 32);
+            this.TimeLabel.Location = new System.Drawing.Point(423, 32);
             this.TimeLabel.Name = "TimeLabel";
             this.TimeLabel.Size = new System.Drawing.Size(127, 13);
             this.TimeLabel.TabIndex = 10;
@@ -341,7 +343,7 @@ namespace RiseOp.Simulator
             // 
             this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(340, 15);
+            this.label1.Location = new System.Drawing.Point(373, 15);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(41, 13);
             this.label1.TabIndex = 11;
@@ -351,7 +353,7 @@ namespace RiseOp.Simulator
             // 
             this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(348, 32);
+            this.label2.Location = new System.Drawing.Point(381, 32);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(33, 13);
             this.label2.TabIndex = 12;
@@ -361,7 +363,7 @@ namespace RiseOp.Simulator
             // 
             this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(12, 398);
+            this.label3.Location = new System.Drawing.Point(45, 398);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(0, 13);
             this.label3.TabIndex = 13;
@@ -391,7 +393,7 @@ namespace RiseOp.Simulator
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Location = new System.Drawing.Point(12, 37);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(525, 70);
+            this.groupBox1.Size = new System.Drawing.Size(558, 70);
             this.groupBox1.TabIndex = 17;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Controls";
@@ -399,7 +401,7 @@ namespace RiseOp.Simulator
             // ElapsedLabel
             // 
             this.ElapsedLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.ElapsedLabel.Location = new System.Drawing.Point(387, 49);
+            this.ElapsedLabel.Location = new System.Drawing.Point(420, 49);
             this.ElapsedLabel.Name = "ElapsedLabel";
             this.ElapsedLabel.Size = new System.Drawing.Size(130, 13);
             this.ElapsedLabel.TabIndex = 14;
@@ -410,7 +412,7 @@ namespace RiseOp.Simulator
             // 
             this.label4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(333, 49);
+            this.label4.Location = new System.Drawing.Point(366, 49);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(48, 13);
             this.label4.TabIndex = 13;
@@ -422,15 +424,20 @@ namespace RiseOp.Simulator
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.LoadProgress.Location = new System.Drawing.Point(100, 429);
             this.LoadProgress.Name = "LoadProgress";
-            this.LoadProgress.Size = new System.Drawing.Size(363, 13);
+            this.LoadProgress.Size = new System.Drawing.Size(396, 13);
             this.LoadProgress.TabIndex = 18;
             this.LoadProgress.Visible = false;
+            // 
+            // columnHeader10
+            // 
+            this.columnHeader10.Text = "#";
+            this.columnHeader10.Width = 23;
             // 
             // SimForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(549, 451);
+            this.ClientSize = new System.Drawing.Size(582, 451);
             this.Controls.Add(this.LoadProgress);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.label6);
@@ -497,5 +504,6 @@ namespace RiseOp.Simulator
         private System.Windows.Forms.ToolStripMenuItem CollectMenuItem;
         private System.Windows.Forms.ToolStripMenuItem LoadOnlineMenuItem;
         private System.Windows.Forms.ToolStripMenuItem UnloadAllMenuItem;
+        private System.Windows.Forms.ColumnHeader columnHeader10;
     }
 }

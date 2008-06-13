@@ -101,6 +101,24 @@ namespace RiseOp
 			return bin;
 		}
 
+        internal static ulong RandUInt64(Random rnd)
+        {
+            byte[] bytes = new byte[8];
+
+            rnd.NextBytes(bytes);
+
+            return BitConverter.ToUInt64(bytes, 0);
+        }
+
+        internal static ulong StrongRandUInt64(RNGCryptoServiceProvider rnd)
+        {
+            byte[] bytes = new byte[8];
+            
+            rnd.GetBytes(bytes);
+
+            return BitConverter.ToUInt64(bytes, 0);
+        }
+
 		internal static byte[] ExtractBytes(byte[] buffer, int offset, int length)
 		{
 			byte[] extracted = new byte[length];
@@ -531,6 +549,40 @@ namespace RiseOp
                 else
                     File.Copy(path, destPath + Path.GetFileName(path), true);
             }
+        }
+
+        internal static byte[] GetSalt(int amount, int buffsize, RNGCryptoServiceProvider rnd)
+        {
+            byte[] salt = new byte[amount];
+            rnd.GetBytes(salt);
+
+            byte[] final = new byte[buffsize];
+            salt.CopyTo(final, 0);
+
+            return final;
+        }
+
+        /*internal static void AddSalt(byte[] original, RNGCryptoServiceProvider rnd, int amount)
+        {
+            byte[] salt = new byte[amount];
+            rnd.GetBytes(salt);
+
+            byte[] final = new byte[original.Length + amount];
+
+            salt.CopyTo(final, 0);
+            original.CopyTo(final, amount);
+
+            return final;
+        }*/
+
+        internal static byte[] CombineArrays(byte[] a, byte[] b)
+        {
+            byte[] c = new byte[a.Length + b.Length];
+
+            a.CopyTo(c, 0);
+            b.CopyTo(c, a.Length);
+
+            return c;
         }
     }
 

@@ -44,7 +44,7 @@ namespace RiseOp.Services.Location
         internal uint Version;
         internal List<PatchTag> Tags = new List<PatchTag>();
 
-        internal DhtClient TunnelClient;
+        internal TunnelAddress TunnelClient;
         internal List<DhtAddress> TunnelServers = new List<DhtAddress>();
 
         internal int GmtOffset;
@@ -151,7 +151,7 @@ namespace RiseOp.Services.Location
                         break;
 
                     case Packet_TunnelClient:
-                        loc.TunnelClient = DhtClient.FromBytes(child.Data, child.PayloadPos);
+                        loc.TunnelClient = TunnelAddress.FromBytes(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_TunnelServers:

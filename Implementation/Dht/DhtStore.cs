@@ -118,7 +118,7 @@ namespace RiseOp.Implementation.Dht
                 Network.SendTunnelPacket(address, store);
 
             // if blocked send tcp with to tag
-            else if (Core.Firewall == FirewallType.Blocked)
+            else if (Core.Context.Firewall == FirewallType.Blocked)
             {
                 store.ToAddress = address;
 

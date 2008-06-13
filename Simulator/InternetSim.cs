@@ -32,7 +32,8 @@ namespace RiseOp.Simulator
         internal UpdateViewHandler UpdateView;
 
         // Sim
-        internal Dictionary<IPEndPoint, DhtNetwork> AddressMap = new Dictionary<IPEndPoint, DhtNetwork>();
+        internal Dictionary<IPEndPoint, DhtNetwork> TcpEndPoints = new Dictionary<IPEndPoint, DhtNetwork>();
+        internal Dictionary<IPEndPoint, DhtNetwork> UdpEndPoints = new Dictionary<IPEndPoint, DhtNetwork>();
         Dictionary<IPAddress, SimInstance> SimMap = new Dictionary<IPAddress, SimInstance>();
 
         internal object PacketHandle = new object(); // in/out packet references switch so use all encompassing handle
@@ -51,6 +52,8 @@ namespace RiseOp.Simulator
 
         internal int WebCacheHits;
 
+        internal string LoadedPath;
+
         // thread
         internal Thread RunThread;
         internal bool Paused;
@@ -64,6 +67,7 @@ namespace RiseOp.Simulator
         internal bool LoadOnline = true;
         internal bool TestEncryption = false;
         internal bool FreshStart = false;
+        internal bool ClearIPCache = true;
         internal bool TestTcpFullBuffer = false;
         internal bool UseTimeFile = true;
         internal bool TestCoreThread = false; // sleepTime needs to be set with this so packets have time to process ayncronously
@@ -73,7 +77,9 @@ namespace RiseOp.Simulator
         //int  FluxOut     = 0;
 
         int PercentNAT = 30;
-        int PercentBlocked = 30;  
+        int PercentBlocked = 30;
+
+        int InstanceCount = 1;
 
 
         internal InternetSim(SimForm form)
@@ -86,7 +92,7 @@ namespace RiseOp.Simulator
 
         internal void StartInstance(string path)
         {
-            SimInstance instance = new SimInstance(this, path);
+            SimInstance instance = new SimInstance(this, InstanceCount++, path);
 
             instance.Context = new RiseOpContext(instance);
 
@@ -149,57 +155,75 @@ namespace RiseOp.Simulator
                 return;
             }
 
-            instance.Context.Cores.Add(core);
-
-            // clear caches so sim relies on simed boot process
-            core.GlobalNet.IPCache.Clear();
-            core.GlobalNet.IPTable.Clear();
-            core.OperationNet.IPCache.Clear();
-            core.OperationNet.IPTable.Clear();
-
-            // set name
-            UserNames[core.OperationNet.Local.UserID] = core.User.Settings.ScreenName;
-            OpNames[core.OperationNet.OpID] = core.User.Settings.Operation;
-
-
-            lock (AddressMap)
-            {
-                AddAddress(new IPEndPoint(instance.RealIP, core.User.Settings.GlobalPortTcp), core.GlobalNet);
-                AddAddress(new IPEndPoint(instance.RealIP, core.User.Settings.GlobalPortUdp), core.GlobalNet);
-
-                AddAddress(new IPEndPoint(instance.RealIP, core.User.Settings.OpPortTcp), core.OperationNet);
-                AddAddress(new IPEndPoint(instance.RealIP, core.User.Settings.OpPortUdp), core.OperationNet);
-            }
+            instance.Context.AddCore(core);
 
             Interface.BeginInvoke(InstanceChange, instance, InstanceChangeType.Update);
         }
 
+        internal void RegisterAddress(OpCore core)
+        {
+            if (ClearIPCache)
+            {
+                core.Network.IPCache.Clear();
+                core.Network.IPTable.Clear();
+            }
+
+            if (core.Network.IsGlobal)
+            {
+                AddAddress(new IPEndPoint(core.Sim.RealIP, core.Network.GlobalConfig.TcpPort), core.Network, true);
+                AddAddress(new IPEndPoint(core.Sim.RealIP, core.Network.GlobalConfig.UdpPort), core.Network, false);
+            }
+            else
+            {
+                AddAddress(new IPEndPoint(core.Sim.RealIP, core.User.Settings.TcpPort), core.Network, true);
+                AddAddress(new IPEndPoint(core.Sim.RealIP, core.User.Settings.UdpPort), core.Network, false);
+
+                UserNames[core.UserID] = core.User.Settings.UserName;
+                OpNames[core.Network.OpID] = core.User.Settings.Operation;
+            }
+        }
+
         internal void Logout(OpCore core)
         {
-            SimInstance instance = core.Sim;
-
-            AddressMap.Remove(new IPEndPoint(instance.RealIP, core.User.Settings.GlobalPortTcp));
-            AddressMap.Remove(new IPEndPoint(instance.RealIP, core.User.Settings.GlobalPortUdp));
-
-            AddressMap.Remove(new IPEndPoint(instance.RealIP, core.User.Settings.OpPortTcp));
-            AddressMap.Remove(new IPEndPoint(instance.RealIP, core.User.Settings.OpPortUdp));
-
-            SimMap.Remove(instance.RealIP);
-
             if (core.GuiMain != null)
                 core.GuiMain.Close();
 
             core.Exit();
-
+      
             Interface.BeginInvoke(InstanceChange, core.Sim, InstanceChangeType.Update);
         }
 
-        internal void AddAddress(IPEndPoint address, DhtNetwork network)
+        internal void UnregisterAddress(OpCore core)
         {
-            if (AddressMap.ContainsKey(address))
-                Debug.Assert(false);
+            if (core.Network.IsGlobal)
+            {
+                TcpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.Network.GlobalConfig.TcpPort));
+                UdpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.Network.GlobalConfig.UdpPort));
+            }
             else
-                AddressMap[address] = network;
+            {
+                TcpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.User.Settings.TcpPort));
+                UdpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.User.Settings.UdpPort));
+            }
+        }
+
+
+        internal void ExitInstance(SimInstance instance)
+        {
+            SimMap.Remove(instance.RealIP);
+        }
+
+        internal void AddAddress(IPEndPoint address, DhtNetwork network, bool tcp)
+        {
+            Dictionary<IPEndPoint, DhtNetwork> endpoints = tcp ? TcpEndPoints : UdpEndPoints;
+
+            lock (endpoints)
+            {
+                if (endpoints.ContainsKey(address))
+                    Debug.Assert(false);
+                else
+                    endpoints[address] = network;
+            }
         }
 
         internal void Start()
@@ -557,7 +581,7 @@ namespace RiseOp.Simulator
             foreach (SimInstance instance in Instances)
                 // use realfirewall, because if flux not used and a lot loaded they all start out as blocked
                 if (instance.RealFirewall == FirewallType.Open && 
-                    //instance.Context.Global != null && 
+                    instance.Context.Global != null && 
                     instance != network.Core.Sim)
                     open.Add(instance);
 
@@ -574,7 +598,7 @@ namespace RiseOp.Simulator
 
             foreach (SimInstance entry in cached)
             {
-                DhtContact contact = entry.Context.Cores[0].GlobalNet.GetLocalContact();
+                DhtContact contact = entry.Context.Global.Network.GetLocalContact();
                 contact.IP = entry.RealIP;
                 network.AddCacheEntry(contact);
             }
@@ -583,18 +607,18 @@ namespace RiseOp.Simulator
         internal int SendPacket(SimPacketType type, DhtNetwork network, byte[] packet, System.Net.IPEndPoint target, TcpConnect tcp)
         {
             if (type == SimPacketType.Tcp)
-                if (!AddressMap.ContainsKey(target))
+                if (!TcpEndPoints.ContainsKey(target))
                 {
                     //this is what actually happens -> throw new Exception("Disconnected");
                     return -1;
                 }
 
-            if( !AddressMap.ContainsKey(target) || 
+            if( !UdpEndPoints.ContainsKey(target) || 
                 !SimMap.ContainsKey(target.Address) ||
                 !SimMap.ContainsKey(network.Core.Sim.RealIP))
                 return 0;
 
-            DhtNetwork targetNet = AddressMap[target];
+            DhtNetwork targetNet = (type == SimPacketType.Tcp) ? TcpEndPoints[target] : UdpEndPoints[target];
             if (network.IsGlobal != targetNet.IsGlobal)
                 Debug.Assert(false);
 
@@ -650,7 +674,7 @@ namespace RiseOp.Simulator
                 Debug.Assert(false, "Empty Packet");
 
             lock (PacketHandle)
-                OutPackets.Add(new SimPacket(type, source, packet, AddressMap[target], tcp, network.Local.UserID));
+                OutPackets.Add(new SimPacket(type, source, packet, targetNet, tcp, network.Local.UserID));
 
             if (packet == null)
                 return 0;
@@ -666,9 +690,11 @@ namespace RiseOp.Simulator
                 handle.Set();
 
             foreach (SimInstance instance in Instances)
-                while (instance.Context.Cores.Count > 0)
-                    Logout(instance.Context.Cores[0]);
-            
+                instance.Context.Cores.LockReading(delegate()
+                {
+                    while (instance.Context.Cores.Count > 0)
+                        Logout(instance.Context.Cores[0]);
+                });
         }
     }
 
@@ -701,6 +727,7 @@ namespace RiseOp.Simulator
         internal RiseOpContext Context;
 
         internal string Path;
+        internal int Index;
 
         internal FirewallType RealFirewall;
         internal IPAddress RealIP;
@@ -710,10 +737,11 @@ namespace RiseOp.Simulator
 
         internal Dictionary<IPEndPoint, bool> NatTable = new Dictionary<IPEndPoint, bool>();
 
-        internal SimInstance(InternetSim internet, string path)
+        internal SimInstance(InternetSim internet, int index, string path)
         {
             Internet = internet;
             Path = path;
+            Index = index;
         }
     }
 

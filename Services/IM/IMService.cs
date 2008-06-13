@@ -38,7 +38,7 @@ namespace RiseOp.Services.IM
         internal IMService(OpCore core)
         {
             Core = core;
-            Network = Core.OperationNet;
+            Network = Core.Network;
             Links = core.Links;
             Locations = core.Locations;
 
@@ -440,7 +440,7 @@ namespace RiseOp.Services.IM
         internal InstantMessage(OpCore core, string text, bool system)
         {
             Source = core.UserID;
-            ClientID = core.OperationNet.Local.ClientID;
+            ClientID = core.Network.Local.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;
             System = system;

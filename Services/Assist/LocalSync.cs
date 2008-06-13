@@ -45,9 +45,11 @@ namespace RiseOp.Services.Assist
         internal LocalSync(OpCore core)
         {
             Core = core;
-            Network = core.OperationNet;
+            Network = core.Network;
             Store = Network.Store;
             Core.Sync = this;
+
+            Network.StatusChange += new StatusChange(Network_StatusChange);
 
             Core.Locations.GetTag[ServiceID, DataTypeSync] += new GetLocationTagHandler(Locations_GetTag);
             Core.Locations.TagReceived[ServiceID, DataTypeSync] += new LocationTagReceivedHandler(Locations_TagReceived);
@@ -81,6 +83,13 @@ namespace RiseOp.Services.Assist
             return null;
         }
 
+        void Network_StatusChange()
+        {
+            // check that we have the latest version of local sync'd files in range
+            if (Network.Established)
+                foreach (ulong user in InRange.Keys)
+                    InvokeTags(user, InRange[user]);
+        }
         internal void UpdateLocal()
         {
             ServiceData data = new ServiceData();
@@ -117,7 +126,7 @@ namespace RiseOp.Services.Assist
         void Cache_FileAquired(OpVersionedFile file)
         {
             ServiceData data = ServiceData.Decode(file.Header.Extra);
-
+            
             if (Network.Routing.InCacheArea(file.UserID))
                 InRange[file.UserID] = data;
             else
@@ -203,6 +212,19 @@ namespace RiseOp.Services.Assist
 
                 Network.Searches.SendDirectRequest(address, user, ServiceID, DataTypeSync, BitConverter.GetBytes(version));
             }
+
+            // ensure we have the lastest versions of the user's services
+            if (file != null)
+                CheckTags(file.UserID);
+        }
+
+        private void CheckTags(ulong user)
+        {
+            if (InRange.ContainsKey(user))
+                InvokeTags(user, InRange[user]);
+
+            else if (OutofRange.ContainsKey(user))
+                InvokeTags(user, OutofRange[user]);
         }
 
 

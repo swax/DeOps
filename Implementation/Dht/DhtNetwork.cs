@@ -42,7 +42,9 @@ namespace RiseOp.Implementation.Dht
         internal LinkedList<DhtContact> IPCache = new LinkedList<DhtContact>();
         internal Dictionary<int, LinkedListNode<DhtContact>> IPTable = new Dictionary<int, LinkedListNode<DhtContact>>();
 
-        internal bool   IsGlobal;
+        internal bool IsGlobal;
+        internal GlobalSettings GlobalConfig;
+
         internal DhtClient Local;
         internal ulong  OpID;
 
@@ -55,6 +57,7 @@ namespace RiseOp.Implementation.Dht
         internal DateTime NextWebcacheTry;
         RetryIntervals    GlobalSearchInterval;
         DateTime          NextGlobalSearch;
+        DateTime          NextSaveCache;
 
         internal RijndaelManaged OriginalCrypt;
         internal RijndaelManaged AugmentedCrypt;
@@ -70,22 +73,19 @@ namespace RiseOp.Implementation.Dht
         internal GraphForm   GuiGraph;
 
 
-        internal DhtNetwork(OpCore core, bool isGlobal)
+        internal DhtNetwork(OpCore core, bool global)
         {
             Core = core;
-            IsGlobal = isGlobal;
+            IsGlobal = global;
+
+            if (IsGlobal)
+                GlobalConfig = GlobalSettings.Load(this);
 
             Local = new DhtClient();
-            Local.UserID = IsGlobal ? Core.User.Settings.GlobalID : Utilities.KeytoID(Core.User.Settings.KeyPair.ExportParameters(false));
+            Local.UserID = IsGlobal ? GlobalConfig.UserID : Utilities.KeytoID(Core.User.Settings.KeyPair.ExportParameters(false));
             Local.ClientID = (ushort) Core.RndGen.Next(1, ushort.MaxValue);
 
             OpID = IsGlobal ? 0 : Utilities.KeytoID(Core.User.Settings.OpKey.Key);
-
-            // load ip cache, addlast so in same order it was saved in
-            List<DhtContact> cache = IsGlobal ? Core.User.GlobalCache : Core.User.OpCache;
-            lock(IPCache)
-                foreach (DhtContact entry in cache)
-                    IPTable.Add(entry.GetHashCode(), IPCache.AddLast(entry));
 
             // load encryption
             if (IsGlobal)
@@ -113,6 +113,7 @@ namespace RiseOp.Implementation.Dht
 
             Retry = new RetryIntervals(Core);
             GlobalSearchInterval = new RetryIntervals(Core);
+            NextSaveCache = Core.TimeNow.AddMinutes(1);
         }
 
         internal void SecondTimer()
@@ -122,6 +123,10 @@ namespace RiseOp.Implementation.Dht
             RudpControl.SecondTimer();   
             Routing.SecondTimer();
             Searches.SecondTimer();
+
+            if(!IsGlobal)
+                CheckGlobalProxyMode();
+
 
             CheckConnectionStatus();
 
@@ -145,6 +150,17 @@ namespace RiseOp.Implementation.Dht
                     IPCache.RemoveLast();
                 }
 
+            // save cache
+            if (Core.TimeNow > NextSaveCache)
+            {
+                if(IsGlobal)
+                    GlobalConfig.Save(Core);
+                else
+                    Core.User.Save();
+
+                NextSaveCache = Core.TimeNow.AddMinutes(5);
+            }
+
             // established in dht
             if (FireStatusChange > 0)
             {
@@ -167,7 +183,14 @@ namespace RiseOp.Implementation.Dht
                 if (IPTable.ContainsKey(entry.GetHashCode()))
                     IPCache.Remove(IPTable[entry.GetHashCode()]);
 
-                IPTable[entry.GetHashCode()] = IPCache.AddFirst(entry);
+                // sort nodes based on last seen
+                LinkedListNode<DhtContact> node = null;
+
+                for (node = IPCache.First; node != null; node = node.Next)
+                    if (entry.LastSeen > node.Value.LastSeen)
+                        break;
+
+                IPTable[entry.GetHashCode()] = (node != null) ? IPCache.AddBefore(node, entry) : IPCache.AddLast(entry);
             }
         }
 
@@ -248,16 +271,23 @@ namespace RiseOp.Implementation.Dht
 
         void OpBootstrap()
         {
+            OpCore global = Core.Context.Global;
+
             // find operation nodes through global net at expanding intervals
             // called from operation network's bootstrap
-            if (Core.GlobalNet != null && Core.GlobalNet.Responsive)
+            if (global != null && global.Network.Responsive)
             {
                 GlobalSearchInterval.Timer();
 
                 if (Core.TimeNow > NextGlobalSearch)
                 {
                     NextGlobalSearch = GlobalSearchInterval.NextTry;
-                    Core.Locations.StartSearch(OpID, 0, true);
+
+                    global.RunInCoreAsync(delegate()
+                    {
+                        GlobalService service = (GlobalService) global.ServiceMap[2];
+                        service.StartSearch(OpID, 0);
+                    });
                 }
             }
 
@@ -288,7 +318,7 @@ namespace RiseOp.Implementation.Dht
 
             // if blocked and go through cache and mark as tcp tried
             // 1 outbound tcp per second, 10 min retry
-            if (Core.Firewall == FirewallType.Blocked)
+            if (Core.Context.Firewall == FirewallType.Blocked)
                 lock (IPCache)
                     foreach (DhtContact entry in IPCache)
                     {
@@ -435,6 +465,12 @@ namespace RiseOp.Implementation.Dht
 
         internal void FirewallChangedtoOpen()
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { FirewallChangedtoOpen(); });
+                return;
+            }
+
             //close proxy connects
             lock (TcpControl.SocketList)
                 foreach (TcpConnect connection in TcpControl.SocketList)
@@ -444,6 +480,12 @@ namespace RiseOp.Implementation.Dht
 
         internal void FirewallChangedtoNAT()
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { FirewallChangedtoNAT(); });
+                return;
+            }
+
             //update proxy connects
             lock (TcpControl.SocketList)
                 foreach (TcpConnect connection in TcpControl.SocketList)
@@ -464,14 +506,14 @@ namespace RiseOp.Implementation.Dht
             source.ClientID = Local.ClientID;
             source.TcpPort  = TcpControl.ListenPort;
             source.UdpPort  = UdpControl.ListenPort;
-            source.Firewall = Core.Firewall;
+            source.Firewall = Core.Context.Firewall;
 
             return source;
         }
 
         internal DhtContact GetLocalContact()
         {
-            return new DhtContact(Local.UserID, Local.ClientID, Core.LocalIP, TcpControl.ListenPort, UdpControl.ListenPort);
+            return new DhtContact(Local.UserID, Local.ClientID, Core.Context.LocalIP, TcpControl.ListenPort, UdpControl.ListenPort);
         }
 
         internal void IncomingPacket(G2ReceivedPacket packet)
@@ -480,7 +522,7 @@ namespace RiseOp.Implementation.Dht
             {
                 lock (IncomingPackets)
                     if (IncomingPackets.Count < 100)
-                        IncomingPackets.Enqueue(new PacketCopy(packet, IsGlobal));
+                        IncomingPackets.Enqueue(new PacketCopy(packet));
 
                 Core.ProcessEvent.Set();
             }
@@ -755,11 +797,16 @@ namespace RiseOp.Implementation.Dht
         internal void SendTunnelPacket(DhtAddress contact, G2Packet embed)
         {
             Debug.Assert(contact.TunnelClient != null && contact.TunnelServer != null);
-
-            // can only send tunneled from operation network
+            Debug.Assert(Core.Context.Global != null);
             Debug.Assert(!IsGlobal);
-            if (IsGlobal)
+            Debug.Assert(Core.User.Settings.OpAccess != AccessType.Secret);
+
+            if (IsGlobal ||
+                Core.Context.Global == null || 
+                Core.User.Settings.OpAccess == AccessType.Secret)
                 return;
+
+            OpCore global = Core.Context.Global;
 
             // tunnel packet through global network
             byte[] encoded = embed.Encode(Protocol);
@@ -781,36 +828,49 @@ namespace RiseOp.Implementation.Dht
             else
                 packet.Payload = encoded;
 
-            packet.Source = Core.GlobalNet.Local;
+            packet.Source = new TunnelAddress(global.Network.Local, Core.TunnelID);
             packet.Target = contact.TunnelClient;
 
+ 
             // if not open send proxied through local global proxy
             // NAT as well because receiver would need to send all responses through same local global proxy
             // for NATd host to get replies
-            if (Core.Firewall != FirewallType.Open)
+            if (Core.Context.Firewall != FirewallType.Open)
             {
                 packet.TargetServer = contact.TunnelServer;
 
-                TcpConnect server = Core.GlobalNet.TcpControl.GetProxy(packet.TargetServer) ?? // direct path
-                                    Core.GlobalNet.TcpControl.GetProxyServer(contact.IP) ?? // reRoute through same server
-                                    Core.GlobalNet.TcpControl.GetRandomProxy(); // random proxy
-
-                if (server != null)
+                global.RunInCoreAsync(delegate()
                 {
-                    packet.SourceServer = new DhtAddress(server.RemoteIP, server);
-                    server.SendPacket(packet);
-                }
+                    TcpConnect server = global.Network.TcpControl.GetProxy(packet.TargetServer) ?? // direct path
+                                        global.Network.TcpControl.GetProxyServer(contact.IP) ?? // reRoute through same server
+                                        global.Network.TcpControl.GetRandomProxy(); // random proxy
+
+                    if (server != null)
+                    {
+                        packet.SourceServer = new DhtAddress(server.RemoteIP, server);
+                        server.SendPacket(packet);
+                    }
+                });
             }
             // else we are open, send op ip address in the souce server
             else
             {
-                packet.SourceServer = new DhtAddress(Core.LocalIP, Core.GlobalNet.GetLocalSource());
-                Core.GlobalNet.UdpControl.SendTo(contact.TunnelServer, packet);
+                packet.SourceServer = new DhtAddress(Core.Context.LocalIP, global.Network.GetLocalSource());
+
+                global.RunInCoreAsync(delegate()
+                {
+                    global.Network.UdpControl.SendTo(contact.TunnelServer, packet);
+                });
             }
         }
 
         void ReceiveTunnelPacket(G2ReceivedPacket raw, TunnelPacket tunnel)
         {
+            Debug.Assert(IsGlobal);
+
+            if (!IsGlobal)
+                return;
+
             // decrypt internal packet
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption) // turn off encryption during simulation
             {
@@ -841,10 +901,18 @@ namespace RiseOp.Implementation.Dht
                 opPacket.Source.TunnelClient = tunnel.Source;
                 opPacket.Source.TunnelServer = tunnel.SourceServer;
 
-                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tunnel, DirectionType.In, opPacket.Source, opPacket.Root.Data);
-                Core.OperationNet.LogPacket(logEntry);
+                Core.Context.Cores.LockReading(delegate()
+                {
+                    foreach (OpCore core in Core.Context.Cores)
+                        if (core.TunnelID == tunnel.Target.TunnelID)
+                            core.RunInCoreAsync(delegate()
+                            {
+                                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tunnel, DirectionType.In, opPacket.Source, opPacket.Root.Data);
+                                core.Network.LogPacket(logEntry);
 
-                Core.OperationNet.IncomingPacket(opPacket);
+                                core.Network.IncomingPacket(opPacket);
+                            });
+                });
             }
         }
 
@@ -856,8 +924,7 @@ namespace RiseOp.Implementation.Dht
             ping.Ident = contact.Ident = (ushort)Core.RndGen.Next(ushort.MaxValue);
 
             // always send ping udp, tcp pings are sent manually
-            SendPacket(contact, ping);
-            
+            SendPacket(contact, ping);       
         }
 
         internal void SendPacket(DhtAddress contact, G2Packet packet)
@@ -874,7 +941,7 @@ namespace RiseOp.Implementation.Dht
             
             // set local IP
             if (ping.RemoteIP != null && !packet.Tunneled)
-                Core.LocalIP = ping.RemoteIP;
+                Core.Context.LocalIP = ping.RemoteIP;
 
 
             // check loop back
@@ -889,7 +956,7 @@ namespace RiseOp.Implementation.Dht
             // dont send back pong if received tunneled and no longer need to use global proxies
             // remote would only send tunneled ping if UseGlobalProxies published info on network
             // let our global address expire from remote's routing table
-            if (packet.Tunneled && !Core.UseGlobalProxies)
+            if (packet.Tunneled && !UseGlobalProxies)
                 return;
 
             // setup pong reply
@@ -916,7 +983,7 @@ namespace RiseOp.Implementation.Dht
                 // received incoming tcp means we are not firewalled
                 if (!packet.Tcp.Outbound)
                     // done here to prevent setting open for loopback tcp connection
-                    Core.SetFirewallType(FirewallType.Open);
+                    Core.Context.SetFirewallType(FirewallType.Open);
 
                 // check if already connected
                 if (packet.Tcp.Proxy == ProxyType.Unset && TcpControl.GetProxy(ping.Source) != null)
@@ -950,7 +1017,7 @@ namespace RiseOp.Implementation.Dht
             {
                 // received udp traffic, we must be behind a NAT at least
                 if (!packet.Tunneled)
-                    Core.SetFirewallType(FirewallType.NAT);
+                    Core.Context.SetFirewallType(FirewallType.NAT);
 
                 Routing.TryAdd(packet, ping.Source);
 
@@ -964,7 +1031,7 @@ namespace RiseOp.Implementation.Dht
             Pong pong = Pong.Decode(packet);
 
             if (pong.RemoteIP != null && !packet.Tunneled)
-                Core.LocalIP = pong.RemoteIP;
+                Core.Context.LocalIP = pong.RemoteIP;
 
 
             // if received tcp
@@ -997,12 +1064,12 @@ namespace RiseOp.Implementation.Dht
                         // if firewalled
                         if (packet.Tcp.Outbound && packet.Tcp.Proxy == ProxyType.Unset)
                         {
-                            if (Core.Firewall != FirewallType.Open && TcpControl.AcceptProxy(ProxyType.Server, pong.Source.UserID))
+                            if (Core.Context.Firewall != FirewallType.Open && TcpControl.AcceptProxy(ProxyType.Server, pong.Source.UserID))
                             {
                                 // send proxy request
                                 ProxyReq request = new ProxyReq();
                                 request.SenderID = Local.UserID;
-                                request.Type = (Core.Firewall == FirewallType.Blocked) ? ProxyType.ClientBlocked : ProxyType.ClientNAT;
+                                request.Type = (Core.Context.Firewall == FirewallType.Blocked) ? ProxyType.ClientBlocked : ProxyType.ClientNAT;
                                 packet.Tcp.SendPacket(request);
                             }
 
@@ -1018,7 +1085,7 @@ namespace RiseOp.Implementation.Dht
             else
             {
                 if (!packet.Tunneled)
-                    Core.SetFirewallType(FirewallType.NAT);
+                    Core.Context.SetFirewallType(FirewallType.NAT);
 
                 // send bootstrap request for nodes if network not responsive
                 // do tcp connect because if 2 nodes on network then one needs to find out they're open
@@ -1035,7 +1102,7 @@ namespace RiseOp.Implementation.Dht
                 Routing.TryAdd(packet, pong.Source, true);
 
                 // forward to proxied nodes, so that their routing tables are up to date, so they can publish easily
-                if (Core.Firewall == FirewallType.Open)
+                if (Core.Context.Firewall == FirewallType.Open)
                 {
                     pong.FromAddress = packet.Source;
                     pong.RemoteIP = null;
@@ -1055,7 +1122,7 @@ namespace RiseOp.Implementation.Dht
             ack.Source = GetLocalSource();
 
             // check if there is space for type required
-            if (Core.Firewall == FirewallType.Open  && TcpControl.AcceptProxy(request.Type, ack.Source.UserID))
+            if (Core.Context.Firewall == FirewallType.Open  && TcpControl.AcceptProxy(request.Type, ack.Source.UserID))
             {
                 ack.Accept = true;
             }
@@ -1101,7 +1168,7 @@ namespace RiseOp.Implementation.Dht
 
 
             // dont do proxy if we're not firewalled or remote host didnt accept
-            if (Core.Firewall == FirewallType.Open || !ack.Accept)
+            if (Core.Context.Firewall == FirewallType.Open || !ack.Accept)
             {
                 if (packet.ReceivedTcp)
                     packet.Tcp.CleanClose("Proxy request rejected");
@@ -1224,17 +1291,51 @@ namespace RiseOp.Implementation.Dht
             if(G2Protocol.ReadPacket(packet.Root))
                 message += ", type " + packet.Root.Name;*/
         }
+
+        internal bool UseGlobalProxies;
+
+        internal void CheckGlobalProxyMode()
+        {
+            Debug.Assert(!IsGlobal);
+
+            // if blocked/NATed connected to global but not the op, then we are in global proxy mode
+            // global proxy mode removed once connection to op is established
+            // global proxies are published with location data so that communication can be tunneled
+            // hosts in global proxy mode are psuedo-open meaning they act similarly to open hosts in that 
+            // they are added to the routing table and they conduct search/store like an open node
+
+            OpCore global = Core.Context.Global;
+
+            bool useProxies = (Core.Context.Firewall != FirewallType.Open &&
+                                Core.TimeNow > Core.StartTime.AddSeconds(15) &&
+                                global != null && global.Network.TcpControl.ProxyServers.Count > 0 &&
+                                TcpControl.ProxyServers.Count == 0);
+
+
+            // if no state change return
+            if (useProxies == UseGlobalProxies)
+                return;
+
+            UseGlobalProxies = useProxies;
+
+            if (UseGlobalProxies)
+            {
+                // socket will handle publishing after 15 secs, location timer handles re-publishing
+            }
+            else
+            {
+                // global proxies should remove themselves from routing by timing out
+            }
+        }
     }
 
     internal class PacketCopy
     {
         internal G2ReceivedPacket Packet;
-        internal bool Global;
 
-        internal PacketCopy(G2ReceivedPacket packet, bool global)
+        internal PacketCopy(G2ReceivedPacket packet)
         {
             Packet = packet;
-            Global = global;
         }
     }
 

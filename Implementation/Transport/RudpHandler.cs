@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 using RiseOp.Services;
@@ -142,6 +143,15 @@ namespace RiseOp.Implementation.Transport
 
         internal void AnnounceProxy(TcpConnect tcp)
         {
+            Debug.Assert(!Network.IsGlobal);
+
+            // function run bewteen cores
+            if (Network.Core.InvokeRequired)
+            {
+                Network.Core.RunInCoreAsync(delegate() { AnnounceProxy(tcp); });
+                return;
+            }
+
             foreach (List<RudpSession> sessions in SessionMap.Values)
                 foreach(RudpSession session in sessions)
                     if (session.Status == SessionStatus.Active)

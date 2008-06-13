@@ -205,7 +205,7 @@ namespace RiseOp.Services.IM
             // name, in bold, blue for incoming, red for outgoing
             if(message.System)
                 MessageTextBox.SelectionColor = Color.Black;
-            else if (message.Source == Core.UserID && message.ClientID == Core.OperationNet.Local.ClientID)
+            else if (message.Source == Core.UserID && message.ClientID == Core.Network.Local.ClientID)
                 MessageTextBox.SelectionColor = Color.Red;
             else
                 MessageTextBox.SelectionColor = Color.Blue;

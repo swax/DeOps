@@ -23,7 +23,7 @@ namespace RiseOp.Interface.Views
             PreserveSideMode = sideMode;
 
             Tray.Icon = InterfaceRes.rank;
-            Tray.Text = Core.User.Settings.Operation + " - " + Core.User.Settings.ScreenName;
+            Tray.Text = Core.User.Settings.Operation + " - " + Core.User.Settings.UserName;
             Tray.Visible = true;
 
             Tray.DoubleClick += new EventHandler(Tray_DoubleClick);

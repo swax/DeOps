@@ -27,6 +27,16 @@ purchase through website, allows user to sign in, take their any of their projec
 de-ops urls boards storages chats anything, extendable
 	peoples emails, profiles, etc.. can include <links>
 
+settings
+	inherited settings - allow local override
+		listbox of items inherited
+		can invite? - true / false - allows sub to see invite box
+		icons, etc..
+	tools - connect help
+		shows current ip/port/port/id (give to someone else)
+		allows pasting of same format into box and adding to cache
+		allows viewing adding web caches as well for network
+	
 security
 	able to change Op ID in client - for project forks or if project is majorly compramised
 		new Op ID can be secure mailed to entire org, or pointer can be put in link file (went to op id x)
@@ -40,6 +50,34 @@ security
 		when something needs to be signed / decrypted use sync key to decrypt private on fly
 		minimize the amount of time private the key stays in memeory
 
+	send out random garbage and random times to random hosts, sometimes with char stings like 'hola como estas' just to mess
+	    sniffers up a lil more 
+	    
+	direct invite - 2 way invite
+		invite is encode location of node or proxy with specified tunnel id and invite id (dummy opID only works for invitee)
+		the inviter recieves notification when invitee connects and then choooses to accept which transmits opID
+		both parties immediately know each other's link and don't need to find each other later
+		removes risk of stale invites lying around ready to be compramised
+		inviter keeps track of all outstanding invite IDs
+		invite list kept of issued invite IDs, id removed when accepted, and cleared when riseOp closes	
+          
+	re-alignment   
+		goal
+			in a corporate network where people join/leave network continuously, good to re-init opID weekly
+			make opID shift as smooth and as transparent possible
+			use existing trust links to transmit new OpID and port numbers
+		reason
+			in server environments, one admin has to keep track of everyone, very easy
+				for someone to slip in an account unnoticed
+			in riseOp people continuously notice and interact with one another
+				discrepancies in accounts quickly noticed and the network is re-aligned
+		implementation
+			tranverse trusted tree publishing/transmitting ecoded opID for each member
+			network reset with new opID, and new network created with old opID with sole purpose of re-direction
+				if trusted node seen on old network (requesting link or loc) old node is re-directed to new opID
+				caching etc.. suspended on old network
+			
+	 
 VPN
 	each node assigned a IP from above, static/dynamic, only changes when hierarchy above changes
 	each level assigns large blocks to level below
@@ -116,7 +154,37 @@ mobile
 	interface uses linked in source files
 
 components
-	auto component distribution to lowers if they dont have it
+	
+	Search Service
+		local 
+			Index - Component ID / Object ID / pub,priv / keywords
+			Build index iteratively as program runs
+			On exit encrypt save index file, if one exists index1,2,3, etc..
+			On search gui - 1st time, load index files, when re-saved they are merged
+				only load search indexes on demand, or slowly as app runs, dont lock app up
+			Simple dictionay<key, list<object keys>> for each component
+			Lookup(component, value) loads appropriate index if needed, returns object key
+				object key mapped by component to object example key first 4 bytes of hash, object is full hash
+		
+			sqlite full text search - if previous too memory consuming or something
+				get ado.net interface, db_linq, and full text search packages
+				insert component ID / keywords / object ID for any new object coming in
+				object removed trigger removal of anything in db with object ID
+				search goes through all objects
+				first version has no encryption, need $$ to pay for see license
+		
+		remote
+			allow services to store key/byte[] on network
+			example link component will publish userID at keys for Joe Smith on dht, so a search for Joe will find users named Joe
+			keys expire over a certain amount of time, replicated until then
+			
+			link - publish name keys, userID, on result find location show if online
+			storage - for large files pulish hash key, user ID - use for multi-source d/l
+			
+			global network could use this to find public operations key name, value OpID
+			
+			
+		auto component distribution to lowers if they dont have it
 	
 	
 	visual 

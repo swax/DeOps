@@ -56,8 +56,8 @@ namespace RiseOp.Services.Trust
             Core = core;
             Core.Links = this;
 
-            Store = Core.OperationNet.Store;
-            Network = Core.OperationNet;
+            Store = Core.Network.Store;
+            Network = Core.Network;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
@@ -94,7 +94,7 @@ namespace RiseOp.Services.Trust
 
             if (!LocalTrust.Loaded)
             {
-                LocalTrust.Name = Core.User.Settings.ScreenName;
+                LocalTrust.Name = Core.User.Settings.UserName;
                 LocalTrust.AddProject(0, true); // operation
 
                 SaveLocal();
@@ -488,7 +488,7 @@ namespace RiseOp.Services.Trust
 
             if (!link.Trust.Searched)
             {
-                Core.Locations.StartSearch(link.UserID, 0, false);
+                Core.Locations.StartSearch(link.UserID, 0);
 
                 link.Trust.Searched = true;
             }
@@ -1163,7 +1163,7 @@ namespace RiseOp.Services.Trust
 
             foreach (ClientInfo info in clients)
             {
-                if (info.Data.UserID == Core.UserID && info.Data.Source.ClientID == Core.OperationNet.Local.ClientID)
+                if (info.Data.UserID == Core.UserID && info.Data.Source.ClientID == Core.Network.Local.ClientID)
                     continue;
 
                 if (!locations.Contains(info.Data))

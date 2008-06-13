@@ -1,25 +1,26 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Security;
 using System.Security.Cryptography;
 using System.Text;
+using System.Windows.Forms;
 using System.Xml;
-using System.Diagnostics;
 
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Protocol.File;
+using RiseOp.Implementation.Protocol.Special;
 
 
 namespace RiseOp
 {
 
-    internal enum LoadModeType { Settings, Cache };
+    internal enum LoadModeType { Settings, AllCaches, GlobalCache };
 
     internal enum AccessType { Public, Private, Secret };
 
@@ -36,12 +37,7 @@ namespace RiseOp
         internal string TempPath;
 		internal RijndaelManaged Password;
 
-		Random RndGen = new Random(unchecked((int)DateTime.Now.Ticks));
-
         internal SettingsPacket Settings = new SettingsPacket();
-
-        internal List<DhtContact> GlobalCache = new List<DhtContact>();
-        internal List<DhtContact> OpCache = new List<DhtContact>();
 
 
         internal Identity(string filepath, string password, OpCore core)
@@ -54,6 +50,7 @@ namespace RiseOp
 
 		internal Identity(string filepath, string password, G2Protocol protocol)
 		{
+            // used when creating new ident
             Protocol    = protocol;
 
             Init(filepath, password);
@@ -68,32 +65,12 @@ namespace RiseOp
             TempPath = RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + "0";
             Directory.CreateDirectory(TempPath);
 
-			// default settings
-            Settings.GlobalPortTcp = NextRandPort();
-            Settings.GlobalPortUdp = NextRandPort();
-            Settings.OpPortTcp = NextRandPort();
-            Settings.OpPortUdp = NextRandPort();
+            Random rndGen = new Random(unchecked((int)DateTime.Now.Ticks));
 
-            byte[] id = new byte[8];
-            RndGen.NextBytes(id);
-            Settings.GlobalID = BitConverter.ToUInt64(id, 0);
+			// default settings, set tcp/udp the same so forwarding is easier
+            Settings.TcpPort = (ushort)rndGen.Next(5000, 9000);
+            Settings.UdpPort = Settings.TcpPort;
 		}
-
-        List<ushort> UsedPorts = new List<ushort>();
-
-        ushort NextRandPort()
-        {
-            while (true)
-            {
-                ushort num = (ushort)RndGen.Next(5000, 9000);
-
-                if (UsedPorts.Contains(num))
-                    continue;
-
-                UsedPorts.Add(num);
-                return num;
-            }
-        }
 
 		internal void Load(LoadModeType loadMode)
 		{
@@ -109,22 +86,19 @@ namespace RiseOp
 
                 while (stream.ReadPacket(ref root))
                 {
-                    if(loadMode == LoadModeType.Settings)
-                        if(root.Name ==  IdentityPacket.Settings)
+                    if (loadMode == LoadModeType.Settings)
+                        if (root.Name == IdentityPacket.OperationSettings)
                         {
                             Settings = SettingsPacket.Decode(root);
                             break;
                         }
 
-                    if (loadMode == LoadModeType.Cache)
-                    {
-                        if (root.Name == IdentityPacket.GlobalCache)
-                            if (Core.GlobalNet != null)
-                                Core.GlobalNet.AddCacheEntry(ContactPacket.Decode(root).Contact);
+                    if (root.Name == IdentityPacket.GlobalCache && Core.Context.Global != null &&
+                        (loadMode == LoadModeType.AllCaches || loadMode == LoadModeType.GlobalCache))
+                        Core.Context.Global.Network.AddCacheEntry(SavedPacket.Decode(root).Contact);
 
-                        if (root.Name == IdentityPacket.OperationCache)
-                            Core.OperationNet.AddCacheEntry(ContactPacket.Decode(root).Contact);
-                    }
+                    if (root.Name == IdentityPacket.OperationCache && loadMode == LoadModeType.AllCaches)
+                        Core.Network.AddCacheEntry(SavedPacket.Decode(root).Contact);
                 }
 
                 stream.Close();
@@ -140,7 +114,7 @@ namespace RiseOp
 
         internal void Save()
         {
-            string backupPath = ProfilePath.Replace(".dop", ".bak");
+            string backupPath = ProfilePath.Replace(".rop", ".bak");
 
 			if( !File.Exists(backupPath) && File.Exists(ProfilePath))
 				File.Copy(ProfilePath, backupPath, true);
@@ -156,10 +130,10 @@ namespace RiseOp
 
                 if (Core != null)
                 {
-                    if (Core.GlobalNet != null)
-                        SaveCache(stream, Core.GlobalNet.IPCache, IdentityPacket.GlobalCache);
+                    if (Core.Context.Global != null)
+                        SaveCache(stream, Core.Context.Global.Network.IPCache, IdentityPacket.GlobalCache);
 
-                    SaveCache(stream, Core.OperationNet.IPCache, IdentityPacket.OperationCache);
+                    SaveCache(stream, Core.Network.IPCache, IdentityPacket.OperationCache);
                 }
 
                 stream.Close();
@@ -180,44 +154,66 @@ namespace RiseOp
             File.Delete(backupPath);
         }
 
-        private void SaveCache(PacketStream stream, LinkedList<DhtContact> cache, byte type)
+        internal static void SaveCache(PacketStream stream, LinkedList<DhtContact> cache, byte type)
         {
             lock (cache)
                 foreach (DhtContact entry in cache)
                     if (entry.TunnelClient == null) 
-                        stream.WritePacket(new ContactPacket(type, entry));
+                        stream.WritePacket(new SavedPacket(type, entry));
         }
 
-        internal void SaveInvite(string path)
+        internal static void CreateNew(string path, string opName, string userName, string password, AccessType access, OneWayInvite invite)
         {
-            /*FileStream writeStream = new FileStream(path, FileMode.Create);
-            XmlTextWriter xmlWriter = new XmlTextWriter(writeStream, Encoding.UTF8);
+            Identity user = new Identity(path, password, new G2Protocol());
+            user.Settings.Operation = opName;
+            user.Settings.UserName = userName;
+            user.Settings.KeyPair = new RSACryptoServiceProvider(1024);
+            user.Settings.OpKey = new RijndaelManaged();
+            user.Settings.FileKey = new RijndaelManaged();
+            user.Settings.FileKey.GenerateKey();
+            user.Settings.OpAccess = access;
 
-            xmlWriter.WriteStartElement("invite");
+            // joining/creating public
+            if (access == AccessType.Public)
+            {
+                // 256 bit rijn
+                
+                SHA256Managed sha256 = new SHA256Managed();
+                user.Settings.OpKey.Key = sha256.ComputeHash(UTF8Encoding.UTF8.GetBytes(opName));
+            }
 
-            xmlWriter.WriteElementString("Operation", Operation);
-            xmlWriter.WriteElementString("OpKey", Utilities.CryptType(OpKey) + "/" + Utilities.BytestoHex(OpKey.Key));
-            xmlWriter.WriteElementString("OpAccess", Enum.GetName(typeof(AccessType), OpAccess));
+            // invite to private/secret
+            else if (invite != null)
+                user.Settings.OpKey.Key = invite.OpID;
 
-            xmlWriter.WriteEndElement();
-            xmlWriter.Flush();
+            // creating private/secret
+            else
+                user.Settings.OpKey.GenerateKey();
 
-            xmlWriter.Close();
-            writeStream.Close();*/
+
+            user.Save();
+
+            // throws exception on failure
         }
     }
 
-    internal class ContactPacket : G2Packet
+    internal class SavedPacket : G2Packet
     {
+        internal const byte Packet_Contact = 0x10;
+        internal const byte Packet_LastSeen = 0x20;
+
+
         internal byte Name;
+        internal DateTime LastSeen;
         internal DhtContact Contact;
 
 
-        internal ContactPacket() { }
+        internal SavedPacket() { }
 
-        internal ContactPacket(byte name, DhtContact contact)
+        internal SavedPacket(byte name, DhtContact contact)
         {
             Name = name;
+            LastSeen = contact.LastSeen;
             Contact = contact;
         }
 
@@ -225,68 +221,86 @@ namespace RiseOp
         {
             lock (protocol.WriteSection)
             {
-                Contact.WritePacket(protocol, null, Name);
+                G2Frame saved = protocol.WritePacket(null, Name, null);
+
+                Contact.WritePacket(protocol, saved, Packet_Contact);
+
+                protocol.WritePacket(saved, Packet_LastSeen, BitConverter.GetBytes(LastSeen.ToBinary()));
+
                 return protocol.WriteFinish();
             }
         }
 
-        internal static ContactPacket Decode(G2Header root)
+        internal static SavedPacket Decode(G2Header root)
         {
-            ContactPacket wrap = new ContactPacket();
+            SavedPacket saved = new SavedPacket();
 
-            wrap.Contact = DhtContact.ReadPacket(root);
+			G2Header child = new G2Header(root.Data);
 
-            return wrap;
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_Contact:
+                        saved.Contact = DhtContact.ReadPacket(child);
+                        break;
+
+                    case Packet_LastSeen:
+                        saved.LastSeen = DateTime.FromBinary(BitConverter.ToInt32(child.Data, child.PayloadPos));
+                        break;
+                }
+            }
+
+            saved.Contact.LastSeen = saved.LastSeen;
+
+            return saved;
         }
     }
 
     internal class IdentityPacket
     {
-        internal const byte Settings = 0x10;
-        internal const byte GlobalCache = 0x20;
-        internal const byte OperationCache = 0x30;
+        internal const byte OperationSettings  = 0x10;
+        internal const byte GlobalSettings     = 0x20;
+
+        internal const byte GlobalCache        = 0x30;
+        internal const byte OperationCache     = 0x40;
     }
 
     internal class SettingsPacket : G2Packet
     {
-        const byte Packet_Operation = 0x10;
-        const byte Packet_ScreenName = 0x20;
-        const byte Packet_GlobalID = 0x30;
-        const byte Packet_GlobalPortTcp = 0x40;
-        const byte Packet_GlobalPortUdp = 0x50;
-        const byte Packet_OpPortTcp = 0x60;
-        const byte Packet_OpPortUdp = 0x70;
-        const byte Packet_OpKey = 0x80;
-        const byte Packet_OpAccess = 0x90;
-        const byte Packet_KeyPair = 0xA0;
-        const byte Packet_Location = 0xB0;
-        const byte Packet_FileKey = 0xC0;
-        const byte Packet_AwayMsg = 0xD0;
+        const byte Packet_Operation     = 0x10;
+        const byte Packet_UserName      = 0x20;
+        const byte Packet_TcpPort       = 0x30;
+        const byte Packet_UdpPort       = 0x40;
+        const byte Packet_OpKey         = 0x50;
+        const byte Packet_OpAccess      = 0x60;
+        const byte Packet_KeyPair       = 0x70;
+        const byte Packet_Location      = 0x80;
+        const byte Packet_FileKey       = 0x90;
+        const byte Packet_AwayMsg       = 0xA0;
 
-        const byte Key_D = 0x10;
-        const byte Key_DP = 0x20;
-        const byte Key_DQ = 0x30;
+        const byte Key_D        = 0x10;
+        const byte Key_DP       = 0x20;
+        const byte Key_DQ       = 0x30;
         const byte Key_Exponent = 0x40;
         const byte Key_InverseQ = 0x50;
-        const byte Key_Modulus = 0x60;
-        const byte Key_P = 0x70;
-        const byte Key_Q = 0x80;
+        const byte Key_Modulus  = 0x60;
+        const byte Key_P        = 0x70;
+        const byte Key_Q        = 0x80;
 
 
         // general
         internal string Operation;
-        internal string ScreenName;
+        internal string UserName;
         internal string Location = "";
         internal string AwayMessage = "";
 
         // network
-        internal ulong GlobalID;
-
-        internal ushort GlobalPortTcp;
-        internal ushort GlobalPortUdp;
-        internal ushort OpPortTcp;
-        internal ushort OpPortUdp;
-
+        internal ushort TcpPort;
+        internal ushort UdpPort;
 
         // private
         internal RijndaelManaged OpKey = new RijndaelManaged();
@@ -306,15 +320,12 @@ namespace RiseOp
         {
             lock (protocol.WriteSection)
             {
-                G2Frame settings = protocol.WritePacket(null, IdentityPacket.Settings, null);
+                G2Frame settings = protocol.WritePacket(null, IdentityPacket.OperationSettings, null);
 
                 protocol.WritePacket(settings, Packet_Operation, UTF8Encoding.UTF8.GetBytes(Operation));
-                protocol.WritePacket(settings, Packet_ScreenName, UTF8Encoding.UTF8.GetBytes(ScreenName));
-                protocol.WritePacket(settings, Packet_GlobalID, BitConverter.GetBytes(GlobalID));
-                protocol.WritePacket(settings, Packet_GlobalPortTcp, BitConverter.GetBytes(GlobalPortTcp));
-                protocol.WritePacket(settings, Packet_GlobalPortUdp, BitConverter.GetBytes(GlobalPortUdp));
-                protocol.WritePacket(settings, Packet_OpPortTcp, BitConverter.GetBytes(OpPortTcp));
-                protocol.WritePacket(settings, Packet_OpPortUdp, BitConverter.GetBytes(OpPortUdp));
+                protocol.WritePacket(settings, Packet_UserName, UTF8Encoding.UTF8.GetBytes(UserName));              
+                protocol.WritePacket(settings, Packet_TcpPort, BitConverter.GetBytes(TcpPort));
+                protocol.WritePacket(settings, Packet_UdpPort, BitConverter.GetBytes(UdpPort));
                 protocol.WritePacket(settings, Packet_Location, UTF8Encoding.UTF8.GetBytes(Location));
                 protocol.WritePacket(settings, Packet_AwayMsg, UTF8Encoding.UTF8.GetBytes(AwayMessage));
 
@@ -360,28 +371,16 @@ namespace RiseOp
                         settings.Operation = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
-                    case Packet_ScreenName:
-                        settings.ScreenName = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                    case Packet_UserName:
+                        settings.UserName = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
-                    case Packet_GlobalID:
-                        settings.GlobalID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                    case Packet_TcpPort:
+                        settings.TcpPort = BitConverter.ToUInt16(child.Data, child.PayloadPos);
                         break;
 
-                    case Packet_GlobalPortTcp:
-                        settings.GlobalPortTcp = BitConverter.ToUInt16(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_GlobalPortUdp:
-                        settings.GlobalPortUdp = BitConverter.ToUInt16(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_OpPortTcp:
-                        settings.OpPortTcp = BitConverter.ToUInt16(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_OpPortUdp:
-                        settings.OpPortUdp = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                    case Packet_UdpPort:
+                        settings.UdpPort = BitConverter.ToUInt16(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_OpKey:
@@ -461,4 +460,148 @@ namespace RiseOp
             settings.KeyPublic = rsa.Modulus;
         }
     }
+
+    internal class GlobalSettings : G2Packet
+    {
+        const byte Packet_UserID = 0x10;
+        const byte Packet_TcpPort = 0x20;
+        const byte Packet_UdpPort = 0x30;
+
+        internal ulong UserID;
+        internal ushort TcpPort;
+        internal ushort UdpPort;
+
+        internal GlobalSettings()
+        {
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame settings = protocol.WritePacket(null, IdentityPacket.GlobalSettings, null);
+
+                protocol.WritePacket(settings, Packet_UserID, BitConverter.GetBytes(UserID));
+                protocol.WritePacket(settings, Packet_TcpPort, BitConverter.GetBytes(TcpPort));
+                protocol.WritePacket(settings, Packet_UdpPort, BitConverter.GetBytes(UdpPort));
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static GlobalSettings Decode(G2Header root)
+        {
+            GlobalSettings settings = new GlobalSettings();
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_UserID:
+                        settings.UserID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_TcpPort:
+                        settings.TcpPort = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_UdpPort:
+                        settings.UdpPort = BitConverter.ToUInt16(child.Data, child.PayloadPos);
+                        break;
+                }
+            }
+
+
+            return settings;
+        }
+
+        internal static GlobalSettings Load(DhtNetwork network)
+        {
+            // so that accross multiple ops, global access points are maintained more or less
+            // also bootstrap file can be sent to others to help them out
+            GlobalSettings settings = null;
+
+            string path = Application.StartupPath + Path.DirectorySeparatorChar + "bootstrap.rop";
+
+            if (File.Exists(path))
+            {
+                RijndaelManaged password = Utilities.PasswordtoRijndael("bootstrap");
+                FileStream readStream = null;
+
+                try
+                {
+                    readStream = new FileStream(path, FileMode.Open);
+                    CryptoStream decStream = new CryptoStream(readStream, password.CreateDecryptor(), CryptoStreamMode.Read);
+                    PacketStream stream = new PacketStream(decStream, network.Protocol, FileAccess.Read);
+
+                    G2Header root = null;
+
+                    while (stream.ReadPacket(ref root))
+                    {
+                        if (root.Name == IdentityPacket.GlobalSettings)
+                            settings = GlobalSettings.Decode(root);
+
+                        if (root.Name == IdentityPacket.GlobalCache)
+                            network.AddCacheEntry(SavedPacket.Decode(root).Contact);
+                    }
+
+                    stream.Close();
+                }
+                catch (Exception ex)
+                {
+                    network.UpdateLog("Exception", "GlobalSettings::Load " + ex.Message);
+                }
+            }
+
+            // file not found / loaded
+            if (settings == null)
+            {
+                settings = new GlobalSettings();
+
+                settings.UserID = Utilities.StrongRandUInt64(network.Core.StrongRndGen);
+                settings.TcpPort = (ushort)network.Core.RndGen.Next(5000, 9000);
+                settings.UdpPort = settings.TcpPort;
+            }
+
+            return settings;
+        }
+
+        internal void Save(OpCore core)
+        {
+            if (core.Sim != null) //crit test function as well as loading
+                return;
+
+            string path = Application.StartupPath + Path.DirectorySeparatorChar + "bootstrap.rop";
+            RijndaelManaged password = Utilities.PasswordtoRijndael("bootstrap");
+
+            try
+            {
+                // Attach to crypto stream and write file
+                FileStream file = new FileStream(path, FileMode.Create);
+                CryptoStream crypto = new CryptoStream(file, password.CreateEncryptor(), CryptoStreamMode.Write);
+                PacketStream stream = new PacketStream(crypto, core.Network.Protocol, FileAccess.Write);
+
+                stream.WritePacket(this);
+
+                Identity.SaveCache(stream, core.Network.IPCache, IdentityPacket.GlobalCache);
+
+                stream.Close();
+            }
+
+            catch (Exception ex)
+            {
+                core.Network.UpdateLog("Exception", "GlobalSettings::Save " + ex.Message);
+            }
+
+        }
+    }
+
 }

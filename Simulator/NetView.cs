@@ -139,34 +139,35 @@ namespace RiseOp.Simulator
             Dictionary<ulong, DhtNetwork> networks = new Dictionary<ulong, DhtNetwork>();
 
             foreach (SimInstance instance in Sim.Instances)
-                foreach(OpCore core in instance.Context.Cores)
-                {
-                    DhtNetwork network = null;
-                    
-                    if(OpID == 0)
-                        network = core.GlobalNet;
-                    
-                    else if(OpID == core.OperationNet.OpID)
-                        network = core.OperationNet;
+            {
+                if (OpID == 0 && instance.Context.Global != null)
+                    networks[instance.Context.Global.UserID] = instance.Context.Global.Network;
 
-
-                    if (network != null)
+                else
+                    instance.Context.Cores.LockReading(delegate()
                     {
-                        int nodeRadius = (core.Firewall == FirewallType.Open) ? maxRadius - 30 : maxRadius;
+                        foreach (OpCore core in instance.Context.Cores)
+                            if (OpID == core.Network.OpID)
+                                networks[core.UserID] = core.Network;
+                    });
+            }
+        
 
-                        NodePoints[network.Local.UserID] = GetCircumPoint(centerPoint, nodeRadius, IDto32(network.Local.UserID));
+            foreach (DhtNetwork network in networks.Values)
+            {
+                int nodeRadius = (network.Core.Context.Firewall == FirewallType.Open) ? maxRadius - 30 : maxRadius;
 
-                        networks[network.Local.UserID] = network;
+                NodePoints[network.Local.UserID] = GetCircumPoint(centerPoint, nodeRadius, IDto32(network.Local.UserID));
 
-                        if (TrackHash != null)
-                        {
-                            if (IsTracked(core))
-                                TrackPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.Local.UserID)));
-                            else if (IsTransferring(core))
-                                TransferPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.Local.UserID)));
-                        }
-                    }
+                if (TrackHash != null)
+                {
+                    if (IsTracked(network.Core))
+                        TrackPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.Local.UserID)));
+                    else if (IsTransferring(network.Core))
+                        TransferPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.Local.UserID)));
                 }
+            }
+
             // draw lines for tcp between points
             foreach(DhtNetwork network in networks.Values)
                 lock(network.TcpControl.SocketList)
@@ -184,7 +185,7 @@ namespace RiseOp.Simulator
             {
                 SolidBrush brush = null;
 
-                FirewallType firewall = networks[id].Core.Firewall;
+                FirewallType firewall = networks[id].Core.Context.Firewall;
                 if(firewall == FirewallType.Open)
                     brush = GreenBrush;
                 if(firewall == FirewallType.NAT)
@@ -210,7 +211,7 @@ namespace RiseOp.Simulator
                 selectBox.Inflate(2,2);
                 buffer.DrawEllipse(BlackPen, selectBox);
 
-                string name = networks[SelectedID].Core.User.Settings.ScreenName;
+                string name = networks[SelectedID].Core.User.Settings.UserName;
                 name += " " + Utilities.IDtoBin(networks[SelectedID].Local.UserID);
                 name += ShowInbound ? " Inbound Traffic" : " Outbound Traffic";
 
@@ -574,12 +575,21 @@ namespace RiseOp.Simulator
                         string name = "Unknown";
 
                         foreach (SimInstance instance in Sim.Instances)
-                            foreach(OpCore core in instance.Context.Cores)
-                                if (core.UserID == id || (core.GlobalNet != null && core.GlobalNet.Local.UserID == id))
+                        {
+                            if (instance.Context.Global != null && instance.Context.Global.UserID == id)
+                                name = instance.Context.Global.User.Settings.UserName;
+
+                            else
+                                instance.Context.Cores.LockReading(delegate()
                                 {
-                                    name = core.User.Settings.ScreenName;
-                                    break;
-                                }
+                                    foreach (OpCore core in instance.Context.Cores)
+                                        if (core.UserID == id)
+                                        {
+                                            name = core.User.Settings.UserName;
+                                            break;
+                                        }
+                                });
+                        }
 
                         NodeTip.Show(name, this, client.X, client.Y);
 

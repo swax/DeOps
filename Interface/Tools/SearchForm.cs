@@ -31,7 +31,10 @@ namespace RiseOp.Interface.Tools
             Sim = control.Sim;
             Network = network;
 
-            Text = name + " Search (" + Network.Core.User.Settings.ScreenName + ")";
+            if (network.Core.User == null)
+                Text = "Global Search (" + network.Core.Context.LocalIP.ToString() + ")";
+            else
+                Text = "Search (" + network.Core.User.Settings.UserName + ")";
 
             OnUpdateList = new UpdateListHandler(UpdateList);
         }
@@ -43,21 +46,27 @@ namespace RiseOp.Interface.Tools
             // find Dht id or user or operation
             if (RadioUser.Checked)
                 foreach (SimInstance instance in Sim.Instances)
-                    foreach(OpCore core in instance.Context.Cores)
-                        if (core.User.Settings.ScreenName == TextSearch.Text)
-                        {
-                            TargetID = Network.IsGlobal ? core.GlobalNet.Local.UserID : core.OperationNet.Local.UserID;
-                            break;
-                        }
-            
-            if(RadioOp.Checked)
+                    instance.Context.Cores.LockReading(delegate()
+                    {
+                        foreach (OpCore core in instance.Context.Cores)
+                            if (core.User.Settings.UserName == TextSearch.Text)
+                            {
+                                TargetID = Network.IsGlobal ? core.Context.Global.UserID : core.UserID;
+                                break;
+                            }
+                    });
+
+            if (RadioOp.Checked)
                 foreach (SimInstance instance in Sim.Instances)
-                    foreach (OpCore core in instance.Context.Cores)
-                        if (core.User.Settings.Operation == TextSearch.Text)
-                        {
-                            TargetID = core.OperationNet.OpID;
-                            break;
-                        }
+                    instance.Context.Cores.LockReading(delegate()
+                    {
+                        foreach (OpCore core in instance.Context.Cores)
+                            if (core.User.Settings.Operation == TextSearch.Text)
+                            {
+                                TargetID = core.Network.OpID;
+                                break;
+                            }
+                    });
 
             if (TargetID == 0)
             {

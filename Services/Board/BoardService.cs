@@ -54,7 +54,7 @@ namespace RiseOp.Services.Board
         internal BoardService(OpCore core )
         {
             Core       = core;
-            Network = Core.OperationNet;
+            Network = Core.Network;
             Protocol = Network.Protocol;
             Store    = Network.Store;
             Links = Core.Links;
@@ -951,7 +951,7 @@ namespace RiseOp.Services.Board
             uid.ToBytes().CopyTo(parameters, 1);
             BitConverter.GetBytes(version).CopyTo(parameters, 17);
 
-            DhtSearch search = Core.OperationNet.Searches.Start(target, "Board:Post", ServiceID, 0, parameters, new EndSearchHandler(EndPostSearch));
+            DhtSearch search = Core.Network.Searches.Start(target, "Board:Post", ServiceID, 0, parameters, new EndSearchHandler(EndPostSearch));
 
             if (search == null)
                 return;

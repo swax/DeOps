@@ -46,8 +46,11 @@ namespace RiseOp.Interface.Tools
             Routing = Network.Routing;
 
 			UpdateGraph = new UpdateGraphHandler(AsyncUpdateGraph);
-			
-			Text = name + " Graph (" + Core.User.Settings.ScreenName + ")";
+
+            if (Core.User == null)
+                Text = "Global Graph (" + Core.Context.LocalIP.ToString() + ")";
+            else
+                Text = "Graph (" + Core.User.Settings.UserName + ")";
 
 			Redraw = true;
 		}

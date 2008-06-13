@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
@@ -26,6 +27,7 @@ using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Comm;
 using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Implementation.Protocol.Special;
 using RiseOp.Implementation.Transport;
 
 using RiseOp.Interface;
@@ -59,12 +61,12 @@ namespace RiseOp.Implementation
 
         // sub-classes
 		internal Identity    User;
-        internal DhtNetwork  GlobalNet;
-        internal DhtNetwork  OperationNet;
+        internal DhtNetwork  Network;
 
         // services
         internal TrustService    Links;
         internal LocationService Locations;
+        internal GlobalService   GlobalLoc;
         internal TransferService Transfers;
         internal LocalSync       Sync;
 
@@ -74,11 +76,9 @@ namespace RiseOp.Implementation
 
 
 		// properties
-		internal IPAddress    LocalIP;
-        internal UInt64       UserID { get { return OperationNet.Local.UserID; } }
-        internal FirewallType Firewall = FirewallType.Blocked;
+        internal UInt64       UserID { get { return Network.Local.UserID; } }
+        internal ushort       TunnelID;
         internal DateTime     StartTime;
-        internal DateTime     NextSaveCache;
 
         internal Dictionary<ulong, byte[]> KeyMap = new Dictionary<ulong, byte[]>();
 
@@ -118,15 +118,15 @@ namespace RiseOp.Implementation
         internal AutoResetEvent ProcessEvent = new AutoResetEvent(false);
         Queue<AsyncCoreFunction> CoreMessages = new Queue<AsyncCoreFunction>();
 
+      
 
-
+        // initializing operation network
         internal OpCore(RiseOpContext context, string path, string pass)
         {
             Context = context;
             Sim = context.Sim;
 
             StartTime = TimeNow;
-            NextSaveCache = TimeNow.AddMinutes(1);
             MinutePoint = RndGen.Next(2, 59);
             GuiProtocol = new G2Protocol();
 
@@ -135,16 +135,13 @@ namespace RiseOp.Implementation
             User = new Identity(path, pass, this);
             User.Load(LoadModeType.Settings);
 
-            OperationNet = new DhtNetwork(this, false);
+            Network = new DhtNetwork(this, false);
 
-            if (User.Settings.OpAccess != AccessType.Secret)
-                GlobalNet = new DhtNetwork(this, true);
-
+            TunnelID = (ushort)RndGen.Next(1, ushort.MaxValue);
 
             Test test = new Test(); // should be empty unless running a test    
 
-            User.Load(LoadModeType.Cache);
-
+            User.Load(LoadModeType.AllCaches);
 
             // delete data dirs if frsh start indicated
             if (Sim != null && Sim.Internet.FreshStart)
@@ -171,9 +168,46 @@ namespace RiseOp.Implementation
             AddService(new PlanService(this));
             AddService(new StorageService(this));
 
-            
+            if (Sim != null)
+                Sim.Internet.RegisterAddress(this);
+
             CoreThread = new Thread(RunCore);
             
+            if (Sim == null || Sim.Internet.TestCoreThread)
+                CoreThread.Start();
+        }
+
+        // initializing global network (from the settings of a loaded operation)
+        internal OpCore(RiseOpContext context)
+        {
+            Context = context;
+            Sim = context.Sim;
+
+            StartTime = TimeNow;
+            MinutePoint = RndGen.Next(2, 59);
+            GuiProtocol = new G2Protocol();
+
+            Network = new DhtNetwork(this, true);
+
+            // load flat global cache
+            // on exit save flat global cache
+
+
+            // for each core, re-load the global cache items
+            Context.Cores.LockReading(delegate()
+            {
+                foreach (OpCore core in Context.Cores)
+                    core.User.Load(LoadModeType.GlobalCache);
+            });
+
+            // get cache from all loaded cores
+            AddService(new GlobalService(this));
+
+            if (Sim != null)
+                Sim.Internet.RegisterAddress(this);
+            
+            CoreThread = new Thread(RunCore);
+
             if (Sim == null || Sim.Internet.TestCoreThread)
                 CoreThread.Start();
         }
@@ -259,56 +293,22 @@ namespace RiseOp.Implementation
                     }
 
 
-                    // get the next packet off the queue (op then global) without blocking it
-                    PacketCopy incoming = null;
+                    // get the next packet off the queue without blocking the recv process
+                    lock (Network.IncomingPackets)
+                        if (Network.IncomingPackets.Count > 0)
+                        {
+                            Network.ReceivePacket(Network.IncomingPackets.Dequeue().Packet);
 
-                    lock (OperationNet.IncomingPackets)
-                        if (OperationNet.IncomingPackets.Count > 0)
-                            incoming = OperationNet.IncomingPackets.Dequeue();
-
-                    if (incoming == null)
-                        lock (GlobalNet.IncomingPackets)
-                            if (GlobalNet.IncomingPackets.Count > 0)
-                                incoming = GlobalNet.IncomingPackets.Dequeue();
-
-
-                    // process packet
-                    if (incoming != null)
-                    {
-                        if (incoming.Global)
-                            GlobalNet.ReceivePacket(incoming.Packet);
-                        else
-                            OperationNet.ReceivePacket(incoming.Packet);
-
-                        keepGoing = true;
-                    }
+                            keepGoing = true;
+                            break;
+                        }
                 }
                 catch (Exception ex)
                 {
-                    OperationNet.UpdateLog("Core Thread", ex.Message + "\n" + ex.StackTrace);
+                    Network.UpdateLog("Core Thread", ex.Message + "\n" + ex.StackTrace);
                 }
             }
         }
-
-		internal void SignOff()
-		{
-            //crit - reimplement signing off 
-            /*
-            if (Login != null)
-                Login.Core = null;
-
-            User.Save();
-
-			lock(BuddyMap.SyncRoot)
-				foreach(KimBuddy buddy in BuddyMap.Values)
-					foreach(KimSession session in buddy.Sessions)
-						if(session.Status == SessionStatus.Active)
-							session.Send_Close("Signing Off");
-			
-			TcpControl.Shutdown();
-			UdpControl.Shutdown();
-            */
-		}
 
 		internal void SecondTimer()
 		{
@@ -322,22 +322,12 @@ namespace RiseOp.Implementation
 			try
 			{
                 // networks
-				GlobalNet.SecondTimer();
-                OperationNet.SecondTimer();
+                Network.SecondTimer();
 
                 SecondTimerEvent.Invoke();
 
-                CheckGlobalProxyMode();
-
-                // save cache
-                if (TimeNow > NextSaveCache)
-                {
-                    User.Save();
-                    NextSaveCache = TimeNow.AddMinutes(5);
-                }
-
                 // before minute timer give gui 2 secs to tell us of nodes it doesnt want removed
-                if (TimeNow.Second == MinutePoint - 2)
+                if (GetFocusedCore != null && TimeNow.Second == MinutePoint - 2)
                 {
                     Focused.SafeClear();
 
@@ -353,54 +343,6 @@ namespace RiseOp.Implementation
 			catch(Exception ex)
 			{
 				ConsoleLog("Exception KimCore::SecondTimer_Tick: " + ex.Message);
-			}
-		}
-
-		internal void SetFirewallType(FirewallType type)
-		{
-			// check if already set
-			if( Firewall == type)
-				return;
-
-
-			// if client previously blocked, cancel any current searches through proxy
-			if(Firewall == FirewallType.Blocked)
-				lock(GlobalNet.Searches.Active)
-                    foreach (DhtSearch search in GlobalNet.Searches.Active)
-						search.ProxyTcp = null;
-
-
-			if(type == FirewallType.Open)
-			{
-                Firewall = FirewallType.Open; // do first, otherwise publish will fail
-                
-                OperationNet.FirewallChangedtoOpen();
-
-                if (GlobalNet != null)
-                    GlobalNet.FirewallChangedtoOpen();
-
-				ConsoleLog("Network Firewall status changed to Open");
-
-                return;
-			}
-
-			if(type == FirewallType.NAT && Firewall != FirewallType.Open)
-			{
-                Firewall = FirewallType.NAT;
-                
-                OperationNet.FirewallChangedtoNAT();
-
-                if (GlobalNet != null)
-                    GlobalNet.FirewallChangedtoNAT();
-
-				ConsoleLog("Network Firewall status changed to NAT");
-				return;
-			}
-
-			if(type == FirewallType.Blocked)
-			{
-				// why is this being set (forced)
-				//Debug.Assert(false);
 			}
 		}
 
@@ -429,7 +371,7 @@ namespace RiseOp.Implementation
 
 					for(int i = 0; i < count; i++)
 					{
-						//RSACryptoServiceProvider keys = new RSACryptoServiceProvider(1024);
+						/*RSACryptoServiceProvider keys = new RSACryptoServiceProvider(1024);
 						//RSAParameters rsaParams = keys.ExportParameters(false);
 						//byte[] hash = sha.ComputeHash( rsaParams.Modulus );
 						
@@ -440,7 +382,7 @@ namespace RiseOp.Implementation
 						DhtContact contact = new DhtContact(kid, 0, new IPAddress(0), 0, 0);
 						
 						// add to routing
-						GlobalNet.Routing.Add(contact);
+						GlobalNet.Routing.Add(contact);*/
 					}
 				}
 
@@ -459,18 +401,18 @@ namespace RiseOp.Implementation
 				}
 				if(commands[0] == "fwstatus")
 				{
-					ConsoleLog("Status set to " + Firewall.ToString());
+                    ConsoleLog("Status set to " + Context.Firewall.ToString());
 				}
 
 
 				if(commands[0] == "fwset" && commands.Length > 1)
 				{
 					if(commands[1] == "open")
-						SetFirewallType(FirewallType.Open);
+						Context.SetFirewallType(FirewallType.Open);
 					if(commands[1] == "nat")
-						SetFirewallType(FirewallType.NAT);
+                        Context.SetFirewallType(FirewallType.NAT);
 					if(commands[1] == "blocked")
-						SetFirewallType(FirewallType.Blocked);
+                        Context.SetFirewallType(FirewallType.Blocked);
 				}
 
 				if(commands[0] == "listening")
@@ -653,12 +595,25 @@ namespace RiseOp.Implementation
                 CoreThread = null;
             }
 
+            //crit notify rudp / location signing off network
+
+            if (Network.IsGlobal)
+                Network.GlobalConfig.Save(this);
+            else
+                User.Save();
+
             foreach (OpService service in ServiceMap.Values)
                 service.Dispose();
 
             ServiceMap.Clear();
 
-            Context.CoreExited(this);
+            Network.TcpControl.Shutdown();
+            Network.UdpControl.Shutdown();
+
+            if (Sim != null)
+                Sim.Internet.UnregisterAddress(this);
+
+            Context.RemoveCore(this);
         }
 
 
@@ -726,36 +681,42 @@ namespace RiseOp.Implementation
             return function;
         }
 
-        internal bool UseGlobalProxies;
-
-        internal void CheckGlobalProxyMode()
+        internal string CreateInvite(string password)
         {
-            // if blocked/NATed connected to global but not the op, then we are in global proxy mode
-            // global proxy mode removed once connection to op is established
-            // global proxies are published with location data so that communication can be tunneled
-            // hosts in global proxy mode are psuedo-open meaning they act similarly to open hosts in that 
-            // they are added to the routing table and they conduct search/store like an open node
+            // generate invite packet
+            OneWayInvite invite = new OneWayInvite();
 
-            bool useProxies = ( Firewall != FirewallType.Open &&
-                                TimeNow > StartTime.AddSeconds(15) &&
-                                GlobalNet != null && GlobalNet.TcpControl.ProxyServers.Count > 0 &&
-                                OperationNet.TcpControl.ProxyServers.Count == 0);
+            invite.OpName = User.Settings.Operation;
+            invite.OpAccess = User.Settings.OpAccess;
+            invite.OpID = User.Settings.OpKey.Key;
+            invite.Contacts = new List<DhtContact>(Network.Routing.GetCacheArea());
 
-  
-            // if no state change return
-            if (useProxies == UseGlobalProxies)
-                return;
+            // encrypt packet with hashed password
+            RijndaelManaged crypt = Utilities.PasswordtoRijndael(password);
 
-            UseGlobalProxies = useProxies;
+            byte[] encrypted = Utilities.EncryptBytes(invite.Encode(GuiProtocol), crypt);
+     
+            // return base 64 link
+            return "riseop://invite/" + Convert.ToBase64String(encrypted);
+        }
 
-            if (UseGlobalProxies)
-            {
-                // socket will handle publishing after 15 secs, location timer handles re-publishing
-            }
-            else
-            {
-                // global proxies should remove themselves from routing by timing out
-            }
+        internal static OneWayInvite OpenInvite(string link, string password)
+        {
+            byte[] encrypted = Convert.FromBase64String(link);
+
+            // decrypt packet with hashed password
+            RijndaelManaged crypt = Utilities.PasswordtoRijndael(password);
+
+            byte[] decrypted = Utilities.DecryptBytes(encrypted, encrypted.Length, crypt);
+
+            return OneWayInvite.Decode(decrypted);
+        }
+
+        internal void ProcessInvite(OneWayInvite invite)
+        {
+            // add nodes to ipcache in processing
+            foreach (DhtContact contact in invite.Contacts)
+                Network.AddCacheEntry(contact);
         }
     }
 
@@ -774,6 +735,5 @@ namespace RiseOp.Implementation
             Method = method;
             Args = args;
         }
-
     }
 }

@@ -1,53 +1,17 @@
 
-move global net/core out into own context var
-share global net, remove references
-rename operation net to network
-move isglobal to core
-hook timer to global core
-thread issues now open between comm between op core and global core
-
-check global (called on core start / exit)
-	if public cores exist, sign into global
-	else destroy global context
+test 
+	threads for each core
+	global / op cache is loaded, sorted by last seen
+	test load/save global cache from root file
+	test encryption
 	
-new / join functionality
-invite button functionality
-warning if already signed into op from same path
-test mix of public / non-public networks
 
-use sim with network
-	or create new user with invite to test
-	can test invites across multiple cores through the sim
-		
+investigate all instances where IV is used
+16 byte salt beginning of op file is combined with password hash to decrypt op file
 
-Invites
-	single instance - balance resources across many dhts
-		ensure clicking on file / link opens new sign-on window
-		use a packet outbound queue, similar to incoming one used in core thread
-			outbound packets throttled there over multiple networks
-			implement when bandwidth management is done
+dont do ping checks if receiving data - should be in context
+	use only when not receiving data as an indication that 'back online' and reset cache attempts
 
-	secret
-		not connected to global network
-		invite is passworded routing table IPs, opID, web caches
-		password is auto-generated to prevent weakness
-		riseop://secret/alpha-encoded
-		
-	private 
-		invitation packet encypted and stored on global network at invite ID with timeout
-		invite itself is invite ID/decyption key
-		passworded as well
-		riseop://private/alpha-encoded
-
-	public
-		riseop://networkname
-		opID is hashed network name
-		
-	have default global network have unique ID so that no rise://name will conflict
-		
-	16 byte salt beginning of op file is combined with password hash to decrypt op file
-	let user know safest way to send invite / password is over riseOp IM public or phone
-	
 graphics
 	data, profile, files, bolder side search button
 	new splash image, new icon (trees)
@@ -94,14 +58,23 @@ test network
 next
 	use packetstream instead of protocl.writetofile	
 	put stream closing calls in finally block
-	delete PacketsFile.cs from svn
-	rename versionedcache in svn
-	rename loader form to login form
-	tet build from fresh checkout
+	rename 
+		versionedcache in svn
+		loader form to login form
+		delete newopform
+		delete loaderform
+		delete inviteform, gettextdialog
+		packetsfile to packetsSpecial
+		move tunnel packets to special
+	test build from fresh checkout
+	do check tags on node click, or local sync search...
 	
 	bandwidth limits / auditing
 		when bandwidth chart, figure out why bandwidth quadrupiles with 30% NATs
-	
+		really need priority search, some of these startup searches should be done during idle time
+		use a packet outbound queue, similar to incoming one used in core thread
+			outbound packets throttled there over multiple networks
+			implement when bandwidth management is done
 		
 test
 	debug places where searches etc.. are happening, when client knows its not connected
@@ -151,20 +124,19 @@ other
 spring release
 	invitations
 	auto-update, exception catching/reporting
+	licensing, installer
 	web caching ips/files - look at using EC2
 		run crawler once a day, upload highest uptime nodes to webcache site
-	licensing, installer
-	website
 	*** items from todo
 	31 crits
-	live locations/chat
 	network bandwidth limits - tracking in sim triggers node to start logging bw data
 	store caching
 	multisource downloading 
 		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
 		right click to cancel, increase/decrease priority
+	live locations/chat
+	website
 	
-
 
 Interface
 	General
@@ -326,34 +298,6 @@ Components
 		$ save storage snapshots (past header file versions) - display at root node	
 		$ signal on comparison page if all files are replicated on network (can go offline and files still exist)
 
-	Search Service
-		local 
-			Index - Component ID / Object ID / pub,priv / keywords
-			Build index iteratively as program runs
-			On exit encrypt save index file, if one exists index1,2,3, etc..
-			On search gui - 1st time, load index files, when re-saved they are merged
-				only load search indexes on demand, or slowly as app runs, dont lock app up
-			Simple dictionay<key, list<object keys>> for each component
-			Lookup(component, value) loads appropriate index if needed, returns object key
-				object key mapped by component to object example key first 4 bytes of hash, object is full hash
-		
-			sqlite full text search - if previous too memory consuming or something
-				get ado.net interface, db_linq, and full text search packages
-				insert component ID / keywords / object ID for any new object coming in
-				object removed trigger removal of anything in db with object ID
-				search goes through all objects
-				first version has no encryption, need $$ to pay for see license
-		
-		remote
-			allow services to store key/byte[] on network
-			example link component will publish userID at keys for Joe Smith on dht, so a search for Joe will find users named Joe
-			keys expire over a certain amount of time, replicated until then
-			
-			link - publish name keys, userID, on result find location show if online
-			storage - for large files pulish hash key, user ID - use for multi-source d/l
-			
-			global network could use this to find public operations key name, value OpID
-			
 Core
     old projects not cleared from components during savelocal, save / ditch / option?
     multisource downloading
@@ -362,7 +306,6 @@ Core
 	Rudp
 		route data over session if desination the same	
 		nat/block keep list of recent search ids/kadids so duplicate results arent sent out
-		check natted are finding closest nodes to proxy off of
 		use rudp when available to transmit link / loc data
 
 		investigate LAN max transfer speed / CPU usuage and see what limits current setup imposes
@@ -438,6 +381,7 @@ Core
 		if user is ignored, chat invites are ignored as well
 		storage quotas per id to prevent flooding
 		public key kill switch	
+			if encountered, all local files and profile deleted, app closed
 	
 	contact manager? plaxo sync for permanent replicating store that is always accessible
 		probably better if built on top of database component ;)
@@ -491,6 +435,3 @@ Release security
 	detatch simulator
 	Install app into GAC, strong name
 	Pre-compile with ngen, http://msdn.microsoft.com/vcsharp/default.aspx?pull=/msdnmag/issues/06/05/CLRInsideOut/default.aspx
-	send out random garbage and random times to random hosts, sometimes with char stings like 'hola como estas' just to mess
-	    sniffers up a lil more 
-

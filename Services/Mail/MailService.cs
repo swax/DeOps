@@ -104,7 +104,7 @@ namespace RiseOp.Services.Mail
         internal MailService(OpCore core)
         {
             Core = core;
-            Network = core.OperationNet;
+            Network = core.Network;
             Protocol = Network.Protocol;
             Store = Network.Store;
 
@@ -392,7 +392,7 @@ namespace RiseOp.Services.Mail
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Mail", "Error saving headers " + ex.Message);
+                Core.Network.UpdateLog("Mail", "Error saving headers " + ex.Message);
             }
         }
 
@@ -432,7 +432,7 @@ namespace RiseOp.Services.Mail
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Mail", "Error loading headers " + ex.Message);
+                Core.Network.UpdateLog("Mail", "Error loading headers " + ex.Message);
             }
         }
 
@@ -478,7 +478,7 @@ namespace RiseOp.Services.Mail
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Mail", "Error saving " + name + " " + ex.Message);
+                Core.Network.UpdateLog("Mail", "Error saving " + name + " " + ex.Message);
             }
         }
 
@@ -522,7 +522,7 @@ namespace RiseOp.Services.Mail
                 }
                 catch (Exception ex)
                 {
-                    Core.OperationNet.UpdateLog("Mail", "Error loading " + name + " " + ex.Message);
+                    Core.Network.UpdateLog("Mail", "Error loading " + name + " " + ex.Message);
                 }
 
             // load mail files that headers point to
@@ -583,7 +583,7 @@ namespace RiseOp.Services.Mail
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Mail", "Error loading local mail " + ex.Message);
+                Core.Network.UpdateLog("Mail", "Error loading local mail " + ex.Message);
             }
 
             if (local.Info != null)
@@ -770,7 +770,7 @@ namespace RiseOp.Services.Mail
                 byte[] signed = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, header.Encode(Network.Protocol, false) );
 
                 if(Network.Established)
-                    Core.OperationNet.Store.PublishNetwork(id, ServiceID, DataTypeMail, signed);
+                    Core.Network.Store.PublishNetwork(id, ServiceID, DataTypeMail, signed);
 
                 Store_LocalMail(new DataReq(null, id, ServiceID, DataTypeMail, signed)); // cant direct process_header, because header var is being modified
             }
@@ -816,7 +816,7 @@ namespace RiseOp.Services.Mail
 
         private void StartMailSearch(ulong key, byte[] parameters)
         {
-            DhtSearch search = Core.OperationNet.Searches.Start(key, "Mail", ServiceID, DataTypeMail, parameters, new EndSearchHandler(EndMailSearch));
+            DhtSearch search = Core.Network.Searches.Start(key, "Mail", ServiceID, DataTypeMail, parameters, new EndSearchHandler(EndMailSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -830,7 +830,7 @@ namespace RiseOp.Services.Mail
 
         private void StartAckSearch(ulong key, byte[] parameters)
         {
-            DhtSearch search = Core.OperationNet.Searches.Start(key, "Mail", ServiceID, DataTypeAck, parameters, new EndSearchHandler(EndAckSearch));
+            DhtSearch search = Core.Network.Searches.Start(key, "Mail", ServiceID, DataTypeAck, parameters, new EndSearchHandler(EndAckSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -1200,7 +1200,7 @@ namespace RiseOp.Services.Mail
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Mail", "Error loading mail " + ex.Message);
+                Core.Network.UpdateLog("Mail", "Error loading mail " + ex.Message);
             }
         }
 
@@ -1258,7 +1258,7 @@ namespace RiseOp.Services.Mail
             byte[] signedAck = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, ack.Encode(Network.Protocol));
             
             if(Network.Established)
-                Core.OperationNet.Store.PublishNetwork(header.SourceID, ServiceID, DataTypeAck, signedAck);
+                Core.Network.Store.PublishNetwork(header.SourceID, ServiceID, DataTypeAck, signedAck);
 
             Store_LocalAck(new DataReq(null, header.SourceID, ServiceID, DataTypeAck, signedAck)); // cant direct process_header, because header var is being modified
             RunSaveHeaders = true;
@@ -1304,7 +1304,7 @@ namespace RiseOp.Services.Mail
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Mail", "Error checking pending " + ex.Message);
+                Core.Network.UpdateLog("Mail", "Error checking pending " + ex.Message);
             }
 
             return false;
@@ -1348,7 +1348,7 @@ namespace RiseOp.Services.Mail
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Mail", "Error checking pending " + ex.Message);
+                Core.Network.UpdateLog("Mail", "Error checking pending " + ex.Message);
             }
 
             return false;
@@ -1552,7 +1552,7 @@ namespace RiseOp.Services.Mail
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Mail", "Error loading pending " + ex.Message);
+                Core.Network.UpdateLog("Mail", "Error loading pending " + ex.Message);
             }
         }
 
@@ -1798,7 +1798,7 @@ namespace RiseOp.Services.Mail
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Profile", "Error saving pending " + ex.Message);
+                Core.Network.UpdateLog("Profile", "Error saving pending " + ex.Message);
             }
         }
 

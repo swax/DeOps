@@ -108,7 +108,7 @@ namespace RiseOp.Implementation.Dht
             // transfer componenent does its own duplicate checks
             // also there can exist multiple transfers with with same trar
 
-            if (service != Core.Transfers.ServiceID) 
+            if (Core.Transfers == null || service != Core.Transfers.ServiceID) 
             {
                 foreach (DhtSearch pending in Pending)
                     if (pending.TargetID == key && pending.Service == service && Utilities.MemCompare(parameters, pending.Parameters))
@@ -398,7 +398,7 @@ namespace RiseOp.Implementation.Dht
             else if (dest.TunnelClient != null)
                 Network.SendTunnelPacket(dest, request);
 
-            else if (Core.Firewall == FirewallType.Blocked)
+            else if (Core.Context.Firewall == FirewallType.Blocked)
             {
                 request.ToAddress = dest;
                 Network.TcpControl.SendRandomProxy(request);

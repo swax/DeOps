@@ -203,6 +203,7 @@ namespace RiseOp.Services.Assist
             if (Network.Established)
             {
                 // republish objects that were not seen on the network during startup
+                // only if local sync doesnt do this for us
                 if (!UseLocalSync)
                     FileMap.LockReading(delegate()
                     {
@@ -262,7 +263,7 @@ namespace RiseOp.Services.Assist
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("VersionedFile", "Error loading data " + ex.Message);
+                Core.Network.UpdateLog("VersionedFile", "Error loading data " + ex.Message);
             }
         }
 
@@ -293,7 +294,7 @@ namespace RiseOp.Services.Assist
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("VersionedFile", "Error saving data " + ex.Message);
+                Core.Network.UpdateLog("VersionedFile", "Error saving data " + ex.Message);
             }
         }
 
@@ -451,7 +452,7 @@ namespace RiseOp.Services.Assist
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("VersionedFile", "Error caching data " + ex.Message);
+                Core.Network.UpdateLog("VersionedFile", "Error caching data " + ex.Message);
             }
         }
 
@@ -611,19 +612,36 @@ namespace RiseOp.Services.Assist
             NextResearch[key] = Core.TimeNow.AddSeconds(30);
         }
 
-        private void StartSearch(ulong key, uint version)
+        private void StartSearch(ulong user, uint version)
         {
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreAsync(delegate() { StartSearch(key, version); });
+                Core.RunInCoreAsync(delegate() { StartSearch(user, version); });
                 return;
             }
 
             byte[] parameters = BitConverter.GetBytes(version);
-            DhtSearch search = Core.OperationNet.Searches.Start(key, Core.GetServiceName(Service), Service, DataType, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Core.Network.Searches.Start(user, Core.GetServiceName(Service), Service, DataType, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
+
+
+            // node is in our local cache area, so not flooding by directly connecting
+            if (Network.Routing.InCacheArea(user))
+                foreach (ClientInfo client in Core.Locations.GetClients(user))
+                    if (client.Data.TunnelClient == null)
+                    {
+                        Network.Searches.SendDirectRequest(new DhtAddress(client.Data.IP, client.Data.Source), user, Service, DataType, BitConverter.GetBytes(version));
+                    }
+                    else
+                    {
+                        foreach (DhtAddress server in client.Data.TunnelServers)
+                        {
+                            DhtContact contact = new DhtContact(client.Data.Source, client.Data.IP, client.Data.TunnelClient, server);
+                            Network.Searches.SendDirectRequest(contact, user, Service, DataType, BitConverter.GetBytes(version));
+                        }
+                    }
         }
 
         void Search_Local(ulong key, byte[] parameters, List<byte[]> results)
@@ -673,23 +691,7 @@ namespace RiseOp.Services.Assist
             if ((file != null && version > file.Header.Version) ||
                 (file == null && Network.Routing.InCacheArea(user)))
             {
-                //crit verify this works through global proxy by commenting out below
                 StartSearch(user, version); // this could be called from a patch given to another user, direct connect not gauranteed
-
-                // node is in our local cache area, so not flooding by directly connecting
-                foreach (ClientInfo client in Core.Locations.GetClients(user))
-                    if (client.Data.TunnelClient == null)
-                    {
-                        Network.Searches.SendDirectRequest(new DhtAddress(client.Data.IP, client.Data.Source), user, Service, DataType, BitConverter.GetBytes(version));
-                    }
-                    else
-                    {
-                        foreach (DhtAddress server in client.Data.TunnelServers)
-                        {
-                            DhtContact contact = new DhtContact(client.Data.Source, client.Data.IP, client.Data.TunnelClient, server);
-                            Network.Searches.SendDirectRequest(contact, user, Service, DataType, BitConverter.GetBytes(version));
-                        }
-                    }
             }
         }
     }

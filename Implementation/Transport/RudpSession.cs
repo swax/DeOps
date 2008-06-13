@@ -129,7 +129,7 @@ namespace RiseOp.Implementation.Transport
                 return false;
 
             PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Rudp, DirectionType.Out, Comm.PrimaryAddress.Address, final);
-            Core.OperationNet.LogPacket(logEntry);
+            Core.Network.LogPacket(logEntry);
 
             // dont worry about buffers, cause initial comm buffer is large enough to fit all negotiating packets
             if (SendEncryptor == null)
@@ -322,7 +322,7 @@ namespace RiseOp.Implementation.Transport
 		{
 			KeyAck keyAck       = new KeyAck();
 			keyAck.SenderPubKey = Core.User.Settings.KeyPair.ExportParameters(false);
-            keyAck.Name         = Core.User.Settings.ScreenName;
+            keyAck.Name         = Core.User.Settings.UserName;
 
 			Log("Key Ack Sent");
 
@@ -550,7 +550,7 @@ namespace RiseOp.Implementation.Transport
             else
                 prefix += ":" + Core.TimeNow.Millisecond.ToString().Substring(0, 2);
 
-            Core.OperationNet.UpdateLog("RUDP " + name, prefix + ": " + entry);
+            Core.Network.UpdateLog("RUDP " + name, prefix + ": " + entry);
 
             //byte[] data = strEnc.GetBytes(Comm.PeerID.ToString() + ": " + entry + "\r\n");
             //DebugWriter.Write(data, 0, data.Length);
@@ -605,7 +605,7 @@ namespace RiseOp.Implementation.Transport
                         break;
 
                     PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Rudp, DirectionType.In, Comm.PrimaryAddress.Address, Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize));
-                    Core.OperationNet.LogPacket(logEntry);
+                    Core.Network.LogPacket(logEntry);
 
                     ReceivePacket(packet);
 
@@ -648,7 +648,7 @@ namespace RiseOp.Implementation.Transport
                         break;
 
                     PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Rudp, DirectionType.In, Comm.PrimaryAddress.Address, Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize));
-                    Core.OperationNet.LogPacket(logEntry);
+                    Core.Network.LogPacket(logEntry);
 
                     ReceivePacket(packet);
 

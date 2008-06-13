@@ -140,18 +140,26 @@ namespace RiseOp.Implementation.Transport
                 if (Age == 5)
                 {
                     // announce to rudp connections new proxy if blocked/nat, or using a global proxy
-                    if( !Network.IsGlobal || Core.UseGlobalProxies)
+                    if (Network.IsGlobal)
+                    {
+                        Core.Context.Cores.LockReading(delegate()
+                        {
+                            foreach (OpCore core in Core.Context.Cores)
+                                if (core.Network.UseGlobalProxies)
+                                    core.Network.RudpControl.AnnounceProxy(this);
+                        });
+                    }
+                    else
                         Network.RudpControl.AnnounceProxy(this);
+
                 }
                 else if (Age == 15)
                 {
-                    if (Network.IsGlobal)
-                    {
-                        if (Core.UseGlobalProxies)
-                            Core.Locations.PublishGlobal();
-                    }
-                    else
+                    if (!Network.IsGlobal)
                         Core.Locations.UpdateLocation();
+
+                    if (Network.UseGlobalProxies)
+                        Core.Locations.PublishGlobal();
                 }
             }
             // new proxied host

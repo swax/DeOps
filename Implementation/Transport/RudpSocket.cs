@@ -805,7 +805,7 @@ namespace RiseOp.Implementation.Transport
             log += " target address " + target.Address.ToString();*/
 
  
-            if (Core.Firewall != FirewallType.Blocked && target.LocalProxy == null)
+            if (Core.Context.Firewall != FirewallType.Blocked && target.LocalProxy == null)
             {
                 Network.SendPacket(target.Address, tracked.Packet);
             }

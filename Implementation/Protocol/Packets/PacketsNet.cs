@@ -36,6 +36,22 @@ namespace RiseOp.Implementation.Protocol.Net
             ClientID = client;
         }
 
+        internal byte[] ToBytes()
+        {
+            byte[] bytes = new byte[10];
+            BitConverter.GetBytes(UserID).CopyTo(bytes, 0);
+            BitConverter.GetBytes(ClientID).CopyTo(bytes, 8);
+            return bytes;
+        }
+
+        internal static DhtClient FromBytes(byte[] data, int start)
+        {
+            DhtClient result = new DhtClient();
+            result.UserID = BitConverter.ToUInt64(data, start);
+            result.ClientID = BitConverter.ToUInt16(data, start + 8);
+            return result;
+        }
+
         public override bool Equals(object obj)
         {
             DhtClient compare = obj as DhtClient;
@@ -50,21 +66,37 @@ namespace RiseOp.Implementation.Protocol.Net
         {
             return UserID.GetHashCode() ^ ClientID.GetHashCode();
         }
+    }
 
-        // fix later, dont want inherited classes using this function thinking something else
-        internal byte[] ToBytes()
+    internal class TunnelAddress : DhtClient
+    {
+        internal ushort TunnelID;
+
+        internal TunnelAddress()
+        { }
+
+        internal TunnelAddress(DhtClient client, ushort id)
         {
-            byte[] bytes = new byte[10];
+            UserID = client.UserID;
+            ClientID = client.ClientID;
+            TunnelID = id;
+        }
+
+        internal new byte[] ToBytes()
+        {
+            byte[] bytes = new byte[12];
             BitConverter.GetBytes(UserID).CopyTo(bytes, 0);
             BitConverter.GetBytes(ClientID).CopyTo(bytes, 8);
+            BitConverter.GetBytes(TunnelID).CopyTo(bytes, 10);
             return bytes;
         }
 
-        internal static DhtClient FromBytes(byte[] data, int start)
+        internal new static TunnelAddress FromBytes(byte[] data, int start)
         {
-            DhtClient result = new DhtClient();
+            TunnelAddress result = new TunnelAddress();
             result.UserID = BitConverter.ToUInt64(data, start);
             result.ClientID = BitConverter.ToUInt16(data, start + 8);
+            result.TunnelID = BitConverter.ToUInt16(data, start + 10);
             return result;
         }
     }
@@ -127,7 +159,7 @@ namespace RiseOp.Implementation.Protocol.Net
         internal ushort    UdpPort;
 
         internal DhtAddress TunnelServer;
-        internal DhtClient TunnelClient;
+        internal TunnelAddress TunnelClient;
 
 
         internal DhtAddress()
@@ -331,8 +363,8 @@ namespace RiseOp.Implementation.Protocol.Net
         const byte Packet_TargetServer = 0x40;
 
 
-        internal DhtClient Source;
-        internal DhtClient Target;
+        internal TunnelAddress Source;
+        internal TunnelAddress Target;
         internal DhtAddress SourceServer;
         internal DhtAddress TargetServer;
 
@@ -341,18 +373,21 @@ namespace RiseOp.Implementation.Protocol.Net
 
         internal override byte[] Encode(G2Protocol protocol)
         {
-            G2Frame tunnel = protocol.WritePacket(null, RootPacket.Tunnel, Payload);
+            lock (protocol.WriteSection)
+            {
+                G2Frame tunnel = protocol.WritePacket(null, RootPacket.Tunnel, Payload);
 
-            protocol.WritePacket(tunnel, Packet_Source, Source.ToBytes());
-            protocol.WritePacket(tunnel, Packet_Target, Target.ToBytes());
+                protocol.WritePacket(tunnel, Packet_Source, Source.ToBytes());
+                protocol.WritePacket(tunnel, Packet_Target, Target.ToBytes());
 
-            if (SourceServer != null)
-                SourceServer.WritePacket(protocol, tunnel, Packet_SourceServer);
-            
-            if (TargetServer != null)
-                TargetServer.WritePacket(protocol, tunnel, Packet_TargetServer);
+                if (SourceServer != null)
+                    SourceServer.WritePacket(protocol, tunnel, Packet_SourceServer);
 
-            return protocol.WriteFinish();
+                if (TargetServer != null)
+                    TargetServer.WritePacket(protocol, tunnel, Packet_TargetServer);
+
+                return protocol.WriteFinish();
+            }
         }
 
         internal static TunnelPacket Decode(G2Header root)
@@ -375,11 +410,11 @@ namespace RiseOp.Implementation.Protocol.Net
                 switch (child.Name)
                 {
                     case Packet_Source:
-                        tunnel.Source = DhtClient.FromBytes(child.Data, child.PayloadPos);
+                        tunnel.Source = TunnelAddress.FromBytes(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Target:
-                        tunnel.Target = DhtClient.FromBytes(child.Data, child.PayloadPos);
+                        tunnel.Target = TunnelAddress.FromBytes(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_SourceServer:

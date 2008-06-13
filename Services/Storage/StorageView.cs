@@ -758,7 +758,7 @@ namespace RiseOp.Services.Storage
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Storage", "Error loading files " + ex.Message);
+                Core.Network.UpdateLog("Storage", "Error loading files " + ex.Message);
             }
         }
 
@@ -1174,7 +1174,7 @@ namespace RiseOp.Services.Storage
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Storage", "Interface:WorkingFolderUpdate: " + ex.Message);
+                Core.Network.UpdateLog("Storage", "Interface:WorkingFolderUpdate: " + ex.Message);
             }
         }
 
@@ -1292,7 +1292,7 @@ namespace RiseOp.Services.Storage
              }
              catch (Exception ex)
              {
-                 Core.OperationNet.UpdateLog("Storage", "Interface:WorkingFileUpdate: " + ex.Message);
+                 Core.Network.UpdateLog("Storage", "Interface:WorkingFileUpdate: " + ex.Message);
              }
         }
 

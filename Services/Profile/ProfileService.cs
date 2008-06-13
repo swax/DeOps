@@ -103,7 +103,7 @@ namespace RiseOp.Services.Profile
         internal ProfileService(OpCore core)
         {
             Core = core;
-            Network = core.OperationNet;
+            Network = core.Network;
             Protocol = Network.Protocol;
             Store = Network.Store;
             Links = Core.Links;

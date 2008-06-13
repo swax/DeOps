@@ -73,7 +73,7 @@ namespace RiseOp.Services.Storage
         internal StorageService(OpCore core)
         {
             Core = core;
-            Network = core.OperationNet;
+            Network = core.Network;
             Protocol = Network.Protocol;
             Store = Network.Store;
             Links = Core.Links;
@@ -364,7 +364,7 @@ namespace RiseOp.Services.Storage
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Storage", "Error updating local " + ex.Message);
+                Core.Network.UpdateLog("Storage", "Error updating local " + ex.Message);
             }
         }
 
@@ -635,7 +635,7 @@ namespace RiseOp.Services.Storage
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Storage", "Error loading files " + ex.Message);
+                Core.Network.UpdateLog("Storage", "Error loading files " + ex.Message);
             }
         }
 
@@ -709,7 +709,7 @@ namespace RiseOp.Services.Storage
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Storage", "Error loading files " + ex.Message);
+                Core.Network.UpdateLog("Storage", "Error loading files " + ex.Message);
             }
         }
 
@@ -860,7 +860,7 @@ namespace RiseOp.Services.Storage
                         if (HashQueue.Count > 1)
                             HashQueue.Enqueue(HashQueue.Dequeue());
 
-                    Core.OperationNet.UpdateLog("Storage", "Hash thread: " + ex.Message);
+                    Core.Network.UpdateLog("Storage", "Hash thread: " + ex.Message);
                     continue; // file might not exist anymore, name changed, etc..
                 }
             }
@@ -1062,7 +1062,7 @@ namespace RiseOp.Services.Storage
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Storage", "UnlockFile: " + ex.Message);
+                Core.Network.UpdateLog("Storage", "UnlockFile: " + ex.Message);
 
                 errors.Add(new LockError(finalpath, "", true, LockErrorType.Unexpected, file, history));
                 return null;

@@ -71,7 +71,7 @@ namespace RiseOp.Services.Storage
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Storage", "Error saving headers " + ex.Message);
+                Core.Network.UpdateLog("Storage", "Error saving headers " + ex.Message);
             }
         }
 
@@ -170,7 +170,7 @@ namespace RiseOp.Services.Storage
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Storage", "Error loading headers " + ex.Message);
+                Core.Network.UpdateLog("Storage", "Error loading headers " + ex.Message);
             }
         }
 
@@ -468,7 +468,7 @@ namespace RiseOp.Services.Storage
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Storage", "OnFileChanged: " + ex.Message);
+                Core.Network.UpdateLog("Storage", "OnFileChanged: " + ex.Message);
             }
         }
 
@@ -519,7 +519,7 @@ namespace RiseOp.Services.Storage
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Storage", "OnFileRenamed: " + ex.Message);
+                Core.Network.UpdateLog("Storage", "OnFileRenamed: " + ex.Message);
             }
         }
 
@@ -561,7 +561,7 @@ namespace RiseOp.Services.Storage
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Storage", "OnFolderChanged: " + ex.Message);
+                Core.Network.UpdateLog("Storage", "OnFolderChanged: " + ex.Message);
             }
         }
 
@@ -594,7 +594,7 @@ namespace RiseOp.Services.Storage
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Storage", "OnFolderRenamed: " + ex.Message);
+                Core.Network.UpdateLog("Storage", "OnFolderRenamed: " + ex.Message);
             }
         }
 
@@ -684,10 +684,7 @@ namespace RiseOp.Services.Storage
             StorageFolder info = new StorageFolder();
             LocalFolder folder = new LocalFolder(parent, info);
 
-            byte[] uid = new byte[8];
-            Storages.Core.StrongRndGen.GetBytes(uid);
-            info.UID = BitConverter.ToUInt64(uid, 0);
-
+            info.UID = Utilities.StrongRandUInt64(Core.StrongRndGen);
             info.ParentUID = parent.Info.UID;
             info.Name = dirname;
             info.Date = Core.TimeNow.ToUniversalTime();
@@ -703,10 +700,7 @@ namespace RiseOp.Services.Storage
             StorageFile info = new StorageFile();
             LocalFile file = new LocalFile(info);
 
-            byte[] uid = new byte[8];
-            Storages.Core.StrongRndGen.GetBytes(uid);
-            info.UID = BitConverter.ToUInt64(uid, 0);
-
+            info.UID = Utilities.StrongRandUInt64(Core.StrongRndGen);
             info.Name = name;
             info.Date = Core.TimeNow.ToUniversalTime();
             info.Revs = 5;

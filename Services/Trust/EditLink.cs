@@ -75,7 +75,7 @@ namespace RiseOp.Services.Trust
                 Links.Core.User.Save();
             }
 
-            if (Core.OperationNet.Responsive)
+            if (Core.Network.Responsive)
                 Core.Locations.UpdateLocation();
 
             Close();

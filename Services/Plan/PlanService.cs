@@ -50,7 +50,7 @@ namespace RiseOp.Services.Plan
         internal PlanService(OpCore core)
         {
             Core = core;
-            Network = core.OperationNet;
+            Network = core.Network;
             Protocol = Network.Protocol;
             Store = Network.Store;
             Links = Core.Links;
@@ -270,7 +270,7 @@ namespace RiseOp.Services.Plan
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Plan", "Error updating local " + ex.Message);
+                Core.Network.UpdateLog("Plan", "Error updating local " + ex.Message);
             }
         }
 
@@ -371,7 +371,7 @@ namespace RiseOp.Services.Plan
             }
             catch (Exception ex)
             {
-                Core.OperationNet.UpdateLog("Plan", "Error loading plan " + ex.Message);
+                Core.Network.UpdateLog("Plan", "Error loading plan " + ex.Message);
             }
 
         }

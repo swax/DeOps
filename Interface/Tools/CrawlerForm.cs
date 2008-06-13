@@ -65,7 +65,10 @@ namespace RiseOp.Interface.Tools
             SearchAck = new SearchAckHandler(Receive_SearchAck);
 			CrawlAck  = new CrawlAckHandler(Receive_CrawlAck);
 
-            Text = name + " Crawler (" + Core.User.Settings.ScreenName + ")";
+            if (Core.User == null)
+                Text = "Global Crawler (" + Core.Context.LocalIP.ToString() + ")";
+            else
+                Text = "Crawler (" + Core.User.Settings.UserName + ")";
 
 			NodeList.ListViewItemSorter = lvwColumnSorter;
 		}

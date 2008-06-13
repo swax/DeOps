@@ -63,7 +63,7 @@ namespace RiseOp.Interface.Tools
 
 			UpdateLog = new UpdateLogHandler(AsyncUpdateLog);
 
-            Text = name + " Packets (" + Network.Core.User.Settings.ScreenName + ")";
+            Text = name + " Packets (" + Network.Core.User.Settings.UserName + ")";
 
             RefreshView();
 		}

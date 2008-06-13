@@ -72,11 +72,11 @@ namespace RiseOp.Implementation.Dht
             List<TcpConnect> sockets = null;
 
             // if open send search to proxied nodes just for good measure, probably helps on very small networks
-            if (Core.Firewall == FirewallType.Open)
+            if (Core.Context.Firewall == FirewallType.Open)
                 sockets = Network.TcpControl.ProxyClients;
 
             // if natted send request to proxies for fresh nodes
-            if(Core.Firewall == FirewallType.NAT)
+            if(Core.Context.Firewall == FirewallType.NAT)
                 sockets = Network.TcpControl.ProxyServers;
 
             if(sockets != null)
@@ -91,7 +91,7 @@ namespace RiseOp.Implementation.Dht
                 }					
 
 			// if blocked send proxy search request to 1 proxy, record and wait
-            if (Core.Firewall == FirewallType.Blocked && !Core.UseGlobalProxies)
+            if (Core.Context.Firewall == FirewallType.Blocked && !Network.UseGlobalProxies)
 			{
 				// pick random proxy server
                 if (Network.TcpControl.ProxyServers.Count == 0)

@@ -43,7 +43,7 @@ namespace RiseOp.Implementation.Transport
             Network = network;
             Core = Network.Core;
 
-            ListenPort = Network.IsGlobal ? Core.User.Settings.GlobalPortTcp : Core.User.Settings.OpPortTcp;
+            ListenPort = Network.IsGlobal ? Network.GlobalConfig.TcpPort : Core.User.Settings.TcpPort;
 
             if (Core.Sim != null)
                 return;
@@ -76,6 +76,9 @@ namespace RiseOp.Implementation.Transport
 
 		internal void Shutdown()
 		{
+            if (Core.Sim != null)
+                return;
+
 			try
 			{
 				Socket oldSocket = ListenSocket; // do this to prevent listen exception
@@ -97,7 +100,7 @@ namespace RiseOp.Implementation.Transport
 		internal void SecondTimer()
 		{
 			// if firewalled find closer proxy
-			if(Core.Firewall != FirewallType.Open)
+			if(Core.Context.Firewall != FirewallType.Open)
 				if(NeedProxies(ProxyType.Server) || Core.TimeNow > LastProxyCheck.AddSeconds(30))
 				{
 					ConnectProxy();
@@ -295,7 +298,7 @@ namespace RiseOp.Implementation.Transport
 			if(attempt != null)
 			{
 				// take into account when making proxy request, disconnct furthest
-				if(Core.Firewall == FirewallType.Blocked)
+				if(Core.Context.Firewall == FirewallType.Blocked)
 				{
 					// continue attempted to test nat with pings which are small
                     Network.Send_Ping(attempt);
@@ -303,7 +306,7 @@ namespace RiseOp.Implementation.Transport
 				}
 
 				// if natted do udp proxy request first before connect
-				else if(Core.Firewall == FirewallType.NAT)
+				else if(Core.Context.Firewall == FirewallType.NAT)
 				{
 					ProxyReq request = new ProxyReq();
                     request.SenderID = Network.Local.UserID;
@@ -342,7 +345,7 @@ namespace RiseOp.Implementation.Transport
 		internal bool ProxiesMaxed()
 		{
 			// we're not firewalled
-			if( Core.Firewall == FirewallType.Open)
+			if( Core.Context.Firewall == FirewallType.Open)
 			{
 				if( NeedProxies(ProxyType.ClientBlocked) )
 					return false;

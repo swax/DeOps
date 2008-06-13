@@ -27,8 +27,6 @@ namespace RiseOp.Simulator
     {
         internal InternetSim Sim;
 
-
-
         private ListViewColumnSorter lvwColumnSorter = new ListViewColumnSorter();
 
         internal Dictionary<ulong, NetView> NetViews = new Dictionary<ulong, NetView>();
@@ -111,6 +109,8 @@ namespace RiseOp.Simulator
 
         private void LoadDirectory(string dirpath)
         {
+            Sim.LoadedPath = dirpath;
+
             if (Sim.UseTimeFile)
             {
                 TimeFile = new FileStream(dirpath + Path.DirectorySeparatorChar + "time.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite);
@@ -132,7 +132,7 @@ namespace RiseOp.Simulator
 
             foreach (string dir in dirs)
             {
-                string[] paths = Directory.GetFiles(dir, "*.dop");
+                string[] paths = Directory.GetFiles(dir, "*.rop");
 
                 foreach (string path in paths)
                     Sim.StartInstance(path);
@@ -149,8 +149,11 @@ namespace RiseOp.Simulator
             Sim.Pause();
 
             foreach (SimInstance instance in Sim.Instances)
-                foreach(OpCore core in instance.Context.Cores)
-                    core.User.Save();
+                instance.Context.Cores.LockReading(delegate()
+                {
+                    foreach (OpCore core in instance.Context.Cores)
+                        core.User.Save();
+                });
 
             MessageBox.Show(this, "Nodes Saved");
         }
@@ -219,11 +222,14 @@ namespace RiseOp.Simulator
 
         private void AddItem(SimInstance instance)
         {
-            foreach (OpCore core in instance.Context.Cores)
-                listInstances.Items.Add(new ListInstanceItem(core));
+            instance.Context.Cores.LockReading(delegate()
+            {
+                foreach (OpCore core in instance.Context.Cores)
+                    listInstances.Items.Add(new ListInstanceItem(core));
 
-            if (instance.Context.Cores.Count == 0)
-                listInstances.Items.Add(new ListInstanceItem(instance));
+                if (instance.Context.Cores.Count == 0)
+                    listInstances.Items.Add(new ListInstanceItem(instance));
+            });
         }
 
         DateTime LastSimTime = new DateTime(2006, 1, 1, 0, 0, 0);
@@ -305,11 +311,16 @@ namespace RiseOp.Simulator
                 menu.MenuItems.Add(new MenuItem("Login", new EventHandler(Click_Connect)));
             else
             {
-                MenuItem global = new MenuItem("Global");
-                global.MenuItems.Add(new MenuItem("Crawler", new EventHandler(Click_GlobalCrawler)));
-                global.MenuItems.Add(new MenuItem("Graph", new EventHandler(Click_GlobalGraph)));
-                global.MenuItems.Add(new MenuItem("Packets", new EventHandler(Click_GlobalPackets)));
-                global.MenuItems.Add(new MenuItem("Search", new EventHandler(Click_GlobalSearch)));
+                MenuItem global = null;
+
+                if (item.Instance.Context.Global != null)
+                {
+                    global = new MenuItem("Global");
+                    global.MenuItems.Add(new MenuItem("Crawler", new EventHandler(Click_GlobalCrawler)));
+                    global.MenuItems.Add(new MenuItem("Graph", new EventHandler(Click_GlobalGraph)));
+                    global.MenuItems.Add(new MenuItem("Packets", new EventHandler(Click_GlobalPackets)));
+                    global.MenuItems.Add(new MenuItem("Search", new EventHandler(Click_GlobalSearch)));
+                }
 
                 MenuItem operation = new MenuItem("Operation");
                 operation.MenuItems.Add(new MenuItem("Crawler", new EventHandler(Click_OpCrawler)));
@@ -325,7 +336,7 @@ namespace RiseOp.Simulator
                 menu.MenuItems.Add(new MenuItem("Main", new EventHandler(Click_Main)));
                 menu.MenuItems.Add(new MenuItem("Internal", new EventHandler(Click_Internal)));
                 menu.MenuItems.Add(new MenuItem("Transfers", new EventHandler(Click_Transfers)));
-                menu.MenuItems.Add(global);
+                if(global != null) menu.MenuItems.Add(global);
                 menu.MenuItems.Add(operation);
                 menu.MenuItems.Add(firewall);
                 menu.MenuItems.Add(new MenuItem("Console", new EventHandler(Click_Console)));
@@ -434,7 +445,7 @@ namespace RiseOp.Simulator
             {
                 OpCore core = item.Core;
 
-                DhtNetwork network = core.GlobalNet;
+                DhtNetwork network = core.Context.Global.Network;
 
                 if (network.GuiCrawler == null)
                     network.GuiCrawler = new CrawlerForm("Global", network);
@@ -450,7 +461,7 @@ namespace RiseOp.Simulator
             {
                 OpCore core = item.Core;
 
-                DhtNetwork network = core.GlobalNet;
+                DhtNetwork network = core.Context.Global.Network;
 
                 if (network.GuiGraph == null)
                     network.GuiGraph = new GraphForm("Global", network);
@@ -466,7 +477,7 @@ namespace RiseOp.Simulator
             {
                 OpCore core = item.Core;
 
-                DhtNetwork network = core.GlobalNet;
+                DhtNetwork network = core.Context.Global.Network;
 
                 if (network.GuiPackets == null)
                     network.GuiPackets = new PacketsForm("Global", network);
@@ -480,7 +491,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                SearchForm form = new SearchForm("Global", this, item.Core.GlobalNet);
+                SearchForm form = new SearchForm("Global", this, item.Core.Context.Global.Network);
 
                 form.Show();
             }
@@ -492,7 +503,7 @@ namespace RiseOp.Simulator
             {
                 OpCore core = item.Core;
 
-                DhtNetwork network = core.OperationNet;
+                DhtNetwork network = core.Network;
 
                 if (network.GuiCrawler == null)
                     network.GuiCrawler = new CrawlerForm("Operation", network);
@@ -508,7 +519,7 @@ namespace RiseOp.Simulator
             {
                 OpCore core = item.Core;
 
-                DhtNetwork network = core.OperationNet;
+                DhtNetwork network = core.Network;
 
                 if (network.GuiGraph == null)
                     network.GuiGraph = new GraphForm("Operation", network);
@@ -524,7 +535,7 @@ namespace RiseOp.Simulator
             {
                 OpCore core = item.Core;
 
-                DhtNetwork network = core.OperationNet;
+                DhtNetwork network = core.Network;
 
                 if (network.GuiPackets == null)
                     network.GuiPackets = new PacketsForm("Operation", network);
@@ -538,7 +549,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
             {
-                SearchForm form = new SearchForm("Operation", this, item.Core.OperationNet);
+                SearchForm form = new SearchForm("Operation", this, item.Core.Network);
                 form.Show();
             }
         }
@@ -741,24 +752,24 @@ namespace RiseOp.Simulator
 
         internal void Refresh()
         {
-            int SUBITEM_COUNT = 9;
+            int SUBITEM_COUNT = 10;
 
             while (SubItems.Count < SUBITEM_COUNT)
                 SubItems.Add("");
 
+            Text = Instance.Index.ToString();
+
             if (Core == null)
             {
-                Text = "Login: " + Path.GetFileNameWithoutExtension(Instance.Path);
+                SubItems[1].Text = "Login: " + Path.GetFileNameWithoutExtension(Instance.Path);
                 ForeColor = Color.Gray;
 
-                SubItems[1].Text = ""; SubItems[2].Text = ""; SubItems[3].Text = ""; SubItems[4].Text = "";
-                SubItems[5].Text = ""; SubItems[6].Text = ""; SubItems[7].Text = ""; 
+                SubItems[2].Text = ""; SubItems[2].Text = ""; SubItems[3].Text = ""; SubItems[4].Text = "";
+                SubItems[6].Text = ""; SubItems[6].Text = ""; SubItems[7].Text = ""; 
 
                 return;
             }
 
-
-            Text = Core.User.Settings.ScreenName;
             ForeColor = Color.Black;
             
             // 0 user
@@ -775,29 +786,29 @@ namespace RiseOp.Simulator
             string alerts = "";
             
             // firewall incorrect
-            if (Instance.RealFirewall != Core.Firewall)
+            if (Instance.RealFirewall != Core.Context.Firewall)
                 alerts += "Firewall, ";
 
             // ip incorrect
-            if (Core.LocalIP != null && !Instance.RealIP.Equals(Core.LocalIP))
+            if (Instance.Context.LocalIP != null && !Instance.RealIP.Equals(Instance.Context.LocalIP))
                 alerts += "IP Mismatch, ";
 
             // routing unresponsive global/op
-            if(Core.GlobalNet != null)
-                if(!Core.GlobalNet.Responsive)
+            if(Instance.Context.Global != null)
+                if (!Instance.Context.Global.Network.Responsive)
                     alerts += "Global Routing, ";
 
-            if (!Core.OperationNet.Responsive)
+            if (!Core.Network.Responsive)
                 alerts += "Op Routing, ";
 
             // not proxied global/op
             if (Instance.RealFirewall != FirewallType.Open)
             {
-                if (Core.GlobalNet != null)
-                    if (Core.GlobalNet.TcpControl.ProxyMap.Count == 0)
+                if (Instance.Context.Global != null)
+                    if (Instance.Context.Global.Network.TcpControl.ProxyMap.Count == 0)
                         alerts += "Global Proxy, ";
 
-                if (Core.OperationNet.TcpControl.ProxyMap.Count == 0)
+                if (Core.Network.TcpControl.ProxyMap.Count == 0)
                     alerts += "Op Proxy, ";
             }
 
@@ -805,20 +816,20 @@ namespace RiseOp.Simulator
             if (Core.Locations.LocationMap.SafeCount <= 1)
                 alerts += "Locs, ";
 
-            
-            SubItems[1].Text = Core.User.Settings.Operation;
-            SubItems[2].Text = Utilities.IDtoBin(Core.OperationNet.Local.UserID);
-            SubItems[3].Text = Instance.RealIP.ToString() + "/" + Core.OperationNet.Local.ClientID.ToString();
-            SubItems[4].Text = Instance.RealFirewall.ToString();
-            SubItems[5].Text = alerts;
+            SubItems[1].Text = Core.User.Settings.UserName;
+            SubItems[2].Text = Core.User.Settings.Operation;
+            SubItems[3].Text = Utilities.IDtoBin(Core.UserID);
+            SubItems[4].Text = Instance.RealIP.ToString() + "/" + Core.Network.Local.ClientID.ToString();
+            SubItems[5].Text = Instance.RealFirewall.ToString();
+            SubItems[6].Text = alerts;
 
-            if(Core.GlobalNet != null)
+            if (Instance.Context.Global != null)
             {
-                SubItems[6].Text = ProxySummary(Core.GlobalNet.TcpControl);
-                SubItems[7].Text = NotesSummary();
+                SubItems[7].Text = ProxySummary(Instance.Context.Global.Network.TcpControl);
+                SubItems[8].Text = NotesSummary();
             }
 
-            SubItems[8].Text = Instance.BytesRecvd.ToString() + " in / " + Instance.BytesSent.ToString() + " out";
+            SubItems[9].Text = Instance.BytesRecvd.ToString() + " in / " + Instance.BytesSent.ToString() + " out";
         }
 
         private string ProxySummary(TcpHandler control)
@@ -846,7 +857,7 @@ namespace RiseOp.Simulator
 
             summary.Append(Core.Locations.LocationMap.SafeCount.ToString() + " locs, ");
 
-            summary.Append(Core.OperationNet.Searches.Pending.Count.ToString() + " searches, ");
+            summary.Append(Core.Network.Searches.Pending.Count.ToString() + " searches, ");
 
             summary.Append(Core.Transfers.Pending.Count.ToString() + " transfers");
 

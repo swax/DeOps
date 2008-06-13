@@ -92,6 +92,7 @@ namespace RiseOp.Interface
             this.MinimizeBox = false;
             this.Name = "GetTextDialog";
             this.ShowInTaskbar = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Title";
             this.Load += new System.EventHandler(this.GetTextDialog_Load);
             this.ResumeLayout(false);

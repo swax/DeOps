@@ -152,7 +152,7 @@ namespace RiseOp.Interface
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            Text = Core.User.Settings.Operation + " - " + Core.User.Settings.ScreenName;
+            Text = Core.User.Settings.Operation + " - " + Core.User.Settings.UserName;
 
             CommandTree.Init(Trust);
             CommandTree.ShowProject(0);
@@ -165,13 +165,6 @@ namespace RiseOp.Interface
                 SideButton.Checked = true;
                 Left = Screen.PrimaryScreen.WorkingArea.Width - Width;
             }
-        }
-
-
-        private void InviteMenuItem_Click(object sender, EventArgs e)
-        {
-            InviteForm form = new InviteForm(Core);
-            form.ShowDialog(this);
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -335,14 +328,14 @@ namespace RiseOp.Interface
             string global = "";
             string operation = "";
 
-            if (Core.GlobalNet == null)
+            if (Core.Context.Global == null)
                 global = "Disconnected";
-            else if (Core.GlobalNet.Responsive)
+            else if (Core.Context.Global.Network.Responsive)
                 global = "Connected";
             else
                 global = "Connecting";
 
-            if (Core.OperationNet.Responsive)
+            if (Core.Network.Responsive)
                 operation = "Connected";
             else
                 operation = "Connecting";
@@ -351,7 +344,7 @@ namespace RiseOp.Interface
             List<string[]> tuples = new List<string[]>();
             tuples.Add(new string[] { "global", global });
             tuples.Add(new string[] { "operation", operation });
-            tuples.Add(new string[] { "firewall", Core.Firewall.ToString() });
+            tuples.Add(new string[] { "firewall", Core.Context.Firewall.ToString() });
 
             
             if (CurrentStatusMode != mode)
@@ -688,7 +681,13 @@ namespace RiseOp.Interface
 
         void ManageMenu_Invite(object sender, EventArgs e)
         {
-
+            if (Core.User.Settings.OpAccess == AccessType.Public)
+                MessageBox.Show("Give out this link to invite others \r\n \r\n riseop://" + Core.User.Settings.Operation);
+            else
+            {
+                InviteForm form = new InviteForm(Core);
+                form.ShowDialog(this);
+            }
         }
 
         void ManageMenu_Tools(object sender, EventArgs e)
