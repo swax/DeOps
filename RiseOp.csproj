@@ -136,19 +136,19 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Implementation\Transport\UPnP.cs" />
-    <Compile Include="Interface\Init\CreateUser.cs">
+    <Compile Include="Interface\Setup\CreateUser.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Interface\Init\CreateUser.Designer.cs">
+    <Compile Include="Interface\Setup\CreateUser.Designer.cs">
       <DependentUpon>CreateUser.cs</DependentUpon>
     </Compile>
-    <Compile Include="Interface\Init\JoinOp.cs">
+    <Compile Include="Interface\Setup\JoinOp.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Interface\Init\JoinOp.Designer.cs">
+    <Compile Include="Interface\Setup\JoinOp.Designer.cs">
       <DependentUpon>JoinOp.cs</DependentUpon>
     </Compile>
-    <Compile Include="Services\Assist\VersionedFile.cs" />
+    <Compile Include="Services\Assist\VersionedCache.cs" />
     <Compile Include="Services\Board\BoardService.cs" />
     <Compile Include="Services\Chat\ChatService.cs" />
     <Compile Include="Services\IM\IMService.cs" />
@@ -530,10 +530,10 @@
     <Compile Include="Interface\Tools\PacketsForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Interface\Init\InviteForm.cs">
+    <Compile Include="Interface\Setup\InviteForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Interface\Init\InviteForm.Designer.cs">
+    <Compile Include="Interface\Setup\InviteForm.Designer.cs">
       <DependentUpon>InviteForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Interface\MainForm.cs">
@@ -548,10 +548,10 @@
     <Compile Include="Interface\LoginForm.Designer.cs">
       <DependentUpon>LoginForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Interface\Init\CreateOp.cs">
+    <Compile Include="Interface\Setup\CreateOp.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Interface\Init\CreateOp.Designer.cs">
+    <Compile Include="Interface\Setup\CreateOp.Designer.cs">
       <DependentUpon>CreateOp.cs</DependentUpon>
     </Compile>
     <Compile Include="Interface\Tools\SearchForm.cs">
@@ -714,11 +714,11 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <EmbeddedResource Include="Interface\Init\CreateUser.resx">
+    <EmbeddedResource Include="Interface\Setup\CreateUser.resx">
       <DependentUpon>CreateUser.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Init\JoinOp.resx">
+    <EmbeddedResource Include="Interface\Setup\JoinOp.resx">
       <DependentUpon>JoinOp.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
@@ -961,7 +961,7 @@
       <DependentUpon>PacketsForm.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Init\InviteForm.resx">
+    <EmbeddedResource Include="Interface\Setup\InviteForm.resx">
       <SubType>Designer</SubType>
       <DependentUpon>InviteForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -973,7 +973,7 @@
       <SubType>Designer</SubType>
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Init\CreateOp.resx">
+    <EmbeddedResource Include="Interface\Setup\CreateOp.resx">
       <SubType>Designer</SubType>
       <DependentUpon>CreateOp.cs</DependentUpon>
     </EmbeddedResource>

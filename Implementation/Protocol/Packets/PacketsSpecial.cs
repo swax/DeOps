@@ -10,6 +10,82 @@ using RiseOp.Services.Location;
 
 namespace RiseOp.Implementation.Protocol.Special
 {
+    internal class TunnelPacket : G2Packet
+    {
+        const byte Packet_Source = 0x10;
+        const byte Packet_Target = 0x20;
+        const byte Packet_SourceServer = 0x30;
+        const byte Packet_TargetServer = 0x40;
+
+
+        internal TunnelAddress Source;
+        internal TunnelAddress Target;
+        internal DhtAddress SourceServer;
+        internal DhtAddress TargetServer;
+
+        internal byte[] Payload;
+
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame tunnel = protocol.WritePacket(null, RootPacket.Tunnel, Payload);
+
+                protocol.WritePacket(tunnel, Packet_Source, Source.ToBytes());
+                protocol.WritePacket(tunnel, Packet_Target, Target.ToBytes());
+
+                if (SourceServer != null)
+                    SourceServer.WritePacket(protocol, tunnel, Packet_SourceServer);
+
+                if (TargetServer != null)
+                    TargetServer.WritePacket(protocol, tunnel, Packet_TargetServer);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static TunnelPacket Decode(G2Header root)
+        {
+            TunnelPacket tunnel = new TunnelPacket();
+
+            if (G2Protocol.ReadPayload(root))
+                tunnel.Payload = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
+
+            G2Protocol.ResetPacket(root);
+
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_Source:
+                        tunnel.Source = TunnelAddress.FromBytes(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Target:
+                        tunnel.Target = TunnelAddress.FromBytes(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_SourceServer:
+                        tunnel.SourceServer = DhtAddress.ReadPacket(child);
+                        break;
+
+                    case Packet_TargetServer:
+                        tunnel.TargetServer = DhtAddress.ReadPacket(child);
+                        break;
+                }
+            }
+
+            return tunnel;
+        }
+    }
+
     internal class OneWayInvite : G2Packet
     {
         const byte Packet_OpName    = 0x10;

@@ -13,6 +13,7 @@ using RiseOp.Services;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Comm;
 using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Implementation.Protocol.Special;
 using RiseOp.Implementation.Transport;
 using RiseOp.Services.Location;
 using RiseOp.Interface.Tools;

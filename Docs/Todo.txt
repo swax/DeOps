@@ -58,15 +58,6 @@ test network
 next
 	use packetstream instead of protocl.writetofile	
 	put stream closing calls in finally block
-	rename 
-		versionedcache in svn
-		loader form to login form
-		delete newopform
-		delete loaderform
-		delete inviteform, gettextdialog
-		packetsfile to packetsSpecial
-		move tunnel packets to special
-	test build from fresh checkout
 	do check tags on node click, or local sync search...
 	
 	bandwidth limits / auditing
