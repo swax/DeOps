@@ -34,6 +34,7 @@ namespace RiseOp.Simulator
             this.buttonPause = new System.Windows.Forms.Button();
             this.labelTime = new System.Windows.Forms.Label();
             this.listInstances = new System.Windows.Forms.ListView();
+            this.columnHeader10 = new System.Windows.Forms.ColumnHeader();
             this.columnHeader1 = new System.Windows.Forms.ColumnHeader();
             this.columnHeader3 = new System.Windows.Forms.ColumnHeader();
             this.columnHeader2 = new System.Windows.Forms.ColumnHeader();
@@ -71,7 +72,7 @@ namespace RiseOp.Simulator
             this.ElapsedLabel = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.LoadProgress = new System.Windows.Forms.ProgressBar();
-            this.columnHeader10 = new System.Windows.Forms.ColumnHeader();
+            this.LoggingMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -134,6 +135,11 @@ namespace RiseOp.Simulator
             this.listInstances.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.listInstances_MouseDoubleClick);
             this.listInstances.MouseClick += new System.Windows.Forms.MouseEventHandler(this.listInstances_MouseClick);
             this.listInstances.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listInstances_ColumnClick);
+            // 
+            // columnHeader10
+            // 
+            this.columnHeader10.Text = "#";
+            this.columnHeader10.Width = 23;
             // 
             // columnHeader1
             // 
@@ -277,6 +283,7 @@ namespace RiseOp.Simulator
             this.OptionsMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.FreshStartMenuItem,
             this.LoadOnlineMenuItem,
+            this.LoggingMenu,
             this.SpeedMenuItem,
             this.CollectMenuItem});
             this.OptionsMenuItem.Name = "OptionsMenuItem";
@@ -287,28 +294,28 @@ namespace RiseOp.Simulator
             // FreshStartMenuItem
             // 
             this.FreshStartMenuItem.Name = "FreshStartMenuItem";
-            this.FreshStartMenuItem.Size = new System.Drawing.Size(141, 22);
+            this.FreshStartMenuItem.Size = new System.Drawing.Size(152, 22);
             this.FreshStartMenuItem.Text = "Fresh Start";
             this.FreshStartMenuItem.Click += new System.EventHandler(this.FreshStartMenuItem_Click);
             // 
             // LoadOnlineMenuItem
             // 
             this.LoadOnlineMenuItem.Name = "LoadOnlineMenuItem";
-            this.LoadOnlineMenuItem.Size = new System.Drawing.Size(141, 22);
+            this.LoadOnlineMenuItem.Size = new System.Drawing.Size(152, 22);
             this.LoadOnlineMenuItem.Text = "Load Online";
             this.LoadOnlineMenuItem.Click += new System.EventHandler(this.LoadOnlineMenu_Click);
             // 
             // SpeedMenuItem
             // 
             this.SpeedMenuItem.Name = "SpeedMenuItem";
-            this.SpeedMenuItem.Size = new System.Drawing.Size(141, 22);
+            this.SpeedMenuItem.Size = new System.Drawing.Size(152, 22);
             this.SpeedMenuItem.Text = "Speed";
             this.SpeedMenuItem.Click += new System.EventHandler(this.SpeedMenuItem_Click);
             // 
             // CollectMenuItem
             // 
             this.CollectMenuItem.Name = "CollectMenuItem";
-            this.CollectMenuItem.Size = new System.Drawing.Size(141, 22);
+            this.CollectMenuItem.Size = new System.Drawing.Size(152, 22);
             this.CollectMenuItem.Text = "GC Collect";
             this.CollectMenuItem.Click += new System.EventHandler(this.CollectMenuItem_Click);
             // 
@@ -428,10 +435,12 @@ namespace RiseOp.Simulator
             this.LoadProgress.TabIndex = 18;
             this.LoadProgress.Visible = false;
             // 
-            // columnHeader10
+            // LoggingMenu
             // 
-            this.columnHeader10.Text = "#";
-            this.columnHeader10.Width = 23;
+            this.LoggingMenu.Name = "LoggingMenu";
+            this.LoggingMenu.Size = new System.Drawing.Size(152, 22);
+            this.LoggingMenu.Text = "Logging";
+            this.LoggingMenu.Click += new System.EventHandler(this.LoggingMenu_Click);
             // 
             // SimForm
             // 
@@ -505,5 +514,6 @@ namespace RiseOp.Simulator
         private System.Windows.Forms.ToolStripMenuItem LoadOnlineMenuItem;
         private System.Windows.Forms.ToolStripMenuItem UnloadAllMenuItem;
         private System.Windows.Forms.ColumnHeader columnHeader10;
+        private System.Windows.Forms.ToolStripMenuItem LoggingMenu;
     }
 }

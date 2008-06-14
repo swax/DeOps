@@ -45,7 +45,8 @@ namespace RiseOp.Services.Storage
         internal string WorkingPath;
         internal string ResourcePath;
 
-        internal RijndaelManaged LocalFileKey;
+        internal byte[] LocalFileKey;
+        RijndaelManaged FileCrypt = new RijndaelManaged();
 
         bool SavingLocal;
         internal StorageUpdateHandler StorageUpdate;
@@ -88,7 +89,9 @@ namespace RiseOp.Services.Storage
 
             Core.Links.LinkUpdate += new LinkUpdateHandler(Links_LinkUpdate);
 
-
+            LocalFileKey = Core.User.Settings.FileKey;
+            FileCrypt.Key = LocalFileKey;
+            FileCrypt.IV = new byte[FileCrypt.IV.Length];
 
             string rootpath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString() + Path.DirectorySeparatorChar;
             DataPath = rootpath + FileTypeData.ToString();
@@ -101,8 +104,6 @@ namespace RiseOp.Services.Storage
             // clear resource files so that updates of these files work
             if (Directory.Exists(ResourcePath))
                 Directory.Delete(ResourcePath, true);
-
-            LocalFileKey = Core.User.Settings.FileKey;
 
             Cache = new VersionedCache(Network, ServiceID, FileTypeCache, true);
 
@@ -298,18 +299,14 @@ namespace RiseOp.Services.Storage
                     if (File.Exists(oldPath))
                     {
                         TaggedStream file = new TaggedStream(oldPath);
-                        CryptoStream crypto = new CryptoStream(file, local.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                        CryptoStream crypto = IVCryptoStream.Load(file, local.File.Header.FileKey);
                         oldStream = new PacketStream(crypto, Protocol, FileAccess.Read);
                     }
                 }
 
-                RijndaelManaged key = new RijndaelManaged();
-                key.GenerateKey();
-                key.IV = new byte[key.IV.Length]; 
-
                 string tempPath = Core.GetTempPath();
-                FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
-                CryptoStream stream = new CryptoStream(tempFile, key.CreateEncryptor(), CryptoStreamMode.Write);
+                byte[] key = Utilities.GenerateKey(Core.StrongRndGen, 256);
+                CryptoStream stream = IVCryptoStream.Save(tempPath, key);
 
                 // write loaded projects
                 WorkingStorage working = null;
@@ -507,7 +504,7 @@ namespace RiseOp.Services.Storage
                     continue;
                 }
 
-                ICryptoTransform transform = LocalFileKey.CreateDecryptor(); //crit moved outside?
+                ICryptoTransform transform = FileCrypt.CreateDecryptor(); //crit moved outside?
                 byte[] id = transform.TransformFinalBlock(hash, 0, hash.Length);
 
                 if (!FileMap.SafeContainsKey(BitConverter.ToUInt64(id, 0)))
@@ -527,7 +524,7 @@ namespace RiseOp.Services.Storage
 
         internal string GetFilePath(ulong hashID)
         {
-            ICryptoTransform transform = LocalFileKey.CreateEncryptor();
+            ICryptoTransform transform = FileCrypt.CreateEncryptor();
 
             byte[] hash = BitConverter.GetBytes(hashID);
 
@@ -536,7 +533,7 @@ namespace RiseOp.Services.Storage
 
         internal string GetWorkingPath(uint project)
         {
-            return WorkingPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "working:" + project.ToString());
+            return WorkingPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "working:" + project.ToString());
         }
 
         internal OpStorage GetStorage(ulong key)
@@ -558,10 +555,10 @@ namespace RiseOp.Services.Storage
                 bool cached = Network.Routing.InCacheArea(storage.UserID);
                 bool local = false;
 
-                RijndaelManaged key = working ? LocalFileKey : storage.File.Header.FileKey;
+                byte[] key = working ? LocalFileKey : storage.File.Header.FileKey;
 
                 TaggedStream filex = new TaggedStream(path);
-                CryptoStream crypto = new CryptoStream(filex, key.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(filex, key);
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
                 G2Header header = null;
@@ -675,7 +672,7 @@ namespace RiseOp.Services.Storage
             // interface list box would be watching if file is transferring, will catch completed update
         }
 
-        private void UnloadHeaderFile(string path, RijndaelManaged key)
+        private void UnloadHeaderFile(string path, byte[] key)
         {
             try
             {
@@ -683,7 +680,7 @@ namespace RiseOp.Services.Storage
                     return;
 
                 TaggedStream filex = new TaggedStream(path);
-                CryptoStream crypto = new CryptoStream(filex, key.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(filex, key);
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
                 G2Header header = null;
@@ -794,7 +791,7 @@ namespace RiseOp.Services.Storage
                         file.References++;
 
                         info.Size = file.Size;
-                        info.FileKey.Key = file.Key;
+                        info.FileKey = file.Key;
 
                         info.Hash = file.Hash;
                         info.HashID = file.HashID;
@@ -808,10 +805,12 @@ namespace RiseOp.Services.Storage
                         continue;
                     }
 
+                    if (info.FileKey == null)
+                        info.FileKey = Utilities.GenerateKey(Core.StrongRndGen, 256);
+
                     // encrypt file to temp dir
                     string tempPath = Core.GetTempPath();
-                    FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
-                    CryptoStream stream = new CryptoStream(tempFile, info.FileKey.CreateEncryptor(), CryptoStreamMode.Write);
+                    CryptoStream stream = IVCryptoStream.Save(tempPath, info.FileKey);
 
                     FileStream localfile = new FileStream(pack.Path, FileMode.Open, FileAccess.Read);
 
@@ -1045,7 +1044,7 @@ namespace RiseOp.Services.Storage
                 FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
 
                 TaggedStream encFile = new TaggedStream(GetFilePath(file.HashID));
-                CryptoStream stream = new CryptoStream(encFile, file.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream stream = IVCryptoStream.Load(encFile, file.FileKey);
 
                 int read = FileBufferSize;
                 while (read == FileBufferSize)
@@ -1320,7 +1319,7 @@ namespace RiseOp.Services.Storage
             HashID = file.HashID;
             Hash = file.Hash;
             Size = file.Size;
-            Key = file.FileKey.Key;
+            Key = file.FileKey;
             Working = true;
         }
 

@@ -73,7 +73,7 @@ namespace RiseOp.Services.Mail
 
         internal string MailPath;
         internal string CachePath;
-        RijndaelManaged LocalFileKey;
+        byte[] LocalFileKey;
         RijndaelManaged MailIDKey;
 
         internal Dictionary<ulong, List<CachedMail>> MailMap = new Dictionary<ulong, List<CachedMail>>();
@@ -134,8 +134,8 @@ namespace RiseOp.Services.Mail
             LocalFileKey = Core.User.Settings.FileKey;
 
             MailIDKey = new RijndaelManaged();
-            MailIDKey.Key = LocalFileKey.Key;
-            MailIDKey.IV = LocalFileKey.IV;
+            MailIDKey.Key = LocalFileKey;
+            MailIDKey.IV = new byte[MailIDKey.IV.Length];
             MailIDKey.Padding = PaddingMode.None;
 
             MailPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
@@ -368,8 +368,7 @@ namespace RiseOp.Services.Mail
             try
             {
                 string tempPath = Core.GetTempPath();
-                FileStream file = new FileStream(tempPath, FileMode.Create);
-                CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
+                CryptoStream stream = IVCryptoStream.Save(tempPath, LocalFileKey);
 
                 // mail headers
                 foreach (List<CachedMail> list in MailMap.Values)
@@ -386,7 +385,7 @@ namespace RiseOp.Services.Mail
                 stream.Close();
 
 
-                string finalPath = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
+                string finalPath = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "headers");
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -400,13 +399,12 @@ namespace RiseOp.Services.Mail
         {
             try
             {
-                string path = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers");
+                string path = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "headers");
 
                 if (!File.Exists(path))
                     return;
 
-                FileStream file = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(path, LocalFileKey);
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;
@@ -456,8 +454,7 @@ namespace RiseOp.Services.Mail
             try
             {
                 string tempPath = Core.GetTempPath();
-                FileStream file = new FileStream(tempPath, FileMode.Create);
-                CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
+                CryptoStream stream = IVCryptoStream.Save(tempPath, LocalFileKey);
 
                 mailList.LockReading(delegate()
                 {
@@ -472,7 +469,7 @@ namespace RiseOp.Services.Mail
                 stream.Close();
 
 
-                string finalPath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, name);
+                string finalPath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, name);
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -489,15 +486,12 @@ namespace RiseOp.Services.Mail
 
             string name = (box == MailBoxType.Inbox) ? "inbox" : "outbox";
 
-            string path = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, name);
+            string path = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, name);
 
             if (File.Exists(path))
                 try
                 {
-                    
-
-                    FileStream file = new FileStream(path, FileMode.Open);
-                    CryptoStream crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                    CryptoStream crypto = IVCryptoStream.Load(path, LocalFileKey);
                     PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                     G2Header root = null;
@@ -554,7 +548,7 @@ namespace RiseOp.Services.Mail
                     return null;
 
                 TaggedStream file = new TaggedStream(path);
-                CryptoStream crypto = new CryptoStream(file, header.LocalKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(file, header.LocalKey);
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;
@@ -660,14 +654,12 @@ namespace RiseOp.Services.Mail
             MailHeader header = new MailHeader();
             header.Source = Core.User.Settings.KeyPublic;
             header.SourceID = Core.UserID;
-            header.LocalKey.GenerateKey();
-            header.LocalKey.IV = new byte[header.LocalKey.IV.Length];
+            header.LocalKey = Utilities.GenerateKey(Core.StrongRndGen, 256);
             header.Read = true;
 
             // setup temp file
             string tempPath = Core.GetTempPath();
-            FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
-            CryptoStream stream = new CryptoStream(tempFile, header.LocalKey.CreateEncryptor(), CryptoStreamMode.Write);
+            CryptoStream stream = IVCryptoStream.Save(tempPath, header.LocalKey);
             int written = 0;
 
             // build mail file
@@ -717,7 +709,7 @@ namespace RiseOp.Services.Mail
 
 
             // move file, overwrite if need be, local id used so filename is the same for all targets
-            string finalPath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, Core.UserID, header.FileHash);
+            string finalPath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, Core.UserID, header.FileHash);
             File.Move(tempPath, finalPath);
 
             // write header to outbound file
@@ -778,31 +770,33 @@ namespace RiseOp.Services.Mail
             SaveHeaders();
         }
 
-        byte[] EncodeFileKey(RSACryptoServiceProvider rsa, RijndaelManaged crypt, ulong fileStart)
+        // key to decrypt the email file is encoded with the receiver's public key
+        byte[] EncodeFileKey(RSACryptoServiceProvider rsa, byte[] crypt, ulong fileStart)
         {
-            byte[] buffer = new byte[crypt.Key.Length + 8];
+            byte[] buffer = new byte[crypt.Length + 8];
 
-            crypt.Key.CopyTo(buffer, 0);
-            BitConverter.GetBytes(fileStart).CopyTo(buffer, crypt.Key.Length);
+            crypt.CopyTo(buffer, 0);
+            BitConverter.GetBytes(fileStart).CopyTo(buffer, crypt.Length);
 
             return rsa.Encrypt(buffer, false);
         }
 
-        void DecodeFileKey(byte[] enocoded, ref RijndaelManaged fileKey, ref ulong fileStart)
+        void DecodeFileKey(byte[] enocoded, ref byte[] fileKey, ref ulong fileStart)
         {
             byte[] decoded = Core.User.Settings.KeyPair.Decrypt(enocoded, false);
 
-            if (decoded.Length < fileKey.Key.Length + 8)
+            if (decoded.Length < (256 / 8) + 8) // 256 bit encryption is 32 bytes plus 8 for fileStart data
                 return;
 
-            fileKey.IV = new byte[fileKey.IV.Length];
-            fileKey.Key = Utilities.ExtractBytes(decoded, 0, fileKey.Key.Length);
+            fileKey = Utilities.ExtractBytes(decoded, 0, 256/8);
 
-            fileStart = BitConverter.ToUInt64(decoded, fileKey.Key.Length);
+            fileStart = BitConverter.ToUInt64(decoded, fileKey.Length);
         }
 
         internal byte[] GetMailID(ulong hashID, ulong userID)
         {
+            // random bytes in MailInfo ensure that the hash ID is different for all messages
+
             byte[] buffer = new byte[16];
 
             BitConverter.GetBytes(hashID).CopyTo(buffer, 0);
@@ -1274,7 +1268,7 @@ namespace RiseOp.Services.Mail
                 string path = PendingCache.GetFilePath(pending.Header);
 
                 TaggedStream file = new TaggedStream(path);
-                CryptoStream crypto = new CryptoStream(file, pending.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(file, pending.Header.FileKey);
 
                 byte[] divider = new byte[16];
                 byte[] buffer = new byte[4096];
@@ -1317,7 +1311,7 @@ namespace RiseOp.Services.Mail
                 string path = PendingCache.GetFilePath(pending.Header);
 
                 TaggedStream file = new TaggedStream(path);
-                CryptoStream crypto = new CryptoStream(file, pending.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(file, pending.Header.FileKey);
 
                 bool dividerReached = false;
                 byte[] divider = new byte[16];
@@ -1463,7 +1457,7 @@ namespace RiseOp.Services.Mail
 
                 // load pending file
                 TaggedStream file = new TaggedStream(PendingCache.GetFilePath(cachedfile.Header));
-                CryptoStream crypto = new CryptoStream(file, cachedfile.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(file, cachedfile.Header.FileKey);
 
                 bool dividerPassed = false;
                 byte[] divider = new byte[16];
@@ -1517,12 +1511,12 @@ namespace RiseOp.Services.Mail
 
                     List<ulong> targets = new List<ulong>();
 
-                    string localpath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "acktargets");
+                    string localpath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "acktargets");
 
                     if (File.Exists(localpath))
                     {
                         file = new TaggedStream(localpath);
-                        crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                        crypto = IVCryptoStream.Load(file, LocalFileKey);
 
                         read = buffer.Length;
                         while (read == buffer.Length)
@@ -1746,13 +1740,9 @@ namespace RiseOp.Services.Mail
 
             try
             {
-                RijndaelManaged key = new RijndaelManaged();
-                key.GenerateKey();
-                key.IV = new byte[key.IV.Length]; 
-
                 string tempPath = Core.GetTempPath();
-                FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
-                CryptoStream stream = new CryptoStream(tempFile, key.CreateEncryptor(), CryptoStreamMode.Write);
+                byte[] key = Utilities.GenerateKey(Core.StrongRndGen, 256);
+                CryptoStream stream = IVCryptoStream.Save(tempPath, key);
 
                 byte[] buffer = null;
 
@@ -1778,12 +1768,11 @@ namespace RiseOp.Services.Mail
 
 
                 // save pending ack targets in local file
-                string localpath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "acktargets");
+                string localpath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "acktargets");
 
                 if (PendingAcks.Count > 0)
                 {
-                    FileStream file = new FileStream(localpath, FileMode.Create);
-                    stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
+                    stream = IVCryptoStream.Save(localpath, LocalFileKey);
 
                     foreach (ulong target in PendingAcks.Keys)
                         stream.Write(BitConverter.GetBytes(target), 0, 8);
@@ -1804,12 +1793,12 @@ namespace RiseOp.Services.Mail
 
         internal string GetCachePath(MailHeader header)
         {
-            return CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.SourceID, header.FileHash);
+            return CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, header.SourceID, header.FileHash);
         }
 
         internal string GetLocalPath(MailHeader header)
         {
-            return MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.SourceID, header.FileHash);
+            return MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, header.SourceID, header.FileHash);
         }
 
         internal void Reply(LocalMail message, string body)

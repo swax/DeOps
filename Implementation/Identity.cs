@@ -35,7 +35,9 @@ namespace RiseOp
 		internal string ProfilePath;
         internal string RootPath;
         internal string TempPath;
-		internal RijndaelManaged Password;
+
+		internal byte[] PasswordKey;  // 32 bytes (256bit)
+        internal byte[] PasswordSalt; // 4 btyes
 
         internal SettingsPacket Settings = new SettingsPacket();
 
@@ -45,6 +47,14 @@ namespace RiseOp
             Core = core;
             Protocol = Core.GuiProtocol;
 
+            // get password salt, first 16 bytes IV, next 4 is salt
+            FileStream stream = new FileStream(filepath, FileMode.Open);
+            stream.Seek(16, SeekOrigin.Begin);
+
+            PasswordSalt = new byte[4];
+            stream.Read(PasswordSalt, 0, 4);
+            stream.Close();
+
             Init(filepath, password);
         }
 
@@ -53,14 +63,20 @@ namespace RiseOp
             // used when creating new ident
             Protocol    = protocol;
 
+            PasswordSalt = new byte[4];
+            RNGCryptoServiceProvider rnd = new RNGCryptoServiceProvider();
+            rnd.GetBytes(PasswordSalt);
+
+           
             Init(filepath, password);
         }
 
         private void Init(string filepath, string password)
         {
 			ProfilePath = filepath;
-			Password    = Utilities.PasswordtoRijndael(password);
 
+            PasswordKey = Utilities.GetPasswordKey(password, PasswordSalt);
+            
             RootPath = Path.GetDirectoryName(filepath);
             TempPath = RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + "0";
             Directory.CreateDirectory(TempPath);
@@ -76,11 +92,21 @@ namespace RiseOp
 		{
 			FileStream readStream = null;
 
+            RijndaelManaged Password = new RijndaelManaged();
+            Password.Key = PasswordKey;
+
+            byte[] iv = new byte[16];
+            byte[] salt = new byte[4];
+
 			try
 			{
+                // first 16 bytes IV, next 4 bytes is salt
                 readStream = new FileStream(ProfilePath, FileMode.Open);
-                CryptoStream decStream = new CryptoStream(readStream, Password.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(decStream, Protocol, FileAccess.Read);
+                readStream.Read(iv, 0, 16);
+                readStream.Read(salt, 0, 4);
+                Password.IV = iv;
+                CryptoStream crypto = new CryptoStream(readStream, Password.CreateDecryptor(), CryptoStreamMode.Read);
+                PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
                 G2Header root = null;
 
@@ -119,10 +145,16 @@ namespace RiseOp
 			if( !File.Exists(backupPath) && File.Exists(ProfilePath))
 				File.Copy(ProfilePath, backupPath, true);
 
+            RijndaelManaged Password = new RijndaelManaged();
+            Password.Key = PasswordKey;
+
             try
             {
                 // Attach to crypto stream and write file
                 FileStream file = new FileStream(ProfilePath, FileMode.Create);
+                Password.GenerateIV();
+                file.Write(Password.IV, 0, Password.IV.Length);
+                file.Write(PasswordSalt, 0, PasswordSalt.Length);
                 CryptoStream crypto = new CryptoStream(file, Password.CreateEncryptor(), CryptoStreamMode.Write);
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Write);
 
@@ -162,15 +194,14 @@ namespace RiseOp
                         stream.WritePacket(new SavedPacket(type, entry));
         }
 
-        internal static void CreateNew(string path, string opName, string userName, string password, AccessType access, OneWayInvite invite)
+        internal static void CreateNew(string path, string opName, string userName, string password, AccessType access, byte[] opKey)
         {
             Identity user = new Identity(path, password, new G2Protocol());
             user.Settings.Operation = opName;
             user.Settings.UserName = userName;
             user.Settings.KeyPair = new RSACryptoServiceProvider(1024);
             user.Settings.OpKey = new RijndaelManaged();
-            user.Settings.FileKey = new RijndaelManaged();
-            user.Settings.FileKey.GenerateKey();
+            user.Settings.FileKey = Utilities.GenerateKey(new RNGCryptoServiceProvider(), 256);
             user.Settings.OpAccess = access;
 
             // joining/creating public
@@ -183,8 +214,8 @@ namespace RiseOp
             }
 
             // invite to private/secret
-            else if (invite != null)
-                user.Settings.OpKey.Key = invite.OpID;
+            else if (opKey != null)
+                user.Settings.OpKey.Key = opKey;
 
             // creating private/secret
             else
@@ -249,7 +280,7 @@ namespace RiseOp
                         break;
 
                     case Packet_LastSeen:
-                        saved.LastSeen = DateTime.FromBinary(BitConverter.ToInt32(child.Data, child.PayloadPos));
+                        saved.LastSeen = DateTime.FromBinary(BitConverter.ToInt64(child.Data, child.PayloadPos));
                         break;
                 }
             }
@@ -309,7 +340,7 @@ namespace RiseOp
         internal RSACryptoServiceProvider KeyPair = new RSACryptoServiceProvider();
         internal byte[] KeyPublic;
 
-        internal RijndaelManaged FileKey = new RijndaelManaged();
+        internal byte[] FileKey;
 
 
         internal SettingsPacket()
@@ -329,7 +360,7 @@ namespace RiseOp
                 protocol.WritePacket(settings, Packet_Location, UTF8Encoding.UTF8.GetBytes(Location));
                 protocol.WritePacket(settings, Packet_AwayMsg, UTF8Encoding.UTF8.GetBytes(AwayMessage));
 
-                protocol.WritePacket(settings, Packet_FileKey, FileKey.Key);
+                protocol.WritePacket(settings, Packet_FileKey, FileKey);
                 protocol.WritePacket(settings, Packet_OpKey, OpKey.Key);
                 protocol.WritePacket(settings, Packet_OpAccess, BitConverter.GetBytes((byte)OpAccess));
 
@@ -388,8 +419,7 @@ namespace RiseOp
                         break;
 
                     case Packet_FileKey:
-                        settings.FileKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        settings.FileKey.IV = new byte[settings.FileKey.IV.Length]; // set zeros
+                        settings.FileKey = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_OpAccess:
@@ -531,16 +561,16 @@ namespace RiseOp
 
             string path = Application.StartupPath + Path.DirectorySeparatorChar + "bootstrap.rop";
 
-            if (File.Exists(path))
+            // dont want instances saving and loading same global file
+            if (network.Core.Sim == null && File.Exists(path))
             {
-                RijndaelManaged password = Utilities.PasswordtoRijndael("bootstrap");
-                FileStream readStream = null;
+                
+                byte[] key = new SHA256Managed().ComputeHash( UTF8Encoding.UTF8.GetBytes("bootstrap"));
 
                 try
                 {
-                    readStream = new FileStream(path, FileMode.Open);
-                    CryptoStream decStream = new CryptoStream(readStream, password.CreateDecryptor(), CryptoStreamMode.Read);
-                    PacketStream stream = new PacketStream(decStream, network.Protocol, FileAccess.Read);
+                    CryptoStream crypto = IVCryptoStream.Load(path, key);
+                    PacketStream stream = new PacketStream(crypto, network.Protocol, FileAccess.Read);
 
                     G2Header root = null;
 
@@ -576,17 +606,17 @@ namespace RiseOp
 
         internal void Save(OpCore core)
         {
-            if (core.Sim != null) //crit test function as well as loading
+            if (core.Sim != null)
                 return;
 
             string path = Application.StartupPath + Path.DirectorySeparatorChar + "bootstrap.rop";
-            RijndaelManaged password = Utilities.PasswordtoRijndael("bootstrap");
+            
+            byte[] key = new SHA256Managed().ComputeHash(UTF8Encoding.UTF8.GetBytes("bootstrap"));
 
             try
             {
                 // Attach to crypto stream and write file
-                FileStream file = new FileStream(path, FileMode.Create);
-                CryptoStream crypto = new CryptoStream(file, password.CreateEncryptor(), CryptoStreamMode.Write);
+                CryptoStream crypto = IVCryptoStream.Save(path, key);
                 PacketStream stream = new PacketStream(crypto, core.Network.Protocol, FileAccess.Write);
 
                 stream.WritePacket(this);

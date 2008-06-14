@@ -33,7 +33,7 @@ namespace RiseOp.Services.Assist
         internal uint Service;
         internal uint DataType;
 
-        RijndaelManaged LocalKey;
+        byte[] LocalKey;
         string CachePath;
 
         internal ThreadedDictionary<ulong, OpVersionedFile> FileMap = new ThreadedDictionary<ulong, OpVersionedFile>();
@@ -235,13 +235,12 @@ namespace RiseOp.Services.Assist
         {
             try
             {
-                string path = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalKey, "VersionedFileHeaders");
+                string path = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "VersionedFileHeaders");
 
                 if (!File.Exists(path))
                     return;
 
-                FileStream file = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(file, LocalKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(path, LocalKey);
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;
@@ -274,8 +273,7 @@ namespace RiseOp.Services.Assist
             try
             {
                 string tempPath = Core.GetTempPath();
-                FileStream file = new FileStream(tempPath, FileMode.Create);
-                CryptoStream stream = new CryptoStream(file, LocalKey.CreateEncryptor(), CryptoStreamMode.Write);
+                CryptoStream stream = IVCryptoStream.Save(tempPath, LocalKey);
 
                 FileMap.LockReading(delegate()
                 {
@@ -288,7 +286,7 @@ namespace RiseOp.Services.Assist
                 stream.Close();
 
 
-                string finalPath = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalKey, "VersionedFileHeaders");
+                string finalPath = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "VersionedFileHeaders");
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -298,7 +296,7 @@ namespace RiseOp.Services.Assist
             }
         }
 
-        internal OpVersionedFile UpdateLocal(string tempPath, RijndaelManaged key, byte[] extra)
+        internal OpVersionedFile UpdateLocal(string tempPath, byte[] key, byte[] extra)
         {
             OpVersionedFile vfile = null;
 
@@ -459,7 +457,7 @@ namespace RiseOp.Services.Assist
 
         internal string GetFilePath(VersionedFileHeader header)
         {
-            return CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalKey, header.KeyID, header.FileHash);
+            return CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, header.KeyID, header.FileHash);
         }
 
         private void Download(SignedData signed, VersionedFileHeader header)
@@ -726,7 +724,7 @@ namespace RiseOp.Services.Assist
         internal uint Version;
         internal byte[] FileHash;
         internal long FileSize;
-        internal RijndaelManaged FileKey = new RijndaelManaged();
+        internal byte[] FileKey;
         internal byte[] Extra;
         
         internal ulong KeyID;
@@ -745,7 +743,7 @@ namespace RiseOp.Services.Assist
                 {
                     protocol.WritePacket(header, Packet_FileHash, FileHash);
                     protocol.WritePacket(header, Packet_FileSize, CompactNum.GetBytes(FileSize));
-                    protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
+                    protocol.WritePacket(header, Packet_FileKey, FileKey);
                 }
 
                 protocol.WritePacket(header, Packet_Extra, Extra);
@@ -797,8 +795,7 @@ namespace RiseOp.Services.Assist
                         break;
 
                     case Packet_FileKey:
-                        header.FileKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        header.FileKey.IV = new byte[header.FileKey.IV.Length];
+                        header.FileKey = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Extra:

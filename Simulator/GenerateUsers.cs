@@ -89,12 +89,12 @@ namespace RiseOp.Simulator
             int users = (int) UsersNumeric.Value;
             int orgs = (int) OrgNumeric.Value;
 
-            RijndaelManaged[] OpKeys = new RijndaelManaged[orgs];
+            List<byte[]> OpKeys = new List<byte[]>();
 
-            for (int i = 0; i < OpKeys.Length; i++)
+            for (int i = 0; i < orgs; i++)
             {
-                OpKeys[i] = new RijndaelManaged();
-                OpKeys[i].GenerateKey();
+                RNGCryptoServiceProvider rnd = new RNGCryptoServiceProvider();
+                OpKeys.Add( Utilities.GenerateKey(rnd, 256) );
             }
 
             Directory.CreateDirectory(OutputFolderLink.Text);
@@ -117,15 +117,7 @@ namespace RiseOp.Simulator
                 Directory.CreateDirectory(OutputFolderLink.Text + Path.DirectorySeparatorChar + filename);
                 string password = name.Split(' ')[0].ToLower(); // lower case first name is password
 
-                Identity ident = new Identity(path, password, Protocol);
-
-                ident.Settings.Operation = OpNames[index];
-                ident.Settings.UserName = name;
-                ident.Settings.KeyPair = new RSACryptoServiceProvider(1024);
-                ident.Settings.OpKey = OpKeys[index];
-                ident.Settings.OpAccess = AccessType.Public;
-
-                ident.Save();
+                Identity.CreateNew(path, OpNames[index], name, password, AccessType.Private, OpKeys[index]);
 
                 GenProgress.Value++;
             }

@@ -116,7 +116,7 @@ namespace RiseOp.Implementation.Transport
                 {
                     BitConverter.GetBytes(address.UserID).CopyTo(Network.AugmentedCrypt.Key, 0);
 
-                    final = Utilities.EncryptBytes(encoded, Network.AugmentedCrypt);
+                    final = Utilities.EncryptBytes(encoded, Network.AugmentedCrypt.Key);
                 }
             }
             else
@@ -213,7 +213,7 @@ namespace RiseOp.Implementation.Transport
                 {
                     BitConverter.GetBytes(Network.Local.UserID).CopyTo(Network.AugmentedCrypt.Key, 0);
 
-                    finalBuff = Utilities.DecryptBytes(buff, length, Network.AugmentedCrypt);
+                    finalBuff = Utilities.DecryptBytes(buff, length, Network.AugmentedCrypt.Key);
                     length = finalBuff.Length;
                     copied = true;
                 }

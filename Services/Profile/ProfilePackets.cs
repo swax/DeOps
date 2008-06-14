@@ -10,8 +10,8 @@ namespace RiseOp.Services.Profile
 {
     internal class ProfilePacket
     {
-        internal const byte Attachment = 0x20;
-        internal const byte Field = 0x30;
+        internal const byte Attachment = 0x10;
+        internal const byte Field = 0x20;
     }
 
     internal class ProfileAttachment : G2Packet

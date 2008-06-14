@@ -21,28 +21,20 @@ namespace RiseOp
 
 	internal static class Utilities
 	{  
-		internal static RijndaelManaged PasswordtoRijndael(string password)
-		{
-			// Encrypt password with sha1
-			UnicodeEncoding strEncoder     = new UnicodeEncoding();
-			SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider();
-			byte[] passwordHash = sha1.ComputeHash( strEncoder.GetBytes(password) );
+        internal static byte[] GetPasswordKey(string password, byte[] salt)
+        {
+            // to prevent rainbow attack salt needs to be hashed with password
+            byte[] textBytes = UTF8Encoding.UTF8.GetBytes(password);
+            byte[] passBytes = new byte[salt.Length + textBytes.Length];
+            salt.CopyTo(passBytes, 0);
+            textBytes.CopyTo(passBytes, salt.Length);
 
-			byte[] key = new byte[32];
-			byte[] iv  = new byte[16];
+            SHA256Managed sha256 = new SHA256Managed();
+            for (int i = 0; i < 25; i++)
+                passBytes = sha256.ComputeHash(passBytes);
 
-			for(int i = 0; i < 2; i++) // key is first 16 bytes from password hash, doubled
-				Buffer.BlockCopy(passwordHash, 0, key, i * 16, 16);
-			for(int i = 0; i < 4; i++) // IV is last 4 bytes of password hash quadrupled
-				Buffer.BlockCopy(passwordHash, 16, iv, i * 4, 4);
-
-			RijndaelManaged rijndael = new RijndaelManaged();
-			rijndael.Key = key;
-			rijndael.IV  = iv;
-
-			return rijndael;
-		}
-
+            return passBytes;
+        }
 
         internal static bool MemCompare(byte[] a, byte[] b)
         {
@@ -301,10 +293,13 @@ namespace RiseOp
 
 
 
-        internal static byte[] EncryptBytes(byte[] data, RijndaelManaged crypt)
+        internal static byte[] EncryptBytes(byte[] data, byte[] key)
         {
+            RijndaelManaged crypt = new RijndaelManaged();
+            crypt.Key = key;
             crypt.GenerateIV();
             crypt.Padding = PaddingMode.PKCS7;
+
             ICryptoTransform encryptor = crypt.CreateEncryptor();
             byte[] transformed = encryptor.TransformFinalBlock(data, 0, data.Length);
 
@@ -316,8 +311,10 @@ namespace RiseOp
             return final;
         }
 
-        internal static byte[] DecryptBytes(byte[] data, int length, RijndaelManaged crypt)
+        internal static byte[] DecryptBytes(byte[] data, int length, byte[] key)
         {
+            RijndaelManaged crypt = new RijndaelManaged();
+            crypt.Key     = key;
             crypt.IV      = Utilities.ExtractBytes(data, 0, crypt.IV.Length);
             crypt.Padding = PaddingMode.PKCS7;
 
@@ -342,17 +339,37 @@ namespace RiseOp
             parent.Nodes.Insert(index, node);
         }
 
-        internal static string CryptFilename(RijndaelManaged crypt, string name)
+        internal static string CryptFilename(OpCore core, string name)
         {
+            // hash, base64 name with ~ instead of /, use for link as well
+
+            SHA1Managed sha1 = new SHA1Managed();
+            byte[] hash = new SHA1Managed().ComputeHash(UTF8Encoding.UTF8.GetBytes(name));
+
+            return Utilities.ToBase64String(hash);
+
+            /*RijndaelManaged crypt = core.User.Settings.FileKey;
+
             UTF8Encoding converter = new UTF8Encoding();
             ICryptoTransform transform = crypt.CreateEncryptor();
 
             byte[] buffer = converter.GetBytes(name);
-            return BytestoHex(transform.TransformFinalBlock(buffer, 0, buffer.Length));
+            return BytestoHex(transform.TransformFinalBlock(buffer, 0, buffer.Length));*/
         }
 
-        internal static string CryptFilename(RijndaelManaged crypt, ulong id, byte[] hash)
+        internal static string CryptFilename(OpCore core, ulong id, byte[] hash)
         {
+            byte[] buffer = new byte[8 + hash.Length];
+            BitConverter.GetBytes(id).CopyTo(buffer, 0);
+            hash.CopyTo(buffer, 8);
+
+            SHA1Managed sha1 = new SHA1Managed();
+            byte[] totalHash = new SHA1Managed().ComputeHash(hash);
+
+            return Utilities.ToBase64String(totalHash);
+
+            /*RijndaelManaged crypt = core.User.Settings.FileKey;
+
             // prevent nodes with same hash for file from overwriting, or even attacking each other
 
             byte[] buffer = new byte[8 + hash.Length];
@@ -361,7 +378,21 @@ namespace RiseOp
 
             ICryptoTransform transform = crypt.CreateEncryptor();
 
-            return BytestoHex(transform.TransformFinalBlock(buffer, 0, buffer.Length));
+            return BytestoHex(transform.TransformFinalBlock(buffer, 0, buffer.Length));*/
+        }
+
+        internal static string ToBase64String(byte[] hash)
+        {
+            string base64 = Convert.ToBase64String(hash);
+
+            return base64.Replace('/', '~');
+        }
+
+        internal static byte[] FromBase64String(string base64)
+        {
+            base64 = base64.Replace('~', '/');
+
+            return Convert.FromBase64String(base64);
         }
 
         const long BytesInKilo = 1024;
@@ -584,6 +615,13 @@ namespace RiseOp
 
             return c;
         }
+
+        internal static byte[] GenerateKey(RNGCryptoServiceProvider rnd, int bits)
+        {
+            byte[] key = new byte[bits / 8];
+            rnd.GetBytes(key);
+            return key;
+        }
     }
 
 
@@ -719,6 +757,42 @@ namespace RiseOp.Implementation
         public override string ToString()
         {
             return Name + " (" + Utilities.ByteSizetoString(Size) + ")";
+        }
+    }
+
+    internal class IVCryptoStream
+    {
+        // this class saves the IV at the beginning of the file and loads it again during reading
+        internal static CryptoStream Load(string path, byte[] key)
+        {
+            FileStream file = new FileStream(path, FileMode.Open);
+
+            return IVCryptoStream.Load(file, key);
+        }
+
+        internal static CryptoStream Load(Stream stream, byte[] key)
+        {
+            byte[] iv = new byte[16];
+            stream.Read(iv, 0, 16);
+
+            RijndaelManaged crypt = new RijndaelManaged();
+            crypt.Key = key;
+            crypt.IV = iv;
+
+            return new CryptoStream(stream, crypt.CreateDecryptor(), CryptoStreamMode.Read);
+        }
+
+        internal static CryptoStream Save(string path, byte[] key)
+        {
+            FileStream file = new FileStream(path, FileMode.Create);
+
+            RijndaelManaged crypt = new RijndaelManaged();
+            crypt.Key = key;
+            crypt.GenerateIV();
+
+            file.Write(crypt.IV, 0, crypt.IV.Length);
+
+            return new CryptoStream(file, crypt.CreateEncryptor(), CryptoStreamMode.Write);
         }
     }
 

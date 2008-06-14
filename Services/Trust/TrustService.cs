@@ -45,7 +45,7 @@ namespace RiseOp.Services.Trust
         internal string LinkPath;
 
         bool RunSaveUplinks;
-        RijndaelManaged LocalFileKey;
+        byte[] LocalFileKey;
 
         internal LinkUpdateHandler LinkUpdate;
         internal LinkGuiUpdateHandler GuiUpdate;
@@ -598,15 +598,10 @@ namespace RiseOp.Services.Trust
         {
             try
             {
-                RijndaelManaged key = new RijndaelManaged();
-                key.GenerateKey();
-                key.IV = new byte[key.IV.Length]; 
-
                 // create new link file in temp dir
                 string tempPath = Core.GetTempPath();
-                FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
-                CryptoStream stream = new CryptoStream(tempFile, key.CreateEncryptor(), CryptoStreamMode.Write);
-
+                byte[] key = Utilities.GenerateKey(Core.StrongRndGen, 256);
+                CryptoStream stream = IVCryptoStream.Save(tempPath, key);
 
                 // project packets
                 foreach (OpLink link in LocalTrust.Links.Values)
@@ -667,8 +662,7 @@ namespace RiseOp.Services.Trust
             try
             {
                 string tempPath = Core.GetTempPath();
-                FileStream file = new FileStream(tempPath, FileMode.Create);
-                CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
+                CryptoStream stream = IVCryptoStream.Save(tempPath, LocalFileKey);
 
                 TrustMap.LockReading(delegate()
                 {
@@ -682,7 +676,7 @@ namespace RiseOp.Services.Trust
                 stream.Close();
 
 
-                string finalPath = LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "uplinks");
+                string finalPath = LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "uplinks");
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -696,13 +690,12 @@ namespace RiseOp.Services.Trust
         {
             try
             {
-                string path = LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "uplinks");
+                string path = LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "uplinks");
 
                 if (!File.Exists(path))
                     return;
 
-                FileStream file = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(path, LocalFileKey);
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;
@@ -849,7 +842,7 @@ namespace RiseOp.Services.Trust
 
                 // load data from link file
                 TaggedStream file = new TaggedStream(Cache.GetFilePath(cachefile.Header));
-                CryptoStream crypto = new CryptoStream(file, cachefile.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(file, cachefile.Header.FileKey);
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header packetRoot = null;

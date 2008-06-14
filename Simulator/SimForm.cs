@@ -39,6 +39,8 @@ namespace RiseOp.Simulator
 
         internal SimForm()
         {
+            object x = new object();
+
             Construct();
         }
 
@@ -658,13 +660,9 @@ namespace RiseOp.Simulator
             text += Sim.SleepTime.ToString() + "ms";
             SpeedMenuItem.Text = text;
 
-            text = "Fresh Start: ";
-            text += Sim.FreshStart ? "Yes" : "No";
-            FreshStartMenuItem.Text = text;
-
-            text = "Load Online: ";
-            text += Sim.LoadOnline ? "Yes" : "No";
-            LoadOnlineMenuItem.Text = text;
+            FreshStartMenuItem.Checked = Sim.FreshStart;
+            LoadOnlineMenuItem.Checked = Sim.LoadOnline;
+            LoggingMenu.Checked = Sim.Logging;
         }
 
         private void EncryptionMenuItem_Click(object sender, EventArgs e)
@@ -694,6 +692,11 @@ namespace RiseOp.Simulator
         {
             Sim.LoadOnline = !Sim.LoadOnline;
         }
+        
+        private void LoggingMenu_Click(object sender, EventArgs e)
+        {
+            Sim.Logging = !Sim.Logging;
+        }
 
         private void UnloadAllMenuItem_Click(object sender, EventArgs e)
         {
@@ -715,6 +718,8 @@ namespace RiseOp.Simulator
 
             OnInstanceChange(null, InstanceChangeType.Refresh);
         }
+
+
     }
 
     internal class ViewMenuItem : ToolStripMenuItem

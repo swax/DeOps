@@ -10,10 +10,10 @@ namespace RiseOp.Services.Storage
 {
     internal class StoragePacket
     {
-        internal const byte Root   = 0x20;
-        internal const byte Folder = 0x30;
-        internal const byte File   = 0x40;
-        internal const byte Pack   = 0x50;
+        internal const byte Root   = 0x10;
+        internal const byte Folder = 0x20;
+        internal const byte File   = 0x30;
+        internal const byte Pack   = 0x40;
     }
 
    
@@ -250,7 +250,7 @@ namespace RiseOp.Services.Storage
         internal long Size;
         internal byte[] Hash;
         internal ulong HashID;
-        internal RijndaelManaged FileKey = new RijndaelManaged();
+        internal byte[] FileKey;
 
         // serves as lookup, so multiple files with same hash aren't duplicated, 
         // especailly since people moving them all around wiould increase the chance of a new key being created for them 
@@ -260,7 +260,6 @@ namespace RiseOp.Services.Storage
 
         internal StorageFile()
         {
-            FileKey.IV = new byte[FileKey.IV.Length];
         }
 
         internal override byte[] Encode(G2Protocol protocol)
@@ -280,7 +279,7 @@ namespace RiseOp.Services.Storage
 
                 protocol.WritePacket(file, Packet_Size, CompactNum.GetBytes(Size));
                 protocol.WritePacket(file, Packet_Hash, Hash);
-                protocol.WritePacket(file, Packet_FileKey, FileKey.Key);
+                protocol.WritePacket(file, Packet_FileKey, FileKey);
                 protocol.WritePacket(file, Packet_InternalSize, CompactNum.GetBytes(InternalSize));
                 protocol.WritePacket(file, Packet_InternalHash, InternalHash);
 
@@ -359,8 +358,7 @@ namespace RiseOp.Services.Storage
                         break;
 
                     case Packet_FileKey:
-                        file.FileKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        file.FileKey.IV = new byte[file.FileKey.IV.Length];
+                        file.FileKey = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_InternalSize:

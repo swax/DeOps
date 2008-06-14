@@ -168,19 +168,19 @@ namespace RiseOp.Services.Location
             // check if data is for our operation, if it is use it
             Core.Context.Cores.LockReading(delegate()
             {
-                foreach (OpCore core in Core.Context.Cores)
-                    if (crypt.Target == core.Network.OpID)
+                foreach (OpCore opCore in Core.Context.Cores)
+                    if (crypt.Target == opCore.Network.OpID)
                     {
-                        DataReq store = new DataReq(null, Core.Network.OpID, ServiceID, 0, newLoc.Data);
+                        DataReq store = new DataReq(null, opCore.Network.OpID, ServiceID, 0, newLoc.Data);
 
                         if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
-                            store.Data = Utilities.DecryptBytes(store.Data, store.Data.Length, Core.Network.OriginalCrypt);
+                            store.Data = Utilities.DecryptBytes(store.Data, store.Data.Length, opCore.Network.OriginalCrypt.Key);
 
                         store.Sources = null; // dont pass global sources to operation store 
 
-                        core.RunInCoreAsync(delegate()
+                        opCore.RunInCoreAsync(delegate()
                         {
-                            core.Locations.OperationStore_Local(store);
+                            opCore.Locations.OperationStore_Local(store);
                         });
                     }
             });

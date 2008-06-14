@@ -28,6 +28,8 @@ de-ops urls boards storages chats anything, extendable
 	peoples emails, profiles, etc.. can include <links>
 
 settings
+	passphrase change
+	advanced - ports, bandwidth limits
 	inherited settings - allow local override
 		listbox of items inherited
 		can invite? - true / false - allows sub to see invite box

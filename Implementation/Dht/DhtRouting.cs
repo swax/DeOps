@@ -431,10 +431,10 @@ namespace RiseOp.Implementation.Dht
             // so only trigger dht responsive when a direct pong comes in
             if (!DhtEnabled || pong)
             {
+                newContact.LastSeen = Core.TimeNow;
+
                 if (ContactMap.ContainsKey(newContact.RoutingID))
-                    ContactMap[newContact.RoutingID].Alive(Core.TimeNow);
-                else
-                    newContact.LastSeen = Core.TimeNow;
+                    ContactMap[newContact.RoutingID].Alive(Core.TimeNow);  
 
                 SetResponsive(true);
             }

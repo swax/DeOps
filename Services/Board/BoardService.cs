@@ -36,7 +36,7 @@ namespace RiseOp.Services.Board
 
         bool Loading = true;
         internal string BoardPath;
-        RijndaelManaged LocalFileKey;
+        byte[] LocalFileKey;
 
         int PruneSize = 64;
 
@@ -188,7 +188,7 @@ namespace RiseOp.Services.Board
                         // remove
                         try
                         {
-                            string dir = BoardPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, furthest.ToString());
+                            string dir = BoardPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, furthest.ToString());
                             string[] files = Directory.GetFiles(dir);
 
                             foreach (string path in files)
@@ -276,13 +276,12 @@ namespace RiseOp.Services.Board
         {
             try
             {
-                string path = GetTargetDir(id) + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers" + id.ToString());
+                string path = GetTargetDir(id) + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "headers" + id.ToString());
 
                 if (!File.Exists(path))
                     return;
 
-                FileStream file = new FileStream(path, FileMode.Open);
-                CryptoStream crypto = new CryptoStream(file, LocalFileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(path, LocalFileKey);
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;
@@ -317,8 +316,7 @@ namespace RiseOp.Services.Board
             try
             {
                 string tempPath = Core.GetTempPath();
-                FileStream file = new FileStream(tempPath, FileMode.Create);
-                CryptoStream stream = new CryptoStream(file, LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
+                CryptoStream stream = IVCryptoStream.Save(tempPath, LocalFileKey);
 
                 board.Posts.LockReading(delegate()
                 {
@@ -330,7 +328,7 @@ namespace RiseOp.Services.Board
                 stream.Close();
 
 
-                string finalPath = GetTargetDir(id) + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, "headers" + id.ToString());
+                string finalPath = GetTargetDir(id) + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "headers" + id.ToString());
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
@@ -411,13 +409,11 @@ namespace RiseOp.Services.Board
                 header.EditTime = Core.TimeNow.ToUniversalTime();
             }
 
-            header.FileKey.GenerateKey();
-            header.FileKey.IV = new byte[header.FileKey.IV.Length];
+            header.FileKey = Utilities.GenerateKey(Core.StrongRndGen, 256);
 
             // setup temp file
             string tempPath = Core.GetTempPath();
-            FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
-            CryptoStream stream = new CryptoStream(tempFile, header.FileKey.CreateEncryptor(), CryptoStreamMode.Write);
+            CryptoStream stream = IVCryptoStream.Save(tempPath, header.FileKey);
             int written = 0;
 
             // write post file
@@ -511,7 +507,7 @@ namespace RiseOp.Services.Board
             new PostUID(header).ToBytes().CopyTo(ident, 0);
             header.FileHash.CopyTo(ident, PostUID.SIZE);
 
-            return targetDir + Path.DirectorySeparatorChar + Utilities.CryptFilename(LocalFileKey, header.TargetID, ident);
+            return targetDir + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, header.TargetID, ident);
         }
 
         internal string GetTargetDir(ulong id)
@@ -1049,7 +1045,7 @@ namespace RiseOp.Services.Board
                     post.Attached = new List<PostFile>();
 
                     TaggedStream file = new TaggedStream(path);
-                    CryptoStream crypto = new CryptoStream(file, post.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                    CryptoStream crypto = IVCryptoStream.Load(file, post.Header.FileKey);
                     PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                     G2Header root = null;

@@ -142,7 +142,7 @@ namespace RiseOp.Services.Profile
             try
             {
                 TaggedStream stream = new TaggedStream(template.FilePath);
-                CryptoStream crypto = new CryptoStream(stream, template.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(stream, template.FileKey);
 
                 int buffSize = 4096;
                 byte[] buffer = new byte[4096];
@@ -433,7 +433,7 @@ namespace RiseOp.Services.Profile
         internal string User = "";
         
         internal string FilePath;
-        internal RijndaelManaged FileKey;
+        internal byte[] FileKey;
         
         internal string Html = "";
         internal byte[] Hash;

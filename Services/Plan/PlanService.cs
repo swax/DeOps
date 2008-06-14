@@ -224,13 +224,9 @@ namespace RiseOp.Services.Plan
         {
             try
             {
-                RijndaelManaged key = new RijndaelManaged();
-                key.GenerateKey();
-                key.IV = new byte[key.IV.Length]; 
-
                 string tempPath = Core.GetTempPath();
-                FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
-                CryptoStream stream = new CryptoStream(tempFile, key.CreateEncryptor(), CryptoStreamMode.Write);
+                byte[] key = Utilities.GenerateKey(Core.StrongRndGen, 256);
+                CryptoStream stream = IVCryptoStream.Save(tempPath, key);
 
                 // write dummy block if nothing to write
                 OpPlan plan = GetPlan(Core.UserID, true);
@@ -308,7 +304,7 @@ namespace RiseOp.Services.Plan
                 List<int> myjobs = new List<int>();
 
                 TaggedStream file = new TaggedStream(path);
-                CryptoStream crypto = new CryptoStream(file, plan.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(file, plan.File.Header.FileKey);
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;

@@ -1,5 +1,6 @@
 ﻿
-		cores share global cache which are dated and combined
+password strengthened, salt added, invites as well
+invites implemented
 
 5/28/08	-   global proxying implementation fully working
 5/26/08 -	routing responsive status revised

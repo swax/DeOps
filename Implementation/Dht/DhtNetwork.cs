@@ -179,7 +179,7 @@ namespace RiseOp.Implementation.Dht
 
         internal void AddCacheEntry(DhtContact entry)
         {
-            lock (IPCache)
+             lock (IPCache)
             {
                 if (IPTable.ContainsKey(entry.GetHashCode()))
                     IPCache.Remove(IPTable[entry.GetHashCode()]);
@@ -192,26 +192,6 @@ namespace RiseOp.Implementation.Dht
                         break;
 
                 IPTable[entry.GetHashCode()] = (node != null) ? IPCache.AddBefore(node, entry) : IPCache.AddLast(entry);
-            }
-        }
-
-        internal void UpdateLog(string type, string message)
-        {
-            lock (LogTable)
-            {
-                Queue<string> targetLog = null;
-
-                if (LogTable.ContainsKey(type))
-                    targetLog = LogTable[type];
-                else
-                    LogTable[type] = targetLog = new Queue<string>();
-
-                targetLog.Enqueue(Core.TimeNow.ToString("HH:mm:ss:ff - ") + message);
-
-                int logsize = (Core.Sim == null) ? 500 : 100;
-
-                while (targetLog.Count > logsize)
-                    targetLog.Dequeue();
             }
         }
 
@@ -823,7 +803,7 @@ namespace RiseOp.Implementation.Dht
                 lock (AugmentedCrypt)
                 {
                     BitConverter.GetBytes(contact.UserID).CopyTo(AugmentedCrypt.Key, 0);
-                    packet.Payload = Utilities.EncryptBytes(encoded, AugmentedCrypt);
+                    packet.Payload = Utilities.EncryptBytes(encoded, AugmentedCrypt.Key);
                 }
             }
             else
@@ -881,7 +861,7 @@ namespace RiseOp.Implementation.Dht
                 lock (AugmentedCrypt)
                 {
                     BitConverter.GetBytes(Local.UserID).CopyTo(AugmentedCrypt.Key, 0);
-                    tunnel.Payload = Utilities.DecryptBytes(tunnel.Payload, tunnel.Payload.Length, AugmentedCrypt);
+                    tunnel.Payload = Utilities.DecryptBytes(tunnel.Payload, tunnel.Payload.Length, AugmentedCrypt.Key);
                 }
             }
 
@@ -1264,8 +1244,34 @@ namespace RiseOp.Implementation.Dht
             
         }
 
+        internal void UpdateLog(string type, string message)
+        {
+            if (Core.Sim != null && !Core.Sim.Internet.Logging)
+                return;
+
+            lock (LogTable)
+            {
+                Queue<string> targetLog = null;
+
+                if (LogTable.ContainsKey(type))
+                    targetLog = LogTable[type];
+                else
+                    LogTable[type] = targetLog = new Queue<string>();
+
+                targetLog.Enqueue(Core.TimeNow.ToString("HH:mm:ss:ff - ") + message);
+
+                int logsize = (Core.Sim == null) ? 500 : 100;
+
+                while (targetLog.Count > logsize)
+                    targetLog.Dequeue();
+            }
+        }
+
         internal void LogPacket(PacketLogEntry logEntry)
         {
+            if (Core.Sim != null && !Core.Sim.Internet.Logging)
+                return;
+
             if (Core.PauseLog)
                 return;
 
@@ -1279,18 +1285,6 @@ namespace RiseOp.Implementation.Dht
 
             if (GuiPackets != null)
                 GuiPackets.BeginInvoke(GuiPackets.UpdateLog, logEntry);
-
-
-            // log in console
-            /*string message = logEntry.Protocol.ToString();
-            message += (logEntry.Direction == DirectionType.In) ? " in from " : " out to ";
-            message += logEntry.Address.ToString();
-
-            G2ReceivedPacket packet = new G2ReceivedPacket();
-            packet.Root = new G2Header(logEntry.Data);
-
-            if(G2Protocol.ReadPacket(packet.Root))
-                message += ", type " + packet.Root.Name;*/
         }
 
         internal bool UseGlobalProxies;

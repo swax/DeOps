@@ -140,9 +140,11 @@ namespace RiseOp.Simulator
 
             foreach (SimInstance instance in Sim.Instances)
             {
-                if (OpID == 0 && instance.Context.Global != null)
-                    networks[instance.Context.Global.UserID] = instance.Context.Global.Network;
-
+                if (OpID == 0)
+                {
+                    if (instance.Context.Global != null)
+                        networks[instance.Context.Global.UserID] = instance.Context.Global.Network;
+                }
                 else
                     instance.Context.Cores.LockReading(delegate()
                     {
@@ -358,7 +360,7 @@ namespace RiseOp.Simulator
             Dictionary<ulong, Dictionary<ulong, PacketGroup>> UdpTraffic = new Dictionary<ulong,Dictionary<ulong,PacketGroup>>();
             Dictionary<ulong, Dictionary<ulong, PacketGroup>> TcpTraffic = new Dictionary<ulong, Dictionary<ulong, PacketGroup>>();
 
-            lock (Sim.PacketHandle)
+            lock (Sim.OutPackets)
             {
                 foreach (SimPacket packet in Sim.OutPackets)
                     if (SelectedID == 0 || (!ShowInbound && SelectedID == packet.SenderID) || (ShowInbound && SelectedID == packet.Dest.Local.UserID))
@@ -577,7 +579,7 @@ namespace RiseOp.Simulator
                         foreach (SimInstance instance in Sim.Instances)
                         {
                             if (instance.Context.Global != null && instance.Context.Global.UserID == id)
-                                name = instance.Context.Global.User.Settings.UserName;
+                                name = instance.Context.LocalIP.ToString();
 
                             else
                                 instance.Context.Cores.LockReading(delegate()

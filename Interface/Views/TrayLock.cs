@@ -51,11 +51,7 @@ namespace RiseOp.Interface.Views
                 return;
 
 
-            RijndaelManaged password = Utilities.PasswordtoRijndael(form.ResultBox.Text);
-
-
-            if (Utilities.MemCompare(password.Key, Core.User.Password.Key) &&
-                Utilities.MemCompare(password.IV, Core.User.Password.IV))
+            if (Utilities.MemCompare(Core.User.PasswordKey, Utilities.GetPasswordKey(form.ResultBox.Text, Core.User.PasswordSalt)))
             {
                 Core.GuiMain = new MainForm(Core);
                 Core.GuiMain.SideMode = PreserveSideMode;

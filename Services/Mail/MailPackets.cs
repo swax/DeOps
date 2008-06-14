@@ -48,7 +48,7 @@ namespace RiseOp.Services.Mail
         internal ulong TargetID;
 
         // only saved in inbox file, **not put out on netork
-        internal RijndaelManaged LocalKey = new RijndaelManaged();
+        internal byte[]   LocalKey;
         internal ulong    FileStart;
         internal bool     Read;
         internal DateTime Received;
@@ -81,7 +81,7 @@ namespace RiseOp.Services.Mail
 
                 if (local)
                 {
-                    protocol.WritePacket(header, Packet_LocalKey, LocalKey.Key);
+                    protocol.WritePacket(header, Packet_LocalKey, LocalKey);
                     protocol.WritePacket(header, Packet_FileStart, BitConverter.GetBytes(FileStart));
                     protocol.WritePacket(header, Packet_Read, BitConverter.GetBytes(Read));
                     protocol.WritePacket(header, Packet_Received, BitConverter.GetBytes(Received.ToBinary()));
@@ -137,8 +137,7 @@ namespace RiseOp.Services.Mail
                         break;
 
                     case Packet_LocalKey:
-                        header.LocalKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        header.LocalKey.IV = new byte[header.LocalKey.IV.Length];
+                        header.LocalKey = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_FileStart:
@@ -164,11 +163,13 @@ namespace RiseOp.Services.Mail
         const byte Packet_Subject = 0x10;
         const byte Packet_Date = 0x20;
         const byte Packet_Attachments = 0x30;
+        const byte Packet_Unique = 0x40;
 
 
         internal string Subject;
         internal DateTime Date;
         internal bool Attachments;
+        internal byte[] Unique = new byte[16];
 
 
         internal MailInfo() { }
@@ -178,6 +179,9 @@ namespace RiseOp.Services.Mail
             Subject = subject;
             Date = date;
             Attachments = attachements;
+
+            RNGCryptoServiceProvider rnd = new RNGCryptoServiceProvider();
+            rnd.GetBytes(Unique);
         }
 
         internal override byte[] Encode(G2Protocol protocol)
@@ -189,6 +193,7 @@ namespace RiseOp.Services.Mail
                 protocol.WritePacket(info, Packet_Subject, UTF8Encoding.UTF8.GetBytes(Subject));
                 protocol.WritePacket(info, Packet_Date, BitConverter.GetBytes(Date.ToBinary()));
                 protocol.WritePacket(info, Packet_Attachments, BitConverter.GetBytes(Attachments));
+                protocol.WritePacket(info, Packet_Unique, Unique);
 
                 return protocol.WriteFinish();
             }
@@ -216,6 +221,10 @@ namespace RiseOp.Services.Mail
 
                     case Packet_Attachments:
                         info.Attachments = BitConverter.ToBoolean(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Unique:
+                        info.Unique = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }

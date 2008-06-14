@@ -222,7 +222,7 @@ namespace RiseOp.Services.Location
             byte[] data = SignedData.Encode(Core.Network.Protocol, Core.User.Settings.KeyPair, location);
 
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
-                data = Utilities.EncryptBytes(data, Core.Network.OriginalCrypt);
+                data = Utilities.EncryptBytes(data, Core.Network.OriginalCrypt.Key);
 
             data = new CryptLoc(LocationData.GLOBAL_TTL, data).Encode(Core.Network.Protocol);
 

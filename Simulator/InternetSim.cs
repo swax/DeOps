@@ -36,7 +36,6 @@ namespace RiseOp.Simulator
         internal Dictionary<IPEndPoint, DhtNetwork> UdpEndPoints = new Dictionary<IPEndPoint, DhtNetwork>();
         Dictionary<IPAddress, SimInstance> SimMap = new Dictionary<IPAddress, SimInstance>();
 
-        internal object PacketHandle = new object(); // in/out packet references switch so use all encompassing handle
         internal List<SimPacket> OutPackets = new List<SimPacket>();
         internal List<SimPacket> InPackets = new List<SimPacket>();
 
@@ -66,11 +65,12 @@ namespace RiseOp.Simulator
         bool RandomCache = true;
         internal bool LoadOnline = true;
         internal bool TestEncryption = false;
-        internal bool FreshStart = false;
+        internal bool FreshStart = false; // all service files deleted
         internal bool ClearIPCache = true;
         internal bool TestTcpFullBuffer = false;
-        internal bool UseTimeFile = true;
+        internal bool UseTimeFile = true; // keep time consistant between sim runs
         internal bool TestCoreThread = false; // sleepTime needs to be set with this so packets have time to process ayncronously
+        internal bool Logging = true; // saves memory with large sim runs
 
         bool Flux        = false;
         //int  FluxIn      = 1;
@@ -261,7 +261,6 @@ namespace RiseOp.Simulator
 
             int i = 0;
             int pumps = 4;
-            List<SimPacket> tempList = new List<SimPacket>();
 
 
             while (true)
@@ -272,7 +271,7 @@ namespace RiseOp.Simulator
                 if (Paused && !Step)
                 {
                     Thread.Sleep(250);
-                    continue;   
+                    continue;
                 }
 
                 // load users
@@ -284,83 +283,84 @@ namespace RiseOp.Simulator
 
                 while (i < pumps)
                 {
-                    // clear out buffer by switching with in buffer
-                    lock (PacketHandle)
+                    InPackets.Clear();
+
+                    lock (OutPackets)
                     {
-                        tempList = InPackets;
-                        InPackets = OutPackets;
-                        OutPackets = tempList;
+                        foreach (SimPacket x in OutPackets)
+                            InPackets.Add(x);
 
-                        // send packets
-                        foreach (SimPacket packet in InPackets)
+                        OutPackets.Clear();
+                    }
+
+                    // send packets
+                    foreach (SimPacket packet in InPackets)
+                    {
+                        switch (packet.Type)
                         {
-                            switch (packet.Type)
-                            {
-                                case SimPacketType.Udp:
-                                    packet.Dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
-                                    packet.Dest.UdpControl.OnReceive(packet.Packet, packet.Packet.Length, packet.Source);
-                                    break;
-                                case SimPacketType.TcpConnect:
-                                    TcpConnect socket = packet.Dest.TcpControl.OnAccept(null, packet.Source);
+                            case SimPacketType.Udp:
+                                packet.Dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
+                                packet.Dest.UdpControl.OnReceive(packet.Packet, packet.Packet.Length, packet.Source);
+                                break;
+                            case SimPacketType.TcpConnect:
+                                TcpConnect socket = packet.Dest.TcpControl.OnAccept(null, packet.Source);
 
-                                    if (socket != null)
-                                    {
-                                        TcpSourcetoDest[packet.Tcp] = socket;
-                                        TcpSourcetoDest[socket] = packet.Tcp;
+                                if (socket != null)
+                                {
+                                    TcpSourcetoDest[packet.Tcp] = socket;
+                                    TcpSourcetoDest[socket] = packet.Tcp;
 
-                                        packet.Tcp.OnConnect();
-                                    }
+                                    packet.Tcp.OnConnect();
+                                }
 
-                                    break;
-                                case SimPacketType.Tcp:
-                                    if (TcpSourcetoDest.ContainsKey(packet.Tcp))
-                                    {
-                                        TcpConnect dest = TcpSourcetoDest[packet.Tcp];
+                                break;
+                            case SimPacketType.Tcp:
+                                if (TcpSourcetoDest.ContainsKey(packet.Tcp))
+                                {
+                                    TcpConnect dest = TcpSourcetoDest[packet.Tcp];
 
-                                        dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
+                                    dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
 
-                                        packet.Packet.CopyTo(dest.RecvBuffer, dest.RecvBuffSize);
-                                        dest.OnReceive(packet.Packet.Length);
-                                    }
-                                    break;
-                                case SimPacketType.TcpClose:
-                                    if (TcpSourcetoDest.ContainsKey(packet.Tcp))
-                                    {
-                                        TcpConnect dest = TcpSourcetoDest[packet.Tcp];
-                                        dest.OnReceive(0);
+                                    packet.Packet.CopyTo(dest.RecvBuffer, dest.RecvBuffSize);
+                                    dest.OnReceive(packet.Packet.Length);
+                                }
+                                break;
+                            case SimPacketType.TcpClose:
+                                if (TcpSourcetoDest.ContainsKey(packet.Tcp))
+                                {
+                                    TcpConnect dest = TcpSourcetoDest[packet.Tcp];
+                                    dest.OnReceive(0);
 
-                                        TcpSourcetoDest.Remove(packet.Tcp);
-                                        TcpSourcetoDest.Remove(dest);
-                                    }
-                                    break;
-                            }
+                                    TcpSourcetoDest.Remove(packet.Tcp);
+                                    TcpSourcetoDest.Remove(dest);
+                                }
+                                break;
                         }
-
-                        InPackets.Clear();
                     }
 
                     // send messages from gui
-                    AsyncCoreFunction function = null;
+                    if (!TestCoreThread)
+                    {
+                        AsyncCoreFunction function = null;
 
-                    // process invoked functions, dequeue quickly to continue processing
-                    lock (CoreMessages)
-                        while (CoreMessages.Count > 0)
-                        {
-                            function = CoreMessages.Dequeue();
-
-                            if (function != null)
+                        // process invoked functions, dequeue quickly to continue processing
+                        lock (CoreMessages)
+                            while (CoreMessages.Count > 0)
                             {
-                                function.Result = function.Method.DynamicInvoke(function.Args);
-                                function.Completed = true;
-                                function.Processed.Set();
-                            }
-                        }
+                                function = CoreMessages.Dequeue();
 
+                                if (function != null)
+                                {
+                                    function.Result = function.Method.DynamicInvoke(function.Args);
+                                    function.Completed = true;
+                                    function.Processed.Set();
+                                }
+                            }
+                    }
 
                     TimeNow = TimeNow.AddMilliseconds(1000 / pumps);
 
                     Interface.BeginInvoke(UpdateView, null);
-
 
                     i++;
 
@@ -388,189 +388,190 @@ namespace RiseOp.Simulator
             }
         }
 
-        object TimerLock = new object();
-        object[] PacketsLock = new object[4] { new object(), new object(), new object(), new object() };
+        /* object TimerLock = new object();
+         object[] PacketsLock = new object[4] { new object(), new object(), new object(), new object() };
 
-        ManualResetEvent[] WaitHandles = new ManualResetEvent[5] {  new ManualResetEvent(true), new ManualResetEvent(true), 
-                                                                    new ManualResetEvent(true), new ManualResetEvent(true), 
-                                                                    new ManualResetEvent(true) };
+         ManualResetEvent[] WaitHandles = new ManualResetEvent[5] {  new ManualResetEvent(true), new ManualResetEvent(true), 
+                                                                     new ManualResetEvent(true), new ManualResetEvent(true), 
+                                                                     new ManualResetEvent(true) };
 
         
-        void OldRun()
-        {
-            int pumps = 4;
-            List<SimPacket> tempList = new List<SimPacket>();
+         void OldRun()
+         {
+             int pumps = 4;
+             List<SimPacket> tempList = new List<SimPacket>();
 
-            Thread timerThread = new Thread(RunTimer);
-            timerThread.Start();
+             Thread timerThread = new Thread(RunTimer);
+             timerThread.Start();
 
-            Thread[] packetsThread = new Thread[4];
-            for (int i = 0; i < 4; i++)
-            {
-                packetsThread[i] = new Thread(RunPackets);
-                packetsThread[i].Start(i);
-            }
+             Thread[] packetsThread = new Thread[4];
+             for (int i = 0; i < 4; i++)
+             {
+                 packetsThread[i] = new Thread(RunPackets);
+                 packetsThread[i].Start(i);
+             }
 
-            Thread.Sleep(1000); // lets new threads reach wait(
-
-
-            while (true && !Shutdown)
-            {
-                if (Paused && !Step)
-                {
-                    Thread.Sleep(250);
-                    continue;
-                }
-
-                // load users
-                if (Flux)
-                    DoFlux();
+             Thread.Sleep(1000); // lets new threads reach wait(
 
 
-                // instance timer
-                lock (TimerLock)
-                {
-                    WaitHandles[0].Reset();
-                    Monitor.Pulse(TimerLock);
-                } 
+             while (true && !Shutdown)
+             {
+                 if (Paused && !Step)
+                 {
+                     Thread.Sleep(250);
+                     continue;
+                 }
 
-                // pump packets, 4 times (250ms latency
-                for (int i = 0; i < pumps; i++)
-                {
-                    // clear out buffer by switching with in buffer
-                    lock (PacketHandle)
-                    {
-                        tempList = InPackets;
-                        InPackets = OutPackets;
-                        OutPackets = tempList;
-                    }
+                 // load users
+                 if (Flux)
+                     DoFlux();
 
-                    for (int index = 0; index < 4; index++)
-                        lock (PacketsLock[index])
-                        {
-                            WaitHandles[1 + index].Reset();
-                            Monitor.Pulse(PacketsLock[index]);
-                        }
+
+                 // instance timer
+                 lock (TimerLock)
+                 {
+                     WaitHandles[0].Reset();
+                     Monitor.Pulse(TimerLock);
+                 } 
+
+                 // pump packets, 4 times (250ms latency
+                 for (int i = 0; i < pumps; i++)
+                 {
+                     // clear out buffer by switching with in buffer
+                     lock (PacketHandle)
+                     {
+                         tempList = InPackets;
+                         InPackets = OutPackets;
+                         OutPackets = tempList;
+                     }
+
+                     for (int index = 0; index < 4; index++)
+                         lock (PacketsLock[index])
+                         {
+                             WaitHandles[1 + index].Reset();
+                             Monitor.Pulse(PacketsLock[index]);
+                         }
 
               
-                    AutoResetEvent.WaitAll(WaitHandles);
+                     AutoResetEvent.WaitAll(WaitHandles);
 
-                    InPackets.Clear();
+                     InPackets.Clear();
 
-                    TimeNow = TimeNow.AddMilliseconds(1000 / pumps);
+                     TimeNow = TimeNow.AddMilliseconds(1000 / pumps);
 
-                    Interface.BeginInvoke(UpdateView, null);
+                     Interface.BeginInvoke(UpdateView, null);
 
-                    if (Step || Shutdown)
-                    {
-                        Step = false;
-                        break;
-                    }
-                }
+                     if (Step || Shutdown)
+                     {
+                         Step = false;
+                         break;
+                     }
+                 }
 
-                // if run sim slow
-                if (SleepTime > 0)
-                    Thread.Sleep(SleepTime);
-            }
+                 // if run sim slow
+                 if (SleepTime > 0)
+                     Thread.Sleep(SleepTime);
+             }
 
 
-            lock(TimerLock)
-                Monitor.Pulse(TimerLock);
+             lock(TimerLock)
+                 Monitor.Pulse(TimerLock);
 
-            for(int i = 0; i < 4; i++)
-                lock(PacketsLock[i])
-                    Monitor.Pulse(PacketsLock[i]);
-        }
+             for(int i = 0; i < 4; i++)
+                 lock(PacketsLock[i])
+                     Monitor.Pulse(PacketsLock[i]);
+         }
 
-        void RunTimer()
-        {
-            while (true && !Shutdown)
-            {
-                lock (TimerLock)
-                {
-                    Monitor.Wait(TimerLock);
+         void RunTimer()
+         {
+             while (true && !Shutdown)
+             {
+                 lock (TimerLock)
+                 {
+                     Monitor.Wait(TimerLock);
 
-                    lock (Instances)
-                        foreach (SimInstance instance in Instances)
-                            instance.Context.SecondTimer_Tick(null, null);
+                     lock (Instances)
+                         foreach (SimInstance instance in Instances)
+                             instance.Context.SecondTimer_Tick(null, null);
 
-                    WaitHandles[0].Set();
-                }
-            }
-        }
+                     WaitHandles[0].Set();
+                 }
+             }
+         }
 
-        void RunPackets(object val)
-        {
-            int index = (int)val;
+         void RunPackets(object val)
+         {
+             int index = (int)val;
 
-            while (true && !Shutdown)
-            {
-                lock (PacketsLock[index])
-                {
-                    Monitor.Wait(PacketsLock[index]);
+             while (true && !Shutdown)
+             {
+                 lock (PacketsLock[index])
+                 {
+                     Monitor.Wait(PacketsLock[index]);
 
-                    // send packets
-                    foreach (SimPacket packet in InPackets)
-                    {
-                        // 0 - global udp
-                        // 1 - global tcp
-                        // 2 - op udp
-                        // 3 - op tcp
+                     // send packets
+                     foreach (SimPacket packet in InPackets)
+                     {
+                         // 0 - global udp
+                         // 1 - global tcp
+                         // 2 - op udp
+                         // 3 - op tcp
 
-                        if ((index == 0 && packet.Type == SimPacketType.Udp && packet.Dest.IsGlobal) ||
-                            (index == 1 && packet.Type != SimPacketType.Udp && packet.Dest.IsGlobal) ||
-                            (index == 2 && packet.Type == SimPacketType.Udp && !packet.Dest.IsGlobal) ||
-                            (index == 3 && packet.Type != SimPacketType.Udp && !packet.Dest.IsGlobal))
-                        {
+                         if ((index == 0 && packet.Type == SimPacketType.Udp && packet.Dest.IsGlobal) ||
+                             (index == 1 && packet.Type != SimPacketType.Udp && packet.Dest.IsGlobal) ||
+                             (index == 2 && packet.Type == SimPacketType.Udp && !packet.Dest.IsGlobal) ||
+                             (index == 3 && packet.Type != SimPacketType.Udp && !packet.Dest.IsGlobal))
+                         {
 
-                            switch (packet.Type)
-                            {
-                                case SimPacketType.Udp:
-                                    packet.Dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
-                                    packet.Dest.UdpControl.OnReceive(packet.Packet, packet.Packet.Length, packet.Source);
-                                    break;
-                                case SimPacketType.TcpConnect:
-                                    TcpConnect socket = packet.Dest.TcpControl.OnAccept(null, packet.Source);
+                             switch (packet.Type)
+                             {
+                                 case SimPacketType.Udp:
+                                     packet.Dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
+                                     packet.Dest.UdpControl.OnReceive(packet.Packet, packet.Packet.Length, packet.Source);
+                                     break;
+                                 case SimPacketType.TcpConnect:
+                                     TcpConnect socket = packet.Dest.TcpControl.OnAccept(null, packet.Source);
 
-                                    if (socket != null)
-                                    {
-                                        TcpSourcetoDest[packet.Tcp] = socket;
-                                        TcpSourcetoDest[socket] = packet.Tcp;
+                                     if (socket != null)
+                                     {
+                                         TcpSourcetoDest[packet.Tcp] = socket;
+                                         TcpSourcetoDest[socket] = packet.Tcp;
 
-                                        packet.Tcp.OnConnect();
-                                    }
+                                         packet.Tcp.OnConnect();
+                                     }
 
-                                    break;
-                                case SimPacketType.Tcp:
-                                    if (TcpSourcetoDest.ContainsKey(packet.Tcp))
-                                    {
-                                        TcpConnect dest = TcpSourcetoDest[packet.Tcp];
+                                     break;
+                                 case SimPacketType.Tcp:
+                                     if (TcpSourcetoDest.ContainsKey(packet.Tcp))
+                                     {
+                                         TcpConnect dest = TcpSourcetoDest[packet.Tcp];
 
-                                        dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
+                                         dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
 
-                                        packet.Packet.CopyTo(dest.RecvBuffer, dest.RecvBuffSize);
-                                        dest.OnReceive(packet.Packet.Length);
-                                    }
-                                    break;
-                                case SimPacketType.TcpClose:
-                                    if (TcpSourcetoDest.ContainsKey(packet.Tcp))
-                                    {
-                                        TcpConnect dest = TcpSourcetoDest[packet.Tcp];
-                                        dest.OnReceive(0);
+                                         packet.Packet.CopyTo(dest.RecvBuffer, dest.RecvBuffSize);
+                                         dest.OnReceive(packet.Packet.Length);
+                                     }
+                                     break;
+                                 case SimPacketType.TcpClose:
+                                     if (TcpSourcetoDest.ContainsKey(packet.Tcp))
+                                     {
+                                         TcpConnect dest = TcpSourcetoDest[packet.Tcp];
+                                         dest.OnReceive(0);
 
-                                        TcpSourcetoDest.Remove(packet.Tcp);
-                                        TcpSourcetoDest.Remove(dest);
-                                    }
-                                    break;
-                            }
+                                         TcpSourcetoDest.Remove(packet.Tcp);
+                                         TcpSourcetoDest.Remove(dest);
+                                     }
+                                     break;
+                             }
                          
-                        }
-                    }
+                         }
+                     }
 
-                    WaitHandles[1 + index].Set();
-                }
-            }
-        }
+                     WaitHandles[1 + index].Set();
+                 }
+             }
+         }
+         */
 
         internal void DownloadCache(DhtNetwork network)
         {
@@ -673,7 +674,7 @@ namespace RiseOp.Simulator
             if (packet != null && packet.Length == 0)
                 Debug.Assert(false, "Empty Packet");
 
-            lock (PacketHandle)
+            lock (OutPackets)
                 OutPackets.Add(new SimPacket(type, source, packet, targetNet, tcp, network.Local.UserID));
 
             if (packet == null)
@@ -686,8 +687,8 @@ namespace RiseOp.Simulator
         {
             Shutdown = true;
 
-            foreach(ManualResetEvent handle in WaitHandles)
-                handle.Set();
+            //foreach(ManualResetEvent handle in WaitHandles)
+            //    handle.Set();
 
             foreach (SimInstance instance in Instances)
                 instance.Context.Cores.LockReading(delegate()

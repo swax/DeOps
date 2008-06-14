@@ -356,7 +356,7 @@ namespace RiseOp.Services.Mail
             try
             {
                 TaggedStream stream = new TaggedStream(Mail.GetLocalPath(message.Header));
-                CryptoStream crypto = new CryptoStream(stream, message.Header.LocalKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(stream, message.Header.LocalKey);
 
                 int buffSize = 4096;
                 byte[] buffer = new byte[4096];
@@ -460,8 +460,7 @@ namespace RiseOp.Services.Mail
         {
             try
             {
-                FileStream stream = new FileStream(Mail.GetLocalPath(message.Header), FileMode.Open, FileAccess.Read, FileShare.Read);
-                CryptoStream crypto = new CryptoStream(stream, message.Header.LocalKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Save(Mail.GetLocalPath(message.Header), message.Header.LocalKey);
 
                 // get past packet section of file
                 const int buffSize = 4096;

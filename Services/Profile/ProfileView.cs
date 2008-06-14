@@ -224,7 +224,7 @@ namespace RiseOp.Services.Profile
             try
             {
                 TaggedStream stream = new TaggedStream(service.GetFilePath(profile));
-                CryptoStream crypto = new CryptoStream(stream, profile.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(stream, profile.File.Header.FileKey);
 
                 int buffSize = 4096;
                 byte[] buffer = new byte[4096];

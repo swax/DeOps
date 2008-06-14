@@ -189,10 +189,6 @@ namespace RiseOp.Implementation
 
             Network = new DhtNetwork(this, true);
 
-            // load flat global cache
-            // on exit save flat global cache
-
-
             // for each core, re-load the global cache items
             Context.Cores.LockReading(delegate()
             {
@@ -692,22 +688,31 @@ namespace RiseOp.Implementation
             invite.Contacts = new List<DhtContact>(Network.Routing.GetCacheArea());
 
             // encrypt packet with hashed password
-            RijndaelManaged crypt = Utilities.PasswordtoRijndael(password);
+            byte[] salt = new byte[4];
+            RNGCryptoServiceProvider rnd = new RNGCryptoServiceProvider();
+            rnd.GetBytes(salt);
 
-            byte[] encrypted = Utilities.EncryptBytes(invite.Encode(GuiProtocol), crypt);
-     
+            byte[] key = Utilities.GetPasswordKey(password, salt);
+
+            byte[] encrypted = Utilities.EncryptBytes(invite.Encode(GuiProtocol), key);
+
+            encrypted = Utilities.CombineArrays(salt, encrypted);
+
             // return base 64 link
-            return "riseop://invite/" + Convert.ToBase64String(encrypted);
+            return "riseop://invite/" + Utilities.ToBase64String(encrypted);
         }
 
         internal static OneWayInvite OpenInvite(string link, string password)
         {
-            byte[] encrypted = Convert.FromBase64String(link);
+            byte[] encrypted = Utilities.FromBase64String(link);
 
             // decrypt packet with hashed password
-            RijndaelManaged crypt = Utilities.PasswordtoRijndael(password);
+            byte[] salt = Utilities.ExtractBytes(encrypted, 0, 4);
+            encrypted = Utilities.ExtractBytes(encrypted, 4, encrypted.Length - 4);
 
-            byte[] decrypted = Utilities.DecryptBytes(encrypted, encrypted.Length, crypt);
+            byte[] key = Utilities.GetPasswordKey(password, salt);
+
+            byte[] decrypted = Utilities.DecryptBytes(encrypted, encrypted.Length, key);
 
             return OneWayInvite.Decode(decrypted);
         }

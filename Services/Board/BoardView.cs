@@ -479,7 +479,7 @@ namespace RiseOp.Services.Board
             try
             {
                 TaggedStream stream = new TaggedStream(Boards.GetPostPath(post.Header));
-                CryptoStream crypto = new CryptoStream(stream, post.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(stream, post.Header.FileKey);
 
                 int buffSize = 4096;
                 byte[] buffer = new byte[4096];

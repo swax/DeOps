@@ -45,7 +45,7 @@ namespace RiseOp.Services.Board
         internal ushort Version;
         internal DateTime EditTime;
         
-        internal RijndaelManaged FileKey = new RijndaelManaged();
+        internal byte[] FileKey;
         internal byte[] FileHash;
         internal long  FileSize;
         internal long  FileStart;
@@ -74,7 +74,7 @@ namespace RiseOp.Services.Board
                 protocol.WritePacket(header, Packet_EditTime, BitConverter.GetBytes(EditTime.ToBinary()));
                 protocol.WritePacket(header, Packet_Archived, BitConverter.GetBytes(Archived));
                 
-                protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
+                protocol.WritePacket(header, Packet_FileKey, FileKey);
                 protocol.WritePacket(header, Packet_FileHash, FileHash);
                 protocol.WritePacket(header, Packet_FileSize, BitConverter.GetBytes(FileSize));
                 protocol.WritePacket(header, Packet_FileStart, BitConverter.GetBytes(FileStart));
@@ -138,8 +138,7 @@ namespace RiseOp.Services.Board
                         break;
 
                     case Packet_FileKey:
-                        header.FileKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        header.FileKey.IV = new byte[header.FileKey.IV.Length];
+                        header.FileKey = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                     case Packet_FileHash:
                         header.FileHash = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);

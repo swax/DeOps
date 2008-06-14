@@ -45,7 +45,7 @@ namespace RiseOp.Interface
             // 
             this.ButtonCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ButtonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.ButtonCancel.Location = new System.Drawing.Point(280, 290);
+            this.ButtonCancel.Location = new System.Drawing.Point(280, 296);
             this.ButtonCancel.Name = "ButtonCancel";
             this.ButtonCancel.Size = new System.Drawing.Size(75, 23);
             this.ButtonCancel.TabIndex = 7;
@@ -57,7 +57,7 @@ namespace RiseOp.Interface
             // 
             this.PasswordBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.PasswordBox.Location = new System.Drawing.Point(129, 46);
+            this.PasswordBox.Location = new System.Drawing.Point(129, 64);
             this.PasswordBox.Name = "PasswordBox";
             this.PasswordBox.PasswordChar = '•';
             this.PasswordBox.Size = new System.Drawing.Size(225, 20);
@@ -66,7 +66,7 @@ namespace RiseOp.Interface
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(12, 49);
+            this.label6.Location = new System.Drawing.Point(12, 67);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(99, 13);
             this.label6.TabIndex = 10;
@@ -75,7 +75,7 @@ namespace RiseOp.Interface
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(11, 75);
+            this.label7.Location = new System.Drawing.Point(11, 93);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(100, 13);
             this.label7.TabIndex = 12;
@@ -85,7 +85,7 @@ namespace RiseOp.Interface
             // 
             this.ConfirmBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.ConfirmBox.Location = new System.Drawing.Point(129, 72);
+            this.ConfirmBox.Location = new System.Drawing.Point(129, 90);
             this.ConfirmBox.Name = "ConfirmBox";
             this.ConfirmBox.PasswordChar = '•';
             this.ConfirmBox.Size = new System.Drawing.Size(225, 20);
@@ -95,7 +95,7 @@ namespace RiseOp.Interface
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(12, 127);
+            this.label3.Location = new System.Drawing.Point(12, 151);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(88, 13);
             this.label3.TabIndex = 16;
@@ -107,17 +107,17 @@ namespace RiseOp.Interface
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.LinkBox.BackColor = System.Drawing.SystemColors.ControlLight;
-            this.LinkBox.Location = new System.Drawing.Point(15, 146);
+            this.LinkBox.Location = new System.Drawing.Point(15, 170);
             this.LinkBox.Multiline = true;
             this.LinkBox.Name = "LinkBox";
             this.LinkBox.ReadOnly = true;
-            this.LinkBox.Size = new System.Drawing.Size(340, 138);
+            this.LinkBox.Size = new System.Drawing.Size(340, 120);
             this.LinkBox.TabIndex = 5;
             // 
             // CreateButton
             // 
             this.CreateButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.CreateButton.Location = new System.Drawing.Point(270, 98);
+            this.CreateButton.Location = new System.Drawing.Point(270, 116);
             this.CreateButton.Name = "CreateButton";
             this.CreateButton.Size = new System.Drawing.Size(85, 23);
             this.CreateButton.TabIndex = 3;
@@ -131,17 +131,17 @@ namespace RiseOp.Interface
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.label2.Location = new System.Drawing.Point(12, 9);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(343, 27);
+            this.label2.Size = new System.Drawing.Size(343, 52);
             this.label2.TabIndex = 21;
-            this.label2.Text = "Send the invitation link and passphrase to the person you are inviting.\r\nFor exam" +
-                "ple send the link by IM and the passphrase by phone.\r\n";
+            this.label2.Text = "Send the invitation link and passphrase to the person you are inviting. For examp" +
+                "le send the link by IM and the passphrase by phone.";
             // 
             // CopyLink
             // 
             this.CopyLink.ActiveLinkColor = System.Drawing.Color.Blue;
             this.CopyLink.AutoSize = true;
             this.CopyLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.CopyLink.Location = new System.Drawing.Point(106, 127);
+            this.CopyLink.Location = new System.Drawing.Point(106, 151);
             this.CopyLink.Name = "CopyLink";
             this.CopyLink.Size = new System.Drawing.Size(94, 13);
             this.CopyLink.TabIndex = 4;
@@ -156,7 +156,7 @@ namespace RiseOp.Interface
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlLight;
             this.CancelButton = this.ButtonCancel;
-            this.ClientSize = new System.Drawing.Size(367, 325);
+            this.ClientSize = new System.Drawing.Size(367, 331);
             this.Controls.Add(this.CopyLink);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.CreateButton);

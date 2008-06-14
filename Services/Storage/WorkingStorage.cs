@@ -54,8 +54,7 @@ namespace RiseOp.Services.Storage
             try
             {
                 string tempPath = Core.GetTempPath();
-                FileStream file = new FileStream(tempPath, FileMode.Create);
-                CryptoStream stream = new CryptoStream(file, Storages.LocalFileKey.CreateEncryptor(), CryptoStreamMode.Write);
+                CryptoStream stream = IVCryptoStream.Save(tempPath, Storages.LocalFileKey);
 
                 Protocol.WriteToFile(new StorageRoot(ProjectID), stream);
 
@@ -87,7 +86,7 @@ namespace RiseOp.Services.Storage
             try
             {
                 string path = Storages.GetWorkingPath(ProjectID);
-                RijndaelManaged key = Storages.LocalFileKey;
+                byte[] key = Storages.LocalFileKey;
                 Stream source = null;
 
                 if (File.Exists(path)) // use locally committed storage file
@@ -107,7 +106,7 @@ namespace RiseOp.Services.Storage
                     source = new TaggedStream(path);
                 }
 
-                CryptoStream crypto = new CryptoStream(source, key.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(source, key);
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
                 G2Header header = null;
@@ -1133,7 +1132,7 @@ namespace RiseOp.Services.Storage
             try
             {
                 TaggedStream filex = new TaggedStream(path);
-                CryptoStream crypto = new CryptoStream(filex, storage.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(filex, storage.File.Header.FileKey);
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
                 ulong currentUID = 0;

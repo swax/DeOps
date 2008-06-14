@@ -11,9 +11,9 @@ namespace RiseOp.Services.Plan
 {
     internal class PlanPacket
     {
-        internal const byte Block  = 0x20;
-        internal const byte Goal   = 0x30;
-        internal const byte Item   = 0x40;
+        internal const byte Block  = 0x10;
+        internal const byte Goal   = 0x20;
+        internal const byte Item   = 0x30;
     }
 
     internal class PlanBlock : G2Packet

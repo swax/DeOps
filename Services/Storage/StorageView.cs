@@ -359,7 +359,7 @@ namespace RiseOp.Services.Storage
             try
             {
                 TaggedStream filex = new TaggedStream(path);
-                CryptoStream crypto = new CryptoStream(filex, storage.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(filex, storage.File.Header.FileKey);
                 PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
 
                 ulong remoteUID = 0;
@@ -685,12 +685,12 @@ namespace RiseOp.Services.Storage
         }
 
 
-        private void LoadHeader(string path, RijndaelManaged key)
+        private void LoadHeader(string path, byte[] key)
         {
             try
             {
                 TaggedStream filex = new TaggedStream(path);
-                CryptoStream crypto = new CryptoStream(filex, key.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(filex, key);
                 PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
 
                 FolderNode currentFolder = RootFolder;
@@ -2046,7 +2046,7 @@ namespace RiseOp.Services.Storage
             try
             {
                 TaggedStream filex = new TaggedStream(path);
-                CryptoStream crypto = new CryptoStream(filex, storage.File.Header.FileKey.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = IVCryptoStream.Load(filex, storage.File.Header.FileKey);
                 PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
 
                 ulong remoteUID = 0;

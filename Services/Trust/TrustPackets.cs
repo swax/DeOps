@@ -10,161 +10,9 @@ namespace RiseOp.Services.Trust
 {
     internal class TrustPacket
     {
-        internal const byte TrustHeader = 0x10;
-        internal const byte ProjectData = 0x20;
-        internal const byte LinkData = 0x30;
-        internal const byte UplinkReq = 0x40;
-    }
-
-    internal class TrustHeader : G2Packet
-    {
-        const byte Packet_Key = 0x10;
-        const byte Packet_Version = 0x20;
-        const byte Packet_FileHash = 0x30;
-        const byte Packet_FileSize = 0x40;
-        const byte Packet_FileKey = 0x50;
-
-
-        internal byte[] Key;
-        internal uint Version;
-        internal byte[] FileHash;
-        internal long FileSize;
-        internal RijndaelManaged FileKey = new RijndaelManaged();
-
-        internal ulong KeyID;
-
-
-        internal override byte[] Encode(G2Protocol protocol)
-        {
-            lock (protocol.WriteSection)
-            {
-                G2Frame header = protocol.WritePacket(null, TrustPacket.TrustHeader, null);
-
-                protocol.WritePacket(header, Packet_Key, Key);
-                protocol.WritePacket(header, Packet_Version, CompactNum.GetBytes(Version));
-                protocol.WritePacket(header, Packet_FileHash, FileHash);
-                protocol.WritePacket(header, Packet_FileSize, CompactNum.GetBytes(FileSize));
-                protocol.WritePacket(header, Packet_FileKey, FileKey.Key);
-
-                return protocol.WriteFinish();
-            }
-        }
-
-        internal static TrustHeader Decode(G2Header root)
-        {
-            TrustHeader header = new TrustHeader();
-            G2Header child = new G2Header(root.Data);
-
-            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                switch (child.Name)
-                {
-                    case Packet_Key:
-                        header.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        header.KeyID = Utilities.KeytoID(header.Key);
-                        break;
-
-                    case Packet_Version:
-                        header.Version = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-
-                    case Packet_FileHash:
-                        header.FileHash = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-
-                    case Packet_FileSize:
-                        header.FileSize = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-
-                    case Packet_FileKey:
-                        header.FileKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        header.FileKey.IV = new byte[header.FileKey.IV.Length];
-                        break;
-                }
-            }
-
-            return header;
-        }
-    }
-
-    internal class UplinkRequest : G2Packet
-    {
-        const byte Packet_ProjectID = 0x10;
-        const byte Packet_LinkVersion = 0x20;
-        const byte Packet_TargetVersion = 0x30;
-        const byte Packet_Key = 0x40;
-        const byte Packet_Target = 0x50;
-
-
-        internal uint ProjectID;
-        internal uint LinkVersion;
-        internal uint TargetVersion;
-        internal byte[] Key;
-        internal byte[] Target;
-
-
-        internal ulong KeyID;
-        internal ulong TargetID;
-        internal byte[] Signed;
-
-
-        internal override byte[] Encode(G2Protocol protocol)
-        {
-            lock (protocol.WriteSection)
-            {
-                G2Frame request = protocol.WritePacket(null, TrustPacket.UplinkReq, null);
-
-                protocol.WritePacket(request, Packet_ProjectID, BitConverter.GetBytes(ProjectID));
-                protocol.WritePacket(request, Packet_LinkVersion, BitConverter.GetBytes(LinkVersion));
-                protocol.WritePacket(request, Packet_TargetVersion, BitConverter.GetBytes(TargetVersion));
-                protocol.WritePacket(request, Packet_Key, Key);
-                protocol.WritePacket(request, Packet_Target, Target);
-
-                return protocol.WriteFinish();
-            }
-        }
-
-        internal static UplinkRequest Decode(G2Header root)
-        {
-            UplinkRequest request = new UplinkRequest();
-            G2Header child = new G2Header(root.Data);
-
-            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                switch (child.Name)
-                {
-                    case Packet_ProjectID:
-                        request.ProjectID = BitConverter.ToUInt32(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_LinkVersion:
-                        request.LinkVersion = BitConverter.ToUInt32(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_TargetVersion:
-                        request.TargetVersion = BitConverter.ToUInt32(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_Key:
-                        request.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        request.KeyID = Utilities.KeytoID(request.Key);
-                        break;
-
-                    case Packet_Target:
-                        request.Target = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        request.TargetID = Utilities.KeytoID(request.Target);
-                        break;
-                }
-            }
-
-            return request;
-        }
+        internal const byte ProjectData = 0x10;
+        internal const byte LinkData = 0x20;
+        internal const byte UplinkReq = 0x30;
     }
 
     internal class ProjectData : G2Packet
@@ -297,4 +145,83 @@ namespace RiseOp.Services.Trust
             return link;
         }
     }
+
+
+    internal class UplinkRequest : G2Packet
+    {
+        const byte Packet_ProjectID = 0x10;
+        const byte Packet_LinkVersion = 0x20;
+        const byte Packet_TargetVersion = 0x30;
+        const byte Packet_Key = 0x40;
+        const byte Packet_Target = 0x50;
+
+
+        internal uint ProjectID;
+        internal uint LinkVersion;
+        internal uint TargetVersion;
+        internal byte[] Key;
+        internal byte[] Target;
+
+
+        internal ulong KeyID;
+        internal ulong TargetID;
+        internal byte[] Signed;
+
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame request = protocol.WritePacket(null, TrustPacket.UplinkReq, null);
+
+                protocol.WritePacket(request, Packet_ProjectID, BitConverter.GetBytes(ProjectID));
+                protocol.WritePacket(request, Packet_LinkVersion, BitConverter.GetBytes(LinkVersion));
+                protocol.WritePacket(request, Packet_TargetVersion, BitConverter.GetBytes(TargetVersion));
+                protocol.WritePacket(request, Packet_Key, Key);
+                protocol.WritePacket(request, Packet_Target, Target);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static UplinkRequest Decode(G2Header root)
+        {
+            UplinkRequest request = new UplinkRequest();
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_ProjectID:
+                        request.ProjectID = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_LinkVersion:
+                        request.LinkVersion = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_TargetVersion:
+                        request.TargetVersion = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Key:
+                        request.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        request.KeyID = Utilities.KeytoID(request.Key);
+                        break;
+
+                    case Packet_Target:
+                        request.Target = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        request.TargetID = Utilities.KeytoID(request.Target);
+                        break;
+                }
+            }
+
+            return request;
+        }
+    }
+
 }

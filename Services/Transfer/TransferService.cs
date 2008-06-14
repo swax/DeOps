@@ -667,7 +667,7 @@ namespace RiseOp.Services.Transfer
             EndEvent = endEvent;
 
             Destination = core.Transfers.TransferPath;
-            Destination += Path.DirectorySeparatorChar + Utilities.CryptFilename(core.User.Settings.FileKey, (ulong)Details.Size, Details.Hash);
+            Destination += Path.DirectorySeparatorChar + Utilities.CryptFilename(core, (ulong)Details.Size, Details.Hash);
         }
 
         internal void AddSource(LocationData location)

@@ -1,39 +1,16 @@
 
-test 
-	threads for each core
-	global / op cache is loaded, sorted by last seen
-	test load/save global cache from root file
-	test encryption
+dont allow downloads to be added with the same destination as a d/l already going
+	maybe wait till multi-source changes, didnt seem to hurt anything... though duplicate transfer...
 	
-
-investigate all instances where IV is used
-16 byte salt beginning of op file is combined with password hash to decrypt op file
+tagged file with packets?, at beginning or end?, end maybe last 8 bytes is beginning of packet ;)
+	packet 
+		file size
+		hash res
+		hashes..
+	dont be back writing files like a crazy person
 
 dont do ping checks if receiving data - should be in context
 	use only when not receiving data as an indication that 'back online' and reset cache attempts
-
-graphics
-	data, profile, files, bolder side search button
-	new splash image, new icon (trees)
-	plans (telescope) comm (?) data (?)
-	put images all in right services directories
-
-
-Dealing with LANs
-	detect clients on LAN to connect to
-		add LAN broadcast ping interval to boostrap
-	implement upnp
-	both above need real world testing		
-
-	know diff between fw open on LAN and on internet
-	should simulate local net screwing up firewall settings and its effect on connecting with the outside	
-		10.0.0.0 - 10.255.255.255
-		172.16.0.0 - 172.31.255.255
-		192.168.0.0 - 192.168.255.255
-	if firewalled/NAT 
-		display in big letters forward TCP/UDP ports xxxx
-		by default set TCP/UDP ports equal
-	if can ping open sites ms/google/etc.. only change to fw open on connect from non-private IP
 
 global proxying
 	have sim print warning in status if global proxy nodes exist in routing table, to ensure they're weeded out
@@ -79,6 +56,7 @@ test
 	links timing out when traversing strucuture
 	link.getlocs / getlocsbelow / use live links?
 	link/plan research timer
+	thread per core
 
 other
 	news message when connected / disconnected from op
@@ -92,9 +70,7 @@ other
 	use last seen date in localSync - show day, not time
 	alert user of desyncs detected in localSync, maybe as news alert,
 		if local versions are newer than those specified in localSync
-	
-	turn packet/error logging back on after tests - ensure mem usage at mim - let user right click turn logging on/off
-	
+
 	chat
 		private triggering 2 invites, members dont see each other
 		if node starts up untrusted, display help service by default instead of chat
@@ -109,15 +85,40 @@ other
 	fix vertical scroll bar in link/chat window once and for all
 	board - All/Higher/Lower Posts, New Post
 	test clients with different local times, init random gmt offsets
-	graphics - darker invite, news icon update, take border off pacman guy
+
+graphics
+	data, profile, files, bolder side search button
+	new splash image, new icon (trees)
+	plans (telescope) comm (?) data (?)
+	put images all in right services directories
+	small sticky note square for board posts icon
 
 
+Dealing with LANs
+	detect clients on LAN to connect to
+		add LAN broadcast ping interval to boostrap
+	implement upnp
+	both above need real world testing		
+
+	know diff between fw open on LAN and on internet
+	should simulate local net screwing up firewall settings and its effect on connecting with the outside	
+		10.0.0.0 - 10.255.255.255
+		172.16.0.0 - 172.31.255.255
+		192.168.0.0 - 192.168.255.255
+	if firewalled/NAT 
+		display in big letters forward TCP/UDP ports xxxx
+		by default set TCP/UDP ports equal
+	if can ping open sites ms/google/etc.. only change to fw open on connect from non-private IP
+	
+	
 spring release
-	invitations
 	auto-update, exception catching/reporting
 	licensing, installer
 	web caching ips/files - look at using EC2
 		run crawler once a day, upload highest uptime nodes to webcache site
+	LAN handling?
+	GOAL: all this done for real LAN testing next weekend!!!
+	
 	*** items from todo
 	31 crits
 	network bandwidth limits - tracking in sim triggers node to start logging bw data
