@@ -298,7 +298,7 @@ namespace RiseOp.Services.Storage
 
                     if (File.Exists(oldPath))
                     {
-                        TaggedStream file = new TaggedStream(oldPath);
+                        TaggedStream file = new TaggedStream(oldPath, Network.Protocol);
                         CryptoStream crypto = IVCryptoStream.Load(file, local.File.Header.FileKey);
                         oldStream = new PacketStream(crypto, Protocol, FileAccess.Read);
                     }
@@ -557,7 +557,7 @@ namespace RiseOp.Services.Storage
 
                 byte[] key = working ? LocalFileKey : storage.File.Header.FileKey;
 
-                TaggedStream filex = new TaggedStream(path);
+                TaggedStream filex = new TaggedStream(path, Network.Protocol);
                 CryptoStream crypto = IVCryptoStream.Load(filex, key);
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
@@ -679,7 +679,7 @@ namespace RiseOp.Services.Storage
                 if (!File.Exists(path))
                     return;
 
-                TaggedStream filex = new TaggedStream(path);
+                TaggedStream filex = new TaggedStream(path, Network.Protocol);
                 CryptoStream crypto = IVCryptoStream.Load(filex, key);
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
@@ -826,7 +826,7 @@ namespace RiseOp.Services.Storage
                     stream.Close();
 
                     // hash temp file
-                    Utilities.HashTagFile(tempPath, ref info.Hash, ref info.Size);
+                    Utilities.HashTagFile(tempPath, Core.Network.Protocol, ref info.Hash, ref info.Size);
                     info.HashID = BitConverter.ToUInt64(info.Hash, 0);
 
                     // move to official path
@@ -1043,7 +1043,7 @@ namespace RiseOp.Services.Storage
                 string tempPath = Core.GetTempPath();
                 FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
 
-                TaggedStream encFile = new TaggedStream(GetFilePath(file.HashID));
+                TaggedStream encFile = new TaggedStream(GetFilePath(file.HashID), Network.Protocol);
                 CryptoStream stream = IVCryptoStream.Load(encFile, file.FileKey);
 
                 int read = FileBufferSize;

@@ -40,11 +40,7 @@ settings
 		allows viewing adding web caches as well for network
 	
 security
-	able to change Op ID in client - for project forks or if project is majorly compramised
-		new Op ID can be secure mailed to entire org, or pointer can be put in link file (went to op id x)
-		
-	signed invitation files - so that if bad people get in, we know who signed them in
-
+	
 	periodic heart beat with secuity key sent from to all trusted nodes, key transmitted during all ops
 		keeps untrusted from being sent any storage information, if kicked out of trusted tree		
 	
@@ -54,6 +50,14 @@ security
 
 	send out random garbage and random times to random hosts, sometimes with char stings like 'hola como estas' just to mess
 	    sniffers up a lil more 
+	    
+	central auth
+		for private/central networks, the network op stores a list of accepted keys at his ID
+		everyone on network has a copy of the list and only communcates with those keys in the list
+		super-op can allow regular ops to have their own invite lists
+		maybe this can just be simplified as only route to those in trust tree structure
+			part of trust confirmation is invite privlidges
+		use closures so if operation with unknown ID, begin verication process and on finish execute stored procedure
 	    
 	direct invite - 2 way invite
 		invite is encode location of node or proxy with specified tunnel id and invite id (dummy opID only works for invitee)

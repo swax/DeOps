@@ -235,4 +235,61 @@ namespace RiseOp.Implementation.Protocol.Special
             return invite;
         }
     }
+
+
+
+    internal class FilePacket
+    {
+        internal const byte SubHash = 0x10;
+    }
+
+    internal class SubHashPacket : G2Packet
+    {
+        const byte Packet_HashResKB = 0x10;
+        const byte Packet_SubHashes = 0x20;
+
+        internal int HashResKB;
+        internal byte[] SubHashes;
+
+        // 200 chunks per packet - 20*200 = 4000kb packets
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame subhash = protocol.WritePacket(null, FilePacket.SubHash, null);
+
+                protocol.WritePacket(subhash, Packet_HashResKB, BitConverter.GetBytes(HashResKB));
+                protocol.WritePacket(subhash, Packet_SubHashes, SubHashes);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static SubHashPacket Decode(G2Header root)
+        {
+            SubHashPacket subhash = new SubHashPacket();
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_HashResKB:
+                        subhash.HashResKB = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_SubHashes:
+                        subhash.SubHashes = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;                     
+                }
+            }
+
+            return subhash;
+        }
+    }
 }

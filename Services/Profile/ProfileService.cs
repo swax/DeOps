@@ -346,7 +346,7 @@ namespace RiseOp.Services.Profile
 
                 profile.Attached = new List<ProfileAttachment>();
 
-                TaggedStream file = new TaggedStream(path);
+                TaggedStream file = new TaggedStream(path, Network.Protocol);
                 CryptoStream crypto = IVCryptoStream.Load(file, profile.File.Header.FileKey);
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 

@@ -457,7 +457,7 @@ namespace RiseOp.Services.Board
             stream.Close();
 
             // finish building header
-            Utilities.HashTagFile(tempPath, ref header.FileHash, ref header.FileSize);
+            Utilities.HashTagFile(tempPath, Network.Protocol, ref header.FileHash, ref header.FileSize);
 
             string finalPath = GetPostPath(header);
             File.Move(tempPath, finalPath);
@@ -1044,7 +1044,7 @@ namespace RiseOp.Services.Board
 
                     post.Attached = new List<PostFile>();
 
-                    TaggedStream file = new TaggedStream(path);
+                    TaggedStream file = new TaggedStream(path, Network.Protocol);
                     CryptoStream crypto = IVCryptoStream.Load(file, post.Header.FileKey);
                     PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 

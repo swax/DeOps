@@ -303,7 +303,7 @@ namespace RiseOp.Services.Plan
 
                 List<int> myjobs = new List<int>();
 
-                TaggedStream file = new TaggedStream(path);
+                TaggedStream file = new TaggedStream(path, Network.Protocol);
                 CryptoStream crypto = IVCryptoStream.Load(file, plan.File.Header.FileKey);
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 

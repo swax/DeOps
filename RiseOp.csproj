@@ -613,6 +613,7 @@
     <Compile Include="Win32.cs" />
     <Content Include="Docs\ChangeLog.txt" />
     <Content Include="Docs\future.txt" />
+    <Content Include="Docs\testing.txt" />
     <Content Include="Docs\transfers.txt" />
     <None Include="Interface\Res\settings.png" />
     <None Include="Interface\Res\tools.png" />

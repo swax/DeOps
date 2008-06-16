@@ -13,6 +13,7 @@ using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Implementation.Protocol.Special;
 using RiseOp.Interface.TLVex;
 
 
@@ -207,7 +208,7 @@ namespace RiseOp
             file.Close();
         }
 
-        internal static void HashTagFile(string path, ref byte[] hash, ref long size)
+        internal static void HashTagFile(string path, G2Protocol protocol, ref byte[] hash, ref long size)
         {
             FileStream file = new FileStream(path, FileMode.Open, FileAccess.ReadWrite);
 
@@ -218,8 +219,8 @@ namespace RiseOp
             SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
             
             int read = 0;
-            byte chunkBits = 7; // 128kb chunks
-            int chunkSize = (int) Math.Pow(2, chunkBits) * 1024;
+            int chunkBytes = 128; // 128kb chunks
+            int chunkSize = chunkBytes * 1024;
             int buffSize = file.Length > chunkSize ? chunkSize : (int) file.Length;
             byte[] chunk = new byte[buffSize];
             List<byte[]> hashes = new List<byte[]>();
@@ -233,12 +234,30 @@ namespace RiseOp
                     hashes.Add(sha.ComputeHash(chunk, 0, read));
             }
 
-            // attach chunk hashes to end of file
-            foreach (byte[] chunkhash in hashes)
-                file.Write(chunkhash, 0, chunkhash.Length);
+            // write packets - 200 sub-hashes per packet
+            int writePos = 0;
+            int hashesLeft = hashes.Count;
 
-            // attach the size of each chunk
-            file.WriteByte(chunkBits);
+            while (hashesLeft > 0)
+            {
+                int writeCount = (hashesLeft > 100) ? 100 : hashesLeft;
+
+                hashesLeft -= writeCount;
+
+                SubHashPacket packet = new SubHashPacket();
+                packet.HashResKB = chunkBytes;
+                packet.SubHashes = new byte[20 * writeCount];
+
+                for (int i = 0; i < writeCount; i++)
+                    hashes[writePos++].CopyTo(packet.SubHashes, 20 * i);
+
+                byte[] encoded = packet.Encode(protocol);
+
+                file.Write(encoded, 0, encoded.Length);
+            }
+
+            // write null - end packets
+            file.WriteByte(0);
 
             // attach original size to end of file
             byte[] sizeBytes = BitConverter.GetBytes(originalSize);
@@ -1525,15 +1544,32 @@ namespace RiseOp.Implementation
     {
         long InternalSize;
 
-        internal TaggedStream(string path)
+        internal TaggedStream(string path, G2Protocol protocol)
             : base(path, FileMode.Open, FileAccess.Read, FileShare.Read)
         {
             Seek(-8, SeekOrigin.End);
 
             byte[] sizeBytes = new byte[8];
             Read(sizeBytes, 0, sizeBytes.Length);
-            InternalSize = BitConverter.ToInt64(sizeBytes, 0);
+            long fileSize = BitConverter.ToInt64(sizeBytes, 0);
 
+            // read internal packets
+            Seek(fileSize, SeekOrigin.Begin);
+
+            PacketStream stream = new PacketStream(this, protocol, FileAccess.Read);
+
+            G2Header root = null;
+
+            while (stream.ReadPacket(ref root))
+                if (root.Name == FilePacket.SubHash)
+                {
+                    //SubHashPacket subHash = SubHashPacket.Decode(root);
+                }
+            // dont need to close packetStream
+
+            InternalSize = fileSize; // set internal size down here so reading packet stream works without mixing up true file lenght
+            
+            // set back to the beginning of the file
             Seek(0, SeekOrigin.Begin);
         }
 

@@ -103,7 +103,7 @@ namespace RiseOp.Services.Storage
                         return;
 
                     key = local.File.Header.FileKey;
-                    source = new TaggedStream(path);
+                    source = new TaggedStream(path, Protocol);
                 }
 
                 CryptoStream crypto = IVCryptoStream.Load(source, key);
@@ -1131,7 +1131,7 @@ namespace RiseOp.Services.Storage
 
             try
             {
-                TaggedStream filex = new TaggedStream(path);
+                TaggedStream filex = new TaggedStream(path, Protocol);
                 CryptoStream crypto = IVCryptoStream.Load(filex, storage.File.Header.FileKey);
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 

@@ -1,36 +1,16 @@
 
-dont allow downloads to be added with the same destination as a d/l already going
-	maybe wait till multi-source changes, didnt seem to hurt anything... though duplicate transfer...
-	
-tagged file with packets?, at beginning or end?, end maybe last 8 bytes is beginning of packet ;)
-	packet 
-		file size
-		hash res
-		hashes..
-	dont be back writing files like a crazy person
-
 dont do ping checks if receiving data - should be in context
 	use only when not receiving data as an indication that 'back online' and reset cache attempts
-
+	
+dont allow downloads to be added with the same destination as a d/l already going
+	maybe wait till multi-source changes, didnt seem to hurt anything... though duplicate transfer...
+	test with storage downloads before / after, try to diagnose a little
+	
 global proxying
 	have sim print warning in status if global proxy nodes exist in routing table, to ensure they're weeded out
 	any way to replace published location with a new version?
-	replicating - after knowing all global data types (invites)
+	replicating - after knowing all global data types
 	ensure 2 global proxied NATs udp hole punch rudp
-
-test network
-	global proxy
-		2 blocked hosts on op1, 1 open hsot on op2
-		2 dupe blocked hosts on op1, proxying through same open global node on op2
-		2 blocked hosts on op1, 2 open hosts on op2
-		full network 5 op1 blocked, 5 op2 open, op1 functional?
-		global proxy location entries expire once node connects to real network
-		2 global proxied online then open comes online, ensure all nodes set useGlobalProxies to false
-		2 blocked connected to 1 open on op, and open node disconnecting, blocked should global proxy
-
-	automated test system
-		automation script - load x hosts, type, timeouts, run, stop, pause, check status, etc..
-		maybe a a list<testScenario> that is run through, results / warnings kept for each, can be run individually
 
 next
 	use packetstream instead of protocl.writetofile	
@@ -56,7 +36,7 @@ test
 	links timing out when traversing strucuture
 	link.getlocs / getlocsbelow / use live links?
 	link/plan research timer
-	thread per core
+	**thread per core
 
 other
 	news message when connected / disconnected from op
@@ -247,15 +227,15 @@ Components
 		on join chat, node asks other nodes for previous singed messages before specified time
 		
 	Mail 
-	    debug send/recv mail
+		one mail folder for in/out, mail and replies threaded so that first msg is root, and everything else is subs in tree
+		give new mail a thread ID that is used for replies, so that tree control can be used to collapse messages
+		soon - sync local mail between users
 		tagging messages, filter by tags
 		double clicking on name loacates them in link tree in panel
 		use labels for organization - for example a project label could be tagged on, so we could filter regarding project x
 		delete mail not refreshing view
-		soon - sync local mail between users
 		test/do re-publishing mail
 		*re-publish local outbound un-acked mail on network established
-		give new mail a thread ID that is used for replies, so that tree control can be used to collapse messages
 
 	Board 
 		 board scope sub-levels down, auto search highers for posts that have source==target, and show if in scope

@@ -50,9 +50,9 @@ namespace RiseOp.Implementation
     internal delegate void GetFocusedHandler();
 
     internal delegate List<MenuItemInfo> MenuRequestHandler(InterfaceMenuType menuType, ulong key, uint proj);
-    
 
-    [DebuggerDisplay("{User.Settings.ScreenName}")]
+
+    [DebuggerDisplay("{User.Settings.UserName}")]
 	internal class OpCore
 	{
         // super-classes

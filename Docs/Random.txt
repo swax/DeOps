@@ -9,6 +9,15 @@ problems solving
 	try to not get sucked into friend 2 friend networks, stay focused on enhancing coordination
 	Focus on users using the project to form large teams and accomplish real goals
 
+	another way to look at it
+		before computers were solitary, we secured them one at a time
+		in the network world computers come and go, many are public, and with a network the chance of insecure computers increases
+		riseOp is treated as a super-system that is secured independently accross all computers, and all computers it runs on are treated as insecure
+		what this achieves is end to end security for comm, storage, etc..
+		there is no super-user security to crack either, 'trust' creates its own security, by the individual choices of nodes in the network
+		scalable, flexible, secure 'super system' that is tightly connected and living
+		
+
 motivation
 	**location independence
 	make IT obsolete
@@ -30,7 +39,11 @@ motivation
 				+avoid problems of patches going in multiple directions and who owns them
 				---clone / rip-off companies turning profit on our labor
 		
-
+	why build? i want this to exist and i think other people would use it too if it did
+		hard to get investment though for a project like this
+		investors want an established market and proven demand behind a product being built
+		a completely new idea/vision being built is hard to invest in because there is no proven market
+		it is a larger gamble and requires a lot more confidence in youself and vision because few will support you
 
 selling points
 	inherently insecure communication system at companies

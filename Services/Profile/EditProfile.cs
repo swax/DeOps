@@ -141,7 +141,7 @@ namespace RiseOp.Services.Profile
             
             try
             {
-                TaggedStream stream = new TaggedStream(template.FilePath);
+                TaggedStream stream = new TaggedStream(template.FilePath, Core.GuiProtocol);
                 CryptoStream crypto = IVCryptoStream.Load(stream, template.FileKey);
 
                 int buffSize = 4096;

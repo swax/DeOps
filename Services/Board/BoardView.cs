@@ -478,7 +478,7 @@ namespace RiseOp.Services.Board
 
             try
             {
-                TaggedStream stream = new TaggedStream(Boards.GetPostPath(post.Header));
+                TaggedStream stream = new TaggedStream(Boards.GetPostPath(post.Header), Core.GuiProtocol);
                 CryptoStream crypto = IVCryptoStream.Load(stream, post.Header.FileKey);
 
                 int buffSize = 4096;

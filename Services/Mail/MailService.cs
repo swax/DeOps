@@ -76,6 +76,7 @@ namespace RiseOp.Services.Mail
         byte[] LocalFileKey;
         RijndaelManaged MailIDKey;
 
+        // cached mail/acks for network
         internal Dictionary<ulong, List<CachedMail>> MailMap = new Dictionary<ulong, List<CachedMail>>();
         internal Dictionary<ulong, List<CachedAck>>  AckMap  = new Dictionary<ulong, List<CachedAck>>();
         internal Dictionary<ulong, CachedPending> PendingMap = new Dictionary<ulong, CachedPending>();
@@ -86,6 +87,7 @@ namespace RiseOp.Services.Mail
         internal bool SaveInbox;
         internal bool SaveOutbox;
 
+        // local pending mails and acks
         internal Dictionary<ulong, List<ulong>>  PendingMail = new Dictionary<ulong, List<ulong>>();
         internal Dictionary<ulong, List<byte[]>> PendingAcks = new Dictionary<ulong, List<byte[]>>();
 
@@ -547,7 +549,7 @@ namespace RiseOp.Services.Mail
                 if (!File.Exists(path))
                     return null;
 
-                TaggedStream file = new TaggedStream(path);
+                TaggedStream file = new TaggedStream(path, Network.Protocol);
                 CryptoStream crypto = IVCryptoStream.Load(file, header.LocalKey);
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
@@ -705,7 +707,7 @@ namespace RiseOp.Services.Mail
 
 
             // finish building header
-            Utilities.HashTagFile(tempPath, ref header.FileHash, ref header.FileSize);
+            Utilities.HashTagFile(tempPath, Network.Protocol, ref header.FileHash, ref header.FileSize);
 
 
             // move file, overwrite if need be, local id used so filename is the same for all targets
@@ -742,7 +744,7 @@ namespace RiseOp.Services.Mail
 
                 PendingMail[hashID].Add(id);
             }
-            
+
             SavePending();
 
             CachedPending local = FindPending(Core.UserID);
@@ -1235,7 +1237,7 @@ namespace RiseOp.Services.Mail
             ack.Source   = Core.User.Settings.KeyPublic;
             ack.SourceID = Core.UserID;
             ack.Target   = header.Source;
-            ack.TargetID = header.TargetID; 
+            ack.TargetID = header.SourceID; 
             ack.TargetVersion = header.SourceVersion;
             
             // update pending
@@ -1243,10 +1245,10 @@ namespace RiseOp.Services.Mail
                 PendingAcks[ack.TargetID] = new List<byte[]>();
             PendingAcks[ack.TargetID].Add(ack.MailID);
 
+            SavePending(); // also publishes
+            
             CachedPending local = FindPending(Core.UserID);
             ack.SourceVersion = (local != null) ? local.Header.Version : 0;
-            
-            SavePending(); // also publishes
 
             // send 
             byte[] signedAck = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, ack.Encode(Network.Protocol));
@@ -1267,7 +1269,7 @@ namespace RiseOp.Services.Mail
             {
                 string path = PendingCache.GetFilePath(pending.Header);
 
-                TaggedStream file = new TaggedStream(path);
+                TaggedStream file = new TaggedStream(path, Network.Protocol);
                 CryptoStream crypto = IVCryptoStream.Load(file, pending.Header.FileKey);
 
                 byte[] divider = new byte[16];
@@ -1310,7 +1312,7 @@ namespace RiseOp.Services.Mail
             {
                 string path = PendingCache.GetFilePath(pending.Header);
 
-                TaggedStream file = new TaggedStream(path);
+                TaggedStream file = new TaggedStream(path, Network.Protocol);
                 CryptoStream crypto = IVCryptoStream.Load(file, pending.Header.FileKey);
 
                 bool dividerReached = false;
@@ -1446,17 +1448,16 @@ namespace RiseOp.Services.Mail
         {
             try
             {
-                if (!PendingMap.ContainsKey(cachedfile.UserID))
-                    PendingMap[cachedfile.UserID] = new CachedPending(cachedfile);
+                CachedPending pending = new CachedPending(cachedfile);
 
-                CachedPending pending = PendingMap[cachedfile.UserID];
+                PendingMap[cachedfile.UserID] = pending;
 
                 List<byte[]> pendingMailIDs = new List<byte[]>();
                 List<byte[]> pendingAckIDs = new List<byte[]>();
 
 
                 // load pending file
-                TaggedStream file = new TaggedStream(PendingCache.GetFilePath(cachedfile.Header));
+                TaggedStream file = new TaggedStream(PendingCache.GetFilePath(cachedfile.Header), Network.Protocol);
                 CryptoStream crypto = IVCryptoStream.Load(file, cachedfile.Header.FileKey);
 
                 bool dividerPassed = false;
@@ -1515,8 +1516,7 @@ namespace RiseOp.Services.Mail
 
                     if (File.Exists(localpath))
                     {
-                        file = new TaggedStream(localpath);
-                        crypto = IVCryptoStream.Load(file, LocalFileKey);
+                        crypto = IVCryptoStream.Load(localpath, LocalFileKey);
 
                         read = buffer.Length;
                         while (read == buffer.Length)
@@ -1532,7 +1532,9 @@ namespace RiseOp.Services.Mail
 
                         crypto.Close();
 
-                        for (int i = 0; i < targets.Count; i++)
+                        Debug.Assert(targets.Count == pendingAckIDs.Count);
+
+                        for (int i = 0; i < targets.Count || i > pendingAckIDs.Count; i++)
                         {
                             if (!PendingAcks.ContainsKey(targets[i]))
                                 PendingAcks[targets[i]] = new List<byte[]>();
@@ -1562,14 +1564,14 @@ namespace RiseOp.Services.Mail
         private void CheckCache(CachedPending pending, List<byte[]> mailIDs, List<byte[]> ackIDs)
         {
 /* entry removal
- *      mail map
+ *      mail map 
  *          ID not in source's pending mail list X
  *          ID in target's pending ack list X
  *      ack map
  *          ID not in target's pending mail list X
  *          ID not in source's pending ack list X
  * 
- *      pending mail
+ *      pending mail (local
  *          Ack received from target
  *          ID in targets pending ack list
  *      pending ack
@@ -1783,7 +1785,9 @@ namespace RiseOp.Services.Mail
                 else if (File.Exists(localpath))
                     File.Delete(localpath);
 
+                // make sure to save this after ack targets written, so that it exists when pendingcache_fileaquired triggered
                 PendingCache.UpdateLocal(tempPath, key, null);
+                
             }
             catch (Exception ex)
             {

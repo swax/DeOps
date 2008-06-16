@@ -788,10 +788,8 @@ namespace RiseOp.Services.Trust
 
         private void Cache_FileAquired(OpVersionedFile cachefile)
         {
-
             try
             {
-
                 // get link directly, even if in unloaded state we need the same reference
                 OpTrust trust = null;
                 TrustMap.SafeTryGetValue(cachefile.UserID, out trust);
@@ -841,7 +839,7 @@ namespace RiseOp.Services.Trust
 
 
                 // load data from link file
-                TaggedStream file = new TaggedStream(Cache.GetFilePath(cachefile.Header));
+                TaggedStream file = new TaggedStream(Cache.GetFilePath(cachefile.Header), Network.Protocol);
                 CryptoStream crypto = IVCryptoStream.Load(file, cachefile.Header.FileKey);
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 

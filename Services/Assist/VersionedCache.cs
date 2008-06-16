@@ -331,7 +331,7 @@ namespace RiseOp.Services.Assist
             // finish building header
             if (key != null)
             {
-                Utilities.HashTagFile(tempPath, ref header.FileHash, ref header.FileSize);
+                Utilities.HashTagFile(tempPath, Network.Protocol, ref header.FileHash, ref header.FileSize);
 
                 // move file, overwrite if need be
                 string finalPath = GetFilePath(header);

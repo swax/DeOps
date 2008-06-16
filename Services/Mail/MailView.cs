@@ -355,7 +355,7 @@ namespace RiseOp.Services.Mail
 
             try
             {
-                TaggedStream stream = new TaggedStream(Mail.GetLocalPath(message.Header));
+                TaggedStream stream = new TaggedStream(Mail.GetLocalPath(message.Header), Core.GuiProtocol);
                 CryptoStream crypto = IVCryptoStream.Load(stream, message.Header.LocalKey);
 
                 int buffSize = 4096;

@@ -358,7 +358,7 @@ namespace RiseOp.Services.Storage
 
             try
             {
-                TaggedStream filex = new TaggedStream(path);
+                TaggedStream filex = new TaggedStream(path, Core.GuiProtocol);
                 CryptoStream crypto = IVCryptoStream.Load(filex, storage.File.Header.FileKey);
                 PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
 
@@ -689,7 +689,7 @@ namespace RiseOp.Services.Storage
         {
             try
             {
-                TaggedStream filex = new TaggedStream(path);
+                TaggedStream filex = new TaggedStream(path, Core.GuiProtocol);
                 CryptoStream crypto = IVCryptoStream.Load(filex, key);
                 PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
 
@@ -2045,7 +2045,7 @@ namespace RiseOp.Services.Storage
 
             try
             {
-                TaggedStream filex = new TaggedStream(path);
+                TaggedStream filex = new TaggedStream(path, Core.GuiProtocol);
                 CryptoStream crypto = IVCryptoStream.Load(filex, storage.File.Header.FileKey);
                 PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
 
