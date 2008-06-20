@@ -1,14 +1,4 @@
 ﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release Sim|AnyCPU' ">
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <BaseAddress>285212672</BaseAddress>
-    <Optimize>true</Optimize>
-    <DebugType>
-    </DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-  </PropertyGroup>
   <PropertyGroup>
     <ProjectType>Local</ProjectType>
     <ProductVersion>9.0.21022</ProductVersion>
@@ -99,20 +89,6 @@
     <DebugType>none</DebugType>
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug Sim|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <BaseAddress>285212672</BaseAddress>
-    <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <Optimize>false</Optimize>
-    <CodeAnalysisRules>
-    </CodeAnalysisRules>
-    <WarningLevel>3</WarningLevel>
-    <RunCodeAnalysis>false</RunCodeAnalysis>
-  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System">
       <Name>System</Name>
@@ -124,6 +100,7 @@
     <Reference Include="System.Drawing">
       <Name>System.Drawing</Name>
     </Reference>
+    <Reference Include="System.Runtime.Remoting" />
     <Reference Include="System.Windows.Forms">
       <Name>System.Windows.Forms</Name>
     </Reference>
@@ -136,6 +113,24 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Implementation\Transport\UPnP.cs" />
+    <Compile Include="Interface\ErrorReport.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\ErrorReport.Designer.cs">
+      <DependentUpon>ErrorReport.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Settings\Operation.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Settings\Operation.Designer.cs">
+      <DependentUpon>Operation.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Settings\User.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Settings\User.Designer.cs">
+      <DependentUpon>User.cs</DependentUpon>
+    </Compile>
     <Compile Include="Interface\Setup\CreateUser.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -425,12 +420,6 @@
     <Compile Include="Services\Chat\RoomView.Designer.cs">
       <DependentUpon>RoomView.cs</DependentUpon>
     </Compile>
-    <Compile Include="Services\Chat\ChatSplit.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Services\Chat\ChatSplit.Designer.cs">
-      <DependentUpon>ChatSplit.cs</DependentUpon>
-    </Compile>
     <Compile Include="Services\Chat\ChatView.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -464,10 +453,10 @@
     <Compile Include="Interface\Views\GetTextDialog.Designer.cs">
       <DependentUpon>GetTextDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Interface\NewProjectForm.cs">
+    <Compile Include="Interface\Setup\NewProjectForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Interface\NewProjectForm.Designer.cs">
+    <Compile Include="Interface\Setup\NewProjectForm.Designer.cs">
       <DependentUpon>NewProjectForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Services\Profile\ProfileView.cs">
@@ -481,7 +470,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>InterfaceRes.resx</DependentUpon>
     </Compile>
-    <Compile Include="Interface\Views\TrayLock.cs" />
+    <Compile Include="Interface\TrayLock.cs" />
     <Compile Include="Interface\Views\ColorTable.cs" />
     <Compile Include="Interface\Views\TreeListViewEx\ContainerListView.cs">
       <SubType>Component</SubType>
@@ -603,6 +592,7 @@
     <Compile Include="Simulator\TrackFile.Designer.cs">
       <DependentUpon>TrackFile.cs</DependentUpon>
     </Compile>
+    <Compile Include="SingleInstance.cs" />
     <Compile Include="Startup.cs" />
     <Compile Include="Test.cs">
       <SubType>Code</SubType>
@@ -715,6 +705,18 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <EmbeddedResource Include="Interface\ErrorReport.resx">
+      <DependentUpon>ErrorReport.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Settings\Operation.resx">
+      <DependentUpon>Operation.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Settings\User.resx">
+      <DependentUpon>User.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Interface\Setup\CreateUser.resx">
       <DependentUpon>CreateUser.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -750,10 +752,6 @@
     <EmbeddedResource Include="Services\Chat\RoomView.resx">
       <SubType>Designer</SubType>
       <DependentUpon>RoomView.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Chat\ChatSplit.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>ChatSplit.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Chat\ChatView.resx">
       <SubType>Designer</SubType>
@@ -908,7 +906,7 @@
       <SubType>Designer</SubType>
       <DependentUpon>GetTextDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\NewProjectForm.resx">
+    <EmbeddedResource Include="Interface\Setup\NewProjectForm.resx">
       <SubType>Designer</SubType>
       <DependentUpon>NewProjectForm.cs</DependentUpon>
     </EmbeddedResource>

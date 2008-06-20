@@ -63,17 +63,6 @@ namespace RiseOp.Simulator
         private void ControlForm_Load(object sender, EventArgs e)
         {
             Sim.InstanceChange += new InstanceChangeHandler(OnInstanceChange);
-
-            //Loaded = true;
-            string name = SystemInformation.UserName;
-            string comp = SystemInformation.ComputerName;
-            
-            // call home for alpha security
-#if !DEBUG
-            WebClient client  = new WebClient();
-            client.DownloadStringCompleted += new DownloadStringCompletedEventHandler( DownloadStringCallback);
-            client.DownloadStringAsync(new Uri("http://www.c0re.net/deops/update.php?build=" + "alpha2" + "&comp=" + comp + "&name=" + name ));
-#endif 
         }
 
         void DownloadStringCallback(object sender, DownloadStringCompletedEventArgs e)
@@ -154,7 +143,7 @@ namespace RiseOp.Simulator
                 instance.Context.Cores.LockReading(delegate()
                 {
                     foreach (OpCore core in instance.Context.Cores)
-                        core.User.Save();
+                        core.Profile.Save();
                 });
 
             MessageBox.Show(this, "Nodes Saved");
@@ -418,142 +407,65 @@ namespace RiseOp.Simulator
         private void Click_Internal(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
-            {
-                OpCore core = item.Core;
-
-                
-                if (core.GuiInternal == null)
-                    core.GuiInternal = new InternalsForm(core);
-
-                core.GuiInternal.Show();
-                core.GuiInternal.Activate();
-            }
+                InternalsForm.Show(item.Core);
         }
 
         private void Click_Transfers(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
-            {
-                OpCore core = item.Core;
-
-                TransferView view = new TransferView(core.Transfers);
-                view.Show(this);
-            }
+                new TransferView(item.Core.Transfers).Show(this);
         }
 
         private void Click_GlobalCrawler(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
-            {
-                OpCore core = item.Core;
-
-                DhtNetwork network = core.Context.Global.Network;
-
-                if (network.GuiCrawler == null)
-                    network.GuiCrawler = new CrawlerForm("Global", network);
-
-                network.GuiCrawler.Show();
-                network.GuiCrawler.Activate();
-            }
+                if (item.Core.Context.Global != null)
+                    CrawlerForm.Show(item.Core.Context.Global.Network);
         }
 
         private void Click_GlobalGraph(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
-            {
-                OpCore core = item.Core;
-
-                DhtNetwork network = core.Context.Global.Network;
-
-                if (network.GuiGraph == null)
-                    network.GuiGraph = new GraphForm("Global", network);
-
-                network.GuiGraph.Show();
-                network.GuiGraph.Activate();
-            }
+                if (item.Core.Context.Global != null)
+                    PacketsForm.Show(item.Core.Context.Global.Network);
         }
 
         private void Click_GlobalPackets(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
-            {
-                OpCore core = item.Core;
-
-                DhtNetwork network = core.Context.Global.Network;
-
-                if (network.GuiPackets == null)
-                    network.GuiPackets = new PacketsForm("Global", network);
-
-                network.GuiPackets.Show();
-                network.GuiPackets.Activate();
-            }
+                if (item.Core.Context.Global != null)
+                    PacketsForm.Show(item.Core.Context.Global.Network);
         }
 
         private void Click_GlobalSearch(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
-            {
-                SearchForm form = new SearchForm("Global", this, item.Core.Context.Global.Network);
-
-                form.Show();
-            }
+                if (item.Core.Context.Global != null)
+                    SearchForm.Show(item.Core.Context.Global.Network);
         }
 
         private void Click_OpCrawler(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
-            {
-                OpCore core = item.Core;
-
-                DhtNetwork network = core.Network;
-
-                if (network.GuiCrawler == null)
-                    network.GuiCrawler = new CrawlerForm("Operation", network);
-
-                network.GuiCrawler.Show();
-                network.GuiCrawler.Activate();
-            }
+                CrawlerForm.Show(item.Core.Network);
         }
 
         private void Click_OpGraph(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
-            {
-                OpCore core = item.Core;
-
-                DhtNetwork network = core.Network;
-
-                if (network.GuiGraph == null)
-                    network.GuiGraph = new GraphForm("Operation", network);
-
-                network.GuiGraph.Show();
-                network.GuiGraph.Activate();
-            }
+                GraphForm.Show(item.Core.Network);
         }
 
         private void Click_OpPackets(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
-            {
-                OpCore core = item.Core;
-
-                DhtNetwork network = core.Network;
-
-                if (network.GuiPackets == null)
-                    network.GuiPackets = new PacketsForm("Operation", network);
-
-                network.GuiPackets.Show();
-                network.GuiPackets.Activate();
-            }
+                PacketsForm.Show(item.Core.Network);
         }
 
         private void Click_OpSearch(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in listInstances.SelectedItems)
-            {
-                SearchForm form = new SearchForm("Operation", this, item.Core.Network);
-                form.Show();
-            }
+                SearchForm.Show(item.Core.Network);
         }
 
         private void Click_Connect(object sender, EventArgs e)
@@ -821,8 +733,8 @@ namespace RiseOp.Simulator
             if (Core.Locations.LocationMap.SafeCount <= 1)
                 alerts += "Locs, ";
 
-            SubItems[1].Text = Core.User.Settings.UserName;
-            SubItems[2].Text = Core.User.Settings.Operation;
+            SubItems[1].Text = Core.Profile.Settings.UserName;
+            SubItems[2].Text = Core.Profile.Settings.Operation;
             SubItems[3].Text = Utilities.IDtoBin(Core.UserID);
             SubItems[4].Text = Instance.RealIP.ToString() + "/" + Core.Network.Local.ClientID.ToString();
             SubItems[5].Text = Instance.RealFirewall.ToString();
@@ -858,7 +770,7 @@ namespace RiseOp.Simulator
 
             StringBuilder summary = new StringBuilder();
 
-            summary.Append(Core.Links.TrustMap.SafeCount.ToString() + " links, ");
+            summary.Append(Core.Trust.TrustMap.SafeCount.ToString() + " links, ");
 
             summary.Append(Core.Locations.LocationMap.SafeCount.ToString() + " locs, ");
 

@@ -51,7 +51,17 @@ namespace RiseOp.Interface.Tools
         private ColumnHeader columnHeaderBandwidth;
 		private System.ComponentModel.IContainer components;
 
-        internal CrawlerForm(string name, DhtNetwork network)
+
+        internal static void Show(DhtNetwork network)
+        {
+            if (network.GuiCrawler == null)
+                network.GuiCrawler = new CrawlerForm(network);
+
+            network.GuiCrawler.Show();
+            network.GuiCrawler.Activate();
+        }
+
+        internal CrawlerForm(DhtNetwork network)
 		{
 			//
 			// Required for Windows Form Designer support
@@ -65,10 +75,7 @@ namespace RiseOp.Interface.Tools
             SearchAck = new SearchAckHandler(Receive_SearchAck);
 			CrawlAck  = new CrawlAckHandler(Receive_CrawlAck);
 
-            if (Core.User == null)
-                Text = "Global Crawler (" + Core.Context.LocalIP.ToString() + ")";
-            else
-                Text = "Crawler (" + Core.User.Settings.UserName + ")";
+            Text = "Crawler (" + Network.GetLabel() + ")";
 
 			NodeList.ListViewItemSorter = lvwColumnSorter;
 		}
@@ -410,7 +417,7 @@ namespace RiseOp.Interface.Tools
 			// Perform the sort with these new sort options.
 			NodeList.Sort();
 		}
-	}
+    }
 
 	internal class CrawlNode
 	{

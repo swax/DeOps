@@ -24,7 +24,7 @@ namespace RiseOp.Services.Chat
 
         internal OpCore Core;
         internal DhtNetwork Network;
-        internal TrustService Links;
+        internal TrustService Trust;
 
         internal ThreadedDictionary<uint, ChatRoom> RoomMap = new ThreadedDictionary<uint, ChatRoom>();
 
@@ -38,7 +38,7 @@ namespace RiseOp.Services.Chat
         {
             Core = core;
             Network = Core.Network;
-            Links = core.Links;
+            Trust = core.Trust;
 
             Network.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
             Network.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
@@ -47,10 +47,10 @@ namespace RiseOp.Services.Chat
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.GetFocusedCore += new GetFocusedHandler(Core_GetFocusedCore);
 
-            Links.LinkUpdate += new LinkUpdateHandler(Link_Update);
+            Trust.LinkUpdate += new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate += new LocationUpdateHandler(Location_Update);
 
-            Link_Update(Links.LocalTrust);
+            Link_Update(Trust.LocalTrust);
         }
 
         public void Dispose()
@@ -65,7 +65,7 @@ namespace RiseOp.Services.Chat
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.GetFocusedCore -= new GetFocusedHandler(Core_GetFocusedCore);
 
-            Links.LinkUpdate -= new LinkUpdateHandler(Link_Update);
+            Trust.LinkUpdate -= new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate -= new LocationUpdateHandler(Location_Update);
         }
 
@@ -143,11 +143,11 @@ namespace RiseOp.Services.Chat
         {
 
             // update command/live rooms
-            Links.ProjectRoots.LockReading(delegate()
+            Trust.ProjectRoots.LockReading(delegate()
             {
-                foreach (uint project in Links.ProjectRoots.Keys)
+                foreach (uint project in Trust.ProjectRoots.Keys)
                 {
-                    OpLink localLink = Links.LocalTrust.GetLink(project);
+                    OpLink localLink = Trust.LocalTrust.GetLink(project);
                     OpLink remoteLink = trust.GetLink(project);
 
                     if (localLink == null || remoteLink == null)
@@ -157,7 +157,7 @@ namespace RiseOp.Services.Chat
                     List<OpLink> downlinks = localLink.GetLowers(true);
                     
                     // if local link updating
-                    if (trust == Links.LocalTrust)
+                    if (trust == Trust.LocalTrust)
                     {
                         // if we are in the project
                         if (localLink.Active)
@@ -285,8 +285,8 @@ namespace RiseOp.Services.Chat
                         foreach (ClientInfo info in clients)
                             Network.RudpControl.Connect(info.Data);
 
-                    if (Links.GetTrust(key) == null)
-                        Links.Research(key, 0, false);    
+                    if (Trust.GetTrust(key) == null)
+                        Trust.Research(key, 0, false);    
                 }
             });
         }
@@ -312,7 +312,7 @@ namespace RiseOp.Services.Chat
             // nodes we arent connected to do try connect
             // if socket already active send status request
 
-            OpLink localLink = Links.LocalTrust.GetLink(room.ProjectID);
+            OpLink localLink = Trust.LocalTrust.GetLink(room.ProjectID);
 
             if (localLink == null)
                 return;
@@ -496,10 +496,10 @@ namespace RiseOp.Services.Chat
             if (session.UserID != Core.UserID)
             {
                 // if check fails then it is loop node sending data, keep it unchanged
-                if (message.Kind == RoomKind.Command_High && Links.IsLowerDirect(session.UserID, message.ProjectID))
+                if (message.Kind == RoomKind.Command_High && Trust.IsLowerDirect(session.UserID, message.ProjectID))
                     message.Kind = RoomKind.Command_Low;
 
-                else if (message.Kind == RoomKind.Command_Low && Links.IsHigher(session.UserID, message.ProjectID))
+                else if (message.Kind == RoomKind.Command_Low && Trust.IsHigher(session.UserID, message.ProjectID))
                     message.Kind = RoomKind.Command_High;
 
                 else if (message.Kind == RoomKind.Live_High)
@@ -732,7 +732,7 @@ namespace RiseOp.Services.Chat
                 if (!Core.KeyMap.ContainsKey(id))
                     return;
 
-                invite.SignedInvite = Core.User.Settings.KeyPair.SignData(Core.KeyMap[id], new SHA1CryptoServiceProvider());
+                invite.SignedInvite = Core.Profile.Settings.KeyPair.SignData(Core.KeyMap[id], new SHA1CryptoServiceProvider());
 
                 room.Verified[id] = true;
             }
@@ -758,7 +758,7 @@ namespace RiseOp.Services.Chat
         {
             // Invite sent to Bob @Home
 
-            ProcessMessage(room, new ChatMessage(Core, "Invite sent to " + Links.GetName(session.UserID) + LocationSuffix(session.UserID, session.ClientID), true));
+            ProcessMessage(room, new ChatMessage(Core, "Invite sent to " + Trust.GetName(session.UserID) + LocationSuffix(session.UserID, session.ClientID), true));
         }
 
         void SendInviteProof(ChatRoom room)
@@ -868,8 +868,8 @@ namespace RiseOp.Services.Chat
                 }
             }
 
-            if (!Core.Links.TrustMap.SafeContainsKey(session.UserID))
-                Links.Research(session.UserID, 0, false);
+            if (!Core.Trust.TrustMap.SafeContainsKey(session.UserID))
+                Trust.Research(session.UserID, 0, false);
 
             if(showInvite)
                 Core.RunInGuiThread(Invited, session.UserID, room);
@@ -958,8 +958,8 @@ namespace RiseOp.Services.Chat
                     {
                         room.AddMember(id);
 
-                        if (Links.GetTrust(id) == null)
-                            Links.Research(id, 0, false);
+                        if (Trust.GetTrust(id) == null)
+                            Trust.Research(id, 0, false);
 
                         Core.Locations.Research(id);
                     }

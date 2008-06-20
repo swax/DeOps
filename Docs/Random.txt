@@ -1,7 +1,7 @@
 abstract data/user location
 problems solving
     end to end (user to user) security within organization
-    IT management of networks, firewalls, setups, VPNs
+    IT management of networks, firewalls, setups, VPNs (bootstrap IT for large groups)
     massive scale coordination, get MORE done FASTER - build people sims, create benchmarks, continually improve this
     auto quality control / responsibility / accountibility
 	rapid / dynamic project growth, put de-ops link on dev site, let people immediately join project
@@ -35,6 +35,11 @@ motivation
 				how to compensate devs fairly?
 					definite salary employees for highest echelons
 					very lax credit pool for contributions, that can be given out freely, traded, exchanged by anyone
+				'i sell my software so i dont have to sell out'
+					applications that are popular open-source and then go commercial, screw over their users because bad management 
+						runs their software now and the original developer is powerless
+					by starting closed, and bringing in income manually, no sell out is necessary, the original vision lives and improves
+			
 			full open source
 				+avoid problems of patches going in multiple directions and who owns them
 				---clone / rip-off companies turning profit on our labor

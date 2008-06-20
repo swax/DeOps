@@ -23,7 +23,6 @@ namespace RiseOp.Implementation.Dht
 
         internal ulong LocalRoutingID;
 
-		internal int CurrentBucket;
         internal List<DhtBucket> BucketList = new List<DhtBucket>();
 
         internal Dictionary<ulong, DhtContact> ContactMap = new Dictionary<ulong, DhtContact>();

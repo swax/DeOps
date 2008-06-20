@@ -146,7 +146,7 @@ namespace RiseOp.Interface
 
             InputBox.SelectionColor = dialog.Color;
 
-            InputBox.Focus();
+            InputBox.Select();
 
             /* RClick font selection
              FontDialog dialog = new FontDialog();

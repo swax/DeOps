@@ -289,7 +289,7 @@ namespace RiseOp.Services.Plan
 
         Pen BlackPen = new Pen(Color.Black);
         Pen RefPen = new Pen(Color.LawnGreen, 2);
-        Brush ControlBrush = new SolidBrush(SystemColors.ControlLight);
+        Brush ControlBrush = new SolidBrush(Color.WhiteSmoke);
 
         private void DateSlider_Paint(object sender, PaintEventArgs e)
         {
@@ -309,7 +309,7 @@ namespace RiseOp.Services.Plan
             // background
             Graphics buffer = Graphics.FromImage(DisplayBuffer);
 
-            buffer.Clear(SystemColors.ControlLight);
+            buffer.Clear(Color.WhiteSmoke);
             buffer.SmoothingMode = SmoothingMode.AntiAlias;
 
             // marks

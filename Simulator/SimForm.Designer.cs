@@ -59,6 +59,7 @@ namespace RiseOp.Simulator
             this.OptionsMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.FreshStartMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.LoadOnlineMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.LoggingMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.SpeedMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.CollectMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ViewMenu = new System.Windows.Forms.ToolStripMenuItem();
@@ -72,7 +73,6 @@ namespace RiseOp.Simulator
             this.ElapsedLabel = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.LoadProgress = new System.Windows.Forms.ProgressBar();
-            this.LoggingMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -126,9 +126,9 @@ namespace RiseOp.Simulator
             this.columnHeader8,
             this.columnHeader9});
             this.listInstances.FullRowSelect = true;
-            this.listInstances.Location = new System.Drawing.Point(12, 142);
+            this.listInstances.Location = new System.Drawing.Point(12, 144);
             this.listInstances.Name = "listInstances";
-            this.listInstances.Size = new System.Drawing.Size(558, 284);
+            this.listInstances.Size = new System.Drawing.Size(558, 279);
             this.listInstances.TabIndex = 3;
             this.listInstances.UseCompatibleStateImageBehavior = false;
             this.listInstances.View = System.Windows.Forms.View.Details;
@@ -294,28 +294,35 @@ namespace RiseOp.Simulator
             // FreshStartMenuItem
             // 
             this.FreshStartMenuItem.Name = "FreshStartMenuItem";
-            this.FreshStartMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.FreshStartMenuItem.Size = new System.Drawing.Size(141, 22);
             this.FreshStartMenuItem.Text = "Fresh Start";
             this.FreshStartMenuItem.Click += new System.EventHandler(this.FreshStartMenuItem_Click);
             // 
             // LoadOnlineMenuItem
             // 
             this.LoadOnlineMenuItem.Name = "LoadOnlineMenuItem";
-            this.LoadOnlineMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.LoadOnlineMenuItem.Size = new System.Drawing.Size(141, 22);
             this.LoadOnlineMenuItem.Text = "Load Online";
             this.LoadOnlineMenuItem.Click += new System.EventHandler(this.LoadOnlineMenu_Click);
+            // 
+            // LoggingMenu
+            // 
+            this.LoggingMenu.Name = "LoggingMenu";
+            this.LoggingMenu.Size = new System.Drawing.Size(141, 22);
+            this.LoggingMenu.Text = "Logging";
+            this.LoggingMenu.Click += new System.EventHandler(this.LoggingMenu_Click);
             // 
             // SpeedMenuItem
             // 
             this.SpeedMenuItem.Name = "SpeedMenuItem";
-            this.SpeedMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.SpeedMenuItem.Size = new System.Drawing.Size(141, 22);
             this.SpeedMenuItem.Text = "Speed";
             this.SpeedMenuItem.Click += new System.EventHandler(this.SpeedMenuItem_Click);
             // 
             // CollectMenuItem
             // 
             this.CollectMenuItem.Name = "CollectMenuItem";
-            this.CollectMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.CollectMenuItem.Size = new System.Drawing.Size(141, 22);
             this.CollectMenuItem.Text = "GC Collect";
             this.CollectMenuItem.Click += new System.EventHandler(this.CollectMenuItem_Click);
             // 
@@ -435,17 +442,11 @@ namespace RiseOp.Simulator
             this.LoadProgress.TabIndex = 18;
             this.LoadProgress.Visible = false;
             // 
-            // LoggingMenu
-            // 
-            this.LoggingMenu.Name = "LoggingMenu";
-            this.LoggingMenu.Size = new System.Drawing.Size(152, 22);
-            this.LoggingMenu.Text = "Logging";
-            this.LoggingMenu.Click += new System.EventHandler(this.LoggingMenu_Click);
-            // 
             // SimForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.ClientSize = new System.Drawing.Size(582, 451);
             this.Controls.Add(this.LoadProgress);
             this.Controls.Add(this.groupBox1);

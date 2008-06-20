@@ -16,25 +16,29 @@ namespace RiseOp.Interface.Tools
 {
     internal partial class SearchForm : Form
     {
-        SimForm Control;
         InternetSim Sim;
         DhtNetwork  Network;
 
         delegate void UpdateListHandler(DhtSearch search);
         UpdateListHandler OnUpdateList;
 
-        internal SearchForm(string name, SimForm control, DhtNetwork network)
+
+        internal static void Show(DhtNetwork network)
+        {
+            SearchForm form = new SearchForm(network);
+            form.Show();
+        }
+
+        internal SearchForm(DhtNetwork network)
         {
             InitializeComponent();
 
-            Control = control;
-            Sim = control.Sim;
+            if(network.Core.Sim != null)
+                Sim = network.Core.Sim.Internet;
+
             Network = network;
 
-            if (network.Core.User == null)
-                Text = "Global Search (" + network.Core.Context.LocalIP.ToString() + ")";
-            else
-                Text = "Search (" + network.Core.User.Settings.UserName + ")";
+            Text = "Search (" + Network.GetLabel() + ")";
 
             OnUpdateList = new UpdateListHandler(UpdateList);
         }
@@ -44,29 +48,32 @@ namespace RiseOp.Interface.Tools
             ulong TargetID = 0;
 
             // find Dht id or user or operation
-            if (RadioUser.Checked)
-                foreach (SimInstance instance in Sim.Instances)
-                    instance.Context.Cores.LockReading(delegate()
-                    {
-                        foreach (OpCore core in instance.Context.Cores)
-                            if (core.User.Settings.UserName == TextSearch.Text)
-                            {
-                                TargetID = Network.IsGlobal ? core.Context.Global.UserID : core.UserID;
-                                break;
-                            }
-                    });
+            if (Sim != null)
+            {
+                if (RadioUser.Checked)
+                    foreach (SimInstance instance in Sim.Instances)
+                        instance.Context.Cores.LockReading(delegate()
+                        {
+                            foreach (OpCore core in instance.Context.Cores)
+                                if (core.Profile.Settings.UserName == TextSearch.Text)
+                                {
+                                    TargetID = Network.IsGlobal ? core.Context.Global.UserID : core.UserID;
+                                    break;
+                                }
+                        });
 
-            if (RadioOp.Checked)
-                foreach (SimInstance instance in Sim.Instances)
-                    instance.Context.Cores.LockReading(delegate()
-                    {
-                        foreach (OpCore core in instance.Context.Cores)
-                            if (core.User.Settings.Operation == TextSearch.Text)
-                            {
-                                TargetID = core.Network.OpID;
-                                break;
-                            }
-                    });
+                if (RadioOp.Checked)
+                    foreach (SimInstance instance in Sim.Instances)
+                        instance.Context.Cores.LockReading(delegate()
+                        {
+                            foreach (OpCore core in instance.Context.Cores)
+                                if (core.Profile.Settings.Operation == TextSearch.Text)
+                                {
+                                    TargetID = core.Network.OpID;
+                                    break;
+                                }
+                        });
+            }
 
             if (TargetID == 0)
             {

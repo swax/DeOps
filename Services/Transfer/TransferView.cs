@@ -28,7 +28,7 @@ namespace RiseOp.Services.Transfer
             RefreshView();
 
 
-            Text = Transfers.Core.Links.GetName(Transfers.Core.UserID) + "'s Transfers";
+            Text = Transfers.Core.Trust.GetName(Transfers.Core.UserID) + "'s Transfers";
         }
 
         private void FastTimer_Tick(object sender, EventArgs e)
@@ -47,7 +47,7 @@ namespace RiseOp.Services.Transfer
 
                 if (node == null)
                 {
-                    string who = Transfers.Core.Links.GetName(download.Target);
+                    string who = Transfers.Core.Trust.GetName(download.Target);
                     DownloadList.Nodes.Add(new DownloadNode(who, download));
                 }
                 else

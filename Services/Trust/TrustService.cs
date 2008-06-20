@@ -54,7 +54,7 @@ namespace RiseOp.Services.Trust
         internal TrustService(OpCore core)
         {
             Core = core;
-            Core.Links = this;
+            Core.Trust = this;
 
             Store = Core.Network.Store;
             Network = Core.Network;
@@ -73,12 +73,12 @@ namespace RiseOp.Services.Trust
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
             Cache.Load();
 
-            ProjectNames.SafeAdd(0, Core.User.Settings.Operation);
+            ProjectNames.SafeAdd(0, Core.Profile.Settings.Operation);
 
-            LinkPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
+            LinkPath = Core.Profile.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
             Directory.CreateDirectory(LinkPath);
 
-            LocalFileKey = Core.User.Settings.FileKey;
+            LocalFileKey = Core.Profile.Settings.FileKey;
 
             LoadUplinkReqs();
 
@@ -88,13 +88,13 @@ namespace RiseOp.Services.Trust
 
             if (LocalTrust == null)
             {
-                LocalTrust = new OpTrust(new OpVersionedFile(Core.User.Settings.KeyPublic));
+                LocalTrust = new OpTrust(new OpVersionedFile(Core.Profile.Settings.KeyPublic));
                 TrustMap.SafeAdd(Core.UserID, LocalTrust);
             }
 
             if (!LocalTrust.Loaded)
             {
-                LocalTrust.Name = Core.User.Settings.UserName;
+                LocalTrust.Name = Core.Profile.Settings.UserName;
                 LocalTrust.AddProject(0, true); // operation
 
                 SaveLocal();
@@ -207,6 +207,9 @@ namespace RiseOp.Services.Trust
                         return;
                 }
 
+                if (!Utilities.VerifyPassphrase(Core, ThreatLevel.Medium))
+                    return;
+
                 LocalTrust.AddProject(project, true);
                 localLink.ResetUplink();
                 localLink.Uplink = remoteLink;
@@ -237,13 +240,13 @@ namespace RiseOp.Services.Trust
             request.Target = remoteLink.Trust.File.Key;
             request.TargetID = remoteLink.UserID;
 
-            byte[] signed = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, request);
+            byte[] signed = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, request);
 
             if(Network.Established)
                 Store.PublishNetwork(request.TargetID, ServiceID, DataTypeFile, signed);
 
             // store locally
-            Process_UplinkReq(null, new SignedData(Network.Protocol, Core.User.Settings.KeyPair, request), request);
+            Process_UplinkReq(null, new SignedData(Network.Protocol, Core.Profile.Settings.KeyPair, request), request);
 
             // publish at neighbors so they are aware of request status
             List<LocationData> locations = new List<LocationData>();
@@ -270,6 +273,10 @@ namespace RiseOp.Services.Trust
 
                 if (!localLink.Downlinks.Contains(remoteLink))
                     throw new Exception(GetName(key) + " does not trust you");
+
+                if (!Utilities.VerifyPassphrase(Core, ThreatLevel.Medium))
+                    return;
+
 
                 if (!localLink.Confirmed.Contains(remoteLink.UserID))
                     localLink.Confirmed.Add(remoteLink.UserID);
@@ -310,6 +317,10 @@ namespace RiseOp.Services.Trust
 
                 if (!unlinkUp && !unlinkDown)
                     throw new Exception("Cannot unlink from node");
+
+                if (!Utilities.VerifyPassphrase(Core, ThreatLevel.Medium))
+                    return;
+
 
                 // make sure old links are notified of change
                 List<LocationData> locations = new List<LocationData>();
@@ -612,11 +623,11 @@ namespace RiseOp.Services.Trust
                         project.Name = GetProjectName(link.Project);
 
                         if (link.Project == 0)
-                            project.UserName = LocalTrust.Name;
+                            project.UserName = Core.Profile.Settings.UserName;
 
                         project.UserTitle = link.Title;
 
-                        byte[] packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, project);
+                        byte[] packet = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, project);
                         stream.Write(packet, 0, packet.Length);
 
 
@@ -624,7 +635,7 @@ namespace RiseOp.Services.Trust
                         if (link.Uplink != null)
                         {
                             LinkData data = new LinkData(link.Project, link.Uplink.Trust.File.Key, true);
-                            packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, data);
+                            packet = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, data);
                             stream.Write(packet, 0, packet.Length);
                         }
 
@@ -633,7 +644,7 @@ namespace RiseOp.Services.Trust
                             if (link.Confirmed.Contains(downlink.UserID))
                             {
                                 LinkData data = new LinkData(link.Project, downlink.Trust.File.Key, false);
-                                packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, data);
+                                packet = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, data);
                                 stream.Write(packet, 0, packet.Length);
                             }
                     }
@@ -1083,6 +1094,9 @@ namespace RiseOp.Services.Trust
 
         internal string GetProjectName(uint id)
         {
+            if (id == 0)
+                return Core.Profile.Settings.Operation;
+
             string name = null;
             if (ProjectNames.SafeTryGetValue(id, out name))
                 if (name.Trim() != "")

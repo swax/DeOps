@@ -57,7 +57,7 @@ namespace RiseOp.Services.Board
             Network = Core.Network;
             Protocol = Network.Protocol;
             Store    = Network.Store;
-            Links = Core.Links;
+            Links = Core.Trust;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
@@ -76,9 +76,9 @@ namespace RiseOp.Services.Board
             if (Core.Sim != null)
                 PruneSize = 16;
 
-            LocalFileKey = Core.User.Settings.FileKey;
+            LocalFileKey = Core.Profile.Settings.FileKey;
 
-            BoardPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
+            BoardPath = Core.Profile.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
 
             if (!Directory.Exists(BoardPath))
                 Directory.CreateDirectory(BoardPath);
@@ -158,7 +158,7 @@ namespace RiseOp.Services.Board
                 if (BoardMap.Count > PruneSize)
                 {
                     List<ulong> localRegion = new List<ulong>();
-                    foreach (uint project in Core.Links.LocalTrust.Links.Keys )
+                    foreach (uint project in Core.Trust.LocalTrust.Links.Keys )
                         localRegion.AddRange(GetBoardRegion(Core.UserID, project, ScopeType.All));
 
                     foreach (OpBoard board in BoardMap.Values)
@@ -382,7 +382,7 @@ namespace RiseOp.Services.Board
             // post header
             PostHeader header = new PostHeader();
             
-            header.Source = Core.User.Settings.KeyPublic;
+            header.Source = Core.Profile.Settings.KeyPublic;
             header.SourceID = Core.UserID;
 
             header.Target = Core.KeyMap[id];
@@ -473,7 +473,7 @@ namespace RiseOp.Services.Board
                 return;
             }
 
-            CachePost(new SignedData(Protocol, Core.User.Settings.KeyPair, header), header);
+            CachePost(new SignedData(Protocol, Core.Profile.Settings.KeyPair, header), header);
 
             // publish to network and local region of target
             OpPost post = GetPost(header);

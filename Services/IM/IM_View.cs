@@ -40,7 +40,7 @@ namespace RiseOp.Services.IM
             InitializeComponent();
 
             IM    = im;
-            Links = IM.Core.Links;
+            Links = IM.Core.Trust;
             Core  = IM.Core;
             Locations = IM.Core.Locations;
             UserID = key;
@@ -70,11 +70,10 @@ namespace RiseOp.Services.IM
         {
             InputControl.SendMessage += new TextInput.SendMessageHandler(InputControl_SendMessage);
 
-            InputControl.Focus();
-            InputControl.InputBox.Focus();
-
             IM_StatusUpdate(UserID);
             DisplayLog();
+
+            InputControl.InputBox.Select();
 
             if (External != null)
             {

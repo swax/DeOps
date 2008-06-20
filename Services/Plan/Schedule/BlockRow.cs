@@ -123,7 +123,7 @@ namespace RiseOp.Services.Plan
             GoalAreas.Clear();
 
 
-            Uplinks = View.Core.Links.GetUnconfirmedUplinkIDs(UserID, View.ProjectID);
+            Uplinks = View.Core.Trust.GetUnconfirmedUplinkIDs(UserID, View.ProjectID);
 
             // upnodes just used for scope calc now
             List<PlanNode> upnodes = new List<PlanNode>();
@@ -616,7 +616,7 @@ namespace RiseOp.Services.Plan
             bool good = false;
             StringBuilder text = new StringBuilder(100);
 
-            text.Append(View.Core.Links.GetName(Node.Link.UserID));
+            text.Append(View.Core.Trust.GetName(Node.Link.UserID));
             //text.Append(" - ");
 
             //DateTime start = View.StartTime;

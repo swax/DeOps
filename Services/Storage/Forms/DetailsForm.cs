@@ -27,7 +27,7 @@ namespace RiseOp.Services.Storage
             InitializeComponent();
 
             View = view;
-            Links = View.Links;
+            Links = View.Trust;
 
             TargetFolder = folder;
             TargetFile = file;
@@ -46,7 +46,7 @@ namespace RiseOp.Services.Storage
             InitializeComponent();
 
             View = view;
-            Links = View.Links;
+            Links = View.Trust;
             TargetFolder = folder;
 
             EnableControls(View.Working != null);

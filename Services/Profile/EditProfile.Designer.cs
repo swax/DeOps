@@ -95,6 +95,7 @@ namespace RiseOp.Services.Profile
             this.ValueTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
+            this.ValueTextBox.BackColor = System.Drawing.Color.WhiteSmoke;
             this.ValueTextBox.Location = new System.Drawing.Point(15, 116);
             this.ValueTextBox.Multiline = true;
             this.ValueTextBox.Name = "ValueTextBox";
@@ -176,7 +177,7 @@ namespace RiseOp.Services.Profile
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CancelButton = this.ButtonCancel;
             this.ClientSize = new System.Drawing.Size(256, 313);
             this.Controls.Add(this.LinkPreview);

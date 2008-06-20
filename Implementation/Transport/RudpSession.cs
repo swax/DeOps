@@ -86,7 +86,7 @@ namespace RiseOp.Implementation.Transport
             NegotiateTimeout = Core.TimeNow.AddSeconds(10);
             Startup = Core.TimeNow;
 
-            Name = Core.Links.GetName(UserID);
+            Name = Core.Trust.GetName(UserID);
 
             //DebugWriter = new FileStream("Log " + Network.Profile.ScreenName + "-" + Buddy.ScreenName + "-" + Comm.PeerID.ToString() + ".txt", FileMode.CreateNew, FileAccess.Write);
 		}
@@ -321,8 +321,8 @@ namespace RiseOp.Implementation.Transport
 		internal void Send_KeyAck()
 		{
 			KeyAck keyAck       = new KeyAck();
-			keyAck.SenderPubKey = Core.User.Settings.KeyPair.ExportParameters(false);
-            keyAck.Name         = Core.User.Settings.UserName;
+			keyAck.SenderPubKey = Core.Profile.Settings.KeyPair.ExportParameters(false);
+            keyAck.Name         = Core.Profile.Settings.UserName;
 
 			Log("Key Ack Sent");
 
@@ -376,7 +376,7 @@ namespace RiseOp.Implementation.Transport
 
             Log("Session Request Received");
 
-            byte[] sessionKey = Core.User.Settings.KeyPair.Decrypt(request.EncryptedKey, false);
+            byte[] sessionKey = Core.Profile.Settings.KeyPair.Decrypt(request.EncryptedKey, false);
 
             // new connection
             if (OutboundEnc == null)

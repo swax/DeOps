@@ -83,10 +83,10 @@ namespace RiseOp.Implementation.Dht
                 GlobalConfig = GlobalSettings.Load(this);
 
             Local = new DhtClient();
-            Local.UserID = IsGlobal ? GlobalConfig.UserID : Utilities.KeytoID(Core.User.Settings.KeyPair.ExportParameters(false));
+            Local.UserID = IsGlobal ? GlobalConfig.UserID : Utilities.KeytoID(Core.Profile.Settings.KeyPair.ExportParameters(false));
             Local.ClientID = (ushort) Core.RndGen.Next(1, ushort.MaxValue);
 
-            OpID = IsGlobal ? 0 : Utilities.KeytoID(Core.User.Settings.OpKey.Key);
+            OpID = IsGlobal ? 0 : Utilities.KeytoID(Core.Profile.Settings.OpKey.Key);
 
             // load encryption
             if (IsGlobal)
@@ -98,7 +98,7 @@ namespace RiseOp.Implementation.Dht
                                             0xf9,0x73,0x9f,0x52,0xd6,0xf4,0x34,0x0e};
             }
             else
-                OriginalCrypt = Core.User.Settings.OpKey;
+                OriginalCrypt = Core.Profile.Settings.OpKey;
 
 
             AugmentedCrypt = new RijndaelManaged();
@@ -157,7 +157,7 @@ namespace RiseOp.Implementation.Dht
                 if(IsGlobal)
                     GlobalConfig.Save(Core);
                 else
-                    Core.User.Save();
+                    Core.Profile.Save();
 
                 NextSaveCache = Core.TimeNow.AddMinutes(5);
             }
@@ -195,7 +195,9 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
-        int ThinkOnline = 0;
+        
+        const int OnlineRetries = 3;
+        int ThinkOnline = OnlineRetries;
         DateTime NextOnlineCheck;
 
         void GlobalBootstrap()
@@ -208,6 +210,7 @@ namespace RiseOp.Implementation.Dht
 
 
             // ensure that if re-connected at anytime then re-connect to network is fast
+            // (only called by global network, and only when it's not responsive)
             if (Core.Sim == null)
             {
                 // ThinkOnline state changed to connected then retry timers reset
@@ -347,11 +350,11 @@ namespace RiseOp.Implementation.Dht
                     }
                 }
 
-                if(ThinkOnline < 3)
+                if (ThinkOnline < OnlineRetries)
                     ThinkOnline++;
             }
 
-            // not success, try another random site
+            // not success, try another random site, quickly (3 times) then retry will be 1 min
             else if (ThinkOnline > 0)
             {
                 ThinkOnline--;
@@ -780,11 +783,11 @@ namespace RiseOp.Implementation.Dht
             Debug.Assert(contact.TunnelClient != null && contact.TunnelServer != null);
             Debug.Assert(Core.Context.Global != null);
             Debug.Assert(!IsGlobal);
-            Debug.Assert(Core.User.Settings.OpAccess != AccessType.Secret);
+            Debug.Assert(Core.Profile.Settings.OpAccess != AccessType.Secret);
 
             if (IsGlobal ||
                 Core.Context.Global == null || 
-                Core.User.Settings.OpAccess == AccessType.Secret)
+                Core.Profile.Settings.OpAccess == AccessType.Secret)
                 return;
 
             OpCore global = Core.Context.Global;
@@ -1321,6 +1324,28 @@ namespace RiseOp.Implementation.Dht
             {
                 // global proxies should remove themselves from routing by timing out
             }
+        }
+
+        internal string GetLabel()
+        {
+            string label = "";
+
+            if (IsGlobal)
+            {
+                label += "Global ";
+
+                Core.Context.Cores.LockReading(delegate()
+                {
+                    foreach (OpCore core in Core.Context.Cores)
+                        label += core.Profile.Settings.UserName + ", ";
+                });
+
+                label = label.TrimEnd(',', ' ');
+            }
+            else
+                label += Core.Profile.Settings.UserName;
+
+            return label;
         }
     }
 

@@ -45,6 +45,16 @@ namespace RiseOp.Interface.Tools
 		/// </summary>
 		private System.ComponentModel.Container components = null;
 
+
+        internal static void Show(OpCore core)
+        {
+            if (core.GuiInternal == null)
+                core.GuiInternal = new InternalsForm(core);
+
+            core.GuiInternal.Show();
+            core.GuiInternal.Activate();
+        }
+
         internal InternalsForm(OpCore core)
 		{
 			//
@@ -58,10 +68,7 @@ namespace RiseOp.Interface.Tools
             Mail = core.GetService("Mail") as MailService;
             Profiles = core.GetService("Profile") as ProfileService;
 
-            if (Core.User == null)
-                Text = "Global Internals (" + Core.Context.LocalIP.ToString() + ")";
-            else
-                Text = "Internals (" + Core.User.Settings.UserName + ")";
+            Text = "Internals (" + Core.Network.GetLabel() + ")";
 
 			
 			treeStructure.Nodes.Add( new StructureNode("", new ShowDelegate(ShowNone), null));
@@ -190,7 +197,7 @@ namespace RiseOp.Interface.Tools
             // 
             // treeStructure
             // 
-            this.treeStructure.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.treeStructure.BackColor = System.Drawing.Color.WhiteSmoke;
             this.treeStructure.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.treeStructure.Dock = System.Windows.Forms.DockStyle.Left;
             this.treeStructure.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -287,12 +294,12 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Property", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
-            listValues.Items.Add(new ListViewItem(new string[] { "ProfilePath", xStr(Core.User.ProfilePath) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "Operation", xStr(Core.User.Settings.Operation) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "ScreenName", xStr(Core.User.Settings.UserName) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "OpPortTcp", xStr(Core.User.Settings.TcpPort) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "OpPortUdp", xStr(Core.User.Settings.UdpPort) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "OpAccess", xStr(Core.User.Settings.OpAccess) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "ProfilePath", xStr(Core.Profile.ProfilePath) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "Operation", xStr(Core.Profile.Settings.Operation) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "ScreenName", xStr(Core.Profile.Settings.UserName) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "OpPortTcp", xStr(Core.Profile.Settings.TcpPort) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "OpPortUdp", xStr(Core.Profile.Settings.UdpPort) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "OpAccess", xStr(Core.Profile.Settings.OpAccess) }));
         }
 
         internal void LoadNetwork(TreeNodeCollection root, string name, DhtNetwork network)
@@ -817,11 +824,11 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Property", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
-            listValues.Items.Add(new ListViewItem(new string[] { "LocalLink",       xStr(Core.Links.GetName(Core.UserID)) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "ProjectRoots", xStr(Core.Links.ProjectRoots.SafeCount) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "LinkMap",         xStr(Core.Links.TrustMap.SafeCount) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "ProjectNames",    xStr(Core.Links.ProjectNames.SafeCount) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "LinkPath",        xStr(Core.Links.LinkPath) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "LocalLink",       xStr(Core.Trust.GetName(Core.UserID)) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "ProjectRoots", xStr(Core.Trust.ProjectRoots.SafeCount) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "LinkMap",         xStr(Core.Trust.TrustMap.SafeCount) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "ProjectNames",    xStr(Core.Trust.ProjectNames.SafeCount) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "LinkPath",        xStr(Core.Trust.LinkPath) }));
         }
 
         internal void ShowLinkMap(object pass)
@@ -848,9 +855,9 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Path", 100, HorizontalAlignment.Left);
 
 
-            Core.Links.TrustMap.LockReading(delegate()
+            Core.Trust.TrustMap.LockReading(delegate()
             {
-                foreach (OpTrust trust in Core.Links.TrustMap.Values)
+                foreach (OpTrust trust in Core.Trust.TrustMap.Values)
                 {
                     string projects = "";
                     string titles = "";
@@ -897,7 +904,7 @@ namespace RiseOp.Interface.Tools
 
                     ListViewItem item = new ListViewItem(new string[]
 					{
-						xStr(Core.Links.GetName(trust.UserID)),		
+						xStr(Core.Trust.GetName(trust.UserID)),		
 						IDtoStr(trust.UserID),
                         xStr(trust.Loaded),	
 						xStr(trust.InLocalLinkTree),
@@ -922,7 +929,7 @@ namespace RiseOp.Interface.Tools
                         item.SubItems[12] = new ListViewItem.ListViewSubItem(item, xStr(trust.File.Header.Version));
                         item.SubItems[13] = new ListViewItem.ListViewSubItem(item, Utilities.BytestoHex(trust.File.Header.FileHash));
                         item.SubItems[14] = new ListViewItem.ListViewSubItem(item, xStr(trust.File.Header.FileSize));
-                        item.SubItems[15] = new ListViewItem.ListViewSubItem(item, xStr(Core.Links.Cache.GetFilePath(trust.File.Header)));
+                        item.SubItems[15] = new ListViewItem.ListViewSubItem(item, xStr(Core.Trust.Cache.GetFilePath(trust.File.Header)));
                     }
 
                     listValues.Items.Add(item);
@@ -1142,12 +1149,12 @@ namespace RiseOp.Interface.Tools
 
         private string GetLinkName(ulong key)
         {
-            return Core.Links.GetName(key);;
+            return Core.Trust.GetName(key);;
         }
 
         private string GetProjectName(uint id)
         {
-            string name = Core.Links.GetProjectName(id);
+            string name = Core.Trust.GetProjectName(id);
 
             return name;
         }
@@ -1160,19 +1167,19 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("ID", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Name", 300, HorizontalAlignment.Left);
 
-            Core.Links.ProjectRoots.LockReading(delegate()
+            Core.Trust.ProjectRoots.LockReading(delegate()
             {
-                foreach (uint id in Core.Links.ProjectRoots.Keys)
+                foreach (uint id in Core.Trust.ProjectRoots.Keys)
                 {
-                    string project = Core.Links.GetProjectName(id);
+                    string project = Core.Trust.GetProjectName(id);
                     string names = "";
 
-                    ThreadedList<OpLink> roots = Core.Links.ProjectRoots[id];
+                    ThreadedList<OpLink> roots = Core.Trust.ProjectRoots[id];
 
                     roots.LockReading(delegate()
                     {
                         foreach (OpLink link in roots)
-                            names += xStr(Core.Links.GetName(link.UserID)) + ", ";
+                            names += xStr(Core.Trust.GetName(link.UserID)) + ", ";
                     });
 
                     listValues.Items.Add(new ListViewItem(new string[] { project, names }));
@@ -1188,11 +1195,11 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("ID", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Name", 300, HorizontalAlignment.Left);
 
-            Core.Links.ProjectNames.LockReading(delegate()
+            Core.Trust.ProjectNames.LockReading(delegate()
             {
-                foreach (uint id in Core.Links.ProjectNames.Keys)
+                foreach (uint id in Core.Trust.ProjectNames.Keys)
                 {
-                    listValues.Items.Add(new ListViewItem(new string[] { id.ToString(), xStr(Core.Links.GetProjectName(id)) }));
+                    listValues.Items.Add(new ListViewItem(new string[] { id.ToString(), xStr(Core.Trust.GetProjectName(id)) }));
                 }
             });
 
@@ -1402,9 +1409,7 @@ namespace RiseOp.Interface.Tools
 
             return sub;
         }
-
-		
-	}
+    }
 
     internal class LogInfo
     {

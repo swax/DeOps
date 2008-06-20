@@ -27,7 +27,7 @@ namespace RiseOp.Interface
 
         private void ButtonOK_Click(object sender, EventArgs e)
         {
-            ProjectID = Core.Links.CreateProject(NameBox.Text);
+            ProjectID = Core.Trust.CreateProject(NameBox.Text);
 
             DialogResult = DialogResult.OK;
             Close();

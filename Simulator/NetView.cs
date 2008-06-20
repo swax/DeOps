@@ -213,7 +213,7 @@ namespace RiseOp.Simulator
                 selectBox.Inflate(2,2);
                 buffer.DrawEllipse(BlackPen, selectBox);
 
-                string name = networks[SelectedID].Core.User.Settings.UserName;
+                string name = networks[SelectedID].Core.Profile.Settings.UserName;
                 name += " " + Utilities.IDtoBin(networks[SelectedID].Local.UserID);
                 name += ShowInbound ? " Inbound Traffic" : " Outbound Traffic";
 
@@ -239,9 +239,9 @@ namespace RiseOp.Simulator
 
             // link
             if(!found)
-                core.Links.TrustMap.LockReading(delegate()
+                core.Trust.TrustMap.LockReading(delegate()
                 {
-                    foreach (OpTrust trust in core.Links.TrustMap.Values)
+                    foreach (OpTrust trust in core.Trust.TrustMap.Values)
                         if (trust.Loaded && Utilities.MemCompare(trust.File.Header.FileHash, TrackHash))
                             found = true;
                 });
@@ -587,7 +587,7 @@ namespace RiseOp.Simulator
                                     foreach (OpCore core in instance.Context.Cores)
                                         if (core.UserID == id)
                                         {
-                                            name = core.User.Settings.UserName;
+                                            name = core.Profile.Settings.UserName;
                                             break;
                                         }
                                 });

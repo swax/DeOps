@@ -89,7 +89,7 @@ namespace RiseOp.Services.Chat
 
             if (!CustomButton.Checked)
             {
-                title += Chat.Core.Links.GetProjectName(ProjectID) + " ";
+                title += Chat.Core.Trust.GetProjectName(ProjectID) + " ";
 
                 if (LocalButton.Checked)
                     title += "Local ";
@@ -350,7 +350,7 @@ namespace RiseOp.Services.Chat
             if(Custom == null)
                 return;
 
-            AddLinks add = new AddLinks(Chat.Core.Links, ProjectID);
+            AddLinks add = new AddLinks(Chat.Core.Trust, ProjectID);
             add.Text = "Invite People";
             add.AddButton.Text = "Invite";
 
@@ -362,7 +362,7 @@ namespace RiseOp.Services.Chat
 
         void Chat_Invited(ulong inviter, ChatRoom room)
         {
-            if (MessageBox.Show("You have been invited by " + Chat.Core.Links.GetName(inviter) + " to the room\r\n" + room.Title + "\r\nJoin now?", "Invite", MessageBoxButtons.YesNo) != DialogResult.Yes)
+            if (MessageBox.Show("You have been invited by " + Chat.Core.Trust.GetName(inviter) + " to the room\r\n" + room.Title + "\r\nJoin now?", "Invite", MessageBoxButtons.YesNo) != DialogResult.Yes)
                 return;
 
             Chat.Core.RunInCoreBlocked(delegate()

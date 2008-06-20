@@ -38,7 +38,7 @@ namespace RiseOp.Services.Storage
         internal G2Protocol Protocol;
         internal DhtNetwork Network;
         internal DhtStore Store;
-        internal TrustService Links;
+        internal TrustService Trust;
 
         bool Loading = true;
         internal string DataPath;
@@ -77,7 +77,7 @@ namespace RiseOp.Services.Storage
             Network = core.Network;
             Protocol = Network.Protocol;
             Store = Network.Store;
-            Links = Core.Links;
+            Trust = Core.Trust;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
@@ -87,13 +87,13 @@ namespace RiseOp.Services.Storage
             Core.Transfers.FileSearch[ServiceID, FileTypeData] += new FileSearchHandler(Transfers_DataFileSearch);
             Core.Transfers.FileRequest[ServiceID, FileTypeData] += new FileRequestHandler(Transfers_DataFileRequest);
 
-            Core.Links.LinkUpdate += new LinkUpdateHandler(Links_LinkUpdate);
+            Core.Trust.LinkUpdate += new LinkUpdateHandler(Trust_Update);
 
-            LocalFileKey = Core.User.Settings.FileKey;
+            LocalFileKey = Core.Profile.Settings.FileKey;
             FileCrypt.Key = LocalFileKey;
             FileCrypt.IV = new byte[FileCrypt.IV.Length];
 
-            string rootpath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString() + Path.DirectorySeparatorChar;
+            string rootpath = Core.Profile.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString() + Path.DirectorySeparatorChar;
             DataPath = rootpath + FileTypeData.ToString();
             WorkingPath = rootpath + FileTypeWorking.ToString();
             ResourcePath = rootpath + FileTypeResource.ToString();
@@ -115,7 +115,7 @@ namespace RiseOp.Services.Storage
             // load working headers
             OpStorage local = GetStorage(Core.UserID);
 
-            foreach (uint project in Links.LocalTrust.Links.Keys)
+            foreach (uint project in Trust.LocalTrust.Links.Keys)
             {
                 if (local != null)
                     LoadHeaderFile(GetWorkingPath(project), local, false, true);
@@ -123,7 +123,7 @@ namespace RiseOp.Services.Storage
                 Working[project] = new WorkingStorage(this, project);
 
                 bool doSave = false;
-                foreach (ulong higher in Links.GetAutoInheritIDs(Core.UserID, project))
+                foreach (ulong higher in Trust.GetAutoInheritIDs(Core.UserID, project))
                     if (Working[project].RefreshHigherChanges(higher))
                         doSave = true;
 
@@ -155,12 +155,12 @@ namespace RiseOp.Services.Storage
             Working.Clear();
 
             // delete completely folders made for other user's storages
-            Links.ProjectRoots.LockReading(delegate()
+            Trust.ProjectRoots.LockReading(delegate()
             {
-                foreach (uint project in Links.ProjectRoots.Keys)
+                foreach (uint project in Trust.ProjectRoots.Keys)
                 {
-                    string path = Core.User.RootPath + Path.DirectorySeparatorChar + Links.GetProjectName(project) + " Storage";
-                    string local = Links.GetName(Core.UserID);
+                    string path = Core.Profile.RootPath + Path.DirectorySeparatorChar + Trust.GetProjectName(project) + " Storage";
+                    string local = Trust.GetName(Core.UserID);
 
                     if (Directory.Exists(path))
                         foreach (string dir in Directory.GetDirectories(path))
@@ -203,7 +203,7 @@ namespace RiseOp.Services.Storage
             Core.Transfers.FileSearch[ServiceID, FileTypeData] -= new FileSearchHandler(Transfers_DataFileSearch);
             Core.Transfers.FileRequest[ServiceID, FileTypeData] -= new FileRequestHandler(Transfers_DataFileRequest);
 
-            Core.Links.LinkUpdate -= new LinkUpdateHandler(Links_LinkUpdate);
+            Core.Trust.LinkUpdate -= new LinkUpdateHandler(Trust_Update);
         }
 
         void Core_SecondTimer()
@@ -357,7 +357,7 @@ namespace RiseOp.Services.Storage
                 OpVersionedFile vfile = Cache.UpdateLocal(tempPath, key, BitConverter.GetBytes(Core.TimeNow.ToUniversalTime().ToBinary()));
                 SavingLocal = false;
 
-                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.UserID, ServiceID, FileTypeCache, vfile.SignedHeader);
+                Store.PublishDirect(Core.Trust.GetLocsAbove(), Core.UserID, ServiceID, FileTypeCache, vfile.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -384,11 +384,11 @@ namespace RiseOp.Services.Storage
             LoadHeaderFile(GetFilePath(newStorage), newStorage, false, false);
 
             // record changes of higher nodes for auto-integration purposes
-            Links.ProjectRoots.LockReading(delegate()
+            Trust.ProjectRoots.LockReading(delegate()
             {
-                foreach (uint project in Links.ProjectRoots.Keys)
+                foreach (uint project in Trust.ProjectRoots.Keys)
                 {
-                    List<ulong> inheritIDs = Links.GetAutoInheritIDs(Core.UserID, project);
+                    List<ulong> inheritIDs = Trust.GetAutoInheritIDs(Core.UserID, project);
 
                     if (Core.UserID == newStorage.UserID || inheritIDs.Contains(newStorage.UserID))
                         // doesnt get called on startup because working not initialized before headers are loaded
@@ -407,11 +407,11 @@ namespace RiseOp.Services.Storage
             {
                 List<LocationData> locations = new List<LocationData>();
 
-                Links.ProjectRoots.LockReading(delegate()
+                Trust.ProjectRoots.LockReading(delegate()
                 {
-                    foreach (uint project in Links.ProjectRoots.Keys)
-                        if (newStorage.UserID == Core.UserID || Links.IsHigher(newStorage.UserID, project))
-                            Links.GetLocsBelow(Core.UserID, project, locations);
+                    foreach (uint project in Trust.ProjectRoots.Keys)
+                        if (newStorage.UserID == Core.UserID || Trust.IsHigher(newStorage.UserID, project))
+                            Trust.GetLocsBelow(Core.UserID, project, locations);
                 });
 
                 Store.PublishDirect(locations, newStorage.UserID, ServiceID, FileTypeCache, file.SignedHeader);
@@ -421,18 +421,18 @@ namespace RiseOp.Services.Storage
                 Core.RunInGuiThread(StorageUpdate, newStorage);
 
             if (Core.NewsWorthy(newStorage.UserID, 0, false))
-                Core.MakeNews("Storage updated by " + Links.GetName(newStorage.UserID), newStorage.UserID, 0, false, StorageRes.Icon, Menu_View);
+                Core.MakeNews("Storage updated by " + Trust.GetName(newStorage.UserID), newStorage.UserID, 0, false, StorageRes.Icon, Menu_View);
 
         }
 
-        void Links_LinkUpdate(OpTrust trust)
+        void Trust_Update(OpTrust trust)
         {
             // update working projects (add)
             if (trust.UserID == Core.UserID)
             {
                 OpStorage local = GetStorage(Core.UserID);
 
-                foreach (uint project in Links.LocalTrust.Links.Keys)
+                foreach (uint project in Trust.LocalTrust.Links.Keys)
                     if (!Working.ContainsKey(project))
                     {
                         if(local != null)
@@ -444,11 +444,11 @@ namespace RiseOp.Services.Storage
 
             // remove all higher changes, reload with new highers (cause link changed
             foreach (WorkingStorage working in Working.Values )
-                if (Core.UserID == trust.UserID || Links.IsHigher(trust.UserID, working.ProjectID))
+                if (Core.UserID == trust.UserID || Trust.IsHigher(trust.UserID, working.ProjectID))
                 {
                     working.RemoveAllHigherChanges();
 
-                    foreach (ulong uplink in Links.GetAutoInheritIDs(Core.UserID, working.ProjectID))
+                    foreach (ulong uplink in Trust.GetAutoInheritIDs(Core.UserID, working.ProjectID))
                         working.RefreshHigherChanges(uplink);
                 }
         }
@@ -572,7 +572,7 @@ namespace RiseOp.Services.Storage
                         StorageRoot packet = StorageRoot.Decode(header);
 
                         local = GetHigherRegion(storage.UserID, packet.ProjectID).Contains(Core.UserID) ||
-                            Links.GetDownlinkIDs(storage.UserID, packet.ProjectID, 1).Contains(Core.UserID);
+                            Trust.GetDownlinkIDs(storage.UserID, packet.ProjectID, 1).Contains(Core.UserID);
                     }
 
                     if (header.Name == StoragePacket.File)
@@ -882,7 +882,7 @@ namespace RiseOp.Services.Storage
 
         internal string GetRootPath(ulong user, uint project)
         {
-            return Core.User.RootPath + Path.DirectorySeparatorChar + Links.GetProjectName(project) + " Storage" + Path.DirectorySeparatorChar + Links.GetName(user);
+            return Core.Profile.RootPath + Path.DirectorySeparatorChar + Trust.GetProjectName(project) + " Storage" + Path.DirectorySeparatorChar + Trust.GetName(user);
         }
 
         internal WorkingStorage Discard(uint project)
@@ -1257,9 +1257,9 @@ namespace RiseOp.Services.Storage
 
         internal List<ulong> GetHigherRegion(ulong id, uint project)
         {
-            List<ulong> highers = Links.GetUplinkIDs(id, project); // works for loops
+            List<ulong> highers = Trust.GetUplinkIDs(id, project); // works for loops
 
-            highers.AddRange(Links.GetAdjacentIDs(id, project));
+            highers.AddRange(Trust.GetAdjacentIDs(id, project));
 
             highers.Remove(id); // remove target
 

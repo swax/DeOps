@@ -13,14 +13,17 @@ using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 
 using RiseOp.Services;
-using RiseOp.Services.Trust;
 using RiseOp.Services.Chat;
 using RiseOp.Services.IM;
-using RiseOp.Services.Mail;
 using RiseOp.Services.Location;
+using RiseOp.Services.Mail;
+using RiseOp.Services.Transfer;
+using RiseOp.Services.Trust;
 
+using RiseOp.Interface.Tools;
 using RiseOp.Interface.TLVex;
 using RiseOp.Interface.Views;
+
 
 namespace RiseOp.Interface
 {
@@ -128,13 +131,13 @@ namespace RiseOp.Interface
             InitializeComponent();
             
             Core = core;
-            Trust = Core.Links;
+            Trust = Core.Trust;
 
             ShowExternal += new ShowExternalHandler(OnShowExternal);
             ShowInternal += new ShowInternalHandler(OnShowInternal);
 
             Core.NewsUpdate += new NewsUpdateHandler(Core_NewsUpdate);
-            Trust.GuiUpdate  += new LinkGuiUpdateHandler(Links_Update);
+            Trust.GuiUpdate  += new LinkGuiUpdateHandler(Trust_Update);
             Core.Locations.GuiUpdate += new LocationGuiUpdateHandler(Location_Update);
             Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
 
@@ -152,8 +155,8 @@ namespace RiseOp.Interface
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            Text = Core.User.Settings.Operation + " - " + Core.User.Settings.UserName;
-
+            UpdateTitle();
+          
             CommandTree.Init(Trust);
             CommandTree.ShowProject(0);
 
@@ -165,6 +168,11 @@ namespace RiseOp.Interface
                 SideButton.Checked = true;
                 Left = Screen.PrimaryScreen.WorkingArea.Width - Width;
             }
+        }
+
+        private void UpdateTitle()
+        {
+            Text = Core.Profile.GetTitle();
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -190,7 +198,7 @@ namespace RiseOp.Interface
             ShowInternal -= new ShowInternalHandler(OnShowInternal);
 
             Core.NewsUpdate -= new NewsUpdateHandler(Core_NewsUpdate);
-            Trust.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
+            Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
             Core.Locations.GuiUpdate -= new LocationGuiUpdateHandler(Location_Update);
             Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
 
@@ -263,14 +271,15 @@ namespace RiseOp.Interface
             InternalPanel.Visible = true;
         }
 
-        void Links_Update(ulong key)
+        void Trust_Update(ulong key)
         {
             OpTrust trust = Trust.GetTrust(key);
 
             if (trust == null)
                 return;
 
-            
+            if (key == Core.UserID)
+                UpdateTitle();
 
             if (!Trust.ProjectRoots.SafeContainsKey(CommandTree.Project))
             {
@@ -651,67 +660,84 @@ namespace RiseOp.Interface
                 treeMenu.Show(CommandTree, e.Location);
         }
 
-#region Manage Menu
-
         private void FillManageMenu(ToolStripItemCollection items, uint project)
         {
-            items.Add("Settings", InterfaceRes.settings, ManageMenu_Settings);
-            items.Add("Invite", ChatRes.invite, ManageMenu_Invite);
-            items.Add("Tools", InterfaceRes.tools, ManageMenu_Tools);
+            // settings
+            ToolStripMenuItem settings = new ToolStripMenuItem("Settings", InterfaceRes.settings);
+
+            settings.DropDownItems.Add(new ManageItem("User", null, delegate() { new RiseOp.Interface.Settings.User(this).ShowDialog(this); }));
+            settings.DropDownItems.Add(new ManageItem("Operation", null, delegate() { new RiseOp.Interface.Settings.Operation(this).ShowDialog(this); }));
+
+            items.Add(settings);
+
+            // invite
+            items.Add(new ManageItem("Invite", ChatRes.invite, delegate()
+            {
+                if (Core.Profile.Settings.OpAccess == AccessType.Public)
+                    MessageBox.Show(this, "Give out this link to invite others \r\n \r\n riseop://" + Core.Profile.Settings.Operation, "RiseOp");
+                else
+                {
+                    InviteForm form = new InviteForm(Core);
+                    form.ShowDialog(this);
+                }
+            }));
+
+            // tools
+            ToolStripMenuItem tools = new ToolStripMenuItem("Tools", InterfaceRes.tools);
+
+            tools.DropDownItems.Add(new ManageItem("Crawler", null, delegate() { CrawlerForm.Show(Core.Network); }));
+
+            // global - crawler/graph/packets/search
+            if (Core.Context.Global != null)
+            {
+                ToolStripMenuItem global = new ToolStripMenuItem("Global", null);
+
+                DhtNetwork globalNetwork = Core.Context.Global.Network;
+
+                global.DropDownItems.Add(new ManageItem("Crawler", null, delegate() { CrawlerForm.Show(globalNetwork); }));
+                global.DropDownItems.Add(new ManageItem("Graph", null, delegate() { GraphForm.Show(globalNetwork); }));
+                global.DropDownItems.Add(new ManageItem("Packets", null, delegate() { PacketsForm.Show(globalNetwork); }));
+                global.DropDownItems.Add(new ManageItem("Search", null, delegate() { SearchForm.Show(globalNetwork); }));
+
+                tools.DropDownItems.Add(global);
+            }
+
+            tools.DropDownItems.Add(new ManageItem("Graph", null, delegate()  { GraphForm.Show(Core.Network); }));
+            tools.DropDownItems.Add(new ManageItem("Internals", null, delegate() { InternalsForm.Show(Core); }));
+            tools.DropDownItems.Add(new ManageItem("Packets", null, delegate() { PacketsForm.Show(Core.Network); }));
+            tools.DropDownItems.Add(new ManageItem("Search", null, delegate() { SearchForm.Show(Core.Network); }));        
+            tools.DropDownItems.Add(new ManageItem("Transfers", null, delegate() { new TransferView(Core.Transfers).Show(); }));
+
+            items.Add(tools);
+
+
+            // split
             items.Add(new ToolStripSeparator());
 
+            // proect options
             if (project != 0)
             {
-                if(Trust.LocalTrust.Links.ContainsKey(project))
+                if (Trust.LocalTrust.Links.ContainsKey(project))
                     items.Add("Leave Project", IMRes.redled, new EventHandler(OnProjectLeave));
                 else
                     items.Add("Join Project", IMRes.greenled, new EventHandler(OnProjectJoin));
             }
+
+            // main options
             else
             {
-                items.Add("Sign On", IMRes.greenled, ManageMenu_SignOn);
-                items.Add("Sign Off", IMRes.redled, ManageMenu_SignOff);
+                items.Add(new ManageItem("Sign On", IMRes.greenled, delegate()
+                {
+                    Core.Context.ShowLogin(null);
+                }));
+
+                items.Add(new ManageItem("Sign Off", IMRes.redled, delegate()
+                {
+                    Core.Context.ShowLogin(null);
+                    Close();
+                }));
             }
         }
-
-        void ManageMenu_Settings(object sender, EventArgs e)
-        {
-
-        }
-
-        void ManageMenu_Invite(object sender, EventArgs e)
-        {
-            if (Core.User.Settings.OpAccess == AccessType.Public)
-                MessageBox.Show("Give out this link to invite others \r\n \r\n riseop://" + Core.User.Settings.Operation);
-            else
-            {
-                InviteForm form = new InviteForm(Core);
-                form.ShowDialog(this);
-            }
-        }
-
-        void ManageMenu_Tools(object sender, EventArgs e)
-        {
-
-        }
-
-        void ManageMenu_SignOn(object sender, EventArgs e)
-        {
-            Core.Context.ShowLogin(null);
-        }
-
-        void ManageMenu_SignOff(object sender, EventArgs e)
-        {
-            Core.Context.ShowLogin(null);
-            Close();
-        }
-
-
-#endregion
-
-
-        
-
 
 
         void TreeMenu_Select(object sender, EventArgs e)
@@ -1711,6 +1737,27 @@ namespace RiseOp.Interface
 
             Font = new System.Drawing.Font("Tahoma", 8.25F);
         }
+    }
+
+    class ManageItem : ToolStripMenuItem
+    {
+        MethodInvoker Code;
+
+
+        internal ManageItem(string text, Image image, MethodInvoker code)
+            : base(text, image)
+        {
+            Code = code;
+
+            this.Click += new EventHandler(ManageItem_OnClick);
+        }
+
+        private void ManageItem_OnClick(object sender, EventArgs e)
+        {
+            Code.Invoke();
+        }
+
+
     }
 
     class ServiceNavItem : ToolStripMenuItem, IViewParams

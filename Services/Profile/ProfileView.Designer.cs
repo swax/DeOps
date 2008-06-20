@@ -44,10 +44,10 @@ namespace RiseOp.Services.Profile
             this.Browser.Location = new System.Drawing.Point(0, 0);
             this.Browser.MinimumSize = new System.Drawing.Size(20, 20);
             this.Browser.Name = "Browser";
+            this.Browser.ScriptErrorsSuppressed = true;
             this.Browser.Size = new System.Drawing.Size(216, 200);
             this.Browser.TabIndex = 0;
             this.Browser.WebBrowserShortcutsEnabled = false;
-            this.Browser.ScriptErrorsSuppressed = true;
             // 
             // RightClickMenu
             // 
@@ -55,13 +55,13 @@ namespace RiseOp.Services.Profile
             this.EditMenu});
             this.RightClickMenu.Name = "RightClickMenu";
             this.RightClickMenu.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.RightClickMenu.Size = new System.Drawing.Size(153, 48);
+            this.RightClickMenu.Size = new System.Drawing.Size(116, 26);
             this.RightClickMenu.Opening += new System.ComponentModel.CancelEventHandler(this.RightClickMenu_Opening);
             // 
             // EditMenu
             // 
             this.EditMenu.Name = "EditMenu";
-            this.EditMenu.Size = new System.Drawing.Size(152, 22);
+            this.EditMenu.Size = new System.Drawing.Size(115, 22);
             this.EditMenu.Text = "Edit...";
             this.EditMenu.Click += new System.EventHandler(this.EditMenu_Click);
             // 
@@ -69,7 +69,7 @@ namespace RiseOp.Services.Profile
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.Control;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.Controls.Add(this.Browser);
             this.Name = "ProfileView";
             this.Size = new System.Drawing.Size(216, 200);

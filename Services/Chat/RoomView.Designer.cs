@@ -59,7 +59,7 @@ namespace RiseOp.Services.Chat
             this.splitContainer1.Panel2.BackColor = System.Drawing.Color.White;
             this.splitContainer1.Panel2.Controls.Add(this.MemberTree);
             this.splitContainer1.Size = new System.Drawing.Size(315, 194);
-            this.splitContainer1.SplitterDistance = 170;
+            this.splitContainer1.SplitterDistance = 172;
             this.splitContainer1.SplitterWidth = 2;
             this.splitContainer1.TabIndex = 0;
             // 
@@ -78,8 +78,8 @@ namespace RiseOp.Services.Chat
             // splitContainer2.Panel2
             // 
             this.splitContainer2.Panel2.Controls.Add(this.InputControl);
-            this.splitContainer2.Size = new System.Drawing.Size(170, 194);
-            this.splitContainer2.SplitterDistance = 163;
+            this.splitContainer2.Size = new System.Drawing.Size(172, 194);
+            this.splitContainer2.SplitterDistance = 165;
             this.splitContainer2.SplitterWidth = 2;
             this.splitContainer2.TabIndex = 0;
             // 
@@ -92,7 +92,7 @@ namespace RiseOp.Services.Chat
             this.MessageTextBox.Location = new System.Drawing.Point(0, 0);
             this.MessageTextBox.Name = "MessageTextBox";
             this.MessageTextBox.ReadOnly = true;
-            this.MessageTextBox.Size = new System.Drawing.Size(170, 163);
+            this.MessageTextBox.Size = new System.Drawing.Size(172, 165);
             this.MessageTextBox.TabIndex = 0;
             this.MessageTextBox.Text = "";
             // 
@@ -107,7 +107,7 @@ namespace RiseOp.Services.Chat
             this.InputControl.Name = "InputControl";
             this.InputControl.ReadOnly = false;
             this.InputControl.ShowFontStrip = false;
-            this.InputControl.Size = new System.Drawing.Size(170, 29);
+            this.InputControl.Size = new System.Drawing.Size(172, 27);
             this.InputControl.TabIndex = 0;
             // 
             // MemberTree
@@ -130,18 +130,18 @@ namespace RiseOp.Services.Chat
             this.MemberTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.MemberTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.MemberTree.ShowPlusMinus = false;
-            this.MemberTree.Size = new System.Drawing.Size(143, 188);
+            this.MemberTree.Size = new System.Drawing.Size(141, 188);
             this.MemberTree.SmallImageList = null;
             this.MemberTree.StateImageList = null;
             this.MemberTree.TabIndex = 0;
-            this.MemberTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.MemberTree_MouseDoubleClick);
             this.MemberTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.MemberTree_MouseClick);
+            this.MemberTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.MemberTree_MouseDoubleClick);
             // 
             // RoomView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.Controls.Add(this.splitContainer1);
             this.Name = "RoomView";
             this.Size = new System.Drawing.Size(315, 194);

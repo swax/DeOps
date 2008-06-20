@@ -24,7 +24,7 @@ namespace RiseOp.Services.Plan
     {
         internal OpCore Core;
         internal PlanService Plans;
-        TrustService Links;
+        TrustService Trust;
 
         internal ulong UserID;
         internal uint  ProjectID;
@@ -102,7 +102,7 @@ namespace RiseOp.Services.Plan
 
             Plans = plans;
             Core = Plans.Core;
-            Links = Core.Links;
+            Trust = Core.Trust;
 
             UserID = id;
             ProjectID = project;
@@ -133,10 +133,10 @@ namespace RiseOp.Services.Plan
             if (UserID == Core.UserID)
                 title += "My ";
             else
-                title += Links.GetName(UserID) + "'s ";
+                title += Trust.GetName(UserID) + "'s ";
 
             if (ProjectID != 0)
-                title += Links.GetProjectName(ProjectID) + " ";
+                title += Trust.GetProjectName(ProjectID) + " ";
 
             title += "Schedule";
 
@@ -169,7 +169,7 @@ namespace RiseOp.Services.Plan
 
 
             // events
-            Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
+            Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
             Plans.PlanUpdate += new PlanUpdateHandler(Plans_Update);
         }
 
@@ -207,7 +207,7 @@ namespace RiseOp.Services.Plan
                     return false;
             }
 
-            Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
+            Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
             Plans.PlanUpdate -= new PlanUpdateHandler(Plans_Update);
 
             Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
@@ -299,7 +299,7 @@ namespace RiseOp.Services.Plan
      
             // nodes
             ThreadedList<OpLink> roots = null;
-            if (Links.ProjectRoots.SafeTryGetValue(ProjectID, out roots))
+            if (Trust.ProjectRoots.SafeTryGetValue(ProjectID, out roots))
                 roots.LockReading(delegate()
                 {
                     foreach (OpLink root in roots)
@@ -343,7 +343,7 @@ namespace RiseOp.Services.Plan
                 foreach (TreeListNode node in PlanStructure.Nodes)
                     if (node.GetType() == typeof(PlanNode))
                     {
-                        List<ulong> uplinks = Links.GetUnconfirmedUplinkIDs(id, ProjectID);
+                        List<ulong> uplinks = Trust.GetUnconfirmedUplinkIDs(id, ProjectID);
                         uplinks.Add(id);
                         VisiblePath((PlanNode)node, uplinks);
                     }
@@ -367,9 +367,9 @@ namespace RiseOp.Services.Plan
             node.AddSubs = true;
 
             // go through downlinks
-            foreach (ulong id in Links.GetDownlinkIDs(node.Link.UserID, ProjectID, 1))
+            foreach (ulong id in Trust.GetDownlinkIDs(node.Link.UserID, ProjectID, 1))
             {
-                OpLink link = Links.GetLink(id, ProjectID);
+                OpLink link = Trust.GetLink(id, ProjectID);
 
                 if (link == null)
                     continue;
@@ -377,7 +377,7 @@ namespace RiseOp.Services.Plan
                 // if doesnt exist search for it
                 if (!link.Trust.Loaded)
                 {
-                    Links.Research(link.UserID, ProjectID, false);
+                    Trust.Research(link.UserID, ProjectID, false);
                     continue;
                 }
 
@@ -408,10 +408,10 @@ namespace RiseOp.Services.Plan
                 ExpandPath(sub, path);
         }
 
-        void Links_Update(ulong key)
+        void Trust_Update(ulong key)
         {
             // copied from linkTree's source
-            OpLink link = Links.GetLink(key, ProjectID);
+            OpLink link = Trust.GetLink(key, ProjectID);
 
             if (link == null)
             {
@@ -588,7 +588,7 @@ namespace RiseOp.Services.Plan
         {
             Uplinks.Clear();
             Uplinks.Add(UserID);
-            Uplinks.AddRange(Links.GetUnconfirmedUplinkIDs(UserID, ProjectID));
+            Uplinks.AddRange(Trust.GetUnconfirmedUplinkIDs(UserID, ProjectID));
 
             // we show unconfirmed highers, but not unconfirmed lowers
         }
@@ -684,7 +684,7 @@ namespace RiseOp.Services.Plan
                 return;
             }
             // link research
-            Links.Research(node.Link.UserID, ProjectID, false);
+            Trust.Research(node.Link.UserID, ProjectID, false);
 
             // plan research
             Plans.Research(node.Link.UserID);
@@ -858,7 +858,7 @@ namespace RiseOp.Services.Plan
             List<int> assigned = new List<int>();
 
             // foreach self & higher
-            List<ulong> ids = Links.GetUplinkIDs(UserID, ProjectID);
+            List<ulong> ids = Trust.GetUplinkIDs(UserID, ProjectID);
             ids.Add(UserID);
 
             foreach (ulong id in ids)
@@ -1059,9 +1059,9 @@ namespace RiseOp.Services.Plan
         internal void UpdateName()
         {
             if (Link.Title != "")
-                Text = View.Core.Links.GetName(Link.UserID) + "\n" + Link.Title;
+                Text = View.Core.Trust.GetName(Link.UserID) + "\n" + Link.Title;
             else
-                Text = View.Core.Links.GetName(Link.UserID);
+                Text = View.Core.Trust.GetName(Link.UserID);
         }
 
         internal void UpdateBlock()

@@ -63,11 +63,8 @@ namespace RiseOp
             // used when creating new ident
             Protocol    = protocol;
 
-            PasswordSalt = new byte[4];
-            RNGCryptoServiceProvider rnd = new RNGCryptoServiceProvider();
-            rnd.GetBytes(PasswordSalt);
-
-           
+            SetNewPassword(password);
+        
             Init(filepath, password);
         }
 
@@ -75,7 +72,8 @@ namespace RiseOp
         {
 			ProfilePath = filepath;
 
-            PasswordKey = Utilities.GetPasswordKey(password, PasswordSalt);
+            if(PasswordKey == null)
+                PasswordKey = Utilities.GetPasswordKey(password, PasswordSalt);
             
             RootPath = Path.GetDirectoryName(filepath);
             TempPath = RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + "0";
@@ -203,6 +201,7 @@ namespace RiseOp
             user.Settings.OpKey = new RijndaelManaged();
             user.Settings.FileKey = Utilities.GenerateKey(new RNGCryptoServiceProvider(), 256);
             user.Settings.OpAccess = access;
+            user.Settings.Security = SecurityLevel.Medium;
 
             // joining/creating public
             if (access == AccessType.Public)
@@ -211,6 +210,7 @@ namespace RiseOp
                 
                 SHA256Managed sha256 = new SHA256Managed();
                 user.Settings.OpKey.Key = sha256.ComputeHash(UTF8Encoding.UTF8.GetBytes(opName));
+                user.Settings.Security = SecurityLevel.Low;
             }
 
             // invite to private/secret
@@ -225,6 +225,29 @@ namespace RiseOp
             user.Save();
 
             // throws exception on failure
+        }
+
+        internal void SetNewPassword(string password)
+        {
+            PasswordSalt = new byte[4];
+            RNGCryptoServiceProvider rnd = new RNGCryptoServiceProvider();
+            rnd.GetBytes(PasswordSalt);
+
+            PasswordKey = Utilities.GetPasswordKey(password, PasswordSalt);
+
+            // ensure save called soon after this function
+        }
+
+        internal bool VerifyPassword(string password)
+        {
+            byte[] key = Utilities.GetPasswordKey(password, PasswordSalt);
+
+            return Utilities.MemCompare(PasswordKey, key);
+        }
+
+        internal string GetTitle()
+        {
+            return Settings.Operation + " - " + Settings.UserName;
         }
     }
 
@@ -308,10 +331,11 @@ namespace RiseOp
         const byte Packet_UdpPort       = 0x40;
         const byte Packet_OpKey         = 0x50;
         const byte Packet_OpAccess      = 0x60;
-        const byte Packet_KeyPair       = 0x70;
-        const byte Packet_Location      = 0x80;
-        const byte Packet_FileKey       = 0x90;
-        const byte Packet_AwayMsg       = 0xA0;
+        const byte Packet_SecurityLevel = 0x70;
+        const byte Packet_KeyPair       = 0x80;
+        const byte Packet_Location      = 0x90;
+        const byte Packet_FileKey       = 0xA0;
+        const byte Packet_AwayMsg       = 0xB0;
 
         const byte Key_D        = 0x10;
         const byte Key_DP       = 0x20;
@@ -336,6 +360,7 @@ namespace RiseOp
         // private
         internal RijndaelManaged OpKey = new RijndaelManaged();
         internal AccessType OpAccess;
+        internal SecurityLevel Security;
 
         internal RSACryptoServiceProvider KeyPair = new RSACryptoServiceProvider();
         internal byte[] KeyPublic;
@@ -363,6 +388,7 @@ namespace RiseOp
                 protocol.WritePacket(settings, Packet_FileKey, FileKey);
                 protocol.WritePacket(settings, Packet_OpKey, OpKey.Key);
                 protocol.WritePacket(settings, Packet_OpAccess, BitConverter.GetBytes((byte)OpAccess));
+                protocol.WritePacket(settings, Packet_SecurityLevel, BitConverter.GetBytes((int)Security));
 
                 RSAParameters rsa = KeyPair.ExportParameters(true);
                 G2Frame key = protocol.WritePacket(settings, Packet_KeyPair, null);
@@ -424,6 +450,10 @@ namespace RiseOp
 
                     case Packet_OpAccess:
                         settings.OpAccess = (AccessType)child.Data[child.PayloadPos];
+                        break;
+
+                    case Packet_SecurityLevel:
+                        settings.Security = (SecurityLevel) BitConverter.ToInt32(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Location:
@@ -559,7 +589,7 @@ namespace RiseOp
             // also bootstrap file can be sent to others to help them out
             GlobalSettings settings = null;
 
-            string path = Application.StartupPath + Path.DirectorySeparatorChar + "bootstrap.rop";
+            string path = Application.StartupPath + Path.DirectorySeparatorChar + "bootstrap";
 
             // dont want instances saving and loading same global file
             if (network.Core.Sim == null && File.Exists(path))
@@ -609,7 +639,7 @@ namespace RiseOp
             if (core.Sim != null)
                 return;
 
-            string path = Application.StartupPath + Path.DirectorySeparatorChar + "bootstrap.rop";
+            string path = Application.StartupPath + Path.DirectorySeparatorChar + "bootstrap";
             
             byte[] key = new SHA256Managed().ComputeHash(UTF8Encoding.UTF8.GetBytes("bootstrap"));
 

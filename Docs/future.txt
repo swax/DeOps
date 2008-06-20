@@ -52,12 +52,14 @@ security
 	    sniffers up a lil more 
 	    
 	central auth
+		open / closed is second in option, in closed network only those on auth list can be communciated with in routing
 		for private/central networks, the network op stores a list of accepted keys at his ID
 		everyone on network has a copy of the list and only communcates with those keys in the list
 		super-op can allow regular ops to have their own invite lists
 		maybe this can just be simplified as only route to those in trust tree structure
 			part of trust confirmation is invite privlidges
 		use closures so if operation with unknown ID, begin verication process and on finish execute stored procedure
+	    
 	    
 	direct invite - 2 way invite
 		invite is encode location of node or proxy with specified tunnel id and invite id (dummy opID only works for invitee)

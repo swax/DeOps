@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using System.IO;
 
@@ -22,43 +23,84 @@ namespace RiseOp.Interface
     {
         RiseOpContext Context;
 
+        internal string Arg = "";
         string LastBrowse;
+        bool SuppressProcessLink;
 
-
-        internal LoginForm(RiseOpContext context, string[] args)
+        internal LoginForm(RiseOpContext context, string arg)
         {
             Context = context;
+            Arg = arg;
 
             InitializeComponent();
 
             if (Context.Sim != null) // prevent sim recursion
                 EnterSimLink.Visible = false;
 
+            // each profile (.rop) is in its own directory
+            // /root/profiledirs[]/profile.rop
             LastBrowse = (context.Sim == null) ? Application.StartupPath : context.Sim.Internet.LoadedPath;
+
+            // if started with file argument, load profiles around the same location
+            if (File.Exists(arg))
+                LastBrowse = Path.GetDirectoryName(Path.GetDirectoryName(arg));
+
+            // if started wtih url argument, select an already created user by default
+            string publicNet = null;
+            if (arg.StartsWith(@"riseop://") && !arg.StartsWith(@"riseop://invite/"))
+                publicNet = arg.Substring(9).TrimEnd('/');
+
+            // load combo box
+            OpComboItem select = null;
 
             foreach (string directory in Directory.GetDirectories(LastBrowse))
                 foreach (string file in Directory.GetFiles(directory, "*.rop"))
-                    OpCombo.Items.Add(new OpComboItem(file));
-
-            if(OpCombo.Items.Count > 0)
-                OpCombo.SelectedIndex = 0;
-
-
-            // if launched from .rop file
-            if (args != null && args.Length > 0 && args[0].IndexOf(".rop") != -1)
-            {
-                /*if (IsInvite(args[0]))
                 {
-                    CreateOp form = new CreateOp(args[0]);
-                    if (form.ShowDialog(this) == DialogResult.OK)
-                        LinkIdentity.Text = form.IdentityPath;
+                    OpComboItem item = new OpComboItem(file);
 
-                    return;
+                    if (file == arg)
+                        select = item;
+
+                    if (publicNet != null && Path.GetFileName(file).Contains(publicNet))
+                    {
+                        select = item;
+                        SuppressProcessLink = true; // found an existing profile, dont need to bother user to create a new one
+                    }
+
+                    OpCombo.Items.Add(item);
                 }
 
-                BrowseLink.Text = args[0];
-                TextPassword.Focus();*/
-            }
+            if (select != null)
+                OpCombo.SelectedItem = select;
+
+            else if(OpCombo.Items.Count > 0)
+                OpCombo.SelectedIndex = 0;
+
+            if(OpCombo.SelectedItem != null)
+                TextPassword.Select();
+        }
+
+        internal void ProcessLink()
+        {
+            if (SuppressProcessLink)
+                return;
+
+            string arg = Arg.TrimEnd('/'); // copy so modifications arent permanent
+
+            CreateUser user = null;
+
+            // private or secret network
+            if (arg.StartsWith(@"riseop://invite/"))
+                user = ReadInvite(arg.Substring(16));
+
+            // public network
+            else
+                user = new CreateUser(Context, arg.Substring(9), AccessType.Public);
+
+            // show create user dialog
+            user.ShowDialog(this);
+
+            Close(); // if user doesnt choose to create link, just close app
         }
 
 
@@ -87,41 +129,11 @@ namespace RiseOp.Interface
             if (join.ShowDialog(this) != DialogResult.OK)
                 return;
 
-
             CreateUser user = null;
 
             // private or secret network
             if(join.OpName.StartsWith(@"invite/"))
-            {
-                string link = join.OpName.Substring(7);
-                bool passed = false;
-
-                // loop get password dialog until it works
-                while(!passed)
-                {
-                    GetTextDialog getPassword = new GetTextDialog("Invite Link", "Enter the password for this invite link", "");
-                    getPassword.ResultBox.PasswordChar = '•';
-
-                    if(getPassword.ShowDialog() != DialogResult.OK)
-                        return;
-
-                    OneWayInvite invite = null;
-
-                    try
-                    {
-                        invite = OpCore.OpenInvite(link, getPassword.ResultBox.Text);
-                    }
-                    catch {}
-
-                    if (invite == null)
-                        MessageBox.Show("Wrong password");
-                    else
-                    {
-                        user = new CreateUser(Context, invite);
-                        passed = true;
-                    }
-                }
-            }
+                user = ReadInvite(join.OpName.Substring(7));
 
             // public network
             else
@@ -129,8 +141,42 @@ namespace RiseOp.Interface
 
 
             // show create user dialog
-            if (user.ShowDialog(this) == DialogResult.OK)
+            if (user != null && user.ShowDialog(this) == DialogResult.OK)
                 Close();
+        }
+
+        private CreateUser ReadInvite(string link)
+        {
+            CreateUser user = null;
+            bool passed = false;
+
+            // loop get password dialog until it works
+            while (!passed)
+            {
+                GetTextDialog getPassword = new GetTextDialog("Invite Link", "Enter the password for this invite link", "");
+                getPassword.ResultBox.PasswordChar = '•';
+
+                if (getPassword.ShowDialog() != DialogResult.OK)
+                    return null;
+
+                OneWayInvite invite = null;
+
+                try
+                {
+                    invite = OpCore.OpenInvite(link, getPassword.ResultBox.Text);
+                }
+                catch { }
+
+                if (invite == null)
+                    MessageBox.Show("Wrong password");
+                else
+                {
+                    user = new CreateUser(Context, invite);
+                    passed = true;
+                }
+            }
+
+            return user;
         }
 
         private void BrowseLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -150,7 +196,7 @@ namespace RiseOp.Interface
 
                     LastBrowse = open.FileName;
 
-                    TextPassword.Focus();
+                    TextPassword.Select();
                 }
             }
             catch(Exception ex)
@@ -173,11 +219,32 @@ namespace RiseOp.Interface
                 if (item == null)
                     return;
 
-                OpCore core = new OpCore(Context, item.Fullpath, TextPassword.Text);
+                bool unique = true;
 
-                Context.ShowCore(core);
+                // look for item in context cores, show mainGui, or notify user to check tray
+                Context.Cores.LockReading(delegate()
+                {
+                    foreach (OpCore core in Context.Cores)
+                        if (core.Profile.ProfilePath == item.Fullpath)
+                        {
+                            if (core.GuiMain != null)
+                            {
+                                core.GuiMain.WindowState = FormWindowState.Normal;
+                                core.GuiMain.Activate();
+                            }
+                            else
+                                MessageBox.Show(this, "This profile is already loaded, check the system tray", "RiseOp");
 
-                Close();
+                            unique = false;
+                        }
+                });
+
+                if (unique)
+                {
+                    Context.ShowCore(new OpCore(Context, item.Fullpath, TextPassword.Text));
+
+                    Close();
+                }
             }
             catch
             {
@@ -202,7 +269,7 @@ namespace RiseOp.Interface
 
             TextPassword.Enabled = File.Exists(item.Fullpath);
 
-            TextPassword.Focus();
+            TextPassword.Select();
 
             CheckLoginButton();
         }

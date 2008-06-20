@@ -294,12 +294,12 @@ namespace RiseOp.Services.Board
             this.PostHeader.Location = new System.Drawing.Point(0, 0);
             this.PostHeader.MinimumSize = new System.Drawing.Size(20, 20);
             this.PostHeader.Name = "PostHeader";
+            this.PostHeader.ScriptErrorsSuppressed = true;
             this.PostHeader.ScrollBarsEnabled = false;
             this.PostHeader.Size = new System.Drawing.Size(511, 62);
             this.PostHeader.TabIndex = 0;
             this.PostHeader.WebBrowserShortcutsEnabled = false;
             this.PostHeader.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.PostHeader_Navigating);
-            this.PostHeader.ScriptErrorsSuppressed = true;
             // 
             // PostBody
             // 
@@ -331,7 +331,7 @@ namespace RiseOp.Services.Board
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.Controls.Add(this.splitContainer1);
             this.Name = "BoardView";
             this.Size = new System.Drawing.Size(511, 426);

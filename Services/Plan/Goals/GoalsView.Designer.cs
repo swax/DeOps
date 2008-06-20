@@ -37,7 +37,7 @@ namespace RiseOp.Services.Plan
             this.DetailsButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.DetailsBrowser = new System.Windows.Forms.WebBrowser();
-            MainPanel = new GoalPanel();
+            this.MainPanel = new GoalPanel();
             this.toolStrip1.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -147,6 +147,7 @@ namespace RiseOp.Services.Plan
             // 
             // MainPanel
             // 
+            this.MainPanel.BackColor = System.Drawing.Color.WhiteSmoke ;
             this.MainPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.MainPanel.Location = new System.Drawing.Point(0, 0);
             this.MainPanel.Name = "MainPanel";
@@ -161,14 +162,15 @@ namespace RiseOp.Services.Plan
             this.DetailsBrowser.Location = new System.Drawing.Point(0, 0);
             this.DetailsBrowser.MinimumSize = new System.Drawing.Size(20, 20);
             this.DetailsBrowser.Name = "DetailsBrowser";
+            this.DetailsBrowser.ScriptErrorsSuppressed = true;
             this.DetailsBrowser.Size = new System.Drawing.Size(172, 389);
             this.DetailsBrowser.TabIndex = 0;
-            this.DetailsBrowser.ScriptErrorsSuppressed = true;
             // 
             // GoalsView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.toolStrip1);
             this.Controls.Add(this.ChangesLabel);

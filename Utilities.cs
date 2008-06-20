@@ -14,11 +14,17 @@ using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
 using RiseOp.Implementation.Protocol.Special;
+
+using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
 
 
 namespace RiseOp
 {
+    // at high security, low threats and above must be checked
+    enum ThreatLevel { Low = 3, Medium = 5, High = 7 }
+    enum SecurityLevel { Low = 7, Medium = 5, High = 3 }
+
 
 	internal static class Utilities
 	{  
@@ -35,6 +41,35 @@ namespace RiseOp
                 passBytes = sha256.ComputeHash(passBytes);
 
             return passBytes;
+        }
+
+        internal static bool VerifyPassphrase(OpCore core, ThreatLevel threat)
+        {
+            //crit revise
+            if (threat != ThreatLevel.High)
+                return true;
+
+            bool trying = true;
+
+            while (trying)
+            {
+                GetTextDialog form = new GetTextDialog(core.Profile.GetTitle(), "Enter Passphrase", "");
+
+                form.StartPosition = FormStartPosition.CenterScreen;
+                form.ResultBox.UseSystemPasswordChar = true;
+
+                if (form.ShowDialog() != DialogResult.OK)
+                    return false;
+
+                byte[] key = GetPasswordKey(form.ResultBox.Text, core.Profile.PasswordSalt);
+
+                if (MemCompare(core.Profile.PasswordKey, key))
+                    return true;
+
+                MessageBox.Show("Wrong passphrase", "RiseOp");
+            }
+
+            return false;
         }
 
         internal static bool MemCompare(byte[] a, byte[] b)
@@ -1540,6 +1575,7 @@ namespace RiseOp.Implementation
         }
     }
 
+    // used to store sub-hashes for files that are transferred over the network
     internal class TaggedStream : FileStream
     {
         long InternalSize;

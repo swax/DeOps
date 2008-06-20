@@ -22,7 +22,7 @@ namespace RiseOp.Services.Board
     {
         OpCore Core;
         BoardService Boards;
-        TrustService Links;
+        TrustService Trust;
 
         ulong UserID;
         uint ProjectID;
@@ -70,7 +70,7 @@ namespace RiseOp.Services.Board
 
             Core = boards.Core;
             Boards = boards;
-            Links = Core.Links;
+            Trust = Core.Trust;
             
 
             UserID = id;
@@ -99,7 +99,7 @@ namespace RiseOp.Services.Board
         internal override void Init()
         {
             Boards.PostUpdate += new PostUpdateHandler(Board_PostUpdate);
-            Core.Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
+            Core.Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
 
             PostView.NodeExpanding += new EventHandler(OnNodeExpanding);
             PostView.NodeCollapsed += new EventHandler(OnNodeCollapsed);
@@ -117,7 +117,7 @@ namespace RiseOp.Services.Board
         internal override bool Fin()
         {
             Boards.PostUpdate -= new PostUpdateHandler(Board_PostUpdate);
-            Links.GuiUpdate  -= new LinkGuiUpdateHandler(Links_Update);
+            Trust.GuiUpdate  -= new LinkGuiUpdateHandler(Trust_Update);
 
             Boards.UnloadView(this, UserID);
 
@@ -134,10 +134,10 @@ namespace RiseOp.Services.Board
             if (UserID == Core.UserID)
                 title += "My ";
             else
-                title += Core.Links.GetName(UserID) + "'s ";
+                title += Core.Trust.GetName(UserID) + "'s ";
 
             if(ProjectID != 0)
-                title += Core.Links.GetProjectName(ProjectID) + " ";
+                title += Core.Trust.GetProjectName(ProjectID) + " ";
 
             title += "Board";
 
@@ -187,7 +187,7 @@ namespace RiseOp.Services.Board
 
             string name = "Main";
             if (id != 0)
-                name = Links.GetProjectName(id);
+                name = Trust.GetProjectName(id);
 
             ProjectButton.Text = "Project: " + name;
 
@@ -384,7 +384,7 @@ namespace RiseOp.Services.Board
             ActiveThreads.Remove(node.Post.Ident);
         }
 
-        void Links_Update(ulong key)
+        void Trust_Update(ulong key)
         {
             // reset high and low scopes, if change detected to refresh
 
@@ -442,7 +442,7 @@ namespace RiseOp.Services.Board
 
             // header
             string content = responseTo + "<b><font size=2>" + parent.Info.Subject + @"</font></b> posted by " +
-                              Links.GetName(post.Header.SourceID) + @" at " +
+                              Trust.GetName(post.Header.SourceID) + @" at " +
                               Utilities.FormatTime(post.Header.Time) + @"<br>";
 
             // edit time
@@ -732,7 +732,7 @@ namespace RiseOp.Services.Board
             Post = post; // editing a post will build a new header, create a new object
 
             Text = boards.GetPostInfo(post);
-            SubItems[0].Text = boards.Core.Links.GetName(post.Header.SourceID);
+            SubItems[0].Text = boards.Core.Trust.GetName(post.Header.SourceID);
             SubItems[1].Text = Utilities.FormatTime(post.Header.Time);
 
             if (post.Header.ParentID == 0 && post.Replies > 0)

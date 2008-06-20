@@ -240,7 +240,7 @@ namespace RiseOp.Services.Plan
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.Controls.Add(this.splitContainer1);
             this.Name = "GoalPanel";
             this.Size = new System.Drawing.Size(469, 343);

@@ -21,7 +21,7 @@ namespace RiseOp.Services.Plan
         internal GoalsView View;
         internal OpCore Core;
         internal PlanService Plans;
-        internal TrustService Links;
+        internal TrustService Trust;
 
         PlanGoal Head;
         PlanGoal Selected;
@@ -38,7 +38,7 @@ namespace RiseOp.Services.Plan
             View = view;
             Core = View.Core;
             Plans = view.Plans;
-            Links = Core.Links;
+            Trust = Core.Trust;
             
             GoalTree.NodeExpanding += new EventHandler(GoalTree_NodeExpanding);
             GoalTree.NodeCollapsed += new EventHandler(GoalTree_NodeCollapsed);
@@ -77,7 +77,7 @@ namespace RiseOp.Services.Plan
             TreeMap.Clear();
             GoalTree.Nodes.Clear();
             
-            List<ulong> uplinks = Links.GetUplinkIDs(View.UserID, View.ProjectID);
+            List<ulong> uplinks = Trust.GetUplinkIDs(View.UserID, View.ProjectID);
             uplinks.Add(View.UserID);
 
             // show all branches
@@ -190,12 +190,12 @@ namespace RiseOp.Services.Plan
         {
             // if only branch
             if (MineOnly.Checked && View.UserID != goal.Person)
-                if (!Links.IsHigher(View.UserID, goal.Person, View.ProjectID) && // show only if person is higher than self
-                    !Links.IsLower(View.UserID, goal.Person, View.ProjectID))   // or is lower than self
+                if (!Trust.IsHigher(View.UserID, goal.Person, View.ProjectID) && // show only if person is higher than self
+                    !Trust.IsLower(View.UserID, goal.Person, View.ProjectID))   // or is lower than self
                     return false;
 
             // only subordinates can have goals assigned
-            if (!Links.IsLower(higher, goal.Person, View.ProjectID))
+            if (!Trust.IsLower(higher, goal.Person, View.ProjectID))
                 return false;
 
             return true;
@@ -213,7 +213,7 @@ namespace RiseOp.Services.Plan
                 return;
 
             Plans.Research(node.Goal.Person);
-            Links.Research(node.Goal.Person, View.ProjectID, false);
+            Trust.Research(node.Goal.Person, View.ProjectID, false);
 
             UpdatePlanItems(node);
 
@@ -242,7 +242,7 @@ namespace RiseOp.Services.Plan
 
 
             // set delegate task vis
-            if (Selected.Person == Core.UserID && Links.HasSubs(Selected.Person, View.ProjectID ))
+            if (Selected.Person == Core.UserID && Trust.HasSubs(Selected.Person, View.ProjectID ))
                 DelegateLink.Show();
             else
                 DelegateLink.Hide();
@@ -260,7 +260,7 @@ namespace RiseOp.Services.Plan
 
             // name's Plan for <goal>
 
-            PlanList.Columns[0].Text = Links.GetName(node.Goal.Person) + "'s Plan for " + node.Goal.Title;
+            PlanList.Columns[0].Text = Trust.GetName(node.Goal.Person) + "'s Plan for " + node.Goal.Title;
 
             // set plan items
             OpPlan plan = Plans.GetPlan(Selected.Person, true);
@@ -678,7 +678,7 @@ namespace RiseOp.Services.Plan
         }
 
 
-        internal void LinkUpdate(ulong key)
+        internal void TrustUpdate(ulong key)
         {
             if (Head == null)
                 return;
@@ -706,8 +706,8 @@ namespace RiseOp.Services.Plan
                     RemoveNode(node, visible);
             }
             
-            List<ulong> myUplinks = Links.GetUplinkIDs(View.UserID, View.ProjectID);
-            List<ulong> linkUplinks = Links.GetUplinkIDs(key, View.ProjectID);
+            List<ulong> myUplinks = Trust.GetUplinkIDs(View.UserID, View.ProjectID);
+            List<ulong> linkUplinks = Trust.GetUplinkIDs(key, View.ProjectID);
 
             // each uplink from this key can assign goals, we need to see if a re-add is necessary
             foreach (ulong uplink in linkUplinks)
@@ -736,7 +736,7 @@ namespace RiseOp.Services.Plan
             // make removed nodes that were visible, visible again
             foreach (ulong id in visible)
             {
-                List<ulong> uplinks = Links.GetUplinkIDs(id,View. ProjectID);
+                List<ulong> uplinks = Trust.GetUplinkIDs(id,View. ProjectID);
 
                 foreach (GoalNode root in GoalTree.Nodes) // should only be one root
                     VisiblePath(root, uplinks);
@@ -782,7 +782,7 @@ namespace RiseOp.Services.Plan
             // update progress of high levels for updated plan not in tree map because it is hidden
             if (plan.GoalMap.ContainsKey(Head.Ident) || plan.ItemMap.ContainsKey(Head.Ident))
             {
-                List<ulong> uplinks = Links.GetUplinkIDs(plan.UserID, View.ProjectID);
+                List<ulong> uplinks = Trust.GetUplinkIDs(plan.UserID, View.ProjectID);
                 uplinks.Add(plan.UserID);
 
                 if (uplinks.Contains(Head.Person))
@@ -797,7 +797,7 @@ namespace RiseOp.Services.Plan
 
             if (MineOnly.Checked)
             {
-                List<ulong> myUplinks = Links.GetUplinkIDs(View.UserID, View.ProjectID);
+                List<ulong> myUplinks = Trust.GetUplinkIDs(View.UserID, View.ProjectID);
                 myUplinks.Add(View.UserID);
 
                 if (myUplinks.Contains(plan.UserID))
@@ -978,7 +978,7 @@ namespace RiseOp.Services.Plan
 
             Text = Goal.Title;
 
-            string name = Panel.Links.GetName(goal.Person);
+            string name = Panel.Trust.GetName(goal.Person);
 
             SubItems[0].Text = name;
             SubItems[2].Text = Panel.GetTimeText(goal.End.ToLocalTime() - Panel.Core.TimeNow, goal.End.ToLocalTime(), false);
@@ -986,10 +986,10 @@ namespace RiseOp.Services.Plan
             if (goal.Person == Panel.View.UserID)
                 ImageIndex = 1;
             // higher
-            else if (Panel.Links.IsHigher(Panel.View.UserID, goal.Person, Panel.View.ProjectID))
+            else if (Panel.Trust.IsHigher(Panel.View.UserID, goal.Person, Panel.View.ProjectID))
                 ImageIndex = 2;
             // lower
-            else if (Panel.Links.IsHigher(goal.Person, Panel.View.UserID, Panel.View.ProjectID))
+            else if (Panel.Trust.IsHigher(goal.Person, Panel.View.UserID, Panel.View.ProjectID))
                 ImageIndex = 3;
             else
                 ImageIndex = 0;

@@ -23,13 +23,13 @@ namespace RiseOp.Services.Storage
             // label
             string text = "Unlock ";
 
-            text += View.Links.GetProjectName(View.ProjectID) + "'s ";
+            text += View.Trust.GetProjectName(View.ProjectID) + "'s ";
             text += "File System to";
 
             MainLabel.Text = text;
 
             // link
-            text = View.Core.User.RootPath + Path.DirectorySeparatorChar + View.Links.GetProjectName(View.ProjectID) + " Storage";
+            text = View.Core.Profile.RootPath + Path.DirectorySeparatorChar + View.Trust.GetProjectName(View.ProjectID) + " Storage";
 
             PathLink.Text = text;
         }

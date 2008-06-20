@@ -106,9 +106,9 @@ namespace RiseOp.Services.Profile
             Network = core.Network;
             Protocol = Network.Protocol;
             Store = Network.Store;
-            Links = Core.Links;
+            Links = Core.Trust;
 
-            ExtractPath = Core.User.RootPath + Path.DirectorySeparatorChar +
+            ExtractPath = Core.Profile.RootPath + Path.DirectorySeparatorChar +
                         "Data" + Path.DirectorySeparatorChar +
                         ServiceID.ToString() + Path.DirectorySeparatorChar +
                         DataTypeExtracted.ToString();

@@ -41,14 +41,14 @@ namespace RiseOp.Services.Plan
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.DoubleBuffered = true;
             this.Name = "DateSlider";
             this.Size = new System.Drawing.Size(396, 25);
-            this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.DateSlider_MouseDown);
-            this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.DateSlider_MouseMove);
-            this.Resize += new System.EventHandler(this.DateSlider_Resize);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.DateSlider_Paint);
+            this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.DateSlider_MouseMove);
+            this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.DateSlider_MouseDown);
+            this.Resize += new System.EventHandler(this.DateSlider_Resize);
             this.MouseUp += new System.Windows.Forms.MouseEventHandler(this.DateSlider_MouseUp);
             this.ResumeLayout(false);
 

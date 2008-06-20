@@ -41,10 +41,10 @@ namespace RiseOp.Interface.Tools
 
 			UpdateConsole = new UpdateConsoleHandler(AsyncUpdateConsole);
 
-            if (Core.User == null)
+            if (Core.Profile == null)
                 Text = "Global Console (" + Core.Context.LocalIP.ToString() + ")";
             else
-			    Text = "Console (" + Core.User.Settings.UserName + ")";
+			    Text = "Console (" + Core.Profile.Settings.UserName + ")";
 
 			RefreshLog();
 		}

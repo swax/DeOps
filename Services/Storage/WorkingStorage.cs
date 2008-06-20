@@ -42,7 +42,7 @@ namespace RiseOp.Services.Storage
 
            
             StorageFolder packet = new StorageFolder();
-            packet.Name = Core.Links.GetProjectName(project) + " Storage";
+            packet.Name = Core.Trust.GetProjectName(project) + " Storage";
 
             RootFolder = new LocalFolder(null, packet);
 
@@ -62,6 +62,10 @@ namespace RiseOp.Services.Storage
 
                 stream.FlushFinalBlock();
                 stream.Close();
+                
+                byte[] hash = null;
+                long size = 0;
+                Utilities.HashTagFile(tempPath, Protocol, ref hash, ref size);
 
                 string finalPath = Storages.GetWorkingPath(ProjectID);
 
@@ -92,7 +96,7 @@ namespace RiseOp.Services.Storage
                 if (File.Exists(path)) // use locally committed storage file
                 {
                     Modified = true; // working file present on startup, meaning there are changes lingering to be committed
-                    source = new FileStream(path, FileMode.Open);
+                    source = new TaggedStream(path, Protocol);
                 }
                 else
                 {
@@ -841,7 +845,7 @@ namespace RiseOp.Services.Storage
                 throw new Exception("Name Contains Invalid Characters");
 
             // check that scope includes self
-            if (scope.Count > 0 && !Core.Links.IsInScope(scope, Core.UserID, ProjectID))
+            if (scope.Count > 0 && !Core.Trust.IsInScope(scope, Core.UserID, ProjectID))
                 throw new Exception("Visibility Must Include Yourself");
                 
 
@@ -885,7 +889,7 @@ namespace RiseOp.Services.Storage
                 throw new Exception("Name Contains Invalid Characters");
 
             // check that scope includes self
-            if (scope.Count > 0 && !Core.Links.IsInScope(scope, Core.UserID, ProjectID))
+            if (scope.Count > 0 && !Core.Trust.IsInScope(scope, Core.UserID, ProjectID))
                 throw new Exception("Visibility Must Include Yourself");
 
             string oldName = Path.GetFileName(path);
@@ -1172,7 +1176,7 @@ namespace RiseOp.Services.Storage
 
                                 // check scope
                                 ignoreCurrent = false;
-                                if (readFolder.Scope.Count > 0 && !Core.Links.IsInScope(readFolder.Scope, Core.UserID, ProjectID))
+                                if (readFolder.Scope.Count > 0 && !Core.Trust.IsInScope(readFolder.Scope, Core.UserID, ProjectID))
                                     ignoreCurrent = true;
 
 
@@ -1234,7 +1238,7 @@ namespace RiseOp.Services.Storage
                                 if (readFolder.Date >= currentFolder.Info.Date)
                                     if (readFolder.IntegratedID == 0 ||
                                         readFolder.IntegratedID == Core.UserID ||
-                                        Core.Links.IsAdjacent(readFolder.IntegratedID, ProjectID))
+                                        Core.Trust.IsAdjacent(readFolder.IntegratedID, ProjectID))
                                         currentFolder.AddHigherChange(id, readFolder);
                             }
 
@@ -1259,7 +1263,7 @@ namespace RiseOp.Services.Storage
 
                                 // check scope
                                 ignoreCurrent = false;
-                                if (readFile.Scope.Count > 0 && !Core.Links.IsInScope(readFile.Scope, Core.UserID, ProjectID))
+                                if (readFile.Scope.Count > 0 && !Core.Trust.IsInScope(readFile.Scope, Core.UserID, ProjectID))
                                 {
                                     ignoreCurrent = true;
                                     continue;
@@ -1290,7 +1294,7 @@ namespace RiseOp.Services.Storage
                                 if (readFile.Date >= currentFile.Info.Date)
                                     if (readFile.IntegratedID == 0 ||
                                         readFile.IntegratedID == Core.UserID ||
-                                        Core.Links.IsAdjacent(readFile.IntegratedID, ProjectID))
+                                        Core.Trust.IsAdjacent(readFile.IntegratedID, ProjectID))
                                         currentFile.AddHigherChange(id, readFile);
                             }
                           
@@ -1355,7 +1359,7 @@ namespace RiseOp.Services.Storage
 
             InheritIDs = new List<ulong>();
             InheritIDs.Add(Core.UserID);
-            InheritIDs.AddRange(Core.Links.GetAutoInheritIDs(Core.UserID, ProjectID));
+            InheritIDs.AddRange(Core.Trust.GetAutoInheritIDs(Core.UserID, ProjectID));
 
 
             List<LockError> errors = new List<LockError>();
@@ -1448,7 +1452,7 @@ namespace RiseOp.Services.Storage
 
                         if (id == directHigher &&
                             changeFile.IntegratedID != 0 &&
-                            Core.Links.IsAdjacent(changeFile.IntegratedID, ProjectID))
+                            Core.Trust.IsAdjacent(changeFile.IntegratedID, ProjectID))
                             inheritIntegrated.Add(changeFile);
                     }
 

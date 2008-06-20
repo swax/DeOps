@@ -49,7 +49,7 @@ namespace RiseOp.Services.Storage
             this.SaveLink = new System.Windows.Forms.LinkLabel();
             this.SecondTimer = new System.Windows.Forms.Timer(this.components);
             this.RescanLabel = new System.Windows.Forms.Label();
-            SelectedInfo = new InfoPanel();
+            this.SelectedInfo = new InfoPanel();
             this.toolStrip1.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -166,14 +166,14 @@ namespace RiseOp.Services.Storage
             this.FolderTreeView.StateImageList = null;
             this.FolderTreeView.TabIndex = 0;
             this.FolderTreeView.Text = "FolderTeeView";
-            this.FolderTreeView.DragDrop += new System.Windows.Forms.DragEventHandler(this.FolderTreeView_DragDrop);
             this.FolderTreeView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.FolderTreeView_MouseClick);
-            this.FolderTreeView.DragOver += new System.Windows.Forms.DragEventHandler(this.FolderTreeView_DragOver);
             this.FolderTreeView.SelectedItemChanged += new System.EventHandler(this.FolderTreeView_SelectedItemChanged);
+            this.FolderTreeView.DragDrop += new System.Windows.Forms.DragEventHandler(this.FolderTreeView_DragDrop);
             this.FolderTreeView.MouseMove += new System.Windows.Forms.MouseEventHandler(this.FolderTreeView_MouseMove);
+            this.FolderTreeView.MouseDown += new System.Windows.Forms.MouseEventHandler(this.FolderTreeView_MouseDown);
             this.FolderTreeView.KeyUp += new System.Windows.Forms.KeyEventHandler(this.FolderTreeView_KeyUp);
             this.FolderTreeView.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FolderTreeView_KeyDown);
-            this.FolderTreeView.MouseDown += new System.Windows.Forms.MouseEventHandler(this.FolderTreeView_MouseDown);
+            this.FolderTreeView.DragOver += new System.Windows.Forms.DragEventHandler(this.FolderTreeView_DragOver);
             // 
             // splitContainer2
             // 
@@ -252,14 +252,14 @@ namespace RiseOp.Services.Storage
             this.FileListView.StateImageList = null;
             this.FileListView.TabIndex = 0;
             this.FileListView.Text = "FileListView";
+            this.FileListView.MouseUp += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseUp);
             this.FileListView.DragOver += new System.Windows.Forms.DragEventHandler(this.FileListView_DragOver);
-            this.FileListView.MouseDown += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDown);
             this.FileListView.MouseMove += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseMove);
-            this.FileListView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseClick);
             this.FileListView.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDoubleClick);
             this.FileListView.DragDrop += new System.Windows.Forms.DragEventHandler(this.FileListView_DragDrop);
             this.FileListView.KeyUp += new System.Windows.Forms.KeyEventHandler(this.FileListView_KeyUp);
-            this.FileListView.MouseUp += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseUp);
+            this.FileListView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseClick);
+            this.FileListView.MouseDown += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDown);
             this.FileListView.SelectedIndexChanged += new System.EventHandler(this.FileListView_SelectedIndexChanged);
             this.FileListView.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FileListView_KeyDown);
             // 
@@ -342,7 +342,7 @@ namespace RiseOp.Services.Storage
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.Controls.Add(this.RescanLabel);
             this.Controls.Add(this.ChangesLabel);
             this.Controls.Add(this.DiscardLink);

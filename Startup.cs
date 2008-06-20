@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Text;
 using System.Windows.Forms;
@@ -10,6 +12,7 @@ using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Interface;
 using RiseOp.Simulator;
+
 
 namespace RiseOp
 {
@@ -26,45 +29,74 @@ namespace RiseOp
 
             try
             {
-                Application.Run(new RiseOpContext(args));
+                RiseOpContext context = new RiseOpContext(args);
+
+                if(context.SingleInstance.First)
+                    Application.Run(context);
             }
             catch(Exception ex)
             {
-                //crit pop up report error interface
-                MessageBox.Show(ex.Message + "\r\n" + ex.StackTrace);
+                ErrorReport report = new ErrorReport(ex);
+
+                Application.Run(report);
             }
         }
-
     }
 
     internal class RiseOpContext : ApplicationContext
     {
+        internal RiseOpMutex SingleInstance;
+
         internal OpCore Global;
         internal ThreadedList<OpCore> Cores = new ThreadedList<OpCore>();
-        LoginForm Login;
+        List<LoginForm> Logins = new List<LoginForm>();
         SimForm Simulator;
 
         internal SimInstance Sim;
 
+        Timer FastTimer = new Timer();
         Timer SecondTimer = new Timer();
+
+        string UpdatePath;
+        Queue<string[]> NewInstances = new Queue<string[]>();
 
         internal IPAddress LocalIP;
         internal FirewallType Firewall = FirewallType.Blocked;
 
 
-
-
         internal RiseOpContext(string[] args)
         {
-            //crit check if already running
+            // if instance already running, signal it and exit
+     
+            SingleInstance = new RiseOpMutex(this, args);
 
+            if (!SingleInstance.First)
+                return;
+
+            // register file types
             RegisterType();
 
+            // start timers
             SecondTimer.Interval = 1000;
             SecondTimer.Tick += new EventHandler(SecondTimer_Tick);
             SecondTimer.Enabled = true ;
 
+            FastTimer.Interval = 250;
+            FastTimer.Tick += new EventHandler(FastTimer_Tick);
+            FastTimer.Enabled = true;
+
+            // check for updates
+            new System.Threading.Thread(CheckForUpdates).Start();
+
+
+            // display login form
             ShowLogin(args);
+        }
+
+        internal void SecondInstanceStarted(string[] args)
+        {
+            lock (NewInstances)
+                NewInstances.Enqueue(args);
         }
 
         internal RiseOpContext(SimInstance sim)
@@ -73,10 +105,45 @@ namespace RiseOp
             Sim = sim;
         }
 
+        internal void CheckForUpdates()
+        {
+            try
+            {
+                WebClient client = new WebClient();
+
+                string address = client.DownloadString("http://www.riseop.com/update/check.php?version=" + Application.ProductVersion);
+
+                if (address != null && address != "")
+                {
+                    string path = Application.StartupPath + Path.DirectorySeparatorChar + Path.GetFileName(address);
+
+                    if (!File.Exists(path))
+                        client.DownloadFile(address, path);
+
+                    UpdatePath = path;
+                }
+
+
+                #if !DEBUG      
+                // call home for alpha security
+                string build = Application.ProductName + "_" + Application.ProductVersion;
+                string name = SystemInformation.UserName;
+                string comp = SystemInformation.ComputerName;
+                
+                string x = client.DownloadString(new Uri("http://www.riseop.com/checkin.php?build=" + build + "&comp=" + comp + "&name=" + name));
+
+                if (x == "**die**")
+                    Application.Exit();
+                
+                #endif
+
+            }
+            catch { }
+        }
 
         void RegisterType()
         {
-            // try to register file type association
+            // try to register file type
             try
             {
                 RegistryKey type = Registry.ClassesRoot.CreateSubKey(".rop");
@@ -86,7 +153,27 @@ namespace RiseOp
                 root.SetValue("", "RiseOp Identity");
 
                 RegistryKey icon = root.CreateSubKey("DefaultIcon");
-                icon.SetValue("", Application.ExecutablePath + ",0");
+                icon.SetValue("", "\"" + Application.ExecutablePath + "\"");
+
+                RegistryKey shell = root.CreateSubKey("shell");
+                RegistryKey open = shell.CreateSubKey("open");
+                RegistryKey command = open.CreateSubKey("command");
+                command.SetValue("", "\"" + Application.ExecutablePath + "\" \"%1\"");
+            }
+            catch
+            {
+                //UpdateLog("Exception", "LoginForm::RegisterType: " + ex.Message);
+            }
+
+            // try to register protocol
+            try
+            {
+                RegistryKey root = Registry.ClassesRoot.CreateSubKey("riseop");
+                root.SetValue("", "URL:riseop Protocol");
+                root.SetValue("URL Protocol", "");
+
+                RegistryKey icon = root.CreateSubKey("DefaultIcon");
+                icon.SetValue("", "\"" + Application.ExecutablePath + "\"");
 
                 RegistryKey shell = root.CreateSubKey("shell");
                 RegistryKey open = shell.CreateSubKey("open");
@@ -111,17 +198,69 @@ namespace RiseOp
             });
         }
 
+        internal void FastTimer_Tick(object sender, EventArgs e)
+        {
+            // process new instance
+            string[] loginArgs = null;
+
+            lock (NewInstances)
+                if (NewInstances.Count > 0)
+                    loginArgs = NewInstances.Dequeue();
+
+            if (loginArgs != null)
+                ShowLogin(loginArgs);
+
+            // run update
+            if (UpdatePath != null)
+            {
+                string path = UpdatePath;  // prevent cascading updates as message box is displayed
+                UpdatePath = null;
+
+                if (MessageBox.Show("A new version of RiseOp is available. Install it now?", "RiseOp", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                {
+                    Process.Start(path); // launch installer without risking core exit screwups
+
+                    try
+                    {
+                        Cores.LockReading(delegate()
+                        {
+                            while (Cores.Count > 0)
+                                Cores[0].Exit();
+                        });
+                    }
+                    catch { }
+
+                    ExitThread();
+                }
+            }
+        }
+
         internal void ShowLogin(string[] args)
         {
-            if (Login != null)
-            {
-                Login.BringToFront();
-                return;
-            }
+            // either c:\... or riseop://...
+            string arg = "";
+            if (args != null && args.Length > 0)
+                arg = args[0];
 
-            Login = new LoginForm(this, args);
-            Login.FormClosed += new FormClosedEventHandler(Window_FormClosed);
-            Login.Show();
+            // find if login exists with same arg
+            foreach(LoginForm login in Logins)
+                if (login.Arg == arg)
+                {
+                    login.WindowState = FormWindowState.Normal;
+                    login.Activate(); // bring windows on top of other apps
+                    return;
+                }
+
+            LoginForm form = new LoginForm(this, arg);
+            form.FormClosed += new FormClosedEventHandler(Window_FormClosed);
+            form.Show();
+            form.Activate();
+
+            Logins.Add(form);
+
+            // do here because process link can close form and we want all the events already hooked up for it
+            if (arg.StartsWith(@"riseop://"))
+                form.ProcessLink();
         }
 
         internal void ShowCore(OpCore core)
@@ -147,8 +286,12 @@ namespace RiseOp
 
         void Window_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if (sender == Login)
-                Login = null;
+            foreach (LoginForm form in Logins)
+                if (sender == form)
+                {
+                    Logins.Remove(form);
+                    break;
+                }
 
             if (sender == Simulator)
                 Simulator = null;
@@ -172,7 +315,7 @@ namespace RiseOp
             Cores.LockReading(delegate()
             {
                 foreach (OpCore core in Cores)
-                    if (core.User.Settings.OpAccess != AccessType.Secret)
+                    if (core.Profile.Settings.OpAccess != AccessType.Secret)
                         runGlobal = true;
 
                 // if public cores exist, sign into global
@@ -215,7 +358,7 @@ namespace RiseOp
             if (Sim != null)
                 return;
 
-            if (Login == null && Cores.SafeCount == 0)
+            if (Logins.Count == 0 && Cores.SafeCount == 0)
             {
                 if (Global != null)
                     Global.Exit();

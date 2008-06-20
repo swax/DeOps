@@ -25,7 +25,7 @@ namespace RiseOp.Services.Storage
     {
         internal OpCore Core;
         internal StorageService Storages;
-        internal TrustService Links;
+        internal TrustService Trust;
 
         internal ulong UserID;
         internal uint ProjectID;
@@ -69,7 +69,7 @@ namespace RiseOp.Services.Storage
             
             Storages = storages;
             Core = Storages.Core;
-            Links = Core.Links;
+            Trust = Core.Trust;
 
             UserID = id;
             ProjectID = project;
@@ -103,10 +103,10 @@ namespace RiseOp.Services.Storage
             if (IsLocal)
                 title += "My ";
             else
-                title += Links.GetName(UserID) + "'s ";
+                title += Trust.GetName(UserID) + "'s ";
 
             if (ProjectID != 0)
-                title += Links.GetProjectName(ProjectID) + " ";
+                title += Trust.GetProjectName(ProjectID) + " ";
 
             title += "Storage";
 
@@ -154,7 +154,7 @@ namespace RiseOp.Services.Storage
 
             // hook up events
             Storages.StorageUpdate += new StorageUpdateHandler(Storages_StorageUpdate);
-            Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
+            Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
             Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
 
             if (IsLocal)
@@ -167,9 +167,9 @@ namespace RiseOp.Services.Storage
             // research higher / lowers
             List<ulong> ids = new List<ulong>();
             ids.Add(UserID);
-            ids.AddRange(Links.GetUplinkIDs(UserID, ProjectID));
-            ids.AddRange(Links.GetAdjacentIDs(UserID, ProjectID));
-            ids.AddRange(Links.GetDownlinkIDs(UserID, ProjectID, 1));
+            ids.AddRange(Trust.GetUplinkIDs(UserID, ProjectID));
+            ids.AddRange(Trust.GetAdjacentIDs(UserID, ProjectID));
+            ids.AddRange(Trust.GetDownlinkIDs(UserID, ProjectID, 1));
 
             foreach (ulong id in ids)
                 Storages.Research(id);
@@ -210,7 +210,7 @@ namespace RiseOp.Services.Storage
         internal override bool Fin()
         {
             Storages.StorageUpdate -= new StorageUpdateHandler(Storages_StorageUpdate);
-            Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
+            Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
             Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
 
             Storages.WorkingFileUpdate -= new WorkingUpdateHandler(Storages_WorkingFileUpdate);
@@ -235,7 +235,7 @@ namespace RiseOp.Services.Storage
             if (DiffCombo.Text == "Local")
             {
                 CurrentDiffs.AddRange(HigherIDs);
-                CurrentDiffs.AddRange(Links.GetDownlinkIDs(UserID, ProjectID, 1));
+                CurrentDiffs.AddRange(Trust.GetDownlinkIDs(UserID, ProjectID, 1));
             }
 
             else if (DiffCombo.Text == "Higher")
@@ -245,12 +245,12 @@ namespace RiseOp.Services.Storage
 
             else if (DiffCombo.Text == "Lower")
             {
-                CurrentDiffs.AddRange(Links.GetDownlinkIDs(UserID, ProjectID, 1));
+                CurrentDiffs.AddRange(Trust.GetDownlinkIDs(UserID, ProjectID, 1));
             }
 
             else if (DiffCombo.Text == "Custom...")
             {
-                AddLinks form = new AddLinks(Links, ProjectID);
+                AddLinks form = new AddLinks(Trust, ProjectID);
 
                 if (form.ShowDialog(this) == DialogResult.OK)
                     CurrentDiffs.AddRange(form.People);
@@ -281,7 +281,7 @@ namespace RiseOp.Services.Storage
             else
             {
                 StorageFolder root = new StorageFolder();
-                root.Name = Links.GetProjectName(ProjectID) + " Storage";
+                root.Name = Trust.GetProjectName(ProjectID) + " Storage";
 
                 RootFolder = new FolderNode(this, root, FolderTreeView.virtualParent, false);
                 FolderTreeView.Nodes.Add(RootFolder);
@@ -391,7 +391,7 @@ namespace RiseOp.Services.Storage
 
                             // check scope
                             bool ignore = false;
-                            if (folder.Scope.Count > 0 && !Links.IsInScope(folder.Scope, UserID, ProjectID))
+                            if (folder.Scope.Count > 0 && !Trust.IsInScope(folder.Scope, UserID, ProjectID))
                                 ignore = true;
 
                             bool added = false;
@@ -463,7 +463,7 @@ namespace RiseOp.Services.Storage
                             remoteUID = file.UID;
 
                             // check scope
-                            if (file.Scope.Count > 0 && !Links.IsInScope(file.Scope, UserID, ProjectID))
+                            if (file.Scope.Count > 0 && !Trust.IsInScope(file.Scope, UserID, ProjectID))
                                 continue;
 
                             FileItem currentFile = null;
@@ -610,9 +610,9 @@ namespace RiseOp.Services.Storage
             }
         }
 
-        private void Links_Update(ulong key)
+        private void Trust_Update(ulong key)
         {
-            OpLink link = Links.GetLink(key, ProjectID);
+            OpLink link = Trust.GetLink(key, ProjectID);
 
             if (link == null)
                 return;
@@ -624,14 +624,14 @@ namespace RiseOp.Services.Storage
             if (DiffCombo.Text == "Local")
             {
                 check.AddRange(HigherIDs);
-                check.AddRange(Links.GetDownlinkIDs(UserID, ProjectID, 1));
+                check.AddRange(Trust.GetDownlinkIDs(UserID, ProjectID, 1));
             }
 
             else if (DiffCombo.Text == "Higher")
                 check.AddRange(HigherIDs);
 
             else if (DiffCombo.Text == "Lower")
-                check.AddRange(Links.GetDownlinkIDs(UserID, ProjectID, 1));
+                check.AddRange(Trust.GetDownlinkIDs(UserID, ProjectID, 1));
 
             else // custom
                 return;

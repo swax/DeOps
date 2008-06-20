@@ -199,7 +199,7 @@ namespace RiseOp.Services.Board
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.Controls.Add(this.ScopeAll);
             this.Controls.Add(this.ScopeLow);
             this.Controls.Add(this.ScopeHigh);

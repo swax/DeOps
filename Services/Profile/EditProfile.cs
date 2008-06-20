@@ -31,7 +31,7 @@ namespace RiseOp.Services.Profile
             InitializeComponent();
 
             Core     = control.Core;
-            Links    = Core.Links;
+            Links    = Core.Trust;
             Profiles = control;
             MainView = view;
 

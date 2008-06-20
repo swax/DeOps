@@ -23,7 +23,7 @@ namespace RiseOp.Interface.Views
             PreserveSideMode = sideMode;
 
             Tray.Icon = InterfaceRes.rank;
-            Tray.Text = Core.User.Settings.Operation + " - " + Core.User.Settings.UserName;
+            Tray.Text = Core.Profile.GetTitle(); 
             Tray.Visible = true;
 
             Tray.DoubleClick += new EventHandler(Tray_DoubleClick);
@@ -43,15 +43,7 @@ namespace RiseOp.Interface.Views
         
         void Menu_Restore(object sender, EventArgs e)
         {
-            GetTextDialog form = new GetTextDialog(Tray.Text, "Enter Passphrase", "");
-            
-            form.ResultBox.UseSystemPasswordChar = true;
-
-            if(form.ShowDialog() != DialogResult.OK)
-                return;
-
-
-            if (Utilities.MemCompare(Core.User.PasswordKey, Utilities.GetPasswordKey(form.ResultBox.Text, Core.User.PasswordSalt)))
+            if (Utilities.VerifyPassphrase(Core, ThreatLevel.High))
             {
                 Core.GuiMain = new MainForm(Core);
                 Core.GuiMain.SideMode = PreserveSideMode;
@@ -59,9 +51,7 @@ namespace RiseOp.Interface.Views
                
                 Tray.Visible = false;
                 Core.GuiTray = null;
-            }
-            else
-                MessageBox.Show("Wrong Passphrase", "RiseOp");
+            }                
         }
 
         void Menu_Exit(object sender, EventArgs e)

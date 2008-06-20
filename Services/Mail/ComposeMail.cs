@@ -30,7 +30,7 @@ namespace RiseOp.Services.Mail
             InitializeComponent();
 
             Mail = mail;
-            Links = mail.Core.Links;
+            Links = mail.Core.Trust;
             DefaultID = id;
 
             if (id != 0)

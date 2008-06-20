@@ -26,19 +26,18 @@ namespace RiseOp.Services.Trust
             InitializeComponent();
 
             Core = core;
-            Links = core.Links;
+            Links = core.Trust;
 
             ProjectID = id;
 
             AwayCheckBox.Checked = Core.Locations.LocalAway;
             AwayMessage.Enabled = Core.Locations.LocalAway;
-            AwayMessage.Text = Core.User.Settings.AwayMessage;
+            AwayMessage.Text = Core.Profile.Settings.AwayMessage;
         }
 
         private void EditLink_Load(object sender, EventArgs e)
         {
-            NameBox.Text = Links.GetName(Core.UserID);
-            LocationBox.Text = Links.Core.User.Settings.Location;
+            LocationBox.Text = Links.Core.Profile.Settings.Location;
 
             OpLink link = Links.GetLink(Core.UserID, ProjectID);
 
@@ -48,13 +47,6 @@ namespace RiseOp.Services.Trust
         
         private void ButtonOK_Click(object sender, EventArgs e)
         {
-            string name = NameBox.Text.Trim();
-
-            if (name == "")
-                return;
-
-            Links.LocalTrust.Name = NameBox.Text;
-
             OpLink link = Links.GetLink(Core.UserID, ProjectID);
 
             if (link != null)
@@ -64,15 +56,15 @@ namespace RiseOp.Services.Trust
 
             Core.Locations.LocalAway = AwayCheckBox.Checked;
 
-            if (LocationBox.Text != Core.User.Settings.Location || AwayMessage.Text != Core.User.Settings.AwayMessage)
+            if (LocationBox.Text != Core.Profile.Settings.Location || AwayMessage.Text != Core.Profile.Settings.AwayMessage)
             {
-                Core.User.Settings.Location = LocationBox.Text;
-                Core.User.Settings.AwayMessage = AwayMessage.Text;
+                Core.Profile.Settings.Location = LocationBox.Text;
+                Core.Profile.Settings.AwayMessage = AwayMessage.Text;
 
-                if (Core.User.Settings.AwayMessage.Length > 100)
-                    Core.User.Settings.AwayMessage = Core.User.Settings.AwayMessage.Substring(0, 100);
+                if (Core.Profile.Settings.AwayMessage.Length > 100)
+                    Core.Profile.Settings.AwayMessage = Core.Profile.Settings.AwayMessage.Substring(0, 100);
 
-                Links.Core.User.Save();
+                Links.Core.Profile.Save();
             }
 
             if (Core.Network.Responsive)

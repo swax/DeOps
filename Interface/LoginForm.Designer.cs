@@ -91,7 +91,7 @@ namespace RiseOp.Interface
             this.TextPassword.Name = "TextPassword";
             this.TextPassword.PasswordChar = '•';
             this.TextPassword.Size = new System.Drawing.Size(250, 20);
-            this.TextPassword.TabIndex = 4;
+            this.TextPassword.TabIndex = 1;
             this.TextPassword.TextChanged += new System.EventHandler(this.TextPassword_TextChanged);
             // 
             // ButtonLoad
@@ -101,7 +101,7 @@ namespace RiseOp.Interface
             this.ButtonLoad.Location = new System.Drawing.Point(109, 285);
             this.ButtonLoad.Name = "ButtonLoad";
             this.ButtonLoad.Size = new System.Drawing.Size(75, 23);
-            this.ButtonLoad.TabIndex = 5;
+            this.ButtonLoad.TabIndex = 2;
             this.ButtonLoad.Text = "Login";
             this.ButtonLoad.UseVisualStyleBackColor = true;
             this.ButtonLoad.Click += new System.EventHandler(this.ButtonLoad_Click);
@@ -113,7 +113,7 @@ namespace RiseOp.Interface
             this.ButtonExit.Location = new System.Drawing.Point(190, 285);
             this.ButtonExit.Name = "ButtonExit";
             this.ButtonExit.Size = new System.Drawing.Size(75, 23);
-            this.ButtonExit.TabIndex = 7;
+            this.ButtonExit.TabIndex = 3;
             this.ButtonExit.Text = "Exit";
             this.ButtonExit.UseVisualStyleBackColor = true;
             this.ButtonExit.Click += new System.EventHandler(this.ButtonExit_Click);
@@ -171,7 +171,7 @@ namespace RiseOp.Interface
             this.EnterSimLink.Location = new System.Drawing.Point(21, 290);
             this.EnterSimLink.Name = "EnterSimLink";
             this.EnterSimLink.Size = new System.Drawing.Size(63, 13);
-            this.EnterSimLink.TabIndex = 10;
+            this.EnterSimLink.TabIndex = 4;
             this.EnterSimLink.TabStop = true;
             this.EnterSimLink.Text = "Launch Sim";
             this.EnterSimLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.EnterSimLink_LinkClicked);
@@ -185,7 +185,7 @@ namespace RiseOp.Interface
             this.OpCombo.Location = new System.Drawing.Point(15, 217);
             this.OpCombo.Name = "OpCombo";
             this.OpCombo.Size = new System.Drawing.Size(190, 21);
-            this.OpCombo.TabIndex = 11;
+            this.OpCombo.TabIndex = 0;
             this.OpCombo.SelectedIndexChanged += new System.EventHandler(this.OpCombo_SelectedIndexChanged);
             // 
             // LoginForm
@@ -193,7 +193,7 @@ namespace RiseOp.Interface
             this.AcceptButton = this.ButtonLoad;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CancelButton = this.ButtonExit;
             this.ClientSize = new System.Drawing.Size(277, 320);
             this.Controls.Add(this.OpCombo);

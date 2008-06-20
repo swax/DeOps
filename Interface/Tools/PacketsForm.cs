@@ -50,7 +50,17 @@ namespace RiseOp.Interface.Tools
         private MenuItem MenuItemTunnel;
         private IContainer components;
 
-        internal PacketsForm(string name, DhtNetwork network)
+
+        internal static void Show(DhtNetwork network)
+        {
+            if (network.GuiPackets == null)
+                network.GuiPackets = new PacketsForm(network);
+
+            network.GuiPackets.Show();
+            network.GuiPackets.Activate();
+        }
+
+        internal PacketsForm(DhtNetwork network)
 		{
 			//
 			// Required for Windows Form Designer support
@@ -63,7 +73,7 @@ namespace RiseOp.Interface.Tools
 
 			UpdateLog = new UpdateLogHandler(AsyncUpdateLog);
 
-            Text = name + " Packets (" + Network.Core.User.Settings.UserName + ")";
+            Text = "Packets (" + Network.GetLabel() + ")";
 
             RefreshView();
 		}
@@ -760,7 +770,7 @@ namespace RiseOp.Interface.Tools
             ListViewPackets.Items.Clear();
             TreeViewPacket.Nodes.Clear();
         }
-	}
+    }
 
     internal class DataNode : TreeNode
     {

@@ -92,7 +92,7 @@ namespace RiseOp.Interface
             // 
             // MainSplit
             // 
-            this.MainSplit.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.MainSplit.BackColor = System.Drawing.Color.WhiteSmoke;
             this.MainSplit.Dock = System.Windows.Forms.DockStyle.Fill;
             this.MainSplit.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
             this.MainSplit.Location = new System.Drawing.Point(27, 0);
@@ -104,7 +104,7 @@ namespace RiseOp.Interface
             // 
             // MainSplit.Panel2
             // 
-            this.MainSplit.Panel2.BackColor = System.Drawing.SystemColors.Control;
+            this.MainSplit.Panel2.BackColor = System.Drawing.Color.WhiteSmoke;
             this.MainSplit.Panel2.Controls.Add(this.NavStrip);
             this.MainSplit.Panel2.Controls.Add(this.InternalPanel);
             this.MainSplit.Panel2.Controls.Add(this.TopToolStrip);
@@ -114,7 +114,7 @@ namespace RiseOp.Interface
             // 
             // CommandSplit
             // 
-            this.CommandSplit.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.CommandSplit.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandSplit.Dock = System.Windows.Forms.DockStyle.Fill;
             this.CommandSplit.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
             this.CommandSplit.ForeColor = System.Drawing.Color.White;
@@ -124,14 +124,14 @@ namespace RiseOp.Interface
             // 
             // CommandSplit.Panel1
             // 
+            this.CommandSplit.Panel1.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandSplit.Panel1.Controls.Add(this.SideNavStrip);
             this.CommandSplit.Panel1.Controls.Add(this.CommandTree);
             // 
             // CommandSplit.Panel2
             // 
-            this.CommandSplit.Panel2.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.CommandSplit.Panel2.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandSplit.Panel2.Controls.Add(this.StatusBrowser);
-            this.CommandSplit.Panel2.ForeColor = System.Drawing.SystemColors.ControlText;
             this.CommandSplit.Size = new System.Drawing.Size(171, 445);
             this.CommandSplit.SplitterDistance = 324;
             this.CommandSplit.TabIndex = 4;
@@ -326,7 +326,7 @@ namespace RiseOp.Interface
             this.InternalPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.InternalPanel.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.InternalPanel.BackColor = System.Drawing.Color.WhiteSmoke;
             this.InternalPanel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.InternalPanel.Location = new System.Drawing.Point(0, 56);
             this.InternalPanel.Name = "InternalPanel";
@@ -618,7 +618,7 @@ namespace RiseOp.Interface
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.ClientSize = new System.Drawing.Size(733, 445);
             this.Controls.Add(this.MainSplit);
             this.Controls.Add(this.SideToolStrip);

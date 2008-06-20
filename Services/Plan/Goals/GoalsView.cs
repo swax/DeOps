@@ -24,7 +24,7 @@ namespace RiseOp.Services.Plan
     {
         internal OpCore Core;
         internal PlanService Plans;
-        internal TrustService Links;
+        internal TrustService Trust;
 
         internal ulong UserID;
         internal uint ProjectID;
@@ -125,7 +125,7 @@ namespace RiseOp.Services.Plan
 
             Plans = plans;
             Core = Plans.Core;
-            Links = Core.Links;
+            Trust = Core.Trust;
 
             UserID = id;
             ProjectID = project;
@@ -146,10 +146,10 @@ namespace RiseOp.Services.Plan
             if (UserID == Core.UserID)
                 title += "My ";
             else
-                title += Links.GetName(UserID) + "'s ";
+                title += Trust.GetName(UserID) + "'s ";
 
             if (ProjectID != 0)
-                title += Links.GetProjectName(ProjectID) + " ";
+                title += Trust.GetProjectName(ProjectID) + " ";
 
             title += "Goals";
 
@@ -168,7 +168,7 @@ namespace RiseOp.Services.Plan
 
         internal override void Init()
         {
-            Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
+            Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
             Plans.PlanUpdate += new PlanUpdateHandler(Plans_Update);
 
             Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
@@ -180,7 +180,7 @@ namespace RiseOp.Services.Plan
             
          
             // research highers for assignments
-            List<ulong> ids = Links.GetUplinkIDs(UserID, ProjectID);
+            List<ulong> ids = Trust.GetUplinkIDs(UserID, ProjectID);
 
             foreach (ulong id in ids)
                 Plans.Research(id);
@@ -218,7 +218,7 @@ namespace RiseOp.Services.Plan
                     return false;
             }
 
-            Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
+            Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
             Plans.PlanUpdate -= new PlanUpdateHandler(Plans_Update);
 
             Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
@@ -231,11 +231,11 @@ namespace RiseOp.Services.Plan
             MainPanel.GetFocused();
         }
 
-        void Links_Update(ulong key)
+        void Trust_Update(ulong key)
         {
             RefreshAssigned();
 
-            MainPanel.LinkUpdate(key);
+            MainPanel.TrustUpdate(key);
         }
 
         void Plans_Update(OpPlan plan)
@@ -503,7 +503,7 @@ namespace RiseOp.Services.Plan
             {
                 tuples.Add(new string[] { "title", goal.Title });
                 tuples.Add(new string[] { "due", goal.End.ToLocalTime().ToString("D") });
-                tuples.Add(new string[] { "person", Links.GetName(goal.Person) });
+                tuples.Add(new string[] { "person", Trust.GetName(goal.Person) });
                 tuples.Add(new string[] { "notes", goal.Description.Replace("\r\n", "<br>") });
 
                 notes = goal.Description;

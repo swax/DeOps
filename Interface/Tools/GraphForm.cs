@@ -34,7 +34,17 @@ namespace RiseOp.Interface.Tools
 		internal UpdateGraphHandler UpdateGraph;
 
 
-        internal GraphForm(string name, DhtNetwork network)
+        internal static void Show(DhtNetwork network)
+        {
+            if (network.GuiGraph == null)
+                network.GuiGraph = new GraphForm(network);
+
+            network.GuiGraph.Show();
+            network.GuiGraph.Activate();
+
+        }
+
+        internal GraphForm(DhtNetwork network)
 		{
 			//
 			// Required for Windows Form Designer support
@@ -47,10 +57,7 @@ namespace RiseOp.Interface.Tools
 
 			UpdateGraph = new UpdateGraphHandler(AsyncUpdateGraph);
 
-            if (Core.User == null)
-                Text = "Global Graph (" + Core.Context.LocalIP.ToString() + ")";
-            else
-                Text = "Graph (" + Core.User.Settings.UserName + ")";
+            Text = "Graph (" + Network.GetLabel() + ")";
 
 			Redraw = true;
 		}
@@ -265,5 +272,6 @@ namespace RiseOp.Interface.Tools
 
 			return retVal;
 		}
-	}
+
+    }
 }

@@ -69,12 +69,12 @@ namespace RiseOp.Services.Plan
             PersonID = id;
 
             if (id != 0)
-                PickLink.Text = Core.Links.GetName(PersonID);
+                PickLink.Text = Core.Trust.GetName(PersonID);
         }
 
         private void PickLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            AddLinks add = new AddLinks(Core.Links, Editing.Project);
+            AddLinks add = new AddLinks(Core.Trust, Editing.Project);
 
             // force root to self, only if self is not in a loop, in which case anyone in loop can be assigned sub-goals
             //if(!Core.Links.LocalLink.LoopRoot.ContainsKey(Editing.Project)), assignment loops, not obvious behavior

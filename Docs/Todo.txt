@@ -1,10 +1,60 @@
 
-dont do ping checks if receiving data - should be in context
-	use only when not receiving data as an indication that 'back online' and reset cache attempts
+Dealing with LANs
+	lanMode - default is true
+		broadcast ping
+		accept connection from other lan node - firewall set to open
+		local IP set to non-LAN ip, then lan mode switched off
+			leaving LAN mode firewall set to blocked - handle switch in code - currently just an exception there
+		disconnected - reset lanMode / IP
+
+	know diff between fw open on LAN and on internet
+	should simulate local net screwing up firewall settings and its effect on connecting with the outside	
+		127.0.0.1 - set this default
+		10.0.0.0 - 10.255.255.255
+		172.16.0.0 - 172.31.255.255
+		192.168.0.0 - 192.168.255.255
+		
+	if firewalled/NAT 
+		display in big letters forward TCP/UDP ports xxxx
+		by default set TCP/UDP ports equal
 	
-dont allow downloads to be added with the same destination as a d/l already going
-	maybe wait till multi-source changes, didnt seem to hurt anything... though duplicate transfer...
-	test with storage downloads before / after, try to diagnose a little
+	
+spring release
+	user management - change name / password / operation name (if non-public) / icon (last 2 inherited from very top)
+	LAN handling
+	LAN broadcast
+	GOAL: all this done for real LAN testing FRIDAY
+	
+	licensing, installer, release security
+	web caching ips/files - look at using EC2
+		run crawler once a day, upload highest uptime nodes to webcache site
+	one more stab at security in settings, tray, link changes
+	icon changing
+		
+	*** items from todo
+	31 crits
+	implement upnp
+	network bandwidth limits - tracking in sim triggers node to start logging bw data
+	store caching
+	multisource downloading 
+		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
+		right click to cancel, increase/decrease priority
+	live locations/chat
+	website
+	
+	
+	
+graphics
+	data, profile, files, bolder side search button
+	new icon 3 white birds as chevron, fluffy cloud
+	plans (telescope) comm (?) data (?)
+	put images all in right services directories
+	small sticky note square for board posts icon
+	
+3 trust chain
+	adding files to storage causes re-download of unrelated file
+	change middle teir file, high level integrates with original verion, but not inherited by subs
+	working not saved between runs sometimes
 	
 global proxying
 	have sim print warning in status if global proxy nodes exist in routing table, to ensure they're weeded out
@@ -66,49 +116,6 @@ other
 	board - All/Higher/Lower Posts, New Post
 	test clients with different local times, init random gmt offsets
 
-graphics
-	data, profile, files, bolder side search button
-	new splash image, new icon (trees)
-	plans (telescope) comm (?) data (?)
-	put images all in right services directories
-	small sticky note square for board posts icon
-
-
-Dealing with LANs
-	detect clients on LAN to connect to
-		add LAN broadcast ping interval to boostrap
-	implement upnp
-	both above need real world testing		
-
-	know diff between fw open on LAN and on internet
-	should simulate local net screwing up firewall settings and its effect on connecting with the outside	
-		10.0.0.0 - 10.255.255.255
-		172.16.0.0 - 172.31.255.255
-		192.168.0.0 - 192.168.255.255
-	if firewalled/NAT 
-		display in big letters forward TCP/UDP ports xxxx
-		by default set TCP/UDP ports equal
-	if can ping open sites ms/google/etc.. only change to fw open on connect from non-private IP
-	
-	
-spring release
-	auto-update, exception catching/reporting
-	licensing, installer
-	web caching ips/files - look at using EC2
-		run crawler once a day, upload highest uptime nodes to webcache site
-	LAN handling?
-	GOAL: all this done for real LAN testing next weekend!!!
-	
-	*** items from todo
-	31 crits
-	network bandwidth limits - tracking in sim triggers node to start logging bw data
-	store caching
-	multisource downloading 
-		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
-		right click to cancel, increase/decrease priority
-	live locations/chat
-	website
-	
 
 Interface
 	General
@@ -119,6 +126,7 @@ Interface
 		alphabetizize component menus, project button, nav bar, project nav drop down
 		dont allow nav bar person switch on mail/chat components
 		trust info box - options like trust, IM, mail, leave/join project
+		exception catching/reporting - move to POST, get last 50 log entries as well by time
 		
 	connecting entertainment
 		visual aid so people can watch the connection process, entertaining, embed in main panel?

@@ -175,11 +175,11 @@ namespace RiseOp.Simulator
             }
             else
             {
-                AddAddress(new IPEndPoint(core.Sim.RealIP, core.User.Settings.TcpPort), core.Network, true);
-                AddAddress(new IPEndPoint(core.Sim.RealIP, core.User.Settings.UdpPort), core.Network, false);
+                AddAddress(new IPEndPoint(core.Sim.RealIP, core.Profile.Settings.TcpPort), core.Network, true);
+                AddAddress(new IPEndPoint(core.Sim.RealIP, core.Profile.Settings.UdpPort), core.Network, false);
 
-                UserNames[core.UserID] = core.User.Settings.UserName;
-                OpNames[core.Network.OpID] = core.User.Settings.Operation;
+                UserNames[core.UserID] = core.Profile.Settings.UserName;
+                OpNames[core.Network.OpID] = core.Profile.Settings.Operation;
             }
         }
 
@@ -202,8 +202,8 @@ namespace RiseOp.Simulator
             }
             else
             {
-                TcpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.User.Settings.TcpPort));
-                UdpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.User.Settings.UdpPort));
+                TcpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.Profile.Settings.TcpPort));
+                UdpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.Profile.Settings.UdpPort));
             }
         }
 

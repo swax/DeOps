@@ -30,8 +30,8 @@ namespace RiseOp.Services.Plan
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ScheduleView));
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader4 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             this.HoverTimer = new System.Windows.Forms.Timer(this.components);
             this.TopStrip = new System.Windows.Forms.ToolStrip();
             this.NewButton = new System.Windows.Forms.ToolStripButton();
@@ -138,7 +138,7 @@ namespace RiseOp.Services.Plan
             // 
             // splitContainer1.Panel1
             // 
-            this.splitContainer1.Panel1.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.splitContainer1.Panel1.BackColor = System.Drawing.Color.WhiteSmoke;
             this.splitContainer1.Panel1.Controls.Add(this.ChangesLabel);
             this.splitContainer1.Panel1.Controls.Add(this.DiscardLink);
             this.splitContainer1.Panel1.Controls.Add(this.SaveLink);
@@ -229,7 +229,7 @@ namespace RiseOp.Services.Plan
             // 
             this.ScheduleSlider.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.ScheduleSlider.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.ScheduleSlider.BackColor = System.Drawing.Color.WhiteSmoke;
             this.ScheduleSlider.Location = new System.Drawing.Point(180, 23);
             this.ScheduleSlider.Name = "ScheduleSlider";
             this.ScheduleSlider.Size = new System.Drawing.Size(172, 27);
@@ -277,29 +277,29 @@ namespace RiseOp.Services.Plan
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.PlanStructure.BackColor = System.Drawing.SystemColors.Window;
             this.PlanStructure.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            toggleColumnHeader3.Hovered = false;
-            toggleColumnHeader3.Image = null;
-            toggleColumnHeader3.Index = 0;
-            toggleColumnHeader3.Pressed = false;
-            toggleColumnHeader3.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
-            toggleColumnHeader3.Selected = false;
-            toggleColumnHeader3.Text = "Structure";
-            toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader3.Visible = true;
-            toggleColumnHeader3.Width = 180;
-            toggleColumnHeader4.Hovered = false;
-            toggleColumnHeader4.Image = null;
-            toggleColumnHeader4.Index = 0;
-            toggleColumnHeader4.Pressed = false;
-            toggleColumnHeader4.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader4.Selected = false;
-            toggleColumnHeader4.Text = "Items";
-            toggleColumnHeader4.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader4.Visible = true;
-            toggleColumnHeader4.Width = 171;
+            toggleColumnHeader1.Hovered = false;
+            toggleColumnHeader1.Image = null;
+            toggleColumnHeader1.Index = 0;
+            toggleColumnHeader1.Pressed = false;
+            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader1.Selected = false;
+            toggleColumnHeader1.Text = "Structure";
+            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader1.Visible = true;
+            toggleColumnHeader1.Width = 180;
+            toggleColumnHeader2.Hovered = false;
+            toggleColumnHeader2.Image = null;
+            toggleColumnHeader2.Index = 0;
+            toggleColumnHeader2.Pressed = false;
+            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader2.Selected = false;
+            toggleColumnHeader2.Text = "Items";
+            toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader2.Visible = true;
+            toggleColumnHeader2.Width = 171;
             this.PlanStructure.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
-            toggleColumnHeader3,
-            toggleColumnHeader4});
+            toggleColumnHeader1,
+            toggleColumnHeader2});
             this.PlanStructure.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.PlanStructure.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.PlanStructure.DisableHorizontalScroll = true;
@@ -317,9 +317,9 @@ namespace RiseOp.Services.Plan
             this.PlanStructure.SmallImageList = null;
             this.PlanStructure.StateImageList = null;
             this.PlanStructure.TabIndex = 21;
-            this.PlanStructure.Enter += new System.EventHandler(this.PlanStructure_Enter);
             this.PlanStructure.SelectedItemChanged += new System.EventHandler(this.PlanStructure_SelectedItemChanged);
             this.PlanStructure.Leave += new System.EventHandler(this.PlanStructure_Leave);
+            this.PlanStructure.Enter += new System.EventHandler(this.PlanStructure_Enter);
             // 
             // DetailsBrowser
             // 
@@ -335,7 +335,7 @@ namespace RiseOp.Services.Plan
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.TopStrip);
             this.DoubleBuffered = true;

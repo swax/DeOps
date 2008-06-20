@@ -40,7 +40,7 @@ namespace RiseOp.Implementation.Transport
             Network = network;
             Core = network.Core;
 
-            ListenPort = Network.IsGlobal ? Network.GlobalConfig.UdpPort : Core.User.Settings.UdpPort;
+            ListenPort = Network.IsGlobal ? Network.GlobalConfig.UdpPort : Core.Profile.Settings.UdpPort;
             
             if (Core.Sim != null)
                 return;

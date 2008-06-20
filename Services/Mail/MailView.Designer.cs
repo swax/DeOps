@@ -104,6 +104,7 @@ namespace RiseOp.Services.Mail
             // 
             // splitContainer1
             // 
+            this.splitContainer1.BackColor = System.Drawing.Color.WhiteSmoke;
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.Location = new System.Drawing.Point(0, 25);
             this.splitContainer1.Name = "splitContainer1";
@@ -173,10 +174,10 @@ namespace RiseOp.Services.Mail
             this.MessageHeader.Location = new System.Drawing.Point(0, 0);
             this.MessageHeader.MinimumSize = new System.Drawing.Size(20, 20);
             this.MessageHeader.Name = "MessageHeader";
+            this.MessageHeader.ScriptErrorsSuppressed = true;
             this.MessageHeader.ScrollBarsEnabled = false;
             this.MessageHeader.Size = new System.Drawing.Size(378, 68);
             this.MessageHeader.TabIndex = 0;
-            this.MessageHeader.ScriptErrorsSuppressed = true;
             this.MessageHeader.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.MessageHeader_Navigating);
             // 
             // MessageBody
@@ -202,7 +203,7 @@ namespace RiseOp.Services.Mail
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.toolStrip1);
             this.Name = "MailView";

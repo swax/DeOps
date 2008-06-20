@@ -164,7 +164,7 @@ namespace RiseOp.Interface
             this.AcceptButton = this.ButtonOK;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CancelButton = this.ButtonCancel;
             this.ClientSize = new System.Drawing.Size(311, 223);
             this.Controls.Add(this.label5);

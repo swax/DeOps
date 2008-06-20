@@ -57,7 +57,7 @@ namespace RiseOp.Services.Transfer
             // create and clear transfer dir
             try
             {
-                TransferPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
+                TransferPath = Core.Profile.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
                 Directory.CreateDirectory(TransferPath);
 
                 string[] files = Directory.GetFiles(TransferPath);
@@ -93,6 +93,8 @@ namespace RiseOp.Services.Transfer
             // add to download pending
             int id = Core.RndGen.Next();
             DownloadMap[id] = new FileDownload(Core, id, target, details, args, endEvent);
+
+            Debug.Assert(!File.Exists(DownloadMap[id].Destination));
 
             Pending.AddLast(id);
 

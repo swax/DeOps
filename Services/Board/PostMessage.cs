@@ -136,10 +136,10 @@ namespace RiseOp.Services.Board
                 if (UserID == Core.UserID)
                     title += "My ";
                 else
-                    title += Core.Links.GetName(UserID) + "'s ";
+                    title += Core.Trust.GetName(UserID) + "'s ";
 
                 if (ProjectID != 0)
-                    title += Core.Links.GetProjectName(ProjectID) + " ";
+                    title += Core.Trust.GetProjectName(ProjectID) + " ";
 
                 title += "Board";
             }

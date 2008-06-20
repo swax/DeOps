@@ -28,6 +28,9 @@ namespace RiseOp.Interface
             {
                 ValidateInput();
 
+                if (!Utilities.VerifyPassphrase(Core, ThreatLevel.Medium))
+                    return;
+
                 LinkBox.Text = Core.CreateInvite(PasswordBox.Text);
             }
             catch (Exception ex)

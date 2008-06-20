@@ -106,7 +106,7 @@ namespace RiseOp.Interface
             this.LinkBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.LinkBox.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.LinkBox.BackColor = System.Drawing.Color.WhiteSmoke;
             this.LinkBox.Location = new System.Drawing.Point(15, 170);
             this.LinkBox.Multiline = true;
             this.LinkBox.Name = "LinkBox";
@@ -154,7 +154,7 @@ namespace RiseOp.Interface
             this.AcceptButton = this.CreateButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CancelButton = this.ButtonCancel;
             this.ClientSize = new System.Drawing.Size(367, 331);
             this.Controls.Add(this.CopyLink);

@@ -20,7 +20,7 @@ namespace RiseOp.Services.Profile
     {
         OpCore Core;
         ProfileService Profiles;
-        TrustService Links;
+        TrustService Trust;
 
         ulong UserID;
         internal uint ProjectID;
@@ -36,7 +36,7 @@ namespace RiseOp.Services.Profile
 
             Profiles = profile;
             Core = profile.Core;
-            Links = Core.Links;
+            Trust = Core.Trust;
 
             UserID = id;
             ProjectID = project;
@@ -45,7 +45,7 @@ namespace RiseOp.Services.Profile
         internal override void Init()
         {
             Profiles.ProfileUpdate += new ProfileUpdateHandler(Profile_Update);
-            Links.GuiUpdate += new LinkGuiUpdateHandler(Links_Update);
+            Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
             Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
             
             OpProfile profile = Profiles.GetProfile(UserID);
@@ -57,7 +57,7 @@ namespace RiseOp.Services.Profile
                 Profile_Update(profile);
 
             List<ulong> ids = new List<ulong>();
-            ids.AddRange(Links.GetUplinkIDs(UserID, ProjectID));
+            ids.AddRange(Trust.GetUplinkIDs(UserID, ProjectID));
 
             foreach (ulong id in ids)
                 Profiles.Research(id);
@@ -67,7 +67,7 @@ namespace RiseOp.Services.Profile
         internal override bool Fin()
         {
             Profiles.ProfileUpdate -= new ProfileUpdateHandler(Profile_Update);
-            Links.GuiUpdate -= new LinkGuiUpdateHandler(Links_Update);
+            Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
             Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
 
             return true;
@@ -110,7 +110,7 @@ namespace RiseOp.Services.Profile
             if (UserID == Profiles.Core.UserID)
                 return "My Profile";
 
-            return Profiles.Core.Links.GetName(UserID) + "'s Profile";
+            return Profiles.Core.Trust.GetName(UserID) + "'s Profile";
         }
 
         internal override Size GetDefaultSize()
@@ -123,10 +123,10 @@ namespace RiseOp.Services.Profile
             return ProfileRes.IconX;
         }
 
-        void Links_Update(ulong key)
+        void Trust_Update(ulong key)
         {
             // if updated node is local, or higher, refresh so motd updates
-            if (key != UserID && !Core.Links.IsHigher(UserID, key, ProjectID))
+            if (key != UserID && !Core.Trust.IsHigher(UserID, key, ProjectID))
                 return;
 
             OpProfile profile = Profiles.GetProfile(UserID);
@@ -142,7 +142,7 @@ namespace RiseOp.Services.Profile
             // if self or in uplink chain, update profile
             List<ulong> uplinks = new List<ulong>();
             uplinks.Add(UserID);
-            uplinks.AddRange(Core.Links.GetUplinkIDs(UserID, ProjectID));
+            uplinks.AddRange(Core.Trust.GetUplinkIDs(UserID, ProjectID));
 
             if (!uplinks.Contains(profile.UserID))
                 return;
@@ -332,7 +332,7 @@ namespace RiseOp.Services.Profile
             string final = template;
 
             // get link
-            OpLink link = service.Core.Links.GetLink(id, project);
+            OpLink link = service.Core.Trust.GetLink(id, project);
 
             if (link == null)
                 return "";
@@ -403,7 +403,7 @@ namespace RiseOp.Services.Profile
                         tagfilled = true;
 
                         if (parts[1] == "name")
-                            final = final.Replace(fulltag, service.Core.Links.GetName(id));
+                            final = final.Replace(fulltag, service.Core.Trust.GetName(id));
 
                         else if (parts[1] == "title")
                             final = final.Replace(fulltag, link.Title);
@@ -460,7 +460,7 @@ namespace RiseOp.Services.Profile
             // get links in chain up
             List<ulong> uplinks = new List<ulong>();
             uplinks.Add(id);
-            uplinks.AddRange(service.Core.Links.GetUplinkIDs(id, project));     
+            uplinks.AddRange(service.Core.Trust.GetUplinkIDs(id, project));     
             uplinks.Reverse();
 
             // build cascading motds

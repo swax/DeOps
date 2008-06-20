@@ -73,7 +73,7 @@ namespace RiseOp.Services.Mail
 
             Mail  = mail;
             Core  = mail.Core;
-            Links = Core.Links;
+            Links = Core.Trust;
 
             MessageList.SmallImageList = new List<Image>();
             MessageList.SmallImageList.Add(MailRes.Mail);

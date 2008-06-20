@@ -49,7 +49,7 @@ namespace RiseOp.Services.Chat
 
             Core = chat.Core;
             Locations = Core.Locations;
-            Links = Core.Links;
+            Links = Core.Trust;
 
             if (room.Kind == RoomKind.Command_High || room.Kind == RoomKind.Live_High)
                 MessageTextBox.BackColor = Color.FromArgb(255, 250, 250);
@@ -75,6 +75,8 @@ namespace RiseOp.Services.Chat
             Chat_MembersUpdate();
 
             DisplayLog();
+
+            InputControl.InputBox.Select();
         }
 
         internal bool Fin()
@@ -286,7 +288,7 @@ namespace RiseOp.Services.Chat
                 MessageTextBox.Focus();
                 MessageTextBox.SelectionStart = MessageTextBox.Text.Length;
                 MessageTextBox.ScrollToCaret();
-
+                
                 InputControl.Focus();
                 InputControl.InputBox.Focus();
             }
@@ -304,7 +306,7 @@ namespace RiseOp.Services.Chat
             if (node == null)
                 return;
 
-            Core.Links.Research(node.UserID, 0, false);
+            Core.Trust.Research(node.UserID, 0, false);
             Core.Locations.Research(node.UserID);
 
             ContextMenuStripEx treeMenu = new ContextMenuStripEx();

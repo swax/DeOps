@@ -60,13 +60,12 @@ namespace RiseOp.Implementation
         internal SimInstance Sim;
 
         // sub-classes
-		internal Identity    User;
+		internal Identity    Profile;
         internal DhtNetwork  Network;
 
         // services
-        internal TrustService    Links;
+        internal TrustService    Trust;
         internal LocationService Locations;
-        internal GlobalService   GlobalLoc;
         internal TransferService Transfers;
         internal LocalSync       Sync;
 
@@ -132,8 +131,8 @@ namespace RiseOp.Implementation
 
             ConsoleLog("RiseOp " + Application.ProductVersion);
 
-            User = new Identity(path, pass, this);
-            User.Load(LoadModeType.Settings);
+            Profile = new Identity(path, pass, this);
+            Profile.Load(LoadModeType.Settings);
 
             Network = new DhtNetwork(this, false);
 
@@ -141,13 +140,13 @@ namespace RiseOp.Implementation
 
             Test test = new Test(); // should be empty unless running a test    
 
-            User.Load(LoadModeType.AllCaches);
+            Profile.Load(LoadModeType.AllCaches);
 
             // delete data dirs if frsh start indicated
             if (Sim != null && Sim.Internet.FreshStart)
                 for (int service = 1; service < 20; service++ ) // 0 is temp folder, cleared on startup
                 {
-                    string dirpath = User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + service.ToString();
+                    string dirpath = Profile.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + service.ToString();
                     if (Directory.Exists(dirpath))
                         Directory.Delete(dirpath, true);
                 }
@@ -193,7 +192,7 @@ namespace RiseOp.Implementation
             Context.Cores.LockReading(delegate()
             {
                 foreach (OpCore core in Context.Cores)
-                    core.User.Load(LoadModeType.GlobalCache);
+                    core.Profile.Load(LoadModeType.GlobalCache);
             });
 
             // get cache from all loaded cores
@@ -504,17 +503,16 @@ namespace RiseOp.Implementation
             }
         }
 
-        Queue<Delegate> LastEvents = new Queue<Delegate>();
+        // used for debugging - Queue<Delegate> LastEvents = new Queue<Delegate>();
 
         internal void RunInGuiThread(Delegate method, params object[] args)
         {
             if (method == null || GuiMain == null)
                 return;
 
-            LastEvents.Enqueue(method);
-            while (LastEvents.Count > 10)
-                LastEvents.Dequeue();
-
+            //LastEvents.Enqueue(method);
+            //while (LastEvents.Count > 10)
+            //    LastEvents.Dequeue();
 
             GuiMain.BeginInvoke(method, args);
         }
@@ -536,7 +534,7 @@ namespace RiseOp.Implementation
                 byte[] rnd = new byte[16];
                 RndGen.NextBytes(rnd);
 
-                path = User.TempPath + Path.DirectorySeparatorChar + Utilities.BytestoHex(rnd);
+                path = Profile.TempPath + Path.DirectorySeparatorChar + Utilities.BytestoHex(rnd);
 
                 if ( !File.Exists(path) )
                     break;
@@ -558,16 +556,16 @@ namespace RiseOp.Implementation
             if (id == UserID)
                 return false;
 
-            if(!localRegionOnly && Links.IsHigher(id, project))
+            if(!localRegionOnly && Trust.IsHigher(id, project))
                 return true;
             
-            if(localRegionOnly && Links.IsHigherDirect(id, project))
+            if(localRegionOnly && Trust.IsHigherDirect(id, project))
                 return true;
 
-            if(Links.IsAdjacent(id, project))
+            if(Trust.IsAdjacent(id, project))
                 return true;
 
-            if (Links.IsLowerDirect(id, project))
+            if (Trust.IsLowerDirect(id, project))
                 return true;
 
             return false;
@@ -582,6 +580,14 @@ namespace RiseOp.Implementation
 
         internal void Exit()
         {
+            // if main interface not closed (triggered from auto-update) then properly close main window
+            // let user save files etc..
+            if (GuiMain != null)
+            {
+                GuiMain.Close();
+                return;
+            }
+
             CoreRunning = false;
 
             if(CoreThread != null && CoreThread.IsAlive)
@@ -596,7 +602,7 @@ namespace RiseOp.Implementation
             if (Network.IsGlobal)
                 Network.GlobalConfig.Save(this);
             else
-                User.Save();
+                Profile.Save();
 
             foreach (OpService service in ServiceMap.Values)
                 service.Dispose();
@@ -682,9 +688,9 @@ namespace RiseOp.Implementation
             // generate invite packet
             OneWayInvite invite = new OneWayInvite();
 
-            invite.OpName = User.Settings.Operation;
-            invite.OpAccess = User.Settings.OpAccess;
-            invite.OpID = User.Settings.OpKey.Key;
+            invite.OpName = Profile.Settings.Operation;
+            invite.OpAccess = Profile.Settings.OpAccess;
+            invite.OpID = Profile.Settings.OpKey.Key;
             invite.Contacts = new List<DhtContact>(Network.Routing.GetCacheArea());
 
             // encrypt packet with hashed password

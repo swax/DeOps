@@ -33,7 +33,7 @@ namespace RiseOp.Services.Plan
         internal G2Protocol  Protocol;
         internal DhtNetwork  Network;
         internal DhtStore    Store;
-        internal TrustService Links;
+        internal TrustService Trust;
 
         internal OpPlan LocalPlan;
 
@@ -53,7 +53,7 @@ namespace RiseOp.Services.Plan
             Network = core.Network;
             Protocol = Network.Protocol;
             Store = Network.Store;
-            Links = Core.Links;
+            Trust = Core.Trust;
             
             if (Core.Sim != null)
                 SaveInterval = 30;
@@ -68,7 +68,7 @@ namespace RiseOp.Services.Plan
  
             if (!PlanMap.SafeContainsKey(Core.UserID))
             {
-                LocalPlan = new OpPlan(new OpVersionedFile(Core.User.Settings.KeyPublic));
+                LocalPlan = new OpPlan(new OpVersionedFile(Core.Profile.Settings.KeyPublic));
                 LocalPlan.Init();
                 LocalPlan.Loaded = true;
                 PlanMap.SafeAdd(Core.UserID, LocalPlan);
@@ -169,11 +169,11 @@ namespace RiseOp.Services.Plan
             {
                 List<LocationData> locations = new List<LocationData>();
 
-                Links.ProjectRoots.LockReading(delegate()
+                Trust.ProjectRoots.LockReading(delegate()
                 {
-                    foreach (uint project in Links.ProjectRoots.Keys)
-                        if (newPlan.UserID == Core.UserID || Links.IsHigher(newPlan.UserID, project))
-                            Links.GetLocsBelow(Core.UserID, project, locations);
+                    foreach (uint project in Trust.ProjectRoots.Keys)
+                        if (newPlan.UserID == Core.UserID || Trust.IsHigher(newPlan.UserID, project))
+                            Trust.GetLocsBelow(Core.UserID, project, locations);
                 });
 
                 Store.PublishDirect(locations, newPlan.UserID, ServiceID, DataTypeFile, newPlan.File.SignedHeader);
@@ -182,10 +182,10 @@ namespace RiseOp.Services.Plan
 
             // see if we need to update our own goal estimates
             if (newPlan.UserID != Core.UserID && LocalPlan != null)
-                Links.ProjectRoots.LockReading(delegate()
+                Trust.ProjectRoots.LockReading(delegate()
                 {
-                    foreach (uint project in Links.ProjectRoots.Keys)
-                        if (Links.IsLower(Core.UserID, newPlan.UserID, project)) // updated plan must be lower than us to have an effect
+                    foreach (uint project in Trust.ProjectRoots.Keys)
+                        if (Trust.IsLower(Core.UserID, newPlan.UserID, project)) // updated plan must be lower than us to have an effect
                             foreach (int ident in LocalPlan.GoalMap.Keys)
                             {
                                 if (!newPlan.Loaded)
@@ -216,7 +216,7 @@ namespace RiseOp.Services.Plan
                 Core.RunInGuiThread(PlanUpdate, newPlan);
 
             if (Core.NewsWorthy(newPlan.UserID, 0, false))
-                Core.MakeNews("Plan updated by " + Links.GetName(newPlan.UserID), newPlan.UserID, 0, false, PlanRes.Schedule, Menu_ScheduleView);
+                Core.MakeNews("Plan updated by " + Trust.GetName(newPlan.UserID), newPlan.UserID, 0, false, PlanRes.Schedule, Menu_ScheduleView);
                 
         }
 
@@ -262,7 +262,7 @@ namespace RiseOp.Services.Plan
 
                 OpVersionedFile file = Cache.UpdateLocal(tempPath, key, null);
 
-                Store.PublishDirect(Core.Links.GetLocsAbove(), Core.UserID, ServiceID, DataTypeFile, file.SignedHeader);
+                Store.PublishDirect(Core.Trust.GetLocsAbove(), Core.UserID, ServiceID, DataTypeFile, file.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -413,7 +413,7 @@ namespace RiseOp.Services.Plan
                 foreach (PlanGoal sub in plan.GoalMap[goal.Ident])
                     if (goal.BranchDown == sub.BranchUp && sub.BranchDown != 0)
                     {
-                        if (Links.TrustMap.SafeContainsKey(sub.Person) && !Links.IsLower(goal.Person, sub.Person, goal.Project))
+                        if (Trust.TrustMap.SafeContainsKey(sub.Person) && !Trust.IsLower(goal.Person, sub.Person, goal.Project))
                             continue; // only pass if link file for sub is loaded, else assume linked so whole net can be reported
 
                         GetEstimate(sub, ref completed, ref total);
@@ -428,7 +428,7 @@ namespace RiseOp.Services.Plan
             List<int> assigned = new List<int>();
 
             // foreach self & higher
-            List<ulong> ids = Links.GetUplinkIDs(target, project);
+            List<ulong> ids = Trust.GetUplinkIDs(target, project);
             ids.Add(target);
 
             foreach (ulong id in ids)
