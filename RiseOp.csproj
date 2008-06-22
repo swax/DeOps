@@ -6,7 +6,7 @@
     <ProjectGuid>{83CFFBE4-8EB9-446D-851A-3874799F3172}</ProjectGuid>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ApplicationIcon>rank.ico</ApplicationIcon>
+    <ApplicationIcon>riseop.ico</ApplicationIcon>
     <AssemblyKeyContainerName>
     </AssemblyKeyContainerName>
     <AssemblyName>RiseOp</AssemblyName>
@@ -112,7 +112,11 @@
     <Compile Include="AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Implementation\Transport\LanHandler.cs" />
     <Compile Include="Implementation\Transport\UPnP.cs" />
+    <Compile Include="Interface\CustomIconForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Interface\ErrorReport.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -608,6 +612,8 @@
     <None Include="Interface\Res\settings.png" />
     <None Include="Interface\Res\tools.png" />
     <None Include="Interface\Res\manage.png" />
+    <None Include="Interface\Res\riseop.ico" />
+    <Content Include="riseop.ico" />
     <Content Include="Services\Board\Board.txt" />
     <None Include="Services\Chat\Res\chat.ico" />
     <None Include="Services\Board\Res\lower.png" />
@@ -698,7 +704,6 @@
     <None Include="Interface\Res\data.png" />
     <None Include="Interface\Res\comm.png" />
     <None Include="Interface\Res\plans.png" />
-    <Content Include="rank.ico" />
     <None Include="Graphics\leftarrow.png" />
     <None Include="Graphics\rightarrow.png" />
     <None Include="Properties\Settings.settings">

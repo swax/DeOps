@@ -28,7 +28,6 @@ namespace RiseOp.Interface
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ExternalView));
             this.SuspendLayout();
             // 
             // ExternalView
@@ -37,11 +36,10 @@ namespace RiseOp.Interface
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.ClientSize = new System.Drawing.Size(501, 594);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "ExternalView";
             this.Text = "PanelHost";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ExternalView_FormClosing);
             this.Load += new System.EventHandler(this.ExternalWin_Load);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ExternalView_FormClosing);
             this.ResumeLayout(false);
 
         }

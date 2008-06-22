@@ -28,7 +28,6 @@ namespace RiseOp.Simulator
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(NetView));
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.LegendMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.TrackMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -69,7 +68,6 @@ namespace RiseOp.Simulator
             this.ClientSize = new System.Drawing.Size(426, 408);
             this.Controls.Add(this.menuStrip1);
             this.DoubleBuffered = true;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "NetView";
             this.Text = "NetView";

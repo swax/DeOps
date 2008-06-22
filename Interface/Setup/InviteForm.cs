@@ -11,7 +11,7 @@ using RiseOp.Implementation;
 
 namespace RiseOp.Interface
 {
-    internal partial class InviteForm : Form
+    internal partial class InviteForm : CustomIconForm
     {
         OpCore Core;
 

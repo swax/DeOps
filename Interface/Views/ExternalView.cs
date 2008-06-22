@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace RiseOp.Interface
 {
-    internal partial class ExternalView : Form
+    internal partial class ExternalView : CustomIconForm
     {
         MainForm  Main;
         internal ViewShell Shell;

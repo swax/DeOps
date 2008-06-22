@@ -40,7 +40,7 @@ using RiseOp.Simulator;
 namespace RiseOp.Implementation
 {
 	internal enum FirewallType { Blocked, NAT, Open };
-    internal enum TransportProtocol { Tcp, Udp, Rudp, Tunnel };
+    internal enum TransportProtocol { Tcp, Udp, LAN, Rudp, Tunnel };
 
 
     internal delegate void LoadHandler();
@@ -75,6 +75,9 @@ namespace RiseOp.Implementation
 
 
 		// properties
+        internal IPAddress LocalIP = IPAddress.Parse("127.0.0.1");
+        internal FirewallType Firewall = FirewallType.Blocked;
+
         internal UInt64       UserID { get { return Network.Local.UserID; } }
         internal ushort       TunnelID;
         internal DateTime     StartTime;
@@ -295,7 +298,6 @@ namespace RiseOp.Implementation
                             Network.ReceivePacket(Network.IncomingPackets.Dequeue().Packet);
 
                             keepGoing = true;
-                            break;
                         }
                 }
                 catch (Exception ex)
@@ -396,18 +398,18 @@ namespace RiseOp.Implementation
 				}
 				if(commands[0] == "fwstatus")
 				{
-                    ConsoleLog("Status set to " + Context.Firewall.ToString());
+                    ConsoleLog("Status set to " + Firewall.ToString());
 				}
 
 
 				if(commands[0] == "fwset" && commands.Length > 1)
 				{
 					if(commands[1] == "open")
-						Context.SetFirewallType(FirewallType.Open);
+						SetFirewallType(FirewallType.Open);
 					if(commands[1] == "nat")
-                        Context.SetFirewallType(FirewallType.NAT);
+                        SetFirewallType(FirewallType.NAT);
 					if(commands[1] == "blocked")
-                        Context.SetFirewallType(FirewallType.Blocked);
+                        SetFirewallType(FirewallType.Blocked);
 				}
 
 				if(commands[0] == "listening")
@@ -435,6 +437,36 @@ namespace RiseOp.Implementation
 				ConsoleLog("Exception " + ex.Message);
 			}
 		}
+
+        // firewall set at core level so that networks can exist on internet and on internal LANs simultaneously
+        internal void SetFirewallType(FirewallType type)
+        {
+            // check if already set
+            if (Firewall == type)
+                return;
+
+
+            // if client previously blocked, cancel any current searches through proxy
+            if (Firewall == FirewallType.Blocked)
+                lock (Network.Searches.Active)
+                    foreach (DhtSearch search in Network.Searches.Active)
+                        search.ProxyTcp = null;
+
+            Firewall = type;
+
+            if (type == FirewallType.Open)
+                Network.FirewallChangedtoOpen();
+
+            if (type == FirewallType.NAT)
+                Network.FirewallChangedtoNAT();
+
+            if (type == FirewallType.Blocked)
+            {
+
+            }
+
+            Network.UpdateLog("Network", "Firewall changed to " + Firewall.ToString());
+        }
 
         /*internal struct LastInputInfo
         {
@@ -690,7 +722,7 @@ namespace RiseOp.Implementation
 
             invite.OpName = Profile.Settings.Operation;
             invite.OpAccess = Profile.Settings.OpAccess;
-            invite.OpID = Profile.Settings.OpKey.Key;
+            invite.OpID = Profile.Settings.OpKey;
             invite.Contacts = new List<DhtContact>(Network.Routing.GetCacheArea());
 
             // encrypt packet with hashed password

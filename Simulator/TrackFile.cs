@@ -6,9 +6,12 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
+using RiseOp.Interface;
+
+
 namespace RiseOp.Simulator
 {
-    internal partial class TrackFile : Form
+    internal partial class TrackFile : CustomIconForm
     {
         NetView View;
 

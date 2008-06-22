@@ -78,7 +78,7 @@ namespace RiseOp.Implementation.Dht
                     // a re-search is almost always immediately done to bring it back up
                     if (bucket.ContactList.Count != 0 &&
                         bucket.ContactList.Count < ContactsPerBucket / 2 &&
-                        Core.Context.Firewall == FirewallType.Open &&
+                        Core.Firewall == FirewallType.Open &&
                         Core.TimeNow > bucket.NextRefresh)
                     {
                         // search on random id in bucket
@@ -131,7 +131,7 @@ namespace RiseOp.Implementation.Dht
             
             // stagger cache pings, so once every second
 			// find oldest can attempt, send ping, remove expired
-            if (oldest != null)
+            if (oldest != null && Core.TimeNow > oldest.NextTry)
             {
                 Network.Send_Ping(oldest);
 
@@ -360,7 +360,7 @@ namespace RiseOp.Implementation.Dht
             get
             {
                 // dht enable if node is open, or psuedo-open as signaled by using global proxies
-                return Core.Context.Firewall == FirewallType.Open || Network.UseGlobalProxies;
+                return Core.Firewall == FirewallType.Open || Network.UseGlobalProxies;
             }
         }
 

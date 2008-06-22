@@ -21,7 +21,7 @@ namespace RiseOp.Interface.Tools
 	/// <summary>
 	/// Summary description for PacketsForm.
 	/// </summary>
-	internal class PacketsForm : System.Windows.Forms.Form
+    internal class PacketsForm : RiseOp.Interface.CustomIconForm
 	{
         DhtNetwork Network;
 		G2Protocol Protocol;
@@ -48,6 +48,7 @@ namespace RiseOp.Interface.Tools
         private ColumnHeader columnHeaderTime;
         private MenuItem ClearMenuItem;
         private MenuItem MenuItemTunnel;
+        private MenuItem MenuItemLAN;
         private IContainer components;
 
 
@@ -101,7 +102,6 @@ namespace RiseOp.Interface.Tools
 		private void InitializeComponent()
 		{
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PacketsForm));
             this.TreeViewPacket = new System.Windows.Forms.TreeView();
             this.splitter1 = new System.Windows.Forms.Splitter();
             this.ListViewPackets = new System.Windows.Forms.ListView();
@@ -117,6 +117,7 @@ namespace RiseOp.Interface.Tools
             this.menuItemPause = new System.Windows.Forms.MenuItem();
             this.MenuItemTcp = new System.Windows.Forms.MenuItem();
             this.MenuItemUdp = new System.Windows.Forms.MenuItem();
+            this.MenuItemLAN = new System.Windows.Forms.MenuItem();
             this.MenuItemRudp = new System.Windows.Forms.MenuItem();
             this.MenuItemTunnel = new System.Windows.Forms.MenuItem();
             this.SuspendLayout();
@@ -206,6 +207,7 @@ namespace RiseOp.Interface.Tools
             this.menuItemPause,
             this.MenuItemTcp,
             this.MenuItemUdp,
+            this.MenuItemLAN,
             this.MenuItemRudp,
             this.MenuItemTunnel});
             this.menuItemCommands.Text = "Commands";
@@ -236,17 +238,24 @@ namespace RiseOp.Interface.Tools
             this.MenuItemUdp.Text = "Udp";
             this.MenuItemUdp.Click += new System.EventHandler(this.MenuItemUdp_Click);
             // 
+            // MenuItemLAN
+            // 
+            this.MenuItemLAN.Checked = true;
+            this.MenuItemLAN.Index = 4;
+            this.MenuItemLAN.Text = "LAN";
+            this.MenuItemLAN.Click += new System.EventHandler(this.MenuItemLAN_Click);
+            // 
             // MenuItemRudp
             // 
             this.MenuItemRudp.Checked = true;
-            this.MenuItemRudp.Index = 4;
+            this.MenuItemRudp.Index = 5;
             this.MenuItemRudp.Text = "Rudp";
             this.MenuItemRudp.Click += new System.EventHandler(this.MenuItemRudp_Click);
             // 
             // MenuItemTunnel
             // 
             this.MenuItemTunnel.Checked = true;
-            this.MenuItemTunnel.Index = 5;
+            this.MenuItemTunnel.Index = 6;
             this.MenuItemTunnel.Text = "Tunnel";
             this.MenuItemTunnel.Click += new System.EventHandler(this.MenuItemTunnel_Click);
             // 
@@ -257,7 +266,6 @@ namespace RiseOp.Interface.Tools
             this.Controls.Add(this.ListViewPackets);
             this.Controls.Add(this.splitter1);
             this.Controls.Add(this.TreeViewPacket);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Menu = this.mainMenu1;
             this.Name = "PacketsForm";
             this.Text = "Packets";
@@ -293,6 +301,7 @@ namespace RiseOp.Interface.Tools
         {
             if ((logEntry.Protocol == TransportProtocol.Tcp && MenuItemTcp.Checked) ||
                 (logEntry.Protocol == TransportProtocol.Udp && MenuItemUdp.Checked) ||
+                (logEntry.Protocol == TransportProtocol.LAN && MenuItemLAN.Checked) ||
                 (logEntry.Protocol == TransportProtocol.Rudp && MenuItemRudp.Checked) ||
                 (logEntry.Protocol == TransportProtocol.Tunnel && MenuItemTunnel.Checked))
                 ListViewPackets.Items.Add(PackettoItem(logEntry));
@@ -312,6 +321,9 @@ namespace RiseOp.Interface.Tools
                     break;
                 case TransportProtocol.Udp:
                     protocol = "udp";
+                    break;
+                case TransportProtocol.LAN:
+                    protocol = "lan";
                     break;
                 case TransportProtocol.Rudp:
                     protocol = "rudp";
@@ -397,9 +409,10 @@ namespace RiseOp.Interface.Tools
                 }
             }
 
-            string time = Network.Core.TimeNow.ToString("HH:mm:ss:ff");
+            string time = logEntry.Time.ToString("HH:mm:ss:ff");
 
-            return new PacketListViewItem(logEntry, new string[] { time, protocol, logEntry.Address.ToString(), name, logEntry.Data.Length.ToString(), hash }, logEntry.Direction == DirectionType.In );
+            string address = (logEntry.Address == null) ? "Broadcast" : logEntry.Address.ToString();
+            return new PacketListViewItem(logEntry, new string[] { time, protocol, address, name, logEntry.Data.Length.ToString(), hash }, logEntry.Direction == DirectionType.In );
 		}
 
         private string GetVariableName(Type packet, byte val)
@@ -620,60 +633,45 @@ namespace RiseOp.Interface.Tools
 				Clipboard.SetDataObject(TreeViewPacket.SelectedNode.Text, true);
 		}
 
-		private void menuItemPause_Click(object sender, System.EventArgs e)
-		{
-			if( menuItemPause.Checked )
-			{
+        private void menuItemPause_Click(object sender, System.EventArgs e)
+        {
+            menuItemPause.Checked = !menuItemPause.Checked;
+
+            if (!menuItemPause.Checked)
                 RefreshView();
-
-				menuItemPause.Checked = false;
-			}
-
-			else
-				menuItemPause.Checked = true;
-	}
+        }
 
         private void MenuItemUdp_Click(object sender, EventArgs e)
         {
-            if( MenuItemUdp.Checked )
-                MenuItemUdp.Checked = false;
-            else
-                MenuItemUdp.Checked = true;
+            MenuItemUdp.Checked = !MenuItemUdp.Checked;
 
             RefreshView();
         }
 
         private void MenuItemTcp_Click(object sender, EventArgs e)
         {
-            if (MenuItemTcp.Checked)
-                MenuItemTcp.Checked = false;
-
-            else
-                MenuItemTcp.Checked = true;
+            MenuItemTcp.Checked = !MenuItemTcp.Checked;
 
             RefreshView();
         }
 
         private void MenuItemRudp_Click(object sender, EventArgs e)
         {
-            if (MenuItemRudp.Checked)
-                MenuItemRudp.Checked = false;
-
-            else
-                MenuItemRudp.Checked = true;
+            MenuItemRudp.Checked = !MenuItemRudp.Checked;
 
             RefreshView();
         }
 
         private void MenuItemTunnel_Click(object sender, EventArgs e)
         {
-            if (MenuItemTunnel.Checked)
-                MenuItemTunnel.Checked = false;
-
-            else
-                MenuItemTunnel.Checked = true;
+            MenuItemTunnel.Checked = !MenuItemTunnel.Checked;
 
             RefreshView();
+        }
+
+        private void MenuItemLAN_Click(object sender, EventArgs e)
+        {
+            MenuItemLAN.Checked = !MenuItemLAN.Checked;
         }
 
         void RefreshView()
@@ -770,6 +768,8 @@ namespace RiseOp.Interface.Tools
             ListViewPackets.Items.Clear();
             TreeViewPacket.Nodes.Clear();
         }
+
+
     }
 
     internal class DataNode : TreeNode

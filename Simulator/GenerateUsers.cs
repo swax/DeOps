@@ -8,17 +8,18 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
+using RiseOp.Interface;
 using RiseOp.Implementation.Protocol;
 
 
 namespace RiseOp.Simulator
 {
-    public partial class GenerateUsers : Form
+    internal partial class GenerateUsers : CustomIconForm
     {
         Random Rnd = new Random((int)DateTime.Now.Ticks);
         G2Protocol Protocol = new G2Protocol();
 
-        public GenerateUsers()
+        internal GenerateUsers()
         {
             InitializeComponent();
 

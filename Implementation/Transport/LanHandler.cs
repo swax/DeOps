@@ -15,13 +15,13 @@ namespace RiseOp.Implementation.Transport
 	/// <summary>
 	/// Summary description for UdpHandler.
 	/// </summary>
-	internal class UdpHandler
+	internal class LanHandler
 	{
         // super-class
         OpCore Core;
 		DhtNetwork Network;
 
-		Socket UdpSocket;
+		Socket LanSocket;
 
 		internal ushort ListenPort;
 	
@@ -33,41 +33,38 @@ namespace RiseOp.Implementation.Transport
         const int MAX_UDP_SIZE = 1500;
 
 
-        internal UdpHandler(DhtNetwork network)
+        internal LanHandler(DhtNetwork network)
 		{
             Network = network;
             Core = network.Core;
 
-            ListenPort = Network.IsGlobal ? Network.GlobalConfig.UdpPort : Core.Profile.Settings.UdpPort;
-            
+            byte[] hash = new SHA1Managed().ComputeHash(Network.OriginalCrypt.Key);
+
+            ListenPort = BitConverter.ToUInt16(hash, 0);
+
+            if (ListenPort < 2000)
+                ListenPort += 2000;
+
             if (Core.Sim != null)
                 return;
 
-			UdpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+			LanSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            LanSocket.EnableBroadcast = true;
 
-			// listen
-			bool bound    = false;
-			int  attempts = 0;
-			while( !bound && attempts < 5)
+			// listen - cant retry because listen port must be the same for everyone
+			try
 			{
-				try
-				{
-					UdpSocket.Bind( new IPEndPoint( System.Net.IPAddress.Any, ListenPort) );
-					bound = true;
-					
-					EndPoint tempSender = (EndPoint) new IPEndPoint(IPAddress.Any, 0);
-					UdpSocket.BeginReceiveFrom(ReceiveBuff, 0, ReceiveBuff.Length, SocketFlags.None, ref tempSender, new AsyncCallback(UdpSocket_Receive), UdpSocket);
-				
-					Network.UpdateLog("Network", "Listening for UDP on port " + ListenPort.ToString());
-
-				}
-				catch(Exception ex)
-				{ 
-					Network.UpdateLog("Exception", "UdpHandler::UdpHandler: " + ex.Message);
+				LanSocket.Bind( new IPEndPoint( System.Net.IPAddress.Any, ListenPort) );
+	
+				EndPoint tempSender = (EndPoint) new IPEndPoint(IPAddress.Any, 0);
+				LanSocket.BeginReceiveFrom(ReceiveBuff, 0, ReceiveBuff.Length, SocketFlags.None, ref tempSender, new AsyncCallback(UdpSocket_Receive), LanSocket);
 			
-					attempts++; 
-					ListenPort++;
-				}
+				Network.UpdateLog("Network", "Listening for LAN on port " + ListenPort.ToString());
+
+			}
+			catch(Exception ex)
+			{ 
+				Network.UpdateLog("Exception", "LanHandler::LanHandler: " + ex.Message);
 			}
 		}
 
@@ -75,25 +72,24 @@ namespace RiseOp.Implementation.Transport
 		{
 			try
 			{
-				Socket oldSocket = UdpSocket; // do this to prevent listen exception
-				UdpSocket = null;
+				Socket oldSocket = LanSocket; // do this to prevent listen exception
+				LanSocket = null;
 
 				if(oldSocket != null)
 					oldSocket.Close();
 			}
 			catch(Exception ex)
 			{
-				Network.UpdateLog("Exception", "UdpHandler::Shudown: " + ex.Message);
+                Network.UpdateLog("Exception", "LanHandler::Shudown: " + ex.Message);
 			}
 		}
 
-		internal void SendTo(DhtAddress address, G2Packet packet)
+		internal void SendTo(G2Packet packet)
 		{
             if (Core.InvokeRequired)
                 Debug.Assert(false);
 
-            Debug.Assert(address.UdpPort != 0);
-
+      
             if (packet is NetworkPacket)
             {
                 ((NetworkPacket)packet).SourceID = Network.Local.UserID;
@@ -102,7 +98,7 @@ namespace RiseOp.Implementation.Transport
 
             byte[] encoded = packet.Encode(Network.Protocol);
 
-            PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Udp, DirectionType.Out, address, encoded);
+            PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.LAN, DirectionType.Out, null, encoded);
             Network.LogPacket(logEntry);
 
             byte[] final = null;
@@ -112,7 +108,7 @@ namespace RiseOp.Implementation.Transport
             {
                 lock (Network.AugmentedCrypt)
                 {
-                    BitConverter.GetBytes(address.UserID).CopyTo(Network.AugmentedCrypt.Key, 0);
+                    BitConverter.GetBytes((ulong)0).CopyTo(Network.AugmentedCrypt.Key, 0);
 
                     final = Utilities.EncryptBytes(encoded, Network.AugmentedCrypt.Key);
                 }
@@ -125,54 +121,55 @@ namespace RiseOp.Implementation.Transport
 			{
                 if (Core.Sim != null)
                 {
-                    Core.Sim.Internet.SendPacket(SimPacketType.Udp, Network, final, address.ToEndPoint(), null);
+                    //Core.Sim.Internet.SendPacket(SimPacketType.Udp, Network, final, address.ToEndPoint(), null);
                     return;
                 }
 
-                if (UdpSocket == null)
+                if (LanSocket == null)
                     return;
 
                 if (encoded.Length> MAX_UDP_SIZE)
 					throw new Exception("Packet larger than " + MAX_UDP_SIZE.ToString() + " bytes");
 
-                UdpSocket.BeginSendTo(final, 0, final.Length, SocketFlags.None, address.ToEndPoint(), new AsyncCallback(UdpSocket_SendTo), UdpSocket);
+                EndPoint tempSender = (EndPoint)new IPEndPoint(IPAddress.Broadcast, ListenPort);
+                LanSocket.BeginSendTo(final, 0, final.Length, SocketFlags.None, tempSender, new AsyncCallback(UdpSocket_SendTo), LanSocket);
 			}
 			catch(Exception ex)
-			{ 
-				Network.UpdateLog("Exception", "UdpHandler::SendTo: " + ex.Message);
+			{
+                Network.UpdateLog("Exception", "LanHandler::SendTo: " + ex.Message);
 			}
 		}
 
 		void UdpSocket_SendTo(IAsyncResult asyncResult)
 		{
-			if(UdpSocket == null)
+			if(LanSocket == null)
 				return;
 
 			try
 			{
-				int bytesSent = UdpSocket.EndSendTo(asyncResult);
+				int bytesSent = LanSocket.EndSendTo(asyncResult);
 			}
 			catch(Exception ex)
-			{ 
-				Network.UpdateLog("Exception", "UdpHandler::UdpSocket_SendTo: " + ex.Message);
+			{
+                Network.UpdateLog("Exception", "LanHandler::UdpSocket_SendTo: " + ex.Message);
 			}
 		}
 
 		void UdpSocket_Receive (IAsyncResult asyncResult)
 		{
-			if(UdpSocket == null)
+			if(LanSocket == null)
 				return;
 		
 			try
 			{
 				EndPoint sender = (EndPoint) new IPEndPoint(IPAddress.Any, 0);
-				int recvLen = UdpSocket.EndReceiveFrom(asyncResult, ref sender);
-
+				int recvLen = LanSocket.EndReceiveFrom(asyncResult, ref sender);
+                
                 OnReceive(ReceiveBuff, recvLen, (IPEndPoint)sender);
 			}
 			catch(Exception ex)
-			{ 
-				Network.UpdateLog("Exception", "UdpHandler::UdpSocket_Receive:1: " + ex.Message);
+			{
+                Network.UpdateLog("Exception", "LanHandler::UdpSocket_Receive:1: " + ex.Message);
 			}
 			
 
@@ -186,12 +183,12 @@ namespace RiseOp.Implementation.Transport
 				try
 				{
 					EndPoint sender = (EndPoint) new IPEndPoint(IPAddress.Any, 0);
-					UdpSocket.BeginReceiveFrom(ReceiveBuff, 0, ReceiveBuff.Length, SocketFlags.None, ref sender, new AsyncCallback(UdpSocket_Receive), UdpSocket);
+					LanSocket.BeginReceiveFrom(ReceiveBuff, 0, ReceiveBuff.Length, SocketFlags.None, ref sender, new AsyncCallback(UdpSocket_Receive), LanSocket);
 					break;
 				}
 				catch(Exception ex)
-				{ 
-					Network.UpdateLog("Exception", "UdpHandler::UdpSocket_Receive:2: " + ex.Message + ", attempt " + attempts.ToString());
+				{
+                    Network.UpdateLog("Exception", "LanHandler::UdpSocket_Receive:2: " + ex.Message + ", attempt " + attempts.ToString());
 					attempts++;
 				}
 			}
@@ -209,7 +206,7 @@ namespace RiseOp.Implementation.Transport
 
                 lock (Network.AugmentedCrypt)
                 {
-                    BitConverter.GetBytes(Network.Local.UserID).CopyTo(Network.AugmentedCrypt.Key, 0);
+                    BitConverter.GetBytes((ulong)0).CopyTo(Network.AugmentedCrypt.Key, 0);
 
                     finalBuff = Utilities.DecryptBytes(buff, length, Network.AugmentedCrypt.Key);
                     length = finalBuff.Length;
@@ -231,7 +228,7 @@ namespace RiseOp.Implementation.Transport
 
                 byte[] packetData = copied ? buff : Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize);
 
-                PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Udp, DirectionType.In, packet.Source, packetData);
+                PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.LAN, DirectionType.In, packet.Source, packetData);
 				Network.LogPacket(logEntry);
 
 

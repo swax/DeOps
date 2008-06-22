@@ -11,7 +11,7 @@ using RiseOp.Implementation;
 
 namespace RiseOp.Interface
 {
-    internal partial class NewProjectForm : Form
+    internal partial class NewProjectForm : CustomIconForm
     {
         OpCore Core;
 

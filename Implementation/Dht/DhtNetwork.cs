@@ -35,7 +35,9 @@ namespace RiseOp.Implementation.Dht
         internal G2Protocol Protocol;
         internal TcpHandler TcpControl;
         internal UdpHandler UdpControl;
+        internal LanHandler LanControl;
         internal RudpHandler RudpControl;
+
         internal DhtRouting Routing;
         internal DhtStore   Store;
         internal DhtSearchControl Searches;
@@ -45,6 +47,7 @@ namespace RiseOp.Implementation.Dht
 
         internal bool IsGlobal;
         internal GlobalSettings GlobalConfig;
+        internal bool LanMode = true;
 
         internal DhtClient Local;
         internal ulong  OpID;
@@ -54,11 +57,17 @@ namespace RiseOp.Implementation.Dht
         internal int  FireStatusChange; // timeout until established is called
         internal StatusChange StatusChange; // operation only
         
-        RetryIntervals    Retry;
+        RetryIntervals    CacheRetry;
         internal DateTime NextWebcacheTry;
         RetryIntervals    GlobalSearchInterval;
         DateTime          NextGlobalSearch;
         DateTime          NextSaveCache;
+        int               BroadcastTimeout = 0;
+
+        byte[] GlobalKey = new byte[] {0x33,0xf6,0x89,0xf3,0xd2,0xf5,0xae,0xc2,
+                                        0x49,0x59,0xe6,0xbb,0xe2,0xc6,0x3c,0xc8,
+                                        0x5e,0x63,0x0c,0x7a,0xb9,0x08,0x18,0xd4,
+                                        0xf9,0x73,0x9f,0x52,0xd6,0xf4,0x34,0x0e};
 
         internal RijndaelManaged OriginalCrypt;
         internal RijndaelManaged AugmentedCrypt;
@@ -86,19 +95,15 @@ namespace RiseOp.Implementation.Dht
             Local.UserID = IsGlobal ? GlobalConfig.UserID : Utilities.KeytoID(Core.Profile.Settings.KeyPair.ExportParameters(false));
             Local.ClientID = (ushort) Core.RndGen.Next(1, ushort.MaxValue);
 
-            OpID = IsGlobal ? 0 : Utilities.KeytoID(Core.Profile.Settings.OpKey.Key);
+            OpID = Utilities.KeytoID(IsGlobal ? GlobalKey : Core.Profile.Settings.OpKey);
+
+            OriginalCrypt = new RijndaelManaged();
 
             // load encryption
             if (IsGlobal)
-            {
-                OriginalCrypt = new RijndaelManaged();
-                OriginalCrypt.Key = new byte[] {0x33,0xf6,0x89,0xf3,0xd2,0xf5,0xae,0xc2,
-                                            0x49,0x59,0xe6,0xbb,0xe2,0xc6,0x3c,0xc8,
-                                            0x5e,0x63,0x0c,0x7a,0xb9,0x08,0x18,0xd4,
-                                            0xf9,0x73,0x9f,0x52,0xd6,0xf4,0x34,0x0e};
-            }
+                OriginalCrypt.Key = GlobalKey;
             else
-                OriginalCrypt = Core.Profile.Settings.OpKey;
+                OriginalCrypt.Key = Core.Profile.Settings.OpKey;
 
 
             AugmentedCrypt = new RijndaelManaged();
@@ -107,12 +112,14 @@ namespace RiseOp.Implementation.Dht
             Protocol = new G2Protocol();
             TcpControl  = new TcpHandler(this);
             UdpControl  = new UdpHandler(this);
+            LanControl  = new LanHandler(this);
             RudpControl = new RudpHandler(this);
+
             Routing     = new DhtRouting(this);
             Store       = new DhtStore(this);
             Searches    = new DhtSearchControl(this);
 
-            Retry = new RetryIntervals(Core);
+            CacheRetry = new RetryIntervals(Core);
             GlobalSearchInterval = new RetryIntervals(Core);
             NextSaveCache = Core.TimeNow.AddMinutes(1);
         }
@@ -125,6 +132,7 @@ namespace RiseOp.Implementation.Dht
             Routing.SecondTimer();
             Searches.SecondTimer();
 
+
             if(!IsGlobal)
                 CheckGlobalProxyMode();
 
@@ -134,13 +142,30 @@ namespace RiseOp.Implementation.Dht
             // if unresponsive
             if (!Responsive)
             {
-                Retry.Timer();
+                CacheRetry.Timer();
 
                 if (IsGlobal)
                     GlobalBootstrap();
                 else
                     OpBootstrap();
             }
+
+            // send broadcast in lan mode every 20 secs
+            if (LanMode )//&& !IsGlobal)
+            {
+                // if disconnected from LAN, once reconnected, establishing should be < 20 secs
+                if (BroadcastTimeout <= 0)
+                {
+                    Ping ping = new Ping();
+                    ping.Source = GetLocalSource();
+                    LanControl.SendTo(ping);
+
+                    BroadcastTimeout = 20;
+                }
+                else
+                    BroadcastTimeout--;
+            }
+
 
             // ip cache
             lock (IPCache)
@@ -218,7 +243,7 @@ namespace RiseOp.Implementation.Dht
                     if (ThinkOnline > 0)
                     {
                         // check online status by pinging google/yahoo/microsoft every 60 secs
-                        PingCheck();
+                        GlobalPingCheck();
                         NextOnlineCheck = Core.TimeNow.AddSeconds(60);
                     }
 
@@ -226,19 +251,19 @@ namespace RiseOp.Implementation.Dht
                     else if (ThinkOnline == 0)
                     {
                         // try google/yahoo/microsoft every 5 secs
-                        PingCheck();
+                        GlobalPingCheck();
                         NextOnlineCheck = Core.TimeNow.AddSeconds(5);
                     }
             }
 
 
-            bool AllowWeb = (IPCache.Count == 0 || Core.TimeNow > Retry.Start.AddSeconds(10));
+            bool AllowWebTry = (IPCache.Count == 0 || Core.TimeNow > CacheRetry.Start.AddSeconds(10));
 
 
             // give a few seconds at startup to try to connect to Dht networks from the cache
-            if (Core.TimeNow > NextWebcacheTry && AllowWeb)
+            if (Core.TimeNow > NextWebcacheTry && AllowWebTry)
             {
-                NextWebcacheTry = Retry.NextTry;
+                NextWebcacheTry = CacheRetry.NextTry;
 
                 // if not connected to global use web cache
                 if (Core.Sim == null)
@@ -292,7 +317,7 @@ namespace RiseOp.Implementation.Dht
 
                     Send_Ping(entry);
 
-                    entry.NextTry = Retry.NextTry;
+                    entry.NextTry = CacheRetry.NextTry;
 
                     pings++;
                     if (pings >= 10)
@@ -302,7 +327,7 @@ namespace RiseOp.Implementation.Dht
 
             // if blocked and go through cache and mark as tcp tried
             // 1 outbound tcp per second, 10 min retry
-            if (Core.Context.Firewall == FirewallType.Blocked)
+            if (Core.Firewall == FirewallType.Blocked)
                 lock (IPCache)
                     foreach (DhtContact entry in IPCache)
                     {
@@ -311,7 +336,7 @@ namespace RiseOp.Implementation.Dht
 
                         TcpControl.MakeOutbound(entry, entry.TcpPort, "ip cache");
 
-                        entry.NextTryProxy = Retry.NextTry;
+                        entry.NextTryProxy = CacheRetry.NextTry;
                         break;
                     }
         }
@@ -321,7 +346,7 @@ namespace RiseOp.Implementation.Dht
                                             "www.youtube.com", 
                                             "www.myspace.com"};
 
-        private void PingCheck()
+        private void GlobalPingCheck()
         {
             System.Net.NetworkInformation.Ping pingSender = new System.Net.NetworkInformation.Ping();
 
@@ -337,11 +362,12 @@ namespace RiseOp.Implementation.Dht
         {
             if (e.Reply != null && e.Reply.Status == System.Net.NetworkInformation.IPStatus.Success)
             {
-                // if previously thought we were offline
+                // if previously thought we were offline and now looks like reconnected
                 if (ThinkOnline == 0)
-                {
-                    Retry.Reset();
+                { 
+                    CacheRetry.Reset();
                     NextWebcacheTry = new DateTime(0);
+                    BroadcastTimeout = 0;
 
                     foreach (DhtContact entry in IPCache)
                     {
@@ -359,7 +385,7 @@ namespace RiseOp.Implementation.Dht
             {
                 ThinkOnline--;
 
-                PingCheck();
+                GlobalPingCheck();
             }
 
         }
@@ -427,7 +453,8 @@ namespace RiseOp.Implementation.Dht
             {
                 Established = false;
 
-                Retry.Reset();
+                SetLanMode(true);
+                CacheRetry.Reset();
                 GlobalSearchInterval.Reset();
                 NextWebcacheTry = Core.TimeNow.AddMinutes(1); // only really reset when global network resets
 
@@ -490,14 +517,14 @@ namespace RiseOp.Implementation.Dht
             source.ClientID = Local.ClientID;
             source.TcpPort  = TcpControl.ListenPort;
             source.UdpPort  = UdpControl.ListenPort;
-            source.Firewall = Core.Context.Firewall;
+            source.Firewall = Core.Firewall;
 
             return source;
         }
 
         internal DhtContact GetLocalContact()
         {
-            return new DhtContact(Local.UserID, Local.ClientID, Core.Context.LocalIP, TcpControl.ListenPort, UdpControl.ListenPort);
+            return new DhtContact(Local.UserID, Local.ClientID, Core.LocalIP, TcpControl.ListenPort, UdpControl.ListenPort);
         }
 
         internal void IncomingPacket(G2ReceivedPacket packet)
@@ -582,7 +609,7 @@ namespace RiseOp.Implementation.Dht
                 if (!IsGlobal)
                     return;
 
-                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tunnel, DirectionType.In, packet.Source, packet.Root.Data);
+                PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Tunnel, DirectionType.In, packet.Source, packet.Root.Data);
                 LogPacket(logEntry);
                 
                 TunnelPacket tunnel = TunnelPacket.Decode(packet.Root);
@@ -795,7 +822,7 @@ namespace RiseOp.Implementation.Dht
             // tunnel packet through global network
             byte[] encoded = embed.Encode(Protocol);
 
-            PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tunnel, DirectionType.Out, contact, encoded);
+            PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Tunnel, DirectionType.Out, contact, encoded);
             LogPacket(logEntry);
 
             TunnelPacket packet = new TunnelPacket();
@@ -819,7 +846,7 @@ namespace RiseOp.Implementation.Dht
             // if not open send proxied through local global proxy
             // NAT as well because receiver would need to send all responses through same local global proxy
             // for NATd host to get replies
-            if (Core.Context.Firewall != FirewallType.Open)
+            if (Core.Firewall != FirewallType.Open)
             {
                 packet.TargetServer = contact.TunnelServer;
 
@@ -839,7 +866,7 @@ namespace RiseOp.Implementation.Dht
             // else we are open, send op ip address in the souce server
             else
             {
-                packet.SourceServer = new DhtAddress(Core.Context.LocalIP, global.Network.GetLocalSource());
+                packet.SourceServer = new DhtAddress(Core.LocalIP, global.Network.GetLocalSource());
 
                 global.RunInCoreAsync(delegate()
                 {
@@ -891,7 +918,7 @@ namespace RiseOp.Implementation.Dht
                         if (core.TunnelID == tunnel.Target.TunnelID)
                             core.RunInCoreAsync(delegate()
                             {
-                                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tunnel, DirectionType.In, opPacket.Source, opPacket.Root.Data);
+                                PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Tunnel, DirectionType.In, opPacket.Source, opPacket.Root.Data);
                                 core.Network.LogPacket(logEntry);
 
                                 core.Network.IncomingPacket(opPacket);
@@ -923,11 +950,14 @@ namespace RiseOp.Implementation.Dht
         {
             Ping ping = Ping.Decode(packet);
             
+            bool lanIP = Utilities.IsLocalIP(packet.Source.IP);
+            bool validSource = (!lanIP || LanMode && lanIP);
+
+
             // set local IP
-            if (ping.RemoteIP != null && !packet.Tunneled)
-                Core.Context.LocalIP = ping.RemoteIP;
+            SetLocalIP(ping.RemoteIP, packet);
 
-
+        
             // check loop back
             if (ping.Source != null && Local.Equals(ping.Source))
             {
@@ -961,13 +991,16 @@ namespace RiseOp.Implementation.Dht
                     return;
                 }
 
-                if (ping.Source.Firewall == FirewallType.Open)
-                    Routing.Add(new DhtContact(ping.Source, packet.Source.IP));
+                if (validSource)
+                {
+                    if (ping.Source.Firewall == FirewallType.Open)
+                        Routing.Add(new DhtContact(ping.Source, packet.Source.IP));
 
-                // received incoming tcp means we are not firewalled
-                if (!packet.Tcp.Outbound)
-                    // done here to prevent setting open for loopback tcp connection
-                    Core.Context.SetFirewallType(FirewallType.Open);
+                    // received incoming tcp means we are not firewalled
+                    if (!packet.Tcp.Outbound)
+                        // done here to prevent setting open for loopback tcp connection
+                        Core.SetFirewallType(FirewallType.Open);
+                }
 
                 // check if already connected
                 if (packet.Tcp.Proxy == ProxyType.Unset && TcpControl.GetProxy(ping.Source) != null)
@@ -999,11 +1032,14 @@ namespace RiseOp.Implementation.Dht
             // ping received udp or tunneled
             else
             {
-                // received udp traffic, we must be behind a NAT at least
-                if (!packet.Tunneled)
-                    Core.Context.SetFirewallType(FirewallType.NAT);
+                if (validSource)
+                {
+                    // received udp traffic, we must be behind a NAT at least
+                    if (Core.Firewall == FirewallType.Blocked && !packet.Tunneled)
+                        Core.SetFirewallType(FirewallType.NAT);
 
-                Routing.TryAdd(packet, ping.Source);
+                    Routing.TryAdd(packet, ping.Source);
+                }
 
                 // send pong
                 SendPacket(packet.Source, pong);
@@ -1014,8 +1050,10 @@ namespace RiseOp.Implementation.Dht
         {
             Pong pong = Pong.Decode(packet);
 
-            if (pong.RemoteIP != null && !packet.Tunneled)
-                Core.Context.LocalIP = pong.RemoteIP;
+            SetLocalIP(pong.RemoteIP, packet);
+
+            bool lanIP = Utilities.IsLocalIP(packet.Source.IP);
+            bool validSource = (!lanIP || LanMode && lanIP);
 
 
             // if received tcp
@@ -1025,7 +1063,7 @@ namespace RiseOp.Implementation.Dht
                 if (pong.Source == null)
                 {
                     // keep routing entry fresh so connect state remains
-                    if (packet.Tcp.Proxy == ProxyType.Server)
+                    if (validSource && packet.Tcp.Proxy == ProxyType.Server)
                         Routing.Add(new DhtContact(packet.Tcp, packet.Tcp.RemoteIP), true);
                 }
 
@@ -1033,7 +1071,7 @@ namespace RiseOp.Implementation.Dht
                 else
                 {
                     // usually a proxied pong from somewhere else to keep our routing fresh
-                    if (pong.Source.Firewall == FirewallType.Open)
+                    if (validSource && pong.Source.Firewall == FirewallType.Open)
                         Routing.Add(new DhtContact(pong.Source, packet.Source.IP), true);
 
                     // pong's direct flag ensures that tcp connection info (especially client ID) is not set with 
@@ -1048,12 +1086,12 @@ namespace RiseOp.Implementation.Dht
                         // if firewalled
                         if (packet.Tcp.Outbound && packet.Tcp.Proxy == ProxyType.Unset)
                         {
-                            if (Core.Context.Firewall != FirewallType.Open && TcpControl.AcceptProxy(ProxyType.Server, pong.Source.UserID))
+                            if (Core.Firewall != FirewallType.Open && TcpControl.AcceptProxy(ProxyType.Server, pong.Source.UserID))
                             {
                                 // send proxy request
                                 ProxyReq request = new ProxyReq();
                                 request.SenderID = Local.UserID;
-                                request.Type = (Core.Context.Firewall == FirewallType.Blocked) ? ProxyType.ClientBlocked : ProxyType.ClientNAT;
+                                request.Type = (Core.Firewall == FirewallType.Blocked) ? ProxyType.ClientBlocked : ProxyType.ClientNAT;
                                 packet.Tcp.SendPacket(request);
                             }
 
@@ -1068,8 +1106,15 @@ namespace RiseOp.Implementation.Dht
             // pong received udp or tunneled
             else
             {
-                if (!packet.Tunneled)
-                    Core.Context.SetFirewallType(FirewallType.NAT);
+                if (validSource)
+                {
+                    if (Core.Firewall == FirewallType.Blocked && !packet.Tunneled)
+                        Core.SetFirewallType(FirewallType.NAT);
+
+                    // add to routing
+                    // on startup, especially in sim everyone starts blocked so pong source firewall is not set right, but still needs to go into routing
+                    Routing.TryAdd(packet, pong.Source, true);
+                }
 
                 // send bootstrap request for nodes if network not responsive
                 // do tcp connect because if 2 nodes on network then one needs to find out they're open
@@ -1081,12 +1126,8 @@ namespace RiseOp.Implementation.Dht
                         TcpControl.MakeOutbound(packet.Source, pong.Source.TcpPort, "pong bootstrap");
                 }
 
-                // add to routing
-                // on startup, especially in sim everyone starts blocked so pong source firewall is not set right, but still needs to go into routing
-                Routing.TryAdd(packet, pong.Source, true);
-
                 // forward to proxied nodes, so that their routing tables are up to date, so they can publish easily
-                if (Core.Context.Firewall == FirewallType.Open)
+                if (Core.Firewall == FirewallType.Open)
                 {
                     pong.FromAddress = packet.Source;
                     pong.RemoteIP = null;
@@ -1098,6 +1139,44 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
+        private void SetLocalIP(IPAddress localIP, G2ReceivedPacket packet)
+        {
+            if (localIP != null && !packet.Tunneled)
+            {
+                bool lanIP = Utilities.IsLocalIP(localIP); // re init to what they think our ip is
+
+                if (!lanIP || LanMode && lanIP)
+                    Core.LocalIP = localIP;
+
+                if (!lanIP && LanMode)
+                    SetLanMode(false);
+            }
+        }
+
+        private void SetLanMode(bool mode)
+        {
+            if(LanMode == mode)
+                return;
+
+            LanMode = mode;
+            
+            // ip per core, one network may be local, while another maybe on the internets
+            // also prevents one networks ip setting from influencing another
+
+            // lost connection to internet and now back to lan mode
+            if (LanMode)
+            {
+                BroadcastTimeout = 0; //broadcast ping
+                Core.SetFirewallType(FirewallType.Blocked); //set firewall blocked - dont need to disconnect tcp, already disconnected
+            }
+
+            // found our external IP address - reset firewall, will quickly be set to nat/open after this function
+            else
+            {
+                Core.SetFirewallType(FirewallType.Blocked);
+            }
+        }
+
         internal void Receive_ProxyRequest(G2ReceivedPacket packet)
         {
             ProxyReq request = ProxyReq.Decode(packet);
@@ -1106,7 +1185,7 @@ namespace RiseOp.Implementation.Dht
             ack.Source = GetLocalSource();
 
             // check if there is space for type required
-            if (Core.Context.Firewall == FirewallType.Open  && TcpControl.AcceptProxy(request.Type, ack.Source.UserID))
+            if (Core.Firewall == FirewallType.Open  && TcpControl.AcceptProxy(request.Type, ack.Source.UserID))
             {
                 ack.Accept = true;
             }
@@ -1152,7 +1231,7 @@ namespace RiseOp.Implementation.Dht
 
 
             // dont do proxy if we're not firewalled or remote host didnt accept
-            if (Core.Context.Firewall == FirewallType.Open || !ack.Accept)
+            if (Core.Firewall == FirewallType.Open || !ack.Accept)
             {
                 if (packet.ReceivedTcp)
                     packet.Tcp.CleanClose("Proxy request rejected");
@@ -1304,9 +1383,9 @@ namespace RiseOp.Implementation.Dht
 
             OpCore global = Core.Context.Global;
 
-            bool useProxies = (Core.Context.Firewall != FirewallType.Open &&
-                                Core.TimeNow > Core.StartTime.AddSeconds(15) &&
-                                global != null && global.Network.TcpControl.ProxyServers.Count > 0 &&
+            bool useProxies = ( Core.TimeNow > Core.StartTime.AddSeconds(15) &&
+                                global != null && Core.Firewall != FirewallType.Open &&
+                                global.Network.TcpControl.ProxyServers.Count > 0 &&
                                 TcpControl.ProxyServers.Count == 0);
 
 

@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ErrorReport));
             this.ExitButton = new System.Windows.Forms.Button();
             this.SendButton = new System.Windows.Forms.Button();
             this.Label3 = new System.Windows.Forms.Label();
@@ -130,7 +129,6 @@
             this.Controls.Add(this.Label2);
             this.Controls.Add(this.DetailsBox);
             this.Controls.Add(this.Label1);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "ErrorReport";
             this.Text = "Unexpected Error";
             this.ResumeLayout(false);

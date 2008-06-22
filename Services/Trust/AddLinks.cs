@@ -6,18 +6,22 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
+using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
 using RiseOp.Services.Trust;
 
 
 namespace RiseOp.Services.Trust
 {
-    internal partial class AddLinks : Form
+    internal partial class AddLinks : CustomIconForm
     {
         TrustService Links;
-        uint ProjectID;
 
+        internal ulong Person;
         internal List<ulong> People = new List<ulong>();
+        internal uint ProjectID;
+
+        internal bool MultiSelect;
 
 
         internal AddLinks(TrustService links, uint project)
@@ -53,12 +57,15 @@ namespace RiseOp.Services.Trust
                 if( item.ID == ProjectID)
                     ProjectCombo.SelectedItem = item;
 
-            PersonTree.MultiSelect = true;
+            PersonTree.MultiSelect = MultiSelect;
         }
 
         private void AddButton_Click(object sender, EventArgs e)
         {
             People = PersonTree.GetSelectedIDs();
+
+            if (People.Count > 0)
+                Person = People[0];
 
             DialogResult = DialogResult.OK;
 
@@ -78,6 +85,7 @@ namespace RiseOp.Services.Trust
                 return;
 
             PersonTree.ShowProject(item.ID);
+            ProjectID = item.ID;
         }
 
     }

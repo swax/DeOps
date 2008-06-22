@@ -20,10 +20,12 @@ using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
 using RiseOp.Implementation.Transport;
 
+using RiseOp.Interface;
+
 
 namespace RiseOp.Simulator
 {
-    internal partial class NetView : Form
+    internal partial class NetView : CustomIconForm
     {
         SimForm Main;
         InternetSim Sim;
@@ -157,7 +159,7 @@ namespace RiseOp.Simulator
 
             foreach (DhtNetwork network in networks.Values)
             {
-                int nodeRadius = (network.Core.Context.Firewall == FirewallType.Open) ? maxRadius - 30 : maxRadius;
+                int nodeRadius = (network.Core.Firewall == FirewallType.Open) ? maxRadius - 30 : maxRadius;
 
                 NodePoints[network.Local.UserID] = GetCircumPoint(centerPoint, nodeRadius, IDto32(network.Local.UserID));
 
@@ -187,7 +189,7 @@ namespace RiseOp.Simulator
             {
                 SolidBrush brush = null;
 
-                FirewallType firewall = networks[id].Core.Context.Firewall;
+                FirewallType firewall = networks[id].Core.Firewall;
                 if(firewall == FirewallType.Open)
                     brush = GreenBrush;
                 if(firewall == FirewallType.NAT)
@@ -579,7 +581,7 @@ namespace RiseOp.Simulator
                         foreach (SimInstance instance in Sim.Instances)
                         {
                             if (instance.Context.Global != null && instance.Context.Global.UserID == id)
-                                name = instance.Context.LocalIP.ToString();
+                                name = instance.Context.Global.LocalIP.ToString();
 
                             else
                                 instance.Context.Cores.LockReading(delegate()

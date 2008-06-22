@@ -18,7 +18,7 @@ namespace RiseOp.Interface.Tools
 	/// <summary>
 	/// Summary description for CrawlerForm.
 	/// </summary>
-	internal class CrawlerForm : System.Windows.Forms.Form
+    internal class CrawlerForm : RiseOp.Interface.CustomIconForm
 	{
         OpCore Core;
 		DhtNetwork Network;
@@ -103,12 +103,12 @@ namespace RiseOp.Interface.Tools
 		private void InitializeComponent()
 		{
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CrawlerForm));
             this.NodeList = new System.Windows.Forms.ListView();
             this.columnHeaderRouting = new System.Windows.Forms.ColumnHeader();
-            this.columnHeaderIP = new System.Windows.Forms.ColumnHeader();
-            this.columnHeaderVersion = new System.Windows.Forms.ColumnHeader();
             this.columnHeaderFirewall = new System.Windows.Forms.ColumnHeader();
+            this.columnHeaderIP = new System.Windows.Forms.ColumnHeader();
+            this.columnHeaderBandwidth = new System.Windows.Forms.ColumnHeader();
+            this.columnHeaderVersion = new System.Windows.Forms.ColumnHeader();
             this.columnHeaderUptime = new System.Windows.Forms.ColumnHeader();
             this.columnHeaderProxied = new System.Windows.Forms.ColumnHeader();
             this.columnHeaderServers = new System.Windows.Forms.ColumnHeader();
@@ -116,7 +116,6 @@ namespace RiseOp.Interface.Tools
             this.RefreshButton = new System.Windows.Forms.Button();
             this.SecondTimer = new System.Windows.Forms.Timer(this.components);
             this.labelCount = new System.Windows.Forms.Label();
-            this.columnHeaderBandwidth = new System.Windows.Forms.ColumnHeader();
             this.SuspendLayout();
             // 
             // NodeList
@@ -147,20 +146,25 @@ namespace RiseOp.Interface.Tools
             // 
             this.columnHeaderRouting.Text = "Routing";
             // 
+            // columnHeaderFirewall
+            // 
+            this.columnHeaderFirewall.DisplayIndex = 3;
+            this.columnHeaderFirewall.Text = "Firewall";
+            // 
             // columnHeaderIP
             // 
             this.columnHeaderIP.DisplayIndex = 1;
             this.columnHeaderIP.Text = "IP";
             // 
+            // columnHeaderBandwidth
+            // 
+            this.columnHeaderBandwidth.DisplayIndex = 7;
+            this.columnHeaderBandwidth.Text = "Bandwidth";
+            // 
             // columnHeaderVersion
             // 
             this.columnHeaderVersion.DisplayIndex = 2;
             this.columnHeaderVersion.Text = "Version";
-            // 
-            // columnHeaderFirewall
-            // 
-            this.columnHeaderFirewall.DisplayIndex = 3;
-            this.columnHeaderFirewall.Text = "Firewall";
             // 
             // columnHeaderUptime
             // 
@@ -208,11 +212,6 @@ namespace RiseOp.Interface.Tools
             this.labelCount.Size = new System.Drawing.Size(248, 16);
             this.labelCount.TabIndex = 3;
             // 
-            // columnHeaderBandwidth
-            // 
-            this.columnHeaderBandwidth.DisplayIndex = 7;
-            this.columnHeaderBandwidth.Text = "Bandwidth";
-            // 
             // CrawlerForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
@@ -221,7 +220,6 @@ namespace RiseOp.Interface.Tools
             this.Controls.Add(this.RefreshButton);
             this.Controls.Add(this.StartButton);
             this.Controls.Add(this.NodeList);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "CrawlerForm";
             this.Text = "Crawler";
             this.Closing += new System.ComponentModel.CancelEventHandler(this.CrawlerForm_Closing);

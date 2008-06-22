@@ -76,7 +76,7 @@ namespace RiseOp.Interface
             this.LockButton = new System.Windows.Forms.ToolStripButton();
             this.TreeImageList = new System.Windows.Forms.ImageList(this.components);
             this.NewsTimer = new System.Windows.Forms.Timer(this.components);
-            this.CommandTree = new RiseOp.Services.Trust.LinkTree();
+            CommandTree = new RiseOp.Services.Trust.LinkTree();
             this.MainSplit.Panel1.SuspendLayout();
             this.MainSplit.Panel2.SuspendLayout();
             this.MainSplit.SuspendLayout();
@@ -501,13 +501,13 @@ namespace RiseOp.Interface
             // commonToolStripMenuItem1
             // 
             this.commonToolStripMenuItem1.Name = "commonToolStripMenuItem1";
-            this.commonToolStripMenuItem1.Size = new System.Drawing.Size(126, 22);
+            this.commonToolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
             this.commonToolStripMenuItem1.Text = "Common";
             // 
             // personalToolStripMenuItem2
             // 
             this.personalToolStripMenuItem2.Name = "personalToolStripMenuItem2";
-            this.personalToolStripMenuItem2.Size = new System.Drawing.Size(126, 22);
+            this.personalToolStripMenuItem2.Size = new System.Drawing.Size(152, 22);
             this.personalToolStripMenuItem2.Text = "Personal";
             // 
             // SideToolStrip
@@ -548,8 +548,8 @@ namespace RiseOp.Interface
             this.OperationButton.Image = ((System.Drawing.Image)(resources.GetObject("OperationButton.Image")));
             this.OperationButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.OperationButton.Name = "OperationButton";
-            this.OperationButton.Size = new System.Drawing.Size(18, 65);
-            this.OperationButton.Text = "Structure";
+            this.OperationButton.Size = new System.Drawing.Size(18, 67);
+            this.OperationButton.Text = "Operation";
             this.OperationButton.TextDirection = System.Windows.Forms.ToolStripTextDirection.Vertical90;
             this.OperationButton.CheckedChanged += new System.EventHandler(this.OperationButton_CheckedChanged);
             // 
@@ -623,7 +623,6 @@ namespace RiseOp.Interface
             this.Controls.Add(this.MainSplit);
             this.Controls.Add(this.SideToolStrip);
             this.DoubleBuffered = true;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MainForm";
             this.Text = "RiseOp";
             this.Load += new System.EventHandler(this.MainForm_Load);

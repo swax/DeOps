@@ -6,9 +6,11 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
+using RiseOp.Interface;
+
 namespace RiseOp.Services.Trust
 {
-    internal partial class RemoveLinks : Form
+    internal partial class RemoveLinks : CustomIconForm
     {
         List<ulong> PersonIDs;
 

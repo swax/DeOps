@@ -1,0 +1,21 @@
+﻿
+
+
+mail 
+	send mail from a to b - once received / acked, check...
+	check send pending file version for both sender/receiver is 2
+	check pending ack/mail buffers are clear
+	
+network
+	global proxy
+		2 blocked hosts on op1, 1 open hsot on op2
+		2 dupe blocked hosts on op1, proxying through same open global node on op2
+		2 blocked hosts on op1, 2 open hosts on op2
+		full network 5 op1 blocked, 5 op2 open, op1 functional?
+		global proxy location entries expire once node connects to real network
+		2 global proxied online then open comes online, ensure all nodes set useGlobalProxies to false
+		2 blocked connected to 1 open on op, and open node disconnecting, blocked should global proxy
+
+future - automated test system
+	automation script - load x hosts, type, timeouts, run, stop, pause, check status, etc..
+	maybe a a list<testScenario> that is run through, results / warnings kept for each, can be run individually

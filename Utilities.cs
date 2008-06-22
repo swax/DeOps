@@ -2,12 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
-using System.Windows.Forms;
 using System.Text;
 using System.Threading;
-using System.IO;
+using System.Windows.Forms;
 
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
@@ -647,19 +648,6 @@ namespace RiseOp
             return final;
         }
 
-        /*internal static void AddSalt(byte[] original, RNGCryptoServiceProvider rnd, int amount)
-        {
-            byte[] salt = new byte[amount];
-            rnd.GetBytes(salt);
-
-            byte[] final = new byte[original.Length + amount];
-
-            salt.CopyTo(final, 0);
-            original.CopyTo(final, amount);
-
-            return final;
-        }*/
-
         internal static byte[] CombineArrays(byte[] a, byte[] b)
         {
             byte[] c = new byte[a.Length + b.Length];
@@ -675,6 +663,44 @@ namespace RiseOp
             byte[] key = new byte[bits / 8];
             rnd.GetBytes(key);
             return key;
+        }
+
+        internal static bool IsLocalIP(IPAddress address)
+        {
+            if (address.IsIPv6LinkLocal)
+                return true;
+
+            if (address.AddressFamily == AddressFamily.InterNetworkV6 )
+                return false;
+
+            byte[] ip = address.GetAddressBytes();
+
+
+            //1.*.*.*
+            //2.*.*.*
+            //5.*.*.*
+            //6.*.*.*
+            //10.*.*.*
+            if (ip[0] == 1 || ip[0] == 2 || ip[0] == 5 || ip[0] == 6 || ip[0] == 10)
+                return true;
+
+            //127.0.0.1
+            if (ip[0] == 127 && ip[1] == 0 && ip[2] == 0 && ip[3] == 1)
+                return true;
+
+            //169.254.*.*
+            if (ip[0] == 169 && ip[1] == 254)
+                return true;
+
+            //172.16.*.* - 172.31.*.*
+            if (ip[0] == 172 && (16 <= ip[1] && ip[1] <= 31))
+                return true;
+
+            //192.168.*.*
+            if (ip[0] == 192 && ip[1] == 168)
+                return true;
+
+            return false;
         }
     }
 

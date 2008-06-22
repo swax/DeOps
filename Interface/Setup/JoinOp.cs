@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace RiseOp.Interface.Startup
 {
-    internal partial class JoinOp : Form
+    internal partial class JoinOp : CustomIconForm
     {
         internal string OpName = "";
         internal AccessType OpAccess = AccessType.Public;

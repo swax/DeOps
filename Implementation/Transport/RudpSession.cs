@@ -128,7 +128,7 @@ namespace RiseOp.Implementation.Transport
             if (Comm.State != RudpState.Connected)
                 return false;
 
-            PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Rudp, DirectionType.Out, Comm.PrimaryAddress.Address, final);
+            PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Rudp, DirectionType.Out, Comm.PrimaryAddress.Address, final);
             Core.Network.LogPacket(logEntry);
 
             // dont worry about buffers, cause initial comm buffer is large enough to fit all negotiating packets
@@ -604,7 +604,7 @@ namespace RiseOp.Implementation.Transport
                     if (streamStatus != G2ReadResult.PACKET_GOOD)
                         break;
 
-                    PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Rudp, DirectionType.In, Comm.PrimaryAddress.Address, Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize));
+                    PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Rudp, DirectionType.In, Comm.PrimaryAddress.Address, Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize));
                     Core.Network.LogPacket(logEntry);
 
                     ReceivePacket(packet);
@@ -647,7 +647,7 @@ namespace RiseOp.Implementation.Transport
                     if (streamStatus != G2ReadResult.PACKET_GOOD)
                         break;
 
-                    PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Rudp, DirectionType.In, Comm.PrimaryAddress.Address, Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize));
+                    PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Rudp, DirectionType.In, Comm.PrimaryAddress.Address, Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize));
                     Core.Network.LogPacket(logEntry);
 
                     ReceivePacket(packet);

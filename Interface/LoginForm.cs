@@ -14,12 +14,13 @@ using RiseOp.Implementation;
 using RiseOp.Implementation.Protocol.Special;
 
 using RiseOp.Interface.Startup;
+
 using RiseOp.Simulator;
 
 
 namespace RiseOp.Interface
 {
-    internal partial class LoginForm : Form
+    internal partial class LoginForm : CustomIconForm
     {
         RiseOpContext Context;
 
@@ -231,6 +232,8 @@ namespace RiseOp.Interface
                             {
                                 core.GuiMain.WindowState = FormWindowState.Normal;
                                 core.GuiMain.Activate();
+
+                                Close(); // user thinks they logged back on, window just brought to front
                             }
                             else
                                 MessageBox.Show(this, "This profile is already loaded, check the system tray", "RiseOp");

@@ -22,7 +22,7 @@ namespace RiseOp.Interface.Views
 
             PreserveSideMode = sideMode;
 
-            Tray.Icon = InterfaceRes.rank;
+            Tray.Icon = InterfaceRes.riseop;
             Tray.Text = Core.Profile.GetTitle(); 
             Tray.Visible = true;
 

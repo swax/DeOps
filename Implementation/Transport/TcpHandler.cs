@@ -100,7 +100,7 @@ namespace RiseOp.Implementation.Transport
 		internal void SecondTimer()
 		{
 			// if firewalled find closer proxy
-			if(Core.Context.Firewall != FirewallType.Open)
+			if(Core.Firewall != FirewallType.Open)
 				if(NeedProxies(ProxyType.Server) || Core.TimeNow > LastProxyCheck.AddSeconds(30))
 				{
 					ConnectProxy();
@@ -128,7 +128,7 @@ namespace RiseOp.Implementation.Transport
 
                 Network.UpdateLog("Tcp", message);
 
-                socket.TcpSocket = null;
+                // socket.TcpSocket = null; causing endrecv to fail on disconnect
 
 
                 lock (SocketList)
@@ -242,7 +242,10 @@ namespace RiseOp.Implementation.Transport
                         if (socket.State == TcpState.Connecting)
                             connecting++;
 
-                        if (socket.State != TcpState.Closed && address.IP.Equals(socket.RemoteIP) && tcpPort == socket.TcpPort)
+                        if (socket.State != TcpState.Closed && 
+                            address.IP.Equals(socket.RemoteIP) && 
+                            tcpPort == socket.TcpPort && 
+                            socket.Outbound) // allows check firewall to work
                             return;
                     }
 
@@ -298,7 +301,7 @@ namespace RiseOp.Implementation.Transport
 			if(attempt != null)
 			{
 				// take into account when making proxy request, disconnct furthest
-				if(Core.Context.Firewall == FirewallType.Blocked)
+				if(Core.Firewall == FirewallType.Blocked)
 				{
 					// continue attempted to test nat with pings which are small
                     Network.Send_Ping(attempt);
@@ -306,7 +309,7 @@ namespace RiseOp.Implementation.Transport
 				}
 
 				// if natted do udp proxy request first before connect
-				else if(Core.Context.Firewall == FirewallType.NAT)
+				else if(Core.Firewall == FirewallType.NAT)
 				{
 					ProxyReq request = new ProxyReq();
                     request.SenderID = Network.Local.UserID;
@@ -345,7 +348,7 @@ namespace RiseOp.Implementation.Transport
 		internal bool ProxiesMaxed()
 		{
 			// we're not firewalled
-			if( Core.Context.Firewall == FirewallType.Open)
+			if( Core.Firewall == FirewallType.Open)
 			{
 				if( NeedProxies(ProxyType.ClientBlocked) )
 					return false;

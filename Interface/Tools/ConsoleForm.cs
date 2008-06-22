@@ -13,7 +13,7 @@ namespace RiseOp.Interface.Tools
 	/// <summary>
 	/// Summary description for ConsoleForm.
 	/// </summary>
-	internal class ConsoleForm : System.Windows.Forms.Form
+	internal class ConsoleForm : RiseOp.Interface.CustomIconForm
 	{
         OpCore Core;
 
@@ -42,7 +42,7 @@ namespace RiseOp.Interface.Tools
 			UpdateConsole = new UpdateConsoleHandler(AsyncUpdateConsole);
 
             if (Core.Profile == null)
-                Text = "Global Console (" + Core.Context.LocalIP.ToString() + ")";
+                Text = "Global Console (" + Core.LocalIP.ToString() + ")";
             else
 			    Text = "Console (" + Core.Profile.Settings.UserName + ")";
 
@@ -71,7 +71,6 @@ namespace RiseOp.Interface.Tools
 		/// </summary>
 		private void InitializeComponent()
 		{
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ConsoleForm));
             this.RichTextBoxConsole = new System.Windows.Forms.RichTextBox();
             this.TextBoxCommand = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
@@ -115,7 +114,6 @@ namespace RiseOp.Interface.Tools
             this.ClientSize = new System.Drawing.Size(456, 294);
             this.Controls.Add(this.TextBoxCommand);
             this.Controls.Add(this.RichTextBoxConsole);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "ConsoleForm";
             this.Text = "Console";
             this.Closing += new System.ComponentModel.CancelEventHandler(this.ConsoleForm_Closing);

@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace RiseOp.Interface
 {
-    internal partial class GetTextDialog : Form
+    internal partial class GetTextDialog : CustomIconForm
     {
         internal GetTextDialog(string title, string direction, string defaultText)
         {

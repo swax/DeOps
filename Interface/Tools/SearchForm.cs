@@ -14,7 +14,7 @@ using RiseOp.Simulator;
 
 namespace RiseOp.Interface.Tools
 {
-    internal partial class SearchForm : Form
+    internal partial class SearchForm : CustomIconForm
     {
         InternetSim Sim;
         DhtNetwork  Network;

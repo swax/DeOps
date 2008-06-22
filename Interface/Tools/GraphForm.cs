@@ -15,7 +15,7 @@ namespace RiseOp.Interface.Tools
 	/// <summary>
 	/// Summary description for GraphForm.
 	/// </summary>
-	internal class GraphForm : System.Windows.Forms.Form
+    internal class GraphForm : RiseOp.Interface.CustomIconForm
 	{
 		/// <summary>
 		/// Required designer variable.
@@ -84,7 +84,6 @@ namespace RiseOp.Interface.Tools
 		/// </summary>
 		private void InitializeComponent()
 		{
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(GraphForm));
             this.SuspendLayout();
             // 
             // GraphForm
@@ -92,12 +91,11 @@ namespace RiseOp.Interface.Tools
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(292, 266);
             this.DoubleBuffered = true;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "GraphForm";
             this.Text = "Graph";
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.GraphForm_Paint);
-            this.Resize += new System.EventHandler(this.GraphForm_Resize);
             this.Closing += new System.ComponentModel.CancelEventHandler(this.GraphForm_Closing);
+            this.Resize += new System.EventHandler(this.GraphForm_Resize);
             this.ResumeLayout(false);
 
 		}

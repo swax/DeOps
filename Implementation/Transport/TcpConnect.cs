@@ -328,7 +328,7 @@ namespace RiseOp.Implementation.Transport
                 }
 
 				byte[] encoded = packet.Encode(Network.Protocol);
-                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tcp, DirectionType.Out, new DhtAddress(RemoteIP, this), encoded);
+                PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Tcp, DirectionType.Out, new DhtAddress(RemoteIP, this), encoded);
                 Network.LogPacket(logEntry);
 
                 lock(FinalSendBuffer)
@@ -454,8 +454,8 @@ namespace RiseOp.Implementation.Transport
                 }
 
                 OnReceive(recvLength);
-               
-				if(State == TcpState.Connected)
+
+                if (State == TcpState.Connected)
                     TcpSocket.BeginReceive(RecvBuffer, RecvBuffSize, RecvBuffer.Length, SocketFlags.None, new AsyncCallback(Socket_Receive), TcpSocket);
 			}
 			catch(Exception ex)
@@ -554,9 +554,13 @@ namespace RiseOp.Implementation.Transport
 
 				packet.Tcp       = this;
 				packet.Source = new DhtContact(this, RemoteIP);
+               
+                // extract data from final recv buffer so it can be referenced without being overwritten by this thread
+                byte[] extracted = Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize);
+                packet.Root = new G2Header(extracted);
+                G2Protocol.ReadPacket(packet.Root);
 
-                byte[] packetData = Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize);
-                PacketLogEntry logEntry = new PacketLogEntry(TransportProtocol.Tcp, DirectionType.In, packet.Source, packetData);
+                PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Tcp, DirectionType.In, packet.Source, packet.Root.Data);
                 Network.LogPacket(logEntry);
 
                 Network.IncomingPacket(packet);

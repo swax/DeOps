@@ -71,6 +71,7 @@ namespace RiseOp.Simulator
         internal bool UseTimeFile = true; // keep time consistant between sim runs
         internal bool TestCoreThread = false; // sleepTime needs to be set with this so packets have time to process ayncronously
         internal bool Logging = true; // saves memory with large sim runs
+        internal bool LAN = false; // cant sim few nodes on lan connected to internet, but can do net of all lan or of alll internet
 
         bool Flux        = false;
         //int  FluxIn      = 1;
@@ -98,6 +99,12 @@ namespace RiseOp.Simulator
 
             // ip
             byte[] ipbytes = new byte[4] { (byte)RndGen.Next(99), (byte)RndGen.Next(99), (byte)RndGen.Next(99), (byte)RndGen.Next(99) };
+
+            if (LAN)
+                ipbytes[0] = 10;
+            else if (Utilities.IsLocalIP(new IPAddress(ipbytes)))
+                ipbytes[0] = (byte)RndGen.Next(30, 70); // make non lan ip
+            
             instance.RealIP = new IPAddress(ipbytes);
 
             // firewall

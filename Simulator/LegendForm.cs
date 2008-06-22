@@ -6,11 +6,13 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
+using RiseOp.Interface;
+
 namespace RiseOp.Simulator
 {
-    public partial class LegendForm : Form
+    internal partial class LegendForm : CustomIconForm
     {
-        public LegendForm()
+        internal LegendForm()
         {
             InitializeComponent();
         }

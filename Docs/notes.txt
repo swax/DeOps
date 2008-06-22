@@ -33,5 +33,33 @@ security
 	level 3 - compartmentalization
 	level 4 - p2p comm links
 	
+LAN
+	lan mode on default on startup
+	
+	if lan mode on
+		broadcast ping in lan mode every 20 secs (disconnect / reconnect find each other quickly)
+		ping telling us our IP is external sets lan mode false
+			set firewall to blocked - dont need to disconnect
+		
+	if lan mode off
+		receiving tcp connects or pings from LAN ips, has no effect on firewall
+		on disconnect from operation
+			reset IP
+			set LAN mode on
+			broadcast ping
+			set firewall blocked - dont need to disconnect tcp, already disconnected
+
+	receive ping
+		if local ip
+			if lan mode store
+			if not lan mode ignore
+		if external ip
+			if lan mode - set lan mode off, set blocked, purge routing, store localIP as LanIP
+			if not lan mode - store in routing, set firewall
+			
+	set broadcast port to first 2 bytes of opkey's hash
+
+
+	
 chat
 	pure p2p everyone connected to everyone else, rudp should have low overhead 100bytes/min max, 100 users would be 1,000/6 bps

@@ -28,15 +28,14 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Operation));
             this.CloseButton = new System.Windows.Forms.Button();
             this.OKButton = new System.Windows.Forms.Button();
             this.OperationBox = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.IconPicture = new System.Windows.Forms.PictureBox();
             this.ChangeLink = new System.Windows.Forms.LinkLabel();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.IconPicture)).BeginInit();
             this.SuspendLayout();
             // 
             // CloseButton
@@ -89,15 +88,14 @@
             this.label2.TabIndex = 12;
             this.label2.Text = "Icon";
             // 
-            // pictureBox1
+            // IconPicture
             // 
-            this.pictureBox1.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox1.Image")));
-            this.pictureBox1.Location = new System.Drawing.Point(68, 64);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(16, 16);
-            this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
-            this.pictureBox1.TabIndex = 13;
-            this.pictureBox1.TabStop = false;
+            this.IconPicture.Location = new System.Drawing.Point(68, 64);
+            this.IconPicture.Name = "IconPicture";
+            this.IconPicture.Size = new System.Drawing.Size(16, 16);
+            this.IconPicture.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
+            this.IconPicture.TabIndex = 13;
+            this.IconPicture.TabStop = false;
             // 
             // ChangeLink
             // 
@@ -119,21 +117,21 @@
             this.CancelButton = this.CloseButton;
             this.ClientSize = new System.Drawing.Size(255, 132);
             this.Controls.Add(this.ChangeLink);
-            this.Controls.Add(this.pictureBox1);
+            this.Controls.Add(this.IconPicture);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.OperationBox);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.CloseButton);
             this.Controls.Add(this.OKButton);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "Operation";
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Operation";
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            this.Load += new System.EventHandler(this.Operation_Load);
+            ((System.ComponentModel.ISupportInitialize)(this.IconPicture)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -146,7 +144,7 @@
         private System.Windows.Forms.TextBox OperationBox;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.PictureBox IconPicture;
         private System.Windows.Forms.LinkLabel ChangeLink;
     }
 }

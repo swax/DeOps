@@ -220,7 +220,8 @@ namespace RiseOp.Implementation.Dht
 
 
             // send ack
-            bool sendNoResults = (request.SearchID != 0 && (packet.ReceivedUdp || packet.Tunneled));
+            bool sendNoResults = (request.SearchID != 0 || request.Service == Core.DhtServiceID) && 
+                                 (packet.ReceivedUdp || packet.Tunneled);
 
             SearchAck ack = new SearchAck();
             ack.Source = Network.GetLocalSource();
@@ -398,7 +399,7 @@ namespace RiseOp.Implementation.Dht
             else if (dest.TunnelClient != null)
                 Network.SendTunnelPacket(dest, request);
 
-            else if (Core.Context.Firewall == FirewallType.Blocked)
+            else if (Core.Firewall == FirewallType.Blocked)
             {
                 request.ToAddress = dest;
                 Network.TcpControl.SendRandomProxy(request);

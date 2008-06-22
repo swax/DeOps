@@ -109,9 +109,9 @@ namespace RiseOp.Interface {
             }
         }
         
-        internal static System.Drawing.Icon rank {
+        internal static System.Drawing.Icon riseop {
             get {
-                object obj = ResourceManager.GetObject("rank", resourceCulture);
+                object obj = ResourceManager.GetObject("riseop", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
             }
         }

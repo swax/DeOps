@@ -198,7 +198,6 @@ namespace RiseOp
             user.Settings.Operation = opName;
             user.Settings.UserName = userName;
             user.Settings.KeyPair = new RSACryptoServiceProvider(1024);
-            user.Settings.OpKey = new RijndaelManaged();
             user.Settings.FileKey = Utilities.GenerateKey(new RNGCryptoServiceProvider(), 256);
             user.Settings.OpAccess = access;
             user.Settings.Security = SecurityLevel.Medium;
@@ -209,17 +208,17 @@ namespace RiseOp
                 // 256 bit rijn
                 
                 SHA256Managed sha256 = new SHA256Managed();
-                user.Settings.OpKey.Key = sha256.ComputeHash(UTF8Encoding.UTF8.GetBytes(opName));
+                user.Settings.OpKey = sha256.ComputeHash(UTF8Encoding.UTF8.GetBytes(opName));
                 user.Settings.Security = SecurityLevel.Low;
             }
 
             // invite to private/secret
             else if (opKey != null)
-                user.Settings.OpKey.Key = opKey;
+                user.Settings.OpKey = opKey;
 
             // creating private/secret
             else
-                user.Settings.OpKey.GenerateKey();
+                user.Settings.OpKey = Utilities.GenerateKey(new RNGCryptoServiceProvider(), 256);
 
 
             user.Save();
@@ -358,7 +357,7 @@ namespace RiseOp
         internal ushort UdpPort;
 
         // private
-        internal RijndaelManaged OpKey = new RijndaelManaged();
+        internal byte[] OpKey;
         internal AccessType OpAccess;
         internal SecurityLevel Security;
 
@@ -386,7 +385,7 @@ namespace RiseOp
                 protocol.WritePacket(settings, Packet_AwayMsg, UTF8Encoding.UTF8.GetBytes(AwayMessage));
 
                 protocol.WritePacket(settings, Packet_FileKey, FileKey);
-                protocol.WritePacket(settings, Packet_OpKey, OpKey.Key);
+                protocol.WritePacket(settings, Packet_OpKey, OpKey);
                 protocol.WritePacket(settings, Packet_OpAccess, BitConverter.GetBytes((byte)OpAccess));
                 protocol.WritePacket(settings, Packet_SecurityLevel, BitConverter.GetBytes((int)Security));
 
@@ -441,7 +440,7 @@ namespace RiseOp
                         break;
 
                     case Packet_OpKey:
-                        settings.OpKey.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        settings.OpKey = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_FileKey:

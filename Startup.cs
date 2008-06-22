@@ -60,9 +60,6 @@ namespace RiseOp
         string UpdatePath;
         Queue<string[]> NewInstances = new Queue<string[]>();
 
-        internal IPAddress LocalIP;
-        internal FirewallType Firewall = FirewallType.Blocked;
-
 
         internal RiseOpContext(string[] args)
         {
@@ -370,59 +367,6 @@ namespace RiseOp
                 }
                 else
                     Sim.Internet.ExitInstance(Sim);
-            }
-        }
-
-        internal void SetFirewallType(FirewallType type)
-        {
-            // check if already set
-            if (Firewall == type)
-                return;
-
-
-            // if client previously blocked, cancel any current searches through proxy
-            if (Global != null && Firewall == FirewallType.Blocked)
-                lock (Global.Network.Searches.Active)
-                    foreach (DhtSearch search in Global.Network.Searches.Active)
-                        search.ProxyTcp = null;
-
-
-            if (type == FirewallType.Open)
-            {
-                Firewall = FirewallType.Open; // do first, otherwise publish will fail
-
-                if (Global != null)
-                    Global.Network.FirewallChangedtoOpen();
-
-                Cores.LockReading(delegate()
-                {
-                    foreach (OpCore core in Cores)
-                        core.Network.FirewallChangedtoOpen();
-                });
-
-                return;
-            }
-
-            if (type == FirewallType.NAT && Firewall != FirewallType.Open)
-            {
-                Firewall = FirewallType.NAT;
-
-                if (Global != null)
-                    Global.Network.FirewallChangedtoNAT();
-
-                Cores.LockReading(delegate()
-                {
-                    foreach (OpCore core in Cores)
-                        core.Network.FirewallChangedtoNAT();
-                });
-
-                return;
-            }
-
-            if (type == FirewallType.Blocked)
-            {
-                // why is this being set (forced)
-                //Debug.Assert(false);
             }
         }
     }

@@ -87,7 +87,7 @@ namespace RiseOp.Interface
             this.Controls.Add(this.OkButton);
             this.Controls.Add(this.ResultBox);
             this.Controls.Add(this.DirectionLabel);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "GetTextDialog";

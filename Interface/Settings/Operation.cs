@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace RiseOp.Interface.Settings
 {
-    internal partial class Operation : Form
+    internal partial class Operation : CustomIconForm
     {
         Identity Profile;
 
@@ -61,6 +61,11 @@ namespace RiseOp.Interface.Settings
         private void CloseButton_Click(object sender, EventArgs e)
         {
             Close();
+        }
+
+        private void Operation_Load(object sender, EventArgs e)
+        {
+            IconPicture.Image = InterfaceRes.riseop.ToBitmap();
         }
     }
 }

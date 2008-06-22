@@ -31,7 +31,7 @@ namespace RiseOp.Interface
     internal delegate void ShowInternalHandler(ViewShell view);
 
 
-    internal partial class MainForm : Form
+    internal partial class MainForm : CustomIconForm
     {
         internal OpCore Core;
         internal TrustService Trust;
@@ -353,7 +353,7 @@ namespace RiseOp.Interface
             List<string[]> tuples = new List<string[]>();
             tuples.Add(new string[] { "global", global });
             tuples.Add(new string[] { "operation", operation });
-            tuples.Add(new string[] { "firewall", Core.Context.Firewall.ToString() });
+            tuples.Add(new string[] { "firewall", Core.Firewall.ToString() });
 
             
             if (CurrentStatusMode != mode)
@@ -952,7 +952,7 @@ namespace RiseOp.Interface
             }
 
             PersonNavButton.DropDownItems.Add("-");
-            PersonNavButton.DropDownItems.Add("Browse...");
+            PersonNavButton.DropDownItems.Add("Browse...", null, new EventHandler(PersonNavBrowse_Clicked));
 
 
             // set person's projects
@@ -994,6 +994,17 @@ namespace RiseOp.Interface
                 return;
 
             OnSelectChange(item.UserID, SelectedProject);
+        }
+
+        private void PersonNavBrowse_Clicked(object sender, EventArgs e)
+        {
+            AddLinks add = new AddLinks(Core.Trust, SelectedProject);
+            add.Text = "Select Person";
+            add.AddButton.Text = "Select";
+            add.MultiSelect = false;
+
+            if (add.ShowDialog(this) == DialogResult.OK)
+                OnSelectChange(add.Person, add.ProjectID);
         }
 
         private void ProjectNav_Clicked(object sender, EventArgs e)

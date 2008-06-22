@@ -14,7 +14,7 @@ using RiseOp.Implementation.Protocol.Special;
 
 namespace RiseOp.Interface.Startup
 {
-    internal partial class CreateUser : Form
+    internal partial class CreateUser : CustomIconForm
     {
         RiseOpContext Context;
         string OpName = "";

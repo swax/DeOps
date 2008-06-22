@@ -28,7 +28,6 @@ namespace RiseOp.Interface
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CreateOp));
             this.label1 = new System.Windows.Forms.Label();
             this.OpNameBox = new System.Windows.Forms.TextBox();
             this.ButtonCancel = new System.Windows.Forms.Button();
@@ -58,14 +57,14 @@ namespace RiseOp.Interface
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.OpNameBox.Location = new System.Drawing.Point(116, 17);
             this.OpNameBox.Name = "OpNameBox";
-            this.OpNameBox.Size = new System.Drawing.Size(183, 20);
+            this.OpNameBox.Size = new System.Drawing.Size(204, 20);
             this.OpNameBox.TabIndex = 0;
             // 
             // ButtonCancel
             // 
             this.ButtonCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ButtonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.ButtonCancel.Location = new System.Drawing.Point(224, 188);
+            this.ButtonCancel.Location = new System.Drawing.Point(245, 188);
             this.ButtonCancel.Name = "ButtonCancel";
             this.ButtonCancel.Size = new System.Drawing.Size(75, 23);
             this.ButtonCancel.TabIndex = 5;
@@ -76,7 +75,7 @@ namespace RiseOp.Interface
             // ButtonOK
             // 
             this.ButtonOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.ButtonOK.Location = new System.Drawing.Point(143, 188);
+            this.ButtonOK.Location = new System.Drawing.Point(164, 188);
             this.ButtonOK.Name = "ButtonOK";
             this.ButtonOK.Size = new System.Drawing.Size(75, 23);
             this.ButtonOK.TabIndex = 4;
@@ -131,9 +130,9 @@ namespace RiseOp.Interface
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label2.Location = new System.Drawing.Point(75, 73);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(224, 31);
+            this.label2.Size = new System.Drawing.Size(245, 31);
             this.label2.TabIndex = 13;
-            this.label2.Text = "Anyone can join by entering riseop://opname";
+            this.label2.Text = "Anyone can join by entering riseop://orgname";
             // 
             // label4
             // 
@@ -142,7 +141,7 @@ namespace RiseOp.Interface
             this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label4.Location = new System.Drawing.Point(75, 104);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(224, 27);
+            this.label4.Size = new System.Drawing.Size(245, 27);
             this.label4.TabIndex = 14;
             this.label4.Text = "Only those invited can join. Utilizes the global network to aid in finding peers." +
                 "";
@@ -154,10 +153,10 @@ namespace RiseOp.Interface
             this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label5.Location = new System.Drawing.Point(75, 141);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(224, 34);
+            this.label5.Size = new System.Drawing.Size(245, 34);
             this.label5.TabIndex = 15;
             this.label5.Text = "Same as private except the global network is not utilized.  Better for larger net" +
-                "works.";
+                "works and LANs.";
             // 
             // CreateOp
             // 
@@ -166,7 +165,7 @@ namespace RiseOp.Interface
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CancelButton = this.ButtonCancel;
-            this.ClientSize = new System.Drawing.Size(311, 223);
+            this.ClientSize = new System.Drawing.Size(332, 223);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label2);
@@ -179,7 +178,6 @@ namespace RiseOp.Interface
             this.Controls.Add(this.label1);
             this.Controls.Add(this.OpNameBox);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "CreateOp";

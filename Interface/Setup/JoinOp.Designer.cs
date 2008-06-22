@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(JoinOp));
             this.label1 = new System.Windows.Forms.Label();
             this.LinkBox = new System.Windows.Forms.TextBox();
             this.ButtonOK = new System.Windows.Forms.Button();
@@ -103,7 +102,6 @@
             this.Controls.Add(this.ButtonCancel);
             this.Controls.Add(this.LinkBox);
             this.Controls.Add(this.label1);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "JoinOp";

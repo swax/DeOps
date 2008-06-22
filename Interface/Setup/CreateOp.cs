@@ -13,7 +13,7 @@ using RiseOp.Implementation.Protocol;
 
 namespace RiseOp.Interface
 {
-    internal partial class CreateOp : Form
+    internal partial class CreateOp : CustomIconForm
     {
         internal string OpName = "";
         internal AccessType OpAccess = AccessType.Public;

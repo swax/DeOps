@@ -23,7 +23,7 @@ using RiseOp.Interface.Tools;
 namespace RiseOp.Simulator
 {
 
-    internal partial class SimForm : Form
+    internal partial class SimForm : CustomIconForm
     {
         internal InternetSim Sim;
 
@@ -575,11 +575,8 @@ namespace RiseOp.Simulator
             FreshStartMenuItem.Checked = Sim.FreshStart;
             LoadOnlineMenuItem.Checked = Sim.LoadOnline;
             LoggingMenu.Checked = Sim.Logging;
-        }
-
-        private void EncryptionMenuItem_Click(object sender, EventArgs e)
-        {
-            Sim.TestEncryption = !Sim.TestEncryption;
+            LanMenu.Checked = Sim.LAN;
+            EncryptionMenu.Checked = Sim.TestEncryption;
         }
 
         private void SpeedMenuItem_Click(object sender, EventArgs e)
@@ -629,6 +626,16 @@ namespace RiseOp.Simulator
             Sim.InstanceChange += new InstanceChangeHandler(OnInstanceChange);
 
             OnInstanceChange(null, InstanceChangeType.Refresh);
+        }
+
+        private void LanMenu_Click(object sender, EventArgs e)
+        {
+            Sim.LAN = !Sim.LAN;
+        }
+
+        private void EncryptionMenu_Click(object sender, EventArgs e)
+        {
+            Sim.TestEncryption = !Sim.TestEncryption;
         }
 
 
@@ -703,12 +710,12 @@ namespace RiseOp.Simulator
             string alerts = "";
             
             // firewall incorrect
-            if (Instance.RealFirewall != Core.Context.Firewall)
+            if (Instance.RealFirewall != Core.Firewall)
                 alerts += "Firewall, ";
 
             // ip incorrect
-            if (Instance.Context.LocalIP != null && !Instance.RealIP.Equals(Instance.Context.LocalIP))
-                alerts += "IP Mismatch, ";
+            //if (Instance.Context.LocalIP != null && !Instance.RealIP.Equals(Instance.Context.LocalIP))
+            //    alerts += "IP Mismatch, ";
 
             // routing unresponsive global/op
             if(Instance.Context.Global != null)

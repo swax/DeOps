@@ -29,7 +29,6 @@ namespace RiseOp.Simulator
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SimForm));
             this.buttonStart = new System.Windows.Forms.Button();
             this.buttonPause = new System.Windows.Forms.Button();
             this.labelTime = new System.Windows.Forms.Label();
@@ -59,6 +58,8 @@ namespace RiseOp.Simulator
             this.OptionsMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.FreshStartMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.LoadOnlineMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.EncryptionMenu = new System.Windows.Forms.ToolStripMenuItem();
+            this.LanMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.LoggingMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.SpeedMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.CollectMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -283,6 +284,8 @@ namespace RiseOp.Simulator
             this.OptionsMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.FreshStartMenuItem,
             this.LoadOnlineMenuItem,
+            this.EncryptionMenu,
+            this.LanMenu,
             this.LoggingMenu,
             this.SpeedMenuItem,
             this.CollectMenuItem});
@@ -304,6 +307,20 @@ namespace RiseOp.Simulator
             this.LoadOnlineMenuItem.Size = new System.Drawing.Size(141, 22);
             this.LoadOnlineMenuItem.Text = "Load Online";
             this.LoadOnlineMenuItem.Click += new System.EventHandler(this.LoadOnlineMenu_Click);
+            // 
+            // EncryptionMenu
+            // 
+            this.EncryptionMenu.Name = "EncryptionMenu";
+            this.EncryptionMenu.Size = new System.Drawing.Size(141, 22);
+            this.EncryptionMenu.Text = "Encryption";
+            this.EncryptionMenu.Click += new System.EventHandler(this.EncryptionMenu_Click);
+            // 
+            // LanMenu
+            // 
+            this.LanMenu.Name = "LanMenu";
+            this.LanMenu.Size = new System.Drawing.Size(141, 22);
+            this.LanMenu.Text = "LAN";
+            this.LanMenu.Click += new System.EventHandler(this.LanMenu_Click);
             // 
             // LoggingMenu
             // 
@@ -456,7 +473,6 @@ namespace RiseOp.Simulator
             this.Controls.Add(this.LabelInstances);
             this.Controls.Add(this.listInstances);
             this.Controls.Add(this.menuStrip1);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "SimForm";
             this.Text = "RiseOp Internet Simulator";
@@ -516,5 +532,7 @@ namespace RiseOp.Simulator
         private System.Windows.Forms.ToolStripMenuItem UnloadAllMenuItem;
         private System.Windows.Forms.ColumnHeader columnHeader10;
         private System.Windows.Forms.ToolStripMenuItem LoggingMenu;
+        private System.Windows.Forms.ToolStripMenuItem LanMenu;
+        private System.Windows.Forms.ToolStripMenuItem EncryptionMenu;
     }
 }

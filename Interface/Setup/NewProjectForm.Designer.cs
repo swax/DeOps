@@ -143,7 +143,7 @@ namespace RiseOp.Interface
             this.Controls.Add(this.NameBox);
             this.Controls.Add(this.ButtonCancel);
             this.Controls.Add(this.ButtonOK);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "NewProjectForm";

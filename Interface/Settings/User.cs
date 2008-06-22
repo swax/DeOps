@@ -11,7 +11,7 @@ using RiseOp.Implementation;
 
 namespace RiseOp.Interface.Settings
 {
-    internal partial class User : Form
+    internal partial class User : CustomIconForm
     {
         Identity Profile;
 

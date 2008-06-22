@@ -11,7 +11,7 @@ using System.Windows.Forms;
 
 namespace RiseOp.Interface
 {
-    internal partial class ErrorReport : Form
+    internal partial class ErrorReport : CustomIconForm
     {
         bool Sent;
         SmtpClient smtp = new SmtpClient("smtp.gmail.com", 587);

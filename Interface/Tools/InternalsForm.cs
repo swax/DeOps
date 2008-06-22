@@ -29,7 +29,7 @@ namespace RiseOp.Interface.Tools
 	/// <summary>
 	/// Summary description for InternalsForm.
 	/// </summary>
-	internal class InternalsForm : System.Windows.Forms.Form
+    internal class InternalsForm : RiseOp.Interface.CustomIconForm
 	{
 		OpCore Core;
         BoardService Boards;
@@ -188,7 +188,6 @@ namespace RiseOp.Interface.Tools
 		/// </summary>
 		private void InitializeComponent()
 		{
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(InternalsForm));
             this.treeStructure = new System.Windows.Forms.TreeView();
             this.splitter1 = new System.Windows.Forms.Splitter();
             this.listValues = new System.Windows.Forms.ListView();
@@ -252,7 +251,6 @@ namespace RiseOp.Interface.Tools
             this.Controls.Add(this.listValues);
             this.Controls.Add(this.splitter1);
             this.Controls.Add(this.treeStructure);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "InternalsForm";
             this.Text = "Internals";
             this.Closing += new System.ComponentModel.CancelEventHandler(this.InternalsForm_Closing);
@@ -280,8 +278,6 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Property", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
-            listValues.Items.Add(new ListViewItem(new string[] { "LocalIP",         xStr(Core.Context.LocalIP) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "Firewall",        xStr(Core.Context.Firewall) }));
             listValues.Items.Add(new ListViewItem(new string[] { "StartTime",       xStr(Core.StartTime) }));
         }
 
@@ -357,6 +353,9 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Property", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
+
+            listValues.Items.Add(new ListViewItem(new string[] { "LocalIP", xStr(network.Core.LocalIP) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "Firewall", xStr(network.Core.Firewall) }));
             listValues.Items.Add(new ListViewItem(new string[] { "LocalDhtID", IDtoStr(network.Local.UserID) }));
             listValues.Items.Add(new ListViewItem(new string[] { "ClientID", xStr(network.Local.ClientID) }));
             listValues.Items.Add(new ListViewItem(new string[] { "OpID", IDtoStr(network.OpID) })); 

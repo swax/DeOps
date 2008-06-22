@@ -71,13 +71,15 @@ namespace RiseOp.Implementation.Protocol
 	
 	internal class PacketLogEntry
 	{
+        internal DateTime Time;
         internal TransportProtocol Protocol;
 		internal DirectionType Direction;
         internal DhtAddress    Address;
 		internal byte[]        Data;
 
-        internal PacketLogEntry(TransportProtocol protocol, DirectionType direction, DhtAddress address, byte[] data)
+        internal PacketLogEntry(DateTime time, TransportProtocol protocol, DirectionType direction, DhtAddress address, byte[] data)
 		{
+            Time = time;
 			Protocol  = protocol;
 			Direction = direction;
 			Address   = address;

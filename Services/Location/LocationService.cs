@@ -29,6 +29,7 @@ namespace RiseOp.Services.Location
         public uint ServiceID { get { return 2; } }
 
         OpCore Core;
+        DhtNetwork Network;
 
         internal uint LocationVersion = 1;
         internal DateTime NextLocationUpdate;
@@ -53,13 +54,15 @@ namespace RiseOp.Services.Location
         internal LocationService(OpCore core)
         {
             Core = core;
+            Network = core.Network;
+
             Core.Locations = this;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
-            Core.Network.Store.StoreEvent[ServiceID, 0] += new StoreHandler(OperationStore_Local);
-            Core.Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(OperationSearch_Local);
+            Network.Store.StoreEvent[ServiceID, 0] += new StoreHandler(OperationStore_Local);
+            Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(OperationSearch_Local);
 
 
             if (Core.Sim != null)
@@ -75,8 +78,8 @@ namespace RiseOp.Services.Location
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.SecondTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
-            Core.Network.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(OperationStore_Local);
-            Core.Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(OperationSearch_Local);
+            Network.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(OperationStore_Local);
+            Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(OperationSearch_Local);
         }
 
         void Core_SecondTimer()
@@ -84,14 +87,14 @@ namespace RiseOp.Services.Location
             OpCore global = Core.Context.Global;
 
             // global publish
-            if ((Core.Context.Firewall == FirewallType.Open || Core.Network.UseGlobalProxies) &&
-                global != null &&
+            if ( global != null &&
                 global.Network.Responsive &&
+                (global.Firewall == FirewallType.Open || Network.UseGlobalProxies) && 
                 Core.TimeNow > NextGlobalPublish)
                 PublishGlobal();
 
             // operation publish
-            if (Core.Network.Responsive && Core.TimeNow > NextLocationUpdate)
+            if (Network.Responsive && Core.TimeNow > NextLocationUpdate)
                 UpdateLocation();
 
             // run code below every quarter second
@@ -163,7 +166,7 @@ namespace RiseOp.Services.Location
                     if (LocationMap.Count > PruneLocations &&
                         id != Core.UserID &&
                         !Core.Focused.SafeContainsKey(id) &&
-                        !Core.Network.Routing.InCacheArea(id))
+                        !Network.Routing.InCacheArea(id))
                         removeIDs.Add(id);
                 }
             });
@@ -207,7 +210,7 @@ namespace RiseOp.Services.Location
         {
             // should be auto-set like a second after tcp connect
             // this isnt called until 15s after tcp connect
-            if (Core.Context.LocalIP == null)
+            if (Core.Context.Global.LocalIP == null)
                 return;
 
             // set next publish time 55 mins
@@ -215,19 +218,23 @@ namespace RiseOp.Services.Location
 
             LocationData location = GetLocalLocation();
 
+            // network iniitialized with ip/firewall set to default, use global values
+            location.IP = Core.Context.Global.LocalIP;
+            location.Source.Firewall = Core.Context.Global.Firewall;
+
 
             // location packet is encrypted inside global loc packet
             // this embedded has OP TTL, while wrapper (CryptLoc) has global TTL
 
-            byte[] data = SignedData.Encode(Core.Network.Protocol, Core.Profile.Settings.KeyPair, location);
+            byte[] data = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, location);
 
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
-                data = Utilities.EncryptBytes(data, Core.Network.OriginalCrypt.Key);
+                data = Utilities.EncryptBytes(data, Network.OriginalCrypt.Key);
 
-            data = new CryptLoc(LocationData.GLOBAL_TTL, data).Encode(Core.Network.Protocol);
+            data = new CryptLoc(LocationData.GLOBAL_TTL, data).Encode(Network.Protocol);
 
             GlobalService service = (GlobalService) Core.Context.Global.ServiceMap[2];
-            service.Publish(Core.Network.OpID, data);
+            service.Publish(Network.OpID, data);
         }
 
         internal void UpdateLocation()
@@ -243,10 +250,10 @@ namespace RiseOp.Services.Location
 
             LocationData location = GetLocalLocation();
             
-            byte[] signed = SignedData.Encode(Core.Network.Protocol, Core.Profile.Settings.KeyPair, location);
+            byte[] signed = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, location);
 
             Debug.Assert(location.TTL < 5);
-            Core.Network.Store.PublishNetwork(Core.UserID, ServiceID, 0, signed);
+            Network.Store.PublishNetwork(Core.UserID, ServiceID, 0, signed);
 
             OperationStore_Local(new DataReq(null, Core.UserID, ServiceID, 0, signed));
         }
@@ -255,7 +262,7 @@ namespace RiseOp.Services.Location
         {
             byte[] parameters = BitConverter.GetBytes(version);
 
-            DhtSearch search = Core.Network.Searches.Start(id, "Location", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Network.Searches.Start(id, "Location", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
 
             if (search != null)
                 search.TargetResults = 2;
@@ -327,7 +334,7 @@ namespace RiseOp.Services.Location
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Core.Network.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Data.UserID, ServiceID, 0, current.SignedData));
+                            Network.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Data.UserID, ServiceID, 0, current.SignedData));
 
                     return;
                 }
@@ -362,9 +369,9 @@ namespace RiseOp.Services.Location
             }
 
             current.Data = location;
-            current.SignedData = signed.Encode(Core.Network.Protocol);
+            current.SignedData = signed.Encode(Network.Protocol);
 
-            if (current.Data.UserID == Core.UserID && current.Data.Source.ClientID == Core.Network.Local.ClientID)
+            if (current.Data.UserID == Core.UserID && current.Data.Source.ClientID == Network.Local.ClientID)
                 LocalLocation = current;
 
             current.TTL = location.TTL;
@@ -372,12 +379,12 @@ namespace RiseOp.Services.Location
             
             // if open and not global, add to routing
             if (location.Source.Firewall == FirewallType.Open)
-                Core.Network.Routing.Add(new DhtContact(location.Source, location.IP));
+                Network.Routing.Add(new DhtContact(location.Source, location.IP));
 
             // add global proxies (they would only be included in location packet if source was not directly connected to OP
             // even if open add the GP because pinging them will let host know of an open node on the network to connect to
             foreach(DhtAddress server in location.TunnelServers)
-                Core.Network.Routing.Add(new DhtContact(location.Source, location.IP, location.TunnelClient, server));
+                Network.Routing.Add(new DhtContact(location.Source, location.IP, location.TunnelClient, server));
     
             if (LocationUpdate != null)
                 LocationUpdate.Invoke(current.Data);
@@ -390,12 +397,11 @@ namespace RiseOp.Services.Location
             LocationData location = new LocationData();
 
             location.Key = Core.Profile.Settings.KeyPublic;
-            location.IP = Core.Context.LocalIP;
             location.TTL = LocationData.OP_TTL;
+            location.IP = Core.LocalIP;
+            location.Source = Network.GetLocalSource();
 
-            location.Source = Core.Network.GetLocalSource();
-
-            if (Core.Network.UseGlobalProxies && Core.Context.Firewall != FirewallType.Open)
+            if (Network.UseGlobalProxies)
             {
                 location.TunnelClient = new TunnelAddress(Core.Context.Global.Network.Local, Core.TunnelID);
 
@@ -403,7 +409,7 @@ namespace RiseOp.Services.Location
                     location.TunnelServers.Add(new DhtAddress(socket.RemoteIP, socket));
             }
 
-            foreach (TcpConnect socket in Core.Network.TcpControl.ProxyServers)
+            foreach (TcpConnect socket in Network.TcpControl.ProxyServers)
                 location.Proxies.Add(new DhtAddress(socket.RemoteIP, socket));
 
             location.Place = Core.Profile.Settings.Location;
@@ -471,7 +477,7 @@ namespace RiseOp.Services.Location
                 return;
             }
 
-            if (!Core.Network.Responsive)
+            if (!Network.Responsive)
                 return;
 
             // limit re-search to once per 30 secs

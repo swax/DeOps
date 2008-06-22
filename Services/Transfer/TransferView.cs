@@ -6,12 +6,13 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
+using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
 using RiseOp.Implementation.Transport;
 
 namespace RiseOp.Services.Transfer
 {
-    internal partial class TransferView : Form
+    internal partial class TransferView : CustomIconForm
     {
         TransferService Transfers;
 
