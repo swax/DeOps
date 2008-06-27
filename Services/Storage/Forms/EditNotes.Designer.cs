@@ -74,7 +74,6 @@ namespace RiseOp.Services.Storage
             this.AcceptButton = this.OKButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CancelButton = this.ExitButton;
             this.ClientSize = new System.Drawing.Size(281, 293);
             this.Controls.Add(this.NotesBox);

@@ -8,9 +8,9 @@ using System.Windows.Forms;
 
 namespace RiseOp.Services.Chat
 {
-    public partial class CreateRoom : Form
+    internal partial class CreateRoom :  RiseOp.Interface.CustomIconForm
     {
-        public CreateRoom()
+        internal CreateRoom()
         {
             InitializeComponent();
         }

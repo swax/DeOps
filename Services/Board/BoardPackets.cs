@@ -191,9 +191,10 @@ namespace RiseOp.Services.Board
     {
         const byte Packet_Subject = 0x10;
         const byte Packet_Unique = 0x20;
-
+        const byte Packet_Quip = 0x30;
 
         internal string     Subject;
+        internal string Quip;
         int Unique; // ensures file hash is unique
 
         
@@ -201,9 +202,10 @@ namespace RiseOp.Services.Board
         {
         }
 
-        internal PostInfo(string subject, Random gen)
+        internal PostInfo(string subject, string quip, Random gen)
         {
             Subject = subject;
+            Quip = quip;
             Unique = gen.Next();
         }
 
@@ -214,6 +216,7 @@ namespace RiseOp.Services.Board
                 G2Frame info = protocol.WritePacket(null, BoardPacket.PostInfo, null);
 
                 protocol.WritePacket(info, Packet_Subject, UTF8Encoding.UTF8.GetBytes(Subject));
+                protocol.WritePacket(info, Packet_Quip, UTF8Encoding.UTF8.GetBytes(Quip));
                 protocol.WritePacket(info, Packet_Unique, BitConverter.GetBytes(Unique));
 
                 return protocol.WriteFinish();
@@ -234,6 +237,10 @@ namespace RiseOp.Services.Board
                 {
                     case Packet_Subject:
                         info.Subject = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_Quip:
+                        info.Quip = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Unique:

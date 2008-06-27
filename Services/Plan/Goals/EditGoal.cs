@@ -13,7 +13,7 @@ namespace RiseOp.Services.Plan
 {
     enum EditGoalMode { New, Delgate, Edit, View };
 
-    internal partial class EditGoal : Form
+    internal partial class EditGoal : RiseOp.Interface.CustomIconForm
     {
         EditGoalMode Mode;
         OpCore Core;

@@ -10,7 +10,7 @@ namespace RiseOp.Services.Plan
 {
     enum EditItemMode { New, Edit, View };
 
-    internal partial class EditPlanItem : Form
+    internal partial class EditPlanItem : RiseOp.Interface.CustomIconForm
     {
         EditItemMode Mode;
         PlanGoal Goal;

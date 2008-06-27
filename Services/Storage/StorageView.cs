@@ -96,7 +96,7 @@ namespace RiseOp.Services.Storage
         internal override string GetTitle(bool small)
         {
             if (small)
-                return "Storage";
+                return "Files";
 
             string title = "";
 
@@ -108,7 +108,7 @@ namespace RiseOp.Services.Storage
             if (ProjectID != 0)
                 title += Trust.GetProjectName(ProjectID) + " ";
 
-            title += "Storage";
+            title += "Files";
 
             return title;
         }
@@ -1324,7 +1324,7 @@ namespace RiseOp.Services.Storage
             return current;
         }
 
-        private void SaveLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void SaveButton_Click(object sender, EventArgs e)
         {
             Storages.SaveLocal(ProjectID);
 
@@ -1333,7 +1333,7 @@ namespace RiseOp.Services.Storage
             CheckWorkingStatus();
         }
 
-        private void DiscardLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void DiscardButton_Click(object sender, EventArgs e)
         {
             Working = Storages.Discard(ProjectID);
 
@@ -1894,7 +1894,7 @@ namespace RiseOp.Services.Storage
 
         void Folder_Create(object sender, EventArgs args)
         {
-            GetTextDialog dialog = new GetTextDialog("Create Folder", "Enter a name for the new folder", "New Folder");
+            GetTextDialog dialog = new GetTextDialog(StorageRes.Icon, "Create Folder", "Enter a name for the new folder", "New Folder");
 
             if (dialog.ShowDialog(this) == DialogResult.OK)
             {
@@ -2167,13 +2167,13 @@ namespace RiseOp.Services.Storage
 
             if (Storages.HashingActive())
             {
-                if (!ChangesLabel.Visible || SaveLink.Visible)
+                if (!ChangesLabel.Visible || SaveButton.Visible)
                 {
                     ChangesLabel.Visible = true;
-                    SaveLink.Visible = false;
-                    DiscardLink.Visible = false;
+                    SaveButton.Visible = false;
+                    DiscardButton.Visible = false;
 
-                    splitContainer1.Height = Height - 18 - toolStrip1.Height;
+                    splitContainer1.Height = Height - 24 - toolStrip1.Height;
                 }
 
                 ChangesLabel.Text = "Processing " + (Storages.HashQueue.Count).ToString() + " Changes...";
@@ -2181,24 +2181,22 @@ namespace RiseOp.Services.Storage
 
             else if (Working.Modified)
             {
-                if (!SaveLink.Visible)
+                if (!SaveButton.Visible)
                 {
-                    ChangesLabel.Visible = true;
-                    SaveLink.Visible = true;
-                    DiscardLink.Visible = true;
+                    ChangesLabel.Visible = false;
+                    SaveButton.Visible = true;
+                    DiscardButton.Visible = true;
 
-                    splitContainer1.Height = Height - 18 - toolStrip1.Height;
-
-                    ChangesLabel.Text = "Changes";
+                    splitContainer1.Height = Height - 24 - toolStrip1.Height;
                 }
             }
             else
             {
-                if (ChangesLabel.Visible)
+                if (SaveButton.Visible)
                 {
                     ChangesLabel.Visible = false;
-                    SaveLink.Visible = false;
-                    DiscardLink.Visible = false;
+                    SaveButton.Visible = false;
+                    DiscardButton.Visible = false;
                     splitContainer1.Height = Height - toolStrip1.Height;
                 }
             }

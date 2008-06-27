@@ -41,7 +41,7 @@
             // 
             this.ExitButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ExitButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.ExitButton.Location = new System.Drawing.Point(195, 297);
+            this.ExitButton.Location = new System.Drawing.Point(234, 303);
             this.ExitButton.Name = "ExitButton";
             this.ExitButton.Size = new System.Drawing.Size(75, 23);
             this.ExitButton.TabIndex = 9;
@@ -52,7 +52,7 @@
             // SendButton
             // 
             this.SendButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.SendButton.Location = new System.Drawing.Point(101, 297);
+            this.SendButton.Location = new System.Drawing.Point(140, 303);
             this.SendButton.Name = "SendButton";
             this.SendButton.Size = new System.Drawing.Size(88, 23);
             this.SendButton.TabIndex = 8;
@@ -64,7 +64,7 @@
             // 
             this.Label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.Label3.AutoSize = true;
-            this.Label3.Location = new System.Drawing.Point(12, 217);
+            this.Label3.Location = new System.Drawing.Point(12, 225);
             this.Label3.Name = "Label3";
             this.Label3.Size = new System.Drawing.Size(84, 13);
             this.Label3.TabIndex = 10;
@@ -74,10 +74,10 @@
             // 
             this.NotesBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.NotesBox.Location = new System.Drawing.Point(12, 235);
+            this.NotesBox.Location = new System.Drawing.Point(12, 241);
             this.NotesBox.Multiline = true;
             this.NotesBox.Name = "NotesBox";
-            this.NotesBox.Size = new System.Drawing.Size(258, 56);
+            this.NotesBox.Size = new System.Drawing.Size(297, 56);
             this.NotesBox.TabIndex = 7;
             // 
             // Label2
@@ -99,7 +99,7 @@
             this.DetailsBox.Multiline = true;
             this.DetailsBox.Name = "DetailsBox";
             this.DetailsBox.ReadOnly = true;
-            this.DetailsBox.Size = new System.Drawing.Size(258, 127);
+            this.DetailsBox.Size = new System.Drawing.Size(297, 144);
             this.DetailsBox.TabIndex = 11;
             // 
             // Label1
@@ -109,7 +109,7 @@
             this.Label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Label1.Location = new System.Drawing.Point(12, 9);
             this.Label1.Name = "Label1";
-            this.Label1.Size = new System.Drawing.Size(258, 42);
+            this.Label1.Size = new System.Drawing.Size(297, 42);
             this.Label1.TabIndex = 13;
             this.Label1.Text = "RiseOp has closed due to an unexpected error.  Assist us in resolving this issue " +
                 "by sending in an error report.";
@@ -119,9 +119,8 @@
             this.AcceptButton = this.SendButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CancelButton = this.ExitButton;
-            this.ClientSize = new System.Drawing.Size(282, 332);
+            this.ClientSize = new System.Drawing.Size(321, 338);
             this.Controls.Add(this.ExitButton);
             this.Controls.Add(this.SendButton);
             this.Controls.Add(this.Label3);

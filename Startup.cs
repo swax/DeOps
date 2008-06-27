@@ -85,7 +85,6 @@ namespace RiseOp
             // check for updates
             new System.Threading.Thread(CheckForUpdates).Start();
 
-
             // display login form
             ShowLogin(args);
         }

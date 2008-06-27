@@ -59,11 +59,13 @@ namespace RiseOp.Services.Mail
             // 
             this.ToTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
+            this.ToTextBox.BackColor = System.Drawing.Color.WhiteSmoke;
             this.ToTextBox.Location = new System.Drawing.Point(52, 6);
             this.ToTextBox.Name = "ToTextBox";
             this.ToTextBox.ReadOnly = true;
             this.ToTextBox.Size = new System.Drawing.Size(173, 20);
             this.ToTextBox.TabIndex = 2;
+            this.ToTextBox.Text = "Click Add...";
             // 
             // label3
             // 
@@ -204,7 +206,6 @@ namespace RiseOp.Services.Mail
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.Controls.Add(this.RemovePersonLink);
             this.Controls.Add(this.AddPersonLink);
             this.Controls.Add(this.LinkAdd);

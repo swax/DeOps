@@ -72,7 +72,7 @@ namespace RiseOp.Services.Profile
             this.TemplateCombo.FormattingEnabled = true;
             this.TemplateCombo.Location = new System.Drawing.Point(15, 39);
             this.TemplateCombo.Name = "TemplateCombo";
-            this.TemplateCombo.Size = new System.Drawing.Size(229, 21);
+            this.TemplateCombo.Size = new System.Drawing.Size(227, 21);
             this.TemplateCombo.TabIndex = 5;
             this.TemplateCombo.SelectedIndexChanged += new System.EventHandler(this.TemplateCombo_SelectedIndexChanged);
             // 
@@ -84,7 +84,7 @@ namespace RiseOp.Services.Profile
             this.FieldsCombo.FormattingEnabled = true;
             this.FieldsCombo.Location = new System.Drawing.Point(57, 92);
             this.FieldsCombo.Name = "FieldsCombo";
-            this.FieldsCombo.Size = new System.Drawing.Size(126, 21);
+            this.FieldsCombo.Size = new System.Drawing.Size(124, 21);
             this.FieldsCombo.TabIndex = 6;
             this.FieldsCombo.SelectedIndexChanged += new System.EventHandler(this.FieldsCombo_SelectedIndexChanged);
             // 
@@ -100,14 +100,14 @@ namespace RiseOp.Services.Profile
             this.ValueTextBox.Multiline = true;
             this.ValueTextBox.Name = "ValueTextBox";
             this.ValueTextBox.ReadOnly = true;
-            this.ValueTextBox.Size = new System.Drawing.Size(229, 151);
+            this.ValueTextBox.Size = new System.Drawing.Size(227, 149);
             this.ValueTextBox.TabIndex = 7;
             this.ValueTextBox.TextChanged += new System.EventHandler(this.ValueTextBox_TextChanged);
             // 
             // ButtonOK
             // 
             this.ButtonOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.ButtonOK.Location = new System.Drawing.Point(88, 278);
+            this.ButtonOK.Location = new System.Drawing.Point(86, 276);
             this.ButtonOK.Name = "ButtonOK";
             this.ButtonOK.Size = new System.Drawing.Size(75, 23);
             this.ButtonOK.TabIndex = 9;
@@ -119,7 +119,7 @@ namespace RiseOp.Services.Profile
             // 
             this.ButtonCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ButtonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.ButtonCancel.Location = new System.Drawing.Point(169, 278);
+            this.ButtonCancel.Location = new System.Drawing.Point(167, 276);
             this.ButtonCancel.Name = "ButtonCancel";
             this.ButtonCancel.Size = new System.Drawing.Size(75, 23);
             this.ButtonCancel.TabIndex = 8;
@@ -143,7 +143,7 @@ namespace RiseOp.Services.Profile
             this.LinkBrowse.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.LinkBrowse.AutoSize = true;
             this.LinkBrowse.Enabled = false;
-            this.LinkBrowse.Location = new System.Drawing.Point(189, 95);
+            this.LinkBrowse.Location = new System.Drawing.Point(187, 95);
             this.LinkBrowse.Name = "LinkBrowse";
             this.LinkBrowse.Size = new System.Drawing.Size(51, 13);
             this.LinkBrowse.TabIndex = 11;
@@ -177,9 +177,8 @@ namespace RiseOp.Services.Profile
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CancelButton = this.ButtonCancel;
-            this.ClientSize = new System.Drawing.Size(256, 313);
+            this.ClientSize = new System.Drawing.Size(254, 311);
             this.Controls.Add(this.LinkPreview);
             this.Controls.Add(this.LinkNew);
             this.Controls.Add(this.LinkBrowse);

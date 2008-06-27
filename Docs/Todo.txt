@@ -1,36 +1,46 @@
 
+test stopAtLoop stops at correct position
 
-new main 3 icons
-
-graphics
-	data, profile, files, bolder side search button
-	plans (telescope) comm (?) data (?)
-	put images all in right services directories
-	small sticky note square for board posts icon
+test large test with all comps in house
+		test crawlable
 		
-graphics
-	storage - restore
-	mail	- forward, reply
-	board   - high, low, all
-	plans   - edit
-	goals	- edit
-	tray	- restore, exit
-	chat	- 
+sending large block of text crashes, test other places where string input is unchecked size
+
+storage is losing files, debug
+
+locations not expiring, there are a million of em
+looooooooootta dupes in ipcache
+
+list box header color is awful
+fix scroll bar
+
+repeat load failure and ensure that core isnt left hanging
+
+chat not selecting default input box
+dont show update when in room
+if no default chat view, show riseOp help page, if can't connect, show profile
+if no chat panels - put up profile for now, later help
+	on first chat message, put news update if chat not visible
+		
+default views
+	mail - help
+	board - help
+	storage - help
+	chat - help (introduction to 'trust')
+	profile - (right click to edit)
 	
 keep list of keys contacted over broadcast - on rudp connect to key send LAN address
 	also for rudp over global proxy, send our local IP specified in global network
 
-if no default chat view, show profile
 one more stab at security in settings, tray, link changes
-icon changing / inheriting from top
-	
-test secret invites with dad also broadcast over wireless
 
+test message board - doesnt seem like refresh is thread safe
 	
 spring release
-	licensing, installer, release security
+	
 	web caching ips/files - look at using EC2
 		run crawler once a day, upload highest uptime nodes to webcache site
+	licensing, installer, release security
 	
 	*** items from todo
 	31 crits
@@ -109,6 +119,7 @@ other
 	fix vertical scroll bar in link/chat window once and for all
 	board - All/Higher/Lower Posts, New Post
 	test clients with different local times, init random gmt offsets
+	GetDownlinkIDs not thread safe
 
 
 Interface
@@ -122,6 +133,15 @@ Interface
 		trust info box - options like trust, IM, mail, leave/join project
 		exception catching/reporting - move to POST, get last 50 log entries as well by time
 		
+	graphics
+		storage - restore
+		mail	- forward, reply
+		board   - high, low, all, small sticky note square for board posts icon
+		plans   - edit
+		goals	- edit
+		tray	- restore, exit
+		chat	- 
+	
 	connecting entertainment
 		visual aid so people can watch the connection process, entertaining, embed in main panel?
 		show ring with global in middle and ring with op name in middle
@@ -220,8 +240,6 @@ Components
 		on join chat, node asks other nodes for previous singed messages before specified time
 		
 	Mail 
-		one mail folder for in/out, mail and replies threaded so that first msg is root, and everything else is subs in tree
-		give new mail a thread ID that is used for replies, so that tree control can be used to collapse messages
 		soon - sync local mail between users
 		tagging messages, filter by tags
 		double clicking on name loacates them in link tree in panel
@@ -237,7 +255,6 @@ Components
 		 posts with subs not marked with +
 		 ***posts/replies not updating quickly or at all :(
 			replies not propagating
-		 *** use high/low check buttons, not a drop down
 		 
 	Profile
 		time out loading - better searching interface use smoke color and better font, more info searching/dling/etc..

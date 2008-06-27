@@ -48,6 +48,7 @@ namespace RiseOp.Services.Board
 
             SubjectTextBox.Text = parent.Info.Subject;
             SubjectTextBox.Enabled = false;
+            SubjectTextBox.BackColor = Color.WhiteSmoke;
 
             SetScopeInvisible();
 
@@ -92,7 +93,7 @@ namespace RiseOp.Services.Board
 
         private void PostMessage_Load(object sender, EventArgs e)
         {
-
+            MessageBody.InputBox.Select();
         }
 
         internal override Icon GetIcon()
@@ -225,18 +226,17 @@ namespace RiseOp.Services.Board
 
                 // if reply - set subject to preview of message
                 string subject = SubjectTextBox.Text;
+   
+                string quip = MessageBody.InputBox.Text;
 
-                if (ParentID != 0)
+                if (quip.Length > 50)
                 {
-                    string msg = MessageBody.InputBox.Text;
-                    
-                    if (msg.Length > 50)
-                        msg = msg.Substring(0, 50) + "...";
-                 
-                    subject = msg;
+                    quip = quip.Substring(0, 50) + "...";
+                    quip = quip.Replace('\r', ' ');
+                    quip = quip.Replace('\n', ' ');
                 }
 
-                Board.PostMessage(UserID, ProjectID, ParentID, scope, subject, MessageBody.InputBox.Rtf, files, EditPost);
+                Board.PostMessage(UserID, ProjectID, ParentID, scope, subject, MessageBody.InputBox.Rtf, quip, files, EditPost);
             }
             catch (Exception ex)
             {

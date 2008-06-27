@@ -12,7 +12,7 @@ using RiseOp.Implementation;
 
 namespace RiseOp.Services.Storage
 {
-    internal partial class DiffForm : Form
+    internal partial class DiffForm : RiseOp.Interface.CustomIconForm
     {
         internal OpCore Core;
         internal InfoPanel Info;

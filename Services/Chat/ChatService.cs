@@ -33,6 +33,8 @@ namespace RiseOp.Services.Chat
         internal RefreshHandler Refresh;
         internal InvitedHandler Invited;
 
+        bool ChatNewsUpdate;
+
 
         internal ChatService(OpCore core)
         {
@@ -524,6 +526,12 @@ namespace RiseOp.Services.Chat
             // if sender not in room
             if(!room.Members.SafeContains(session.UserID))
                 return;
+
+            if (!ChatNewsUpdate)
+            {
+                ChatNewsUpdate = true;
+                Core.MakeNews(Trust.GetName(session.UserID) + " is chatting", session.UserID, 0, false, ChatRes.Icon, Menu_View);
+            }
 
             ProcessMessage(room, new ChatMessage(Core, session, message.Text));
         }

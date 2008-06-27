@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace RiseOp.Services.Storage
 {
-    internal partial class EditNotes : Form
+    internal partial class EditNotes : RiseOp.Interface.CustomIconForm
     {
         internal EditNotes()
         {

@@ -601,6 +601,7 @@
     <Compile Include="Test.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="ThreadedGenerics.cs" />
     <Compile Include="Utilities.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -613,6 +614,9 @@
     <None Include="Interface\Res\tools.png" />
     <None Include="Interface\Res\manage.png" />
     <None Include="Interface\Res\riseop.ico" />
+    <None Include="Interface\Res\splash.jpg" />
+    <None Include="Interface\Res\save.png" />
+    <None Include="Interface\Res\discard.png" />
     <Content Include="riseop.ico" />
     <Content Include="Services\Board\Board.txt" />
     <None Include="Services\Chat\Res\chat.ico" />
@@ -630,6 +634,8 @@
     <None Include="Services\IM\Res\greenled.png" />
     <None Include="Services\IM\Res\yellowled.png" />
     <None Include="Services\Chat\Res\invite.png" />
+    <None Include="Services\Mail\Res\recvmail.png" />
+    <None Include="Services\Mail\Res\sentmail.png" />
     <Content Include="Services\Trust\Link.txt" />
     <None Include="Services\Trust\Res\unlink.ico" />
     <Content Include="Services\Location\Location.txt" />

@@ -190,7 +190,7 @@ namespace RiseOp.Interface
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.CommandTree.BackColor = System.Drawing.SystemColors.Window;
-            this.CommandTree.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.CommandTree.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.CommandTree.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.CommandTree.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandTree.GridLineColor = System.Drawing.Color.WhiteSmoke;
@@ -210,6 +210,7 @@ namespace RiseOp.Interface
             this.CommandTree.StateImageList = null;
             this.CommandTree.TabIndex = 0;
             this.CommandTree.Text = "treeListViewEx1";
+            this.CommandTree.VisualStyles = false;
             this.CommandTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseClick);
             this.CommandTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseDoubleClick);
             this.CommandTree.SelectedItemChanged += new System.EventHandler(this.CommandTree_SelectedItemChanged);
@@ -501,13 +502,13 @@ namespace RiseOp.Interface
             // commonToolStripMenuItem1
             // 
             this.commonToolStripMenuItem1.Name = "commonToolStripMenuItem1";
-            this.commonToolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
+            this.commonToolStripMenuItem1.Size = new System.Drawing.Size(126, 22);
             this.commonToolStripMenuItem1.Text = "Common";
             // 
             // personalToolStripMenuItem2
             // 
             this.personalToolStripMenuItem2.Name = "personalToolStripMenuItem2";
-            this.personalToolStripMenuItem2.Size = new System.Drawing.Size(152, 22);
+            this.personalToolStripMenuItem2.Size = new System.Drawing.Size(126, 22);
             this.personalToolStripMenuItem2.Text = "Personal";
             // 
             // SideToolStrip

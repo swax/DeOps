@@ -1,34 +1,56 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+
+using RiseOp.Implementation;
+
 
 namespace RiseOp.Interface
 {
     internal class CustomIconForm : Form
     {
+        Identity Profile;
+
+
         internal CustomIconForm()
         {
             Icon = InterfaceRes.riseop;
+
+            if (Application.RenderWithVisualStyles)
+                BackColor = System.Drawing.Color.WhiteSmoke;
         }
 
-        /*internal CustomIconForm(OpCore core)
+        internal CustomIconForm(OpCore core)
         {
-            // when core given as argument hook into the icon changed event
-            // also means this needs to be disposed
+            Profile = core.Profile;
 
-            // default icon is in core.profile.settings.opIcon
-            // or inherited
+
+            // window icon
+            Profile_IconUpdate();
+
+
+            // dialog background color
+            if (Application.RenderWithVisualStyles)
+                BackColor = System.Drawing.Color.WhiteSmoke;
+
+
+            // signup for icon updates
+            core.Profile.GuiIconUpdate += new IconUpdateHandler(Profile_IconUpdate);
         }
 
+        void Profile_IconUpdate()
+        {
+            Icon = Profile.GetOpIcon();
+        }
 
         protected override void Dispose(bool disposing)
         {
-            //crit check this doesnt override forms dispose
-            // unhook event
-            
+            if(Profile != null)
+                Profile.GuiIconUpdate -= new IconUpdateHandler(Profile_IconUpdate);
 
             base.Dispose(disposing);
-        }*/
+        }
     }
 }

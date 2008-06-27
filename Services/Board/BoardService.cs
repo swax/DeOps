@@ -17,7 +17,7 @@ using RiseOp.Services.Location;
 
 namespace RiseOp.Services.Board
 {
-    internal enum ScopeType {All, High, Low };
+    internal enum ScopeType {All, High, Low, None };
     internal enum BoardSearch { Threads, Time, Post };
 
     internal delegate void PostUpdateHandler(OpPost post);
@@ -377,7 +377,7 @@ namespace RiseOp.Services.Board
             FinishPost(copy);
         }
 
-        internal void PostMessage(ulong id, uint project, uint parent, ScopeType scope, string subject, string message, List<AttachedFile> files, OpPost edit)
+        internal void PostMessage(ulong id, uint project, uint parent, ScopeType scope, string subject, string message, string quip, List<AttachedFile> files, OpPost edit)
         {
             // post header
             PostHeader header = new PostHeader();
@@ -417,7 +417,7 @@ namespace RiseOp.Services.Board
             int written = 0;
 
             // write post file
-            written += Protocol.WriteToFile(new PostInfo(subject, Core.RndGen), stream);
+            written += Protocol.WriteToFile(new PostInfo(subject, quip, Core.RndGen), stream);
 
             byte[] msgBytes = UTF8Encoding.UTF8.GetBytes(message);
             written += Protocol.WriteToFile(new PostFile("body", msgBytes.Length), stream);
@@ -1033,8 +1033,9 @@ namespace RiseOp.Services.Board
             }
         }
 
-        internal string GetPostInfo(OpPost post)
+        internal string GetPostTitle(OpPost post)
         {
+            // loads info when first demanded, cached afterwards
             if (post.Info == null)
                 try
                 {
@@ -1066,8 +1067,14 @@ namespace RiseOp.Services.Board
                     Network.UpdateLog("Board", "Could not load post " + post.Header.SourceID.ToString() + ": " + ex.Message);
                 }
 
-            
-            return (post.Info != null) ? post.Info.Subject : "";
+            if (post.Info == null)
+                return "";
+
+
+            if (post.Header.ParentID == 0)
+                return post.Info.Subject;
+            else
+                return post.Info.Quip;
         }
 
         internal OpBoard GetBoard(ulong key)
@@ -1150,35 +1157,28 @@ namespace RiseOp.Services.Board
             return targets;
         }
 
-        internal void LoadRegion(ulong id, uint project)
+        internal void LoadRegion(ulong user, uint project)
         {
-            // get all boards in local region
-            List<ulong> targets = GetBoardRegion(id, project, ScopeType.All);
-
-
-            foreach (ulong target in targets)
+            if (Core.InvokeRequired)
             {
-                OpBoard board = GetBoard(target);
-
-                if (board == null)
-                {
-                    LoadHeader(target); // updateinterface called in processheader
-                    continue;
-                }
-
-                // call update for all posts
-                board.Posts.LockReading(delegate()
-                {
-                    foreach (OpPost post in board.Posts.Values)
-                        if (post.Header.ProjectID == project && post.Header.ParentID == 0)
-                            UpdateGui(post);
-                });
+                Core.RunInCoreAsync(delegate() { LoadRegion(user, project); });
+                return;
             }
 
+            // get all boards in local region
+            List<ulong> region = GetBoardRegion(user, project, ScopeType.All);
+
+            foreach (ulong id in region)
+            {
+                OpBoard board = GetBoard(id);
+
+                if (board == null)
+                    LoadHeader(id); // updateinterface called in processheader
+            }
 
             // searches
-            foreach (ulong target in targets)
-                SearchBoard(target, project);
+            foreach (ulong id in region)
+                SearchBoard(id, project);
         }
 
         internal void SearchBoard(ulong target, uint project)

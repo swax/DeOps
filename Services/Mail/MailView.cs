@@ -20,14 +20,14 @@ namespace RiseOp.Services.Mail
 
     internal partial class MailView : ViewShell
     {
-        OpCore Core;
-        MailService Mail;
-        TrustService Links;
+        internal OpCore Core;
+        internal MailService Mail;
+        internal TrustService Links;
 
         private ListViewColumnSorter lvwColumnSorter = new ListViewColumnSorter();
 
-        Font RegularFont = new Font("Tahoma", 8.25F);
-        Font BoldFont = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+        internal Font RegularFont = new Font("Tahoma", 8.25F);
+        internal Font BoldFont = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 
         const string DefaultPage =
                 @"<html>
@@ -69,15 +69,13 @@ namespace RiseOp.Services.Mail
         {
             InitializeComponent();
 
-            //MessageList.ListViewItemSorter = lvwColumnSorter;
-
             Mail  = mail;
             Core  = mail.Core;
             Links = Core.Trust;
 
-            MessageList.SmallImageList = new List<Image>();
-            MessageList.SmallImageList.Add(MailRes.Mail);
-            MessageList.SmallImageList.Add(MailRes.Attach);
+            MessageView.SmallImageList = new List<Image>();
+            MessageView.SmallImageList.Add(MailRes.recvmail);
+            MessageView.SmallImageList.Add(MailRes.sentmail);
 
             MessageHeader.DocumentText = HeaderPage.ToString();
 
@@ -106,7 +104,18 @@ namespace RiseOp.Services.Mail
         {
             Mail.MailUpdate += new MailUpdateHandler(OnMailUpdate);
 
-            InboxButton_Click(null, null);
+            MessageView.BeginUpdate();
+
+            RefreshView();
+
+            if (MessageView.Nodes.Count > 0)
+            {
+                MessageNode node = MessageView.Nodes[0] as MessageNode;
+
+                MessageView.Select(node);
+                ShowMessage(node.Message);
+            }
+            MessageView.EndUpdate();
         }
 
         internal override bool Fin()
@@ -123,137 +132,80 @@ namespace RiseOp.Services.Mail
 
         private void InboxButton_Click(object sender, EventArgs e)
         {
-            InboxButton.Checked = true;
-            OutboxButton.Checked = false;
-            
-            // setup - From / Subject / Received
-            MessageList.Columns.Clear();
-            MessageList.Columns.Add("Subject", 250, HorizontalAlignment.Left, ColumnScaleStyle.Spring);
-            MessageList.Columns.Add("From", 100, HorizontalAlignment.Left, ColumnScaleStyle.Slide);
-            MessageList.Columns.Add("Received", 150, HorizontalAlignment.Left, ColumnScaleStyle.Slide);
-
-            MessageList.Items.Clear();
-
-            MessageList.RecalcLayout();
-
-            if (Mail.Inbox == null)
-                Mail.LoadLocalHeaders(MailBoxType.Inbox);
-            
-            // display messages in list box
-            Mail.Inbox.LockReading(delegate()
-            {
-                foreach (LocalMail message in Mail.Inbox)
-                    AddInboxMessage(message);
-            });
-
-            // select first item
-            if (MessageList.Items.Count > 0)
-                MessageList.Select(MessageList.Items[0]);
-
-            ShowSelected();
+            RefreshView();
         }
 
         private void OutboxButton_Click(object sender, EventArgs e)
         {
-            InboxButton.Checked = false;
-            OutboxButton.Checked = true;
+            RefreshView();
+        }
 
-            // setup - To / Subject / Sent
-            MessageList.Columns.Clear();
-            MessageList.Columns.Add("Subject", 250, HorizontalAlignment.Left, ColumnScaleStyle.Spring);
-            MessageList.Columns.Add("To", 100, HorizontalAlignment.Left, ColumnScaleStyle.Slide);
-            MessageList.Columns.Add("Sent", 150, HorizontalAlignment.Left, ColumnScaleStyle.Slide);
-            MessageList.Columns.Add("Status", 100, HorizontalAlignment.Left, ColumnScaleStyle.Slide);
+        private void RefreshView()
+        {
+            MessageView.Nodes.Clear();
 
-            MessageList.Items.Clear();
+            if (Mail.LocalMailbox == null)
+                Mail.LoadLocalHeaders();
 
-            MessageList.RecalcLayout();
-
-            if (Mail.Outbox == null)
-                Mail.LoadLocalHeaders(MailBoxType.Outbox);
-
-            // display messages
-            Mail.Outbox.LockReading(delegate()
+            // messages sorted oldest to newest so thread parents should be correct
+            Mail.LocalMailbox.LockReading(delegate()
             {
-                foreach (LocalMail message in Mail.Outbox)
-                    AddOutboxMessage(message);
+                foreach (LocalMail message in Mail.LocalMailbox.Values)
+                    AddMessage(message, false);
             });
-
-            // select first item
-            if (MessageList.Items.Count > 0)
-                MessageList.Select(MessageList.Items[0]);
-
-            ShowSelected();
         }
 
-        void OnMailUpdate(bool inbox, LocalMail message)
+        void OnMailUpdate(LocalMail message)
         {
-            // in already in list remove
-            MessageListItem item = FindMessage(message);
-
-            if (item != null)
-                MessageList.Items.Remove(item);
-
-            if (inbox && InboxButton.Checked)
-                AddInboxMessage(message);
-
-            if (!inbox && OutboxButton.Checked)
-                AddOutboxMessage(message);
+            AddMessage(message, true);
         }
 
-        private MessageListItem FindMessage(LocalMail message)
+        private void AddMessage(LocalMail message, bool ensureVisible)
         {
-            foreach (MessageListItem item in MessageList.Items)
-                if (Utilities.MemCompare(item.Message.Header.MailID, message.Header.MailID))
-                    return item;
+            bool local = (message.Header.TargetID == Core.UserID);
 
-            return null;
-        }
+            if(local && !ReceivedButton.Checked)
+                return;
 
-        private void AddInboxMessage(LocalMail message)
-        {
-            MessageListItem item = new MessageListItem(message, 
-                    message.Info.Subject,
-                    Links.GetName(message.From),
-                    Utilities.FormatTime(message.Header.Received.ToLocalTime()));
-            
-            //crit - no sub item fonts
-            /*if(!message.Header.Read)
-                foreach (ContainerSubListViewItem subItem in item.SubItems)
-                    subItem.Font = BoldFont;*/
-            
-            MessageList.Items.Add(item);
+            if(!local && !SentButton.Checked)
+                return;
 
-            MessageList.Invalidate();
-        }
+            // find thread id and add to thread
+            MessageNode node = new MessageNode(this, message);
 
-        private void AddOutboxMessage(LocalMail message)
-        {
-            string to = Mail.GetNames(message.To);
-
-            int total = message.To.Count + message.CC.Count;
-
-            string status = "";
-            ulong hashid = BitConverter.ToUInt64(message.Header.FileHash, 0);
-            if (Mail.PendingMail.ContainsKey(hashid))
+            // interate through parents
+            foreach (MessageNode parent in MessageView.Nodes)
             {
-                int unrecved = Mail.PendingMail[hashid].Count;
-                if (total == unrecved)
-                    status = "Sent";
-                else
-                    status = "Received by " + (total - unrecved).ToString() + " of " + total.ToString();
+                if (Utilities.MemCompare(parent.Message.Header.MailID, node.Message.Header.MailID))
+                {
+                    parent.UpdateRow();
+                    return;
+                }
+
+                // iterate through children
+                if (parent.Message.Header.ThreadID == message.Header.ThreadID)
+                {
+                    foreach (MessageNode child in parent.Nodes)
+                        if (Utilities.MemCompare(child.Message.Header.MailID, node.Message.Header.MailID))
+                        {
+                            child.UpdateRow();
+                            return;
+                        }
+
+                    // not found add to thread
+                    parent.Nodes.Add(node);
+                    node.UpdateRow();
+                    
+                    if(!message.Header.Read || ensureVisible)
+                        parent.Expand();
+
+                    return;
+                }
             }
-            else
-                status = "Received";
 
-
-            MessageList.Items.Add(new MessageListItem(message, 
-                    message.Info.Subject,
-                    to,
-                    Utilities.FormatTime(message.Info.Date.ToLocalTime()),
-                    status));
-
-            MessageList.Invalidate();
+            // thread not found add as parent, sort new to old
+            MessageView.Nodes.Insert(0, node);
+            node.UpdateRow(); // update here so node knows whether to put subject or quip
         }
 
         private void ComposeButton_Click(object sender, EventArgs e)
@@ -261,7 +213,7 @@ namespace RiseOp.Services.Mail
             Mail.QuickMenu_View(null, null);
         }
 
-        private void MessageList_ColumnClick(object sender, ColumnClickEventArgs e)
+        /*private void MessageList_ColumnClick(object sender, ColumnClickEventArgs e)
         {
             // Determine if clicked column is already the column that is being sorted.
             if (e.Column == lvwColumnSorter.ColumnToSort)
@@ -281,22 +233,22 @@ namespace RiseOp.Services.Mail
 
             // Perform the sort with these new sort options.
             //MessageList.Sort();
-        }
+        }*/
 
-        private void MessageList_SelectedIndexChanged(object sender, EventArgs e)
+        private void MessageView_SelectedItemChanged(object sender, EventArgs e)
         {
             ShowSelected();
         }
 
         private void ShowSelected()
         {
-            if (MessageList.SelectedItems.Count == 0)
+            if (MessageView.SelectedNodes.Count == 0)
             {
                 ShowMessage(null);
                 return;
             }
 
-            MessageListItem item = (MessageListItem)MessageList.SelectedItems[0];
+            MessageNode item = (MessageNode)MessageView.SelectedNodes[0];
 
             ShowMessage(item.Message);
         }
@@ -341,7 +293,7 @@ namespace RiseOp.Services.Mail
 
             string actions = "";
 
-            if (InboxButton.Checked)
+            if (message.Header.TargetID == Core.UserID)
                 actions += @"<a href='reply:x" + "'>Reply</a>";
 
             actions += @", <a href='forward:x'>Forward</a>";
@@ -391,14 +343,10 @@ namespace RiseOp.Services.Mail
             {
                 message.Header.Read = true;
 
-                Mail.SaveInbox = true;
+                Mail.SaveMailbox = true;
 
-                MessageListItem item = FindMessage(message);
-
-                //crit - no sub item fonts
-                /*if (item != null)
-                    foreach (ContainerSubListViewItem subItem in item.SubItems)
-                        subItem.Font = RegularFont;*/
+                if (MessageView.SelectedNodes.Count > 0)
+                    ((MessageNode)MessageView.SelectedNodes[0]).UpdateRow();
             }
         }
 
@@ -410,13 +358,13 @@ namespace RiseOp.Services.Mail
             if (parts.Length < 2)
                 return;
 
-            if( MessageList.SelectedItems.Count == 0)
+            if (MessageView.SelectedNodes.Count == 0)
                 return;
 
             if (parts[0] == "about")
                 return;
 
-            MessageListItem item = MessageList.SelectedItems[0] as MessageListItem;
+            MessageNode item = MessageView.SelectedNodes[0] as MessageNode;
             
             if(item == null)
                 return;
@@ -536,55 +484,75 @@ namespace RiseOp.Services.Mail
             if (MessageBox.Show(this, "Are you sure you want to delete this message?", "Delete", MessageBoxButtons.YesNo) == DialogResult.No)
                 return;
 
-            Mail.DeleteLocal(item.Message, InboxButton.Checked);
+            Mail.DeleteLocal(item.Message);
 
-            // remove from list box
-            MessageListItem deleted = FindMessage(item.Message);
+            // need to figure if parent or child, if parent then first child is the new parent in thread
+            // refresh is quick fix for now
 
-            if (deleted != null)
-                MessageList.Items.Remove(deleted);
+            RefreshView();
         }
 
-        private void MessageList_MouseClick(object sender, MouseEventArgs e)
+        private void MessageView_MouseClick(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Right)
                 return;
 
-            MessageListItem item = MessageList.GetItemAt(e.Location) as MessageListItem;
+            MessageNode item = MessageView.GetNodeAt(e.Location) as MessageNode;
 
             if (item == null)
                 return;
 
             ContextMenuStripEx menu = new ContextMenuStripEx();
 
-            if (InboxButton.Checked)
+            if (item.Message.Header.TargetID == Core.UserID)
                 menu.Items.Add(new MessageMenuItem(item.Message, "Reply", null, new EventHandler(Message_Reply)));
 
             menu.Items.Add(new MessageMenuItem(item.Message, "Forward", null, new EventHandler(Message_Forward)));
             menu.Items.Add("-");
             menu.Items.Add(new MessageMenuItem(item.Message, "Delete", MailRes.delete, new EventHandler(Message_Delete)));
 
-            menu.Show(MessageList, e.Location);
+            menu.Show(MessageView, e.Location);
         }
     }
 
-    class MessageListItem : ContainerListViewItem
+    class MessageNode : TreeListNode
     {
+        MailView View;
         internal LocalMail Message;
 
-        internal MessageListItem(LocalMail message, params string[] columns)
+        internal MessageNode(MailView view, LocalMail message)
         {
+            View = view;
             Message = message;
 
-            if(message.Attached.Count > 1)
-                ImageIndex = 1;
-            else
-                ImageIndex = 0;
+            SubItems.Add("");
+            SubItems.Add("");
+        }
 
-            Text = columns[0];
-           
-            for(int i = 1; i < columns.Length; i++)
-                SubItems.Add(columns[i]);
+        internal void UpdateRow()
+        {
+            bool local = (Message.Header.TargetID == View.Core.UserID);
+
+            ImageIndex = local ? 0 : 1;
+
+            string subject = (TreeList.virtualParent == Parent) ? Message.Info.Subject : Message.Info.Quip;
+
+            string who = local ? "From: " + View.Links.GetName(Message.From) :
+                                 "To: " + View.Mail.GetNames(Message.To);
+
+            DateTime utc = local ? Message.Header.Received : Message.Info.Date;
+            string date = Utilities.FormatTime(utc.ToLocalTime());
+
+
+            Text = subject;
+            SubItems[0].Text = who;
+            SubItems[1].Text = date;
+
+            // if unread put in bold
+            if (local && !Message.Header.Read)
+                Font = View.BoldFont;
+            else
+                Font = View.RegularFont;
         }
     }
 

@@ -13,7 +13,7 @@ using RiseOp.Interface.TLVex;
 
 namespace RiseOp.Services.Storage
 {
-    internal partial class LockMessage : Form
+    internal partial class LockMessage : RiseOp.Interface.CustomIconForm
     {
         LockErrorType Type;
         List<LockError> Errors;

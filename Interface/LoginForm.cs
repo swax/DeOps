@@ -11,6 +11,7 @@ using System.IO;
 using Microsoft.Win32;
 
 using RiseOp.Implementation;
+using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Special;
 
 using RiseOp.Interface.Startup;
@@ -28,12 +29,17 @@ namespace RiseOp.Interface
         string LastBrowse;
         bool SuppressProcessLink;
 
+        internal G2Protocol Protocol = new G2Protocol();
+
+
         internal LoginForm(RiseOpContext context, string arg)
         {
             Context = context;
             Arg = arg;
 
             InitializeComponent();
+
+            SplashBox.Image = InterfaceRes.splash;
 
             if (Context.Sim != null) // prevent sim recursion
                 EnterSimLink.Visible = false;
@@ -57,7 +63,7 @@ namespace RiseOp.Interface
             foreach (string directory in Directory.GetDirectories(LastBrowse))
                 foreach (string file in Directory.GetFiles(directory, "*.rop"))
                 {
-                    OpComboItem item = new OpComboItem(file);
+                    OpComboItem item = new OpComboItem(this, file);
 
                     if (file == arg)
                         select = item;
@@ -76,6 +82,8 @@ namespace RiseOp.Interface
 
             else if(OpCombo.Items.Count > 0)
                 OpCombo.SelectedIndex = 0;
+
+            OpCombo.Items.Add("Browse...");
 
             if(OpCombo.SelectedItem != null)
                 TextPassword.Select();
@@ -116,11 +124,6 @@ namespace RiseOp.Interface
 
             if (create.ShowDialog(this) == DialogResult.OK)
                 Close();
-        }
-
-        private void ShowCreateOp()
-        {
-            throw new NotImplementedException();
         }
 
         private void JoinLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -180,7 +183,7 @@ namespace RiseOp.Interface
             return user;
         }
 
-        private void BrowseLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void BrowseLink_LinkClicked()
         {
             try
             {
@@ -191,14 +194,32 @@ namespace RiseOp.Interface
 
                 if (open.ShowDialog() == DialogResult.OK)
                 {
-                    OpComboItem item = new OpComboItem(open.FileName);
-                    OpCombo.Items.Add(item);
-                    OpCombo.SelectedItem = item;
+                    OpComboItem select = null;
+
+                    foreach(object item in OpCombo.Items)
+                        if(item is OpComboItem)
+                            if (((OpComboItem)item).Fullpath == open.FileName)
+                            {
+                                select = item as OpComboItem;
+                                break;
+                            }
+
+                    if (select == null)
+                    {
+                        select = new OpComboItem(this, open.FileName);
+                        OpCombo.Items.Insert(0, select);
+                    }
+
+                    OpCombo.SelectedItem = select;
 
                     LastBrowse = open.FileName;
 
+                    TextPassword.Text = "";
                     TextPassword.Select();
                 }
+
+                else
+                    OpCombo.Text = "";
             }
             catch(Exception ex)
             {
@@ -265,16 +286,32 @@ namespace RiseOp.Interface
 
         private void OpCombo_SelectedIndexChanged(object sender, EventArgs e)
         {
-            OpComboItem item = OpCombo.SelectedItem as OpComboItem;
 
-            if (item == null)
+            if (OpCombo.SelectedItem is OpComboItem)
+            {
+                OpComboItem item = OpCombo.SelectedItem as OpComboItem;
+
+                item.UpdateSplash();
+
+                TextPassword.Enabled = File.Exists(item.Fullpath);
+
+                TextPassword.Text = "";
+                TextPassword.Select();
+
+                CheckLoginButton();
+
+                return;
+            }
+            else
                 TextPassword.Enabled = ButtonLoad.Enabled = false;
 
-            TextPassword.Enabled = File.Exists(item.Fullpath);
 
-            TextPassword.Select();
+            if (OpCombo.SelectedItem is string)
+            {
+                SplashBox.Image = InterfaceRes.splash;
 
-            CheckLoginButton();
+                BrowseLink_LinkClicked();
+            }
         }
 
         private void TextPassword_TextChanged(object sender, EventArgs e)
@@ -289,16 +326,28 @@ namespace RiseOp.Interface
             else
                 ButtonLoad.Enabled = false;
         }
+
+        private void pictureBox1_DoubleClick(object sender, EventArgs e)
+        {
+            if (Context.Sim == null)
+                EnterSimLink.Visible = !EnterSimLink.Visible;
+        }
     }
 
     internal class OpComboItem
     {
+        LoginForm Login;
+
         internal string Name;
         internal string Fullpath;
 
+        internal bool TriedSplash;
+        internal Bitmap Splash;
+        
 
-        internal OpComboItem(string path)
+        internal OpComboItem(LoginForm login, string path)
         {
+            Login = login;
             Fullpath = path;
 
             Name = Path.GetFileNameWithoutExtension(path);
@@ -307,6 +356,50 @@ namespace RiseOp.Interface
         public override string ToString()
         {
             return Name;
+        }
+
+        internal void UpdateSplash()
+        {
+            if(Splash != null)
+            {
+                Login.SplashBox.Image = Splash;
+                return;
+            }
+
+            Login.SplashBox.Image = InterfaceRes.splash; // set default
+
+            if(TriedSplash) 
+               return;
+
+            TriedSplash = true;
+
+            // open file
+            if (!File.Exists(Fullpath))
+                return;
+
+            // read image
+            try
+            {
+                TaggedStream file = new TaggedStream(Fullpath, Login.Protocol, new ProcessTagsHandler(ProcessSplash));
+                file.Close();
+            }
+            catch { }
+        }
+
+        void ProcessSplash(PacketStream stream)
+        {
+            G2Header root = null;
+            if (stream.ReadPacket(ref root))
+                if (root.Name == IdentityPacket.Splash)
+                {
+                    LargeDataPacket start = LargeDataPacket.Decode(root);
+                    if (start.Size > 0)
+                    {
+                        byte[] data = LargeDataPacket.Read(start, stream, IdentityPacket.Splash);
+                        Splash = (Bitmap)Bitmap.FromStream(new MemoryStream(data));
+                        Login.SplashBox.Image = Splash;
+                    }
+                }
         }
     }
 }

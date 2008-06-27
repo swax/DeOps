@@ -258,14 +258,10 @@ namespace RiseOp.Services.IM
             MessageTextBox.SelectionLength = oldLength;
 
 
-            if (InputControl.Focused)
+            if (!MessageTextBox.Focused)
             {
-                MessageTextBox.Focus();
                 MessageTextBox.SelectionStart = MessageTextBox.Text.Length;
                 MessageTextBox.ScrollToCaret();
-
-                InputControl.Focus();
-                InputControl.InputBox.Focus();
             }
 
             if (External != null && !WindowActivated)

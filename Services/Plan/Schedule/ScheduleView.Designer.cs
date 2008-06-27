@@ -41,9 +41,8 @@ namespace RiseOp.Services.Plan
             this.GoalCombo = new System.Windows.Forms.ToolStripComboBox();
             this.DetailsButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.ChangesLabel = new System.Windows.Forms.Label();
-            this.DiscardLink = new System.Windows.Forms.LinkLabel();
-            this.SaveLink = new System.Windows.Forms.LinkLabel();
+            this.DiscardButton = new System.Windows.Forms.PictureBox();
+            this.SaveButton = new System.Windows.Forms.PictureBox();
             this.LabelMinus = new System.Windows.Forms.Label();
             this.LabelPlus = new System.Windows.Forms.Label();
             this.ScheduleSlider = new RiseOp.Services.Plan.DateSlider();
@@ -56,6 +55,8 @@ namespace RiseOp.Services.Plan
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.DiscardButton)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.SaveButton)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DateRange)).BeginInit();
             this.SuspendLayout();
             // 
@@ -139,9 +140,8 @@ namespace RiseOp.Services.Plan
             // splitContainer1.Panel1
             // 
             this.splitContainer1.Panel1.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.splitContainer1.Panel1.Controls.Add(this.ChangesLabel);
-            this.splitContainer1.Panel1.Controls.Add(this.DiscardLink);
-            this.splitContainer1.Panel1.Controls.Add(this.SaveLink);
+            this.splitContainer1.Panel1.Controls.Add(this.DiscardButton);
+            this.splitContainer1.Panel1.Controls.Add(this.SaveButton);
             this.splitContainer1.Panel1.Controls.Add(this.LabelMinus);
             this.splitContainer1.Panel1.Controls.Add(this.LabelPlus);
             this.splitContainer1.Panel1.Controls.Add(this.ScheduleSlider);
@@ -157,54 +157,31 @@ namespace RiseOp.Services.Plan
             this.splitContainer1.SplitterDistance = 353;
             this.splitContainer1.TabIndex = 24;
             // 
-            // ChangesLabel
+            // DiscardButton
             // 
-            this.ChangesLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.ChangesLabel.AutoSize = true;
-            this.ChangesLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ChangesLabel.Location = new System.Drawing.Point(203, 203);
-            this.ChangesLabel.Name = "ChangesLabel";
-            this.ChangesLabel.Size = new System.Drawing.Size(56, 13);
-            this.ChangesLabel.TabIndex = 30;
-            this.ChangesLabel.Text = "Changes";
-            this.ChangesLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.ChangesLabel.Visible = false;
+            this.DiscardButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.DiscardButton.Image = global::RiseOp.Properties.Resources.discard;
+            this.DiscardButton.Location = new System.Drawing.Point(269, 199);
+            this.DiscardButton.Name = "DiscardButton";
+            this.DiscardButton.Size = new System.Drawing.Size(64, 19);
+            this.DiscardButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
+            this.DiscardButton.TabIndex = 31;
+            this.DiscardButton.TabStop = false;
+            this.DiscardButton.Visible = false;
+            this.DiscardButton.Click += new System.EventHandler(this.DiscardButton_Click);
             // 
-            // DiscardLink
+            // SaveButton
             // 
-            this.DiscardLink.ActiveLinkColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(192)))), ((int)(((byte)(192)))));
-            this.DiscardLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.DiscardLink.AutoSize = true;
-            this.DiscardLink.BackColor = System.Drawing.Color.Red;
-            this.DiscardLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.DiscardLink.LinkColor = System.Drawing.Color.White;
-            this.DiscardLink.Location = new System.Drawing.Point(299, 203);
-            this.DiscardLink.Name = "DiscardLink";
-            this.DiscardLink.Size = new System.Drawing.Size(43, 13);
-            this.DiscardLink.TabIndex = 29;
-            this.DiscardLink.TabStop = true;
-            this.DiscardLink.Text = "Discard";
-            this.DiscardLink.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.DiscardLink.Visible = false;
-            this.DiscardLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.DiscardLink_LinkClicked);
-            // 
-            // SaveLink
-            // 
-            this.SaveLink.ActiveLinkColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
-            this.SaveLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.SaveLink.AutoSize = true;
-            this.SaveLink.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
-            this.SaveLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.SaveLink.LinkColor = System.Drawing.Color.White;
-            this.SaveLink.Location = new System.Drawing.Point(261, 203);
-            this.SaveLink.Name = "SaveLink";
-            this.SaveLink.Size = new System.Drawing.Size(32, 13);
-            this.SaveLink.TabIndex = 28;
-            this.SaveLink.TabStop = true;
-            this.SaveLink.Text = "Save";
-            this.SaveLink.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.SaveLink.Visible = false;
-            this.SaveLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.SaveLink_LinkClicked);
+            this.SaveButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.SaveButton.Image = global::RiseOp.Properties.Resources.save;
+            this.SaveButton.Location = new System.Drawing.Point(199, 199);
+            this.SaveButton.Name = "SaveButton";
+            this.SaveButton.Size = new System.Drawing.Size(64, 19);
+            this.SaveButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
+            this.SaveButton.TabIndex = 30;
+            this.SaveButton.TabStop = false;
+            this.SaveButton.Visible = false;
+            this.SaveButton.Click += new System.EventHandler(this.SaveButton_Click);
             // 
             // LabelMinus
             // 
@@ -348,6 +325,8 @@ namespace RiseOp.Services.Plan
             this.splitContainer1.Panel1.PerformLayout();
             this.splitContainer1.Panel2.ResumeLayout(false);
             this.splitContainer1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.DiscardButton)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.SaveButton)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DateRange)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -365,9 +344,6 @@ namespace RiseOp.Services.Plan
         private System.Windows.Forms.ToolStripComboBox GoalCombo;
         private System.Windows.Forms.ToolStripButton DetailsButton;
         private System.Windows.Forms.SplitContainer splitContainer1;
-        private System.Windows.Forms.Label ChangesLabel;
-        private System.Windows.Forms.LinkLabel DiscardLink;
-        private System.Windows.Forms.LinkLabel SaveLink;
         private System.Windows.Forms.Label LabelMinus;
         private System.Windows.Forms.Label LabelPlus;
         internal DateSlider ScheduleSlider;
@@ -376,5 +352,7 @@ namespace RiseOp.Services.Plan
         private System.Windows.Forms.TrackBar DateRange;
         internal RiseOp.Interface.TLVex.TreeListViewEx PlanStructure;
         private System.Windows.Forms.WebBrowser DetailsBrowser;
+        private System.Windows.Forms.PictureBox SaveButton;
+        private System.Windows.Forms.PictureBox DiscardButton;
     }
 }

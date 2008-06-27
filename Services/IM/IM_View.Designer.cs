@@ -129,7 +129,6 @@ namespace RiseOp.Services.IM
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.Controls.Add(this.splitContainer1);
             this.Name = "IM_View";
             this.Size = new System.Drawing.Size(301, 279);

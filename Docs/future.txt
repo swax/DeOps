@@ -24,8 +24,17 @@ purchase through website, allows user to sign in, take their any of their projec
 	orgs would want unqiue physical keys per person, people *could* have multiple orgs on the same key, or use multiple keys
 	loosing keys also means $$ for us, piggy back off hardware sales, like apple lolz
 	
+investigate html over rtf - no clean solution - unicode considerations - rtf takes space, but predictable at the moment with unicode especially
+
 de-ops urls boards storages chats anything, extendable
 	peoples emails, profiles, etc.. can include <links>
+
+website
+	use sources from random file to make blog entries on arguing the need for the software
+	use youtube to make a product demo video and narrate the vision
+	forums for connecting users
+	look at making intro video 5 minutes for beta testers (in leui of full web site)
+
 
 settings
 	passphrase change

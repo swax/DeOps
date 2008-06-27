@@ -13,7 +13,7 @@ using RiseOp.Implementation.Protocol.Net;
 
 namespace RiseOp.Services.Trust
 {
-    internal partial class EditLink : Form
+    internal partial class EditLink : RiseOp.Interface.CustomIconForm
     {
         OpCore Core;
         TrustService Links;
@@ -22,6 +22,7 @@ namespace RiseOp.Services.Trust
 
 
         internal EditLink(OpCore core, uint id)
+            : base(core)
         {
             InitializeComponent();
 

@@ -111,7 +111,6 @@ namespace RiseOp.Services.Trust
             this.AcceptButton = this.AddButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CancelButton = this.TheCancelButton;
             this.ClientSize = new System.Drawing.Size(251, 312);
             this.Controls.Add(this.ProjectCombo);

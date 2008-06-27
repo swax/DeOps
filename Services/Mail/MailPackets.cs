@@ -34,15 +34,18 @@ namespace RiseOp.Services.Mail
         const byte Packet_FileStart     = 0xA0;
         const byte Packet_Read          = 0xB0;
         const byte Packet_Received      = 0xC0;
+        const byte Packet_ThreadID      = 0xD0;
+
 
         internal byte[] Source;
         internal byte[] Target; 
         internal byte[] FileKey; // signed with targets public key
         internal byte[] FileHash;
-        internal long  FileSize;
-        internal uint SourceVersion;
-        internal uint TargetVersion;
+        internal long   FileSize;
+        internal uint   SourceVersion;
+        internal uint   TargetVersion;
         internal byte[] MailID;
+        internal int    ThreadID;
 
         internal ulong SourceID;
         internal ulong TargetID;
@@ -78,6 +81,7 @@ namespace RiseOp.Services.Mail
                 protocol.WritePacket(header, Packet_SourceVersion, BitConverter.GetBytes(SourceVersion));
                 protocol.WritePacket(header, Packet_TargetVersion, BitConverter.GetBytes(TargetVersion));
                 protocol.WritePacket(header, Packet_MailID, MailID);
+                protocol.WritePacket(header, Packet_ThreadID, BitConverter.GetBytes(ThreadID));
 
                 if (local)
                 {
@@ -136,6 +140,10 @@ namespace RiseOp.Services.Mail
                         header.MailID = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
+                    case Packet_ThreadID:
+                        header.ThreadID = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        break;
+
                     case Packet_LocalKey:
                         header.LocalKey = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
@@ -164,9 +172,11 @@ namespace RiseOp.Services.Mail
         const byte Packet_Date = 0x20;
         const byte Packet_Attachments = 0x30;
         const byte Packet_Unique = 0x40;
+        const byte Packet_Quip = 0x50;
 
 
         internal string Subject;
+        internal string Quip;
         internal DateTime Date;
         internal bool Attachments;
         internal byte[] Unique = new byte[16];
@@ -174,9 +184,10 @@ namespace RiseOp.Services.Mail
 
         internal MailInfo() { }
 
-        internal MailInfo(string subject, DateTime date, bool attachements)
+        internal MailInfo(string subject, string quip, DateTime date, bool attachements)
         {
             Subject = subject;
+            Quip = quip;
             Date = date;
             Attachments = attachements;
 
@@ -191,6 +202,7 @@ namespace RiseOp.Services.Mail
                 G2Frame info = protocol.WritePacket(null, MailPacket.MailInfo, null);
 
                 protocol.WritePacket(info, Packet_Subject, UTF8Encoding.UTF8.GetBytes(Subject));
+                protocol.WritePacket(info, Packet_Quip, UTF8Encoding.UTF8.GetBytes(Quip));
                 protocol.WritePacket(info, Packet_Date, BitConverter.GetBytes(Date.ToBinary()));
                 protocol.WritePacket(info, Packet_Attachments, BitConverter.GetBytes(Attachments));
                 protocol.WritePacket(info, Packet_Unique, Unique);
@@ -213,6 +225,10 @@ namespace RiseOp.Services.Mail
                 {
                     case Packet_Subject:
                         info.Subject = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_Quip:
+                        info.Quip = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Date:

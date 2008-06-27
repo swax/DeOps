@@ -16,6 +16,7 @@ namespace RiseOp.Interface.Settings
         Identity Profile;
 
         internal User(MainForm parent)
+            : base(parent.Core)
         {
             InitializeComponent();
 

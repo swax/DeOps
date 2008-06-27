@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
 using System.Security;
@@ -24,6 +26,9 @@ namespace RiseOp
 
     internal enum AccessType { Public, Private, Secret };
 
+    internal delegate void IconUpdateHandler();
+
+
 	/// <summary>
 	/// Summary description for KimProfile.
 	/// </summary>
@@ -41,6 +46,12 @@ namespace RiseOp
 
         internal SettingsPacket Settings = new SettingsPacket();
 
+        // gui look
+        internal Bitmap OpIcon;
+        internal Bitmap OpSplash;
+
+        internal IconUpdateHandler GuiIconUpdate;
+ 
 
         internal Identity(string filepath, string password, OpCore core)
         {
@@ -88,7 +99,7 @@ namespace RiseOp
 
 		internal void Load(LoadModeType loadMode)
 		{
-			FileStream readStream = null;
+			FileStream file = null;
 
             RijndaelManaged Password = new RijndaelManaged();
             Password.Key = PasswordKey;
@@ -98,24 +109,28 @@ namespace RiseOp
 
 			try
 			{
+                file = new TaggedStream(ProfilePath, Protocol, ProcessSplash); // tagged with splash
+
                 // first 16 bytes IV, next 4 bytes is salt
-                readStream = new FileStream(ProfilePath, FileMode.Open);
-                readStream.Read(iv, 0, 16);
-                readStream.Read(salt, 0, 4);
+                file.Read(iv, 0, 16);
+                file.Read(salt, 0, 4);
                 Password.IV = iv;
-                CryptoStream crypto = new CryptoStream(readStream, Password.CreateDecryptor(), CryptoStreamMode.Read);
+                CryptoStream crypto = new CryptoStream(file, Password.CreateDecryptor(), CryptoStreamMode.Read);
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
                 G2Header root = null;
-
                 while (stream.ReadPacket(ref root))
                 {
                     if (loadMode == LoadModeType.Settings)
+                    {
                         if (root.Name == IdentityPacket.OperationSettings)
-                        {
                             Settings = SettingsPacket.Decode(root);
-                            break;
-                        }
+
+                        // save icon to identity file because only root node saves icon/splash to link file
+                        // to minimize link file size, but allow user to set custom icon/splash if there are not overrides
+                        if (root.Name == IdentityPacket.Icon)
+                            OpIcon = IconPacket.Decode(root).OpIcon;
+                    }
 
                     if (root.Name == IdentityPacket.GlobalCache && Core.Context.Global != null &&
                         (loadMode == LoadModeType.AllCaches || loadMode == LoadModeType.GlobalCache))
@@ -129,12 +144,27 @@ namespace RiseOp
             }
 			catch(Exception ex)
 			{
-				if(readStream != null)
-					readStream.Close();
+				if(file != null)
+					file.Close();
 
 				throw ex;
 			}
 		}
+
+        void ProcessSplash(PacketStream stream)
+        {
+            G2Header root = null;
+            if (stream.ReadPacket(ref root))
+                if (root.Name == IdentityPacket.Splash)
+                {
+                    LargeDataPacket start = LargeDataPacket.Decode(root);
+                    if (start.Size > 0)
+                    {
+                        byte[] data = LargeDataPacket.Read(start, stream, IdentityPacket.Splash);
+                        OpSplash = (Bitmap)Bitmap.FromStream(new MemoryStream(data));
+                    }
+                }
+        }
 
         internal void Save()
         {
@@ -149,7 +179,13 @@ namespace RiseOp
             try
             {
                 // Attach to crypto stream and write file
-                FileStream file = new FileStream(ProfilePath, FileMode.Create);
+                string tempPath = TempPath + Path.DirectorySeparatorChar + "firstsave";
+                if (Core != null)
+                    tempPath = Core.GetTempPath();
+
+                FileStream file = new FileStream(tempPath, FileMode.Create);
+
+                // write encrypted part of file
                 Password.GenerateIV();
                 file.Write(Password.IV, 0, Password.IV.Length);
                 file.Write(PasswordSalt, 0, PasswordSalt.Length);
@@ -157,7 +193,7 @@ namespace RiseOp
                 PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Write);
 
                 stream.WritePacket(Settings);
-
+  
                 if (Core != null)
                 {
                     if (Core.Context.Global != null)
@@ -166,13 +202,46 @@ namespace RiseOp
                     SaveCache(stream, Core.Network.IPCache, IdentityPacket.OperationCache);
                 }
 
+
+                if (OpIcon != null)
+                    stream.WritePacket(new IconPacket(IdentityPacket.Icon, OpIcon));
+
                 stream.Close();
+
+                // write unencrypted splash
+                file = new FileStream(tempPath, FileMode.Open);
+                file.Seek(0, SeekOrigin.End);
+
+                long startpos = file.Position;
+
+                stream = new PacketStream(file, Protocol, FileAccess.Write);
+
+                // get right splash image (only used for startup logo, main setting is in link file)
+                if (OpSplash != null)
+                {
+                    MemoryStream mem = new MemoryStream();
+                    OpSplash.Save(mem, ImageFormat.Jpeg);
+                    LargeDataPacket.Write(stream, IdentityPacket.Splash, mem.ToArray());
+                }
+                else
+                    LargeDataPacket.Write(stream, IdentityPacket.Splash, null);
+
+                file.WriteByte(0); // end packet stream
+                
+                byte[] last = BitConverter.GetBytes(startpos);
+                file.Write(last, 0, last.Length);
+
+                stream.Close();
+
+
+                File.Copy(tempPath, ProfilePath, true);
+                File.Delete(tempPath);
             }
 
             catch (Exception ex)
             {
                 if (Core != null)
-                    Core.ConsoleLog("Exception KimProfile::Save() " + ex.Message);
+                    Core.ConsoleLog("Exception Identity::Save() " + ex.Message);
                 else
                     System.Windows.Forms.MessageBox.Show("Profile Save Error:\n" + ex.Message + "\nBackup Restored");
 
@@ -248,6 +317,57 @@ namespace RiseOp
         {
             return Settings.Operation + " - " + Settings.UserName;
         }
+
+        internal void IconUpdate()
+        {
+            Core.RunInGuiThread(GuiIconUpdate);
+        }
+
+        internal Icon GetOpIcon()
+        {
+            if (OpIcon != null)
+                return Icon.FromHandle(OpIcon.GetHicon());
+
+            else
+                return Interface.InterfaceRes.riseop;
+        }
+    }
+
+    internal class IconPacket : G2Packet
+    {
+        byte Name;
+        internal Bitmap OpIcon;
+
+        internal IconPacket(byte name, Bitmap icon)
+        {
+            Name = name;
+            OpIcon = icon;
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                MemoryStream stream = new MemoryStream();
+                OpIcon.Save(stream, ImageFormat.Png);
+
+                protocol.WritePacket(null, Name, stream.ToArray());
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static IconPacket Decode(G2Header root)
+        {
+            if (G2Protocol.ReadPayload(root))
+            {
+                byte[] array = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
+
+                return new IconPacket(root.Name, (Bitmap) Bitmap.FromStream(new MemoryStream(array)));
+            }
+
+            return new IconPacket(root.Name, null);
+        }
     }
 
     internal class SavedPacket : G2Packet
@@ -320,6 +440,9 @@ namespace RiseOp
 
         internal const byte GlobalCache        = 0x30;
         internal const byte OperationCache     = 0x40;
+
+        internal const byte Icon = 0x50;
+        internal const byte Splash = 0x50;
     }
 
     internal class SettingsPacket : G2Packet

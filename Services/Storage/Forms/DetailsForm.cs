@@ -13,7 +13,7 @@ using RiseOp.Services.Trust;
 
 namespace RiseOp.Services.Storage
 {
-    internal partial class DetailsForm : Form
+    internal partial class DetailsForm : RiseOp.Interface.CustomIconForm
     {
         StorageView View;
         TrustService Links;
@@ -151,7 +151,7 @@ namespace RiseOp.Services.Storage
 
             VisItem selected = (VisItem)VisList.SelectedItems[0];
 
-            GetTextDialog getText = new GetTextDialog("Sub-Levels", "Visible how many levels down from " + selected.Name + "? 0 for no one, -1 for everyone.", selected.Levels.ToString());
+            GetTextDialog getText = new GetTextDialog(StorageRes.Icon, "Sub-Levels", "Visible how many levels down from " + selected.Name + "? 0 for no one, -1 for everyone.", selected.Levels.ToString());
 
             if (getText.ShowDialog() == DialogResult.OK)
             {

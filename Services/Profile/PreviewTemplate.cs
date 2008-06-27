@@ -11,7 +11,7 @@ using RiseOp.Implementation;
 
 namespace RiseOp.Services.Profile
 {
-    internal partial class PreviewTemplate : Form
+    internal partial class PreviewTemplate : RiseOp.Interface.CustomIconForm
     {
         ProfileService Profiles;
         EditProfile EditForm;

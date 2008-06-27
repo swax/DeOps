@@ -28,7 +28,6 @@ namespace RiseOp.Services.Trust
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(EditLink));
             this.ButtonCancel = new System.Windows.Forms.Button();
             this.ButtonOK = new System.Windows.Forms.Button();
             this.TitleBox = new System.Windows.Forms.TextBox();
@@ -126,7 +125,6 @@ namespace RiseOp.Services.Trust
             this.AcceptButton = this.ButtonOK;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CancelButton = this.ButtonCancel;
             this.ClientSize = new System.Drawing.Size(208, 172);
             this.Controls.Add(this.AwayMessage);
@@ -139,7 +137,6 @@ namespace RiseOp.Services.Trust
             this.Controls.Add(this.ButtonCancel);
             this.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "EditLink";

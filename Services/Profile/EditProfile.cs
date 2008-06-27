@@ -11,9 +11,10 @@ using System.Windows.Forms;
 using RiseOp.Implementation;
 using RiseOp.Services.Trust;
 
+
 namespace RiseOp.Services.Profile
 {
-    internal partial class EditProfile : Form
+    internal partial class EditProfile : RiseOp.Interface.CustomIconForm
     {
         internal OpCore Core;
         TrustService     Links;

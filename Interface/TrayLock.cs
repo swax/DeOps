@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
@@ -22,11 +23,12 @@ namespace RiseOp.Interface.Views
 
             PreserveSideMode = sideMode;
 
-            Tray.Icon = InterfaceRes.riseop;
+            Profile_IconUpdate();
             Tray.Text = Core.Profile.GetTitle(); 
             Tray.Visible = true;
 
             Tray.DoubleClick += new EventHandler(Tray_DoubleClick);
+            core.Profile.GuiIconUpdate += new IconUpdateHandler(Profile_IconUpdate);
 
             ContextMenuStripEx menu = new ContextMenuStripEx();
 
@@ -34,6 +36,20 @@ namespace RiseOp.Interface.Views
             menu.Items.Add("Exit", null, new EventHandler(Menu_Exit));
 
             Tray.ContextMenuStrip = menu;
+        }
+
+        void Profile_IconUpdate()
+        {
+            //crit bug, wont fire when in tray mode because core.RunInGuiThread depends on guiMain which is null
+            // need to create a hidden form which events like this can be processed on, a little tricky, todo l8r
+            // on other hand might be a good idea to prevent icon from changing in tray mode
+
+            /*HiddenForm = new Form(); // put this code in core / context to remove fast timer
+            HiddenForm.Size = new Size(0, 0);
+            HiddenForm.GotFocus += new EventHandler(HiddenForm_GotFocus); // run hide() in here
+            HiddenForm.Show();*/ // sill a little flicker which is annyoing
+
+            Tray.Icon = Core.Profile.GetOpIcon();
         }
 
         void Tray_DoubleClick(object sender, EventArgs e)
@@ -48,19 +64,25 @@ namespace RiseOp.Interface.Views
                 Core.GuiMain = new MainForm(Core);
                 Core.GuiMain.SideMode = PreserveSideMode;
                 Core.GuiMain.Show();
-               
-                Tray.Visible = false;
-                Core.GuiTray = null;
+
+                CleanupTray();
+                
             }                
         }
 
         void Menu_Exit(object sender, EventArgs e)
-        {     
-            Tray.Visible = false;
-            Core.GuiTray = null;
+        {
+            CleanupTray();
          
             if (Core.Sim == null)
                 Core.Exit(); 
+        }
+
+        private void CleanupTray()
+        {
+            Core.Profile.GuiIconUpdate -= new IconUpdateHandler(Profile_IconUpdate);
+            Tray.Visible = false;
+            Core.GuiTray = null;
         }
     }
 }

@@ -17,6 +17,7 @@ namespace RiseOp.Services.Trust
         internal List<ulong> RemoveIDs = new List<ulong>();
 
         internal RemoveLinks(TrustService links, List<ulong> ids)
+            : base(links.Core)
         {
             InitializeComponent();
 

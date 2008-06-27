@@ -19,6 +19,7 @@ namespace RiseOp.Interface
 
 
         internal NewProjectForm(OpCore core)
+            : base(core)
         {
             InitializeComponent();
 

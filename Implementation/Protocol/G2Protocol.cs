@@ -393,6 +393,8 @@ namespace RiseOp.Implementation.Protocol
         int    Start;
         int Pos;
 
+        internal int ParentPos;
+
         G2ReadResult ReadStatus = G2ReadResult.PACKET_INCOMPLETE;
 
 
@@ -439,7 +441,11 @@ namespace RiseOp.Implementation.Protocol
         {
             if (ReadSize > 0)
             {
+                int prevStart = Start;
+
                 ReadStatus = G2Protocol.ReadNextPacket(root, ref Start, ref ReadSize);
+
+                ParentPos += (Start - prevStart);
 
                 if (ReadStatus == G2ReadResult.PACKET_GOOD)
                     return true;

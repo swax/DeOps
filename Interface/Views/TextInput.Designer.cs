@@ -155,9 +155,9 @@ namespace RiseOp.Interface
             this.InputBox.Size = new System.Drawing.Size(239, 26);
             this.InputBox.TabIndex = 1;
             this.InputBox.Text = "";
-            this.InputBox.LinkClicked += new System.Windows.Forms.LinkClickedEventHandler(this.InputBox_LinkClicked);
-            this.InputBox.SelectionChanged += new System.EventHandler(this.InputBox_SelectionChanged);
             this.InputBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.InputBox_KeyDown);
+            this.InputBox.SelectionChanged += new System.EventHandler(this.InputBox_SelectionChanged);
+            this.InputBox.LinkClicked += new System.Windows.Forms.LinkClickedEventHandler(this.InputBox_LinkClicked);
             // 
             // TextInput
             // 

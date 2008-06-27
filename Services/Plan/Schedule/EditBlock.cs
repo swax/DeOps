@@ -14,7 +14,7 @@ namespace RiseOp.Services.Plan
 {
     internal enum BlockViewMode { New, Edit, Show };
 
-    internal partial class EditBlock : Form
+    internal partial class EditBlock : RiseOp.Interface.CustomIconForm
     {
         BlockViewMode Mode;
 
@@ -124,7 +124,7 @@ namespace RiseOp.Services.Plan
 
         private void ScopeLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            GetTextDialog getText = new GetTextDialog("Sub-Levels", "How many levels down is this item visible? 0 for Personal, -1 for Everyone", CurrentScope.ToString());
+            GetTextDialog getText = new GetTextDialog(PlanRes.Schedule, "Sub-Levels", "How many levels down is this item visible? 0 for Personal, -1 for Everyone", CurrentScope.ToString());
 
             if (getText.ShowDialog() == DialogResult.OK)
             {

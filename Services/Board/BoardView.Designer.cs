@@ -32,23 +32,20 @@ namespace RiseOp.Services.Board
             RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader4 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(BoardView));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.PostView = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.ArchiveButton = new System.Windows.Forms.ToolStripButton();
             this.RightSplitter = new System.Windows.Forms.ToolStripSeparator();
+            this.toolStripLabel4 = new System.Windows.Forms.ToolStripLabel();
             this.PostButton = new System.Windows.Forms.ToolStripButton();
-            this.ProjectButton = new System.Windows.Forms.ToolStripDropDownButton();
-            this.mainToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
-            this.ViewButton = new System.Windows.Forms.ToolStripDropDownButton();
-            this.HighMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.LowMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.AllMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.RefreshButton = new System.Windows.Forms.ToolStripButton();
+            this.ButtonLow = new System.Windows.Forms.ToolStripButton();
+            this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
+            this.ButtonHigh = new System.Windows.Forms.ToolStripButton();
+            this.toolStripLabel3 = new System.Windows.Forms.ToolStripLabel();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.PostHeader = new System.Windows.Forms.WebBrowser();
             this.PostBody = new System.Windows.Forms.RichTextBox();
@@ -94,7 +91,7 @@ namespace RiseOp.Services.Board
             toggleColumnHeader1.Text = "Subject";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 239;
+            toggleColumnHeader1.Width = 269;
             toggleColumnHeader2.Hovered = false;
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
@@ -104,6 +101,7 @@ namespace RiseOp.Services.Board
             toggleColumnHeader2.Text = "Author";
             toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader2.Visible = true;
+            toggleColumnHeader2.Width = 100;
             toggleColumnHeader3.Hovered = false;
             toggleColumnHeader3.Image = null;
             toggleColumnHeader3.Index = 0;
@@ -113,20 +111,11 @@ namespace RiseOp.Services.Board
             toggleColumnHeader3.Text = "Date";
             toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader3.Visible = true;
-            toggleColumnHeader4.Hovered = false;
-            toggleColumnHeader4.Image = null;
-            toggleColumnHeader4.Index = 0;
-            toggleColumnHeader4.Pressed = false;
-            toggleColumnHeader4.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
-            toggleColumnHeader4.Selected = false;
-            toggleColumnHeader4.Text = "Replies";
-            toggleColumnHeader4.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader4.Visible = true;
+            toggleColumnHeader3.Width = 140;
             this.PostView.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader1,
             toggleColumnHeader2,
-            toggleColumnHeader3,
-            toggleColumnHeader4});
+            toggleColumnHeader3});
             this.PostView.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.PostView.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.PostView.DisableHorizontalScroll = true;
@@ -154,12 +143,14 @@ namespace RiseOp.Services.Board
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.ArchiveButton,
             this.RightSplitter,
+            this.toolStripLabel4,
             this.PostButton,
-            this.ProjectButton,
-            this.toolStripLabel2,
-            this.ViewButton,
             this.toolStripLabel1,
-            this.RefreshButton});
+            this.RefreshButton,
+            this.ButtonLow,
+            this.toolStripLabel2,
+            this.ButtonHigh,
+            this.toolStripLabel3});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -184,73 +175,20 @@ namespace RiseOp.Services.Board
             this.RightSplitter.Name = "RightSplitter";
             this.RightSplitter.Size = new System.Drawing.Size(6, 25);
             // 
+            // toolStripLabel4
+            // 
+            this.toolStripLabel4.Name = "toolStripLabel4";
+            this.toolStripLabel4.Size = new System.Drawing.Size(10, 22);
+            this.toolStripLabel4.Text = " ";
+            // 
             // PostButton
             // 
-            this.PostButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
             this.PostButton.Image = ((System.Drawing.Image)(resources.GetObject("PostButton.Image")));
             this.PostButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.PostButton.Name = "PostButton";
             this.PostButton.Size = new System.Drawing.Size(48, 22);
             this.PostButton.Text = "Post";
             this.PostButton.Click += new System.EventHandler(this.PostButton_Click);
-            // 
-            // ProjectButton
-            // 
-            this.ProjectButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.ProjectButton.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mainToolStripMenuItem});
-            this.ProjectButton.Image = ((System.Drawing.Image)(resources.GetObject("ProjectButton.Image")));
-            this.ProjectButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.ProjectButton.Name = "ProjectButton";
-            this.ProjectButton.Size = new System.Drawing.Size(54, 22);
-            this.ProjectButton.Text = "Project";
-            this.ProjectButton.Visible = false;
-            // 
-            // mainToolStripMenuItem
-            // 
-            this.mainToolStripMenuItem.Name = "mainToolStripMenuItem";
-            this.mainToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
-            this.mainToolStripMenuItem.Text = "Main";
-            // 
-            // toolStripLabel2
-            // 
-            this.toolStripLabel2.Name = "toolStripLabel2";
-            this.toolStripLabel2.Size = new System.Drawing.Size(10, 22);
-            this.toolStripLabel2.Text = " ";
-            // 
-            // ViewButton
-            // 
-            this.ViewButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.ViewButton.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.HighMenuItem,
-            this.LowMenuItem,
-            this.AllMenuItem});
-            this.ViewButton.Image = ((System.Drawing.Image)(resources.GetObject("ViewButton.Image")));
-            this.ViewButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.ViewButton.Name = "ViewButton";
-            this.ViewButton.Size = new System.Drawing.Size(60, 22);
-            this.ViewButton.Text = "View: All";
-            // 
-            // HighMenuItem
-            // 
-            this.HighMenuItem.Name = "HighMenuItem";
-            this.HighMenuItem.Size = new System.Drawing.Size(106, 22);
-            this.HighMenuItem.Text = "High";
-            this.HighMenuItem.Click += new System.EventHandler(this.HighMenuItem_Click);
-            // 
-            // LowMenuItem
-            // 
-            this.LowMenuItem.Name = "LowMenuItem";
-            this.LowMenuItem.Size = new System.Drawing.Size(106, 22);
-            this.LowMenuItem.Text = "Low";
-            this.LowMenuItem.Click += new System.EventHandler(this.LowMenuItem_Click);
-            // 
-            // AllMenuItem
-            // 
-            this.AllMenuItem.Name = "AllMenuItem";
-            this.AllMenuItem.Size = new System.Drawing.Size(106, 22);
-            this.AllMenuItem.Text = "All";
-            this.AllMenuItem.Click += new System.EventHandler(this.AllMenuItem_Click);
             // 
             // toolStripLabel1
             // 
@@ -266,6 +204,46 @@ namespace RiseOp.Services.Board
             this.RefreshButton.Size = new System.Drawing.Size(65, 22);
             this.RefreshButton.Text = "Refresh";
             this.RefreshButton.Click += new System.EventHandler(this.RefreshButton_Click);
+            // 
+            // ButtonLow
+            // 
+            this.ButtonLow.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.ButtonLow.Checked = true;
+            this.ButtonLow.CheckOnClick = true;
+            this.ButtonLow.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.ButtonLow.Image = ((System.Drawing.Image)(resources.GetObject("ButtonLow.Image")));
+            this.ButtonLow.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.ButtonLow.Name = "ButtonLow";
+            this.ButtonLow.Size = new System.Drawing.Size(46, 22);
+            this.ButtonLow.Text = "Low";
+            this.ButtonLow.CheckedChanged += new System.EventHandler(this.ButtonLow_CheckedChanged);
+            // 
+            // toolStripLabel2
+            // 
+            this.toolStripLabel2.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.toolStripLabel2.AutoSize = false;
+            this.toolStripLabel2.Name = "toolStripLabel2";
+            this.toolStripLabel2.Size = new System.Drawing.Size(5, 22);
+            // 
+            // ButtonHigh
+            // 
+            this.ButtonHigh.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.ButtonHigh.Checked = true;
+            this.ButtonHigh.CheckOnClick = true;
+            this.ButtonHigh.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.ButtonHigh.Image = ((System.Drawing.Image)(resources.GetObject("ButtonHigh.Image")));
+            this.ButtonHigh.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.ButtonHigh.Name = "ButtonHigh";
+            this.ButtonHigh.Size = new System.Drawing.Size(48, 22);
+            this.ButtonHigh.Text = "High";
+            this.ButtonHigh.CheckedChanged += new System.EventHandler(this.ButtonHigh_CheckedChanged);
+            // 
+            // toolStripLabel3
+            // 
+            this.toolStripLabel3.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.toolStripLabel3.Name = "toolStripLabel3";
+            this.toolStripLabel3.Size = new System.Drawing.Size(37, 22);
+            this.toolStripLabel3.Text = "Show:";
             // 
             // splitContainer2
             // 
@@ -359,16 +337,14 @@ namespace RiseOp.Services.Board
         private RiseOp.Interface.TLVex.TreeListViewEx PostView;
         private System.Windows.Forms.ToolStripButton PostButton;
         private System.Windows.Forms.ToolStripButton ArchiveButton;
-        private System.Windows.Forms.ToolStripDropDownButton ProjectButton;
-        private System.Windows.Forms.ToolStripMenuItem mainToolStripMenuItem;
-        private System.Windows.Forms.ToolStripDropDownButton ViewButton;
-        private System.Windows.Forms.ToolStripMenuItem HighMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem LowMenuItem;
         private System.Windows.Forms.ToolStripSeparator RightSplitter;
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;
         private System.Windows.Forms.ToolStripLabel toolStripLabel2;
         private System.Windows.Forms.ToolStripButton RefreshButton;
         private System.Windows.Forms.ImageList PostImageList;
-        private System.Windows.Forms.ToolStripMenuItem AllMenuItem;
+        private System.Windows.Forms.ToolStripButton ButtonHigh;
+        private System.Windows.Forms.ToolStripButton ButtonLow;
+        private System.Windows.Forms.ToolStripLabel toolStripLabel3;
+        private System.Windows.Forms.ToolStripLabel toolStripLabel4;
     }
 }

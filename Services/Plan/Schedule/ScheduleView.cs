@@ -197,12 +197,14 @@ namespace RiseOp.Services.Plan
 
         internal override bool Fin()
         {
-            if (SaveLink.Visible)
+            bool save = false;
+
+            if (SaveButton.Visible)
             {
                 DialogResult result = MessageBox.Show(this, "Save Chages to Schedule?", "RiseOp", MessageBoxButtons.YesNoCancel);
 
                 if (result == DialogResult.Yes)
-                    Plans.SaveLocal();
+                    save = true;
                 if (result == DialogResult.Cancel)
                     return false;
             }
@@ -213,6 +215,10 @@ namespace RiseOp.Services.Plan
             Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
 
             HoverTimer.Enabled = false;
+
+            if(save)
+                Plans.SaveLocal();
+
             return true;
         }
 
@@ -804,22 +810,18 @@ namespace RiseOp.Services.Plan
             HoverTip.Hide(this);
         }
 
-        private void SaveLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void SaveButton_Click(object sender, EventArgs e)
         {
-            ChangesLabel.Visible = false;
-            SaveLink.Visible = false;
-            DiscardLink.Visible = false;
-
-            PlanStructure.Height += 15;
+            SaveButton.Visible = false;
+            DiscardButton.Visible = false;
 
             Plans.SaveLocal();
         }
 
-        private void DiscardLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void DiscardButton_Click(object sender, EventArgs e)
         {
-            ChangesLabel.Visible = false;
-            SaveLink.Visible = false;
-            DiscardLink.Visible = false;
+            SaveButton.Visible = false;
+            DiscardButton.Visible = false;
 
             PlanStructure.Height += 20;
 
@@ -829,12 +831,8 @@ namespace RiseOp.Services.Plan
 
         internal void ChangesMade()
         {
-            if(!ChangesLabel.Visible)
-                PlanStructure.Height -= 20;
-
-            ChangesLabel.Visible = true;
-            SaveLink.Visible = true;
-            DiscardLink.Visible = true;
+            SaveButton.Visible = true;
+            DiscardButton.Visible = true;
         }
 
 
@@ -1015,6 +1013,8 @@ namespace RiseOp.Services.Plan
         {
             return EndTime;
         }
+
+
     }
 
 

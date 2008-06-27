@@ -1050,6 +1050,13 @@ namespace RiseOp.Interface.TLVex
 		#region Constructor
 		public ContainerListViewEx()
 		{
+            if (VisualStyles)
+            {
+                HeaderNormal = new VisualStyleRenderer(VisualStyleElement.Header.Item.Normal);
+                HeaderHot = new VisualStyleRenderer(VisualStyleElement.Header.Item.Hot);
+                HeaderPressed = new VisualStyleRenderer(VisualStyleElement.Header.Item.Pressed);
+            }
+
 			Construct();
 		}
 
@@ -2549,6 +2556,9 @@ namespace RiseOp.Interface.TLVex
 
 		protected virtual void DrawHeaders(Graphics g, Rectangle r)
 		{
+            DrawHeadersStyled(g, r);
+            return;
+
 			// if running in XP with styles
 			if (VisualStyles)
 			{
@@ -2805,9 +2815,9 @@ namespace RiseOp.Interface.TLVex
             }
 		}
 
-        VisualStyleRenderer HeaderNormal = new VisualStyleRenderer(VisualStyleElement.Header.Item.Normal);
-        VisualStyleRenderer HeaderHot = new VisualStyleRenderer(VisualStyleElement.Header.Item.Hot);
-        VisualStyleRenderer HeaderPressed = new VisualStyleRenderer(VisualStyleElement.Header.Item.Pressed);
+        VisualStyleRenderer HeaderNormal;
+        VisualStyleRenderer HeaderHot;
+        VisualStyleRenderer HeaderPressed;
 
 		protected virtual void DrawHeadersStyled(Graphics g, Rectangle r)
 		{
@@ -2822,7 +2832,9 @@ namespace RiseOp.Interface.TLVex
 				int lp = r.Left;
 				int tp = r.Top+1;
 
+                Rectangle clip = new Rectangle(lp, tp, r.Width, headerBuffer);
 
+                g.Clip = new Region(clip);
 
 				//System.IntPtr hdc = g.GetHdc();
 				try
@@ -2832,30 +2844,44 @@ namespace RiseOp.Interface.TLVex
                     {
                         colwid = (columns[i].ScaleStyle == ColumnScaleStyle.Spring ? springWid : columns[i].Width);
 
+                        Rectangle bounds = new Rectangle(lp_scr + last, tp, colwid, headerBuffer);
+                        
                         if (headerStyle == ColumnHeaderStyle.Clickable && columns[i].Pressed)
-                            HeaderPressed.DrawBackground(g,
-                                                        new Rectangle(lp_scr + last, tp, colwid, headerBuffer),
-                                                        new Rectangle(lp, tp, r.Width , headerBuffer));
-
+                        {
+                            if (VisualStyles)
+                                HeaderPressed.DrawBackground(g, bounds, clip);
+                            else
+                                ControlPaint.DrawButton(g, bounds, ButtonState.Flat);
+                        }
                         else if (headerStyle != ColumnHeaderStyle.None && columns[i].Hovered)
-                            HeaderHot.DrawBackground(g,
-                                                        new Rectangle(lp_scr + last, tp, colwid, headerBuffer),
-                                                        new Rectangle(lp, tp, r.Width , headerBuffer));
-
+                        {
+                            if (VisualStyles)
+                                HeaderHot.DrawBackground(g, bounds, clip);
+                            else
+                                ControlPaint.DrawButton(g, bounds, ButtonState.Normal);
+                        }
                         else
-                            HeaderNormal.DrawBackground(g,
-                                                        new Rectangle(lp_scr + last, tp, colwid, headerBuffer),
-                                                        new Rectangle(lp, tp, r.Width , headerBuffer));
+                        {
+                            if (VisualStyles)
+                                HeaderNormal.DrawBackground(g, bounds, clip);
+                            else
+                                ControlPaint.DrawButton(g, bounds, ButtonState.Normal);
+                        }
+
                         last += colwid;
                     }
+
 					// only render trailing column header if the end of the
 					// last column ends before the boundary of the listview 
 					if (!(r.Left+last+2-hscrollBar.Value > r.Left+r.Width))
 					{
-                        HeaderNormal.DrawBackground(g, 
-                            new Rectangle(lp_scr + last, tp, r.Width - last - 2 + hscrollBar.Value, headerBuffer), 
-                            new Rectangle( r.Left, /* r.Top BMS 2003/05/22 */ tp, r.Width, headerBuffer));
+                        Rectangle bounds = new Rectangle(lp_scr + last, tp, r.Width - last - 2 + hscrollBar.Value, headerBuffer);
 
+                        if (VisualStyles)
+                            HeaderNormal.DrawBackground(g, bounds, 
+                                new Rectangle(r.Left, /* r.Top BMS 2003/05/22 */ tp, r.Width, headerBuffer));
+                        else
+                            ControlPaint.DrawButton(g, bounds, ButtonState.Normal);
 					}
 				}
 				catch

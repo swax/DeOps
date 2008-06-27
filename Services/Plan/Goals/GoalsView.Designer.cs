@@ -29,69 +29,21 @@ namespace RiseOp.Services.Plan
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(GoalsView));
-            this.DiscardLink = new System.Windows.Forms.LinkLabel();
-            this.SaveLink = new System.Windows.Forms.LinkLabel();
-            this.ChangesLabel = new System.Windows.Forms.Label();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.SelectGoalButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.DetailsButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.DetailsBrowser = new System.Windows.Forms.WebBrowser();
-            this.MainPanel = new GoalPanel();
+            this.SaveButton = new System.Windows.Forms.PictureBox();
+            this.DiscardButton = new System.Windows.Forms.PictureBox();
+            MainPanel = new GoalPanel();
             this.toolStrip1.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.SaveButton)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DiscardButton)).BeginInit();
             this.SuspendLayout();
-            // 
-            // DiscardLink
-            // 
-            this.DiscardLink.ActiveLinkColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(192)))), ((int)(((byte)(192)))));
-            this.DiscardLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.DiscardLink.AutoSize = true;
-            this.DiscardLink.BackColor = System.Drawing.Color.Red;
-            this.DiscardLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.DiscardLink.LinkColor = System.Drawing.Color.White;
-            this.DiscardLink.Location = new System.Drawing.Point(442, 417);
-            this.DiscardLink.Name = "DiscardLink";
-            this.DiscardLink.Size = new System.Drawing.Size(43, 13);
-            this.DiscardLink.TabIndex = 18;
-            this.DiscardLink.TabStop = true;
-            this.DiscardLink.Text = "Discard";
-            this.DiscardLink.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.DiscardLink.Visible = false;
-            this.DiscardLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.DiscardLink_LinkClicked);
-            // 
-            // SaveLink
-            // 
-            this.SaveLink.ActiveLinkColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
-            this.SaveLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.SaveLink.AutoSize = true;
-            this.SaveLink.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(192)))), ((int)(((byte)(0)))));
-            this.SaveLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.SaveLink.LinkColor = System.Drawing.Color.White;
-            this.SaveLink.Location = new System.Drawing.Point(404, 417);
-            this.SaveLink.Name = "SaveLink";
-            this.SaveLink.Size = new System.Drawing.Size(32, 13);
-            this.SaveLink.TabIndex = 17;
-            this.SaveLink.TabStop = true;
-            this.SaveLink.Text = "Save";
-            this.SaveLink.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.SaveLink.Visible = false;
-            this.SaveLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.SaveLink_LinkClicked);
-            // 
-            // ChangesLabel
-            // 
-            this.ChangesLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.ChangesLabel.AutoSize = true;
-            this.ChangesLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ChangesLabel.Location = new System.Drawing.Point(346, 417);
-            this.ChangesLabel.Name = "ChangesLabel";
-            this.ChangesLabel.Size = new System.Drawing.Size(56, 13);
-            this.ChangesLabel.TabIndex = 19;
-            this.ChangesLabel.Text = "Changes";
-            this.ChangesLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.ChangesLabel.Visible = false;
             // 
             // toolStrip1
             // 
@@ -141,17 +93,17 @@ namespace RiseOp.Services.Plan
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.DetailsBrowser);
-            this.splitContainer1.Size = new System.Drawing.Size(489, 389);
+            this.splitContainer1.Size = new System.Drawing.Size(489, 379);
             this.splitContainer1.SplitterDistance = 313;
             this.splitContainer1.TabIndex = 21;
             // 
             // MainPanel
             // 
-            this.MainPanel.BackColor = System.Drawing.Color.WhiteSmoke ;
+            this.MainPanel.BackColor = System.Drawing.Color.WhiteSmoke;
             this.MainPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.MainPanel.Location = new System.Drawing.Point(0, 0);
             this.MainPanel.Name = "MainPanel";
-            this.MainPanel.Size = new System.Drawing.Size(313, 389);
+            this.MainPanel.Size = new System.Drawing.Size(313, 379);
             this.MainPanel.TabIndex = 0;
             // 
             // DetailsBrowser
@@ -163,19 +115,44 @@ namespace RiseOp.Services.Plan
             this.DetailsBrowser.MinimumSize = new System.Drawing.Size(20, 20);
             this.DetailsBrowser.Name = "DetailsBrowser";
             this.DetailsBrowser.ScriptErrorsSuppressed = true;
-            this.DetailsBrowser.Size = new System.Drawing.Size(172, 389);
+            this.DetailsBrowser.Size = new System.Drawing.Size(172, 379);
             this.DetailsBrowser.TabIndex = 0;
+            // 
+            // SaveButton
+            // 
+            this.SaveButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.SaveButton.Image = global::RiseOp.Properties.Resources.save;
+            this.SaveButton.Location = new System.Drawing.Point(336, 410);
+            this.SaveButton.Name = "SaveButton";
+            this.SaveButton.Size = new System.Drawing.Size(64, 19);
+            this.SaveButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
+            this.SaveButton.TabIndex = 22;
+            this.SaveButton.TabStop = false;
+            this.SaveButton.Visible = false;
+            this.SaveButton.Click += new System.EventHandler(this.SaveButton_Click);
+            // 
+            // DiscardButton
+            // 
+            this.DiscardButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.DiscardButton.Image = global::RiseOp.Properties.Resources.discard;
+            this.DiscardButton.Location = new System.Drawing.Point(406, 410);
+            this.DiscardButton.Name = "DiscardButton";
+            this.DiscardButton.Size = new System.Drawing.Size(64, 19);
+            this.DiscardButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
+            this.DiscardButton.TabIndex = 23;
+            this.DiscardButton.TabStop = false;
+            this.DiscardButton.Visible = false;
+            this.DiscardButton.Click += new System.EventHandler(this.DiscardButton_Click);
             // 
             // GoalsView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
+            this.Controls.Add(this.DiscardButton);
+            this.Controls.Add(this.SaveButton);
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.toolStrip1);
-            this.Controls.Add(this.ChangesLabel);
-            this.Controls.Add(this.DiscardLink);
-            this.Controls.Add(this.SaveLink);
             this.Name = "GoalsView";
             this.Size = new System.Drawing.Size(489, 432);
             this.Load += new System.EventHandler(this.GoalsView_Load);
@@ -184,6 +161,8 @@ namespace RiseOp.Services.Plan
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);
             this.splitContainer1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.SaveButton)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DiscardButton)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -191,14 +170,13 @@ namespace RiseOp.Services.Plan
 
         #endregion
 
-        private System.Windows.Forms.LinkLabel DiscardLink;
-        private System.Windows.Forms.LinkLabel SaveLink;
-        private System.Windows.Forms.Label ChangesLabel;
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.ToolStripDropDownButton SelectGoalButton;
         private System.Windows.Forms.ToolStripButton DetailsButton;
         private GoalPanel MainPanel;
         private System.Windows.Forms.WebBrowser DetailsBrowser;
+        private System.Windows.Forms.PictureBox SaveButton;
+        private System.Windows.Forms.PictureBox DiscardButton;
     }
 }

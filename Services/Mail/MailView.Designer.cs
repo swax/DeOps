@@ -30,13 +30,18 @@ namespace RiseOp.Services.Mail
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MailView));
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
-            this.InboxButton = new System.Windows.Forms.ToolStripButton();
-            this.OutboxButton = new System.Windows.Forms.ToolStripButton();
+            this.SentButton = new System.Windows.Forms.ToolStripButton();
+            this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
+            this.ReceivedButton = new System.Windows.Forms.ToolStripButton();
             this.ComposeButton = new System.Windows.Forms.ToolStripButton();
+            this.toolStripLabel3 = new System.Windows.Forms.ToolStripLabel();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.MessageList = new RiseOp.Interface.TLVex.ContainerListViewEx();
+            this.MessageView = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.MessageHeader = new System.Windows.Forms.WebBrowser();
             this.MessageBody = new System.Windows.Forms.RichTextBox();
@@ -55,12 +60,14 @@ namespace RiseOp.Services.Mail
             this.toolStrip1.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripLabel1,
-            this.InboxButton,
-            this.OutboxButton,
-            this.ComposeButton});
+            this.ReceivedButton,
+            this.toolStripLabel2,
+            this.SentButton,
+            this.ComposeButton,
+            this.toolStripLabel3});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(378, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(453, 25);
             this.toolStrip1.TabIndex = 0;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -70,37 +77,54 @@ namespace RiseOp.Services.Mail
             this.toolStripLabel1.Size = new System.Drawing.Size(10, 22);
             this.toolStripLabel1.Text = " ";
             // 
-            // InboxButton
+            // SentButton
             // 
-            this.InboxButton.Checked = true;
-            this.InboxButton.CheckOnClick = true;
-            this.InboxButton.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.InboxButton.Image = ((System.Drawing.Image)(resources.GetObject("InboxButton.Image")));
-            this.InboxButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.InboxButton.Name = "InboxButton";
-            this.InboxButton.Size = new System.Drawing.Size(55, 22);
-            this.InboxButton.Text = "Inbox";
-            this.InboxButton.Click += new System.EventHandler(this.InboxButton_Click);
+            this.SentButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.SentButton.Checked = true;
+            this.SentButton.CheckOnClick = true;
+            this.SentButton.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.SentButton.Image = ((System.Drawing.Image)(resources.GetObject("SentButton.Image")));
+            this.SentButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.SentButton.Name = "SentButton";
+            this.SentButton.Size = new System.Drawing.Size(49, 22);
+            this.SentButton.Text = "Sent";
+            this.SentButton.Click += new System.EventHandler(this.OutboxButton_Click);
             // 
-            // OutboxButton
+            // toolStripLabel2
             // 
-            this.OutboxButton.CheckOnClick = true;
-            this.OutboxButton.Image = ((System.Drawing.Image)(resources.GetObject("OutboxButton.Image")));
-            this.OutboxButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.OutboxButton.Name = "OutboxButton";
-            this.OutboxButton.Size = new System.Drawing.Size(63, 22);
-            this.OutboxButton.Text = "Outbox";
-            this.OutboxButton.Click += new System.EventHandler(this.OutboxButton_Click);
+            this.toolStripLabel2.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.toolStripLabel2.AutoSize = false;
+            this.toolStripLabel2.Name = "toolStripLabel2";
+            this.toolStripLabel2.Size = new System.Drawing.Size(5, 22);
+            // 
+            // ReceivedButton
+            // 
+            this.ReceivedButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.ReceivedButton.Checked = true;
+            this.ReceivedButton.CheckOnClick = true;
+            this.ReceivedButton.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.ReceivedButton.Image = ((System.Drawing.Image)(resources.GetObject("ReceivedButton.Image")));
+            this.ReceivedButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.ReceivedButton.Name = "ReceivedButton";
+            this.ReceivedButton.Size = new System.Drawing.Size(71, 22);
+            this.ReceivedButton.Text = "Received";
+            this.ReceivedButton.Click += new System.EventHandler(this.InboxButton_Click);
             // 
             // ComposeButton
             // 
-            this.ComposeButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
             this.ComposeButton.Image = ((System.Drawing.Image)(resources.GetObject("ComposeButton.Image")));
             this.ComposeButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.ComposeButton.Name = "ComposeButton";
             this.ComposeButton.Size = new System.Drawing.Size(83, 22);
             this.ComposeButton.Text = "Compose...";
             this.ComposeButton.Click += new System.EventHandler(this.ComposeButton_Click);
+            // 
+            // toolStripLabel3
+            // 
+            this.toolStripLabel3.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.toolStripLabel3.Name = "toolStripLabel3";
+            this.toolStripLabel3.Size = new System.Drawing.Size(37, 22);
+            this.toolStripLabel3.Text = "Show:";
             // 
             // splitContainer1
             // 
@@ -112,38 +136,70 @@ namespace RiseOp.Services.Mail
             // 
             // splitContainer1.Panel1
             // 
-            this.splitContainer1.Panel1.Controls.Add(this.MessageList);
+            this.splitContainer1.Panel1.Controls.Add(this.MessageView);
             // 
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.splitContainer2);
-            this.splitContainer1.Size = new System.Drawing.Size(378, 307);
-            this.splitContainer1.SplitterDistance = 117;
+            this.splitContainer1.Size = new System.Drawing.Size(453, 282);
+            this.splitContainer1.SplitterDistance = 107;
             this.splitContainer1.TabIndex = 1;
             // 
-            // MessageList
+            // MessageView
             // 
-            this.MessageList.BackColor = System.Drawing.SystemColors.Window;
-            this.MessageList.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.MessageList.ColumnSortColor = System.Drawing.Color.Gainsboro;
-            this.MessageList.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.MessageList.DisableHorizontalScroll = true;
-            this.MessageList.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.MessageList.GridLineColor = System.Drawing.Color.WhiteSmoke;
-            this.MessageList.HeaderMenu = null;
-            this.MessageList.ItemMenu = null;
-            this.MessageList.LabelEdit = false;
-            this.MessageList.Location = new System.Drawing.Point(0, 0);
-            this.MessageList.Name = "MessageList";
-            this.MessageList.RowSelectColor = System.Drawing.SystemColors.Highlight;
-            this.MessageList.RowTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.MessageList.Size = new System.Drawing.Size(378, 117);
-            this.MessageList.SmallImageList = null;
-            this.MessageList.StateImageList = null;
-            this.MessageList.TabIndex = 0;
-            this.MessageList.Text = "containerListViewEx1";
-            this.MessageList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.MessageList_MouseClick);
-            this.MessageList.SelectedIndexChanged += new System.EventHandler(this.MessageList_SelectedIndexChanged);
+            this.MessageView.BackColor = System.Drawing.SystemColors.Window;
+            toggleColumnHeader1.Hovered = false;
+            toggleColumnHeader1.Image = null;
+            toggleColumnHeader1.Index = 0;
+            toggleColumnHeader1.Pressed = false;
+            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.Selected = false;
+            toggleColumnHeader1.Text = "Message";
+            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader1.Visible = true;
+            toggleColumnHeader1.Width = 179;
+            toggleColumnHeader2.Hovered = false;
+            toggleColumnHeader2.Image = null;
+            toggleColumnHeader2.Index = 0;
+            toggleColumnHeader2.Pressed = false;
+            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader2.Selected = false;
+            toggleColumnHeader2.Text = "Who";
+            toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader2.Visible = true;
+            toggleColumnHeader2.Width = 120;
+            toggleColumnHeader3.Hovered = false;
+            toggleColumnHeader3.Image = null;
+            toggleColumnHeader3.Index = 0;
+            toggleColumnHeader3.Pressed = false;
+            toggleColumnHeader3.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader3.Selected = false;
+            toggleColumnHeader3.Text = "Date";
+            toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader3.Visible = true;
+            toggleColumnHeader3.Width = 150;
+            this.MessageView.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
+            toggleColumnHeader1,
+            toggleColumnHeader2,
+            toggleColumnHeader3});
+            this.MessageView.ColumnSortColor = System.Drawing.Color.Gainsboro;
+            this.MessageView.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
+            this.MessageView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.MessageView.GridLineColor = System.Drawing.Color.WhiteSmoke;
+            this.MessageView.HeaderMenu = null;
+            this.MessageView.ItemHeight = 20;
+            this.MessageView.ItemMenu = null;
+            this.MessageView.LabelEdit = false;
+            this.MessageView.Location = new System.Drawing.Point(0, 0);
+            this.MessageView.Name = "MessageView";
+            this.MessageView.RowSelectColor = System.Drawing.SystemColors.Highlight;
+            this.MessageView.RowTrackColor = System.Drawing.Color.WhiteSmoke;
+            this.MessageView.Size = new System.Drawing.Size(453, 107);
+            this.MessageView.SmallImageList = null;
+            this.MessageView.StateImageList = null;
+            this.MessageView.TabIndex = 0;
+            this.MessageView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.MessageView_MouseClick);
+            this.MessageView.SelectedItemChanged += new System.EventHandler(this.MessageView_SelectedItemChanged);
             // 
             // splitContainer2
             // 
@@ -161,7 +217,7 @@ namespace RiseOp.Services.Mail
             // 
             this.splitContainer2.Panel2.BackColor = System.Drawing.Color.White;
             this.splitContainer2.Panel2.Controls.Add(this.MessageBody);
-            this.splitContainer2.Size = new System.Drawing.Size(378, 186);
+            this.splitContainer2.Size = new System.Drawing.Size(453, 171);
             this.splitContainer2.SplitterDistance = 68;
             this.splitContainer2.SplitterWidth = 1;
             this.splitContainer2.TabIndex = 0;
@@ -176,7 +232,7 @@ namespace RiseOp.Services.Mail
             this.MessageHeader.Name = "MessageHeader";
             this.MessageHeader.ScriptErrorsSuppressed = true;
             this.MessageHeader.ScrollBarsEnabled = false;
-            this.MessageHeader.Size = new System.Drawing.Size(378, 68);
+            this.MessageHeader.Size = new System.Drawing.Size(453, 68);
             this.MessageHeader.TabIndex = 0;
             this.MessageHeader.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.MessageHeader_Navigating);
             // 
@@ -188,7 +244,7 @@ namespace RiseOp.Services.Mail
             this.MessageBody.Location = new System.Drawing.Point(0, 0);
             this.MessageBody.Name = "MessageBody";
             this.MessageBody.ReadOnly = true;
-            this.MessageBody.Size = new System.Drawing.Size(378, 117);
+            this.MessageBody.Size = new System.Drawing.Size(453, 102);
             this.MessageBody.TabIndex = 0;
             this.MessageBody.Text = "";
             // 
@@ -207,7 +263,7 @@ namespace RiseOp.Services.Mail
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.toolStrip1);
             this.Name = "MailView";
-            this.Size = new System.Drawing.Size(378, 332);
+            this.Size = new System.Drawing.Size(453, 307);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
             this.splitContainer1.Panel1.ResumeLayout(false);
@@ -224,15 +280,17 @@ namespace RiseOp.Services.Mail
         #endregion
 
         private System.Windows.Forms.ToolStrip toolStrip1;
-        private System.Windows.Forms.ToolStripButton InboxButton;
-        private System.Windows.Forms.ToolStripButton OutboxButton;
+        private System.Windows.Forms.ToolStripButton ReceivedButton;
+        private System.Windows.Forms.ToolStripButton SentButton;
         private System.Windows.Forms.ToolStripButton ComposeButton;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.RichTextBox MessageBody;
         private System.Windows.Forms.WebBrowser MessageHeader;
         private System.Windows.Forms.ImageList ListImages;
-        private RiseOp.Interface.TLVex.ContainerListViewEx MessageList;
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;
+        private System.Windows.Forms.ToolStripLabel toolStripLabel2;
+        private System.Windows.Forms.ToolStripLabel toolStripLabel3;
+        private RiseOp.Interface.TLVex.TreeListViewEx MessageView;
     }
 }

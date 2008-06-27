@@ -51,9 +51,10 @@ using RiseOp.Services.Transfer;
 
 namespace RiseOp.Services.Mail
 {
-    internal delegate void MailUpdateHandler(bool inbox, LocalMail message);
 
     enum MailBoxType { Inbox, Outbox }
+
+    internal delegate void MailUpdateHandler(LocalMail message);
 
 
     class MailService : OpService
@@ -81,11 +82,9 @@ namespace RiseOp.Services.Mail
         internal Dictionary<ulong, List<CachedAck>>  AckMap  = new Dictionary<ulong, List<CachedAck>>();
         internal Dictionary<ulong, CachedPending> PendingMap = new Dictionary<ulong, CachedPending>();
 
-        internal ThreadedList<LocalMail> Inbox;
-        internal ThreadedList<LocalMail> Outbox;
 
-        internal bool SaveInbox;
-        internal bool SaveOutbox;
+        internal bool SaveMailbox;
+        internal ThreadedSortedList<DateTime, LocalMail> LocalMailbox;
 
         // local pending mails and acks
         internal Dictionary<ulong, List<ulong>>  PendingMail = new Dictionary<ulong, List<ulong>>();
@@ -193,12 +192,8 @@ namespace RiseOp.Services.Mail
             if (RunSaveHeaders)
                 SaveHeaders();
 
-            if (SaveInbox && Inbox != null)
-                SaveLocalHeaders(MailBoxType.Inbox);
-
-            if (SaveOutbox && Outbox != null)
-                SaveLocalHeaders(MailBoxType.Outbox);
-
+            if (SaveMailbox && LocalMailbox != null)
+                SaveLocalHeaders();
 
             // clean download later map
             if (!Network.Established)
@@ -436,31 +431,21 @@ namespace RiseOp.Services.Mail
             }
         }
 
-        internal void SaveLocalHeaders(MailBoxType box)
+        internal void SaveLocalHeaders()
         {           
             if (Core.InvokeRequired)
                 Debug.Assert(false);
 
-            ThreadedList<LocalMail> mailList = (box == MailBoxType.Inbox) ? Inbox : Outbox;
-            string name = (box == MailBoxType.Inbox) ? "inbox" : "outbox";
-
-            if (box == MailBoxType.Inbox)
-                SaveInbox = false;
-            if (box == MailBoxType.Outbox)
-                SaveOutbox = false;
-
-            if (mailList == null)
-                return;
-
+            SaveMailbox = false;
  
             try
             {
                 string tempPath = Core.GetTempPath();
                 CryptoStream stream = IVCryptoStream.Save(tempPath, LocalFileKey);
 
-                mailList.LockReading(delegate()
+                LocalMailbox.LockReading(delegate()
                 {
-                    foreach (LocalMail local in mailList)
+                    foreach (LocalMail local in LocalMailbox.Values)
                     {
                         byte[] encoded = local.Header.Encode(Network.Protocol, true);
                         stream.Write(encoded, 0, encoded.Length);
@@ -471,24 +456,22 @@ namespace RiseOp.Services.Mail
                 stream.Close();
 
 
-                string finalPath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, name);
+                string finalPath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "mailbox");
                 File.Delete(finalPath);
                 File.Move(tempPath, finalPath);
             }
             catch (Exception ex)
             {
-                Core.Network.UpdateLog("Mail", "Error saving " + name + " " + ex.Message);
+                Core.Network.UpdateLog("Mail", "Error saving mailbox " + ex.Message);
             }
         }
 
-        internal void LoadLocalHeaders(MailBoxType box)
+        internal void LoadLocalHeaders()
         {
-            ThreadedList<LocalMail> mailList = new ThreadedList<LocalMail>();
             List<MailHeader> headers = new List<MailHeader>();
 
-            string name = (box == MailBoxType.Inbox) ? "inbox" : "outbox";
-
-            string path = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, name);
+ 
+            string path = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "mailbox");
 
             if (File.Exists(path))
                 try
@@ -518,22 +501,19 @@ namespace RiseOp.Services.Mail
                 }
                 catch (Exception ex)
                 {
-                    Core.Network.UpdateLog("Mail", "Error loading " + name + " " + ex.Message);
+                    Core.Network.UpdateLog("Mail", "Error loading mailbox " + ex.Message);
                 }
 
             // load mail files that headers point to
+            LocalMailbox = new ThreadedSortedList<DateTime, LocalMail>();
+
             foreach (MailHeader header in headers)
             {
                 LocalMail local = LoadLocalMail(header);
 
                 if (local != null)
-                    mailList.SafeAdd(local);
+                    LocalMailbox.SafeAdd(local.Info.Date, local);
             }
-
-            if (box == MailBoxType.Inbox)
-                Inbox = mailList;
-            else
-                Outbox = mailList;
         }
 
         private LocalMail LoadLocalMail(MailHeader header)
@@ -644,11 +624,11 @@ namespace RiseOp.Services.Mail
             Core.InvokeView(node.IsExternal(), view);
         }
 
-        internal void SendMail(List<ulong> to, List<AttachedFile> files, string subject, string body)
+        internal void SendMail(List<ulong> to, List<AttachedFile> files, string subject, string body, string quip, int threadID)
         {
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreBlocked(delegate() { SendMail(to, files, subject, body); });
+                Core.RunInCoreBlocked(delegate() { SendMail(to, files, subject, body, quip, threadID); });
                 return;
             }
 
@@ -665,7 +645,7 @@ namespace RiseOp.Services.Mail
             int written = 0;
 
             // build mail file
-            written += Protocol.WriteToFile(new MailInfo(subject, Core.TimeNow.ToUniversalTime(), files.Count > 0), stream);
+            written += Protocol.WriteToFile(new MailInfo(subject, quip, Core.TimeNow.ToUniversalTime(), files.Count > 0), stream);
 
             foreach (ulong id in to)
                 written += Protocol.WriteToFile(new MailDestination(Core.KeyMap[id], false), stream);
@@ -715,18 +695,18 @@ namespace RiseOp.Services.Mail
             File.Move(tempPath, finalPath);
 
             // write header to outbound file
-            if (Outbox == null)
-                LoadLocalHeaders(MailBoxType.Outbox);
+            if (LocalMailbox == null)
+                LoadLocalHeaders();
 
             LocalMail message = LoadLocalMail(header);
 
             if (message != null)
             {
-                Outbox.SafeAdd(message);
-                SaveOutbox = true;
+                LocalMailbox.SafeAdd(message.Info.Date, message);
+                SaveMailbox = true;
 
                 if (MailUpdate != null)
-                    Core.RunInGuiThread(MailUpdate, false, message);
+                    Core.RunInGuiThread(MailUpdate, message);
             }
 
             // write headers to outbound cache file
@@ -748,6 +728,7 @@ namespace RiseOp.Services.Mail
             SavePending();
 
             CachedPending local = FindPending(Core.UserID);
+            header.ThreadID = (threadID != 0) ? threadID : Core.RndGen.Next();
             header.SourceVersion = (local != null) ? local.Header.Version : 0;
 
             // publish to targets
@@ -1214,8 +1195,8 @@ namespace RiseOp.Services.Mail
             File.Move(cachePath, localPath);
 
             // add to inbound list
-            if (Inbox == null)
-                LoadLocalHeaders(MailBoxType.Inbox);
+            if (LocalMailbox == null)
+                LoadLocalHeaders();
 
             DecodeFileKey(header.FileKey, ref header.LocalKey, ref header.FileStart);
 
@@ -1223,12 +1204,12 @@ namespace RiseOp.Services.Mail
 
             if (message != null)
             {
-                Inbox.SafeAdd(message);
+                LocalMailbox.SafeAdd(message.Info.Date, message);
 
-                SaveInbox = true;
+                SaveMailbox = true;
 
                 if (MailUpdate != null)
-                    Core.RunInGuiThread(MailUpdate, true, message);
+                    Core.RunInGuiThread(MailUpdate, message);
             }
 
             // publish ack
@@ -1431,13 +1412,13 @@ namespace RiseOp.Services.Mail
             SavePending(); // also publishes
 
             // update interface
-            if (Outbox != null && MailUpdate != null)
-                Outbox.LockReading(delegate()
+            if (LocalMailbox != null && MailUpdate != null)
+                LocalMailbox.LockReading(delegate()
                 {
-                    foreach (LocalMail message in Outbox)
+                    foreach (LocalMail message in LocalMailbox.Values)
                         if (Utilities.MemCompare(message.Header.MailID, ack.MailID))
                         {
-                            Core.RunInGuiThread(MailUpdate, false, message);
+                            Core.RunInGuiThread(MailUpdate, message);
                             break;
                         }
                 });
@@ -1808,83 +1789,44 @@ namespace RiseOp.Services.Mail
         internal void Reply(LocalMail message, string body)
         {
             ComposeMail compose = new ComposeMail(this, message.Header.SourceID);
+            compose.CustomTitle = "Reply to ";
+            compose.ThreadID = message.Header.ThreadID;
 
-            string subject = message.Info.Subject;
-            if (!subject.StartsWith("RE: "))
-                subject = "RE: " + subject;
+            compose.SubjectTextBox.Text = message.Info.Subject;
+            compose.SubjectTextBox.Enabled = false;
+            compose.SubjectTextBox.BackColor = System.Drawing.Color.WhiteSmoke;
 
-            compose.SubjectTextBox.Text = subject;
-
-            string header = "\n\n-----Original Message-----\n";
-            header += "From: " + Core.Trust.GetName(message.Header.SourceID) + "\n";
-            header += "Sent: " + Utilities.FormatTime(message.Info.Date) + "\n";
-            header += "To: " + GetNames(message.To) + "\n";
-
-            if(message.CC.Count > 0)
-                header += "CC: " + GetNames(message.CC) + "\n";
-
-            header += "Subject: " + message.Info.Subject + "\n\n";
-
-            compose.MessageBody.InputBox.AppendText(header);
-
-            compose.MessageBody.InputBox.Select(compose.MessageBody.InputBox.TextLength, 0);
-            compose.MessageBody.InputBox.SelectedRtf = body;
-
-            compose.MessageBody.InputBox.Select(0, 0);
-
-            
             Core.RunInGuiThread(Core.GuiMain.ShowExternal, compose);
         }
 
         internal void Forward(LocalMail message, string body)
         {
             ComposeMail compose = new ComposeMail(this, 0);
+            compose.CustomTitle = "Forward to ";
+            compose.ThreadID = message.Header.ThreadID;
 
-
-            string subject = message.Info.Subject;
-            if (!subject.StartsWith("FW: "))
-                subject = "FW: " + subject;
-
-            compose.SubjectTextBox.Text = subject;
+            compose.SubjectTextBox.Text = message.Info.Subject;
+            compose.SubjectTextBox.Enabled = false;
+            compose.SubjectTextBox.BackColor = System.Drawing.Color.WhiteSmoke;
 
             //crit attach files
-
-
-            string header = "\n\n-----Original Message-----\n";
-            header += "From: " + Core.Trust.GetName(message.Header.SourceID) + "\n";
-            header += "Sent: " + Utilities.FormatTime(message.Info.Date) + "\n";
-            header += "To: " + GetNames(message.To) + "\n";
-
-            if (message.CC.Count > 0)
-                header += "CC: " + GetNames(message.CC) + "\n";
-
-            header += "Subject: " + message.Info.Subject + "\n\n";
-
-            compose.MessageBody.InputBox.AppendText(header);
-
-            compose.MessageBody.InputBox.Select(compose.MessageBody.InputBox.TextLength, 0);
-            compose.MessageBody.InputBox.SelectedRtf = body;
-
-            compose.MessageBody.InputBox.Select(0, 0);
-
+            
             Core.RunInGuiThread(Core.GuiMain.ShowExternal, compose);
         }
 
-        internal void DeleteLocal(LocalMail message, bool inbox)
+        internal void DeleteLocal(LocalMail message)
         {
             File.Delete(GetLocalPath(message.Header));
             
-            if (inbox)
+            LocalMailbox.LockWriting(delegate()
             {
-                Inbox.SafeRemove(message);
-                SaveInbox = true;
-            }
+                int index = LocalMailbox.IndexOfValue(message);
 
-            else
-            {
-                Outbox.SafeRemove(message);
-                SaveOutbox = true;
-            }
+                if(index >= 0)
+                    LocalMailbox.RemoveAt(index);
+
+                SaveMailbox = true;
+            });
         }
 
         internal string GetNames(List<ulong> list)

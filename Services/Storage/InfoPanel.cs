@@ -1106,7 +1106,7 @@ namespace RiseOp.Services.Storage
                 {
                     string defaultRevs = (CurrentItem.Revs == 0) ? "all" : CurrentItem.Revs.ToString();
 
-                    GetTextDialog dialog = new GetTextDialog("Edit Revisions", "Enter number of revisions to save. To save everything type 'all'", defaultRevs);
+                    GetTextDialog dialog = new GetTextDialog(StorageRes.Icon, "Edit Revisions", "Enter number of revisions to save. To save everything type 'all'", defaultRevs);
 
                     if (dialog.ShowDialog(this) == DialogResult.OK)
                     {

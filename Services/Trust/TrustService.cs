@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 using System.Security.Cryptography;
@@ -10,6 +12,7 @@ using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Implementation.Protocol.Special;
 
 using RiseOp.Services.Assist;
 using RiseOp.Services.Location;
@@ -465,7 +468,7 @@ namespace RiseOp.Services.Trust
                     MarkBranchLinked(link, 2);
 
                     // TraverseDown 1 from all parents above self
-                    List<ulong> uplinks = GetUplinkIDs(LocalTrust.UserID, project, false);
+                    List<ulong> uplinks = GetUplinkIDs(LocalTrust.UserID, project, false, false);
 
                     foreach (ulong id in uplinks)
                     {
@@ -649,9 +652,25 @@ namespace RiseOp.Services.Trust
                             }
                     }
 
+
+                // save inheritable settings only if they can be inherited
+                if (IsInheritNode(Core.UserID))
+                {
+                    PacketStream streamEx = new PacketStream(stream, Network.Protocol, FileAccess.Write);
+
+                    if (Core.Profile.OpIcon != null)
+                        streamEx.WritePacket(new IconPacket(TrustPacket.Icon, Core.Profile.OpIcon));
+
+                    if (Core.Profile.OpSplash != null)
+                    {
+                        MemoryStream splash = new MemoryStream();
+                        Core.Profile.OpSplash.Save(splash, ImageFormat.Jpeg);
+                        LargeDataPacket.Write(streamEx, TrustPacket.Splash, splash.ToArray());
+                    }
+                }
+
                 stream.WriteByte(0); // signal last packet
 
-                stream.FlushFinalBlock();
                 stream.Close();
 
                 OpVersionedFile file = Cache.UpdateLocal(tempPath, key, null);
@@ -850,6 +869,11 @@ namespace RiseOp.Services.Trust
 
 
                 // load data from link file
+                string inheritName = null; 
+                string inheritOp = null;
+                Bitmap inheritIcon = null;
+                byte[] inheritSplash = null;
+
                 TaggedStream file = new TaggedStream(Cache.GetFilePath(cachefile.Header), Network.Protocol);
                 CryptoStream crypto = IVCryptoStream.Load(file, cachefile.Header.FileKey);
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
@@ -857,6 +881,7 @@ namespace RiseOp.Services.Trust
                 G2Header packetRoot = null;
 
                 while (stream.ReadPacket(ref packetRoot))
+                {
                     if (packetRoot.Name == DataPacket.SignedData)
                     {
                         SignedData signed = SignedData.Decode(packetRoot);
@@ -866,12 +891,32 @@ namespace RiseOp.Services.Trust
                         if (G2Protocol.ReadPacket(embedded))
                         {
                             if (embedded.Name == TrustPacket.ProjectData)
-                                Process_ProjectData(trust, signed, ProjectData.Decode(embedded));
+                            {
+                                ProjectData project = ProjectData.Decode(embedded);
+                                Process_ProjectData(trust, signed, project);
+
+                                if (project.ID == 0)
+                                {
+                                    inheritName = project.UserName;
+                                    inheritOp = project.Name;
+                                }
+                            }
 
                             else if (embedded.Name == TrustPacket.LinkData)
                                 Process_LinkData(trust, signed, LinkData.Decode(embedded));
                         }
                     }
+                    else if (packetRoot.Name == TrustPacket.Icon)
+                        inheritIcon = IconPacket.Decode(packetRoot).OpIcon;
+
+                    else if (packetRoot.Name == TrustPacket.Splash)
+                    {
+                        LargeDataPacket splash = LargeDataPacket.Decode(packetRoot);
+
+                        if (splash.Size > 0)
+                            inheritSplash = LargeDataPacket.Read(splash, stream, TrustPacket.Splash);
+                    }
+                }
 
                 stream.Close();
 
@@ -942,6 +987,31 @@ namespace RiseOp.Services.Trust
                     Store.PublishDirect(locations, trust.UserID, ServiceID, 0, cachefile.SignedHeader);
                 }
 
+                // inherit local settings
+                if(Core.UserID == trust.UserID)
+                {
+                    if (inheritName != null)
+                        Core.Profile.Settings.UserName = inheritName;
+                }
+
+                // inherit settings from highest node, first node in loop
+                if (IsInheritNode(trust.UserID))
+                {
+                    if (inheritOp != null)
+                        Core.Profile.Settings.Operation = inheritOp;
+
+                    if (inheritIcon != null)
+                    {
+                        Core.Profile.OpIcon = inheritIcon;
+                        Core.Profile.IconUpdate();
+                    }
+
+                    if (inheritSplash != null)
+                        Core.Profile.OpSplash = (Bitmap)Bitmap.FromStream(new MemoryStream(inheritSplash));
+                    else
+                        Core.Profile.OpSplash = null;
+                }
+
                 // update interface node
                 Core.RunInGuiThread(GuiUpdate, trust.UserID);
 
@@ -954,6 +1024,22 @@ namespace RiseOp.Services.Trust
             {
                 Network.UpdateLog("Link", "Error loading file " + ex.Message);
             }
+        }
+
+        internal bool IsInheritNode(ulong check)
+        {
+            List<ulong> highers = GetUplinkIDs(Core.UserID, 0, true, true);
+
+            if (highers.Count > 0)
+            {
+                if (highers[highers.Count - 1] == check)
+                    return true;
+            }
+            // else local is at the top
+            if (Core.UserID == check)
+                return true;
+
+            return false;
         }
 
         private void AddRoot(OpLink link)
@@ -1243,7 +1329,7 @@ namespace RiseOp.Services.Trust
             if (local == null)
                 return false;
 
-            List<ulong> uplinks = GetUplinkIDs(localID, project, confirmed);
+            List<ulong> uplinks = GetUplinkIDs(localID, project, confirmed, false);
 
             if (uplinks.Count == 0)
                 return false;
@@ -1265,7 +1351,7 @@ namespace RiseOp.Services.Trust
 
         internal bool IsLower(ulong localID, ulong lowerID, uint project)
         {
-            List<ulong> uplinks = GetUplinkIDs(lowerID, project, true);
+            List<ulong> uplinks = GetUplinkIDs(lowerID, project, true, true);
 
             if (uplinks.Contains(localID))
                 return true;
@@ -1300,15 +1386,15 @@ namespace RiseOp.Services.Trust
 
         internal List<ulong> GetUplinkIDs(ulong id, uint project)
         {
-            return GetUplinkIDs(id, project, true);
+            return GetUplinkIDs(id, project, true, false);
         }
 
         internal List<ulong> GetUnconfirmedUplinkIDs(ulong id, uint project)
         {
-            return GetUplinkIDs(id, project, false);
+            return GetUplinkIDs(id, project, false, false);
         }
 
-        private List<ulong> GetUplinkIDs(ulong local, uint project, bool confirmed)
+        private List<ulong> GetUplinkIDs(ulong local, uint project, bool confirmed, bool stopAtLoop)
         {
             // get uplinks from id, not including id, starting with directly above and ending with root
 
@@ -1316,18 +1402,22 @@ namespace RiseOp.Services.Trust
 
             OpLink link = GetLink(local, project);
 
-            if (link == null)
+            if (link == null || (stopAtLoop && link.InLoop) )
                 return list;
 
             OpLink uplink = link.GetHigher(confirmed);
 
             while (uplink != null)
             {
-                // if looping, return
+                // if full loop traversed
                 if (uplink.UserID == local || list.Contains(uplink.UserID))
                     return list;
 
                 list.Add(uplink.UserID);
+
+                // stop at loop means get first node in loop and return
+                if (stopAtLoop && uplink.InLoop)
+                    return list;
 
                 uplink = uplink.GetHigher(confirmed);
             }
@@ -1339,12 +1429,7 @@ namespace RiseOp.Services.Trust
         {
             // get uplinks from local, including first id in loop, but no more
 
-            OpLink link = GetLink(local, project);
-
-            if (link == null)
-                return new List<ulong>();
-
-            return link.GetHighers();
+            return GetUplinkIDs(local, project, true, true);
         }
 
         internal List<ulong> GetAdjacentIDs(ulong id, uint project)
@@ -1639,8 +1724,11 @@ namespace RiseOp.Services.Trust
         internal bool Active;
         internal string Title = "";
 
+        // loop root is an empty node that has IsLoopRoot set to true, LoopRoot set to null
+        // link in loop has LoopRoot set to adress of root node, IsLoopRoot false, InLoop resolves to true
         internal bool IsLoopRoot;
         internal OpLink LoopRoot;
+        internal bool InLoop { get { return LoopRoot != null; } }
 
         internal OpLink Uplink;
         internal List<OpLink> Downlinks = new List<OpLink>();
@@ -1739,7 +1827,7 @@ namespace RiseOp.Services.Trust
                 }
         }
 
-
+        // includes first node in loop only, not the entire loop
         internal List<ulong> GetHighers()
         {
             List<ulong> list = new List<ulong>();

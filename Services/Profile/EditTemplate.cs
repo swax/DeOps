@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace RiseOp.Services.Profile
 {
-    internal partial class EditTemplate : Form
+    internal partial class EditTemplate : RiseOp.Interface.CustomIconForm
     {
         EditProfile EditForm;
         ProfileTemplate Template;

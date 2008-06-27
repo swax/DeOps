@@ -21,6 +21,9 @@ namespace RiseOp.Services.Mail
 
         ulong DefaultID;
         bool MessageSent;
+        
+        internal string CustomTitle;
+        internal int ThreadID;
 
         List<ulong> ToIDs = new List<ulong>();
 
@@ -40,10 +43,18 @@ namespace RiseOp.Services.Mail
             }
         }
 
+        private void ComposeMail_Load(object sender, EventArgs e)
+        {
+            MessageBody.InputBox.Select();
+        }
+
         internal override string GetTitle(bool small)
         {
             if (small)
                 return "Compose";
+
+            if(CustomTitle != null)
+                return CustomTitle + Links.GetName(DefaultID);
 
             if (DefaultID != 0)
                 return "Mail " + Links.GetName(DefaultID);
@@ -132,8 +143,17 @@ namespace RiseOp.Services.Mail
                 if (MessageBody.InputBox.Text.Length == 0)
                     throw new Exception("Message body is blank");
 
+                // if reply - set subject to preview of message
+                string quip = MessageBody.InputBox.Text;
 
-                Mail.SendMail(ToIDs, files, SubjectTextBox.Text, MessageBody.InputBox.Rtf);
+                if (quip.Length > 50)
+                {
+                    quip = quip.Substring(0, 50) + "...";
+                    quip = quip.Replace('\r', ' ');
+                    quip = quip.Replace('\n', ' ');
+                }
+
+                Mail.SendMail(ToIDs, files, SubjectTextBox.Text, MessageBody.InputBox.Rtf, quip, ThreadID);
             }
             catch (Exception ex)
             {
@@ -198,12 +218,5 @@ namespace RiseOp.Services.Mail
         {
 
         }
-
-        private void ComposeMail_Load(object sender, EventArgs e)
-        {
-
-        }
-
-   
     }
 }

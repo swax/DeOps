@@ -6,20 +6,48 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
+using RiseOp.Implementation;
+
+
 namespace RiseOp.Interface
 {
     internal partial class GetTextDialog : CustomIconForm
     {
+        // default icon
         internal GetTextDialog(string title, string direction, string defaultText)
         {
             InitializeComponent();
 
-            Text = title;
-            DirectionLabel.Text  = direction;
-            ResultBox.Text = defaultText;
+            SetupBox(title, direction, defaultText);
         }
 
- 
+        // main operation icon
+        internal GetTextDialog(OpCore core, string title, string direction, string defaultText)
+            : base(core)
+        {
+            InitializeComponent();
+
+            SetupBox(title, direction, defaultText);
+        }
+
+        // service icon
+        internal GetTextDialog(Icon image, string title, string direction, string defaultText)
+        {
+            InitializeComponent();
+
+            SetupBox(title, direction, defaultText);
+
+            Icon = image;
+        }
+
+
+        void SetupBox(string title, string direction, string defaultText)
+        {
+            Text = title;
+            DirectionLabel.Text = direction;
+            ResultBox.Text = defaultText;
+        }
+        
         private void GetTextDialog_Load(object sender, EventArgs e)
         {
             if (DirectionLabel.Width > ResultBox.Width)

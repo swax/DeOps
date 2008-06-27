@@ -95,10 +95,24 @@ namespace RiseOp.Services.Mail {
             }
         }
         
+        internal static System.Drawing.Bitmap recvmail {
+            get {
+                object obj = ResourceManager.GetObject("recvmail", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Icon SendMail {
             get {
                 object obj = ResourceManager.GetObject("SendMail", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap sentmail {
+            get {
+                object obj = ResourceManager.GetObject("sentmail", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
             }
         }
     }

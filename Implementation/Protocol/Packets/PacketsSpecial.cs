@@ -292,4 +292,145 @@ namespace RiseOp.Implementation.Protocol.Special
             return subhash;
         }
     }
+
+    internal class LargeDataPacket : G2Packet
+    {
+        const byte Packet_Size= 0x10;
+        const byte Packet_Hash = 0x20;
+
+        byte Name;
+
+        internal int Size;
+        internal byte[] Hash;
+        internal byte[] Data;
+
+
+        internal LargeDataPacket(byte name, int size, byte[] hash)
+        {
+            Name = name;
+            Size = size;
+            Hash = hash;
+        }
+
+        internal LargeDataPacket(byte name, byte[] data)
+        {
+            Name = name;
+            Data = data;
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                // first packet is size
+                if (Size > 0)
+                {
+                    G2Frame split = protocol.WritePacket(null, Name, null);
+                    protocol.WritePacket(split, Packet_Size, BitConverter.GetBytes(Size));
+
+                    if(Hash != null)
+                        protocol.WritePacket(split, Packet_Hash, Hash);
+                }
+                // following packets are data
+                else
+                    protocol.WritePacket(null, Name, Data);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static bool Decode(G2Header root, byte[] destination, ref int pos)
+        {
+            // data packet
+            if (G2Protocol.ReadPayload(root))
+            {
+                Buffer.BlockCopy(root.Data, root.PayloadPos, destination, pos, root.PayloadSize);
+                pos += root.PayloadSize;
+                return true;
+            }
+
+            return false;
+        }
+
+        internal static LargeDataPacket Decode(G2Header root)
+        {
+            LargeDataPacket packet = new LargeDataPacket(root.Name, 0, null);
+
+            // size packet
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                if (child.Name == Packet_Size)
+                    packet.Size = BitConverter.ToInt32(child.Data, child.PayloadPos);
+
+                if (child.Name == Packet_Hash)
+                    packet.Hash = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+            }
+
+            return packet;
+        }
+
+        internal static void Write(PacketStream stream, byte name, byte[] data)
+        {
+            // empty file
+            if (data == null)
+            {
+                stream.WritePacket(new LargeDataPacket(name, 0, null));
+                return;
+            }
+
+            // write header packet
+            byte[] hash = new SHA1Managed().ComputeHash(data);
+
+            stream.WritePacket(new LargeDataPacket(name, data.Length, hash));
+
+            int pos = 0;
+            int left = data.Length;
+
+            while (left > 0)
+            {
+                int amount = (left > 2000) ? 2000 : left;
+
+                left -= amount;
+
+                stream.WritePacket(new LargeDataPacket(name, Utilities.ExtractBytes(data, pos, amount)));
+
+                pos += amount;
+            }
+
+        }
+
+        internal static byte[] Read(LargeDataPacket start, PacketStream stream, byte name)
+        {
+            byte[] data = new byte[start.Size];
+            int pos = 0;
+
+            G2Header root = null;
+
+            while (stream.ReadPacket(ref root))
+                if (root.Name == name)
+                {
+                    if (!LargeDataPacket.Decode(root, data, ref pos))
+                        break;
+
+                    // done, break
+                    if (pos == start.Size)
+                        break;
+
+                }
+                // unknown packet, break
+                else
+                    break;
+
+            if (start != null && data != null)
+                if(Utilities.MemCompare(start.Hash, new SHA1Managed().ComputeHash(data)))
+                    return data;
+
+            return null;
+        }
+    }
 }

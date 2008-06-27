@@ -162,6 +162,12 @@ namespace RiseOp.Interface.TLVex
 
 			// selectedNodes = new SelectedTreeListNodeCollection();
 
+            if (VisualStyles)
+            {
+                GlyphClosed = new VisualStyleRenderer(VisualStyleElement.TreeView.Glyph.Closed);
+                GlyphOpened = new VisualStyleRenderer(VisualStyleElement.TreeView.Glyph.Opened);
+            }
+
 			nodeRowRects = new ListDictionary();
 			pmRects = new ListDictionary();	
 		}
@@ -1292,8 +1298,11 @@ namespace RiseOp.Interface.TLVex
 				}
 		}
 
-        VisualStyleRenderer GlyphClosed = new VisualStyleRenderer(VisualStyleElement.TreeView.Glyph.Closed);
-        VisualStyleRenderer GlyphOpened = new VisualStyleRenderer(VisualStyleElement.TreeView.Glyph.Opened);
+        VisualStyleRenderer GlyphClosed;
+        VisualStyleRenderer GlyphOpened;
+
+        SolidBrush WhiteBrush = new SolidBrush(Color.White);
+        Pen BlackPen = new Pen(new SolidBrush(Color.Black));
 
 		private void RenderPlus(Graphics g, int x, int y, int w, int h, TreeListNode node)
 		{
@@ -1306,12 +1315,12 @@ namespace RiseOp.Interface.TLVex
 			}
 			else
 			{
-				g.DrawRectangle(new Pen(SystemBrushes.ControlDark),x, y, w, h);
-				g.FillRectangle(new SolidBrush(Color.White), x+1, y+1, w-1, h-1);
-				g.DrawLine(new Pen(new SolidBrush(Color.Black)), x+2, y+4, x+w-2, y+4);			
+                g.DrawRectangle(new Pen(SystemBrushes.ControlDark), x + 5, y + 5, 8, 8);
+                g.FillRectangle(WhiteBrush, x + 6, y + 6, 7, 7);
+                g.DrawLine(BlackPen, x + 7, y + 9, x + 11, y + 9);			
 
 				if (!node.IsExpanded)
-					g.DrawLine(new Pen(new SolidBrush(Color.Black)), x+4, y+2, x+4, y+h-2);
+                    g.DrawLine(BlackPen, x + 9, y + 7, x + 9, y + 11);
 			}
 
 			pmRects.Add(new Rectangle(x, y, w, h), node);

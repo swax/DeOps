@@ -126,7 +126,7 @@ namespace RiseOp.Interface
         // add online status
         // add edit link
 
-        internal MainForm(OpCore core)
+        internal MainForm(OpCore core) : base(core)
         {
             InitializeComponent();
             
@@ -854,10 +854,10 @@ namespace RiseOp.Interface
 
 
             // find previous component in drop down, activate click on it
-            string previous = InternalView != null? InternalView.GetTitle(true) : "Chat";
+            string previous = InternalView != null? InternalView.GetTitle(true) : "Profile";
 
             if (!SelectService(previous))
-                SelectService("Chat");
+                SelectService("Profile");
 
             ResumeLayout();
         }

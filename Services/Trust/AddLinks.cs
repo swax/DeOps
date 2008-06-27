@@ -25,6 +25,7 @@ namespace RiseOp.Services.Trust
 
 
         internal AddLinks(TrustService links, uint project)
+            : base(links.Core)
         {
             InitializeComponent();
 

@@ -159,13 +159,10 @@ namespace RiseOp.Interface.Tools
 			//{
 				RichTextBoxConsole.AppendText( message + "\n");
 
-				if( TextBoxCommand.Focused )
+                if (!RichTextBoxConsole.Focused)
 				{
-					RichTextBoxConsole.Focus();
 					RichTextBoxConsole.SelectionStart = RichTextBoxConsole.Text.Length;
 					RichTextBoxConsole.ScrollToCaret();
-
-					TextBoxCommand.Focus();
 				}
 			//}
 		}

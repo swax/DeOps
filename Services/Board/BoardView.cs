@@ -35,6 +35,10 @@ namespace RiseOp.Services.Board
         Dictionary<int, PostViewNode> ThreadMap = new Dictionary<int, PostViewNode>();
         Dictionary<int, Dictionary<int, PostViewNode>> ActiveThreads = new Dictionary<int,Dictionary<int, PostViewNode>>();
 
+        // the system of active threads is required because posts exist individually and must be pulled
+        // from their location on the network with a thread search
+
+
         const string HeaderPage = @"<html>
                 <head>
                     <style type='text/css'>
@@ -89,9 +93,9 @@ namespace RiseOp.Services.Board
 
             PostView.SmallImageList = new List<Image>();
             PostView.SmallImageList.Add(BoardRes.post);
+            PostView.SmallImageList.Add(BoardRes.higher);
+            PostView.SmallImageList.Add(BoardRes.lower);
 
-            PostView.OverlayImages.Add(BoardRes.higher);
-            PostView.OverlayImages.Add(BoardRes.lower);
             PostView.OverlayImages.Add(BoardRes.high_scope);
             PostView.OverlayImages.Add(BoardRes.low_scope);
         }
@@ -106,12 +110,18 @@ namespace RiseOp.Services.Board
 
             Boards.LoadView(this, UserID);
 
-            SelectProject(ProjectID);
+            RefreshBoard();
         }
 
         private void BoardView_Load(object sender, EventArgs e)
         {
-       
+            if (PostView.Nodes.Count > 0)
+            {
+                PostViewNode node = PostView.Nodes[0] as PostViewNode;
+
+                PostView.Select(node);
+                ShowMessage(node.Post, null);
+            }
         }
 
         internal override bool Fin()
@@ -154,67 +164,13 @@ namespace RiseOp.Services.Board
             return BoardRes.Icon;
         }
 
-        /*private void ProjectButton_DropDownOpening(object sender, EventArgs e)
+        private void ButtonHigh_CheckedChanged(object sender, EventArgs e)
         {
-            ProjectButton.DropDownItems.Clear();
-
-            ProjectButton.DropDownItems.Add(new ProjectItem("Main", 0, new EventHandler(ProjectMenu_Click)));
-
-            OpTrustOld link = Links.GetTrustOld(DhtID);
-
-            if(link != null)
-                Links.ProjectNames.LockReading(delegate()
-                {
-                    foreach (uint id in Links.ProjectNames.Keys)
-                        if (id != 0 && link.Projects.Contains(id) && id != ProjectID)
-                            ProjectButton.DropDownItems.Add(new ProjectItem(Links.ProjectNames[id], id, new EventHandler(ProjectMenu_Click)));
-                });
-        }*/
-
-        private void ProjectMenu_Click(object sender, EventArgs e)
-        {
-            ProjectItem item = sender as ProjectItem;
-
-            if (item == null)
-                return;
-
-            SelectProject(item.ProjectID);
-        }
-
-        private void SelectProject(uint id)
-        {
-            ProjectID = id;
-
-            string name = "Main";
-            if (id != 0)
-                name = Trust.GetProjectName(id);
-
-            ProjectButton.Text = "Project: " + name;
-
             RefreshBoard();
         }
 
-        private void HighMenuItem_Click(object sender, EventArgs e)
+        private void ButtonLow_CheckedChanged(object sender, EventArgs e)
         {
-            CurrentScope = ScopeType.High;
-            ViewButton.Text = "View: " + CurrentScope.ToString();
-
-            RefreshBoard();
-        }
-
-        private void LowMenuItem_Click(object sender, EventArgs e)
-        {
-            CurrentScope = ScopeType.Low;
-            ViewButton.Text = "View: " + CurrentScope.ToString();
-
-            RefreshBoard();
-        }
-
-        private void AllMenuItem_Click(object sender, EventArgs e)
-        {
-            CurrentScope = ScopeType.All;
-            ViewButton.Text = "View: " + CurrentScope.ToString();
-
             RefreshBoard();
         }
 
@@ -225,13 +181,42 @@ namespace RiseOp.Services.Board
             PostView.Nodes.Clear();
             ThreadMap.Clear();
 
+            if (ButtonHigh.Checked && ButtonLow.Checked)
+                CurrentScope = ScopeType.All;
+            else if (ButtonHigh.Checked)
+                CurrentScope = ScopeType.High;
+            else if (ButtonLow.Checked)
+                CurrentScope = ScopeType.Low;
+            else
+                CurrentScope = ScopeType.None;
+
             HighIDs = Boards.GetBoardRegion(UserID, ProjectID, ScopeType.High);
             LowIDs = Boards.GetBoardRegion(UserID, ProjectID, ScopeType.Low);
 
             Boards.LoadRegion(UserID, ProjectID);
 
-            SetHeader("");
-            PostBody.Rtf = "";
+            List<ulong> localIDs = Boards.GetBoardRegion(UserID, ProjectID, ScopeType.All);
+            foreach (ulong target in localIDs)
+            {
+                OpBoard board = Boards.GetBoard(target);
+
+                if (board == null)
+                {
+                    Boards.LoadHeader(target); // updateinterface called in processheader
+                    continue;
+                }
+
+                // call update for all posts
+                board.Posts.LockReading(delegate()
+                {
+                    foreach (OpPost post in board.Posts.Values)
+                        if (post.Header.ProjectID == ProjectID)
+                            Board_PostUpdate(post);
+                });
+            }
+
+            //SetHeader("");
+            //PostBody.Rtf = "";
         }
 
         internal void SetHeader(string content)
@@ -260,20 +245,23 @@ namespace RiseOp.Services.Board
                 pass = true;
             }
 
-            else if (HighIDs.Contains(post.Header.TargetID) && // high user
-                     CurrentScope != ScopeType.Low && // view filter
-                     post.Header.Scope != ScopeType.High) // post meant for high user's highers, not us
+            else if (CurrentScope != ScopeType.None) // use else because local id is in highIDs
             {
-                pass = true;
-                level = ScopeType.High;
-            }
+                if (HighIDs.Contains(post.Header.TargetID) && // high user
+                         CurrentScope != ScopeType.Low && // view filter
+                         post.Header.Scope != ScopeType.High) // post meant for high user's highers, not us
+                {
+                    pass = true;
+                    level = ScopeType.High;
+                }
 
-            else if (LowIDs.Contains(post.Header.TargetID) && // low user
-                     CurrentScope != ScopeType.High && // view filter
-                     post.Header.Scope != ScopeType.Low) // post meant for low user's lowers, not us
-            {
-                pass = true;
-                level = ScopeType.Low;
+                else if (LowIDs.Contains(post.Header.TargetID) && // low user
+                         CurrentScope != ScopeType.High && // view filter
+                         post.Header.Scope != ScopeType.Low) // post meant for low user's lowers, not us
+                {
+                    pass = true;
+                    level = ScopeType.Low;
+                }
             }
 
             if (!pass)
@@ -290,7 +278,7 @@ namespace RiseOp.Services.Board
                     node = new PostViewNode(Boards, post, level, post.Header.Scope);
                     ThreadMap[post.Ident] = node;
 
-                    PostView.Nodes.Add(node);
+                    AddPostNode(PostView.Nodes, node, false);
                 }
                 else
                 {
@@ -325,15 +313,16 @@ namespace RiseOp.Services.Board
                 // if post has replies, add an empty item below so it has an expand option
                 if(!ActiveThreads.ContainsKey(parentIdent))
                 {
-                    PostViewNode paretnNode = ThreadMap[parentIdent];
+                    PostViewNode parent = ThreadMap[parentIdent];
 
-                    if (paretnNode.Nodes.Count == 0)
-                        paretnNode.Nodes.Add(new TreeListNode());
+                    if (parent.Nodes.Count == 0)
+                        parent.Nodes.Add(new TreeListNode());
 
                     PostView.Invalidate();
                     return;
                 }
 
+                // else post is active
                 PostViewNode parentNode = ThreadMap[parentIdent];
 
                 PostViewNode replyNode = null;
@@ -343,7 +332,8 @@ namespace RiseOp.Services.Board
                     replyNode = new PostViewNode(Boards, post, ScopeType.All, ScopeType.All);
 
                     ActiveThreads[parentIdent][post.Ident] = replyNode;
-                    parentNode.Nodes.Add(replyNode);
+
+                    AddPostNode(parentNode.Nodes, replyNode, true);
                 }
                 else
                 {
@@ -354,6 +344,30 @@ namespace RiseOp.Services.Board
                 if (replyNode.Selected)
                     ShowMessage(replyNode.Post, parentNode.Post);
             } 
+        }
+
+        private void AddPostNode(TreeListNodeCollection list, PostViewNode add, bool lowToHigh)
+        {
+            int i = 0;
+
+            foreach (PostViewNode node in list)
+            {
+                if (lowToHigh && add.Post.Header.Time < node.Post.Header.Time)
+                {
+                    list.Insert(i, add);
+                    return;
+                }
+
+                if (!lowToHigh && add.Post.Header.Time > node.Post.Header.Time)
+                {
+                    list.Insert(i, add);
+                    return;
+                }
+
+                i++;
+            }
+
+            list.Insert(i, add);
         }
 
         void OnNodeExpanding(object sender, EventArgs e)
@@ -721,7 +735,6 @@ namespace RiseOp.Services.Board
 
             SubItems.Add(new ContainerSubListViewItem());
             SubItems.Add(new ContainerSubListViewItem());
-            SubItems.Add(new ContainerSubListViewItem());
 
             Update(boards, post);
         }
@@ -731,14 +744,14 @@ namespace RiseOp.Services.Board
         {
             Post = post; // editing a post will build a new header, create a new object
 
-            Text = boards.GetPostInfo(post);
+            Text = boards.GetPostTitle(post);
+
+            if (post.Header.ParentID == 0 && post.Replies > 0)
+                Text += " (" + post.Replies.ToString() + ")";
+
             SubItems[0].Text = boards.Core.Trust.GetName(post.Header.SourceID);
             SubItems[1].Text = Utilities.FormatTime(post.Header.Time);
 
-            if (post.Header.ParentID == 0 && post.Replies > 0)
-                SubItems[2].Text = post.Replies.ToString();
-            else
-                SubItems[2].Text = "";
 
             /*
             0 - PostView.OverlayImages.Add(PostImages.higher);
@@ -749,20 +762,21 @@ namespace RiseOp.Services.Board
 
             ImageIndex = 0;
 
+            if (Position == ScopeType.High)
+                ImageIndex = 1;
+
+            if (Position == ScopeType.Low)
+                ImageIndex = 2;
+
+
             if (Overlays == null)
                 Overlays = new List<int>();
 
-            if (Position == ScopeType.High)
+            if (Scope == ScopeType.High)
                 Overlays.Add(0);
 
-            if (Position == ScopeType.Low)
-                Overlays.Add(1);
-
-            if (Scope == ScopeType.High)
-                Overlays.Add(2);
-
             if (Scope == ScopeType.Low)
-                Overlays.Add(3);
+                Overlays.Add(1);
  
         }
     }

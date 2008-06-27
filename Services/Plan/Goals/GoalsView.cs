@@ -208,12 +208,14 @@ namespace RiseOp.Services.Plan
 
         internal override bool Fin()
         {
-            if (SaveLink.Visible)
+            bool save = false;
+
+            if (SaveButton.Visible)
             {
                 DialogResult result = MessageBox.Show(this, "Save Chages to Goals?", "RiseOp", MessageBoxButtons.YesNoCancel);
 
                 if (result == DialogResult.Yes)
-                    Plans.SaveLocal();
+                    save = true;
                 if (result == DialogResult.Cancel)
                     return false;
             }
@@ -223,6 +225,9 @@ namespace RiseOp.Services.Plan
 
             Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
             
+            if(save)
+                Plans.SaveLocal(); // save down here so events arent triggered
+
             return true;
         }
 
@@ -263,35 +268,31 @@ namespace RiseOp.Services.Plan
         {
             Plans_Update(Plans.LocalPlan);
 
-            ChangesLabel.Visible = true;
-            SaveLink.Visible = true;
-            DiscardLink.Visible = true;
+            SaveButton.Visible = true;
+            DiscardButton.Visible = true;
 
-            splitContainer1.Height = Height - toolStrip1.Height - 15;
+            splitContainer1.Height = Height - toolStrip1.Height - 24;
         }
 
-        private void SaveLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void SaveButton_Click(object sender, EventArgs e)
         {
-            ChangesLabel.Visible = false;
-            SaveLink.Visible = false;
-            DiscardLink.Visible = false;
+            SaveButton.Visible = false;
+            DiscardButton.Visible = false;
 
             splitContainer1.Height = Height - toolStrip1.Height;
 
             Plans.SaveLocal();
         }
 
-        private void DiscardLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void DiscardButton_Click(object sender, EventArgs e)
         {
-            ChangesLabel.Visible = false;
-            SaveLink.Visible = false;
-            DiscardLink.Visible = false;
+            SaveButton.Visible = false;
+            DiscardButton.Visible = false;
             splitContainer1.Height = Height - toolStrip1.Height;
 
             Plans.LoadPlan(Core.UserID);
             Plans_Update(Plans.LocalPlan);
         }
-
 
         private void SelectGoal_DropDownOpening(object sender, EventArgs e)
         {

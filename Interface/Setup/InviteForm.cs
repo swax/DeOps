@@ -16,6 +16,7 @@ namespace RiseOp.Interface
         OpCore Core;
 
         internal InviteForm(OpCore core)
+            : base(core)
         {
             InitializeComponent();
 

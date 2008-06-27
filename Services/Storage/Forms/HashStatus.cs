@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace RiseOp.Services.Storage
 {
-    internal partial class HashStatus : Form
+    internal partial class HashStatus : RiseOp.Interface.CustomIconForm
     {
         StorageService Storages;
 

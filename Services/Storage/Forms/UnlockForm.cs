@@ -9,7 +9,7 @@ using System.Windows.Forms;
 
 namespace RiseOp.Services.Storage
 {
-    internal partial class UnlockForm : Form
+    internal partial class UnlockForm : RiseOp.Interface.CustomIconForm
     {
         StorageView View;
 

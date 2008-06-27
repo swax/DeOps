@@ -172,6 +172,9 @@ selling points
 	smart phones arent secure on corporate network
 		http://www.computerworld.com/action/article.do?command=viewArticleBasic&articleId=9091778
 	
+	Nearly Half of IT Workers Snoop in Confidential Files
+		http://www.pcworld.com/businesscenter/article/147400/nearly_half_of_it_workers_snoop_in_confidential_files.html
+		
 	Andy Tanenbaum: The problem is co-ordinating things. Projects like GNU, MINIX, or LINUX only hold together if one person is in charge. 
 	Linus Torvalds: Yes, coordination is a big problem, and I don't think linux will move away from me as "head surgeon" for some time..
 	
