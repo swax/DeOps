@@ -59,7 +59,60 @@ LAN
 			
 	set broadcast port to first 2 bytes of opkey's hash
 
+web cache
+	startup
+		web caches loaded from settings / links
+		set next publish is set to 1 hour
 
+	bootstrap
+		for each web cache
+			if time > next query
+				try query
+				increment query retry
+				
+				if success
+					add nodes
+					if low
+						publishTo(cache) using remote ip
+						continue
+					else
+						break
+				else
+					if think online set last tried to now
+					continue	
+		
+	timer
+		if time > next publish
+			if connected and firewall open
+				foreach web cache
+					if time > cache timeout
+						try publishTo(cache)
+						if success
+							if low continue
+							else break
+						else
+							if think online set last tried to now
+							continue
+					
+		prune
+			remove largest difference between last seen and last tried
+            this way caches that were never seen are always removed first while ensuring they've been tried
+            remove any diff more than 7 days
+
+	disconnect
+		reset web cache query retry and next publish
+		
+	save to settings
+		randomize
+	
+	add cache / on connect
+		if last tried not set and think online, ping cache
+	
+	send caches in link
+		get top 3 last seen caches (because loaded is random, publish is random)
+
+	give op caches out in invite for secret / private
+	
 	
 chat
 	pure p2p everyone connected to everyone else, rudp should have low overhead 100bytes/min max, 100 users would be 1,000/6 bps

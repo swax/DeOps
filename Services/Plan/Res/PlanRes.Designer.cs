@@ -81,6 +81,20 @@ namespace RiseOp.Services.Plan {
             }
         }
         
+        internal static System.Drawing.Bitmap details1 {
+            get {
+                object obj = ResourceManager.GetObject("details1", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap details2 {
+            get {
+                object obj = ResourceManager.GetObject("details2", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Icon Goals {
             get {
                 object obj = ResourceManager.GetObject("Goals", resourceCulture);

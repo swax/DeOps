@@ -171,8 +171,8 @@ namespace RiseOp.Simulator
         {
             if (ClearIPCache)
             {
-                core.Network.IPCache.Clear();
-                core.Network.IPTable.Clear();
+                core.Network.Cache.IPs.Clear();
+                core.Network.Cache.IPTable.Clear();
             }
 
             if (core.Network.IsGlobal)
@@ -237,7 +237,7 @@ namespace RiseOp.Simulator
         {
             if (RunThread == null || !RunThread.IsAlive)
             {
-                RunThread = new Thread(new ThreadStart(Run));
+                RunThread = new Thread(Run);
                 RunThread.Start();
             }
 
@@ -251,7 +251,7 @@ namespace RiseOp.Simulator
             
             if (RunThread == null)
             {
-                RunThread = new Thread(new ThreadStart(Run));
+                RunThread = new Thread(Run);
                 RunThread.Start();
             }              
         }
@@ -608,7 +608,7 @@ namespace RiseOp.Simulator
             {
                 DhtContact contact = entry.Context.Global.Network.GetLocalContact();
                 contact.IP = entry.RealIP;
-                network.AddCacheEntry(contact);
+                network.Cache.AddContact(contact);
             }
         }
 

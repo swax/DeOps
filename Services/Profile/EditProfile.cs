@@ -335,7 +335,7 @@ namespace RiseOp.Services.Profile
             else if (tag.FieldType == ProfileFieldType.File && FileFields.ContainsKey(tag.Name))
                 ValueTextBox.Text = FileFields[tag.Name];
             else
-                ValueTextBox.Text = "";
+                ValueTextBox.Text = "Click Browse to select a file";
 
             ValueTextBox_TextChanged(null, null);
         }

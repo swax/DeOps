@@ -869,7 +869,9 @@ namespace RiseOp.Interface.TLVex
                 allRowsHeight *= itemheight;
 
 				vsize = vscrollBar.Width;
-				hsize = DisableHScroll ? 0 : hscrollBar.Height;
+				hsize = 0;
+                if (!DisableHScroll && allColsWidth > this.ClientRectangle.Width - 2 - vsize)
+                    hsize = hscrollBar.Height;
 
 				vscrollBar.Left = this.ClientRectangle.Left+this.ClientRectangle.Width-vscrollBar.Width-1;
 				vscrollBar.Top = this.ClientRectangle.Top+headerBuffer;

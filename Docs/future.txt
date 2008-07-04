@@ -156,7 +156,13 @@ web-node
 			search requests asks web-cache
 				closest cache is searched first
 				implement multi-source during implementation of file cache
-
+		
+	allow looking at status with update.php?status=password
+		update/publish rate per minute
+		save last 10 updates in table with timestamp, calc update rate
+		also output rate per opID
+			
+			
 server mode
 	increase prune object amounts accross all services
 	increase bucket sizes

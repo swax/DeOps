@@ -43,6 +43,11 @@ namespace RiseOp.Implementation.Transport
             Network = network;
             Core = Network.Core;
 
+            Initialize();
+        }
+
+        internal void Initialize()
+        {
             ListenPort = Network.IsGlobal ? Network.GlobalConfig.TcpPort : Core.Profile.Settings.TcpPort;
 
             if (Core.Sim != null)

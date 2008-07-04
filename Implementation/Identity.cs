@@ -107,6 +107,8 @@ namespace RiseOp
             byte[] iv = new byte[16];
             byte[] salt = new byte[4];
 
+            OpCore global = Core.Context.Global;
+
 			try
 			{
                 file = new TaggedStream(ProfilePath, Protocol, ProcessSplash); // tagged with splash
@@ -132,12 +134,23 @@ namespace RiseOp
                             OpIcon = IconPacket.Decode(root).OpIcon;
                     }
 
-                    if (root.Name == IdentityPacket.GlobalCache && Core.Context.Global != null &&
-                        (loadMode == LoadModeType.AllCaches || loadMode == LoadModeType.GlobalCache))
-                        Core.Context.Global.Network.AddCacheEntry(SavedPacket.Decode(root).Contact);
+                    if (global != null && (loadMode == LoadModeType.AllCaches || loadMode == LoadModeType.GlobalCache))
+                    {
+                        if (root.Name == IdentityPacket.GlobalCachedIP)
+                            global.Network.Cache.AddContact(CachedIP.Decode(root).Contact);
 
-                    if (root.Name == IdentityPacket.OperationCache && loadMode == LoadModeType.AllCaches)
-                        Core.Network.AddCacheEntry(SavedPacket.Decode(root).Contact);
+                        if (root.Name == IdentityPacket.GlobalCachedWeb)
+                            global.Network.Cache.AddCache(WebCache.Decode(root));
+                    }
+
+                    if (loadMode == LoadModeType.AllCaches)
+                    {
+                        if (root.Name == IdentityPacket.OpCachedIP)
+                            Core.Network.Cache.AddContact(CachedIP.Decode(root).Contact);
+
+                        if (root.Name == IdentityPacket.OpCachedWeb)
+                            Core.Network.Cache.AddCache(WebCache.Decode(root));
+                    }
                 }
 
                 stream.Close();
@@ -197,9 +210,13 @@ namespace RiseOp
                 if (Core != null)
                 {
                     if (Core.Context.Global != null)
-                        SaveCache(stream, Core.Context.Global.Network.IPCache, IdentityPacket.GlobalCache);
+                    {
+                        Core.Context.Global.Network.Cache.SaveIPs(stream);
+                        Core.Context.Global.Network.Cache.SaveWeb(stream);
+                    }
 
-                    SaveCache(stream, Core.Network.IPCache, IdentityPacket.OperationCache);
+                    Core.Network.Cache.SaveIPs(stream);
+                    Core.Network.Cache.SaveWeb(stream);
                 }
 
 
@@ -251,14 +268,6 @@ namespace RiseOp
             }
 
             File.Delete(backupPath);
-        }
-
-        internal static void SaveCache(PacketStream stream, LinkedList<DhtContact> cache, byte type)
-        {
-            lock (cache)
-                foreach (DhtContact entry in cache)
-                    if (entry.TunnelClient == null) 
-                        stream.WritePacket(new SavedPacket(type, entry));
         }
 
         internal static void CreateNew(string path, string opName, string userName, string password, AccessType access, byte[] opKey)
@@ -370,7 +379,7 @@ namespace RiseOp
         }
     }
 
-    internal class SavedPacket : G2Packet
+    internal class CachedIP : G2Packet
     {
         internal const byte Packet_Contact = 0x10;
         internal const byte Packet_LastSeen = 0x20;
@@ -381,9 +390,9 @@ namespace RiseOp
         internal DhtContact Contact;
 
 
-        internal SavedPacket() { }
+        internal CachedIP() { }
 
-        internal SavedPacket(byte name, DhtContact contact)
+        internal CachedIP(byte name, DhtContact contact)
         {
             Name = name;
             LastSeen = contact.LastSeen;
@@ -404,9 +413,9 @@ namespace RiseOp
             }
         }
 
-        internal static SavedPacket Decode(G2Header root)
+        internal static CachedIP Decode(G2Header root)
         {
-            SavedPacket saved = new SavedPacket();
+            CachedIP saved = new CachedIP();
 
 			G2Header child = new G2Header(root.Data);
 
@@ -438,11 +447,14 @@ namespace RiseOp
         internal const byte OperationSettings  = 0x10;
         internal const byte GlobalSettings     = 0x20;
 
-        internal const byte GlobalCache        = 0x30;
-        internal const byte OperationCache     = 0x40;
+        internal const byte GlobalCachedIP   = 0x30;
+        internal const byte OpCachedIP = 0x40;
 
-        internal const byte Icon = 0x50;
-        internal const byte Splash = 0x50;
+        internal const byte GlobalCachedWeb = 0x50;
+        internal const byte OpCachedWeb = 0x60;
+
+        internal const byte Icon    = 0x70;
+        internal const byte Splash  = 0x80;
     }
 
     internal class SettingsPacket : G2Packet
@@ -643,6 +655,7 @@ namespace RiseOp
         }
     }
 
+    // save independently so all operations use same global settings for quick startup and global network stability
     internal class GlobalSettings : G2Packet
     {
         const byte Packet_UserID = 0x10;
@@ -731,8 +744,12 @@ namespace RiseOp
                         if (root.Name == IdentityPacket.GlobalSettings)
                             settings = GlobalSettings.Decode(root);
 
-                        if (root.Name == IdentityPacket.GlobalCache)
-                            network.AddCacheEntry(SavedPacket.Decode(root).Contact);
+                        if (root.Name == IdentityPacket.GlobalCachedIP)
+                            network.Cache.AddContact(CachedIP.Decode(root).Contact);
+
+                        if (root.Name == IdentityPacket.GlobalCachedWeb)
+                            network.Cache.AddCache(WebCache.Decode(root));
+
                     }
 
                     stream.Close();
@@ -758,6 +775,8 @@ namespace RiseOp
 
         internal void Save(OpCore core)
         {
+            Debug.Assert(core.Network.IsGlobal);
+
             if (core.Sim != null)
                 return;
 
@@ -773,7 +792,8 @@ namespace RiseOp
 
                 stream.WritePacket(this);
 
-                Identity.SaveCache(stream, core.Network.IPCache, IdentityPacket.GlobalCache);
+                core.Network.Cache.SaveIPs(stream);
+                core.Network.Cache.SaveWeb(stream);
 
                 stream.Close();
             }

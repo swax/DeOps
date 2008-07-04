@@ -74,10 +74,10 @@
             // 
             this.NotesBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.NotesBox.Location = new System.Drawing.Point(12, 241);
+            this.NotesBox.Location = new System.Drawing.Point(12, 243);
             this.NotesBox.Multiline = true;
             this.NotesBox.Name = "NotesBox";
-            this.NotesBox.Size = new System.Drawing.Size(297, 56);
+            this.NotesBox.Size = new System.Drawing.Size(297, 54);
             this.NotesBox.TabIndex = 7;
             // 
             // Label2

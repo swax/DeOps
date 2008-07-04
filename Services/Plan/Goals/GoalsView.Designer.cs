@@ -33,6 +33,7 @@ namespace RiseOp.Services.Plan
             this.SelectGoalButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.DetailsButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.DetailsBrowser = new System.Windows.Forms.WebBrowser();
             this.SaveButton = new System.Windows.Forms.PictureBox();
             this.DiscardButton = new System.Windows.Forms.PictureBox();
@@ -41,6 +42,7 @@ namespace RiseOp.Services.Plan
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.SaveButton)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DiscardButton)).BeginInit();
             this.SuspendLayout();
@@ -76,6 +78,7 @@ namespace RiseOp.Services.Plan
             this.DetailsButton.Size = new System.Drawing.Size(59, 22);
             this.DetailsButton.Text = "Details";
             this.DetailsButton.CheckedChanged += new System.EventHandler(this.DetailsButton_CheckedChanged);
+            this.DetailsButton.Click += new System.EventHandler(this.DetailsButton_Click);
             // 
             // splitContainer1
             // 
@@ -92,7 +95,7 @@ namespace RiseOp.Services.Plan
             // 
             // splitContainer1.Panel2
             // 
-            this.splitContainer1.Panel2.Controls.Add(this.DetailsBrowser);
+            this.splitContainer1.Panel2.Controls.Add(this.groupBox1);
             this.splitContainer1.Size = new System.Drawing.Size(489, 379);
             this.splitContainer1.SplitterDistance = 313;
             this.splitContainer1.TabIndex = 21;
@@ -106,16 +109,29 @@ namespace RiseOp.Services.Plan
             this.MainPanel.Size = new System.Drawing.Size(313, 379);
             this.MainPanel.TabIndex = 0;
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+                        | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.DetailsBrowser);
+            this.groupBox1.Location = new System.Drawing.Point(3, 3);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(166, 373);
+            this.groupBox1.TabIndex = 1;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Details";
+            // 
             // DetailsBrowser
             // 
             this.DetailsBrowser.AllowWebBrowserDrop = false;
             this.DetailsBrowser.Dock = System.Windows.Forms.DockStyle.Fill;
             this.DetailsBrowser.IsWebBrowserContextMenuEnabled = false;
-            this.DetailsBrowser.Location = new System.Drawing.Point(0, 0);
+            this.DetailsBrowser.Location = new System.Drawing.Point(3, 16);
             this.DetailsBrowser.MinimumSize = new System.Drawing.Size(20, 20);
             this.DetailsBrowser.Name = "DetailsBrowser";
             this.DetailsBrowser.ScriptErrorsSuppressed = true;
-            this.DetailsBrowser.Size = new System.Drawing.Size(172, 379);
+            this.DetailsBrowser.Size = new System.Drawing.Size(160, 354);
             this.DetailsBrowser.TabIndex = 0;
             // 
             // SaveButton
@@ -161,6 +177,7 @@ namespace RiseOp.Services.Plan
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);
             this.splitContainer1.ResumeLayout(false);
+            this.groupBox1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.SaveButton)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DiscardButton)).EndInit();
             this.ResumeLayout(false);
@@ -178,5 +195,6 @@ namespace RiseOp.Services.Plan
         private System.Windows.Forms.WebBrowser DetailsBrowser;
         private System.Windows.Forms.PictureBox SaveButton;
         private System.Windows.Forms.PictureBox DiscardButton;
+        private System.Windows.Forms.GroupBox groupBox1;
     }
 }

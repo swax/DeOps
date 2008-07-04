@@ -41,7 +41,7 @@ namespace RiseOp.Interface
             // ButtonOK
             // 
             this.ButtonOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.ButtonOK.Location = new System.Drawing.Point(84, 113);
+            this.ButtonOK.Location = new System.Drawing.Point(84, 76);
             this.ButtonOK.Name = "ButtonOK";
             this.ButtonOK.Size = new System.Drawing.Size(75, 23);
             this.ButtonOK.TabIndex = 0;
@@ -53,7 +53,7 @@ namespace RiseOp.Interface
             // 
             this.ButtonCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ButtonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.ButtonCancel.Location = new System.Drawing.Point(165, 113);
+            this.ButtonCancel.Location = new System.Drawing.Point(165, 76);
             this.ButtonCancel.Name = "ButtonCancel";
             this.ButtonCancel.Size = new System.Drawing.Size(75, 23);
             this.ButtonCancel.TabIndex = 1;
@@ -84,48 +84,52 @@ namespace RiseOp.Interface
             // 
             this.RadioSecret.AutoSize = true;
             this.RadioSecret.Enabled = false;
-            this.RadioSecret.Location = new System.Drawing.Point(158, 68);
+            this.RadioSecret.Location = new System.Drawing.Point(193, 49);
             this.RadioSecret.Name = "RadioSecret";
             this.RadioSecret.Size = new System.Drawing.Size(56, 17);
             this.RadioSecret.TabIndex = 9;
             this.RadioSecret.TabStop = true;
             this.RadioSecret.Text = "Secret";
             this.RadioSecret.UseVisualStyleBackColor = true;
+            this.RadioSecret.Visible = false;
             // 
             // RadioPrivate
             // 
             this.RadioPrivate.AutoSize = true;
             this.RadioPrivate.Enabled = false;
-            this.RadioPrivate.Location = new System.Drawing.Point(94, 68);
+            this.RadioPrivate.Location = new System.Drawing.Point(129, 49);
             this.RadioPrivate.Name = "RadioPrivate";
             this.RadioPrivate.Size = new System.Drawing.Size(58, 17);
             this.RadioPrivate.TabIndex = 8;
             this.RadioPrivate.TabStop = true;
             this.RadioPrivate.Text = "Private";
             this.RadioPrivate.UseVisualStyleBackColor = true;
+            this.RadioPrivate.Visible = false;
             // 
             // RadioPublic
             // 
             this.RadioPublic.AutoSize = true;
             this.RadioPublic.Enabled = false;
-            this.RadioPublic.Location = new System.Drawing.Point(34, 68);
+            this.RadioPublic.Location = new System.Drawing.Point(69, 49);
             this.RadioPublic.Name = "RadioPublic";
             this.RadioPublic.Size = new System.Drawing.Size(54, 17);
             this.RadioPublic.TabIndex = 7;
             this.RadioPublic.TabStop = true;
             this.RadioPublic.Text = "Public";
             this.RadioPublic.UseVisualStyleBackColor = true;
+            this.RadioPublic.Visible = false;
             // 
             // label3
             // 
             this.label3.AutoSize = true;
             this.label3.Enabled = false;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(12, 52);
+            this.label3.Location = new System.Drawing.Point(12, 51);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(48, 13);
             this.label3.TabIndex = 6;
             this.label3.Text = "Access";
+            this.label3.Visible = false;
             // 
             // NewProjectForm
             // 
@@ -133,7 +137,7 @@ namespace RiseOp.Interface
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.ButtonCancel;
-            this.ClientSize = new System.Drawing.Size(252, 148);
+            this.ClientSize = new System.Drawing.Size(252, 111);
             this.Controls.Add(this.RadioSecret);
             this.Controls.Add(this.RadioPrivate);
             this.Controls.Add(this.RadioPublic);

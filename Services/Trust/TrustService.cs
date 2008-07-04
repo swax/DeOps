@@ -652,12 +652,16 @@ namespace RiseOp.Services.Trust
                             }
                     }
 
+                PacketStream streamEx = new PacketStream(stream, Network.Protocol, FileAccess.Write);
+
+                // save top 5 web caches
+                foreach (WebCache cache in Network.Cache.GetLastSeen(5))
+                    streamEx.WritePacket(new WebCache(cache, TrustPacket.WebCache));
+
 
                 // save inheritable settings only if they can be inherited
                 if (IsInheritNode(Core.UserID))
                 {
-                    PacketStream streamEx = new PacketStream(stream, Network.Protocol, FileAccess.Write);
-
                     if (Core.Profile.OpIcon != null)
                         streamEx.WritePacket(new IconPacket(TrustPacket.Icon, Core.Profile.OpIcon));
 
@@ -906,6 +910,10 @@ namespace RiseOp.Services.Trust
                                 Process_LinkData(trust, signed, LinkData.Decode(embedded));
                         }
                     }
+
+                    else if (packetRoot.Name == TrustPacket.WebCache)
+                        Network.Cache.AddCache(WebCache.Decode(packetRoot));
+
                     else if (packetRoot.Name == TrustPacket.Icon)
                         inheritIcon = IconPacket.Decode(packetRoot).OpIcon;
 

@@ -54,8 +54,11 @@ namespace RiseOp.Interface.Settings
                 if (NewPassBox.Text != "")
                     Profile.SetNewPassword(NewPassBox.Text);
 
-                Profile.Save();
-                Profile.Core.Trust.SaveLocal();
+                Profile.Core.RunInCoreAsync(delegate()
+                {
+                    Profile.Save();
+                    Profile.Core.Trust.SaveLocal();
+                });
             }
 
 

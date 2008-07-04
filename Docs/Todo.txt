@@ -1,27 +1,46 @@
 
-test stopAtLoop stops at correct position
+test
+	in sim show web cache requests / publishes, ensure not too often
+	web cache pruning
+	check minute ping is done
+	create a / b / c /d /e / f caches
+	
+other
+	**storage is losing files, debug
+	**publisher unknown
+	**are file name hashes still unique, add salt?
+	
+	sql error reports
+	move global cache to cache.riseop.com so it can be turned off by dns or redirected
 
-test large test with all comps in house
-		test crawlable
-		
-sending large block of text crashes, test other places where string input is unchecked size
+	on linkup, trigger inherit from top node
+	doesnt seem like trust icon/splash changes are propagated to subs quickly should auto post
 
-storage is losing files, debug
+	test crawlable over home lan
+			
+	sending large block of text crashes, test other places where string input is unchecked size
+	
+	locations not expiring, there are a million of em
+	looooooooootta dupes in ipcache
 
-locations not expiring, there are a million of em
-looooooooootta dupes in ipcache
+	list box header color is awful
 
-list box header color is awful
-fix scroll bar
+	repeat load failure and ensure that core isnt left hanging
 
-repeat load failure and ensure that core isnt left hanging
+	chat not selecting default input box
+	dont show update when in room
+	if no default chat view, show riseOp help page, if can't connect, show profile
+	if no chat panels - put up profile for now, later help
+		on first chat message, put news update if chat not visible
+			
+	keep list of keys contacted over broadcast - on rudp connect to key send LAN address
+		also for rudp over global proxy, send our local IP specified in global network
 
-chat not selecting default input box
-dont show update when in room
-if no default chat view, show riseOp help page, if can't connect, show profile
-if no chat panels - put up profile for now, later help
-	on first chat message, put news update if chat not visible
-		
+	one more stab at security in settings, tray, link changes
+
+	test message board - doesnt seem like refresh is thread safe
+
+
 default views
 	mail - help
 	board - help
@@ -29,17 +48,10 @@ default views
 	chat - help (introduction to 'trust')
 	profile - (right click to edit)
 	
-keep list of keys contacted over broadcast - on rudp connect to key send LAN address
-	also for rudp over global proxy, send our local IP specified in global network
 
-one more stab at security in settings, tray, link changes
-
-test message board - doesnt seem like refresh is thread safe
 	
-spring release
-	
-	web caching ips/files - look at using EC2
-		run crawler once a day, upload highest uptime nodes to webcache site
+summer release
+	web caching ips
 	licensing, installer, release security
 	
 	*** items from todo
@@ -51,6 +63,7 @@ spring release
 		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
 		right click to cancel, increase/decrease priority
 	live locations/chat
+	web caching files
 	website
 	
 3 trust chain
@@ -99,7 +112,6 @@ other
 	location signoff tag
 	assert in deconstructors that events are set back to null
 	GetActiveSessions not threaded for gui, try not to thread dictionary
-	window title not updated on name change
 		
 	use last seen date in localSync - show day, not time
 	alert user of desyncs detected in localSync, maybe as news alert,
@@ -116,8 +128,6 @@ other
 	crawler - bandwidth, location storage load
 
 	nav bar work with loops?
-	fix vertical scroll bar in link/chat window once and for all
-	board - All/Higher/Lower Posts, New Post
 	test clients with different local times, init random gmt offsets
 	GetDownlinkIDs not thread safe
 
@@ -135,12 +145,9 @@ Interface
 		
 	graphics
 		storage - restore
-		mail	- forward, reply
-		board   - high, low, all, small sticky note square for board posts icon
 		plans   - edit
 		goals	- edit
 		tray	- restore, exit
-		chat	- 
 	
 	connecting entertainment
 		visual aid so people can watch the connection process, entertaining, embed in main panel?

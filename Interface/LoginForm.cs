@@ -163,11 +163,11 @@ namespace RiseOp.Interface
                 if (getPassword.ShowDialog() != DialogResult.OK)
                     return null;
 
-                OneWayInvite invite = null;
+                InvitePackage invite = null;
 
                 try
                 {
-                    invite = OpCore.OpenInvite(link, getPassword.ResultBox.Text);
+                    invite = OpCore.OpenInvite(Protocol, link, getPassword.ResultBox.Text);
                 }
                 catch { }
 

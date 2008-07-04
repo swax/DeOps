@@ -26,10 +26,8 @@ namespace RiseOp.Implementation.Dht
 
     internal class DhtNetwork
     {
-        const int MAX_CACHE = 200;
-
         // super-class
-        internal OpCore Core; 
+        internal OpCore Core;
 
         // sub-class
         internal G2Protocol Protocol;
@@ -38,33 +36,25 @@ namespace RiseOp.Implementation.Dht
         internal LanHandler LanControl;
         internal RudpHandler RudpControl;
 
+        internal OpCache Cache;
         internal DhtRouting Routing;
-        internal DhtStore   Store;
+        internal DhtStore Store;
         internal DhtSearchControl Searches;
 
-        internal LinkedList<DhtContact> IPCache = new LinkedList<DhtContact>();
-        internal Dictionary<int, LinkedListNode<DhtContact>> IPTable = new Dictionary<int, LinkedListNode<DhtContact>>();
 
         internal bool IsGlobal;
         internal GlobalSettings GlobalConfig;
         internal bool LanMode = true;
 
         internal DhtClient Local;
-        internal ulong  OpID;
+        internal ulong OpID;
 
         internal bool Established;
         internal bool Responsive;
-        internal int  FireStatusChange; // timeout until established is called
+        internal int FireStatusChange; // timeout until established is called
         internal StatusChange StatusChange; // operation only
-        
-        RetryIntervals    CacheRetry;
-        internal DateTime NextWebcacheTry;
-        RetryIntervals    GlobalSearchInterval;
-        DateTime          NextGlobalSearch;
-        DateTime          NextSaveCache;
-        int               BroadcastTimeout = 0;
 
-        byte[] GlobalKey = new byte[] {0x33,0xf6,0x89,0xf3,0xd2,0xf5,0xae,0xc2,
+        byte[] GlobalKey = new byte[]  {0x33,0xf6,0x89,0xf3,0xd2,0xf5,0xae,0xc2,
                                         0x49,0x59,0xe6,0xbb,0xe2,0xc6,0x3c,0xc8,
                                         0x5e,0x63,0x0c,0x7a,0xb9,0x08,0x18,0xd4,
                                         0xf9,0x73,0x9f,0x52,0xd6,0xf4,0x34,0x0e};
@@ -73,14 +63,14 @@ namespace RiseOp.Implementation.Dht
         internal RijndaelManaged AugmentedCrypt;
 
         // log
-        internal Queue<PacketCopy> IncomingPackets = new Queue<PacketCopy>();
+        internal Queue<G2ReceivedPacket> IncomingPackets = new Queue<G2ReceivedPacket>();
         internal Queue<PacketLogEntry> LoggedPackets = new Queue<PacketLogEntry>();
         internal Dictionary<string, Queue<string>> LogTable = new Dictionary<string, Queue<string>>();
 
         // gui
         internal PacketsForm GuiPackets;
         internal CrawlerForm GuiCrawler;
-        internal GraphForm   GuiGraph;
+        internal GraphForm GuiGraph;
 
 
         internal DhtNetwork(OpCore core, bool global)
@@ -88,12 +78,14 @@ namespace RiseOp.Implementation.Dht
             Core = core;
             IsGlobal = global;
 
+            Cache = new OpCache(this); // global config loads cache entries
+
             if (IsGlobal)
                 GlobalConfig = GlobalSettings.Load(this);
 
             Local = new DhtClient();
             Local.UserID = IsGlobal ? GlobalConfig.UserID : Utilities.KeytoID(Core.Profile.Settings.KeyPair.ExportParameters(false));
-            Local.ClientID = (ushort) Core.RndGen.Next(1, ushort.MaxValue);
+            Local.ClientID = (ushort)Core.RndGen.Next(1, ushort.MaxValue);
 
             OpID = Utilities.KeytoID(IsGlobal ? GlobalKey : Core.Profile.Settings.OpKey);
 
@@ -107,85 +99,35 @@ namespace RiseOp.Implementation.Dht
 
 
             AugmentedCrypt = new RijndaelManaged();
-            AugmentedCrypt.Key = (byte[]) OriginalCrypt.Key.Clone();
+            AugmentedCrypt.Key = (byte[])OriginalCrypt.Key.Clone();
 
             Protocol = new G2Protocol();
-            TcpControl  = new TcpHandler(this);
-            UdpControl  = new UdpHandler(this);
-            LanControl  = new LanHandler(this);
+            TcpControl = new TcpHandler(this);
+            UdpControl = new UdpHandler(this);
+            LanControl = new LanHandler(this);
             RudpControl = new RudpHandler(this);
-
-            Routing     = new DhtRouting(this);
-            Store       = new DhtStore(this);
-            Searches    = new DhtSearchControl(this);
-
-            CacheRetry = new RetryIntervals(Core);
-            GlobalSearchInterval = new RetryIntervals(Core);
-            NextSaveCache = Core.TimeNow.AddMinutes(1);
+            
+            Routing = new DhtRouting(this);
+            Store = new DhtStore(this);
+            Searches = new DhtSearchControl(this);
         }
 
         internal void SecondTimer()
         {
             // timers
+            Cache.SecondTimer();
             TcpControl.SecondTimer();
-            RudpControl.SecondTimer();   
+            RudpControl.SecondTimer();
             Routing.SecondTimer();
             Searches.SecondTimer();
 
 
-            if(!IsGlobal)
+            if (!IsGlobal)
                 CheckGlobalProxyMode();
 
 
             CheckConnectionStatus();
 
-            // if unresponsive
-            if (!Responsive)
-            {
-                CacheRetry.Timer();
-
-                if (IsGlobal)
-                    GlobalBootstrap();
-                else
-                    OpBootstrap();
-            }
-
-            // send broadcast in lan mode every 20 secs
-            if (LanMode )//&& !IsGlobal)
-            {
-                // if disconnected from LAN, once reconnected, establishing should be < 20 secs
-                if (BroadcastTimeout <= 0)
-                {
-                    Ping ping = new Ping();
-                    ping.Source = GetLocalSource();
-                    LanControl.SendTo(ping);
-
-                    BroadcastTimeout = 20;
-                }
-                else
-                    BroadcastTimeout--;
-            }
-
-
-            // ip cache
-            lock (IPCache)
-                while (IPCache.Count > MAX_CACHE)
-                {
-                    DhtContact entry = IPCache.Last.Value;
-                    IPTable.Remove(entry.GetHashCode());
-                    IPCache.RemoveLast();
-                }
-
-            // save cache
-            if (Core.TimeNow > NextSaveCache)
-            {
-                if(IsGlobal)
-                    GlobalConfig.Save(Core);
-                else
-                    Core.Profile.Save();
-
-                NextSaveCache = Core.TimeNow.AddMinutes(5);
-            }
 
             // established in dht
             if (FireStatusChange > 0)
@@ -196,231 +138,9 @@ namespace RiseOp.Implementation.Dht
                 {
                     Established = true;
 
-                    if(StatusChange != null)
+                    if (StatusChange != null)
                         StatusChange.Invoke();
                 }
-            }
-        }
-
-        internal void AddCacheEntry(DhtContact entry)
-        {
-             lock (IPCache)
-            {
-                if (IPTable.ContainsKey(entry.GetHashCode()))
-                    IPCache.Remove(IPTable[entry.GetHashCode()]);
-
-                // sort nodes based on last seen
-                LinkedListNode<DhtContact> node = null;
-
-                for (node = IPCache.First; node != null; node = node.Next)
-                    if (entry.LastSeen > node.Value.LastSeen)
-                        break;
-
-                IPTable[entry.GetHashCode()] = (node != null) ? IPCache.AddBefore(node, entry) : IPCache.AddLast(entry);
-            }
-        }
-
-        
-        const int OnlineRetries = 3;
-        int ThinkOnline = OnlineRetries;
-        DateTime NextOnlineCheck;
-
-        void GlobalBootstrap()
-        {
-            // only called if network not responsive
-
-            // try website BootstrapTimeout at 1 2 5 10 15 30 / 30 / 30 intervals 
-            // reset increment when disconnected
-            // dont try web cache for first 10 seconds
-
-
-            // ensure that if re-connected at anytime then re-connect to network is fast
-            // (only called by global network, and only when it's not responsive)
-            if (Core.Sim == null)
-            {
-                // ThinkOnline state changed to connected then retry timers reset
-                if (Core.TimeNow > NextOnlineCheck)
-                    if (ThinkOnline > 0)
-                    {
-                        // check online status by pinging google/yahoo/microsoft every 60 secs
-                        GlobalPingCheck();
-                        NextOnlineCheck = Core.TimeNow.AddSeconds(60);
-                    }
-
-                    // if think offline
-                    else if (ThinkOnline == 0)
-                    {
-                        // try google/yahoo/microsoft every 5 secs
-                        GlobalPingCheck();
-                        NextOnlineCheck = Core.TimeNow.AddSeconds(5);
-                    }
-            }
-
-
-            bool AllowWebTry = (IPCache.Count == 0 || Core.TimeNow > CacheRetry.Start.AddSeconds(10));
-
-
-            // give a few seconds at startup to try to connect to Dht networks from the cache
-            if (Core.TimeNow > NextWebcacheTry && AllowWebTry)
-            {
-                NextWebcacheTry = CacheRetry.NextTry;
-
-                // if not connected to global use web cache
-                if (Core.Sim == null)
-                {
-                    Thread dlThread = new Thread(new ThreadStart(DownloadCache));
-                    dlThread.Start();
-                }
-                else
-                    Core.Sim.Internet.DownloadCache(this);
-            }
-
-            TryFromCache();
-        }
-
-        void OpBootstrap()
-        {
-            OpCore global = Core.Context.Global;
-
-            // find operation nodes through global net at expanding intervals
-            // called from operation network's bootstrap
-            if (global != null && global.Network.Responsive)
-            {
-                GlobalSearchInterval.Timer();
-
-                if (Core.TimeNow > NextGlobalSearch)
-                {
-                    NextGlobalSearch = GlobalSearchInterval.NextTry;
-
-                    global.RunInCoreAsync(delegate()
-                    {
-                        GlobalService service = (GlobalService) global.ServiceMap[2];
-                        service.StartSearch(OpID, 0);
-                    });
-                }
-            }
-
-            TryFromCache();
-        }
-
-        private void TryFromCache()
-        {
-            // send pings to nodes in cache, responses will startup the routing system
-            // 10 udp pings per second, 10 min retry
-            int pings = 0;
-
-            lock (IPCache)
-                foreach (DhtContact entry in IPCache)
-                {
-                    if (Core.TimeNow < entry.NextTry)
-                        continue;
-
-                    Send_Ping(entry);
-
-                    entry.NextTry = CacheRetry.NextTry;
-
-                    pings++;
-                    if (pings >= 10)
-                        break;
-                }
-
-
-            // if blocked and go through cache and mark as tcp tried
-            // 1 outbound tcp per second, 10 min retry
-            if (Core.Firewall == FirewallType.Blocked)
-                lock (IPCache)
-                    foreach (DhtContact entry in IPCache)
-                    {
-                        if (Core.TimeNow < entry.NextTryProxy)
-                            continue;
-
-                        TcpControl.MakeOutbound(entry, entry.TcpPort, "ip cache");
-
-                        entry.NextTryProxy = CacheRetry.NextTry;
-                        break;
-                    }
-        }
-
-        string[] TestSites = new string[] { "www.google.com", 
-                                            "www.yahoo.com", 
-                                            "www.youtube.com", 
-                                            "www.myspace.com"};
-
-        private void GlobalPingCheck()
-        {
-            System.Net.NetworkInformation.Ping pingSender = new System.Net.NetworkInformation.Ping();
-
-            // Create an event handler for ping complete
-            pingSender.PingCompleted += new System.Net.NetworkInformation.PingCompletedEventHandler(Ping_Complete);
-
-            // Send the ping asynchronously
-            string site = TestSites[Core.RndGen.Next(TestSites.Length)];
-            pingSender.SendAsync(site, 5000, null);
-        }
-
-        private void Ping_Complete(object sender, System.Net.NetworkInformation.PingCompletedEventArgs e)
-        {
-            if (e.Reply != null && e.Reply.Status == System.Net.NetworkInformation.IPStatus.Success)
-            {
-                // if previously thought we were offline and now looks like reconnected
-                if (ThinkOnline == 0)
-                { 
-                    CacheRetry.Reset();
-                    NextWebcacheTry = new DateTime(0);
-                    BroadcastTimeout = 0;
-
-                    foreach (DhtContact entry in IPCache)
-                    {
-                        entry.NextTry = new DateTime(0);
-                        entry.NextTryProxy = new DateTime(0);
-                    }
-                }
-
-                if (ThinkOnline < OnlineRetries)
-                    ThinkOnline++;
-            }
-
-            // not success, try another random site, quickly (3 times) then retry will be 1 min
-            else if (ThinkOnline > 0)
-            {
-                ThinkOnline--;
-
-                GlobalPingCheck();
-            }
-
-        }
-
-        void DownloadCache()
-        {
-            try
-            {
-                //crit - revise
-               /* WebClient cacheSite = new System.Net.WebClient();
-
-                UpdateLog("Network", "Requesting web cache...");
-                Stream webStream = cacheSite.OpenRead("http://kim.c0re.net/cache.net");
-                StreamReader cacheStream = new StreamReader(webStream);
-
-                int entries = 0;
-                string line = cacheStream.ReadLine();
-
-                while (line != null)
-                {
-                    string[] addr = line.Split(':');
-
-                    AddCacheEntry( new IPCacheEntry(IPAddress.Parse(addr[0]), Convert.ToUInt16(addr[1]), Convert.ToUInt16(addr[2])));
-                    entries++;
-
-                    line = cacheStream.ReadLine();
-                }
-
-                UpdateLog("Network", entries.ToString() + " entries read from web cache");
-
-                cacheStream.Close();*/
-            }
-            catch (Exception ex)
-            {
-                UpdateLog("Exception", "KimCore::DownloadCache: " + ex.Message);
             }
         }
 
@@ -428,7 +148,7 @@ namespace RiseOp.Implementation.Dht
         {
             // dht responsiveness is only reliable if we can accept incoming connections, other wise we might be 
             // behind a NAT and in that case won't be able to receive traffic from anyone who has not sent us stuff
-            bool connected = (Routing.DhtEnabled && Routing.DhtResponsive) || 
+            bool connected = (Routing.DhtEnabled && Routing.DhtResponsive) ||
                             TcpControl.ProxyServers.Count > 0 || TcpControl.ProxyClients.Count > 0;
 
 
@@ -454,9 +174,8 @@ namespace RiseOp.Implementation.Dht
                 Established = false;
 
                 SetLanMode(true);
-                CacheRetry.Reset();
-                GlobalSearchInterval.Reset();
-                NextWebcacheTry = Core.TimeNow.AddMinutes(1); // only really reset when global network resets
+
+                Cache.Reset();
 
                 if (StatusChange != null)
                     StatusChange.Invoke();
@@ -513,10 +232,10 @@ namespace RiseOp.Implementation.Dht
         {
             DhtSource source = new DhtSource();
 
-            source.UserID    = Local.UserID;
+            source.UserID = Local.UserID;
             source.ClientID = Local.ClientID;
-            source.TcpPort  = TcpControl.ListenPort;
-            source.UdpPort  = UdpControl.ListenPort;
+            source.TcpPort = TcpControl.ListenPort;
+            source.UdpPort = UdpControl.ListenPort;
             source.Firewall = Core.Firewall;
 
             return source;
@@ -533,7 +252,7 @@ namespace RiseOp.Implementation.Dht
             {
                 lock (IncomingPackets)
                     if (IncomingPackets.Count < 100)
-                        IncomingPackets.Enqueue(new PacketCopy(packet));
+                        IncomingPackets.Enqueue(packet);
 
                 Core.ProcessEvent.Set();
             }
@@ -558,11 +277,11 @@ namespace RiseOp.Implementation.Dht
                 NetworkPacket netPacket = NetworkPacket.Decode(packet.Root);
 
                 G2ReceivedPacket embedded = new G2ReceivedPacket();
-                embedded.Tcp    = packet.Tcp;
+                embedded.Tcp = packet.Tcp;
                 embedded.Source = packet.Source;
                 embedded.Source.UserID = netPacket.SourceID;
                 embedded.Source.ClientID = netPacket.ClientID;
-                embedded.Root   = new G2Header(netPacket.InternalData);
+                embedded.Root = new G2Header(netPacket.InternalData);
 
                 // from - received from proxy server
                 if (netPacket.FromAddress != null)
@@ -593,17 +312,17 @@ namespace RiseOp.Implementation.Dht
                         direct.SendPacket(netPacket);
                     else
                         UdpControl.SendTo(address, netPacket);
-                    
+
                     return;
                 }
 
                 // process
-                if(G2Protocol.ReadPacket(embedded.Root))
+                if (G2Protocol.ReadPacket(embedded.Root))
                     ReceiveNetworkPacket(embedded);
             }
 
             // Tunnel Packet
-            else if (packet.Root.Name == RootPacket.Tunnel )
+            else if (packet.Root.Name == RootPacket.Tunnel)
             {
                 // can only tunnel over global network
                 if (!IsGlobal)
@@ -611,18 +330,18 @@ namespace RiseOp.Implementation.Dht
 
                 PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Tunnel, DirectionType.In, packet.Source, packet.Root.Data);
                 LogPacket(logEntry);
-                
+
                 TunnelPacket tunnel = TunnelPacket.Decode(packet.Root);
 
                 // handle locally
-                if ( tunnel.Target.Equals(Local))
+                if (tunnel.Target.Equals(Local))
                 {
                     ReceiveTunnelPacket(packet, tunnel);
                 }
-                else if(tunnel.TargetServer != null)
+                else if (tunnel.TargetServer != null)
                 {
                     TcpConnect direct = TcpControl.GetProxy(tunnel.Target);
-  
+
                     // if directly connected add from and forwared
                     if (direct != null)
                         direct.SendPacket(tunnel);
@@ -737,13 +456,13 @@ namespace RiseOp.Implementation.Dht
                     RudpControl.SessionMap[syn.SenderID] = new List<RudpSession>();
 
                 RudpControl.SessionMap[syn.SenderID].Add(newSession);
-               
+
                 // send ack before sending our own syn (connect)
                 // ack tells remote which address is good so that our syn's ack comes back quickly
                 newSession.Comm.RudpReceive(raw, packet, IsGlobal);
-                
+
                 newSession.Connect();
-                
+
 
                 UpdateLog("RUDP", "Inbound session accepted to ClientID " + syn.ClientID.ToString());
             }
@@ -813,7 +532,7 @@ namespace RiseOp.Implementation.Dht
             Debug.Assert(Core.Profile.Settings.OpAccess != AccessType.Secret);
 
             if (IsGlobal ||
-                Core.Context.Global == null || 
+                Core.Context.Global == null ||
                 Core.Profile.Settings.OpAccess == AccessType.Secret)
                 return;
 
@@ -842,7 +561,7 @@ namespace RiseOp.Implementation.Dht
             packet.Source = new TunnelAddress(global.Network.Local, Core.TunnelID);
             packet.Target = contact.TunnelClient;
 
- 
+
             // if not open send proxied through local global proxy
             // NAT as well because receiver would need to send all responses through same local global proxy
             // for NATd host to get replies
@@ -905,7 +624,7 @@ namespace RiseOp.Implementation.Dht
 
                 // used to add direct op contact if source firewall is open
                 // or re-routing through same global proxy
-                opPacket.Source.IP = raw.Source.IP; 
+                opPacket.Source.IP = raw.Source.IP;
 
                 // op user/client set by net/comm processing
 
@@ -935,7 +654,7 @@ namespace RiseOp.Implementation.Dht
             ping.Ident = contact.Ident = (ushort)Core.RndGen.Next(ushort.MaxValue);
 
             // always send ping udp, tcp pings are sent manually
-            SendPacket(contact, ping);       
+            SendPacket(contact, ping);
         }
 
         internal void SendPacket(DhtAddress contact, G2Packet packet)
@@ -949,7 +668,7 @@ namespace RiseOp.Implementation.Dht
         void Receive_Ping(G2ReceivedPacket packet)
         {
             Ping ping = Ping.Decode(packet);
-            
+
             bool lanIP = Utilities.IsLocalIP(packet.Source.IP);
             bool validSource = (!lanIP || LanMode && lanIP);
 
@@ -957,7 +676,7 @@ namespace RiseOp.Implementation.Dht
             // set local IP
             SetLocalIP(ping.RemoteIP, packet);
 
-        
+
             // check loop back
             if (ping.Source != null && Local.Equals(ping.Source))
             {
@@ -1155,18 +874,18 @@ namespace RiseOp.Implementation.Dht
 
         private void SetLanMode(bool mode)
         {
-            if(LanMode == mode)
+            if (LanMode == mode)
                 return;
 
             LanMode = mode;
-            
+
             // ip per core, one network may be local, while another maybe on the internets
             // also prevents one networks ip setting from influencing another
 
             // lost connection to internet and now back to lan mode
             if (LanMode)
             {
-                BroadcastTimeout = 0; //broadcast ping
+                Cache.BroadcastTimeout = 0; //broadcast ping
                 Core.SetFirewallType(FirewallType.Blocked); //set firewall blocked - dont need to disconnect tcp, already disconnected
             }
 
@@ -1185,7 +904,7 @@ namespace RiseOp.Implementation.Dht
             ack.Source = GetLocalSource();
 
             // check if there is space for type required
-            if (Core.Firewall == FirewallType.Open  && TcpControl.AcceptProxy(request.Type, ack.Source.UserID))
+            if (Core.Firewall == FirewallType.Open && TcpControl.AcceptProxy(request.Type, ack.Source.UserID))
             {
                 ack.Accept = true;
             }
@@ -1194,7 +913,7 @@ namespace RiseOp.Implementation.Dht
                 packet.Tcp.CleanClose("Couldn't accept proxy request");
                 return;
             }
-                
+
 
 
             // always send some contacts along so node can find closer proxy
@@ -1242,7 +961,7 @@ namespace RiseOp.Implementation.Dht
             // received ack udp
             if (packet.ReceivedUdp)
             {
-                if(!TcpControl.ProxyMap.ContainsKey(ack.Source.UserID))
+                if (!TcpControl.ProxyMap.ContainsKey(ack.Source.UserID))
                     TcpControl.MakeOutbound(packet.Source, ack.Source.TcpPort, "proxy ack recv");
             }
 
@@ -1296,9 +1015,9 @@ namespace RiseOp.Implementation.Dht
         {
             CrawlAck ack = new CrawlAck();
 
-            ack.Source  = GetLocalSource();
+            ack.Source = GetLocalSource();
             ack.Version = System.Windows.Forms.Application.ProductVersion;
-            ack.Uptime  = (Core.TimeNow - Core.StartTime).Seconds;
+            ack.Uptime = (Core.TimeNow - Core.StartTime).Seconds;
 
 
             foreach (TcpConnect connection in TcpControl.ProxyServers)
@@ -1323,7 +1042,7 @@ namespace RiseOp.Implementation.Dht
 
             if (GuiCrawler != null)
                 GuiCrawler.BeginInvoke(GuiCrawler.CrawlAck, ack, packet);
-            
+
         }
 
         internal void UpdateLog(string type, string message)
@@ -1383,7 +1102,7 @@ namespace RiseOp.Implementation.Dht
 
             OpCore global = Core.Context.Global;
 
-            bool useProxies = ( Core.TimeNow > Core.StartTime.AddSeconds(15) &&
+            bool useProxies = (Core.TimeNow > Core.StartTime.AddSeconds(15) &&
                                 global != null && Core.Firewall != FirewallType.Open &&
                                 global.Network.TcpControl.ProxyServers.Count > 0 &&
                                 TcpControl.ProxyServers.Count == 0);
@@ -1426,61 +1145,39 @@ namespace RiseOp.Implementation.Dht
 
             return label;
         }
-    }
 
-    internal class PacketCopy
-    {
-        internal G2ReceivedPacket Packet;
-
-        internal PacketCopy(G2ReceivedPacket packet)
+        internal void ChangePorts(ushort tcp, ushort udp)
         {
-            Packet = packet;
-        }
-    }
-
-    class RetryIntervals
-    {
-        OpCore Core;
-
-        internal DateTime Start;
-        int Index = 0;
-        DateTime LastIncrement;
-
-        int[] Intervals = new int[] { 0, 1, 2, 5, 10, 15, 30 };
-
-
-        internal RetryIntervals(OpCore core)
-        {
-            Core = core;
-
-            Reset();
-        }
-
-        internal void Reset()
-        {
-            Start = Core.TimeNow;
-            Index = 0;
-            LastIncrement = new DateTime(0);
-        }
-
-        internal DateTime NextTry
-        {
-            get
+            if (Core.InvokeRequired)
             {
-                return Core.TimeNow.AddMinutes(Intervals[Index]);
+                Core.RunInCoreAsync(delegate() { ChangePorts(tcp, udp); });
+                return;
             }
-        }
-    
-        internal void Timer()
-        {
-            if (Core.TimeNow > LastIncrement.AddMinutes(Intervals[Index]))
+
+            if (IsGlobal)
             {
-                LastIncrement = Core.TimeNow;
-                
-                if(Index < Intervals.Length - 1)
-                    Index++;
+                GlobalConfig.TcpPort = tcp;
+                GlobalConfig.UdpPort = udp;
             }
+            else
+            {
+                Core.Profile.Settings.TcpPort = tcp;
+                Core.Profile.Settings.UdpPort = udp;
+            }
+
+            // re-initialize sockets
+            TcpControl.Shutdown();
+            UdpControl.Shutdown();
+
+            TcpControl.Initialize();
+            UdpControl.Initialize();
+
+            // save profile
+            Core.Profile.Save();
+
+            // save global config
+            if (IsGlobal)
+                GlobalConfig.Save(Core);
         }
     }
 }
-

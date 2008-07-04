@@ -65,7 +65,10 @@ namespace RiseOp.Services.Trust
                 if (Core.Profile.Settings.AwayMessage.Length > 100)
                     Core.Profile.Settings.AwayMessage = Core.Profile.Settings.AwayMessage.Substring(0, 100);
 
-                Links.Core.Profile.Save();
+                Core.RunInCoreAsync(delegate()
+                {
+                    Links.Core.Profile.Save();
+                });
             }
 
             if (Core.Network.Responsive)

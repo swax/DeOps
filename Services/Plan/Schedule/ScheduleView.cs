@@ -934,6 +934,10 @@ namespace RiseOp.Services.Plan
         {
             splitContainer1.Panel2Collapsed = !DetailsButton.Checked;
 
+            if (DetailsButton.Checked)
+                DetailsButton.Image = PlanRes.details2;
+            else
+                DetailsButton.Image = PlanRes.details1;
         }
 
 

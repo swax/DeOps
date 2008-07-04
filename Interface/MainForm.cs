@@ -667,6 +667,7 @@ namespace RiseOp.Interface
 
             settings.DropDownItems.Add(new ManageItem("User", null, delegate() { new RiseOp.Interface.Settings.User(this).ShowDialog(this); }));
             settings.DropDownItems.Add(new ManageItem("Operation", null, delegate() { new RiseOp.Interface.Settings.Operation(this).ShowDialog(this); }));
+            settings.DropDownItems.Add(new ManageItem("Connecting", null, delegate() { new RiseOp.Interface.Settings.Connecting(this).ShowDialog(this); }));
 
             items.Add(settings);
 

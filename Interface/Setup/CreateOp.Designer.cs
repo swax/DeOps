@@ -64,7 +64,7 @@ namespace RiseOp.Interface
             // 
             this.ButtonCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ButtonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.ButtonCancel.Location = new System.Drawing.Point(245, 188);
+            this.ButtonCancel.Location = new System.Drawing.Point(245, 192);
             this.ButtonCancel.Name = "ButtonCancel";
             this.ButtonCancel.Size = new System.Drawing.Size(75, 23);
             this.ButtonCancel.TabIndex = 5;
@@ -75,7 +75,7 @@ namespace RiseOp.Interface
             // ButtonOK
             // 
             this.ButtonOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.ButtonOK.Location = new System.Drawing.Point(164, 188);
+            this.ButtonOK.Location = new System.Drawing.Point(164, 192);
             this.ButtonOK.Name = "ButtonOK";
             this.ButtonOK.Size = new System.Drawing.Size(75, 23);
             this.ButtonOK.TabIndex = 4;
@@ -153,7 +153,7 @@ namespace RiseOp.Interface
             this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label5.Location = new System.Drawing.Point(75, 141);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(245, 34);
+            this.label5.Size = new System.Drawing.Size(245, 48);
             this.label5.TabIndex = 15;
             this.label5.Text = "Same as private except the global network is not utilized.  Better for larger net" +
                 "works and LANs.";
@@ -164,7 +164,7 @@ namespace RiseOp.Interface
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.ButtonCancel;
-            this.ClientSize = new System.Drawing.Size(332, 223);
+            this.ClientSize = new System.Drawing.Size(332, 227);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label2);

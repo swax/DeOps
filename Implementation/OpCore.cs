@@ -87,7 +87,7 @@ namespace RiseOp.Implementation
         // events
         internal event TimerHandler SecondTimerEvent;
 
-        int MinutePoint; // random so all of network doesnt burst at once
+        int MinuteCounter; // random so all of network doesnt burst at once
         internal event TimerHandler MinuteTimerEvent;
         internal event NewsUpdateHandler NewsUpdate;
 
@@ -129,7 +129,6 @@ namespace RiseOp.Implementation
             Sim = context.Sim;
 
             StartTime = TimeNow;
-            MinutePoint = RndGen.Next(2, 59);
             GuiProtocol = new G2Protocol();
 
             ConsoleLog("RiseOp " + Application.ProductVersion);
@@ -186,7 +185,6 @@ namespace RiseOp.Implementation
             Sim = context.Sim;
 
             StartTime = TimeNow;
-            MinutePoint = RndGen.Next(2, 59);
             GuiProtocol = new G2Protocol();
 
             Network = new DhtNetwork(this, true);
@@ -295,7 +293,7 @@ namespace RiseOp.Implementation
                     lock (Network.IncomingPackets)
                         if (Network.IncomingPackets.Count > 0)
                         {
-                            Network.ReceivePacket(Network.IncomingPackets.Dequeue().Packet);
+                            Network.ReceivePacket(Network.IncomingPackets.Dequeue());
 
                             keepGoing = true;
                         }
@@ -324,7 +322,7 @@ namespace RiseOp.Implementation
                 SecondTimerEvent.Invoke();
 
                 // before minute timer give gui 2 secs to tell us of nodes it doesnt want removed
-                if (GetFocusedCore != null && TimeNow.Second == MinutePoint - 2)
+                if (GetFocusedCore != null && MinuteCounter == 58)
                 {
                     Focused.SafeClear();
 
@@ -332,9 +330,13 @@ namespace RiseOp.Implementation
                     RunInGuiThread(GetFocusedGui);
                 }
 
-                if (TimeNow.Second == MinutePoint)
+
+                MinuteCounter++;
+
+                if (MinuteCounter == 60)
                 {
                     MinuteTimerEvent.Invoke();
+                    MinuteCounter = 0;
                 }
 			}
 			catch(Exception ex)
@@ -643,6 +645,7 @@ namespace RiseOp.Implementation
 
             Network.TcpControl.Shutdown();
             Network.UdpControl.Shutdown();
+            Network.LanControl.Shutdown();
 
             if (Sim != null)
                 Sim.Internet.UnregisterAddress(this);
@@ -717,8 +720,51 @@ namespace RiseOp.Implementation
 
         internal string CreateInvite(string password)
         {
-            // generate invite packet
+            byte[] data = new byte[4096];
+            MemoryStream mem = new MemoryStream(data);
+            PacketStream stream = new PacketStream(mem, GuiProtocol, FileAccess.Write);
+
+            // write invite
             OneWayInvite invite = new OneWayInvite();
+            invite.OpName = Profile.Settings.Operation;
+            invite.OpAccess = Profile.Settings.OpAccess;
+            invite.OpID = Profile.Settings.OpKey;
+
+            stream.WritePacket(invite);
+
+
+            // write some contacts
+            foreach(DhtContact contact in Network.Routing.GetCacheArea())
+            {
+                byte[] bytes = contact.Encode(GuiProtocol, InvitePacket.Contact);
+                mem.Write(bytes, 0, bytes.Length);
+            }
+
+
+            // write web caches
+            foreach (WebCache cache in Network.Cache.GetLastSeen(3))
+                stream.WritePacket(new WebCache(cache, InvitePacket.WebCache));
+
+            mem.WriteByte(0); // end packets
+
+
+            // encrypt packet with hashed password
+            byte[] salt = new byte[4];
+            RNGCryptoServiceProvider rnd = new RNGCryptoServiceProvider();
+            rnd.GetBytes(salt);
+
+            byte[] key = Utilities.GetPasswordKey(password, salt);
+
+            byte[] encrypted = Utilities.EncryptBytes(Utilities.ExtractBytes(data, 0, (int)mem.Position), key);
+
+            encrypted = Utilities.CombineArrays(salt, encrypted);
+
+            // return base 64 link
+            return "riseop://invite/" + Utilities.ToBase64String(encrypted);
+           
+
+            // generate invite packet
+            /*OneWayInvite invite = new OneWayInvite();
 
             invite.OpName = Profile.Settings.Operation;
             invite.OpAccess = Profile.Settings.OpAccess;
@@ -737,10 +783,10 @@ namespace RiseOp.Implementation
             encrypted = Utilities.CombineArrays(salt, encrypted);
 
             // return base 64 link
-            return "riseop://invite/" + Utilities.ToBase64String(encrypted);
+            return "riseop://invite/" + Utilities.ToBase64String(encrypted);*/
         }
 
-        internal static OneWayInvite OpenInvite(string link, string password)
+        internal static InvitePackage OpenInvite(G2Protocol protocol, string link, string password)
         {
             byte[] encrypted = Utilities.FromBase64String(link);
 
@@ -752,14 +798,47 @@ namespace RiseOp.Implementation
 
             byte[] decrypted = Utilities.DecryptBytes(encrypted, encrypted.Length, key);
 
-            return OneWayInvite.Decode(decrypted);
+            // get packets
+            MemoryStream mem = new MemoryStream(decrypted);
+            PacketStream stream = new PacketStream(mem, protocol, FileAccess.Read);
+
+            InvitePackage package = new InvitePackage();
+
+            G2Header root = null;
+            while(stream.ReadPacket(ref root))
+            {
+                if (root.Name == InvitePacket.Info)
+                    package.Info = OneWayInvite.Decode(root);
+
+                if (root.Name == InvitePacket.Contact)
+                    package.Contacts.Add(DhtContact.ReadPacket(root));
+
+                if (root.Name == InvitePacket.WebCache)
+                    package.Caches.Add(WebCache.Decode(root));
+            }
+
+            return package;
         }
 
-        internal void ProcessInvite(OneWayInvite invite)
+        internal void ProcessInvite(InvitePackage invite)
         {
             // add nodes to ipcache in processing
             foreach (DhtContact contact in invite.Contacts)
-                Network.AddCacheEntry(contact);
+                Network.Cache.AddContact(contact);
+
+            foreach (WebCache cache in invite.Caches)
+                Network.Cache.AddCache(cache);
+        }
+    }
+
+    internal class InvitePackage
+    {
+        internal OneWayInvite Info;
+        internal List<DhtContact> Contacts = new List<DhtContact>();
+        internal List<WebCache> Caches = new List<WebCache>();
+
+        internal InvitePackage()
+        {
         }
     }
 

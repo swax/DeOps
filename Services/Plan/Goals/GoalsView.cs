@@ -355,6 +355,10 @@ namespace RiseOp.Services.Plan
         {
             splitContainer1.Panel2Collapsed = !DetailsButton.Checked;
 
+            if (DetailsButton.Checked)
+                DetailsButton.Image = PlanRes.details2;
+            else
+                DetailsButton.Image = PlanRes.details1;
         }
 
 
@@ -562,6 +566,11 @@ namespace RiseOp.Services.Plan
             DetailsBrowser.Hide();
             DetailsBrowser.DocumentText = html;
             DetailsBrowser.Show();
+        }
+
+        private void DetailsButton_Click(object sender, EventArgs e)
+        {
+
         }
     }
 

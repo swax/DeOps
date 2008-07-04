@@ -361,8 +361,8 @@ namespace RiseOp.Interface.Tools
             listValues.Items.Add(new ListViewItem(new string[] { "OpID", IDtoStr(network.OpID) })); 
             listValues.Items.Add(new ListViewItem(new string[] { "Responsive", xStr(network.Responsive) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Established", xStr(network.Established) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "IPCache", xStr(network.IPCache.Count) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "IPTable", xStr(network.IPTable.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "IPCache", xStr(network.Cache.IPs.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "IPTable", xStr(network.Cache.IPTable.Count) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Searches Pending", xStr(network.Searches.Pending.Count) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Searches Active", xStr(network.Searches.Active.Count) }));
         }
@@ -383,7 +383,7 @@ namespace RiseOp.Interface.Tools
 			listValues.Columns.Add("NextTryTcp",150, HorizontalAlignment.Left);
 
 
-            foreach (DhtContact entry in network.IPCache)
+            foreach (DhtContact entry in network.Cache.IPs)
 				listValues.Items.Add( new ListViewItem( new string[]
 				{
 					xStr(entry.IP),		

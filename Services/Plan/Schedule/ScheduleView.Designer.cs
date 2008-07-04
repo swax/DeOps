@@ -50,6 +50,7 @@ namespace RiseOp.Services.Plan
             this.RangeLabel = new System.Windows.Forms.Label();
             this.DateRange = new System.Windows.Forms.TrackBar();
             this.PlanStructure = new RiseOp.Interface.TLVex.TreeListViewEx();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.DetailsBrowser = new System.Windows.Forms.WebBrowser();
             this.TopStrip.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -58,6 +59,7 @@ namespace RiseOp.Services.Plan
             ((System.ComponentModel.ISupportInitialize)(this.DiscardButton)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.SaveButton)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DateRange)).BeginInit();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // HoverTimer
@@ -152,7 +154,7 @@ namespace RiseOp.Services.Plan
             // 
             // splitContainer1.Panel2
             // 
-            this.splitContainer1.Panel2.Controls.Add(this.DetailsBrowser);
+            this.splitContainer1.Panel2.Controls.Add(this.groupBox1);
             this.splitContainer1.Size = new System.Drawing.Size(505, 221);
             this.splitContainer1.SplitterDistance = 353;
             this.splitContainer1.TabIndex = 24;
@@ -298,14 +300,27 @@ namespace RiseOp.Services.Plan
             this.PlanStructure.Leave += new System.EventHandler(this.PlanStructure_Leave);
             this.PlanStructure.Enter += new System.EventHandler(this.PlanStructure_Enter);
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+                        | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.DetailsBrowser);
+            this.groupBox1.Location = new System.Drawing.Point(3, 50);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(142, 168);
+            this.groupBox1.TabIndex = 1;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Details";
+            // 
             // DetailsBrowser
             // 
             this.DetailsBrowser.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.DetailsBrowser.Location = new System.Drawing.Point(0, 0);
+            this.DetailsBrowser.Location = new System.Drawing.Point(3, 16);
             this.DetailsBrowser.MinimumSize = new System.Drawing.Size(20, 20);
             this.DetailsBrowser.Name = "DetailsBrowser";
             this.DetailsBrowser.ScriptErrorsSuppressed = true;
-            this.DetailsBrowser.Size = new System.Drawing.Size(148, 221);
+            this.DetailsBrowser.Size = new System.Drawing.Size(136, 149);
             this.DetailsBrowser.TabIndex = 0;
             // 
             // ScheduleView
@@ -328,6 +343,7 @@ namespace RiseOp.Services.Plan
             ((System.ComponentModel.ISupportInitialize)(this.DiscardButton)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.SaveButton)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DateRange)).EndInit();
+            this.groupBox1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -354,5 +370,6 @@ namespace RiseOp.Services.Plan
         private System.Windows.Forms.WebBrowser DetailsBrowser;
         private System.Windows.Forms.PictureBox SaveButton;
         private System.Windows.Forms.PictureBox DiscardButton;
+        private System.Windows.Forms.GroupBox groupBox1;
     }
 }

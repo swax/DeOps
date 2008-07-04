@@ -101,11 +101,11 @@ namespace RiseOp.Interface
             // 
             // CreateLink
             // 
-            this.CreateLink.ActiveLinkColor = System.Drawing.Color.Green;
+            this.CreateLink.ActiveLinkColor = System.Drawing.Color.Red;
             this.CreateLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.CreateLink.AutoSize = true;
             this.CreateLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.CreateLink.LinkColor = System.Drawing.Color.Green;
+            this.CreateLink.LinkColor = System.Drawing.Color.Blue;
             this.CreateLink.Location = new System.Drawing.Point(221, 211);
             this.CreateLink.Name = "CreateLink";
             this.CreateLink.Size = new System.Drawing.Size(38, 13);
@@ -116,11 +116,11 @@ namespace RiseOp.Interface
             // 
             // JoinLink
             // 
-            this.JoinLink.ActiveLinkColor = System.Drawing.Color.Green;
+            this.JoinLink.ActiveLinkColor = System.Drawing.Color.Red;
             this.JoinLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.JoinLink.AutoSize = true;
             this.JoinLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.JoinLink.LinkColor = System.Drawing.Color.Green;
+            this.JoinLink.LinkColor = System.Drawing.Color.Blue;
             this.JoinLink.Location = new System.Drawing.Point(189, 211);
             this.JoinLink.Name = "JoinLink";
             this.JoinLink.Size = new System.Drawing.Size(26, 13);
@@ -136,7 +136,7 @@ namespace RiseOp.Interface
             this.EnterSimLink.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.EnterSimLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
             this.EnterSimLink.LinkColor = System.Drawing.Color.Red;
-            this.EnterSimLink.Location = new System.Drawing.Point(21, 300);
+            this.EnterSimLink.Location = new System.Drawing.Point(12, 300);
             this.EnterSimLink.Name = "EnterSimLink";
             this.EnterSimLink.Size = new System.Drawing.Size(63, 13);
             this.EnterSimLink.TabIndex = 4;

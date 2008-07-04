@@ -112,6 +112,7 @@
     <Compile Include="AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Implementation\OpCache.cs" />
     <Compile Include="Implementation\Transport\LanHandler.cs" />
     <Compile Include="Implementation\Transport\UPnP.cs" />
     <Compile Include="Interface\CustomIconForm.cs">
@@ -122,6 +123,18 @@
     </Compile>
     <Compile Include="Interface\ErrorReport.Designer.cs">
       <DependentUpon>ErrorReport.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Settings\Connecting.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Settings\Connecting.Designer.cs">
+      <DependentUpon>Connecting.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Settings\CacheSetup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Settings\CacheSetup.Designer.cs">
+      <DependentUpon>CacheSetup.cs</DependentUpon>
     </Compile>
     <Compile Include="Interface\Settings\Operation.cs">
       <SubType>Form</SubType>
@@ -636,6 +649,8 @@
     <None Include="Services\Chat\Res\invite.png" />
     <None Include="Services\Mail\Res\recvmail.png" />
     <None Include="Services\Mail\Res\sentmail.png" />
+    <None Include="Services\Plan\Res\details1.png" />
+    <None Include="Services\Plan\Res\details2.png" />
     <Content Include="Services\Trust\Link.txt" />
     <None Include="Services\Trust\Res\unlink.ico" />
     <Content Include="Services\Location\Location.txt" />
@@ -718,6 +733,14 @@
     </None>
     <EmbeddedResource Include="Interface\ErrorReport.resx">
       <DependentUpon>ErrorReport.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Settings\Connecting.resx">
+      <DependentUpon>Connecting.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Settings\CacheSetup.resx">
+      <DependentUpon>CacheSetup.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\Settings\Operation.resx">

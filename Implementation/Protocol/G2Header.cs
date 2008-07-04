@@ -15,7 +15,6 @@ namespace RiseOp.Implementation.Protocol
         internal const byte Comm = 0x20;
         internal const byte Padding = 0x30;
         internal const byte Tunnel = 0x40;
-        internal const byte Invite = 0x50;
     }
 
 	internal class G2Header

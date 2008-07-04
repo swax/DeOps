@@ -437,8 +437,8 @@ namespace RiseOp.Implementation.Dht
 
                 SetResponsive(true);
             }
-            
-            Network.AddCacheEntry(newContact);
+
+            Network.Cache.AddContact(newContact);
             
             if (ContactMap.ContainsKey(newContact.RoutingID))
             {

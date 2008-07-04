@@ -169,6 +169,17 @@ namespace RiseOp.Implementation.Dht
                 protocol.WritePacket(address, Packet_Client, TunnelClient.ToBytes());
         }
 
+        internal byte[] Encode(G2Protocol protocol, byte name)
+        {
+            lock (protocol.WriteSection)
+            {
+                WritePacket(protocol, null, name);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+
         internal static new DhtContact ReadPacket(G2Header root)
         {
             // read payload

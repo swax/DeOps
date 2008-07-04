@@ -211,7 +211,7 @@ namespace RiseOp.Services.Storage
             // hashing
             if (HashQueue.Count > 0 && (HashThreadHandle == null || !HashThreadHandle.IsAlive))
             {
-                HashThreadHandle = new Thread(new ThreadStart(HashThread));
+                HashThreadHandle = new Thread(HashThread);
                 HashThreadHandle.Start();
             }
 

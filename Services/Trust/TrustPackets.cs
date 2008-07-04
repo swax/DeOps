@@ -11,10 +11,11 @@ namespace RiseOp.Services.Trust
     internal class TrustPacket
     {
         internal const byte ProjectData = 0x10;
-        internal const byte LinkData = 0x20;
-        internal const byte UplinkReq = 0x30;
-        internal const byte Icon = 0x40;
-        internal const byte Splash = 0x50;
+        internal const byte LinkData    = 0x20;
+        internal const byte UplinkReq   = 0x30;
+        internal const byte WebCache    = 0x40;
+        internal const byte Icon        = 0x50;
+        internal const byte Splash      = 0x60;
     }
 
     internal class ProjectData : G2Packet

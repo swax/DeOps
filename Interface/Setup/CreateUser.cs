@@ -20,7 +20,7 @@ namespace RiseOp.Interface.Startup
         string OpName = "";
         AccessType OpAccess = AccessType.Public;
 
-        OneWayInvite Invite;
+        InvitePackage Invite;
 
 
         internal CreateUser(RiseOpContext context, string opName, AccessType opAccess)
@@ -36,14 +36,14 @@ namespace RiseOp.Interface.Startup
             BrowseLink.Text = (context.Sim == null) ? Application.StartupPath : context.Sim.Internet.LoadedPath;
         }
 
-        internal CreateUser(RiseOpContext context, OneWayInvite invite)
+        internal CreateUser(RiseOpContext context, InvitePackage invite)
         {
             InitializeComponent();
 
             Context = context;
             Invite = invite;
-            OpName = invite.OpName;
-            OpAccess = invite.OpAccess;
+            OpName = invite.Info.OpName;
+            OpAccess = invite.Info.OpAccess;
 
             Text = OpName + ": Create User";
 
@@ -88,7 +88,7 @@ namespace RiseOp.Interface.Startup
                 if (File.Exists(path))
                     throw new Exception("Cannot create because " + filename + " already exists");
 
-                byte[] opKey = Invite != null ? Invite.OpID : null;
+                byte[] opKey = Invite != null ? Invite.Info.OpID : null;
                 Identity.CreateNew(path, OpName, TextName.Text, TextPassword.Text, OpAccess, opKey);
 
                 OpCore core = new OpCore(Context, path, TextPassword.Text);

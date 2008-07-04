@@ -148,8 +148,11 @@ namespace RiseOp.Interface.Settings
                 Profile.OpIcon = SelectedIcon;
                 Profile.OpSplash = SelectedSplash;
 
-                Profile.Save();
-                Profile.Core.Trust.SaveLocal(); // triggers icon update
+                Profile.Core.RunInCoreAsync(delegate()
+                {
+                    Profile.Save();
+                    Profile.Core.Trust.SaveLocal(); // triggers icon update
+                });
             }
 
             Close();

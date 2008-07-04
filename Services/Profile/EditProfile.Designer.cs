@@ -95,7 +95,7 @@ namespace RiseOp.Services.Profile
             this.ValueTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.ValueTextBox.BackColor = System.Drawing.Color.WhiteSmoke;
+            this.ValueTextBox.BackColor = System.Drawing.Color.White;
             this.ValueTextBox.Location = new System.Drawing.Point(15, 116);
             this.ValueTextBox.Multiline = true;
             this.ValueTextBox.Name = "ValueTextBox";

@@ -86,12 +86,18 @@ namespace RiseOp.Implementation.Protocol.Special
         }
     }
 
+    internal class InvitePacket
+    {
+        internal const byte Info = 0x10;
+        internal const byte Contact = 0x20;
+        internal const byte WebCache = 0x30;
+    }
+
     internal class OneWayInvite : G2Packet
     {
         const byte Packet_OpName    = 0x10;
         const byte Packet_OpAccess  = 0x20;
         const byte Packet_OpID      = 0x30;
-        const byte Packet_Contact   = 0x40;
 
 
         internal string OpName;
@@ -104,29 +110,18 @@ namespace RiseOp.Implementation.Protocol.Special
         {
             lock (protocol.WriteSection)
             {
-                G2Frame invite = protocol.WritePacket(null, RootPacket.Invite, null);
+                G2Frame invite = protocol.WritePacket(null, InvitePacket.Info, null);
 
                 protocol.WritePacket(invite, Packet_OpName, UTF8Encoding.UTF8.GetBytes(OpName));
                 protocol.WritePacket(invite, Packet_OpAccess, BitConverter.GetBytes((byte)OpAccess));
                 protocol.WritePacket(invite, Packet_OpID, OpID);
 
-                foreach (DhtContact contact in Contacts)
-                    contact.WritePacket(protocol, invite, Packet_Contact);
-
                 return protocol.WriteFinish();
             }
         }
 
-        internal static OneWayInvite Decode(byte[] data)
+        internal static OneWayInvite Decode(G2Header root)
         {
-            G2Header root = new G2Header(data);
-
-            if (!G2Protocol.ReadPacket(root))
-                return null;
-
-            if (root.Name != RootPacket.Invite)
-                return null;
-
             OneWayInvite invite = new OneWayInvite();
 
             G2Header child = new G2Header(root.Data);
@@ -150,20 +145,14 @@ namespace RiseOp.Implementation.Protocol.Special
                     case Packet_OpID:
                         invite.OpID = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
-                        
-                    case Packet_Contact:
-                        invite.Contacts.Add(DhtContact.ReadPacket(child));
-                        break;
-
                 }
-
             }
 
             return invite;
         }
     }
 
-    internal class TwoWayInvite : G2Packet
+    /*internal class TwoWayInvite : G2Packet
     {
         const byte Packet_OpName  = 0x10;
         const byte Packet_OpAccess = 0x20;
@@ -234,7 +223,7 @@ namespace RiseOp.Implementation.Protocol.Special
 
             return invite;
         }
-    }
+    }*/
 
 
 

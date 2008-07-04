@@ -38,6 +38,11 @@ namespace RiseOp.Implementation.Transport
             Network = network;
             Core = network.Core;
 
+            Initialize();
+        }
+
+        internal void Initialize()
+        {
             ListenPort = Network.IsGlobal ? Network.GlobalConfig.UdpPort : Core.Profile.Settings.UdpPort;
             
             if (Core.Sim != null)

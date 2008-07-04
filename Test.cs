@@ -5,6 +5,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Net;
 using System.Security.Cryptography;
+using System.Text;
 
 using RiseOp.Services.Storage;
 using RiseOp.Services.Location;
@@ -19,11 +20,6 @@ namespace RiseOp
     class TestFile
     {
 
-       
-
-
-
-        
     }
 
 
@@ -34,6 +30,79 @@ namespace RiseOp
 	{
 		internal Test()
         {
+            // encode request
+
+
+                string cacheKey = "O+6IRs7GY1r/JIk+DFY/VK+i8pFTWhsDfNH9R3j3f9Q=";
+
+                RijndaelManaged crypt = new RijndaelManaged();
+                crypt.BlockSize = 256;
+                crypt.Padding = PaddingMode.Zeros;
+                crypt.GenerateIV();
+                crypt.Key = Convert.FromBase64String(cacheKey);
+
+                Random rnd = new Random();
+
+                string combined = "";
+
+                if (true)
+                {
+                    string type = "publish";
+                    ulong op = 1476981679885938220;
+                    //IPAddress adddress = IPAddress.Parse("24.218.20.180");
+                    IPAddress adddress = new IPAddress(rnd.Next());
+                    ulong user = Utilities.RandUInt64(rnd);
+                    ushort tcp = (ushort)rnd.Next();
+                    ushort udp = (ushort)rnd.Next();
+
+                    combined = type + ":" + op + "/" +
+                                       user + "/" +
+                                       adddress + "/" +
+                                       tcp + "/" +
+                                       udp;
+                }
+
+                if (false)
+                {
+                    string type = "query";
+                    ulong op = 1476981679885938220;
+                    combined = type + ":" + op;
+                }
+
+                if (false)
+                {
+                    ulong op = 1476981679885938220;
+                    combined = "ping" + ":" + op;
+                }
+            /*
+                byte[] data = ASCIIEncoding.ASCII.GetBytes(combined);
+                byte[] encrypted = crypt.CreateEncryptor().TransformFinalBlock(data, 0, data.Length);
+
+
+                // php decode requests
+                byte[] ivEnc = Utilities.CombineArrays(crypt.IV, encrypted);
+                string request = Convert.ToBase64String(ivEnc);
+
+                WebClient web = new WebClient();
+                string response = web.DownloadString("http://www.riseop.com/cache/update.php?get=" + Uri.EscapeDataString(request));
+
+                // php encode response
+                byte[] decoded = Convert.FromBase64String(response);
+
+                // decode response
+                crypt.IV = Utilities.ExtractBytes(decoded, 0, 32);
+
+                data = Utilities.ExtractBytes(decoded, 32, decoded.Length - 32);
+                byte[] decrypted = crypt.CreateDecryptor().TransformFinalBlock(data, 0, data.Length);
+
+                response = ASCIIEncoding.ASCII.GetString(decrypted);
+                response = response.Trim('\0');
+
+                string[] lines = response.Split('\n');
+
+
+                int x = 0;*/
+            
             /*IPAddress address = IPAddress.Parse("1.2.3.4");
 
             byte[] transmit = address.GetAddressBytes();
