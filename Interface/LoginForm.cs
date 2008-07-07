@@ -247,7 +247,7 @@ namespace RiseOp.Interface
                 Context.Cores.LockReading(delegate()
                 {
                     foreach (OpCore core in Context.Cores)
-                        if (core.Profile.ProfilePath == item.Fullpath)
+                        if (core.User.ProfilePath == item.Fullpath)
                         {
                             if (core.GuiMain != null)
                             {

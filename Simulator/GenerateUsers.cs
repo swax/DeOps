@@ -23,8 +23,8 @@ namespace RiseOp.Simulator
         {
             InitializeComponent();
 
-            NamesFolderLink.Text = Application.StartupPath;
-            OutputFolderLink.Text = Application.StartupPath + "\\SimOutput";
+            NamesFolderLink.Text = Application.StartupPath + "\\Sim";
+            OutputFolderLink.Text = Application.StartupPath + "\\SimNetwork";
         }
 
         private void NamesFolderLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -118,7 +118,7 @@ namespace RiseOp.Simulator
                 Directory.CreateDirectory(OutputFolderLink.Text + Path.DirectorySeparatorChar + filename);
                 string password = name.Split(' ')[0].ToLower(); // lower case first name is password
 
-                Identity.CreateNew(path, OpNames[index], name, password, AccessType.Private, OpKeys[index]);
+                OpUser.CreateNew(path, OpNames[index], name, password, AccessType.Private, OpKeys[index]);
 
                 GenProgress.Value++;
             }

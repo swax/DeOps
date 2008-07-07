@@ -41,8 +41,8 @@ namespace RiseOp.Services.Plan
             this.GoalCombo = new System.Windows.Forms.ToolStripComboBox();
             this.DetailsButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.DiscardButton = new System.Windows.Forms.PictureBox();
-            this.SaveButton = new System.Windows.Forms.PictureBox();
+            this.DiscardButton = new RiseOp.Interface.Views.ImageButton();
+            this.SaveButton = new RiseOp.Interface.Views.ImageButton();
             this.LabelMinus = new System.Windows.Forms.Label();
             this.LabelPlus = new System.Windows.Forms.Label();
             this.ScheduleSlider = new RiseOp.Services.Plan.DateSlider();
@@ -162,7 +162,10 @@ namespace RiseOp.Services.Plan
             // DiscardButton
             // 
             this.DiscardButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.DiscardButton.Image = global::RiseOp.Properties.Resources.discard;
+            this.DiscardButton.ButtonDown = global::RiseOp.Properties.Resources.discard_down;
+            this.DiscardButton.ButtonHot = global::RiseOp.Properties.Resources.discard_hot;
+            this.DiscardButton.ButtonNormal = global::RiseOp.Properties.Resources.discard_norm;
+            this.DiscardButton.Image = global::RiseOp.Properties.Resources.discard_norm;
             this.DiscardButton.Location = new System.Drawing.Point(269, 199);
             this.DiscardButton.Name = "DiscardButton";
             this.DiscardButton.Size = new System.Drawing.Size(64, 19);
@@ -175,7 +178,10 @@ namespace RiseOp.Services.Plan
             // SaveButton
             // 
             this.SaveButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.SaveButton.Image = global::RiseOp.Properties.Resources.save;
+            this.SaveButton.ButtonDown = global::RiseOp.Properties.Resources.save_down;
+            this.SaveButton.ButtonHot = global::RiseOp.Properties.Resources.save_hot;
+            this.SaveButton.ButtonNormal = global::RiseOp.Properties.Resources.save_norm;
+            this.SaveButton.Image = global::RiseOp.Properties.Resources.save_norm;
             this.SaveButton.Location = new System.Drawing.Point(199, 199);
             this.SaveButton.Name = "SaveButton";
             this.SaveButton.Size = new System.Drawing.Size(64, 19);
@@ -368,8 +374,8 @@ namespace RiseOp.Services.Plan
         private System.Windows.Forms.TrackBar DateRange;
         internal RiseOp.Interface.TLVex.TreeListViewEx PlanStructure;
         private System.Windows.Forms.WebBrowser DetailsBrowser;
-        private System.Windows.Forms.PictureBox SaveButton;
-        private System.Windows.Forms.PictureBox DiscardButton;
+        private RiseOp.Interface.Views.ImageButton SaveButton;
+        private RiseOp.Interface.Views.ImageButton DiscardButton;
         private System.Windows.Forms.GroupBox groupBox1;
     }
 }

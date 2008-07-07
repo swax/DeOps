@@ -172,7 +172,7 @@ namespace RiseOp.Interface
 
         private void UpdateTitle()
         {
-            Text = Core.Profile.GetTitle();
+            Text = Core.User.GetTitle();
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -353,7 +353,7 @@ namespace RiseOp.Interface
             List<string[]> tuples = new List<string[]>();
             tuples.Add(new string[] { "global", global });
             tuples.Add(new string[] { "operation", operation });
-            tuples.Add(new string[] { "firewall", Core.Firewall.ToString() });
+            tuples.Add(new string[] { "firewall", Core.GetFirewallString() });
 
             
             if (CurrentStatusMode != mode)
@@ -674,8 +674,8 @@ namespace RiseOp.Interface
             // invite
             items.Add(new ManageItem("Invite", ChatRes.invite, delegate()
             {
-                if (Core.Profile.Settings.OpAccess == AccessType.Public)
-                    MessageBox.Show(this, "Give out this link to invite others \r\n \r\n riseop://" + Core.Profile.Settings.Operation, "RiseOp");
+                if (Core.User.Settings.OpAccess == AccessType.Public)
+                    MessageBox.Show(this, "Give out this link to invite others \r\n \r\n riseop://" + Core.User.Settings.Operation, "RiseOp");
                 else
                 {
                     InviteForm form = new InviteForm(Core);

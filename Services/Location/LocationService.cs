@@ -226,7 +226,7 @@ namespace RiseOp.Services.Location
             // location packet is encrypted inside global loc packet
             // this embedded has OP TTL, while wrapper (CryptLoc) has global TTL
 
-            byte[] data = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, location);
+            byte[] data = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, location);
 
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
                 data = Utilities.EncryptBytes(data, Network.OriginalCrypt.Key);
@@ -250,7 +250,7 @@ namespace RiseOp.Services.Location
 
             LocationData location = GetLocalLocation();
             
-            byte[] signed = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, location);
+            byte[] signed = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, location);
 
             Debug.Assert(location.TTL < 5);
             Network.Store.PublishNetwork(Core.UserID, ServiceID, 0, signed);
@@ -396,7 +396,7 @@ namespace RiseOp.Services.Location
         {
             LocationData location = new LocationData();
 
-            location.Key = Core.Profile.Settings.KeyPublic;
+            location.Key = Core.User.Settings.KeyPublic;
             location.TTL = LocationData.OP_TTL;
             location.IP = Core.LocalIP;
             location.Source = Network.GetLocalSource();
@@ -412,10 +412,10 @@ namespace RiseOp.Services.Location
             foreach (TcpConnect socket in Network.TcpControl.ProxyServers)
                 location.Proxies.Add(new DhtAddress(socket.RemoteIP, socket));
 
-            location.Place = Core.Profile.Settings.Location;
+            location.Place = Core.User.Settings.Location;
             location.GmtOffset = System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes;
             location.Away = LocalAway;
-            location.AwayMessage = LocalAway ? Core.Profile.Settings.AwayMessage : "";
+            location.AwayMessage = LocalAway ? Core.User.Settings.AwayMessage : "";
 
             location.Version = LocationVersion++;
 

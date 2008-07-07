@@ -10,7 +10,7 @@ namespace RiseOp.Interface.Settings
 {
     internal partial class Operation : CustomIconForm
     {
-        Identity Profile;
+        OpUser Profile;
 
         Bitmap SelectedIcon;
         Bitmap SelectedSplash;
@@ -20,7 +20,7 @@ namespace RiseOp.Interface.Settings
         {
             InitializeComponent();
 
-            Profile = parent.Core.Profile;
+            Profile = parent.Core.User;
 
             OperationBox.Text = Profile.Settings.Operation;
 

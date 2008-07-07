@@ -143,7 +143,7 @@ namespace RiseOp.Simulator
                 instance.Context.Cores.LockReading(delegate()
                 {
                     foreach (OpCore core in instance.Context.Cores)
-                        core.Profile.Save();
+                        core.User.Save();
                 });
 
             MessageBox.Show(this, "Nodes Saved");
@@ -740,8 +740,8 @@ namespace RiseOp.Simulator
             if (Core.Locations.LocationMap.SafeCount <= 1)
                 alerts += "Locs, ";
 
-            SubItems[1].Text = Core.Profile.Settings.UserName;
-            SubItems[2].Text = Core.Profile.Settings.Operation;
+            SubItems[1].Text = Core.User.Settings.UserName;
+            SubItems[2].Text = Core.User.Settings.Operation;
             SubItems[3].Text = Utilities.IDtoBin(Core.UserID);
             SubItems[4].Text = Instance.RealIP.ToString() + "/" + Core.Network.Local.ClientID.ToString();
             SubItems[5].Text = Instance.RealFirewall.ToString();

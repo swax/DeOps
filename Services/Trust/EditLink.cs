@@ -33,12 +33,12 @@ namespace RiseOp.Services.Trust
 
             AwayCheckBox.Checked = Core.Locations.LocalAway;
             AwayMessage.Enabled = Core.Locations.LocalAway;
-            AwayMessage.Text = Core.Profile.Settings.AwayMessage;
+            AwayMessage.Text = Core.User.Settings.AwayMessage;
         }
 
         private void EditLink_Load(object sender, EventArgs e)
         {
-            LocationBox.Text = Links.Core.Profile.Settings.Location;
+            LocationBox.Text = Links.Core.User.Settings.Location;
 
             OpLink link = Links.GetLink(Core.UserID, ProjectID);
 
@@ -57,17 +57,17 @@ namespace RiseOp.Services.Trust
 
             Core.Locations.LocalAway = AwayCheckBox.Checked;
 
-            if (LocationBox.Text != Core.Profile.Settings.Location || AwayMessage.Text != Core.Profile.Settings.AwayMessage)
+            if (LocationBox.Text != Core.User.Settings.Location || AwayMessage.Text != Core.User.Settings.AwayMessage)
             {
-                Core.Profile.Settings.Location = LocationBox.Text;
-                Core.Profile.Settings.AwayMessage = AwayMessage.Text;
+                Core.User.Settings.Location = LocationBox.Text;
+                Core.User.Settings.AwayMessage = AwayMessage.Text;
 
-                if (Core.Profile.Settings.AwayMessage.Length > 100)
-                    Core.Profile.Settings.AwayMessage = Core.Profile.Settings.AwayMessage.Substring(0, 100);
+                if (Core.User.Settings.AwayMessage.Length > 100)
+                    Core.User.Settings.AwayMessage = Core.User.Settings.AwayMessage.Substring(0, 100);
 
                 Core.RunInCoreAsync(delegate()
                 {
-                    Links.Core.Profile.Save();
+                    Links.Core.User.Save();
                 });
             }
 

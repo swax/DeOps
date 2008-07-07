@@ -157,6 +157,26 @@ web-node
 				closest cache is searched first
 				implement multi-source during implementation of file cache
 		
+		file cache
+			settings 
+				max storage total
+				max file size
+				transfer / bandwidth limits
+			file cache unlike web cache has ID, closest ID to target is queried for file
+			database kept of file hashes / last request date
+			when max storage reached, prune last requested files
+			on file search
+				query file cache, add to d/l mesh
+				when file aquired, publish it to file cache
+				dont need to worry about min file sizes
+				dont need to worry about overwritting versions, prev versions get pruned
+				files can always be uploaded, just forces prune
+				just last requested on top, least demanded pruned
+			implemented just in file transfer service as a way to add source	
+				if not on cache, and d/l is success then publish
+			request - file hash / size
+				response - yes/no, if no signal should publish
+		
 	allow looking at status with update.php?status=password
 		update/publish rate per minute
 		save last 10 updates in table with timestamp, calc update rate

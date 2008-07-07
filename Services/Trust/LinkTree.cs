@@ -99,7 +99,7 @@ namespace RiseOp.Services.Trust
                 return;
             }
 
-            string rootname = Core.Profile.Settings.Operation;
+            string rootname = Core.User.Settings.Operation;
             if (Project != 0)
                 rootname = Trust.GetProjectName(Project);
 

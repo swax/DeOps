@@ -76,9 +76,9 @@ namespace RiseOp.Services.Board
             if (Core.Sim != null)
                 PruneSize = 16;
 
-            LocalFileKey = Core.Profile.Settings.FileKey;
+            LocalFileKey = Core.User.Settings.FileKey;
 
-            BoardPath = Core.Profile.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
+            BoardPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
 
             if (!Directory.Exists(BoardPath))
                 Directory.CreateDirectory(BoardPath);
@@ -93,7 +93,7 @@ namespace RiseOp.Services.Board
             {
                 string dir = Path.GetFileName(path); // gets dir name
 
-                ulong id = BitConverter.ToUInt64(Utilities.HextoBytes(dir), 0);
+                ulong id = BitConverter.ToUInt64(Utilities.FromBase64String(dir), 0);
 
                 targets[Core.UserID ^ id] = id;
             }
@@ -382,7 +382,7 @@ namespace RiseOp.Services.Board
             // post header
             PostHeader header = new PostHeader();
             
-            header.Source = Core.Profile.Settings.KeyPublic;
+            header.Source = Core.User.Settings.KeyPublic;
             header.SourceID = Core.UserID;
 
             header.Target = Core.KeyMap[id];
@@ -473,7 +473,7 @@ namespace RiseOp.Services.Board
                 return;
             }
 
-            CachePost(new SignedData(Protocol, Core.Profile.Settings.KeyPair, header), header);
+            CachePost(new SignedData(Protocol, Core.User.Settings.KeyPair, header), header);
 
             // publish to network and local region of target
             OpPost post = GetPost(header);
@@ -512,7 +512,7 @@ namespace RiseOp.Services.Board
 
         internal string GetTargetDir(ulong id)
         {
-            return BoardPath + Path.DirectorySeparatorChar + Utilities.BytestoHex(BitConverter.GetBytes(id));
+            return BoardPath + Path.DirectorySeparatorChar + Utilities.ToBase64String(BitConverter.GetBytes(id));
         }
 
         void Store_Local(DataReq store)
@@ -1284,7 +1284,7 @@ namespace RiseOp.Services.Board
 
         public override string ToString()
         {
-            return Utilities.BytestoHex(ToBytes());
+            return Utilities.ToBase64String(ToBytes());
         }
 
         public override int GetHashCode()

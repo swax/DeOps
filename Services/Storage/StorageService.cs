@@ -89,11 +89,11 @@ namespace RiseOp.Services.Storage
 
             Core.Trust.LinkUpdate += new LinkUpdateHandler(Trust_Update);
 
-            LocalFileKey = Core.Profile.Settings.FileKey;
+            LocalFileKey = Core.User.Settings.FileKey;
             FileCrypt.Key = LocalFileKey;
             FileCrypt.IV = new byte[FileCrypt.IV.Length];
 
-            string rootpath = Core.Profile.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString() + Path.DirectorySeparatorChar;
+            string rootpath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString() + Path.DirectorySeparatorChar;
             DataPath = rootpath + FileTypeData.ToString();
             WorkingPath = rootpath + FileTypeWorking.ToString();
             ResourcePath = rootpath + FileTypeResource.ToString();
@@ -159,7 +159,7 @@ namespace RiseOp.Services.Storage
             {
                 foreach (uint project in Trust.ProjectRoots.Keys)
                 {
-                    string path = Core.Profile.RootPath + Path.DirectorySeparatorChar + Trust.GetProjectName(project) + " Storage";
+                    string path = Core.User.RootPath + Path.DirectorySeparatorChar + Trust.GetProjectName(project) + " Storage";
                     string local = Trust.GetName(Core.UserID);
 
                     if (Directory.Exists(path))
@@ -402,7 +402,7 @@ namespace RiseOp.Services.Storage
                 }
             });
 
-            // update subs
+            // update subs - this ensures file not propagated lower until we have it (prevents flood to original poster)
             if (Network.Established)
             {
                 List<LocationData> locations = new List<LocationData>();
@@ -496,7 +496,7 @@ namespace RiseOp.Services.Storage
             // delete loose files not in map - do here because now files in cache range are marked as reffed
             foreach (string filepath in Directory.GetFiles(DataPath))
             {
-                byte[] hash = Utilities.HextoBytes(Path.GetFileName(filepath));
+                byte[] hash = Utilities.FromBase64String(Path.GetFileName(filepath));
 
                 if (hash == null)
                 {
@@ -528,7 +528,7 @@ namespace RiseOp.Services.Storage
 
             byte[] hash = BitConverter.GetBytes(hashID);
 
-            return DataPath + Path.DirectorySeparatorChar + Utilities.BytestoHex(transform.TransformFinalBlock(hash, 0, hash.Length));
+            return DataPath + Path.DirectorySeparatorChar + Utilities.ToBase64String(transform.TransformFinalBlock(hash, 0, hash.Length));
         }
 
         internal string GetWorkingPath(uint project)
@@ -571,8 +571,9 @@ namespace RiseOp.Services.Storage
                     {
                         StorageRoot packet = StorageRoot.Decode(header);
 
-                        local = GetHigherRegion(storage.UserID, packet.ProjectID).Contains(Core.UserID) ||
-                            Trust.GetDownlinkIDs(storage.UserID, packet.ProjectID, 1).Contains(Core.UserID);
+                        local = Core.UserID == storage.UserID ||
+                                GetHigherRegion(Core.UserID, packet.ProjectID).Contains(storage.UserID) ||
+                                Trust.GetDownlinkIDs(Core.UserID, packet.ProjectID, 1).Contains(storage.UserID);
                     }
 
                     if (header.Name == StoragePacket.File)
@@ -882,7 +883,7 @@ namespace RiseOp.Services.Storage
 
         internal string GetRootPath(ulong user, uint project)
         {
-            return Core.Profile.RootPath + Path.DirectorySeparatorChar + Trust.GetProjectName(project) + " Storage" + Path.DirectorySeparatorChar + Trust.GetName(user);
+            return Core.User.RootPath + Path.DirectorySeparatorChar + Trust.GetProjectName(project) + " Storage" + Path.DirectorySeparatorChar + Trust.GetName(user);
         }
 
         internal WorkingStorage Discard(uint project)
@@ -1257,6 +1258,8 @@ namespace RiseOp.Services.Storage
 
         internal List<ulong> GetHigherRegion(ulong id, uint project)
         {
+            // all users form id to the top, and direct subs of superior
+
             List<ulong> highers = Trust.GetUplinkIDs(id, project); // works for loops
 
             highers.AddRange(Trust.GetAdjacentIDs(id, project));

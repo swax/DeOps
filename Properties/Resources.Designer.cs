@@ -74,9 +74,23 @@ namespace RiseOp.Properties {
             }
         }
         
-        internal static System.Drawing.Bitmap discard {
+        internal static System.Drawing.Bitmap discard_down {
             get {
-                object obj = ResourceManager.GetObject("discard", resourceCulture);
+                object obj = ResourceManager.GetObject("discard_down", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap discard_hot {
+            get {
+                object obj = ResourceManager.GetObject("discard_hot", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap discard_norm {
+            get {
+                object obj = ResourceManager.GetObject("discard_norm", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -88,9 +102,23 @@ namespace RiseOp.Properties {
             }
         }
         
-        internal static System.Drawing.Bitmap save {
+        internal static System.Drawing.Bitmap save_down {
             get {
-                object obj = ResourceManager.GetObject("save", resourceCulture);
+                object obj = ResourceManager.GetObject("save_down", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap save_hot {
+            get {
+                object obj = ResourceManager.GetObject("save_hot", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap save_norm {
+            get {
+                object obj = ResourceManager.GetObject("save_norm", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

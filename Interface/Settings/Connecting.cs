@@ -14,7 +14,7 @@ namespace RiseOp.Interface.Settings
     {
         OpCore Core;
         OpCore Global;
-        Identity Profile;
+        OpUser Profile;
 
         bool SaveCache;
 
@@ -26,7 +26,7 @@ namespace RiseOp.Interface.Settings
 
             Core = parent.Core;
             Global = Core.Context.Global;
-            Profile = Core.Profile;
+            Profile = Core.User;
 
             if (Profile.Settings.OpAccess == AccessType.Secret)
             {
@@ -40,8 +40,8 @@ namespace RiseOp.Interface.Settings
             OpTcpBox.Text = Core.Network.TcpControl.ListenPort.ToString();
             OpUdpBox.Text = Core.Network.UdpControl.ListenPort.ToString();
             OpLanBox.Text = Core.Network.LanControl.ListenPort.ToString();
-            
-            OpStatusBox.Text = Core.Firewall.ToString();
+
+            OpStatusBox.Text = Core.GetFirewallString();
             OpStatusBox.BackColor = GetStatusColor(Core.Firewall);
 
             OpTcpBox.KeyPress += new KeyPressEventHandler(PortBox_KeyPress);
@@ -53,7 +53,7 @@ namespace RiseOp.Interface.Settings
                 GlobalUdpBox.Text = Global.Network.UdpControl.ListenPort.ToString();
                 GlobalLanBox.Text = Global.Network.LanControl.ListenPort.ToString();
 
-                GlobalStatusBox.Text = Global.Firewall.ToString();
+                GlobalStatusBox.Text = Global.GetFirewallString();
                 GlobalStatusBox.BackColor = GetStatusColor(Global.Firewall);
 
                 GlobalTcpBox.KeyPress += new KeyPressEventHandler(PortBox_KeyPress);

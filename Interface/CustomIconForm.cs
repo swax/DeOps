@@ -11,7 +11,7 @@ namespace RiseOp.Interface
 {
     internal class CustomIconForm : Form
     {
-        Identity Profile;
+        OpUser Profile;
 
 
         internal CustomIconForm()
@@ -24,7 +24,7 @@ namespace RiseOp.Interface
 
         internal CustomIconForm(OpCore core)
         {
-            Profile = core.Profile;
+            Profile = core.User;
 
 
             // window icon
@@ -37,7 +37,7 @@ namespace RiseOp.Interface
 
 
             // signup for icon updates
-            core.Profile.GuiIconUpdate += new IconUpdateHandler(Profile_IconUpdate);
+            core.User.GuiIconUpdate += new IconUpdateHandler(Profile_IconUpdate);
         }
 
         void Profile_IconUpdate()

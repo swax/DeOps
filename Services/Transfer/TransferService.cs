@@ -57,7 +57,7 @@ namespace RiseOp.Services.Transfer
             // create and clear transfer dir
             try
             {
-                TransferPath = Core.Profile.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
+                TransferPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
                 Directory.CreateDirectory(TransferPath);
 
                 string[] files = Directory.GetFiles(TransferPath);
@@ -364,14 +364,15 @@ namespace RiseOp.Services.Transfer
                     UploadMap.Remove(session);
 
             // downloads
-            
             foreach (int id in Active)
             {
                 FileDownload download = DownloadMap[id];
 
                 // active
                 if(session.Status == SessionStatus.Active)
-                    if ( download.Status != DownloadStatus.Done && !download.Sessions.Contains(session))
+                    if ( download.Status != DownloadStatus.Done && 
+                        !download.Sessions.Contains(session) &&
+                        download.Sessions.Count == 0)// only allow 1 d/l session at a time for now
                             foreach(LocationData source in download.Sources)
                                 if (source.UserID == session.UserID && source.Source.ClientID == session.ClientID)
                                 {
@@ -570,7 +571,7 @@ namespace RiseOp.Services.Transfer
             {
                 if (data.StartByte == download.FilePos)
                 {
-                    download.Log("Data received, pos " + download.FilePos.ToString() + ", size " + data.Data.Length.ToString());
+                    download.Log("Data received, pos " + download.FilePos.ToString() + ", size " + data.Data.Length.ToString() + "  from " + session.Name);
                     download.WriteStream.Write(data.Data, 0, data.Data.Length);
                     download.FilePos += data.Data.Length;
                 }

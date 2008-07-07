@@ -108,7 +108,7 @@ namespace RiseOp.Services.Profile
             Store = Network.Store;
             Links = Core.Trust;
 
-            ExtractPath = Core.Profile.RootPath + Path.DirectorySeparatorChar +
+            ExtractPath = Core.User.RootPath + Path.DirectorySeparatorChar +
                         "Data" + Path.DirectorySeparatorChar +
                         ServiceID.ToString() + Path.DirectorySeparatorChar +
                         DataTypeExtracted.ToString();

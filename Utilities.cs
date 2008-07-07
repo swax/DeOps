@@ -54,7 +54,7 @@ namespace RiseOp
 
             while (trying)
             {
-                GetTextDialog form = new GetTextDialog(core, core.Profile.GetTitle(), "Enter Passphrase", "");
+                GetTextDialog form = new GetTextDialog(core, core.User.GetTitle(), "Enter Passphrase", "");
 
                 form.StartPosition = FormStartPosition.CenterScreen;
                 form.ResultBox.UseSystemPasswordChar = true;
@@ -62,9 +62,9 @@ namespace RiseOp
                 if (form.ShowDialog() != DialogResult.OK)
                     return false;
 
-                byte[] key = GetPasswordKey(form.ResultBox.Text, core.Profile.PasswordSalt);
+                byte[] key = GetPasswordKey(form.ResultBox.Text, core.User.PasswordSalt);
 
-                if (MemCompare(core.Profile.PasswordKey, key))
+                if (MemCompare(core.User.PasswordKey, key))
                     return true;
 
                 MessageBox.Show("Wrong passphrase", "RiseOp");
@@ -398,42 +398,30 @@ namespace RiseOp
         {
             // hash, base64 name with ~ instead of /, use for link as well
 
+            byte[] salt = Utilities.ExtractBytes(core.User.Settings.FileKey, 0, 4);
+
+            byte[] final = Utilities.CombineArrays(salt, UTF8Encoding.UTF8.GetBytes(name));
+
             SHA1Managed sha1 = new SHA1Managed();
-            byte[] hash = new SHA1Managed().ComputeHash(UTF8Encoding.UTF8.GetBytes(name));
+            byte[] hash = new SHA1Managed().ComputeHash(final);
 
             return Utilities.ToBase64String(hash);
-
-            /*RijndaelManaged crypt = core.User.Settings.FileKey;
-
-            UTF8Encoding converter = new UTF8Encoding();
-            ICryptoTransform transform = crypt.CreateEncryptor();
-
-            byte[] buffer = converter.GetBytes(name);
-            return BytestoHex(transform.TransformFinalBlock(buffer, 0, buffer.Length));*/
         }
 
         internal static string CryptFilename(OpCore core, ulong id, byte[] hash)
         {
-            byte[] buffer = new byte[8 + hash.Length];
-            BitConverter.GetBytes(id).CopyTo(buffer, 0);
-            hash.CopyTo(buffer, 8);
+            // we salt so there are no common file names between users
+            byte[] salt = Utilities.ExtractBytes(core.User.Settings.FileKey, 0, 4);
+
+            byte[] buffer = new byte[4 + 8 + hash.Length];
+            salt.CopyTo(buffer, 0);
+            BitConverter.GetBytes(id).CopyTo(buffer, 4);
+            hash.CopyTo(buffer, 12);
 
             SHA1Managed sha1 = new SHA1Managed();
             byte[] totalHash = new SHA1Managed().ComputeHash(hash);
 
             return Utilities.ToBase64String(totalHash);
-
-            /*RijndaelManaged crypt = core.User.Settings.FileKey;
-
-            // prevent nodes with same hash for file from overwriting, or even attacking each other
-
-            byte[] buffer = new byte[8 + hash.Length];
-            BitConverter.GetBytes(id).CopyTo(buffer, 0);
-            hash.CopyTo(buffer, 8);
-
-            ICryptoTransform transform = crypt.CreateEncryptor();
-
-            return BytestoHex(transform.TransformFinalBlock(buffer, 0, buffer.Length));*/
         }
 
         internal static string ToBase64String(byte[] hash)

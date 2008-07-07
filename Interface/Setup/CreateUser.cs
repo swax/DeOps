@@ -89,7 +89,7 @@ namespace RiseOp.Interface.Startup
                     throw new Exception("Cannot create because " + filename + " already exists");
 
                 byte[] opKey = Invite != null ? Invite.Info.OpID : null;
-                Identity.CreateNew(path, OpName, TextName.Text, TextPassword.Text, OpAccess, opKey);
+                OpUser.CreateNew(path, OpName, TextName.Text, TextPassword.Text, OpAccess, opKey);
 
                 OpCore core = new OpCore(Context, path, TextPassword.Text);
 

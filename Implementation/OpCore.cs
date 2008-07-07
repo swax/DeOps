@@ -60,7 +60,7 @@ namespace RiseOp.Implementation
         internal SimInstance Sim;
 
         // sub-classes
-		internal Identity    Profile;
+		internal OpUser    User;
         internal DhtNetwork  Network;
 
         // services
@@ -133,8 +133,8 @@ namespace RiseOp.Implementation
 
             ConsoleLog("RiseOp " + Application.ProductVersion);
 
-            Profile = new Identity(path, pass, this);
-            Profile.Load(LoadModeType.Settings);
+            User = new OpUser(path, pass, this);
+            User.Load(LoadModeType.Settings);
 
             Network = new DhtNetwork(this, false);
 
@@ -142,13 +142,13 @@ namespace RiseOp.Implementation
 
             Test test = new Test(); // should be empty unless running a test    
 
-            Profile.Load(LoadModeType.AllCaches);
+            User.Load(LoadModeType.AllCaches);
 
             // delete data dirs if frsh start indicated
             if (Sim != null && Sim.Internet.FreshStart)
                 for (int service = 1; service < 20; service++ ) // 0 is temp folder, cleared on startup
                 {
-                    string dirpath = Profile.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + service.ToString();
+                    string dirpath = User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + service.ToString();
                     if (Directory.Exists(dirpath))
                         Directory.Delete(dirpath, true);
                 }
@@ -193,7 +193,7 @@ namespace RiseOp.Implementation
             Context.Cores.LockReading(delegate()
             {
                 foreach (OpCore core in Context.Cores)
-                    core.Profile.Load(LoadModeType.GlobalCache);
+                    core.User.Load(LoadModeType.GlobalCache);
             });
 
             // get cache from all loaded cores
@@ -400,7 +400,7 @@ namespace RiseOp.Implementation
 				}
 				if(commands[0] == "fwstatus")
 				{
-                    ConsoleLog("Status set to " + Firewall.ToString());
+                    ConsoleLog("Status set to " + GetFirewallString());
 				}
 
 
@@ -440,6 +440,18 @@ namespace RiseOp.Implementation
 			}
 		}
 
+        internal string GetFirewallString()
+        {
+            if (Firewall == FirewallType.Open)
+                return "Open";
+
+            else if (Firewall == FirewallType.NAT)
+                return "NAT";
+
+            else
+                return "Blocked";
+        }
+
         // firewall set at core level so that networks can exist on internet and on internal LANs simultaneously
         internal void SetFirewallType(FirewallType type)
         {
@@ -467,7 +479,7 @@ namespace RiseOp.Implementation
 
             }
 
-            Network.UpdateLog("Network", "Firewall changed to " + Firewall.ToString());
+            Network.UpdateLog("Network", "Firewall changed to " + GetFirewallString());
         }
 
         /*internal struct LastInputInfo
@@ -568,7 +580,7 @@ namespace RiseOp.Implementation
                 byte[] rnd = new byte[16];
                 RndGen.NextBytes(rnd);
 
-                path = Profile.TempPath + Path.DirectorySeparatorChar + Utilities.BytestoHex(rnd);
+                path = User.TempPath + Path.DirectorySeparatorChar + Utilities.ToBase64String(rnd);
 
                 if ( !File.Exists(path) )
                     break;
@@ -636,7 +648,7 @@ namespace RiseOp.Implementation
             if (Network.IsGlobal)
                 Network.GlobalConfig.Save(this);
             else
-                Profile.Save();
+                User.Save();
 
             foreach (OpService service in ServiceMap.Values)
                 service.Dispose();
@@ -726,9 +738,9 @@ namespace RiseOp.Implementation
 
             // write invite
             OneWayInvite invite = new OneWayInvite();
-            invite.OpName = Profile.Settings.Operation;
-            invite.OpAccess = Profile.Settings.OpAccess;
-            invite.OpID = Profile.Settings.OpKey;
+            invite.OpName = User.Settings.Operation;
+            invite.OpAccess = User.Settings.OpAccess;
+            invite.OpID = User.Settings.OpKey;
 
             stream.WritePacket(invite);
 

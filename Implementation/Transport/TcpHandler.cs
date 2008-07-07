@@ -48,7 +48,7 @@ namespace RiseOp.Implementation.Transport
 
         internal void Initialize()
         {
-            ListenPort = Network.IsGlobal ? Network.GlobalConfig.TcpPort : Core.Profile.Settings.TcpPort;
+            ListenPort = Network.IsGlobal ? Network.GlobalConfig.TcpPort : Core.User.Settings.TcpPort;
 
             if (Core.Sim != null)
                 return;
@@ -477,7 +477,7 @@ namespace RiseOp.Implementation.Transport
             if (!ProxyMap.ContainsKey(socket.UserID))
                 ProxyMap[socket.UserID] = new Dictionary<ushort, TcpConnect>();
 
-            Debug.Assert(!ProxyMap[socket.UserID].ContainsKey(socket.ClientID));
+            Debug.Assert(!ProxyMap[socket.UserID].ContainsKey(socket.ClientID)); //crit this was tripped!!!
 
             ProxyMap[socket.UserID][socket.ClientID] = socket;
 

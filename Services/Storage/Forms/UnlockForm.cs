@@ -29,7 +29,7 @@ namespace RiseOp.Services.Storage
             MainLabel.Text = text;
 
             // link
-            text = View.Core.Profile.RootPath + Path.DirectorySeparatorChar + View.Trust.GetProjectName(View.ProjectID) + " Storage";
+            text = View.Core.User.RootPath + Path.DirectorySeparatorChar + View.Trust.GetProjectName(View.ProjectID) + " Storage";
 
             PathLink.Text = text;
         }

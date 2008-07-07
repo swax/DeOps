@@ -740,7 +740,7 @@ namespace RiseOp.Services.Chat
                 if (!Core.KeyMap.ContainsKey(id))
                     return;
 
-                invite.SignedInvite = Core.Profile.Settings.KeyPair.SignData(Core.KeyMap[id], new SHA1CryptoServiceProvider());
+                invite.SignedInvite = Core.User.Settings.KeyPair.SignData(Core.KeyMap[id], new SHA1CryptoServiceProvider());
 
                 room.Verified[id] = true;
             }

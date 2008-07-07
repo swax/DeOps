@@ -43,7 +43,7 @@ namespace RiseOp.Implementation.Transport
 
         internal void Initialize()
         {
-            ListenPort = Network.IsGlobal ? Network.GlobalConfig.UdpPort : Core.Profile.Settings.UdpPort;
+            ListenPort = Network.IsGlobal ? Network.GlobalConfig.UdpPort : Core.User.Settings.UdpPort;
             
             if (Core.Sim != null)
                 return;

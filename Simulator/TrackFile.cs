@@ -32,7 +32,7 @@ namespace RiseOp.Simulator
 
         private void TrackButton_Click(object sender, EventArgs e)
         {
-            View.TrackHash = Utilities.HextoBytes(HashBox.Text);
+            View.TrackHash = Utilities.FromBase64String(HashBox.Text);
 
             UpdateTrackButton();
             
@@ -57,7 +57,7 @@ namespace RiseOp.Simulator
 
         void UpdateTrackButton()
         {
-            byte[] newHash = Utilities.HextoBytes(HashBox.Text);
+            byte[] newHash = Utilities.FromBase64String(HashBox.Text);
 
             if (Utilities.MemCompare(newHash, View.TrackHash))
                 TrackButton.Text = "Tracking";

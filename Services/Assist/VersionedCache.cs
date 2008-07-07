@@ -59,14 +59,14 @@ namespace RiseOp.Services.Assist
             DataType = type;
             UseLocalSync = useLocalSync;
 
-            CachePath = Core.Profile.RootPath + Path.DirectorySeparatorChar +
+            CachePath = Core.User.RootPath + Path.DirectorySeparatorChar +
                         "Data" + Path.DirectorySeparatorChar +
                         Service.ToString() + Path.DirectorySeparatorChar +
                         DataType.ToString();
 
             Directory.CreateDirectory(CachePath);
 
-            LocalKey = Core.Profile.Settings.FileKey;
+            LocalKey = Core.User.Settings.FileKey;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
@@ -321,7 +321,7 @@ namespace RiseOp.Services.Assist
                 header = new VersionedFileHeader();
 
 
-            header.Key = Core.Profile.Settings.KeyPublic;
+            header.Key = Core.User.Settings.KeyPublic;
             header.KeyID = Core.UserID; // set so keycheck works
             header.Version++;
             header.FileKey = key;
@@ -338,7 +338,7 @@ namespace RiseOp.Services.Assist
                 File.Move(tempPath, finalPath);
             }
 
-            CacheFile(new SignedData(Network.Protocol, Core.Profile.Settings.KeyPair, header), header);
+            CacheFile(new SignedData(Network.Protocol, Core.User.Settings.KeyPair, header), header);
 
             SaveHeaders();
 
@@ -573,6 +573,7 @@ namespace RiseOp.Services.Assist
                     return;
                 }
 
+                
                 vfile.Unique = false; // network has current or newer version
 
                 if (vfile.Header.Version == version)

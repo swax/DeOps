@@ -311,7 +311,7 @@ namespace RiseOp
             Cores.LockReading(delegate()
             {
                 foreach (OpCore core in Cores)
-                    if (core.Profile.Settings.OpAccess != AccessType.Secret)
+                    if (core.User.Settings.OpAccess != AccessType.Secret)
                         runGlobal = true;
 
                 // if public cores exist, sign into global

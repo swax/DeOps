@@ -40,23 +40,23 @@ namespace RiseOp.Services.Storage
             this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
             this.DiffCombo = new System.Windows.Forms.ToolStripComboBox();
             this.GhostsButton = new System.Windows.Forms.ToolStripButton();
-            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.FolderTreeView = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
+            this.FolderTreeView = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.FileListView = new RiseOp.Interface.TLVex.ContainerListViewEx();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.SecondTimer = new System.Windows.Forms.Timer(this.components);
             this.RescanLabel = new System.Windows.Forms.Label();
-            this.DiscardButton = new System.Windows.Forms.PictureBox();
-            this.SaveButton = new System.Windows.Forms.PictureBox();
+            this.DiscardButton = new RiseOp.Interface.Views.ImageButton();
+            this.SaveButton = new RiseOp.Interface.Views.ImageButton();
             this.ChangesLabel = new System.Windows.Forms.Label();
             SelectedInfo = new InfoPanel();
             this.toolStrip1.SuspendLayout();
-            this.splitContainer1.Panel1.SuspendLayout();
-            this.splitContainer1.Panel2.SuspendLayout();
-            this.splitContainer1.SuspendLayout();
             this.splitContainer2.Panel1.SuspendLayout();
             this.splitContainer2.Panel2.SuspendLayout();
             this.splitContainer2.SuspendLayout();
+            this.splitContainer1.Panel1.SuspendLayout();
+            this.splitContainer1.Panel2.SuspendLayout();
+            this.splitContainer1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.DiscardButton)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.SaveButton)).BeginInit();
             this.SuspendLayout();
@@ -123,25 +123,23 @@ namespace RiseOp.Services.Storage
             this.GhostsButton.Text = "Ghosts";
             this.GhostsButton.CheckedChanged += new System.EventHandler(this.GhostsButton_CheckedChanged);
             // 
-            // splitContainer1
+            // splitContainer2
             // 
-            this.splitContainer1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
-            this.splitContainer1.Location = new System.Drawing.Point(0, 25);
-            this.splitContainer1.Name = "splitContainer1";
+            this.splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer2.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
+            this.splitContainer2.Location = new System.Drawing.Point(0, 0);
+            this.splitContainer2.Name = "splitContainer2";
             // 
-            // splitContainer1.Panel1
+            // splitContainer2.Panel1
             // 
-            this.splitContainer1.Panel1.Controls.Add(this.FolderTreeView);
+            this.splitContainer2.Panel1.Controls.Add(this.FolderTreeView);
             // 
-            // splitContainer1.Panel2
+            // splitContainer2.Panel2
             // 
-            this.splitContainer1.Panel2.Controls.Add(this.splitContainer2);
-            this.splitContainer1.Size = new System.Drawing.Size(523, 379);
-            this.splitContainer1.SplitterDistance = 159;
-            this.splitContainer1.TabIndex = 2;
+            this.splitContainer2.Panel2.Controls.Add(this.FileListView);
+            this.splitContainer2.Size = new System.Drawing.Size(523, 272);
+            this.splitContainer2.SplitterDistance = 145;
+            this.splitContainer2.TabIndex = 2;
             // 
             // FolderTreeView
             // 
@@ -163,7 +161,7 @@ namespace RiseOp.Services.Storage
             this.FolderTreeView.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.FolderTreeView.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.FolderTreeView.ShowLines = true;
-            this.FolderTreeView.Size = new System.Drawing.Size(159, 379);
+            this.FolderTreeView.Size = new System.Drawing.Size(145, 272);
             this.FolderTreeView.SmallImageList = null;
             this.FolderTreeView.StateImageList = null;
             this.FolderTreeView.TabIndex = 0;
@@ -176,25 +174,6 @@ namespace RiseOp.Services.Storage
             this.FolderTreeView.KeyUp += new System.Windows.Forms.KeyEventHandler(this.FolderTreeView_KeyUp);
             this.FolderTreeView.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FolderTreeView_KeyDown);
             this.FolderTreeView.DragOver += new System.Windows.Forms.DragEventHandler(this.FolderTreeView_DragOver);
-            // 
-            // splitContainer2
-            // 
-            this.splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer2.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
-            this.splitContainer2.Location = new System.Drawing.Point(0, 0);
-            this.splitContainer2.Name = "splitContainer2";
-            this.splitContainer2.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            // 
-            // splitContainer2.Panel1
-            // 
-            this.splitContainer2.Panel1.Controls.Add(this.FileListView);
-            // 
-            // splitContainer2.Panel2
-            // 
-            this.splitContainer2.Panel2.Controls.Add(this.SelectedInfo);
-            this.splitContainer2.Size = new System.Drawing.Size(360, 379);
-            this.splitContainer2.SplitterDistance = 271;
-            this.splitContainer2.TabIndex = 0;
             // 
             // FileListView
             // 
@@ -210,7 +189,7 @@ namespace RiseOp.Services.Storage
             toggleColumnHeader1.Text = "Name";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 168;
+            toggleColumnHeader1.Width = 182;
             toggleColumnHeader2.Hovered = false;
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
@@ -249,7 +228,7 @@ namespace RiseOp.Services.Storage
             this.FileListView.Name = "FileListView";
             this.FileListView.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.FileListView.RowTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.FileListView.Size = new System.Drawing.Size(360, 271);
+            this.FileListView.Size = new System.Drawing.Size(374, 272);
             this.FileListView.SmallImageList = null;
             this.FileListView.StateImageList = null;
             this.FileListView.TabIndex = 0;
@@ -265,12 +244,33 @@ namespace RiseOp.Services.Storage
             this.FileListView.SelectedIndexChanged += new System.EventHandler(this.FileListView_SelectedIndexChanged);
             this.FileListView.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FileListView_KeyDown);
             // 
+            // splitContainer1
+            // 
+            this.splitContainer1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+                        | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
+            this.splitContainer1.Location = new System.Drawing.Point(0, 25);
+            this.splitContainer1.Name = "splitContainer1";
+            this.splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            // 
+            // splitContainer1.Panel1
+            // 
+            this.splitContainer1.Panel1.Controls.Add(this.splitContainer2);
+            // 
+            // splitContainer1.Panel2
+            // 
+            this.splitContainer1.Panel2.Controls.Add(this.SelectedInfo);
+            this.splitContainer1.Size = new System.Drawing.Size(523, 380);
+            this.splitContainer1.SplitterDistance = 272;
+            this.splitContainer1.TabIndex = 0;
+            // 
             // SelectedInfo
             // 
             this.SelectedInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.SelectedInfo.Location = new System.Drawing.Point(0, 0);
             this.SelectedInfo.Name = "SelectedInfo";
-            this.SelectedInfo.Size = new System.Drawing.Size(360, 104);
+            this.SelectedInfo.Size = new System.Drawing.Size(523, 104);
             this.SelectedInfo.TabIndex = 0;
             // 
             // SecondTimer
@@ -294,7 +294,10 @@ namespace RiseOp.Services.Storage
             // DiscardButton
             // 
             this.DiscardButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.DiscardButton.Image = global::RiseOp.Properties.Resources.discard;
+            this.DiscardButton.ButtonDown = global::RiseOp.Properties.Resources.discard_down;
+            this.DiscardButton.ButtonHot = global::RiseOp.Properties.Resources.discard_hot;
+            this.DiscardButton.ButtonNormal = global::RiseOp.Properties.Resources.discard_norm;
+            this.DiscardButton.Image = global::RiseOp.Properties.Resources.discard_norm;
             this.DiscardButton.Location = new System.Drawing.Point(437, 410);
             this.DiscardButton.Name = "DiscardButton";
             this.DiscardButton.Size = new System.Drawing.Size(64, 19);
@@ -307,7 +310,10 @@ namespace RiseOp.Services.Storage
             // SaveButton
             // 
             this.SaveButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.SaveButton.Image = global::RiseOp.Properties.Resources.save;
+            this.SaveButton.ButtonDown = global::RiseOp.Properties.Resources.save_down;
+            this.SaveButton.ButtonHot = global::RiseOp.Properties.Resources.save_hot;
+            this.SaveButton.ButtonNormal = global::RiseOp.Properties.Resources.save_norm;
+            this.SaveButton.Image = global::RiseOp.Properties.Resources.save_norm;
             this.SaveButton.Location = new System.Drawing.Point(367, 410);
             this.SaveButton.Name = "SaveButton";
             this.SaveButton.Size = new System.Drawing.Size(64, 19);
@@ -334,23 +340,23 @@ namespace RiseOp.Services.Storage
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
+            this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.ChangesLabel);
             this.Controls.Add(this.DiscardButton);
             this.Controls.Add(this.SaveButton);
             this.Controls.Add(this.RescanLabel);
-            this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.toolStrip1);
             this.Name = "StorageView";
             this.Size = new System.Drawing.Size(523, 432);
             this.Load += new System.EventHandler(this.StorageView_Load);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
-            this.splitContainer1.Panel1.ResumeLayout(false);
-            this.splitContainer1.Panel2.ResumeLayout(false);
-            this.splitContainer1.ResumeLayout(false);
             this.splitContainer2.Panel1.ResumeLayout(false);
             this.splitContainer2.Panel2.ResumeLayout(false);
             this.splitContainer2.ResumeLayout(false);
+            this.splitContainer1.Panel1.ResumeLayout(false);
+            this.splitContainer1.Panel2.ResumeLayout(false);
+            this.splitContainer1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.DiscardButton)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.SaveButton)).EndInit();
             this.ResumeLayout(false);
@@ -362,9 +368,9 @@ namespace RiseOp.Services.Storage
 
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.ToolStripLabel divLabel;
-        private System.Windows.Forms.SplitContainer splitContainer1;
-        private RiseOp.Interface.TLVex.TreeListViewEx FolderTreeView;
         private System.Windows.Forms.SplitContainer splitContainer2;
+        private RiseOp.Interface.TLVex.TreeListViewEx FolderTreeView;
+        private System.Windows.Forms.SplitContainer splitContainer1;
         private RiseOp.Interface.TLVex.ContainerListViewEx FileListView;
         private System.Windows.Forms.ToolStripLabel toolStripLabel2;
         private System.Windows.Forms.ToolStripComboBox DiffCombo;
@@ -374,8 +380,8 @@ namespace RiseOp.Services.Storage
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;
         private InfoPanel SelectedInfo;
         private System.Windows.Forms.Label RescanLabel;
-        private System.Windows.Forms.PictureBox DiscardButton;
-        private System.Windows.Forms.PictureBox SaveButton;
+        private RiseOp.Interface.Views.ImageButton DiscardButton;
+        private RiseOp.Interface.Views.ImageButton SaveButton;
         private System.Windows.Forms.Label ChangesLabel;
     }
 }

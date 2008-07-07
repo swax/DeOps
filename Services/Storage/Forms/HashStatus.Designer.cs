@@ -74,7 +74,7 @@ namespace RiseOp.Services.Storage
             this.MinimizeBox = false;
             this.Name = "HashStatus";
             this.ShowInTaskbar = false;
-            this.Text = "Storage Processing...";
+            this.Text = "Files Processing...";
             this.ResumeLayout(false);
 
         }

@@ -27,6 +27,7 @@
     <SignAssembly>false</SignAssembly>
     <OldToolsVersion>2.0</OldToolsVersion>
     <IsWebBootstrapper>false</IsWebBootstrapper>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -41,7 +42,6 @@
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <OutputPath>bin\Debug\</OutputPath>
@@ -159,6 +159,9 @@
     </Compile>
     <Compile Include="Interface\Setup\JoinOp.Designer.cs">
       <DependentUpon>JoinOp.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Views\ImageButton.cs">
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Services\Assist\VersionedCache.cs" />
     <Compile Include="Services\Board\BoardService.cs" />
@@ -403,7 +406,7 @@
     <Compile Include="Implementation\OpCore.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Implementation\Identity.cs">
+    <Compile Include="Implementation\OpUser.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Implementation\Protocol\G2Header.cs">
@@ -630,6 +633,12 @@
     <None Include="Interface\Res\splash.jpg" />
     <None Include="Interface\Res\save.png" />
     <None Include="Interface\Res\discard.png" />
+    <None Include="Interface\Res\save_hot.png" />
+    <None Include="Interface\Res\save_norm.png" />
+    <None Include="Interface\Res\discard_down.png" />
+    <None Include="Interface\Res\discard_hot.png" />
+    <None Include="Interface\Res\discard_norm.png" />
+    <None Include="Interface\Res\save_down.png" />
     <Content Include="riseop.ico" />
     <Content Include="Services\Board\Board.txt" />
     <None Include="Services\Chat\Res\chat.ico" />

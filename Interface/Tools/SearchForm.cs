@@ -55,7 +55,7 @@ namespace RiseOp.Interface.Tools
                         instance.Context.Cores.LockReading(delegate()
                         {
                             foreach (OpCore core in instance.Context.Cores)
-                                if (core.Profile.Settings.UserName == TextSearch.Text)
+                                if (core.User.Settings.UserName == TextSearch.Text)
                                 {
                                     TargetID = Network.IsGlobal ? core.Context.Global.UserID : core.UserID;
                                     break;
@@ -67,7 +67,7 @@ namespace RiseOp.Interface.Tools
                         instance.Context.Cores.LockReading(delegate()
                         {
                             foreach (OpCore core in instance.Context.Cores)
-                                if (core.Profile.Settings.Operation == TextSearch.Text)
+                                if (core.User.Settings.Operation == TextSearch.Text)
                                 {
                                     TargetID = core.Network.OpID;
                                     break;

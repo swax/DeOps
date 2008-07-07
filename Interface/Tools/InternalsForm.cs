@@ -290,12 +290,12 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Property", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
-            listValues.Items.Add(new ListViewItem(new string[] { "ProfilePath", xStr(Core.Profile.ProfilePath) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "Operation", xStr(Core.Profile.Settings.Operation) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "ScreenName", xStr(Core.Profile.Settings.UserName) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "OpPortTcp", xStr(Core.Profile.Settings.TcpPort) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "OpPortUdp", xStr(Core.Profile.Settings.UdpPort) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "OpAccess", xStr(Core.Profile.Settings.OpAccess) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "ProfilePath", xStr(Core.User.ProfilePath) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "Operation", xStr(Core.User.Settings.Operation) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "ScreenName", xStr(Core.User.Settings.UserName) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "OpPortTcp", xStr(Core.User.Settings.TcpPort) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "OpPortUdp", xStr(Core.User.Settings.UdpPort) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "OpAccess", xStr(Core.User.Settings.OpAccess) }));
         }
 
         internal void LoadNetwork(TreeNodeCollection root, string name, DhtNetwork network)
@@ -356,6 +356,7 @@ namespace RiseOp.Interface.Tools
 
             listValues.Items.Add(new ListViewItem(new string[] { "LocalIP", xStr(network.Core.LocalIP) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Firewall", xStr(network.Core.Firewall) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "LanMode", xStr(network.LanMode) }));
             listValues.Items.Add(new ListViewItem(new string[] { "LocalDhtID", IDtoStr(network.Local.UserID) }));
             listValues.Items.Add(new ListViewItem(new string[] { "ClientID", xStr(network.Local.ClientID) }));
             listValues.Items.Add(new ListViewItem(new string[] { "OpID", IDtoStr(network.OpID) })); 

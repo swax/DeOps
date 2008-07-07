@@ -13,14 +13,14 @@ namespace RiseOp.Interface.Settings
 {
     internal partial class User : CustomIconForm
     {
-        Identity Profile;
+        OpUser Profile;
 
         internal User(MainForm parent)
             : base(parent.Core)
         {
             InitializeComponent();
 
-            Profile = parent.Core.Profile;
+            Profile = parent.Core.User;
 
             NameBox.Text = Profile.Settings.UserName;
         }

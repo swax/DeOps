@@ -83,7 +83,7 @@ namespace RiseOp.Services.Storage
                     IsLocal = true;
                 }
 
-            MenuAdd = new ToolStripMenuItem("Add to Storage", StorageRes.Add, FileView_Add);
+            MenuAdd = new ToolStripMenuItem("Add to Files", StorageRes.Add, FileView_Add);
             MenuLock = new ToolStripMenuItem("Lock", StorageRes.Locked, FileView_Lock);
             MenuUnlock = new ToolStripMenuItem("Unlock", StorageRes.Unlocked, FileView_Unlock);
             MenuRestore = new ToolStripMenuItem("Restore", null, FileView_Restore);
@@ -260,7 +260,12 @@ namespace RiseOp.Services.Storage
 
             FailedDiffs.Clear();
 
+            foreach(ulong user in CurrentDiffs)
+                Storages.Research(user);
+
             // clear out current diffs
+            SelectedInfo.DiffsView = true; // show diff status panel
+
             RefreshView();
         }
 
@@ -281,7 +286,7 @@ namespace RiseOp.Services.Storage
             else
             {
                 StorageFolder root = new StorageFolder();
-                root.Name = Trust.GetProjectName(ProjectID) + " Storage";
+                root.Name = Trust.GetProjectName(ProjectID) + " Files";
 
                 RootFolder = new FolderNode(this, root, FolderTreeView.virtualParent, false);
                 FolderTreeView.Nodes.Add(RootFolder);
@@ -2204,7 +2209,7 @@ namespace RiseOp.Services.Storage
 
         private void FoldersButton_CheckedChanged(object sender, EventArgs e)
         {
-            splitContainer1.Panel1Collapsed = !FoldersButton.Checked;
+            splitContainer2.Panel1Collapsed = !FoldersButton.Checked;
 
             RefreshFileList(); // puts .. dir if needed
         }
@@ -2547,7 +2552,7 @@ namespace RiseOp.Services.Storage
         {
             if (Working.FileExists(destPath))
             {
-                errors.Add("File " + destPath + " already exists in storage");
+                errors.Add("File " + destPath + " already exists in files");
                 return;
             }
 

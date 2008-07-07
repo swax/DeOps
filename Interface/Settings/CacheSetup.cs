@@ -14,7 +14,7 @@ namespace RiseOp.Interface.Settings
     internal partial class CacheSetup : CustomIconForm
     {
         OpCore Core;
-        Identity Profile;
+        OpUser Profile;
 
         internal WebCache Cache;
 
@@ -25,7 +25,7 @@ namespace RiseOp.Interface.Settings
             InitializeComponent();
 
             Core = core;
-            Profile = Core.Profile;
+            Profile = Core.User;
 
             Cache = cache;
 

@@ -24,11 +24,11 @@ namespace RiseOp.Interface.Views
             PreserveSideMode = sideMode;
 
             Profile_IconUpdate();
-            Tray.Text = Core.Profile.GetTitle(); 
+            Tray.Text = Core.User.GetTitle(); 
             Tray.Visible = true;
 
             Tray.DoubleClick += new EventHandler(Tray_DoubleClick);
-            core.Profile.GuiIconUpdate += new IconUpdateHandler(Profile_IconUpdate);
+            core.User.GuiIconUpdate += new IconUpdateHandler(Profile_IconUpdate);
 
             ContextMenuStripEx menu = new ContextMenuStripEx();
 
@@ -49,7 +49,7 @@ namespace RiseOp.Interface.Views
             HiddenForm.GotFocus += new EventHandler(HiddenForm_GotFocus); // run hide() in here
             HiddenForm.Show();*/ // sill a little flicker which is annyoing
 
-            Tray.Icon = Core.Profile.GetOpIcon();
+            Tray.Icon = Core.User.GetOpIcon();
         }
 
         void Tray_DoubleClick(object sender, EventArgs e)
@@ -80,7 +80,7 @@ namespace RiseOp.Interface.Views
 
         private void CleanupTray()
         {
-            Core.Profile.GuiIconUpdate -= new IconUpdateHandler(Profile_IconUpdate);
+            Core.User.GuiIconUpdate -= new IconUpdateHandler(Profile_IconUpdate);
             Tray.Visible = false;
             Core.GuiTray = null;
         }

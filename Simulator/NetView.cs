@@ -215,7 +215,7 @@ namespace RiseOp.Simulator
                 selectBox.Inflate(2,2);
                 buffer.DrawEllipse(BlackPen, selectBox);
 
-                string name = networks[SelectedID].Core.Profile.Settings.UserName;
+                string name = networks[SelectedID].Core.User.Settings.UserName;
                 name += " " + Utilities.IDtoBin(networks[SelectedID].Local.UserID);
                 name += ShowInbound ? " Inbound Traffic" : " Outbound Traffic";
 
@@ -589,7 +589,7 @@ namespace RiseOp.Simulator
                                     foreach (OpCore core in instance.Context.Cores)
                                         if (core.UserID == id)
                                         {
-                                            name = core.Profile.Settings.UserName;
+                                            name = core.User.Settings.UserName;
                                             break;
                                         }
                                 });

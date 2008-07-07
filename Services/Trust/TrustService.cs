@@ -76,12 +76,12 @@ namespace RiseOp.Services.Trust
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
             Cache.Load();
 
-            ProjectNames.SafeAdd(0, Core.Profile.Settings.Operation);
+            ProjectNames.SafeAdd(0, Core.User.Settings.Operation);
 
-            LinkPath = Core.Profile.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
+            LinkPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
             Directory.CreateDirectory(LinkPath);
 
-            LocalFileKey = Core.Profile.Settings.FileKey;
+            LocalFileKey = Core.User.Settings.FileKey;
 
             LoadUplinkReqs();
 
@@ -91,13 +91,13 @@ namespace RiseOp.Services.Trust
 
             if (LocalTrust == null)
             {
-                LocalTrust = new OpTrust(new OpVersionedFile(Core.Profile.Settings.KeyPublic));
+                LocalTrust = new OpTrust(new OpVersionedFile(Core.User.Settings.KeyPublic));
                 TrustMap.SafeAdd(Core.UserID, LocalTrust);
             }
 
             if (!LocalTrust.Loaded)
             {
-                LocalTrust.Name = Core.Profile.Settings.UserName;
+                LocalTrust.Name = Core.User.Settings.UserName;
                 LocalTrust.AddProject(0, true); // operation
 
                 SaveLocal();
@@ -243,13 +243,13 @@ namespace RiseOp.Services.Trust
             request.Target = remoteLink.Trust.File.Key;
             request.TargetID = remoteLink.UserID;
 
-            byte[] signed = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, request);
+            byte[] signed = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, request);
 
             if(Network.Established)
                 Store.PublishNetwork(request.TargetID, ServiceID, DataTypeFile, signed);
 
             // store locally
-            Process_UplinkReq(null, new SignedData(Network.Protocol, Core.Profile.Settings.KeyPair, request), request);
+            Process_UplinkReq(null, new SignedData(Network.Protocol, Core.User.Settings.KeyPair, request), request);
 
             // publish at neighbors so they are aware of request status
             List<LocationData> locations = new List<LocationData>();
@@ -626,11 +626,11 @@ namespace RiseOp.Services.Trust
                         project.Name = GetProjectName(link.Project);
 
                         if (link.Project == 0)
-                            project.UserName = Core.Profile.Settings.UserName;
+                            project.UserName = Core.User.Settings.UserName;
 
                         project.UserTitle = link.Title;
 
-                        byte[] packet = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, project);
+                        byte[] packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, project);
                         stream.Write(packet, 0, packet.Length);
 
 
@@ -638,7 +638,7 @@ namespace RiseOp.Services.Trust
                         if (link.Uplink != null)
                         {
                             LinkData data = new LinkData(link.Project, link.Uplink.Trust.File.Key, true);
-                            packet = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, data);
+                            packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, data);
                             stream.Write(packet, 0, packet.Length);
                         }
 
@@ -647,7 +647,7 @@ namespace RiseOp.Services.Trust
                             if (link.Confirmed.Contains(downlink.UserID))
                             {
                                 LinkData data = new LinkData(link.Project, downlink.Trust.File.Key, false);
-                                packet = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, data);
+                                packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, data);
                                 stream.Write(packet, 0, packet.Length);
                             }
                     }
@@ -662,13 +662,13 @@ namespace RiseOp.Services.Trust
                 // save inheritable settings only if they can be inherited
                 if (IsInheritNode(Core.UserID))
                 {
-                    if (Core.Profile.OpIcon != null)
-                        streamEx.WritePacket(new IconPacket(TrustPacket.Icon, Core.Profile.OpIcon));
+                    if (Core.User.OpIcon != null)
+                        streamEx.WritePacket(new IconPacket(TrustPacket.Icon, Core.User.OpIcon));
 
-                    if (Core.Profile.OpSplash != null)
+                    if (Core.User.OpSplash != null)
                     {
                         MemoryStream splash = new MemoryStream();
-                        Core.Profile.OpSplash.Save(splash, ImageFormat.Jpeg);
+                        Core.User.OpSplash.Save(splash, ImageFormat.Jpeg);
                         LargeDataPacket.Write(streamEx, TrustPacket.Splash, splash.ToArray());
                     }
                 }
@@ -999,25 +999,25 @@ namespace RiseOp.Services.Trust
                 if(Core.UserID == trust.UserID)
                 {
                     if (inheritName != null)
-                        Core.Profile.Settings.UserName = inheritName;
+                        Core.User.Settings.UserName = inheritName;
                 }
 
                 // inherit settings from highest node, first node in loop
                 if (IsInheritNode(trust.UserID))
                 {
                     if (inheritOp != null)
-                        Core.Profile.Settings.Operation = inheritOp;
+                        Core.User.Settings.Operation = inheritOp;
 
                     if (inheritIcon != null)
                     {
-                        Core.Profile.OpIcon = inheritIcon;
-                        Core.Profile.IconUpdate();
+                        Core.User.OpIcon = inheritIcon;
+                        Core.User.IconUpdate();
                     }
 
                     if (inheritSplash != null)
-                        Core.Profile.OpSplash = (Bitmap)Bitmap.FromStream(new MemoryStream(inheritSplash));
+                        Core.User.OpSplash = (Bitmap)Bitmap.FromStream(new MemoryStream(inheritSplash));
                     else
-                        Core.Profile.OpSplash = null;
+                        Core.User.OpSplash = null;
                 }
 
                 // update interface node
@@ -1189,7 +1189,7 @@ namespace RiseOp.Services.Trust
         internal string GetProjectName(uint id)
         {
             if (id == 0)
-                return Core.Profile.Settings.Operation;
+                return Core.User.Settings.Operation;
 
             string name = null;
             if (ProjectNames.SafeTryGetValue(id, out name))

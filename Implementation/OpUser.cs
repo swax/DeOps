@@ -32,7 +32,7 @@ namespace RiseOp
 	/// <summary>
 	/// Summary description for KimProfile.
 	/// </summary>
-	internal class Identity
+	internal class OpUser
 	{
         internal OpCore Core;
         internal G2Protocol Protocol;
@@ -53,7 +53,7 @@ namespace RiseOp
         internal IconUpdateHandler GuiIconUpdate;
  
 
-        internal Identity(string filepath, string password, OpCore core)
+        internal OpUser(string filepath, string password, OpCore core)
         {
             Core = core;
             Protocol = Core.GuiProtocol;
@@ -69,7 +69,7 @@ namespace RiseOp
             Init(filepath, password);
         }
 
-		internal Identity(string filepath, string password, G2Protocol protocol)
+		internal OpUser(string filepath, string password, G2Protocol protocol)
 		{
             // used when creating new ident
             Protocol    = protocol;
@@ -272,7 +272,7 @@ namespace RiseOp
 
         internal static void CreateNew(string path, string opName, string userName, string password, AccessType access, byte[] opKey)
         {
-            Identity user = new Identity(path, password, new G2Protocol());
+            OpUser user = new OpUser(path, password, new G2Protocol());
             user.Settings.Operation = opName;
             user.Settings.UserName = userName;
             user.Settings.KeyPair = new RSACryptoServiceProvider(1024);

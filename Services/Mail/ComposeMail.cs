@@ -145,13 +145,11 @@ namespace RiseOp.Services.Mail
 
                 // if reply - set subject to preview of message
                 string quip = MessageBody.InputBox.Text;
+                quip = quip.Replace('\r', ' ');
+                quip = quip.Replace('\n', ' ');
 
                 if (quip.Length > 50)
-                {
                     quip = quip.Substring(0, 50) + "...";
-                    quip = quip.Replace('\r', ' ');
-                    quip = quip.Replace('\n', ' ');
-                }
 
                 Mail.SendMail(ToIDs, files, SubjectTextBox.Text, MessageBody.InputBox.Rtf, quip, ThreadID);
             }

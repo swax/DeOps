@@ -84,10 +84,10 @@ namespace RiseOp.Implementation.Dht
                 GlobalConfig = GlobalSettings.Load(this);
 
             Local = new DhtClient();
-            Local.UserID = IsGlobal ? GlobalConfig.UserID : Utilities.KeytoID(Core.Profile.Settings.KeyPair.ExportParameters(false));
+            Local.UserID = IsGlobal ? GlobalConfig.UserID : Utilities.KeytoID(Core.User.Settings.KeyPair.ExportParameters(false));
             Local.ClientID = (ushort)Core.RndGen.Next(1, ushort.MaxValue);
 
-            OpID = Utilities.KeytoID(IsGlobal ? GlobalKey : Core.Profile.Settings.OpKey);
+            OpID = Utilities.KeytoID(IsGlobal ? GlobalKey : Core.User.Settings.OpKey);
 
             OriginalCrypt = new RijndaelManaged();
 
@@ -95,7 +95,7 @@ namespace RiseOp.Implementation.Dht
             if (IsGlobal)
                 OriginalCrypt.Key = GlobalKey;
             else
-                OriginalCrypt.Key = Core.Profile.Settings.OpKey;
+                OriginalCrypt.Key = Core.User.Settings.OpKey;
 
 
             AugmentedCrypt = new RijndaelManaged();
@@ -529,11 +529,11 @@ namespace RiseOp.Implementation.Dht
             Debug.Assert(contact.TunnelClient != null && contact.TunnelServer != null);
             Debug.Assert(Core.Context.Global != null);
             Debug.Assert(!IsGlobal);
-            Debug.Assert(Core.Profile.Settings.OpAccess != AccessType.Secret);
+            Debug.Assert(Core.User.Settings.OpAccess != AccessType.Secret);
 
             if (IsGlobal ||
                 Core.Context.Global == null ||
-                Core.Profile.Settings.OpAccess == AccessType.Secret)
+                Core.User.Settings.OpAccess == AccessType.Secret)
                 return;
 
             OpCore global = Core.Context.Global;
@@ -1135,13 +1135,13 @@ namespace RiseOp.Implementation.Dht
                 Core.Context.Cores.LockReading(delegate()
                 {
                     foreach (OpCore core in Core.Context.Cores)
-                        label += core.Profile.Settings.UserName + ", ";
+                        label += core.User.Settings.UserName + ", ";
                 });
 
                 label = label.TrimEnd(',', ' ');
             }
             else
-                label += Core.Profile.Settings.UserName;
+                label += Core.User.Settings.UserName;
 
             return label;
         }
@@ -1161,8 +1161,8 @@ namespace RiseOp.Implementation.Dht
             }
             else
             {
-                Core.Profile.Settings.TcpPort = tcp;
-                Core.Profile.Settings.UdpPort = udp;
+                Core.User.Settings.TcpPort = tcp;
+                Core.User.Settings.UdpPort = udp;
             }
 
             // re-initialize sockets
@@ -1173,7 +1173,7 @@ namespace RiseOp.Implementation.Dht
             UdpControl.Initialize();
 
             // save profile
-            Core.Profile.Save();
+            Core.User.Save();
 
             // save global config
             if (IsGlobal)

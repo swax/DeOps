@@ -42,7 +42,7 @@ namespace RiseOp.Services.Storage
 
            
             StorageFolder packet = new StorageFolder();
-            packet.Name = Core.Trust.GetProjectName(project) + " Storage";
+            packet.Name = Core.Trust.GetProjectName(project) + " Files";
 
             RootFolder = new LocalFolder(null, packet);
 

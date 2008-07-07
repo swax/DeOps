@@ -132,14 +132,14 @@ namespace RiseOp.Services.Mail
             if (Core.Sim != null)
                 PruneSize = 16;
 
-            LocalFileKey = Core.Profile.Settings.FileKey;
+            LocalFileKey = Core.User.Settings.FileKey;
 
             MailIDKey = new RijndaelManaged();
             MailIDKey.Key = LocalFileKey;
             MailIDKey.IV = new byte[MailIDKey.IV.Length];
             MailIDKey.Padding = PaddingMode.None;
 
-            MailPath = Core.Profile.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
+            MailPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
             CachePath = MailPath + Path.DirectorySeparatorChar + "1";
 
             Directory.CreateDirectory(MailPath);
@@ -634,7 +634,7 @@ namespace RiseOp.Services.Mail
 
             // exception handled by compose mail interface
             MailHeader header = new MailHeader();
-            header.Source = Core.Profile.Settings.KeyPublic;
+            header.Source = Core.User.Settings.KeyPublic;
             header.SourceID = Core.UserID;
             header.LocalKey = Utilities.GenerateKey(Core.StrongRndGen, 256);
             header.Read = true;
@@ -742,7 +742,7 @@ namespace RiseOp.Services.Mail
                 if (PendingMap.ContainsKey(id))
                     header.TargetVersion = PendingMap[id].Header.Version;
 
-                byte[] signed = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, header.Encode(Network.Protocol, false) );
+                byte[] signed = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, header.Encode(Network.Protocol, false) );
 
                 if(Network.Established)
                     Core.Network.Store.PublishNetwork(id, ServiceID, DataTypeMail, signed);
@@ -766,7 +766,7 @@ namespace RiseOp.Services.Mail
 
         void DecodeFileKey(byte[] enocoded, ref byte[] fileKey, ref ulong fileStart)
         {
-            byte[] decoded = Core.Profile.Settings.KeyPair.Decrypt(enocoded, false);
+            byte[] decoded = Core.User.Settings.KeyPair.Decrypt(enocoded, false);
 
             if (decoded.Length < (256 / 8) + 8) // 256 bit encryption is 32 bytes plus 8 for fileStart data
                 return;
@@ -1215,7 +1215,7 @@ namespace RiseOp.Services.Mail
             // publish ack
             MailAck ack  = new MailAck();
             ack.MailID   = header.MailID;
-            ack.Source   = Core.Profile.Settings.KeyPublic;
+            ack.Source   = Core.User.Settings.KeyPublic;
             ack.SourceID = Core.UserID;
             ack.Target   = header.Source;
             ack.TargetID = header.SourceID; 
@@ -1232,7 +1232,7 @@ namespace RiseOp.Services.Mail
             ack.SourceVersion = (local != null) ? local.Header.Version : 0;
 
             // send 
-            byte[] signedAck = SignedData.Encode(Network.Protocol, Core.Profile.Settings.KeyPair, ack.Encode(Network.Protocol));
+            byte[] signedAck = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, ack.Encode(Network.Protocol));
             
             if(Network.Established)
                 Core.Network.Store.PublishNetwork(header.SourceID, ServiceID, DataTypeAck, signedAck);

@@ -78,10 +78,7 @@ namespace RiseOp.Implementation.Dht
         {
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreAsync(delegate()
-                {
-                    PublishDirect(locations, target, service, datatype, data);
-                });
+                Core.RunInCoreAsync(delegate() { PublishDirect(locations, target, service, datatype, data); });
                 return;
             }
 

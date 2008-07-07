@@ -68,7 +68,7 @@ namespace RiseOp.Services.Plan
  
             if (!PlanMap.SafeContainsKey(Core.UserID))
             {
-                LocalPlan = new OpPlan(new OpVersionedFile(Core.Profile.Settings.KeyPublic));
+                LocalPlan = new OpPlan(new OpVersionedFile(Core.User.Settings.KeyPublic));
                 LocalPlan.Init();
                 LocalPlan.Loaded = true;
                 PlanMap.SafeAdd(Core.UserID, LocalPlan);

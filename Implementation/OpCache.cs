@@ -80,7 +80,7 @@ namespace RiseOp.Implementation
                 if (Network.IsGlobal)
                     Network.GlobalConfig.Save(Core);
                 else
-                    Core.Profile.Save();
+                    Core.User.Save();
 
                 NextSave = Core.TimeNow.AddMinutes(5);
             }
@@ -153,7 +153,7 @@ namespace RiseOp.Implementation
             }
 
             // check if any caches havent been tried yet, only check 1 per minute
-            if(ThinkOnline)
+            if(ThinkOnline && Core.Sim == null)
                 foreach (WebCache cache in WebCaches)
                     if (cache.LastTried == default(DateTime))
                     {

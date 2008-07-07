@@ -23,6 +23,7 @@ namespace RiseOp.Services.Storage
         internal StorageService Storages;
 
         internal bool DisplayActivated;
+        internal string CurrentWebSource = "";
 
         internal FolderNode CurrentFolder;
         internal FileItem CurrentFile;
@@ -391,12 +392,13 @@ namespace RiseOp.Services.Storage
                 return;
 
             // watch transfers runs per second, dont update unless we need to 
-            if (html.CompareTo(InfoDisplay.DocumentText) == 0)
+            if (html.CompareTo(CurrentWebSource) == 0)
                 return;
             
             // prevents clicking sound when browser navigates
             InfoDisplay.Hide();
             InfoDisplay.DocumentText = html;
+            CurrentWebSource = html; // document text doesn't update immediate, so for compare to work above we need this
             InfoDisplay.Show();
         }
 

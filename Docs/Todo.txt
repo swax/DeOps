@@ -1,15 +1,53 @@
 
+setup website / forum - see how far can get with it, email pj tonight
+	all help files online, no one needs offline help -yet- thats a $$ features
+	
+
+plan this month
+	plan this weeks 
+		M/T - start up joomla site so i can start documenting help
+		W/T - store caching
+		F/S - bandwidth - quantitate location overhead
+	next week..
+		mutli-source
+	next 
+		live
+		
+
+need to fix location scheme
+	maybe clicking on someone does a quick locations search 
+	shows searching... and green led if online
+	location publishes are fine, its the constant searching that needs to change
+		publish every 5 mins, or on proxy change, or when going offline (kill loc)
+	constant searching is not cool, maybe when online tab is active, location searches done on those nodes at intervals
+		when online tab closed, not focused, searches arent done
+		how do projects work - seeing who's online
+	combine this with 'live' strategy
+
 test
 	in sim show web cache requests / publishes, ensure not too often
-	web cache pruning
-	check minute ping is done
-	create a / b / c /d /e / f caches
+	web cache pruning - create a / b / c /d /e / f caches
 	
 other
-	**storage is losing files, debug
-	**publisher unknown
-	**are file name hashes still unique, add salt?
+	publisher unknown
+	re-publish of local sync is off the hook!
+
+	if file deleted on file sys, should auto go back to locked state
+		what if user deletes to recycle bin, warn?
+
 	
+	sim AI
+		have filler text function getFiller(min, max) amount returns words 'asdf xcv dd cxcdsf xs' to fit
+		chat - put chat text in active room, qa - received by members?
+		trust - trust / change trust, qa - ensure accepted
+		mail - send mail, qa - was received
+		board - make post / reply to posts, qa - post reached all in region
+		storage - create / add random files / folders with scopes
+		profile - randomly change, qa ensure network up to date
+		location - change loc name, etc.. qa - network up to date
+		schedules, goals, storage, trust, mail can be checked to see if remotes have lastest versions
+		
+
 	sql error reports
 	move global cache to cache.riseop.com so it can be turned off by dns or redirected
 
@@ -17,6 +55,7 @@ other
 	doesnt seem like trust icon/splash changes are propagated to subs quickly should auto post
 
 	test crawlable over home lan
+		crawl requests must be signed?
 			
 	sending large block of text crashes, test other places where string input is unchecked size
 	
@@ -51,20 +90,25 @@ default views
 
 	
 summer release
-	web caching ips
 	licensing, installer, release security
+	
 	
 	*** items from todo
 	31 crits
-	implement upnp
-	network bandwidth limits - tracking in sim triggers node to start logging bw data
+	
 	store caching
+	network bandwidth limits/audit - tracking in sim triggers node to start logging bw data
+	do larger sim (128) - test create/find public ops
+	
 	multisource downloading 
 		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
 		right click to cancel, increase/decrease priority
 	live locations/chat
-	web caching files
 	website
+	
+	web caching files?
+	implement upnp?
+	
 	
 3 trust chain
 	adding files to storage causes re-download of unrelated file
@@ -142,6 +186,7 @@ Interface
 		dont allow nav bar person switch on mail/chat components
 		trust info box - options like trust, IM, mail, leave/join project
 		exception catching/reporting - move to POST, get last 50 log entries as well by time
+		multiline text in tree list row exceeds clip bounds
 		
 	graphics
 		storage - restore
@@ -392,6 +437,10 @@ live
 	uplink determined by highest offline where not challenged
 	show trusted/untrusted in live
 	ensure when random subset of nodes removed all links/chat rooms still connected through live
+	regular heart beats from the top? each link signs (itself and online subs) on way down tree
+		everyone in org now knows who's online
+		
+		
 	
 			
 quick
