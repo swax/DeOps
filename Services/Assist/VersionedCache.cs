@@ -187,7 +187,7 @@ namespace RiseOp.Services.Assist
 
                         FileRemoved.Invoke(vfile);
 
-                        if (vfile.Header != null)
+                        if (vfile.Header != null && vfile.Header.FileHash != null) // local sync doesnt use files
                             try { File.Delete(GetFilePath(vfile.Header)); }
                             catch { }
 

@@ -227,14 +227,7 @@ namespace RiseOp.Services.Board
                 // if reply - set subject to preview of message
                 string subject = SubjectTextBox.Text;
    
-                string quip = MessageBody.InputBox.Text;
-                quip = quip.Replace('\r', ' ');
-                quip = quip.Replace('\n', ' ');
-
-                if (quip.Length > 50)
-                    quip = quip.Substring(0, 50) + "...";
-
-                Board.PostMessage(UserID, ProjectID, ParentID, scope, subject, MessageBody.InputBox.Rtf, quip, files, EditPost);
+                Board.PostMessage(UserID, ProjectID, ParentID, scope, subject, MessageBody.InputBox.Rtf, files, EditPost);
             }
             catch (Exception ex)
             {

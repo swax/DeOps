@@ -236,6 +236,15 @@ namespace RiseOp.Services.Transfer
             }
         }
 
+
+        public void SimTest()
+        {
+        }
+
+        public void SimCleanup()
+        {
+        }
+
         public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
         {
             return null;

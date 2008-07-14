@@ -14,6 +14,7 @@ using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Transport;
 
+using RiseOp.Services;
 using RiseOp.Services.Transfer;
 
 using RiseOp.Interface;
@@ -22,6 +23,8 @@ using RiseOp.Interface.Tools;
 
 namespace RiseOp.Simulator
 {
+    delegate void RunServiceMethod(OpService service);
+
 
     internal partial class SimForm : CustomIconForm
     {
@@ -55,7 +58,7 @@ namespace RiseOp.Simulator
         {
             InitializeComponent();
 
-            listInstances.ListViewItemSorter = lvwColumnSorter;
+            ListInstances.ListViewItemSorter = lvwColumnSorter;
 
             Sim = new InternetSim(this);
         }
@@ -180,7 +183,7 @@ namespace RiseOp.Simulator
             // refresh
             else if (type == InstanceChangeType.Refresh)
             {
-                listInstances.Items.Clear();
+                ListInstances.Items.Clear();
 
                 foreach (SimInstance inst in Sim.Instances)
                     AddItem(inst);
@@ -191,7 +194,7 @@ namespace RiseOp.Simulator
             // update
             else if (type == InstanceChangeType.Update)
             {
-                foreach (ListInstanceItem item in listInstances.Items)
+                foreach (ListInstanceItem item in ListInstances.Items)
                     if (item.Instance == instance)
                     {
                         item.Refresh();
@@ -202,10 +205,10 @@ namespace RiseOp.Simulator
             // remove
             else if (type == InstanceChangeType.Remove)
             {
-                foreach (ListInstanceItem item in listInstances.Items)
+                foreach (ListInstanceItem item in ListInstances.Items)
                     if (item.Instance == instance)
                     {
-                        listInstances.Items.Remove(item);
+                        ListInstances.Items.Remove(item);
                         break;
                     }
             }
@@ -216,10 +219,10 @@ namespace RiseOp.Simulator
             instance.Context.Cores.LockReading(delegate()
             {
                 foreach (OpCore core in instance.Context.Cores)
-                    listInstances.Items.Add(new ListInstanceItem(core));
+                    ListInstances.Items.Add(new ListInstanceItem(core));
 
                 if (instance.Context.Cores.Count == 0)
-                    listInstances.Items.Add(new ListInstanceItem(instance));
+                    ListInstances.Items.Add(new ListInstanceItem(instance));
             });
         }
 
@@ -291,7 +294,7 @@ namespace RiseOp.Simulator
             if (e.Button != MouseButtons.Right)
                 return;
 
-            ListInstanceItem item = listInstances.GetItemAt(e.X, e.Y) as ListInstanceItem;
+            ListInstanceItem item = ListInstances.GetItemAt(e.X, e.Y) as ListInstanceItem;
 
             if (item == null)
                 return;
@@ -324,6 +327,7 @@ namespace RiseOp.Simulator
                 firewall.MenuItems.Add(new MenuItem("NAT", new EventHandler(Click_FwNAT)));
                 firewall.MenuItems.Add(new MenuItem("Blocked", new EventHandler(Click_FwBlocked)));
 
+
                 menu.MenuItems.Add(new MenuItem("Main", new EventHandler(Click_Main)));
                 menu.MenuItems.Add(new MenuItem("Internal", new EventHandler(Click_Internal)));
                 menu.MenuItems.Add(new MenuItem("Transfers", new EventHandler(Click_Transfers)));
@@ -335,7 +339,7 @@ namespace RiseOp.Simulator
                 menu.MenuItems.Add(new MenuItem("Logout", new EventHandler(Click_Disconnect)));
             }
 
-            menu.Show(listInstances, e.Location);
+            menu.Show(ListInstances, e.Location);
         }
 
         private void listInstances_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -345,7 +349,7 @@ namespace RiseOp.Simulator
 
         private void Click_Main(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
             {
                 OpCore core = item.Core;
 
@@ -365,7 +369,7 @@ namespace RiseOp.Simulator
         
         private void Click_FwOpen(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
             {
                 item.Instance.RealFirewall = FirewallType.Open;
                 OnInstanceChange(item.Instance, InstanceChangeType.Update);
@@ -374,7 +378,7 @@ namespace RiseOp.Simulator
 
         private void Click_FwNAT(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
             {
                 item.Instance.RealFirewall = FirewallType.NAT;
                 OnInstanceChange(item.Instance, InstanceChangeType.Update);
@@ -383,7 +387,7 @@ namespace RiseOp.Simulator
 
         private void Click_FwBlocked(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
             {
                 item.Instance.RealFirewall = FirewallType.Blocked;
                 OnInstanceChange(item.Instance, InstanceChangeType.Update);
@@ -392,7 +396,7 @@ namespace RiseOp.Simulator
 
         private void Click_Console(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
             {
                 OpCore core = item.Core;
 
@@ -406,71 +410,71 @@ namespace RiseOp.Simulator
 
         private void Click_Internal(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 InternalsForm.Show(item.Core);
         }
 
         private void Click_Transfers(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 new TransferView(item.Core.Transfers).Show(this);
         }
 
         private void Click_GlobalCrawler(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 if (item.Core.Context.Global != null)
                     CrawlerForm.Show(item.Core.Context.Global.Network);
         }
 
         private void Click_GlobalGraph(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 if (item.Core.Context.Global != null)
                     PacketsForm.Show(item.Core.Context.Global.Network);
         }
 
         private void Click_GlobalPackets(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 if (item.Core.Context.Global != null)
                     PacketsForm.Show(item.Core.Context.Global.Network);
         }
 
         private void Click_GlobalSearch(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 if (item.Core.Context.Global != null)
                     SearchForm.Show(item.Core.Context.Global.Network);
         }
 
         private void Click_OpCrawler(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 CrawlerForm.Show(item.Core.Network);
         }
 
         private void Click_OpGraph(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 GraphForm.Show(item.Core.Network);
         }
 
         private void Click_OpPackets(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 PacketsForm.Show(item.Core.Network);
         }
 
         private void Click_OpSearch(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 SearchForm.Show(item.Core.Network);
         }
 
         private void Click_Connect(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 if(item.Core == null)
                     Sim.Login(item.Instance);
 
@@ -479,7 +483,7 @@ namespace RiseOp.Simulator
 
         private void Click_Disconnect(object sender, EventArgs e)
         {
-            foreach (ListInstanceItem item in listInstances.SelectedItems)
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 if (item.Core != null)
                 {
                     OpCore core = item.Core;
@@ -508,7 +512,7 @@ namespace RiseOp.Simulator
             }
 
             // Perform the sort with these new sort options.
-            listInstances.Sort();
+            ListInstances.Sort();
         }
 
         private void LinkUpdate_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -636,6 +640,20 @@ namespace RiseOp.Simulator
         private void EncryptionMenu_Click(object sender, EventArgs e)
         {
             Sim.TestEncryption = !Sim.TestEncryption;
+        }
+
+        private void TestServicesMenu_Click(object sender, EventArgs e)
+        {
+            SelectServices form = new SelectServices(this, "Test Services", delegate(OpService service) { service.SimTest(); });
+
+            form.Show();
+        }
+
+        private void CleanupServicesMenu_Click(object sender, EventArgs e)
+        {
+            SelectServices form = new SelectServices(this, "Cleanup Services", delegate(OpService service) { service.SimCleanup(); });
+
+            form.Show();
         }
 
 

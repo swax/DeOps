@@ -107,6 +107,14 @@ namespace RiseOp.Services.IM
             });
         }
 
+        public void SimTest()
+        {
+        }
+
+        public void SimCleanup()
+        {
+        }
+
         void Core_GetFocusedCore()
         {
             IMMap.LockReading(delegate()

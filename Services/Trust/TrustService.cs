@@ -401,6 +401,51 @@ namespace RiseOp.Services.Trust
                });
         }
 
+        public void SimTest()
+        {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { SimTest(); });
+                return;
+            }
+
+            OpLink localLink = LocalTrust.Links[0];
+
+            if (localLink.Uplink == null)
+            {
+                // linkup to random untrusted nodes
+                OpTrust randTrust = GetRandomTrust();
+
+                if (randTrust != null)
+                {
+                    OpLink uplink = randTrust.Links[0];
+
+                    localLink.ResetUplink();
+                    localLink.Uplink = uplink;
+
+                    SaveLocal();
+
+                    LinkupRequest(uplink);
+                }
+            }
+
+            // if unconfirmed nodes, accept them
+            bool change = false;
+
+            foreach (OpLink downlink in localLink.Downlinks)
+                if (!localLink.Confirmed.Contains(downlink.UserID))
+                {
+                    change = true;
+                    localLink.Confirmed.Add(downlink.UserID);
+                }
+
+            if (change)
+                SaveLocal();
+        }
+
+        public void SimCleanup()
+        {
+        }
 
         void Core_GetFocusedCore()
         {
@@ -1600,6 +1645,33 @@ namespace RiseOp.Services.Trust
                 return null;
 
             return trust.GetLink(project);
+        }
+
+        internal OpTrust GetRandomTrust()
+        {
+            OpTrust result = null;
+
+            List<OpTrust> list = new List<OpTrust>();
+
+            TrustMap.LockReading(delegate()
+            {
+                int index = Core.RndGen.Next(TrustMap.Count);
+
+                int i = 0;
+                foreach (OpTrust trust in TrustMap.Values)
+                    if (trust != LocalTrust && trust.Loaded)
+                    {
+                        if (i >= index)
+                        {
+                            result = trust;
+                            break;
+                        }
+
+                        i++;
+                    }
+            });
+
+            return result;
         }
     }
 

@@ -143,15 +143,7 @@ namespace RiseOp.Services.Mail
                 if (MessageBody.InputBox.Text.Length == 0)
                     throw new Exception("Message body is blank");
 
-                // if reply - set subject to preview of message
-                string quip = MessageBody.InputBox.Text;
-                quip = quip.Replace('\r', ' ');
-                quip = quip.Replace('\n', ' ');
-
-                if (quip.Length > 50)
-                    quip = quip.Substring(0, 50) + "...";
-
-                Mail.SendMail(ToIDs, files, SubjectTextBox.Text, MessageBody.InputBox.Rtf, quip, ThreadID);
+                Mail.SendMail(ToIDs, files, SubjectTextBox.Text, MessageBody.InputBox.Rtf, ThreadID);
             }
             catch (Exception ex)
             {

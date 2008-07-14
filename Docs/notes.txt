@@ -1,4 +1,9 @@
 
+message board - random scope
+schedule - random levels
+goals - assign/delegate
+
+
 debugging
 	finding an error
 		start removing code

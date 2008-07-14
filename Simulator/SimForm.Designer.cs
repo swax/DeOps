@@ -32,7 +32,7 @@ namespace RiseOp.Simulator
             this.buttonStart = new System.Windows.Forms.Button();
             this.buttonPause = new System.Windows.Forms.Button();
             this.labelTime = new System.Windows.Forms.Label();
-            this.listInstances = new System.Windows.Forms.ListView();
+            this.ListInstances = new System.Windows.Forms.ListView();
             this.columnHeader10 = new System.Windows.Forms.ColumnHeader();
             this.columnHeader1 = new System.Windows.Forms.ColumnHeader();
             this.columnHeader3 = new System.Windows.Forms.ColumnHeader();
@@ -64,6 +64,9 @@ namespace RiseOp.Simulator
             this.SpeedMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.CollectMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ViewMenu = new System.Windows.Forms.ToolStripMenuItem();
+            this.ServicesMenu = new System.Windows.Forms.ToolStripMenuItem();
+            this.TestServicesMenu = new System.Windows.Forms.ToolStripMenuItem();
+            this.CleanupServicesMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.ButtonStep = new System.Windows.Forms.Button();
             this.TimeLabel = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
@@ -110,12 +113,12 @@ namespace RiseOp.Simulator
             this.labelTime.Text = "00:00:00";
             this.labelTime.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
-            // listInstances
+            // ListInstances
             // 
-            this.listInstances.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            this.ListInstances.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.listInstances.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.ListInstances.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader10,
             this.columnHeader1,
             this.columnHeader3,
@@ -126,16 +129,17 @@ namespace RiseOp.Simulator
             this.columnHeader6,
             this.columnHeader8,
             this.columnHeader9});
-            this.listInstances.FullRowSelect = true;
-            this.listInstances.Location = new System.Drawing.Point(12, 144);
-            this.listInstances.Name = "listInstances";
-            this.listInstances.Size = new System.Drawing.Size(556, 277);
-            this.listInstances.TabIndex = 3;
-            this.listInstances.UseCompatibleStateImageBehavior = false;
-            this.listInstances.View = System.Windows.Forms.View.Details;
-            this.listInstances.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.listInstances_MouseDoubleClick);
-            this.listInstances.MouseClick += new System.Windows.Forms.MouseEventHandler(this.listInstances_MouseClick);
-            this.listInstances.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listInstances_ColumnClick);
+            this.ListInstances.FullRowSelect = true;
+            this.ListInstances.HideSelection = false;
+            this.ListInstances.Location = new System.Drawing.Point(12, 144);
+            this.ListInstances.Name = "ListInstances";
+            this.ListInstances.Size = new System.Drawing.Size(556, 277);
+            this.ListInstances.TabIndex = 3;
+            this.ListInstances.UseCompatibleStateImageBehavior = false;
+            this.ListInstances.View = System.Windows.Forms.View.Details;
+            this.ListInstances.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.listInstances_MouseDoubleClick);
+            this.ListInstances.MouseClick += new System.Windows.Forms.MouseEventHandler(this.listInstances_MouseClick);
+            this.ListInstances.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.listInstances_ColumnClick);
             // 
             // columnHeader10
             // 
@@ -212,7 +216,8 @@ namespace RiseOp.Simulator
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.FileMenu,
             this.OptionsMenuItem,
-            this.ViewMenu});
+            this.ViewMenu,
+            this.ServicesMenu});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
@@ -350,6 +355,29 @@ namespace RiseOp.Simulator
             this.ViewMenu.Text = "View";
             this.ViewMenu.DropDownOpening += new System.EventHandler(this.ViewMenu_DropDownOpening);
             // 
+            // ServicesMenu
+            // 
+            this.ServicesMenu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.TestServicesMenu,
+            this.CleanupServicesMenu});
+            this.ServicesMenu.Name = "ServicesMenu";
+            this.ServicesMenu.Size = new System.Drawing.Size(59, 20);
+            this.ServicesMenu.Text = "Services";
+            // 
+            // TestServicesMenu
+            // 
+            this.TestServicesMenu.Name = "TestServicesMenu";
+            this.TestServicesMenu.Size = new System.Drawing.Size(124, 22);
+            this.TestServicesMenu.Text = "Test";
+            this.TestServicesMenu.Click += new System.EventHandler(this.TestServicesMenu_Click);
+            // 
+            // CleanupServicesMenu
+            // 
+            this.CleanupServicesMenu.Name = "CleanupServicesMenu";
+            this.CleanupServicesMenu.Size = new System.Drawing.Size(124, 22);
+            this.CleanupServicesMenu.Text = "Cleanup";
+            this.CleanupServicesMenu.Click += new System.EventHandler(this.CleanupServicesMenu_Click);
+            // 
             // ButtonStep
             // 
             this.ButtonStep.Location = new System.Drawing.Point(96, 32);
@@ -470,7 +498,7 @@ namespace RiseOp.Simulator
             this.Controls.Add(this.label3);
             this.Controls.Add(this.LinkUpdate);
             this.Controls.Add(this.LabelInstances);
-            this.Controls.Add(this.listInstances);
+            this.Controls.Add(this.ListInstances);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "SimForm";
@@ -491,7 +519,6 @@ namespace RiseOp.Simulator
         private System.Windows.Forms.Button buttonStart;
         private System.Windows.Forms.Button buttonPause;
         private System.Windows.Forms.Label labelTime;
-        private System.Windows.Forms.ListView listInstances;
         private System.Windows.Forms.ColumnHeader columnHeader1;
         private System.Windows.Forms.ColumnHeader columnHeader2;
         private System.Windows.Forms.ColumnHeader columnHeader3;
@@ -533,5 +560,9 @@ namespace RiseOp.Simulator
         private System.Windows.Forms.ToolStripMenuItem LoggingMenu;
         private System.Windows.Forms.ToolStripMenuItem LanMenu;
         private System.Windows.Forms.ToolStripMenuItem EncryptionMenu;
+        private System.Windows.Forms.ToolStripMenuItem ServicesMenu;
+        private System.Windows.Forms.ToolStripMenuItem TestServicesMenu;
+        private System.Windows.Forms.ToolStripMenuItem CleanupServicesMenu;
+        internal System.Windows.Forms.ListView ListInstances;
     }
 }

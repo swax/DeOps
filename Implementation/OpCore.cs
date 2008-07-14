@@ -36,6 +36,8 @@ using RiseOp.Interface.Views;
 
 using RiseOp.Simulator;
 
+using NLipsum.Core;
+
 
 namespace RiseOp.Implementation
 {
@@ -112,6 +114,7 @@ namespace RiseOp.Implementation
         // other
         internal Random RndGen = new Random(unchecked((int)DateTime.Now.Ticks));
         internal RNGCryptoServiceProvider StrongRndGen = new RNGCryptoServiceProvider();
+        internal LipsumGenerator TextGen = new LipsumGenerator();
 
         // threading
         Thread CoreThread;
@@ -335,8 +338,8 @@ namespace RiseOp.Implementation
 
                 if (MinuteCounter == 60)
                 {
-                    MinuteTimerEvent.Invoke();
                     MinuteCounter = 0;
+                    MinuteTimerEvent.Invoke();
                 }
 			}
 			catch(Exception ex)

@@ -135,6 +135,14 @@ namespace RiseOp.Services.Location
             });
         }
 
+        public void SimTest()
+        {
+        }
+
+        public void SimCleanup()
+        {
+        }
+
         internal void Publish(ulong opID, byte[] data)
         {
             // called from operation thread

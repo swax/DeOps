@@ -442,16 +442,20 @@ namespace RiseOp.Implementation.Dht
             
             if (ContactMap.ContainsKey(newContact.RoutingID))
             {
-                DhtContact dupe = ContactMap[newContact.RoutingID];
-
-                // tunnel may change from pong / location update etc.. reflect in routing
-                // once host is open and in routing, prevent it from being maliciously set back to tunneled
-                if (dupe.TunnelServer != null)
+                if (!Network.IsGlobal)
                 {
-                    dupe.TunnelServer = newContact.TunnelServer;
-                    dupe.TunnelClient = newContact.TunnelClient;
+                    DhtContact dupe = ContactMap[newContact.RoutingID];
+
+                    // tunnel may change from pong / location update etc.. reflect in routing
+                    // once host is open and in routing, prevent it from being maliciously set back to tunneled
+                    if (dupe.TunnelServer != null)
+                    {
+                        dupe.TunnelServer = newContact.TunnelServer;
+                        dupe.TunnelClient = newContact.TunnelClient;
+                    }
                 }
 
+                // dont handle dupes
                 return;
             }
 

@@ -205,6 +205,92 @@ namespace RiseOp.Services.Board
             
         }
 
+        public void SimTest()
+        {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { SimTest(); });
+                return;
+            }
+
+            int choice = Core.RndGen.Next(100);
+
+            ulong user = 0;
+            uint project = 0;
+            uint parent = 0;
+            ScopeType scope = ScopeType.All;
+
+            // post
+            if (choice < 25)
+            {
+                user = Core.UserID;
+
+                int scopeChoice = Core.RndGen.Next(3);
+
+                if(scopeChoice == 0)
+                    scope = ScopeType.High;
+                else if (scopeChoice == 1)
+                    scope = ScopeType.Low;
+                else if (scopeChoice == 2)
+                    scope = ScopeType.All;
+            }
+
+            // reply
+            else
+            {
+                List<ulong> region = GetBoardRegion(Core.UserID, project, ScopeType.All);
+
+                if (region.Count == 0)
+                    return;
+
+                ulong target = region[Core.RndGen.Next(region.Count)];
+
+                OpBoard board = null;
+                if(BoardMap.SafeTryGetValue(target, out board))
+                {
+                    user = board.UserID;
+
+                    board.Posts.LockReading(delegate()
+                    {
+                        if (board.Posts.Count == 0)
+                            return;
+
+                        int index = Core.RndGen.Next(board.Posts.Count);
+
+                        int i = 0;
+                        foreach (OpPost post in board.Posts.Values)
+                        {
+                            if (i == index)
+                            {
+                                if(post.Header.ParentID == 0)
+                                    parent = post.Header.PostID;
+                                else
+                                    parent = post.Header.ParentID;
+
+                                break;
+                            }
+
+                            i++;
+                        }
+                    });
+                }
+
+                if (parent == 0)
+                    return;
+            }
+
+            string subject = Core.TextGen.GenerateSentences(1)[0];
+            string message = "";
+
+            message = Core.TextGen.GenerateParagraphs(1)[0];
+
+            PostMessage(user, project, parent, scope, subject, Utilities.ToRtf(message), new List<AttachedFile>(), null);
+        }
+
+        public void SimCleanup()
+        {
+        }
+
         private void PruneMap(ThreadedDictionary<ulong, List<PostUID>> map)
         {
             if (map.SafeCount < PruneSize)
@@ -377,7 +463,7 @@ namespace RiseOp.Services.Board
             FinishPost(copy);
         }
 
-        internal void PostMessage(ulong id, uint project, uint parent, ScopeType scope, string subject, string message, string quip, List<AttachedFile> files, OpPost edit)
+        internal void PostMessage(ulong user, uint project, uint parent, ScopeType scope, string subject, string message, List<AttachedFile> files, OpPost edit)
         {
             // post header
             PostHeader header = new PostHeader();
@@ -385,8 +471,8 @@ namespace RiseOp.Services.Board
             header.Source = Core.User.Settings.KeyPublic;
             header.SourceID = Core.UserID;
 
-            header.Target = Core.KeyMap[id];
-            header.TargetID = id;
+            header.Target = Core.KeyMap[user];
+            header.TargetID = user;
 
             header.ParentID = parent;
             header.ProjectID = project;
@@ -417,7 +503,7 @@ namespace RiseOp.Services.Board
             int written = 0;
 
             // write post file
-            written += Protocol.WriteToFile(new PostInfo(subject, quip, Core.RndGen), stream);
+            written += Protocol.WriteToFile(new PostInfo(subject, Utilities.GetQuip(message), Core.RndGen), stream);
 
             byte[] msgBytes = UTF8Encoding.UTF8.GetBytes(message);
             written += Protocol.WriteToFile(new PostFile("body", msgBytes.Length), stream);

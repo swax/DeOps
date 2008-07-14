@@ -68,7 +68,7 @@ namespace RiseOp.Services.Profile
                                                             <strong>&nbsp; Phone:</strong> <?text:Phone?><br />
                                                         
                                                         <br />  
-	                                                  <strong>&nbsp; Email:</strong> <?text:Email?><br />
+	                                                  <strong>&nbsp; Public Email:</strong> <?text:Email?><br />
                                                         <br />
                                                             <strong>&nbsp; IM:</strong> <?text:IM?></span>
                                                     </div>
@@ -382,6 +382,45 @@ namespace RiseOp.Services.Profile
         internal string GetFilePath(OpProfile profile)
         {
             return Cache.GetFilePath(profile.File.Header);
+        }
+
+        public void SimTest()
+        {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { SimTest(); });
+                return;
+            }
+
+            // Email, IM, Phone, MOTD
+
+            Dictionary<string, string> textFields = new Dictionary<string, string>();
+
+            textFields["Email"] = Core.User.Settings.UserName.Replace(' ', '_') + "@" + Core.User.Settings.Operation + ".com";
+            textFields["IM"] = Core.User.Settings.UserName.Split(' ')[0] + Core.RndGen.Next(100).ToString();
+
+            uint project = 0;
+            
+            textFields["MOTD-" + project] = Core.TextGen.GenerateParagraphs(1, NLipsum.Core.Paragraph.Short)[0];
+
+            string phone = "";
+            for (int i = 0; i < 3; i++)
+                phone += Core.RndGen.Next(1, 9).ToString();
+            phone += "-";
+            for (int i = 0; i < 3; i++)
+                phone += Core.RndGen.Next(1, 9).ToString();
+            phone += "-";
+            for (int i = 0; i < 4; i++)
+                phone += Core.RndGen.Next(1, 9).ToString();
+
+            textFields["Phone"] = phone;
+
+            SaveLocal(DefaultTemplate, textFields, null);
+
+        }
+
+        public void SimCleanup()
+        {
         }
     }
 

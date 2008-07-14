@@ -315,7 +315,15 @@ namespace RiseOp.Implementation.Dht
             if (Network.Local.Equals(ack.Source))
                 return;
 
-            // if response to crawl
+
+            if (ack.Source.Firewall == FirewallType.Open)
+                Routing.Add(new DhtContact(ack.Source, packet.Source.IP));
+
+            foreach (DhtContact contact in ack.ContactList)
+                Routing.Add(contact); // function calls back into seach system, adding closer nodes
+            
+
+            // if response to initial pong or crawl
             if (ack.SearchID == 0)
             {
                 if (Network.GuiCrawler != null)
@@ -323,12 +331,6 @@ namespace RiseOp.Implementation.Dht
 
                 return;
             }
-
-            if (ack.Source.Firewall == FirewallType.Open)
-                Routing.Add(new DhtContact(ack.Source, packet.Source.IP));
-
-            foreach (DhtContact contact in ack.ContactList)
-                Routing.Add(contact); // function calls back into seach system, adding closer nodes
 
             // mark searches as done
             lock (Active)

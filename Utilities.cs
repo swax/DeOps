@@ -690,6 +690,27 @@ namespace RiseOp
 
             return false;
         }
+
+        internal static string ToRtf(string text)
+        {
+            return "{\\rtf1\\ansi\\ansicpg1252\\deff0\\deflang1033{\\fonttbl{\\f0\\fnil\\fcharset0 Tahoma;}}\r\n{\\colortbl ;\\red0\\green0\\blue0;}\r\n\\viewkind4\\uc1\\pard\\cf1\\f0\\fs20 " + text + "\\cf0}\r\n";
+        }
+
+        internal static string GetQuip(string body)
+        {
+            // rtf to short text quip
+            RichTextBox box = new RichTextBox();
+            box.Rtf = body;
+
+            string quip = box.Text;
+            quip = quip.Replace('\r', ' ');
+            quip = quip.Replace('\n', ' ');
+
+            if (quip.Length > 50)
+                quip = quip.Substring(0, 50) + "...";
+
+            return quip;
+        }
     }
 
 

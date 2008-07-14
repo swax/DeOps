@@ -140,6 +140,131 @@ namespace RiseOp.Services.Plan
             }
         }
 
+        public void SimTest()
+        {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { SimTest(); });
+                return;
+            }
+
+            uint project = 0;
+
+            // schedule
+            PlanBlock block = new PlanBlock();
+
+            block.ProjectID = project;
+            block.Title = Core.TextGen.GenerateWords(1)[0];
+            block.StartTime = Core.TimeNow.AddDays(Core.RndGen.Next(365)); // anytime in next year
+            block.EndTime = block.StartTime.AddDays(Core.RndGen.Next(3, 90)); // half a week to 3 months
+            block.Description = Core.TextGen.GenerateSentences(1)[0];
+            block.Scope = -1;
+            block.Unique = Core.RndGen.Next();
+
+            // add to local plan
+            LocalPlan.AddBlock(block);
+
+    
+            // goals
+
+            // get  uplinks including self and scan all goals for  anything assigned to local
+            List<ulong> uplinks = Core.Trust.GetUplinkIDs(Core.UserID, project);
+            uplinks.Add(Core.UserID);
+               
+            List<PlanGoal> assignedGoals = new List<PlanGoal>();
+
+            PlanMap.LockReading(delegate()
+            {
+                foreach (ulong uplink in uplinks)
+                    if (PlanMap.ContainsKey(uplink) && PlanMap[uplink].GoalMap != null)
+                        foreach (List<PlanGoal> list in PlanMap[uplink].GoalMap.Values)
+                            foreach (PlanGoal goal in list)
+                                if (goal.Person == Core.UserID)
+                                    assignedGoals.Add(goal);
+            });
+
+
+            PlanGoal randGoal = null;
+            if (assignedGoals.Count > 0)
+                randGoal = assignedGoals[Core.RndGen.Next(assignedGoals.Count)];
+
+
+            List<ulong> downlinks = Core.Trust.GetDownlinkIDs(Core.UserID, project, 3);
+
+            if (downlinks.Count > 0)
+            {
+                // create new goal
+                PlanGoal newGoal = new PlanGoal();
+
+                newGoal.Project = project;
+                newGoal.Title = GetRandomTitle(); 
+                newGoal.End = Core.TimeNow.AddDays(Core.RndGen.Next(30, 300));
+                newGoal.Description = Core.TextGen.GenerateSentences(1)[0];
+
+                int choice = Core.RndGen.Next(100);
+
+                // create new goal
+                if (randGoal == null || choice < 10)
+                {
+                    newGoal.Ident = Core.RndGen.Next();
+                    newGoal.Person = Core.UserID;
+                }
+
+                // delegate goal to sub
+                else if (randGoal != null && choice < 50)
+                {
+                    PlanGoal head = randGoal;
+
+                    // delegate down
+                    newGoal.Ident = head.Ident;
+                    newGoal.BranchUp = head.BranchDown;
+                    newGoal.BranchDown = Core.RndGen.Next();
+                    newGoal.Person = downlinks[Core.RndGen.Next(downlinks.Count)];
+                }
+                else
+                    newGoal = null;
+
+
+                if(newGoal != null)
+                    LocalPlan.AddGoal(newGoal);
+            }
+
+
+            // add item to random goal
+            if (randGoal != null)
+            {
+                PlanItem item = new PlanItem();
+
+                item.Ident = randGoal.Ident;
+                item.Project = randGoal.Project;
+                item.BranchUp = randGoal.BranchDown;
+
+                item.Title = GetRandomTitle(); 
+                item.HoursTotal = Core.RndGen.Next(3, 30);
+                item.HoursCompleted = Core.RndGen.Next(0, item.HoursTotal);
+                item.Description = Core.TextGen.GenerateSentences(1)[0];
+
+                LocalPlan.AddItem(item);
+            }
+
+            SaveLocal();
+        }
+
+        private string GetRandomTitle()
+        {
+            string[] words = Core.TextGen.GenerateWords(Core.RndGen.Next(1,5));
+
+            string title = "";
+            foreach (string word in words)
+                title = word + " ";
+
+            return title;
+        }
+
+        public void SimCleanup()
+        {
+        }
+
         void Cache_FileRemoved(OpVersionedFile file)
         {
             OpPlan plan = GetPlan(file.UserID, false);

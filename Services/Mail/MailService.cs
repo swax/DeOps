@@ -13,6 +13,7 @@ using RiseOp.Implementation.Protocol.Net;
 
 using RiseOp.Services.Assist;
 using RiseOp.Services.Transfer;
+using RiseOp.Services.Trust;
 
 /* files
  *      mail folder
@@ -278,6 +279,67 @@ namespace RiseOp.Services.Mail
             }
         }
 
+        public void SimTest()
+        {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(delegate() { SimTest(); });
+                return;
+            }
+
+            int choice = Core.RndGen.Next(100);
+
+            int thread = 0;
+
+            // mail
+            if (choice < 25)
+            {
+
+            }
+
+            // reply
+            else if (LocalMailbox != null)
+            {
+                LocalMailbox.LockReading(delegate()
+                {
+                    int index = Core.RndGen.Next(LocalMailbox.Count);
+
+                    int i = 0;
+                    foreach (LocalMail mail in LocalMailbox.Values)
+                    {
+                        if (i == index)
+                        {
+                            thread = mail.Header.ThreadID;
+                            break;
+                        }
+
+                        i++;
+                    }
+                });
+            }
+
+            else
+                return;
+
+            OpTrust target = Core.Trust.GetRandomTrust();
+
+            if (target == null)
+                return;
+
+            string subject = Core.TextGen.GenerateSentences(1)[0];
+            string body = "";
+
+            body = Core.TextGen.GenerateParagraphs(1)[0];
+            //foreach (string paragraph in Core.TextGen.GenerateParagraphs(Core.RndGen.Next(1,3)))
+            //   body += paragraph + "\r\n\r\n";
+
+            SendMail(new List<ulong>() { target.UserID }, new List<AttachedFile>(), subject, Utilities.ToRtf(body), thread);
+        }
+
+        public void SimCleanup()
+        {
+        }
+
         void PendingCache_FileRemoved(OpVersionedFile file)
         {
             CachedPending pending = FindPending(file.UserID);
@@ -512,7 +574,7 @@ namespace RiseOp.Services.Mail
                 LocalMail local = LoadLocalMail(header);
 
                 if (local != null)
-                    LocalMailbox.SafeAdd(local.Info.Date, local);
+                    AddToLocalMail(local.Info.Date, local);
             }
         }
 
@@ -624,11 +686,11 @@ namespace RiseOp.Services.Mail
             Core.InvokeView(node.IsExternal(), view);
         }
 
-        internal void SendMail(List<ulong> to, List<AttachedFile> files, string subject, string body, string quip, int threadID)
+        internal void SendMail(List<ulong> to, List<AttachedFile> files, string subject, string body, int threadID)
         {
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreBlocked(delegate() { SendMail(to, files, subject, body, quip, threadID); });
+                Core.RunInCoreBlocked(delegate() { SendMail(to, files, subject, body, threadID); });
                 return;
             }
 
@@ -645,7 +707,7 @@ namespace RiseOp.Services.Mail
             int written = 0;
 
             // build mail file
-            written += Protocol.WriteToFile(new MailInfo(subject, quip, Core.TimeNow.ToUniversalTime(), files.Count > 0), stream);
+            written += Protocol.WriteToFile(new MailInfo(subject, Utilities.GetQuip(body), Core.TimeNow.ToUniversalTime(), files.Count > 0), stream);
 
             foreach (ulong id in to)
                 written += Protocol.WriteToFile(new MailDestination(Core.KeyMap[id], false), stream);
@@ -702,7 +764,7 @@ namespace RiseOp.Services.Mail
 
             if (message != null)
             {
-                LocalMailbox.SafeAdd(message.Info.Date, message);
+                AddToLocalMail(message.Info.Date, message);
                 SaveMailbox = true;
 
                 if (MailUpdate != null)
@@ -1204,7 +1266,7 @@ namespace RiseOp.Services.Mail
 
             if (message != null)
             {
-                LocalMailbox.SafeAdd(message.Info.Date, message);
+                AddToLocalMail(message.Info.Date, message);
 
                 SaveMailbox = true;
 
@@ -1242,6 +1304,19 @@ namespace RiseOp.Services.Mail
             
             Core.MakeNews("Mail Received from " + Core.Trust.GetName(message.From), message.From, 0, false, MailRes.Icon, Menu_View);
          
+        }
+
+        private void AddToLocalMail(DateTime time, LocalMail message)
+        {
+            // sorted list doesnt support dupes, mod the ticks a little so it adds
+            LocalMailbox.LockWriting(delegate()
+            {
+                while (LocalMailbox.ContainsKey(time))
+                    time = time.AddTicks(1);
+
+                LocalMailbox.Add(time, message);
+            });
+            
         }
 
         private bool IsMailPending(CachedPending pending, byte[] mailID)
@@ -1513,7 +1588,7 @@ namespace RiseOp.Services.Mail
 
                         crypto.Close();
 
-                        Debug.Assert(targets.Count == pendingAckIDs.Count);
+                        //crit Debug.Assert(targets.Count == pendingAckIDs.Count);
 
                         for (int i = 0; i < targets.Count || i > pendingAckIDs.Count; i++)
                         {

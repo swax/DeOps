@@ -60,6 +60,9 @@ namespace RiseOp.Services
 
          string Name { get; }
          uint ServiceID { get; }
+
+         void SimTest();
+         void SimCleanup();
     }
 
     internal class DataPacket

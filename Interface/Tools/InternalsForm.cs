@@ -362,6 +362,13 @@ namespace RiseOp.Interface.Tools
             listValues.Items.Add(new ListViewItem(new string[] { "OpID", IDtoStr(network.OpID) })); 
             listValues.Items.Add(new ListViewItem(new string[] { "Responsive", xStr(network.Responsive) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Established", xStr(network.Established) }));
+
+            if (!network.IsGlobal)
+            {
+                listValues.Items.Add(new ListViewItem(new string[] { "UseGlobalProxies", xStr(network.UseGlobalProxies) }));
+                listValues.Items.Add(new ListViewItem(new string[] { "TunnelID", xStr(network.Core.TunnelID) }));
+            }
+            
             listValues.Items.Add(new ListViewItem(new string[] { "IPCache", xStr(network.Cache.IPs.Count) }));
             listValues.Items.Add(new ListViewItem(new string[] { "IPTable", xStr(network.Cache.IPTable.Count) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Searches Pending", xStr(network.Searches.Pending.Count) }));
@@ -686,11 +693,11 @@ namespace RiseOp.Interface.Tools
 			listValues.Columns.Add("LastSeen",		100, HorizontalAlignment.Left);
 			listValues.Columns.Add("Attempts",		100, HorizontalAlignment.Left);
 			listValues.Columns.Add("NextTryProxy",	100, HorizontalAlignment.Left);
+            listValues.Columns.Add("Tunnel Client/Server", 100, HorizontalAlignment.Left);
 
-			foreach(DhtContact contact in contactList)
-				
-				
-					listValues.Items.Add( new ListViewItem( new string[]
+            foreach (DhtContact contact in contactList)
+            {
+                listValues.Items.Add(new ListViewItem(new string[]
 					{
 						GetLinkName(contact.UserID),
 						xStr( Utilities.IDtoBin(contact.RoutingID)),
@@ -700,8 +707,11 @@ namespace RiseOp.Interface.Tools
 						xStr(contact.UdpPort),		
 						xStr(contact.LastSeen),
 						xStr(contact.Attempts),		
-						xStr(contact.NextTryProxy)
+						xStr(contact.NextTryProxy),
+                        xStr(contact.TunnelClient) + " / " + xStr(contact.TunnelServer) 
 					}));
+
+            }
 
 		}
 

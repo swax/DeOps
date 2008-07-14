@@ -44,7 +44,7 @@ namespace RiseOp.Implementation.Transport
 		// proxying
 		internal ProxyType    Proxy;
 
-        const int BUFF_SIZE = 8 * 1024;
+        const int BUFF_SIZE = 16 * 1024;
 
 		// sending
 		ICryptoTransform Encryptor;

@@ -1,19 +1,53 @@
 
-setup website / forum - see how far can get with it, email pj tonight
-	all help files online, no one needs offline help -yet- thats a $$ features
-	
+two open not connecting
 
-plan this month
-	plan this weeks 
-		M/T - start up joomla site so i can start documenting help
-		W/T - store caching
-		F/S - bandwidth - quantitate location overhead
-	next week..
-		mutli-source
-	next 
-		live
+store caching 
+	keep track of when last result was sent
+		if greater than a minute, cache entry is up for pruning
+	
+	if greater than x requests in time period, signal in search result to republish
+		if search result tagged with republish, republish result at closest node that didnt have data
+
+	used when high load
+	how to keep cache entries up to date?
+	cache entries only last for like 5 mins
+	requester do the caching, or should requested auto-cache if load too high
+		auto-caching might not hit the nodes that requesting nodes would be likely to hit
+	index file hashes on network for files over 10 meg, otherwise file can be multisourced from default replicators of file
+	always get content once found from node closest to SELF, pull content away from source, ensure it doesn't get flooded
+		node publishes data (he is focal point), diseminates to adjacent peers (focal point splits in two, etc..)
+	How to prevent publishing overload? ex. 100 members in op all publishing global loc data at same 8 nodes closest to OpID
+		need publish search type with acks that return current storage volume, publish closest not full
+			
+	testing
+		compare node load in 64 network with on off
+		create auto link routine where nodes make random linkup to someone, gen a root
+		create auto post / mail / files / chat use for screen shots
+		compare bandwidth at levels
+		bandwidth for root node with everyone updating its loc every 2 secs
+
+
+bandwidth
+	interface
+		interface is given list of cores to track
+		filters cut down core types
+		same interface can be used for sim and client
+
+	sim
+		track overall bandwidth
+		global / operation cores
+		filter host types - filter shows % of max
+		filter service type
+		
+	client
+		burst protection
+			no more than 1kb/s of non rudp packets
+		show bandwidth as breakdown of service type
+		
 		
 
+all help files online, no one needs offline help -yet- thats a $$ features
+	
 need to fix location scheme
 	maybe clicking on someone does a quick locations search 
 	shows searching... and green led if online
@@ -35,9 +69,23 @@ other
 	if file deleted on file sys, should auto go back to locked state
 		what if user deletes to recycle bin, warn?
 
+	intead of (accept trust) after name, grey name, and when clicked make header below yellow instead of purple
 	
 	sim AI
-		have filler text function getFiller(min, max) amount returns words 'asdf xcv dd cxcdsf xs' to fit
+		right click sim 
+			Service
+				Run test -> select service box	
+				Cleanup menu -> select service box
+					foreach service selected / run asyncronously
+			
+	
+			chat on / chat off
+			Linkup
+			Mail -> rand send / reply
+			Post -> rand post / reply
+			Plan -> 
+			
+		Clean menu -> cleans cached object
 		chat - put chat text in active room, qa - received by members?
 		trust - trust / change trust, qa - ensure accepted
 		mail - send mail, qa - was received
@@ -47,6 +95,9 @@ other
 		location - change loc name, etc.. qa - network up to date
 		schedules, goals, storage, trust, mail can be checked to see if remotes have lastest versions
 		
+	change goals so goals have id and deligation follows org lines
+		that way someone changes positions, switches super / sup, goals remain basically the same
+		goal deligation is like a request, once accepted the task remains no matter what happens to above?
 
 	sql error reports
 	move global cache to cache.riseop.com so it can be turned off by dns or redirected
@@ -87,7 +138,6 @@ default views
 	chat - help (introduction to 'trust')
 	profile - (right click to edit)
 	
-
 	
 summer release
 	licensing, installer, release security
@@ -120,6 +170,10 @@ global proxying
 	any way to replace published location with a new version?
 	replicating - after knowing all global data types
 	ensure 2 global proxied NATs udp hole punch rudp
+
+	rainy day bug 
+		2 client network, A client blocked, the B client has open global port, blocked op port
+		blocked B op being added to A as open causing tunnel to break, links not synced, packet chaos
 
 next
 	use packetstream instead of protocl.writetofile	
@@ -374,24 +428,6 @@ Core
 			so local area can update for everyone on login to the network
 			storage, plans, profile - need latest fetched data of local area
 			location data needs to be stored when user is offline for this to work
-
-	store caching 
-		keep track of when last result was sent
-			if greater than a minute, cache entry is up for pruning
-		
-		if greater than x requests in time period, signal in search result to republish
-			if search result tagged with republish, republish result at closest node that didnt have data
-	
-		used when high load
-		how to keep cache entries up to date?
-		cache entries only last for like 5 mins
-		requester do theh caching, or should requested auto-cache if load too high
-			auto-caching might not hit the nodes that requesting nodes would be likely to hit
-		index file hashes on network for files over 10 meg, otherwise file can be multisourced from default replicators of file
-		always get content once found from node closest to SELF, pull content away from source, ensure it doesn't get flooded
-			node publishes data (he is focal point), diseminates to adjacent peers (focal point splits in two, etc..)
-		How to prevent publishing overload? ex. 100 members in op all publishing global loc data at same 8 nodes closest to OpID
-			need publish search type with acks that return current storage volume, publish closest not full
 
 	udp packet throttle especially for patches
 		backlog for packets, for patches, etc.. not for rudp

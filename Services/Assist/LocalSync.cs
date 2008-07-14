@@ -232,6 +232,15 @@ namespace RiseOp.Services.Assist
         {
             Cache.Research(user);
         }
+
+
+        public void SimTest()
+        {
+        }
+
+        public void SimCleanup()
+        {
+        }
     }
 
     internal class SyncPacket

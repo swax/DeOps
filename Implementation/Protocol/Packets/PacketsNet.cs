@@ -99,6 +99,11 @@ namespace RiseOp.Implementation.Protocol.Net
             result.TunnelID = BitConverter.ToUInt16(data, start + 10);
             return result;
         }
+
+        public override string ToString()
+        {
+            return UserID + ":" + ClientID + ":" + TunnelID;
+        }
     }
 
     internal class DhtSource : DhtClient

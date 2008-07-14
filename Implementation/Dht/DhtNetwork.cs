@@ -336,7 +336,13 @@ namespace RiseOp.Implementation.Dht
                 // handle locally
                 if (tunnel.Target.Equals(Local))
                 {
-                    ReceiveTunnelPacket(packet, tunnel);
+                    Core.Context.Cores.LockReading(delegate()
+                    {
+                        foreach (OpCore core in Core.Context.Cores)
+                            if (core.TunnelID == tunnel.Target.TunnelID)
+                                core.Network.ReceiveTunnelPacket(packet, tunnel); 
+                    });
+
                 }
                 else if (tunnel.TargetServer != null)
                 {
@@ -562,6 +568,23 @@ namespace RiseOp.Implementation.Dht
             packet.Target = contact.TunnelClient;
 
 
+            // if we are the tunnel server (our global net is open, but op is blocked)
+            if (global.Network.Local.Equals(contact.TunnelServer)) // use dhtclient compare
+            {
+                global.RunInCoreAsync(delegate()
+                {
+                    TcpConnect direct = global.Network.TcpControl.GetProxy(packet.Target);
+
+                    if (direct != null)
+                    {
+                        packet.SourceServer = new DhtAddress(Core.LocalIP, global.Network.GetLocalSource());
+                        direct.SendPacket(packet);
+                    }
+                });
+
+                return;
+            }
+
             // if not open send proxied through local global proxy
             // NAT as well because receiver would need to send all responses through same local global proxy
             // for NATd host to get replies
@@ -594,11 +617,17 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
-        void ReceiveTunnelPacket(G2ReceivedPacket raw, TunnelPacket tunnel)
+        internal void ReceiveTunnelPacket(G2ReceivedPacket raw, TunnelPacket tunnel)
         {
-            Debug.Assert(IsGlobal);
+            if (Core.InvokeRequired) // called from  global core's thread
+            {
+                Core.RunInCoreAsync(delegate() { ReceiveTunnelPacket(raw, tunnel); });
+                return;
+            }
 
-            if (!IsGlobal)
+            Debug.Assert(!IsGlobal);
+
+            if (IsGlobal)
                 return;
 
             // decrypt internal packet
@@ -631,18 +660,10 @@ namespace RiseOp.Implementation.Dht
                 opPacket.Source.TunnelClient = tunnel.Source;
                 opPacket.Source.TunnelServer = tunnel.SourceServer;
 
-                Core.Context.Cores.LockReading(delegate()
-                {
-                    foreach (OpCore core in Core.Context.Cores)
-                        if (core.TunnelID == tunnel.Target.TunnelID)
-                            core.RunInCoreAsync(delegate()
-                            {
-                                PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Tunnel, DirectionType.In, opPacket.Source, opPacket.Root.Data);
-                                core.Network.LogPacket(logEntry);
+                PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Tunnel, DirectionType.In, opPacket.Source, opPacket.Root.Data);
+                LogPacket(logEntry);
 
-                                core.Network.IncomingPacket(opPacket);
-                            });
-                });
+                IncomingPacket(opPacket);
             }
         }
 
@@ -671,7 +692,6 @@ namespace RiseOp.Implementation.Dht
 
             bool lanIP = Utilities.IsLocalIP(packet.Source.IP);
             bool validSource = (!lanIP || LanMode && lanIP);
-
 
             // set local IP
             SetLocalIP(ping.RemoteIP, packet);
@@ -1103,8 +1123,11 @@ namespace RiseOp.Implementation.Dht
             OpCore global = Core.Context.Global;
 
             bool useProxies = (Core.TimeNow > Core.StartTime.AddSeconds(15) &&
+                                // op core blocked
                                 global != null && Core.Firewall != FirewallType.Open &&
-                                global.Network.TcpControl.ProxyServers.Count > 0 &&
+                                // either we're connected to an open global, or we are open global (global port open, op port closed)
+                                (global.Network.TcpControl.ProxyServers.Count > 0 || global.Firewall == FirewallType.Open) &&
+                                // not connected to any op proxy servers
                                 TcpControl.ProxyServers.Count == 0);
 
 

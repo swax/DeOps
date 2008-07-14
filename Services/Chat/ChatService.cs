@@ -12,6 +12,9 @@ using RiseOp.Implementation.Transport;
 using RiseOp.Services.Trust;
 using RiseOp.Services.Location;
 
+using NLipsum.Core;
+
+
 namespace RiseOp.Services.Chat
 {
     internal delegate void RefreshHandler();
@@ -139,6 +142,32 @@ namespace RiseOp.Services.Chat
 
             StatusUpdate.Clear();
 
+            
+            // for sim test write random msg ever 10 secs
+            if (Core.Sim != null && SimTextActive && Core.RndGen.Next(10) == 0)
+            {
+                List<ChatRoom> rooms = new List<ChatRoom>();
+                RoomMap.LockReading(delegate()
+                {
+                    foreach (ChatRoom room in RoomMap.Values)
+                        if (room.Active)
+                            rooms.Add(room);
+                });
+
+                if (rooms.Count > 0)
+                    SendMessage(rooms[Core.RndGen.Next(rooms.Count)], Utilities.ToRtf(Core.TextGen.GenerateSentences(1, Sentence.Short)[0]));
+            }
+        }
+
+        bool SimTextActive = false;
+
+        public void SimTest()
+        {
+            SimTextActive = !SimTextActive;
+        }
+
+        public void SimCleanup()
+        {
         }
 
         internal void Link_Update(OpTrust trust)

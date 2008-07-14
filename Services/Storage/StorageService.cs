@@ -236,6 +236,20 @@ namespace RiseOp.Services.Storage
             });
         }
 
+        public void SimTest()
+        {
+            // create file
+            // add file
+            // accept file
+            // integrate file
+
+
+        }
+
+        public void SimCleanup()
+        {
+        }
+
         void Cache_FileRemoved(OpVersionedFile file)
         {
             OpStorage storage = GetStorage(file.UserID);

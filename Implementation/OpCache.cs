@@ -182,7 +182,10 @@ namespace RiseOp.Implementation
             lock (IPs)
             {
                 if (IPTable.ContainsKey(entry.GetHashCode()))
-                    IPs.Remove(IPTable[entry.GetHashCode()]);
+                {
+                    entry = IPTable[entry.GetHashCode()].Value; // replace entry with dupe to maintain next try info
+                    IPs.Remove(entry);
+                }
 
                 // sort nodes based on last seen
                 LinkedListNode<DhtContact> node = null;
