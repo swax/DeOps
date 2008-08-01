@@ -94,7 +94,6 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "SelectServices";
-            this.ShowInTaskbar = false;
             this.Text = "Select Services";
             this.ResumeLayout(false);
 

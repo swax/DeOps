@@ -1,5 +1,9 @@
 
 two open not connecting
+make title something assigned
+work on bandwidth
+
+design re-alignment
 
 store caching 
 	keep track of when last result was sent
@@ -105,6 +109,8 @@ other
 	on linkup, trigger inherit from top node
 	doesnt seem like trust icon/splash changes are propagated to subs quickly should auto post
 
+	network status info panel title header should be the color of the status of the firewall
+
 	test crawlable over home lan
 		crawl requests must be signed?
 			
@@ -140,7 +146,7 @@ default views
 	
 	
 summer release
-	licensing, installer, release security
+	licensing
 	
 	
 	*** items from todo

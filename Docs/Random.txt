@@ -1,4 +1,5 @@
 abstract data/user location
+
 problems solving
     end to end (user to user) security within organization
     IT management of networks, firewalls, setups, VPNs (bootstrap IT for large groups)
@@ -177,6 +178,9 @@ selling points
 		
 	Why business don't trust the cloud - external, less secure, reliability concerns, speed important, transition time
 		http://gigaom.com/2008/07/01/10-reasons-enterprises-arent-ready-to-trust-the-cloud/
+		
+	europe putting money in ad-hoc p2p mobile networks for coordination
+		http://www.sciencedaily.com/releases/2008/07/080723121327.htm
 		
 	Andy Tanenbaum: The problem is co-ordinating things. Projects like GNU, MINIX, or LINUX only hold together if one person is in charge. 
 	Linus Torvalds: Yes, coordination is a big problem, and I don't think linux will move away from me as "head surgeon" for some time..

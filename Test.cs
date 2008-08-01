@@ -23,6 +23,8 @@ namespace RiseOp
     }
 
 
+
+
 	/// <summary>
 	/// Summary description for Tests.
 	/// </summary>
@@ -33,7 +35,7 @@ namespace RiseOp
             // encode request
 
 
-                string cacheKey = "O+6IRs7GY1r/JIk+DFY/VK+i8pFTWhsDfNH9R3j3f9Q=";
+                /*string cacheKey = "O+6IRs7GY1r/JIk+DFY/VK+i8pFTWhsDfNH9R3j3f9Q=";
 
                 RijndaelManaged crypt = new RijndaelManaged();
                 crypt.BlockSize = 256;
@@ -74,7 +76,7 @@ namespace RiseOp
                     ulong op = 1476981679885938220;
                     combined = "ping" + ":" + op;
                 }
-            /*
+            
                 byte[] data = ASCIIEncoding.ASCII.GetBytes(combined);
                 byte[] encrypted = crypt.CreateEncryptor().TransformFinalBlock(data, 0, data.Length);
 

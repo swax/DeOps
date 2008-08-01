@@ -947,6 +947,81 @@ namespace RiseOp.Implementation
         }
     }
 
+    internal class CircularBuffer<T> : IEnumerable
+    {
+        internal T[] Buffer;
+        internal int CurrentPos = -1;
+        internal int Length;
+
+        internal T Accumulated;
+
+        internal int Capacity
+        {
+            set
+            {
+                Buffer = new T[value];
+                CurrentPos = -1;
+                Length = 0;
+            }
+            get
+            {
+                return Buffer.Length;
+            }
+        }
+
+
+        internal CircularBuffer(int capacity)
+        {
+            Capacity = capacity;
+        }
+
+        internal void AddAccumulated()
+        {
+            Add(Accumulated);
+
+            Accumulated = default(T);
+        }
+
+        internal void Add(T value)
+        {
+            if (Buffer == null || Buffer.Length == 0)
+                return;
+
+            CurrentPos++;
+
+            // circle around
+            if (CurrentPos >= Buffer.Length)
+                CurrentPos = 0;
+
+            Buffer[CurrentPos] = value;
+
+            if (Length <= CurrentPos)
+                Length = CurrentPos + 1;
+        }
+
+        public IEnumerator GetEnumerator()
+        {
+            if (CurrentPos == -1)
+                yield break;
+
+            // iterate from most recent to beginning
+            for (int i = CurrentPos; i >= 0; i--)
+                yield return Buffer[i];
+
+            // iterate the back down
+            if (Length == Buffer.Length)
+                for (int i = Length - 1; i > CurrentPos; i--)
+                    yield return Buffer[i];
+        }
+
+        internal void Clear()
+        {
+            Buffer = new T[Buffer.Length];
+            CurrentPos = -1;
+            Length = 0;
+        }
+    }
+
     // used to store sub-hashes for files that are transferred over the network
     internal delegate void ProcessTagsHandler(PacketStream stream);
 

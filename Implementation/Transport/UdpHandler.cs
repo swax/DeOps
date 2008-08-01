@@ -12,11 +12,15 @@ using RiseOp.Simulator;
 
 namespace RiseOp.Implementation.Transport
 {
+    enum Bandwidth { In, Out }
+
 	/// <summary>
 	/// Summary description for UdpHandler.
 	/// </summary>
 	internal class UdpHandler
 	{
+        const int MAX_UDP_SIZE = 1500;
+
         // super-class
         OpCore Core;
 		DhtNetwork Network;
@@ -30,13 +34,16 @@ namespace RiseOp.Implementation.Transport
 
 		BufferData SendData = new BufferData( new byte[4096] );
 
-        const int MAX_UDP_SIZE = 1500;
-
+        CircularBuffer<int> BandwidthIn = new CircularBuffer<int>(5);
+        CircularBuffer<int> BandwidthOut = new CircularBuffer<int>(5);
+        
 
         internal UdpHandler(DhtNetwork network)
 		{
             Network = network;
             Core = network.Core;
+
+            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
 
             Initialize();
         }
@@ -78,6 +85,8 @@ namespace RiseOp.Implementation.Transport
 
 		internal void Shutdown()
 		{
+            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+
 			try
 			{
 				Socket oldSocket = UdpSocket; // do this to prevent listen exception
@@ -91,6 +100,12 @@ namespace RiseOp.Implementation.Transport
 				Network.UpdateLog("Exception", "UdpHandler::Shudown: " + ex.Message);
 			}
 		}
+
+        void Core_SecondTimer()
+        {
+            BandwidthIn.AddAccumulated();
+            BandwidthOut.AddAccumulated();
+        }
 
 		internal void SendTo(DhtAddress address, G2Packet packet)
 		{
@@ -124,6 +139,9 @@ namespace RiseOp.Implementation.Transport
             }
             else
                 final = encoded;
+
+            // record bandwidth 
+            Bandwidth[(int)DirectionType.Out].Accumulated += final.Length;
 
             // send
             try
@@ -172,6 +190,9 @@ namespace RiseOp.Implementation.Transport
 			{
 				EndPoint sender = (EndPoint) new IPEndPoint(IPAddress.Any, 0);
 				int recvLen = UdpSocket.EndReceiveFrom(asyncResult, ref sender);
+
+                // record bandwidth 
+                Bandwidth[(int)DirectionType.In].Accumulated += recvLen;
 
                 OnReceive(ReceiveBuff, recvLen, (IPEndPoint)sender);
 			}

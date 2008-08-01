@@ -2558,7 +2558,7 @@ namespace RiseOp.Interface.TLVex
 		{
             DrawHeadersStyled(g, r);
             return;
-
+/*
 			// if running in XP with styles
 			if (VisualStyles)
 			{
@@ -2621,7 +2621,7 @@ namespace RiseOp.Interface.TLVex
 					g.Clip = new Region(new Rectangle(r.Left+2, r.Top+2, r.Width-5, r.Top+headerBuffer));
 					System.Windows.Forms.ControlPaint.DrawButton(g, lp_scr+last, r.Top+2, r.Width-(r.Left+last)-3+hscrollBar.Value , r.Top+headerBuffer, ButtonState.Normal);
 				}
-			}
+			}*/
 		}		
 
 		protected virtual void DrawRows(Graphics g, Rectangle r)

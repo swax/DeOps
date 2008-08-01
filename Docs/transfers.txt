@@ -1,6 +1,60 @@
 ﻿
 
 multi-source d/l
+
+	if downloading or being uploaded from, the file is loaded as a transfer
+
+	transfer
+		bit field representing parts
+		connected (closest) peers
+			peer's bitfield
+		
+	on request
+		check bitfield if part exists, if it does it can be transferred
+		
+	on timer
+		for each transfer
+			if bitfield changed, update peers
+		
+			if incomplete bitfields, requests need to be made	
+			
+			if all peers complete or not-reponsive and bitfield is complete, unload transfer
+			
+			if too many peers connected > 10, disconnect furthest (signal comm not needed)
+			
+		if bandwidth available for upload
+			select piece and start sending it
+		
+			foreach transfer
+				determine most needed parts that we have locally
+				
+	on begin/end receive data update bitfield to all hosts
+		prevent hosts from sending dupe
+		on dupe - accept one, send updated bitfield to other
+	
+
+	maxes
+		max 50 unique comm connections by transfer service
+		if < 40 comm connects then pending can go to active
+			partial bitfields override complete bitfields in active space
+		max 10 closest sources per download
+		
+		
+	how to know bandwidth is available to send?
+		
+		
+	which piece to start next?
+	
+	
+	when to start sending another piece?
+
+
+
+
+
+	call ben
+
+
 	show file's distribution over network
 	file download interface
 		main: hash, size, parts graphic
@@ -9,6 +63,9 @@ multi-source d/l
 	analyze current algorithm
 		how to pause re-request file transfers? encapsulate in g2?
 		are there different 'streams' for file transfers control and data?
+		round robin low level  udp send buffer?
+
+	search return partial files
 
 	should there be a difference between uploads and downloads?
 
