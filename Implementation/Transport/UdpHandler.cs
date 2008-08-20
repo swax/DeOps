@@ -12,8 +12,6 @@ using RiseOp.Simulator;
 
 namespace RiseOp.Implementation.Transport
 {
-    enum Bandwidth { In, Out }
-
 	/// <summary>
 	/// Summary description for UdpHandler.
 	/// </summary>
@@ -34,8 +32,8 @@ namespace RiseOp.Implementation.Transport
 
 		BufferData SendData = new BufferData( new byte[4096] );
 
-        CircularBuffer<int> BandwidthIn = new CircularBuffer<int>(5);
-        CircularBuffer<int> BandwidthOut = new CircularBuffer<int>(5);
+        internal CircularBuffer<int> BandwidthIn = new CircularBuffer<int>(5);
+        internal CircularBuffer<int> BandwidthOut = new CircularBuffer<int>(5);
         
 
         internal UdpHandler(DhtNetwork network)
@@ -107,7 +105,7 @@ namespace RiseOp.Implementation.Transport
             BandwidthOut.AddAccumulated();
         }
 
-		internal void SendTo(DhtAddress address, G2Packet packet)
+		internal int SendTo(DhtAddress address, G2Packet packet)
 		{
             if (Core.InvokeRequired)
                 Debug.Assert(false);
@@ -140,30 +138,35 @@ namespace RiseOp.Implementation.Transport
             else
                 final = encoded;
 
-            // record bandwidth 
-            Bandwidth[(int)DirectionType.Out].Accumulated += final.Length;
-
+            
             // send
             try
 			{
                 if (Core.Sim != null)
                 {
                     Core.Sim.Internet.SendPacket(SimPacketType.Udp, Network, final, address.ToEndPoint(), null);
-                    return;
+                }
+                else
+                {
+                    if (UdpSocket == null)
+                        return 0;
+
+                    if (encoded.Length > MAX_UDP_SIZE)
+                        throw new Exception("Packet larger than " + MAX_UDP_SIZE.ToString() + " bytes");
+
+                    UdpSocket.BeginSendTo(final, 0, final.Length, SocketFlags.None, address.ToEndPoint(), new AsyncCallback(UdpSocket_SendTo), UdpSocket);
                 }
 
-                if (UdpSocket == null)
-                    return;
-
-                if (encoded.Length> MAX_UDP_SIZE)
-					throw new Exception("Packet larger than " + MAX_UDP_SIZE.ToString() + " bytes");
-
-                UdpSocket.BeginSendTo(final, 0, final.Length, SocketFlags.None, address.ToEndPoint(), new AsyncCallback(UdpSocket_SendTo), UdpSocket);
-			}
+                // record bandwidth
+                BandwidthOut.Accumulated += final.Length;
+                return final.Length;
+            }
 			catch(Exception ex)
 			{ 
 				Network.UpdateLog("Exception", "UdpHandler::SendTo: " + ex.Message);
 			}
+
+            return 0;
 		}
 
 		void UdpSocket_SendTo(IAsyncResult asyncResult)
@@ -192,7 +195,7 @@ namespace RiseOp.Implementation.Transport
 				int recvLen = UdpSocket.EndReceiveFrom(asyncResult, ref sender);
 
                 // record bandwidth 
-                Bandwidth[(int)DirectionType.In].Accumulated += recvLen;
+                BandwidthIn.Accumulated += recvLen;
 
                 OnReceive(ReceiveBuff, recvLen, (IPEndPoint)sender);
 			}

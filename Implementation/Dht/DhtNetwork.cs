@@ -204,7 +204,7 @@ namespace RiseOp.Implementation.Dht
             //close proxy connects
             lock (TcpControl.SocketList)
                 foreach (TcpConnect connection in TcpControl.SocketList)
-                    if (connection.State == TcpState.Connected) // close everything, even unset proxies
+                    if (connection.State == TcpState.Connected && connection.Proxy == ProxyType.Server) //crit ?? close everything, even unset proxies
                         connection.CleanClose("Firewall changed to Open", true);
         }
 
@@ -530,7 +530,7 @@ namespace RiseOp.Implementation.Dht
         // nodes in global proxy mode are psuedo-open, instead of udp they send tunneled packets
         // tunnel packets include routing information to the global target as well as
         // the encrytped operation packet embedded in the payload
-        internal void SendTunnelPacket(DhtAddress contact, G2Packet embed)
+        internal int SendTunnelPacket(DhtAddress contact, G2Packet embed)
         {
             Debug.Assert(contact.TunnelClient != null && contact.TunnelServer != null);
             Debug.Assert(Core.Context.Global != null);
@@ -540,7 +540,7 @@ namespace RiseOp.Implementation.Dht
             if (IsGlobal ||
                 Core.Context.Global == null ||
                 Core.User.Settings.OpAccess == AccessType.Secret)
-                return;
+                return 0;
 
             OpCore global = Core.Context.Global;
 
@@ -567,6 +567,7 @@ namespace RiseOp.Implementation.Dht
             packet.Source = new TunnelAddress(global.Network.Local, Core.TunnelID);
             packet.Target = contact.TunnelClient;
 
+            int bytesSent = 0;
 
             // if we are the tunnel server (our global net is open, but op is blocked)
             if (global.Network.Local.Equals(contact.TunnelServer)) // use dhtclient compare
@@ -578,11 +579,11 @@ namespace RiseOp.Implementation.Dht
                     if (direct != null)
                     {
                         packet.SourceServer = new DhtAddress(Core.LocalIP, global.Network.GetLocalSource());
-                        direct.SendPacket(packet);
+                        bytesSent = direct.SendPacket(packet);
                     }
                 });
 
-                return;
+                return bytesSent;
             }
 
             // if not open send proxied through local global proxy
@@ -601,7 +602,7 @@ namespace RiseOp.Implementation.Dht
                     if (server != null)
                     {
                         packet.SourceServer = new DhtAddress(server.RemoteIP, server);
-                        server.SendPacket(packet);
+                        bytesSent = server.SendPacket(packet);
                     }
                 });
             }
@@ -612,9 +613,11 @@ namespace RiseOp.Implementation.Dht
 
                 global.RunInCoreAsync(delegate()
                 {
-                    global.Network.UdpControl.SendTo(contact.TunnelServer, packet);
+                    bytesSent = global.Network.UdpControl.SendTo(contact.TunnelServer, packet);
                 });
             }
+
+            return bytesSent;
         }
 
         internal void ReceiveTunnelPacket(G2ReceivedPacket raw, TunnelPacket tunnel)
@@ -678,16 +681,26 @@ namespace RiseOp.Implementation.Dht
             SendPacket(contact, ping);
         }
 
-        internal void SendPacket(DhtAddress contact, G2Packet packet)
+        internal int SendPacket(DhtAddress contact, G2Packet packet)
         {
             if (contact.TunnelServer != null)
-                SendTunnelPacket(contact, packet);
+                return SendTunnelPacket(contact, packet);
             else
-                UdpControl.SendTo(contact, packet);
+                return UdpControl.SendTo(contact, packet);
         }
 
         void Receive_Ping(G2ReceivedPacket packet)
         {
+            //crit - delete
+            if (!IsGlobal)
+                if (packet.Tcp != null)
+                {
+                    int x = 0;
+                }
+                else
+                {
+                    int y = 0;
+                }
             Ping ping = Ping.Decode(packet);
 
             bool lanIP = Utilities.IsLocalIP(packet.Source.IP);
@@ -737,8 +750,11 @@ namespace RiseOp.Implementation.Dht
 
                     // received incoming tcp means we are not firewalled
                     if (!packet.Tcp.Outbound)
+                    {
                         // done here to prevent setting open for loopback tcp connection
                         Core.SetFirewallType(FirewallType.Open);
+                        pong.Source.Firewall = FirewallType.Open;
+                    }
                 }
 
                 // check if already connected
@@ -798,6 +814,12 @@ namespace RiseOp.Implementation.Dht
             // if received tcp
             if (packet.ReceivedTcp)
             {
+                //crit - delete
+                if (!IsGlobal)
+                {
+                    int x = 0;
+                }
+
                 // if regular interval pong 
                 if (pong.Source == null)
                 {

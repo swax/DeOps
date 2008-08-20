@@ -93,6 +93,7 @@ namespace RiseOp.Implementation.Dht
                     Send_StoreReq(proxy, null, req);
             }
         }
+
         internal void Send_StoreReq(DhtAddress address, DhtClient localProxy, DataReq publish)
         {
             if (address == null)
@@ -105,14 +106,15 @@ namespace RiseOp.Implementation.Dht
             store.DataType  = publish.DataType;
             store.Data      = publish.Data;
 
-
+            int sentBytes = 0;
+  
             TcpConnect direct = Network.TcpControl.GetProxy(address);
 
             if (direct != null)
-                direct.SendPacket(store);
+                sentBytes = direct.SendPacket(store);
 
             else if (address.TunnelClient != null)
-                Network.SendTunnelPacket(address, store);
+                sentBytes = Network.SendTunnelPacket(address, store);
 
             // if blocked send tcp with to tag
             else if (Core.Firewall == FirewallType.Blocked)
@@ -122,17 +124,22 @@ namespace RiseOp.Implementation.Dht
                 TcpConnect proxy = Network.TcpControl.GetProxy(localProxy);
 
                 if (proxy != null)
-                    proxy.SendPacket(store);
+                    sentBytes = proxy.SendPacket(store);
                 else
-                    Network.TcpControl.SendRandomProxy(store);
+                    sentBytes = Network.TcpControl.SendRandomProxy(store);
             }
             else
-                Network.UdpControl.SendTo(address, store);
+                sentBytes = Network.UdpControl.SendTo(address, store);
+
+            Core.ServiceBandwidthOut[store.Service].Accumulated += sentBytes;
         }
 
         internal void Receive_StoreReq(G2ReceivedPacket packet)
         {
             StoreReq store = StoreReq.Decode(packet);
+
+            if (Core.ServiceBandwidthIn.ContainsKey(store.Service))
+                Core.ServiceBandwidthIn[store.Service].Accumulated += packet.Root.Data.Length;
 
             if (store.Source.Firewall == FirewallType.Open )
                     // dont need to add to routing if nat/blocked because eventual routing ping by server will auto add

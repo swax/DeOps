@@ -61,6 +61,11 @@ namespace RiseOp.Implementation.Transport
         internal byte[] FinalRecvBuffer;
         internal int    FinalRecvBuffSize;
 
+        // bandwidth
+        CircularBuffer<int> BandwidthIn = new CircularBuffer<int>(5);
+        CircularBuffer<int> BandwidthOut = new CircularBuffer<int>(5);
+        
+
         // inbound
         internal TcpConnect(TcpHandler control)
 		{
@@ -113,6 +118,9 @@ namespace RiseOp.Implementation.Transport
 
 			BytesSentinSec     = 0;
 			BytesReceivedinSec = 0;
+
+            BandwidthIn.AddAccumulated();
+            BandwidthOut.AddAccumulated();
 
             if (Age < 60)
                 Age++;
@@ -310,7 +318,7 @@ namespace RiseOp.Implementation.Transport
             State = TcpState.Closed; 
         }
 
-		internal void SendPacket(G2Packet packet)
+		internal int SendPacket(G2Packet packet)
 		{
             if (Core.InvokeRequired)
                 Debug.Assert(false);
@@ -330,6 +338,7 @@ namespace RiseOp.Implementation.Transport
 				byte[] encoded = packet.Encode(Network.Protocol);
                 PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Tcp, DirectionType.Out, new DhtAddress(RemoteIP, this), encoded);
                 Network.LogPacket(logEntry);
+                
 
                 lock(FinalSendBuffer)
                 {
@@ -360,11 +369,11 @@ namespace RiseOp.Implementation.Transport
 
                         int tryTransform = SendBuffSize - (SendBuffSize % Encryptor.InputBlockSize);
                         if (tryTransform == 0)
-                            return;
+                            return 0;
 
                         int tranformed = Encryptor.TransformBlock(SendBuffer, 0, tryTransform, FinalSendBuffer, FinalSendBuffSize);
                         if (tranformed == 0)
-                            return;
+                            return 0;
 
                         FinalSendBuffSize += tranformed;
                         SendBuffSize -= tranformed;
@@ -378,12 +387,16 @@ namespace RiseOp.Implementation.Transport
                 }
                    
                 TrySend();
-               
+            
+                // record bandwidth
+                return encoded.Length;
 			}
 			catch(Exception ex)
 			{
 				LogException("SendPacket", ex.Message);
 			}
+
+            return 0;
 		}
 
 		internal void TrySend()
@@ -420,6 +433,8 @@ namespace RiseOp.Implementation.Transport
                     {
                         FinalSendBuffSize -= bytesSent;
                         BytesSentinSec += bytesSent;
+
+                        BandwidthOut.Accumulated += bytesSent;
 
                         if (FinalSendBuffSize < 0)
                             throw new Exception("Tcp SendBuff size less than zero");
@@ -475,7 +490,8 @@ namespace RiseOp.Implementation.Transport
                 Disconnect();
                 return;
             }
-            
+
+            BandwidthIn.Accumulated += length;
             BytesReceivedinSec += length;
             RecvBuffSize += length;  
 

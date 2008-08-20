@@ -99,6 +99,7 @@ namespace RiseOp.Implementation.Dht
         internal DateTime  LastSeen;
         internal int       Attempts;
         internal DateTime  NextTry;
+        internal DateTime  NextTryIP;
         internal DateTime  NextTryProxy; // required because attempts more spaced out
         internal ushort    Ident;
 

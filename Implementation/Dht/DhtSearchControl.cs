@@ -133,19 +133,23 @@ namespace RiseOp.Implementation.Dht
         {
             SearchReq request = new SearchReq();
 
-            request.Source     = Network.GetLocalSource();
-            request.SearchID   = searchID;
-            request.TargetID   = targetID;
-            request.Service    = service;
-            request.DataType   = datatype;
+            request.Source = Network.GetLocalSource();
+            request.SearchID = searchID;
+            request.TargetID = targetID;
+            request.Service = service;
+            request.DataType = datatype;
             request.Parameters = parameters;
+
+            int sentBytes = 0;
 
             TcpConnect direct = Network.TcpControl.GetProxy(address);
 
             if (direct != null)
-                direct.SendPacket(request);
+                sentBytes = direct.SendPacket(request);
             else
-                Network.SendPacket(address, request);
+                sentBytes = Network.SendPacket(address, request);
+
+            Core.ServiceBandwidthOut[request.Service].Accumulated += sentBytes;
         }
 
         internal void ReceiveRequest(G2ReceivedPacket packet)
@@ -156,6 +160,8 @@ namespace RiseOp.Implementation.Dht
             if (Network.Local.Equals(request.Source))
                 return;
 
+            if (Core.ServiceBandwidthIn.ContainsKey(request.Service))
+                Core.ServiceBandwidthIn[request.Service].Accumulated += packet.Root.Data.Length;
 
             if (packet.ReceivedTcp && request.SearchID != 0)
             {
@@ -298,13 +304,17 @@ namespace RiseOp.Implementation.Dht
                 // fw req t-> open ack t-> fw
                 // fw1 req t-> open t-> fw2 ack t-> open t-> fw1
 
+            int bytesSent = 0;
+
             if (packet.ReceivedTcp)
             {
                 ack.ToAddress = packet.Source;
-                packet.Tcp.SendPacket(ack);
+                bytesSent = packet.Tcp.SendPacket(ack);
             }
             else
-                Network.SendPacket(packet.Source, ack);
+                bytesSent = Network.SendPacket(packet.Source, ack);
+
+            Core.ServiceBandwidthOut[ack.Service].Accumulated += bytesSent;
         }
 
         internal void ReceiveAck(G2ReceivedPacket packet)
@@ -315,6 +325,8 @@ namespace RiseOp.Implementation.Dht
             if (Network.Local.Equals(ack.Source))
                 return;
 
+            if (Core.ServiceBandwidthIn.ContainsKey(ack.Service))
+                Core.ServiceBandwidthIn[ack.Service].Accumulated += packet.Root.Data.Length;
 
             if (ack.Source.Firewall == FirewallType.Open)
                 Routing.Add(new DhtContact(ack.Source, packet.Source.IP));
@@ -393,21 +405,26 @@ namespace RiseOp.Implementation.Dht
             request.Parameters  = parameters;
             request.Nodes       = false;
 
+            int sentBytes = 0;
+            
             TcpConnect socket = Network.TcpControl.GetProxy(dest);
 
             if (socket != null)
-                socket.SendPacket(request);
+                sentBytes = socket.SendPacket(request);
 
             else if (dest.TunnelClient != null)
-                Network.SendTunnelPacket(dest, request);
+                sentBytes = Network.SendTunnelPacket(dest, request);
 
             else if (Core.Firewall == FirewallType.Blocked)
             {
                 request.ToAddress = dest;
-                Network.TcpControl.SendRandomProxy(request);
+                sentBytes = Network.TcpControl.SendRandomProxy(request);
             }
             else
-                Network.UdpControl.SendTo(dest, request);
+                sentBytes = Network.UdpControl.SendTo(dest, request);
+
+
+            Core.ServiceBandwidthOut[request.Service].Accumulated += sentBytes;
 
             // if remote end has what we need they will send us a store request
         }

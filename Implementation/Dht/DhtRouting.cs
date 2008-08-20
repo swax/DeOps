@@ -133,6 +133,12 @@ namespace RiseOp.Implementation.Dht
 			// find oldest can attempt, send ping, remove expired
             if (oldest != null && Core.TimeNow > oldest.NextTry)
             {
+				//crit - delete
+                if (!Network.IsGlobal)
+                {
+                    int z = 0;
+                }
+
                 Network.Send_Ping(oldest);
 
                 oldest.Attempts++;
@@ -153,6 +159,12 @@ namespace RiseOp.Implementation.Dht
         {
             if (DhtResponsive == responsive)
                 return;
+            
+            //crit - delete
+            if (responsive == false && !Network.IsGlobal)
+            {
+                int x = 0;
+            }
 
             // reset attempts when re-entering responsive mode
             if (responsive)

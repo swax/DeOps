@@ -1,5 +1,19 @@
 
-two open not connecting
+2test 
+	set fw to open and send back pong that reflects that
+	op fw changed t
+	nextTryIP the best way 2 solve the problem?
+	catch thrown expceptions
+
+can a circular buffer be directly indexed [i]?
+
+test zedgraph data
+test real data
+proper resize circular buffer
+
+automated tests
+	2open, 1open1nat,  2op1open1nat, 2op2open... , run each until connected
+
 make title something assigned
 work on bandwidth
 
@@ -41,7 +55,7 @@ bandwidth
 		track overall bandwidth
 		global / operation cores
 		filter host types - filter shows % of max
-		filter service type
+		filters servive/protocol/direction
 		
 	client
 		burst protection

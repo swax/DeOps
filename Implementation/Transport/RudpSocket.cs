@@ -75,6 +75,10 @@ namespace RiseOp.Implementation.Transport
 		int InOrderAcks;
 		int ReTransmits;
 
+        // bandwidth
+        CircularBuffer<int> BandwidthIn = new CircularBuffer<int>(5);
+        CircularBuffer<int> BandwidthOut = new CircularBuffer<int>(5);
+        
 
         internal RudpSocket(RudpSession session, bool listening)
         {
@@ -277,13 +281,14 @@ namespace RiseOp.Implementation.Transport
                 error = "Too Large Packet Received Size " + packet.Payload.Length.ToString() + ", Type " + packet.PacketType.ToString();
                 RudpClose(CloseReason.LARGE_PACKET);
             }
-
+            
 			if( error != null )
 			{
                 Session.Log(error);
 				return;
 			}
-
+            
+            BandwidthIn.Accumulated += raw.Root.Data.Length;
 
             // add proxied and direct addresses
             // proxied first because that packet has highest chance of being received, no need for retry
@@ -804,14 +809,15 @@ namespace RiseOp.Implementation.Transport
             log +=  " to " + Utilities.IDtoBin(tracked.Packet.TargetID).Substring(0, 10);
             log += " target address " + target.Address.ToString();*/
 
- 
+            int sentBytes = 0;
+
             if (Core.Firewall != FirewallType.Blocked && target.LocalProxy == null)
             {
-                Network.SendPacket(target.Address, tracked.Packet);
+                sentBytes = Network.SendPacket(target.Address, tracked.Packet);
             }
 
             else if (target.Address.TunnelClient != null)
-                Network.SendTunnelPacket(target.Address, tracked.Packet);
+                sentBytes = Network.SendTunnelPacket(target.Address, tracked.Packet);
 
             else
             {
@@ -820,12 +826,14 @@ namespace RiseOp.Implementation.Transport
                 TcpConnect proxy = Network.TcpControl.GetProxy(target.LocalProxy);
 
                 if (proxy != null)
-                    proxy.SendPacket(tracked.Packet);
+                    sentBytes = proxy.SendPacket(tracked.Packet);
                 else
-                    Network.TcpControl.SendRandomProxy(tracked.Packet);
+                    sentBytes = Network.TcpControl.SendRandomProxy(tracked.Packet);
 
                 //log += " proxied by local tcp";
             }
+
+            BandwidthOut.Accumulated += sentBytes;
 
             //Session.Log(log);
         }
@@ -916,6 +924,10 @@ namespace RiseOp.Implementation.Transport
 
 			// update bandwidth rate used for determining internal send buffer
 			AvgBytesSent.Next();
+
+            // bandwidth stats
+            BandwidthIn.AddAccumulated();
+            BandwidthOut.AddAccumulated();
 		}
 
         internal void CheckRoutes()

@@ -69,8 +69,6 @@ namespace RiseOp.Implementation.Transport
         internal DateTime  Startup;
 
 
-        //FileStream DebugWriter;
-        //UTF8Encoding strEnc = new UTF8Encoding();
         internal RudpSession(RudpHandler control, ulong dhtID, ushort clientID, bool inbound)
         {
 			Core     = control.Network.Core;
@@ -462,6 +460,8 @@ namespace RiseOp.Implementation.Transport
         {
             CommData data = new CommData(service, datatype, packet.Encode(Network.Protocol));
 
+            Core.ServiceBandwidthOut[service].Accumulated += data.Data.Length;
+
             return SendPacket(data, expedite);
         }
 
@@ -471,9 +471,14 @@ namespace RiseOp.Implementation.Transport
 
             CommData data = CommData.Decode(embeddedPacket);
 
-            if (data != null)
-                if (RudpControl.SessionData.Contains(data.Service, data.DataType))
-                    RudpControl.SessionData[data.Service, data.DataType].Invoke(this, data.Data);
+            if (data == null)
+                return;
+
+            if (Core.ServiceBandwidthIn.ContainsKey(data.Service))
+                Core.ServiceBandwidthIn[data.Service].Accumulated += data.Data.Length;
+
+            if (RudpControl.SessionData.Contains(data.Service, data.DataType))
+                RudpControl.SessionData[data.Service, data.DataType].Invoke(this, data.Data);
         }
 
 		internal void Send_Close(string reason)

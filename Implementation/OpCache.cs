@@ -480,12 +480,12 @@ namespace RiseOp.Implementation
             lock (IPs)
                 foreach (DhtContact entry in IPs)
                 {
-                    if (Core.TimeNow < entry.NextTry)
+                    if (Core.TimeNow < entry.NextTryIP)
                         continue;
 
                     Network.Send_Ping(entry);
 
-                    entry.NextTry = Retry.NextTry;
+                    entry.NextTryIP = Retry.NextTry;
 
                     pings++;
                     if (pings >= 10)
@@ -537,7 +537,7 @@ namespace RiseOp.Implementation
 
                     foreach (DhtContact entry in IPs)
                     {
-                        entry.NextTry = new DateTime(0);
+                        entry.NextTryIP = new DateTime(0);
                         entry.NextTryProxy = new DateTime(0);
                     }
                 }

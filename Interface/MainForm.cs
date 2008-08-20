@@ -686,6 +686,7 @@ namespace RiseOp.Interface
             // tools
             ToolStripMenuItem tools = new ToolStripMenuItem("Tools", InterfaceRes.tools);
 
+            tools.DropDownItems.Add(new ManageItem("Bandwidth", null, delegate() { BandwidthForm.Show(Core.Context); }));
             tools.DropDownItems.Add(new ManageItem("Crawler", null, delegate() { CrawlerForm.Show(Core.Network); }));
 
             // global - crawler/graph/packets/search

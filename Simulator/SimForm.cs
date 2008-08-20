@@ -330,6 +330,7 @@ namespace RiseOp.Simulator
 
                 menu.MenuItems.Add(new MenuItem("Main", new EventHandler(Click_Main)));
                 menu.MenuItems.Add(new MenuItem("Internal", new EventHandler(Click_Internal)));
+                menu.MenuItems.Add(new MenuItem("Bandwidth", new EventHandler(Click_Bandwidth)));
                 menu.MenuItems.Add(new MenuItem("Transfers", new EventHandler(Click_Transfers)));
                 if(global != null) menu.MenuItems.Add(global);
                 menu.MenuItems.Add(operation);
@@ -412,6 +413,21 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 InternalsForm.Show(item.Core);
+        }
+
+        private void Click_Bandwidth(object sender, EventArgs e)
+        {
+            List<OpCore> cores = new List<OpCore>();
+
+            foreach (ListInstanceItem item in ListInstances.SelectedItems)
+            {
+                cores.Add(item.Core);
+
+                if (!cores.Contains(item.Core.Context.Global))
+                    cores.Add(item.Core.Context.Global);
+            }
+
+            new BandwidthForm(cores).Show();
         }
 
         private void Click_Transfers(object sender, EventArgs e)

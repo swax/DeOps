@@ -75,8 +75,10 @@ namespace RiseOp.Implementation
         internal ushort DhtServiceID = 0;
         internal Dictionary<uint, OpService> ServiceMap = new Dictionary<uint, OpService>();
 
+        internal Dictionary<uint, CircularBuffer<int>> ServiceBandwidthIn = new Dictionary<uint, CircularBuffer<int>>();
+        internal Dictionary<uint, CircularBuffer<int>> ServiceBandwidthOut = new Dictionary<uint, CircularBuffer<int>>();
 
-		// properties
+        // properties
         internal IPAddress LocalIP = IPAddress.Parse("127.0.0.1");
         internal FirewallType Firewall = FirewallType.Blocked;
 
@@ -156,6 +158,9 @@ namespace RiseOp.Implementation
                         Directory.Delete(dirpath, true);
                 }
 
+            ServiceBandwidthIn[DhtServiceID] = new CircularBuffer<int>(5);
+            ServiceBandwidthOut[DhtServiceID] = new CircularBuffer<int>(5);
+
             // permanent - order is important here
             AddService(new TransferService(this));
             AddService(new LocationService(this));
@@ -199,6 +204,9 @@ namespace RiseOp.Implementation
                     core.User.Load(LoadModeType.GlobalCache);
             });
 
+            ServiceBandwidthIn[DhtServiceID] = new CircularBuffer<int>(5);
+            ServiceBandwidthOut[DhtServiceID] = new CircularBuffer<int>(5);
+
             // get cache from all loaded cores
             AddService(new GlobalService(this));
 
@@ -217,6 +225,9 @@ namespace RiseOp.Implementation
                 throw new Exception("Duplicate Service Added");
 
             ServiceMap[service.ServiceID] = service;
+
+            ServiceBandwidthIn[service.ServiceID] = new CircularBuffer<int>(5);
+            ServiceBandwidthOut[service.ServiceID] = new CircularBuffer<int>(5);
         }
 
         private void RemoveService(uint id)
@@ -227,6 +238,9 @@ namespace RiseOp.Implementation
             ServiceMap[id].Dispose();
 
             ServiceMap.Remove(id);
+
+            ServiceBandwidthIn.Remove(id);
+            ServiceBandwidthOut.Remove(id);
         }
 
         internal string GetServiceName(uint id)
@@ -323,6 +337,12 @@ namespace RiseOp.Implementation
                 Network.SecondTimer();
 
                 SecondTimerEvent.Invoke();
+
+                // service bandwidth
+                foreach (CircularBuffer<int> buffer in ServiceBandwidthIn.Values)
+                    buffer.AddAccumulated();
+                foreach (CircularBuffer<int> buffer in ServiceBandwidthOut.Values)
+                    buffer.AddAccumulated();
 
                 // before minute timer give gui 2 secs to tell us of nodes it doesnt want removed
                 if (GetFocusedCore != null && MinuteCounter == 58)

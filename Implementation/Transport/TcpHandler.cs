@@ -464,12 +464,11 @@ namespace RiseOp.Implementation.Transport
             return ProxyServers[Core.RndGen.Next(ProxyServers.Count)];
         }
 
-        internal void SendRandomProxy(G2Packet packet)
+        internal int SendRandomProxy(G2Packet packet)
         {
             TcpConnect socket = GetRandomProxy();
 
-            if(socket != null)
-                socket.SendPacket(packet);
+            return (socket != null) ? socket.SendPacket(packet) : 0;
         }
 
         internal void AddProxy(TcpConnect socket)
