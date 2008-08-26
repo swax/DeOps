@@ -256,7 +256,7 @@ namespace RiseOp.Implementation
 
                     global.RunInCoreAsync(delegate()
                     {
-                        GlobalService service = (GlobalService)global.ServiceMap[2];
+                        GlobalService service = (GlobalService)global.ServiceMap[12];
                         service.StartSearch(Network.OpID, 0);
                     });
                 }

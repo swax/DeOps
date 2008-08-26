@@ -44,14 +44,14 @@
             this.ServiceList.Location = new System.Drawing.Point(12, 59);
             this.ServiceList.Name = "ServiceList";
             this.ServiceList.SelectionMode = System.Windows.Forms.SelectionMode.MultiSimple;
-            this.ServiceList.Size = new System.Drawing.Size(217, 160);
+            this.ServiceList.Size = new System.Drawing.Size(217, 173);
             this.ServiceList.Sorted = true;
             this.ServiceList.TabIndex = 0;
             // 
             // ExitButton
             // 
             this.ExitButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.ExitButton.Location = new System.Drawing.Point(154, 232);
+            this.ExitButton.Location = new System.Drawing.Point(154, 248);
             this.ExitButton.Name = "ExitButton";
             this.ExitButton.Size = new System.Drawing.Size(75, 23);
             this.ExitButton.TabIndex = 1;
@@ -62,7 +62,7 @@
             // RunButton
             // 
             this.RunButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.RunButton.Location = new System.Drawing.Point(73, 232);
+            this.RunButton.Location = new System.Drawing.Point(73, 248);
             this.RunButton.Name = "RunButton";
             this.RunButton.Size = new System.Drawing.Size(75, 23);
             this.RunButton.TabIndex = 2;
@@ -85,7 +85,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(241, 267);
+            this.ClientSize = new System.Drawing.Size(241, 283);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.RunButton);
             this.Controls.Add(this.ExitButton);

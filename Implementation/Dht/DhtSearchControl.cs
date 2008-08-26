@@ -149,7 +149,7 @@ namespace RiseOp.Implementation.Dht
             else
                 sentBytes = Network.SendPacket(address, request);
 
-            Core.ServiceBandwidthOut[request.Service].Accumulated += sentBytes;
+            Core.ServiceBandwidth[request.Service].OutPerSec += sentBytes;
         }
 
         internal void ReceiveRequest(G2ReceivedPacket packet)
@@ -160,8 +160,8 @@ namespace RiseOp.Implementation.Dht
             if (Network.Local.Equals(request.Source))
                 return;
 
-            if (Core.ServiceBandwidthIn.ContainsKey(request.Service))
-                Core.ServiceBandwidthIn[request.Service].Accumulated += packet.Root.Data.Length;
+            if (Core.ServiceBandwidth.ContainsKey(request.Service))
+                Core.ServiceBandwidth[request.Service].InPerSec += packet.Root.Data.Length;
 
             if (packet.ReceivedTcp && request.SearchID != 0)
             {
@@ -314,7 +314,7 @@ namespace RiseOp.Implementation.Dht
             else
                 bytesSent = Network.SendPacket(packet.Source, ack);
 
-            Core.ServiceBandwidthOut[ack.Service].Accumulated += bytesSent;
+            Core.ServiceBandwidth[ack.Service].OutPerSec += bytesSent;
         }
 
         internal void ReceiveAck(G2ReceivedPacket packet)
@@ -325,8 +325,8 @@ namespace RiseOp.Implementation.Dht
             if (Network.Local.Equals(ack.Source))
                 return;
 
-            if (Core.ServiceBandwidthIn.ContainsKey(ack.Service))
-                Core.ServiceBandwidthIn[ack.Service].Accumulated += packet.Root.Data.Length;
+            if (Core.ServiceBandwidth.ContainsKey(ack.Service))
+                Core.ServiceBandwidth[ack.Service].InPerSec += packet.Root.Data.Length;
 
             if (ack.Source.Firewall == FirewallType.Open)
                 Routing.Add(new DhtContact(ack.Source, packet.Source.IP));
@@ -424,7 +424,7 @@ namespace RiseOp.Implementation.Dht
                 sentBytes = Network.UdpControl.SendTo(dest, request);
 
 
-            Core.ServiceBandwidthOut[request.Service].Accumulated += sentBytes;
+            Core.ServiceBandwidth[request.Service].OutPerSec += sentBytes;
 
             // if remote end has what we need they will send us a store request
         }

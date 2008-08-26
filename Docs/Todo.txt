@@ -4,18 +4,11 @@
 	op fw changed t
 	nextTryIP the best way 2 solve the problem?
 	catch thrown expceptions
-
-can a circular buffer be directly indexed [i]?
-
-test zedgraph data
-test real data
-proper resize circular buffer
-
+	
 automated tests
 	2open, 1open1nat,  2op1open1nat, 2op2open... , run each until connected
 
 make title something assigned
-work on bandwidth
 
 design re-alignment
 
@@ -46,22 +39,9 @@ store caching
 
 
 bandwidth
-	interface
-		interface is given list of cores to track
-		filters cut down core types
-		same interface can be used for sim and client
-
-	sim
-		track overall bandwidth
-		global / operation cores
-		filter host types - filter shows % of max
-		filters servive/protocol/direction
-		
 	client
 		burst protection
 			no more than 1kb/s of non rudp packets
-		show bandwidth as breakdown of service type
-		
 		
 
 all help files online, no one needs offline help -yet- thats a $$ features
@@ -174,7 +154,9 @@ summer release
 		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
 		right click to cancel, increase/decrease priority
 	live locations/chat
-	website
+	realignment
+	location redo
+	global buddy list - facilites invites
 	
 	web caching files?
 	implement upnp?

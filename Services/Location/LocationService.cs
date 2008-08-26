@@ -241,7 +241,7 @@ namespace RiseOp.Services.Location
 
             data = new CryptLoc(LocationData.GLOBAL_TTL, data).Encode(Network.Protocol);
 
-            GlobalService service = (GlobalService) Core.Context.Global.ServiceMap[2];
+            GlobalService service = (GlobalService) Core.Context.Global.ServiceMap[12];
             service.Publish(Network.OpID, data);
         }
 

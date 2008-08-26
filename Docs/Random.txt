@@ -182,6 +182,9 @@ selling points
 	europe putting money in ad-hoc p2p mobile networks for coordination
 		http://www.sciencedaily.com/releases/2008/07/080723121327.htm
 		
+	the enternal value of privacy	
+		http://www.wired.com/politics/security/commentary/securitymatters/2006/05/70886
+		
 	Andy Tanenbaum: The problem is co-ordinating things. Projects like GNU, MINIX, or LINUX only hold together if one person is in charge. 
 	Linus Torvalds: Yes, coordination is a big problem, and I don't think linux will move away from me as "head surgeon" for some time..
 	

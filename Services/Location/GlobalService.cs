@@ -14,7 +14,7 @@ namespace RiseOp.Services.Location
     class GlobalService : OpService 
     {
         public string Name { get { return "Global"; } }
-        public uint ServiceID { get { return 2; } }
+        public uint ServiceID { get { return 12; } }
 
         OpCore Core;
         DhtNetwork Network;

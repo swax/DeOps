@@ -62,9 +62,8 @@ namespace RiseOp.Implementation.Transport
         internal int    FinalRecvBuffSize;
 
         // bandwidth
-        CircularBuffer<int> BandwidthIn = new CircularBuffer<int>(5);
-        CircularBuffer<int> BandwidthOut = new CircularBuffer<int>(5);
-        
+        internal BandwidthLog Bandwidth;
+
 
         // inbound
         internal TcpConnect(TcpHandler control)
@@ -72,6 +71,8 @@ namespace RiseOp.Implementation.Transport
             TcpControl = control;
             Network    = TcpControl.Network;
             Core       = TcpControl.Core;
+
+            Bandwidth = new BandwidthLog(Core.RecordBandwidthSeconds);
 		}
 
         // outbound
@@ -80,6 +81,8 @@ namespace RiseOp.Implementation.Transport
             TcpControl = control;
             Network = TcpControl.Network;
             Core = TcpControl.Core;
+
+            Bandwidth = new BandwidthLog(Core.RecordBandwidthSeconds);
 
             Outbound = true;
 
@@ -119,8 +122,7 @@ namespace RiseOp.Implementation.Transport
 			BytesSentinSec     = 0;
 			BytesReceivedinSec = 0;
 
-            BandwidthIn.AddAccumulated();
-            BandwidthOut.AddAccumulated();
+            Bandwidth.NextSecond();
 
             if (Age < 60)
                 Age++;
@@ -434,7 +436,7 @@ namespace RiseOp.Implementation.Transport
                         FinalSendBuffSize -= bytesSent;
                         BytesSentinSec += bytesSent;
 
-                        BandwidthOut.Accumulated += bytesSent;
+                        Bandwidth.OutPerSec += bytesSent;
 
                         if (FinalSendBuffSize < 0)
                             throw new Exception("Tcp SendBuff size less than zero");
@@ -491,7 +493,7 @@ namespace RiseOp.Implementation.Transport
                 return;
             }
 
-            BandwidthIn.Accumulated += length;
+            Bandwidth.InPerSec += length;
             BytesReceivedinSec += length;
             RecvBuffSize += length;  
 

@@ -75,9 +75,9 @@ namespace RiseOp.Implementation
         internal ushort DhtServiceID = 0;
         internal Dictionary<uint, OpService> ServiceMap = new Dictionary<uint, OpService>();
 
-        internal Dictionary<uint, CircularBuffer<int>> ServiceBandwidthIn = new Dictionary<uint, CircularBuffer<int>>();
-        internal Dictionary<uint, CircularBuffer<int>> ServiceBandwidthOut = new Dictionary<uint, CircularBuffer<int>>();
-
+        internal int RecordBandwidthSeconds = 5;
+        internal Dictionary<uint, BandwidthLog> ServiceBandwidth = new Dictionary<uint, BandwidthLog>();
+        
         // properties
         internal IPAddress LocalIP = IPAddress.Parse("127.0.0.1");
         internal FirewallType Firewall = FirewallType.Blocked;
@@ -158,8 +158,8 @@ namespace RiseOp.Implementation
                         Directory.Delete(dirpath, true);
                 }
 
-            ServiceBandwidthIn[DhtServiceID] = new CircularBuffer<int>(5);
-            ServiceBandwidthOut[DhtServiceID] = new CircularBuffer<int>(5);
+            Context.KnownServices[DhtServiceID] = "Dht";
+            ServiceBandwidth[DhtServiceID] = new BandwidthLog(RecordBandwidthSeconds);
 
             // permanent - order is important here
             AddService(new TransferService(this));
@@ -204,8 +204,7 @@ namespace RiseOp.Implementation
                     core.User.Load(LoadModeType.GlobalCache);
             });
 
-            ServiceBandwidthIn[DhtServiceID] = new CircularBuffer<int>(5);
-            ServiceBandwidthOut[DhtServiceID] = new CircularBuffer<int>(5);
+            ServiceBandwidth[DhtServiceID] = new BandwidthLog(RecordBandwidthSeconds);
 
             // get cache from all loaded cores
             AddService(new GlobalService(this));
@@ -226,8 +225,9 @@ namespace RiseOp.Implementation
 
             ServiceMap[service.ServiceID] = service;
 
-            ServiceBandwidthIn[service.ServiceID] = new CircularBuffer<int>(5);
-            ServiceBandwidthOut[service.ServiceID] = new CircularBuffer<int>(5);
+            ServiceBandwidth[service.ServiceID] = new BandwidthLog(RecordBandwidthSeconds);
+
+            Context.KnownServices[service.ServiceID] = service.Name;
         }
 
         private void RemoveService(uint id)
@@ -239,8 +239,7 @@ namespace RiseOp.Implementation
 
             ServiceMap.Remove(id);
 
-            ServiceBandwidthIn.Remove(id);
-            ServiceBandwidthOut.Remove(id);
+            ServiceBandwidth.Remove(id);
         }
 
         internal string GetServiceName(uint id)
@@ -339,10 +338,8 @@ namespace RiseOp.Implementation
                 SecondTimerEvent.Invoke();
 
                 // service bandwidth
-                foreach (CircularBuffer<int> buffer in ServiceBandwidthIn.Values)
-                    buffer.AddAccumulated();
-                foreach (CircularBuffer<int> buffer in ServiceBandwidthOut.Values)
-                    buffer.AddAccumulated();
+                foreach (BandwidthLog buffer in ServiceBandwidth.Values)
+                    buffer.NextSecond();
 
                 // before minute timer give gui 2 secs to tell us of nodes it doesnt want removed
                 if (GetFocusedCore != null && MinuteCounter == 58)
@@ -751,6 +748,31 @@ namespace RiseOp.Implementation
             ProcessEvent.Set();
 
             return function;
+        }
+
+        internal void ResizeBandwidthRecord(int seconds)
+        {
+            if(InvokeRequired)
+            {
+                RunInCoreAsync(delegate() { ResizeBandwidthRecord(seconds); } );
+                return;
+            }
+
+            // services
+            foreach (BandwidthLog log in ServiceBandwidth.Values)
+                log.Resize(seconds);
+
+            // transport
+            foreach (TcpConnect tcp in Network.TcpControl.SocketList)
+                tcp.Bandwidth.Resize(seconds);
+
+            Network.UdpControl.Bandwidth.Resize(seconds);
+
+            foreach (List<RudpSession> sessions in Network.RudpControl.SessionMap.Values)
+                foreach (RudpSession session in sessions)
+                    session.Comm.Bandwidth.Resize(seconds);
+
+            RecordBandwidthSeconds = seconds; // do this last to ensure all buffers set
         }
 
         internal string CreateInvite(string password)

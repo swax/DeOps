@@ -8,6 +8,21 @@ using System.Net;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Transport;
 
+/* Built in Service IDs
+ * Dht          0
+ * Trust        1
+ * Location     2
+ * Transfer     3
+ * Profile      4
+ * IM           5
+ * Chat         6
+ * Mail         7
+ * Board        8
+ * Plan         9
+ * Storage     10
+ * LocalSync   11
+ * Global      12
+ */
 
 namespace RiseOp.Services
 {

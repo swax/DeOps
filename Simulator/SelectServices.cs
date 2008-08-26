@@ -14,8 +14,6 @@ namespace RiseOp.Simulator
 {
     internal partial class SelectServices : Form
     {
-        
-
         SimForm Sim;
         RunServiceMethod Method;
 
@@ -28,18 +26,16 @@ namespace RiseOp.Simulator
             Text = title;
             Method = method;
 
-            OpCore sample = null;
-
             foreach (ListInstanceItem item in Sim.ListInstances.Items)
                 if (item.Core != null)
                 {
-                    sample = item.Core;
+                    RiseOpContext sample = item.Core.Context;
+
+                    foreach (uint id in sample.KnownServices.Keys)
+                        ServiceList.Items.Add(new ServiceItem(id, sample.KnownServices[id]));
+
                     break;
                 }
-
-            if (sample != null)
-                foreach (OpService service in sample.ServiceMap.Values)
-                    ServiceList.Items.Add(new ServiceItem(service));
         }
 
         private void TestButton_Click(object sender, EventArgs e)
@@ -64,17 +60,15 @@ namespace RiseOp.Simulator
         }
     }
 
-
     internal class ServiceItem
     {
         internal uint ID;
         internal string Name;
 
-
-        internal ServiceItem(OpService service)
+        internal ServiceItem(uint id, string name)
         {
-            ID = service.ServiceID;
-            Name = service.Name;
+            ID = id;
+            Name = name;
         }
 
         public override string ToString()

@@ -421,10 +421,10 @@ namespace RiseOp.Simulator
 
             foreach (ListInstanceItem item in ListInstances.SelectedItems)
             {
-                cores.Add(item.Core);
-
                 if (!cores.Contains(item.Core.Context.Global))
                     cores.Add(item.Core.Context.Global);
+                
+                cores.Add(item.Core);
             }
 
             new BandwidthForm(cores).Show();

@@ -678,7 +678,9 @@ namespace RiseOp.Implementation.Dht
             ping.Ident = contact.Ident = (ushort)Core.RndGen.Next(ushort.MaxValue);
 
             // always send ping udp, tcp pings are sent manually
-            SendPacket(contact, ping);
+            int sentBytes = SendPacket(contact, ping);
+
+            Core.ServiceBandwidth[Core.DhtServiceID].OutPerSec += sentBytes;
         }
 
         internal int SendPacket(DhtAddress contact, G2Packet packet)
@@ -691,16 +693,8 @@ namespace RiseOp.Implementation.Dht
 
         void Receive_Ping(G2ReceivedPacket packet)
         {
-            //crit - delete
-            if (!IsGlobal)
-                if (packet.Tcp != null)
-                {
-                    int x = 0;
-                }
-                else
-                {
-                    int y = 0;
-                }
+            Core.ServiceBandwidth[Core.DhtServiceID].InPerSec += packet.Root.Data.Length;
+
             Ping ping = Ping.Decode(packet);
 
             bool lanIP = Utilities.IsLocalIP(packet.Source.IP);
@@ -733,6 +727,8 @@ namespace RiseOp.Implementation.Dht
 
             if (ping.RemoteIP != null)
                 pong.RemoteIP = packet.Source.IP;
+
+            int sentBytes = 0;
 
             // received tcp
             if (packet.ReceivedTcp)
@@ -779,7 +775,7 @@ namespace RiseOp.Implementation.Dht
                 }
 
                 pong.Direct = true;
-                packet.Tcp.SendPacket(pong);
+                sentBytes = packet.Tcp.SendPacket(pong);
 
                 // dont send close if proxies maxxed yet, because their id might be closer than current proxies
             }
@@ -797,12 +793,16 @@ namespace RiseOp.Implementation.Dht
                 }
 
                 // send pong
-                SendPacket(packet.Source, pong);
+                sentBytes = SendPacket(packet.Source, pong);
             }
+
+            Core.ServiceBandwidth[Core.DhtServiceID].OutPerSec += sentBytes;
         }
 
         void Receive_Pong(G2ReceivedPacket packet)
         {
+            Core.ServiceBandwidth[Core.DhtServiceID].InPerSec += packet.Root.Data.Length;
+
             Pong pong = Pong.Decode(packet);
 
             SetLocalIP(pong.RemoteIP, packet);

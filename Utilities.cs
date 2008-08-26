@@ -945,6 +945,11 @@ namespace RiseOp.Implementation
         {
             return First.GetHashCode() ^ Second.GetHashCode();
         }
+
+        public override string ToString()
+        {
+            return First + " - " + Second;
+        }
     }
 
     internal class CircularBuffer<T> : IEnumerable
@@ -953,15 +958,25 @@ namespace RiseOp.Implementation
         internal int CurrentPos = -1;
         internal int Length;
 
-        internal T Accumulated;
-
         internal int Capacity
         {
             set
             {
+                // copy prev elements
+                T[] copy = new T[Length];
+
+                for (int i = 0; i < Length && i < value; i++)
+                    copy[i] = this[i];
+
+                // re-init buff
                 Buffer = new T[value];
                 CurrentPos = -1;
                 Length = 0;
+
+                // add back values
+                Array.Reverse(copy);
+                foreach (T init in copy)
+                    Add(init);
             }
             get
             {
@@ -975,11 +990,34 @@ namespace RiseOp.Implementation
             Capacity = capacity;
         }
 
-        internal void AddAccumulated()
+        internal T this[int index]
         {
-            Add(Accumulated);
+            get
+            {
+                return Buffer[ToCircleIndex(index)];
+            }
+            set
+            {
+                Buffer[ToCircleIndex(index)] = value;
+            }
+        }
 
-            Accumulated = default(T);
+        int ToCircleIndex(int index)
+        {
+            // linear index to circular index
+
+            if (CurrentPos == -1)
+                throw new Exception("Index value not valid");
+
+            if (index >= Length)
+                throw new Exception("Index value exceeds bounds of array");
+
+            int circIndex = CurrentPos - index;
+
+            if (circIndex < 0)
+                circIndex = Buffer.Length + circIndex;
+
+            return circIndex;
         }
 
         internal void Add(T value)
@@ -1016,7 +1054,7 @@ namespace RiseOp.Implementation
 
         internal void Clear()
         {
-            Buffer = new T[Buffer.Length];
+            Buffer = new T[Capacity];
             CurrentPos = -1;
             Length = 0;
         }
@@ -1082,6 +1120,53 @@ namespace RiseOp.Implementation
                 count = (int)(Length - Position);
 
             return base.Read(array, offset, count);
+        }
+    }
+
+    internal class BandwidthLog
+    {
+        internal CircularBuffer<int> In;
+        internal CircularBuffer<int> Out;
+
+        internal int InPerSec;
+        internal int OutPerSec;
+
+
+        internal BandwidthLog(int size)
+        {
+            In = new CircularBuffer<int>(size);
+            Out = new CircularBuffer<int>(size);
+        }
+
+        internal void NextSecond()
+        {
+            In.Add(InPerSec);
+            InPerSec = 0;
+
+            Out.Add(OutPerSec);
+            OutPerSec = 0;
+        }
+
+        internal void Resize(int seconds)
+        {
+            In.Capacity = seconds;
+            Out.Capacity = seconds;
+        }
+
+        internal float InOutAvg(int period)
+        {
+            return Average(In, period) + Average(Out, period);
+        }
+
+        internal float Average(CircularBuffer<int> buff, int period)
+        {
+            float avg = 0;
+
+            int i = 0;
+            for (; i < period && i < buff.Length; i++)
+                avg += buff[i];
+
+            return (i > 0) ? avg / i : 0;
         }
     }
 }

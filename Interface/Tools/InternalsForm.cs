@@ -507,7 +507,7 @@ namespace RiseOp.Interface.Tools
             if (Core.Context.Global == null)
                 return;
 
-            GlobalService globalLocs = (GlobalService)Core.Context.Global.ServiceMap[2];
+            GlobalService globalLocs = (GlobalService)Core.Context.Global.ServiceMap[12];
 
             globalLocs.GlobalIndex.LockReading(delegate()
             {

@@ -60,6 +60,8 @@ namespace RiseOp
         string UpdatePath;
         Queue<string[]> NewInstances = new Queue<string[]>();
 
+        internal Dictionary<uint, string> KnownServices = new Dictionary<uint, string>();
+
 
         internal RiseOpContext(string[] args)
         {
@@ -91,6 +93,7 @@ namespace RiseOp
 
         internal void SecondInstanceStarted(string[] args)
         {
+            // pass to main thread
             lock (NewInstances)
                 NewInstances.Enqueue(args);
         }

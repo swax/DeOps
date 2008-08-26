@@ -131,15 +131,15 @@ namespace RiseOp.Implementation.Dht
             else
                 sentBytes = Network.UdpControl.SendTo(address, store);
 
-            Core.ServiceBandwidthOut[store.Service].Accumulated += sentBytes;
+            Core.ServiceBandwidth[store.Service].OutPerSec += sentBytes;
         }
 
         internal void Receive_StoreReq(G2ReceivedPacket packet)
         {
             StoreReq store = StoreReq.Decode(packet);
 
-            if (Core.ServiceBandwidthIn.ContainsKey(store.Service))
-                Core.ServiceBandwidthIn[store.Service].Accumulated += packet.Root.Data.Length;
+            if (Core.ServiceBandwidth.ContainsKey(store.Service))
+                Core.ServiceBandwidth[store.Service].InPerSec += packet.Root.Data.Length;
 
             if (store.Source.Firewall == FirewallType.Open )
                     // dont need to add to routing if nat/blocked because eventual routing ping by server will auto add

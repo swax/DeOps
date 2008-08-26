@@ -76,8 +76,7 @@ namespace RiseOp.Implementation.Transport
 		int ReTransmits;
 
         // bandwidth
-        CircularBuffer<int> BandwidthIn = new CircularBuffer<int>(5);
-        CircularBuffer<int> BandwidthOut = new CircularBuffer<int>(5);
+        internal BandwidthLog Bandwidth;
         
 
         internal RudpSocket(RudpSession session, bool listening)
@@ -85,6 +84,8 @@ namespace RiseOp.Implementation.Transport
             Session = session;
             Core = session.Core;
             Network = Session.Network;
+
+            Bandwidth = new BandwidthLog(Core.RecordBandwidthSeconds);
 
             Listening = listening; 
             
@@ -288,7 +289,7 @@ namespace RiseOp.Implementation.Transport
 				return;
 			}
             
-            BandwidthIn.Accumulated += raw.Root.Data.Length;
+            Bandwidth.InPerSec += raw.Root.Data.Length;
 
             // add proxied and direct addresses
             // proxied first because that packet has highest chance of being received, no need for retry
@@ -833,7 +834,7 @@ namespace RiseOp.Implementation.Transport
                 //log += " proxied by local tcp";
             }
 
-            BandwidthOut.Accumulated += sentBytes;
+            Bandwidth.OutPerSec += sentBytes;
 
             //Session.Log(log);
         }
@@ -926,8 +927,7 @@ namespace RiseOp.Implementation.Transport
 			AvgBytesSent.Next();
 
             // bandwidth stats
-            BandwidthIn.AddAccumulated();
-            BandwidthOut.AddAccumulated();
+            Bandwidth.NextSecond();
 		}
 
         internal void CheckRoutes()

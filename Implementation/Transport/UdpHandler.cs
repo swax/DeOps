@@ -32,14 +32,15 @@ namespace RiseOp.Implementation.Transport
 
 		BufferData SendData = new BufferData( new byte[4096] );
 
-        internal CircularBuffer<int> BandwidthIn = new CircularBuffer<int>(5);
-        internal CircularBuffer<int> BandwidthOut = new CircularBuffer<int>(5);
+        internal BandwidthLog Bandwidth;
         
 
         internal UdpHandler(DhtNetwork network)
 		{
             Network = network;
             Core = network.Core;
+
+            Bandwidth = new BandwidthLog(Core.RecordBandwidthSeconds);
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
 
@@ -101,8 +102,7 @@ namespace RiseOp.Implementation.Transport
 
         void Core_SecondTimer()
         {
-            BandwidthIn.AddAccumulated();
-            BandwidthOut.AddAccumulated();
+            Bandwidth.NextSecond();
         }
 
 		internal int SendTo(DhtAddress address, G2Packet packet)
@@ -158,7 +158,7 @@ namespace RiseOp.Implementation.Transport
                 }
 
                 // record bandwidth
-                BandwidthOut.Accumulated += final.Length;
+                Bandwidth.OutPerSec += final.Length;
                 return final.Length;
             }
 			catch(Exception ex)
@@ -194,9 +194,6 @@ namespace RiseOp.Implementation.Transport
 				EndPoint sender = (EndPoint) new IPEndPoint(IPAddress.Any, 0);
 				int recvLen = UdpSocket.EndReceiveFrom(asyncResult, ref sender);
 
-                // record bandwidth 
-                BandwidthIn.Accumulated += recvLen;
-
                 OnReceive(ReceiveBuff, recvLen, (IPEndPoint)sender);
 			}
 			catch(Exception ex)
@@ -228,6 +225,9 @@ namespace RiseOp.Implementation.Transport
 
         internal void OnReceive(byte[] buff, int length, IPEndPoint sender)
         {
+            // record bandwidth - done here so caught in/out of sim
+            Bandwidth.InPerSec += length;
+
             bool copied = false;
             byte[] finalBuff = buff;
 
