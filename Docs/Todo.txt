@@ -12,6 +12,8 @@ make title something assigned
 
 design re-alignment
 
+maybe put into input text toolbar a formatting off button that is on by default - msgs are encoded txt/rtf/html(for future)
+
 store caching 
 	keep track of when last result was sent
 		if greater than a minute, cache entry is up for pruning

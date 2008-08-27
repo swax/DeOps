@@ -1,75 +1,129 @@
 ﻿
-
 multi-source d/l
 
-	if downloading or being uploaded from, the file is loaded as a transfer
-
-	transfer
+	transfer - if downloading or being uploaded from, the file is loaded as a transfer
 		bit field representing parts
 		connected (closest) peers (or use plain udp state messages?)
 			peer's bitfield
 		
-	on request
-		check bitfield if part exists, if it does it can be transferred
+	search 
+		target service replies with completed files
+		transfer service replies with partial files
+		
+	end search
+		locations searched for
+		added to transfer
+		locations 'transfer pinged'
+		
+	ping
+		continually transfer pings those around in mesh (60 sec timeout)
+			lets others know that host wants pieces sent to it
+			tag if bitfield has changed since last ping - if remote host interested they will request updated bitfield
+			alt tag on first ping
+		
+	on ping
+		keep host in list of hosts we can sent chunks to
+		mark if we need to update bitfield
+		before sending chunks, req bitfield
+		send random 3 alts (upon first contact will send more alts)
+		send pong
+		
+	pong
+		ok - min ping timeout
+		error - dont have file anymore
+		want bitfield - send bitfield (or have all/none)
+		
+	mini-dht
+		have entire file
+			dht consists of those closest who need the file
+		have part of file
+			dht consts of closests with/without entire file
+		max 16 closest. those outside dont ping
+			dont need up/down closest because if someone pings us we keep them in our peer list
+		keep transfer pings for whole context at no more than 1 every 3 seconds
+			vary ping timeout response accordingly (similar to webcache response)
 		
 	on timer
 		for each transfer
-			if bitfield changed, update peers
+			ping those in transfer list who need to be pinged
+				only if not completed, if completed dont ping at all, require remotes to stay alive
 		
-			if incomplete bitfields, requests need to be made	
-			
 			if all peers complete or not-reponsive and bitfield is complete, unload transfer
+
+			remove peers we haven't heard from
+						
+			?? if too many peers connected > 10, disconnect furthest (signal comm not needed)
 			
-			if too many peers connected > 10, disconnect furthest (signal comm not needed)
+		if transfer needed (how to determine? transfers exist)
+			increase need count
 			
-		if bandwidth available for upload
-			select piece and start sending it
-		
-			foreach transfer
-				determine most needed parts that we have locally
+			if  active transfer slots exist (total transfers across context must be less than  u/l bw / 7kb)
+				bandwidth available for upload and 
+				we have the highest need count of whole context
 				
+				select piece and start sending it
+				add to active transfer list
+					
+				zero need count
+		else
+			zero need count
+	
+	select piece
+		preference incomplete transfers
+		pick transfer that has waited the longest (zero wait, next iter will be next transfer)
+		pick host that has waited the longest (zero wait, next iter will be next host)
+		pick piece that is the rarest that the remote host needs
+		if we dont have a piece to send (loop hosts, then loop transfers)
+		open transfer, send piece
+	
+
+	how to know bandwidth is available to send? set a mark at first, and then auto-figure out
+		max upload rate hit when transfers at full speed
+		record this high mark, and use to determine if room for concurrent transfers
+		default rate is 15 (starts with 1 transfer and quickly ramps up)
+		decrease high mark over time
+		allocate min of 7kb/s to each transfer (if we think we have 70kb up no more than 10 uploads)
+		
 	on begin/end receive data update bitfield to all hosts
 		prevent hosts from sending dupe
 		on dupe - accept one, send updated bitfield to other
+		
+	on close
+		send 'going offline' to hosts in mesh
+		save partial transfers
+		do not auto-download on restart - but keep in case requested again
+		keep max 20 partials or 50MB, remove oldest over limit
+
+
+	implmentation plan
+	
+	interface constructs
+	
+	testing
 	
 
-	maxes
-		max 50 unique comm connections by transfer service
-		if < 40 comm connects then pending can go to active
-			partial bitfields override complete bitfields in active space
-		max 10 closest sources per download
-		
-	udp
-		transfer ping/pong to keep mesh going
-		alts should know each other
-		
-	how to know bandwidth is available to send? set a mark at first, and then auto-figure out
-		
+
+	show file's distribution over network
+	
 	which piece to start next? rarest piece we have and others dont
 	
 	
 	when to start sending another piece? upload bw falls below mark
+		if a piece needs to be sent
+		if there is available u/l bw or current u/ls can be throttled back to allow piece to be sent 7kb/s
 
 	alerting of other sources in the mesh? alt req/response
 
-
-
-	show file's distribution over network
-	file download interface
-		main: hash, size, parts graphic
-		subs: name, status (pending / 5kb/s), parts graphic
-		
 	analyze current algorithm
 		how to pause re-request file transfers? encapsulate in g2?
 		are there different 'streams' for file transfers control and data?
 		round robin low level  udp send buffer?
 
-	search return partial files
-
-	current algorithm dl/ul
-		Start d/l puts file in pending queue
-		Move to active when less than 5 active
-		New active searches for target
+		current algorithm dl/ul
+				Start d/l puts file in pending queue
+				Move to active when less than 5 active
+				New active searches for target
+				
 
 	a transfer doesn't keep track of more than 20 peers
 		peer list like mini-dht every 2 slots is xor closer to local
@@ -91,14 +145,14 @@ multi-source d/l
 	who to send to 
 		clients are sent chunks round robin to who needs them
 		no need to client to signal choked, server decides when to send based on if remote is interested
-		give u/l pref to files being downloaded
+		give u/l pref to partial-files (files local host is downloading)
 		
 	what do we know
 		we know our send rate total and per node based on acknowledgements
 		we know we want 5kb/s at least as overhead for network comm
 		we know if remote is dropping packets because they are re-requested
 		
-	bandwidth test
+	bandwidth test (needed?)
 		once connected to network
 		select 10 closests nodes
 		send at full speed to all hosts for 10 seconds
@@ -116,9 +170,11 @@ multi-source d/l
 		stop allowing more slots if average u/l speed < 4kbs
 		
 		transfer control is aware of pending transfers
+		decisions are managed context wide
 		when slot avaialable transfer is selected by component (round robin), then FCFS for multiple transfers in component
 			transfer awarded slot, transfers chunk
 			when finished requests from control to keep slot
+
 
 	securing files
 		encrypt file to temp
@@ -133,6 +189,12 @@ multi-source d/l
 
 	if blocked favor open hosts, dont want to double bw d/ling from NAT/blocked
 
+	transfers interface
+		show current files considered as transfers in tree view no diff up/down
+		option to show context wide
+		main: hash, size, parts graphic
+		subs: name, status (pending / 5kb/s), parts graphic
+		
 	testing 
 		in network view, seed file and watch, implement bw limits in simulator
 		each node shows a progress bar of the files completion
