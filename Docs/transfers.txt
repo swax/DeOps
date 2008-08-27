@@ -3,9 +3,13 @@ multi-source d/l
 
 	transfer - if downloading or being uploaded from, the file is loaded as a transfer
 		bit field representing parts
-		connected (closest) peers (or use plain udp state messages?)
-			peer's bitfield
-		
+		peers
+			bitfield
+			bitfield out-of-date
+			last seen
+			next update
+			timeout
+			
 	search 
 		target service replies with completed files
 		transfer service replies with partial files
@@ -13,80 +17,100 @@ multi-source d/l
 	end search
 		locations searched for
 		added to transfer
-		locations 'transfer pinged'
+		add transfer locations
 		
-	ping
-		continually transfer pings those around in mesh (60 sec timeout)
-			lets others know that host wants pieces sent to it
-			tag if bitfield has changed since last ping - if remote host interested they will request updated bitfield
-			alt tag on first ping
+	add location
+		add loc to peers list for transfer
+		ping location
+		continually send transfer pings those around in mesh (60 sec default timeout)
+	
+	send ping
+		time out 60 secs default
+		bitfield changed tag - when bitfield has changed since last ping - if remote host interested they will request updated bitfield
+		give alts tag - only on first ping (add location)
+		(pings only sent from incomplete hosts)
+		file hash/size
+	
+	recv ping
+		(host must be incomplete to recv ping)
+		check if we have file and that it should be loaded
+		on error return pong - error 
+		add/update host in peers list
+		mark peer's bitfield out-of-date
+		if haven't sent alts - send random 3 alts (upon first contact will send more alts)
+		calc min timeout for no more than 1 ping ever 3 seconds (similar to webcache response)
+		send pong ok
 		
-	on ping
-		keep host in list of hosts we can sent chunks to
-		mark if we need to update bitfield
-		before sending chunks, req bitfield
-		send random 3 alts (upon first contact will send more alts)
-		send pong
-		
-	pong
-		ok - min ping timeout
-		error - dont have file anymore
-		want bitfield - send bitfield (or have all/none)
+	recv  pong
+		ok - set min ping timeout
+		error - remove location from peers
+		process alts (add locations)
 		
 	mini-dht
 		have entire file
 			dht consists of those closest who need the file
 		have part of file
 			dht consts of closests with/without entire file
-		max 16 closest. those outside dont ping
+		max 16 closest. those outside dont ping,  if they ping us keey them in
 			dont need up/down closest because if someone pings us we keep them in our peer list
-		keep transfer pings for whole context at no more than 1 every 3 seconds
-			vary ping timeout response accordingly (similar to webcache response)
 		
 	on timer
 		for each transfer
 			ping those in transfer list who need to be pinged
-				only if not completed, if completed dont ping at all, require remotes to stay alive
+				only if not completed, if completed dont ping at all, require remotes to ping us stay alive
 		
-			if all peers complete or not-reponsive and bitfield is complete, unload transfer
-
-			remove peers we haven't heard from
-						
-			?? if too many peers connected > 10, disconnect furthest (signal comm not needed)
+			remove peers that haven't pinged us
 			
-		if transfer needed (how to determine? transfers exist)
-			increase need count
+			if file completed and no peers in list, unload transfer
+		
 			
-			if  active transfer slots exist (total transfers across context must be less than  u/l bw / 7kb)
-				bandwidth available for upload and 
-				we have the highest need count of whole context
+		if no transfers loaded
+			set WaitingSince to now
+			
+		else if active transfer slots exist (total transfers across context must be less than  u/l bw / 7kb)
+			bandwidth available for upload and 
+			we have the oldest WaitingSince of whole context and
+			select piece returns true
+			
+			add piece/host to active transfers list
 				
-				select piece and start sending it
-				add to active transfer list
-					
-				zero need count
-		else
-			zero need count
-	
+			set WaitingSince to now
+		
 	select piece
-		preference incomplete transfers
+		preference local incomplete transfers\
+		preference last  piece (contains sub-hashes)
 		pick transfer that has waited the longest (zero wait, next iter will be next transfer)
 		pick host that has waited the longest (zero wait, next iter will be next host)
 		pick piece that is the rarest that the remote host needs
 		if we dont have a piece to send (loop hosts, then loop transfers)
-		open transfer, send piece
+		return true host/piece
 	
-
+	add piece/host to active transfers
+		connect to host
+		if bit-field out of date request
+		re-evaluate piece to send
+		send header (start byte)
+		start transferring
+		on close connect - remove from active transfer
+		
+	recv header
+		if already transferring piece, send cancel (try again / dont try if nothing else to send)
+		mark piece as transferring by tagging byte ranges (might be able to do sub-part transfers by modding byte range)
+			once byterange of chunk finished / verified its added to local bitfield
+		remote allows 3 retries before cancelling transfers
+		
+	recv data
+		on last data piece
+			if contains sub-hashes - process sub-hashes (how many sub-hashes can 256kb chunk contain?)
+			sub-hash data (if bad mark host, 3 bad pieces tag host)
+			
 	how to know bandwidth is available to send? set a mark at first, and then auto-figure out
 		max upload rate hit when transfers at full speed
 		record this high mark, and use to determine if room for concurrent transfers
-		default rate is 15 (starts with 1 transfer and quickly ramps up)
+		default rate is 15 (starts with 1 transfer and quickly ramps up), min is 10
 		decrease high mark over time
 		allocate min of 7kb/s to each transfer (if we think we have 70kb up no more than 10 uploads)
-		
-	on begin/end receive data update bitfield to all hosts
-		prevent hosts from sending dupe
-		on dupe - accept one, send updated bitfield to other
+		implement max bandwidth in sim (drop packets over rate)
 		
 	on close
 		send 'going offline' to hosts in mesh
@@ -96,23 +120,23 @@ multi-source d/l
 
 
 	implmentation plan
+		create transfer service 2 that is empty (replace in core loading)
+		have transfer gui attach to service to show status
 	
-	interface constructs
+	interface
+		transfer tree / transfer log
 	
 	testing
-	
+		put hash into sim network view
+		if enabled each peer shows a file completed bar and percentage
+		publish new file in storage at top of network
+		time how long it takes to distribute file across entire network
+
+		generate random bitfields and determine network rarest
+		build operations to add/subtrant bitfields to determine rarest that local has
 
 
-	show file's distribution over network
-	
-	which piece to start next? rarest piece we have and others dont
-	
-	
-	when to start sending another piece? upload bw falls below mark
-		if a piece needs to be sent
-		if there is available u/l bw or current u/ls can be throttled back to allow piece to be sent 7kb/s
 
-	alerting of other sources in the mesh? alt req/response
 
 	analyze current algorithm
 		how to pause re-request file transfers? encapsulate in g2?
