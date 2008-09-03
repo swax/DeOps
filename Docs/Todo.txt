@@ -58,6 +58,23 @@ need to fix location scheme
 		how do projects work - seeing who's online
 	combine this with 'live' strategy
 
+	
+	current loc
+		every 5 mins node publishes loc info on network
+			every 5 mins node searches for all peer's loc info on network
+			
+	new
+		when join network, search for peers loc info, lightComm tell them to notify us with heartbeats
+		send heartbeats at local's discresion to those who want to be notified
+		only keep track of local region online, dont go higher unless requested
+		if addresses change, notify in beat
+			also have messages to cut contacts, signoff, etc..
+			
+		LightComm keeps address list of user/clients
+			keeps last reponsive address on top
+			when message sent, wait for ack, if no ack try next address
+
+
 test
 	in sim show web cache requests / publishes, ensure not too often
 	web cache pruning - create a / b / c /d /e / f caches

@@ -812,6 +812,7 @@ namespace RiseOp.Implementation.Transport
 
             int sentBytes = 0;
 
+            // same code used in lightComm
             if (Core.Firewall != FirewallType.Blocked && target.LocalProxy == null)
             {
                 sentBytes = Network.SendPacket(target.Address, tracked.Packet);
@@ -979,20 +980,6 @@ namespace RiseOp.Implementation.Transport
         {
             Address = address;
             LocalProxy = new DhtClient(proxy);
-        }
-
-
-        public override bool Equals(object obj)
-        {
-            RudpAddress check = obj as RudpAddress;
-
-            if (check == null)
-                return false;
-
-            if (Address.Equals(check.Address) && LocalProxy.Equals(check.LocalProxy))
-                return true;
-
-            return false;
         }
 
         public override int GetHashCode()

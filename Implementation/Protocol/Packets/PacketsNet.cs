@@ -20,6 +20,11 @@ namespace RiseOp.Implementation.Protocol.Net
         internal ulong UserID;
         internal ushort ClientID;
 
+        public ulong RoutingID
+        {
+            get { return UserID ^ ClientID; }
+        }
+
         internal DhtClient()
         {
         }
@@ -289,6 +294,7 @@ namespace RiseOp.Implementation.Protocol.Net
         internal const byte ProxyAck        = 0x80;
         internal const byte CrawlRequest    = 0x90;
         internal const byte CrawlAck        = 0xA0;
+
 
         
         internal ulong      SourceID;
@@ -1072,7 +1078,6 @@ namespace RiseOp.Implementation.Protocol.Net
 			return ack;
 		}
 	}
-
 
     internal class CryptPadding : G2Packet
     {

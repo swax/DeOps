@@ -22,8 +22,7 @@ using RiseOp.Interface.Tools;
 namespace RiseOp.Implementation.Dht
 {
     internal delegate void StatusChange();
-
-
+    
     internal class DhtNetwork
     {
         // super-class
@@ -35,6 +34,7 @@ namespace RiseOp.Implementation.Dht
         internal UdpHandler UdpControl;
         internal LanHandler LanControl;
         internal RudpHandler RudpControl;
+        internal LightCommHandler LightComm;
 
         internal OpCache Cache;
         internal DhtRouting Routing;
@@ -106,6 +106,7 @@ namespace RiseOp.Implementation.Dht
             UdpControl = new UdpHandler(this);
             LanControl = new LanHandler(this);
             RudpControl = new RudpHandler(this);
+            LightComm = new LightCommHandler(this);
             
             Routing = new DhtRouting(this);
             Store = new DhtStore(this);
@@ -118,6 +119,7 @@ namespace RiseOp.Implementation.Dht
             Cache.SecondTimer();
             TcpControl.SecondTimer();
             RudpControl.SecondTimer();
+            LightComm.SecondTimer();
             Routing.SecondTimer();
             Searches.SecondTimer();
 
@@ -416,6 +418,13 @@ namespace RiseOp.Implementation.Dht
                         RudpControl.SocketMap[packet.PeerID].RudpReceive(raw, packet, IsGlobal);
                         return;
                     }
+
+                if (packet.PacketType == RudpPacketType.Light ||
+                    packet.PacketType == RudpPacketType.LightAck)
+                {
+                    LightComm.ReceivePacket(raw, packet);
+                    return;
+                }
 
                 // if starting new session
                 if (packet.PacketType != RudpPacketType.Syn)

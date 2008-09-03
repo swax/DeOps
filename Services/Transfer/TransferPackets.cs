@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
 
 
 namespace RiseOp.Services.Transfer
@@ -13,6 +14,9 @@ namespace RiseOp.Services.Transfer
         internal const byte Request = 0x20;
         internal const byte Ack = 0x30;
         internal const byte Data = 0x40;
+
+        internal const byte Ping = 0x50;
+        internal const byte Pong = 0x60;
     }
 
     internal class FileDetails : G2Packet
@@ -336,6 +340,125 @@ namespace RiseOp.Services.Transfer
             }
 
             return td;
+        }
+    }
+
+    internal class TransferPing : G2Packet
+    {
+        const byte Packet_Details = 0x10;
+
+        internal ulong Target; //crit - implement
+        internal FileDetails Details;
+        internal bool RequestAlts;
+
+
+        internal TransferPing()
+        {
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame ping = protocol.WritePacket(null, TransferPacket.Ping, null);
+
+                protocol.WritePacket(ping, Packet_Details, Details.Encode(protocol));
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static TransferPing Decode(G2Header root)
+        {
+            TransferPing ping = new TransferPing();
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_Details:
+                        ping.Details = FileDetails.Decode(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
+                        break;
+                }
+            }
+
+            return ping;
+        }
+    }
+
+    internal class TransferPong : G2Packet
+    {
+        const byte Packet_Details = 0x10;
+        const byte Packet_AltClient = 0x10;
+        const byte Packet_AltAddress = 0x10;
+
+        internal ulong FileID;
+        internal bool Error;
+        internal int Timeout;
+
+        internal Dictionary<DhtClient, List<DhtAddress>> Alts = new Dictionary<DhtClient, List<DhtAddress>>();
+
+
+        internal TransferPong()
+        {
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame pong = protocol.WritePacket(null, TransferPacket.Pong, null);
+
+                //protocol.WritePacket(pong, Packet_Details, Details.Encode(protocol));
+
+                foreach (DhtClient client in Alts.Keys)
+                {
+                    G2Frame alt = protocol.WritePacket(pong, Packet_AltClient, client.ToBytes());
+
+                    foreach (DhtAddress address in Alts[client])
+                        address.WritePacket(protocol, alt, Packet_AltAddress);
+                }
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static TransferPong Decode(G2Header root)
+        {
+            TransferPong pong = new TransferPong();
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_AltClient:
+                        DhtClient client = DhtClient.FromBytes(child.Data, child.PayloadPos);
+                        pong.Alts[client] = new List<DhtAddress>();
+
+                        G2Protocol.ResetPacket(child);
+                        
+                        G2Header sub = new G2Header(child.Data);
+
+                        while (G2Protocol.ReadNextChild(child, sub) == G2ReadResult.PACKET_GOOD)
+                            if (G2Protocol.ReadPayload(sub))
+                                if (sub.Name == Packet_AltAddress)
+                                    pong.Alts[client].Add(DhtAddress.ReadPacket(sub));
+
+                        break;
+                }
+            }
+
+            return pong;
         }
     }
 }

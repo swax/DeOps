@@ -29,12 +29,15 @@ namespace RiseOp.Implementation.Protocol.Comm
 
 	internal class RudpPacketType 
     {
-        internal const byte Syn  = 0x00; 
-        internal const byte Ack  = 0x10;
-        internal const byte Ping = 0x20;
-        internal const byte Pong = 0x30;
-        internal const byte Data = 0x40;
-        internal const byte Fin  = 0x50;
+        internal const byte Syn   = 0x00; 
+        internal const byte Ack   = 0x10;
+        internal const byte Ping  = 0x20;
+        internal const byte Pong  = 0x30;
+        internal const byte Data  = 0x40;
+        internal const byte Fin   = 0x50;
+
+        internal const byte Light = 0x60;
+        internal const byte LightAck = 0x70;
     };
 
 	internal class RudpPacket : G2Packet
@@ -201,8 +204,39 @@ namespace RiseOp.Implementation.Protocol.Comm
 
             return payload;
 		}	
-
 	}
+
+    internal class RudpLight
+    {
+        const int MIN_SIZE = 4 + 4;
+
+        internal uint   Service;
+        internal uint   Type;
+        internal byte[] Data;
+
+
+        internal RudpLight(byte[] bytes)
+        {
+            if (bytes.Length < MIN_SIZE)
+                return;
+
+            Service = BitConverter.ToUInt32(bytes, 0);
+            Type = BitConverter.ToUInt32(bytes, 4);
+            Data = Utilities.ExtractBytes(bytes, 8, bytes.Length - 8);
+        }
+
+        internal static byte[] Encode(uint service, int type, byte[] data)
+        {
+            byte[] payload = new byte[MIN_SIZE + data.Length];
+
+            BitConverter.GetBytes(service).CopyTo(payload, 0);
+            BitConverter.GetBytes(type).CopyTo(payload, 4);
+            data.CopyTo(payload, 8);
+
+            return payload;
+        }
+    }
+
 
 	internal class RudpAck
 	{

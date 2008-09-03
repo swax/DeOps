@@ -27,7 +27,7 @@
     <SignAssembly>false</SignAssembly>
     <OldToolsVersion>2.0</OldToolsVersion>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -97,6 +97,9 @@
     <Reference Include="System">
       <Name>System</Name>
     </Reference>
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
     <Reference Include="System.Data">
       <Name>System.Data</Name>
     </Reference>
@@ -122,6 +125,7 @@
     </Compile>
     <Compile Include="Implementation\OpCache.cs" />
     <Compile Include="Implementation\Transport\LanHandler.cs" />
+    <Compile Include="Implementation\Transport\LightCommHandler.cs" />
     <Compile Include="Implementation\Transport\UPnP.cs" />
     <Compile Include="Interface\CustomIconForm.cs">
       <SubType>Form</SubType>
@@ -189,6 +193,9 @@
     <Compile Include="Services\Plan\PlanService.cs" />
     <Compile Include="Services\Profile\ProfileService.cs" />
     <Compile Include="Services\Storage\StorageService.cs" />
+    <None Include="Services\Transfer\TransferServiceOld.cs">
+      <SubType>Code</SubType>
+    </None>
     <Compile Include="Services\Transfer\TransferService.cs" />
     <Compile Include="Services\Trust\TrustService.cs" />
     <Compile Include="Services\Board\BoardPackets.cs" />

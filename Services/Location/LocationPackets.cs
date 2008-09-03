@@ -53,6 +53,10 @@ namespace RiseOp.Services.Location
 
 
         internal ulong UserID;
+        internal ulong RoutingID
+        {
+            get { return UserID ^ Source.ClientID; }
+        }
 
         internal override byte[] Encode(G2Protocol protocol)
         {
@@ -75,6 +79,28 @@ namespace RiseOp.Services.Location
 
                 foreach(PatchTag tag in Tags)
                     protocol.WritePacket(loc, Packet_Tag, tag.ToBytes());
+
+                if (TunnelClient != null)
+                    protocol.WritePacket(loc, Packet_TunnelClient, TunnelClient.ToBytes());
+
+                foreach (DhtAddress server in TunnelServers)
+                    server.WritePacket(protocol, loc, Packet_TunnelServers);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal byte[] EncodeLight(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame loc = protocol.WritePacket(null, LocPacket.LocationData, null);
+
+                Source.WritePacket(protocol, loc, Packet_Source);
+                protocol.WritePacket(loc, Packet_IP, IP.GetAddressBytes());
+
+                foreach (DhtAddress proxy in Proxies)
+                    proxy.WritePacket(protocol, loc, Packet_Proxies);
 
                 if (TunnelClient != null)
                     protocol.WritePacket(loc, Packet_TunnelClient, TunnelClient.ToBytes());
@@ -112,6 +138,7 @@ namespace RiseOp.Services.Location
 
                     case Packet_Source:
                         loc.Source = DhtSource.ReadPacket(child);
+                        loc.UserID = loc.Source.UserID; // encode light doesnt send full key
                         break;
 
                     case Packet_IP:

@@ -1,4 +1,41 @@
 ﻿
+light comm
+	on end transfer search
+		add locations to light comm
+		
+	timer
+		prune 100 locations
+		prune locations not talked to in 30 minutes
+		
+		foreach location
+			if packets in queue
+			try send
+		
+	send packet
+		queue packet - give ID
+		try send
+		
+	location.trysend
+		send to first address
+		move address to back on list
+		set nextTry 3 seconds
+		increase attempts
+		
+		if attempts = addresses.length * 2 then send failed
+			remove packet from queue
+			location/addresses not removed (we or they could be temp disconnected, let caller decide when to stop comm)
+		
+	on ack
+		move addresss to front of list
+		remove packet from queue
+		
+	receive packet
+		add source addresses to lightComm
+		notify above service (transfer can add peer and pong back without worrying about addresses)
+			(send alts could send top 2 addresses from lightComm for each random peer)
+
+	remove net custom service packet
+
 multi-source d/l
 
 	transfer - if downloading or being uploaded from, the file is loaded as a transfer
@@ -13,17 +50,19 @@ multi-source d/l
 	search 
 		target service replies with completed files
 		transfer service replies with partial files
+		** search should cache - recent results - timeout after 1 min, multiple searches for samefile hosted at same id
 		
 	end search
 		locations searched for
 		added to transfer
 		add transfer locations
+		(maybe transfer response should just be addresses not locations) (as long as we get file with proper hash no security problem)
 		
 	add location
 		add loc to peers list for transfer
 		ping location
 		continually send transfer pings those around in mesh (60 sec default timeout)
-	
+
 	send ping
 		time out 60 secs default
 		bitfield changed tag - when bitfield has changed since last ping - if remote host interested they will request updated bitfield
@@ -56,13 +95,16 @@ multi-source d/l
 		
 	on timer
 		for each transfer
+			if pending transfers - limit 20 incomplete active transfers for now
+				if donwload bandwidth available, and waited the longest, move to active
+		
 			ping those in transfer list who need to be pinged
 				only if not completed, if completed dont ping at all, require remotes to ping us stay alive
-		
-			remove peers that haven't pinged us
-			
-			if file completed and no peers in list, unload transfer
-		
+					?? preference transfers that are closest to completed to send pings to
+					?? dont send a ping to the same host twice for 2 different transfers
+				
+			remove peers that haven't pinged us - 
+				no peers and complete discard, incomplete - notify failure
 			
 		if no transfers loaded
 			set WaitingSince to now
@@ -76,6 +118,8 @@ multi-source d/l
 				
 			set WaitingSince to now
 		
+		dont ping the same host more than x times per second (many transfers with same host)
+		
 	select piece
 		preference local incomplete transfers\
 		preference last  piece (contains sub-hashes)
@@ -84,6 +128,13 @@ multi-source d/l
 		pick piece that is the rarest that the remote host needs
 		if we dont have a piece to send (loop hosts, then loop transfers)
 		return true host/piece
+		
+		loop host that has waited the longest
+			loop until piece found
+				transfer the rarest piece the host needs for its most near-complete file
+					near-complete (bytes until completion) small files preferenced first (link files get through) 
+		
+	current host map - preference file that host last transferred?
 	
 	add piece/host to active transfers
 		connect to host
@@ -118,6 +169,7 @@ multi-source d/l
 		do not auto-download on restart - but keep in case requested again
 		keep max 20 partials or 50MB, remove oldest over limit
 
+	serialize partials list every 15 seconds if changed
 
 	implmentation plan
 		create transfer service 2 that is empty (replace in core loading)
@@ -135,7 +187,10 @@ multi-source d/l
 		generate random bitfields and determine network rarest
 		build operations to add/subtrant bitfields to determine rarest that local has
 
-
+		transfers work between 2 open, open/nat, 2 nat, 2 blocked, global proxy
+		5mb file on 8 peer network, peers limited in bandwidth, does multisource work
+		5mb file on 128 peer network, how bogged down does source get? optimize for min bog
+		100 mp3s, syncing around network of 32
 
 
 	analyze current algorithm

@@ -337,6 +337,9 @@ namespace RiseOp.Implementation.Dht
             // high/low is backup, a continuous cache, to keep data from being lost by grouped nodes in xor
             // boundaries are xor'd with client id these need to be modified to work with an user id
 
+            //ex a node on one side of the network, and 8 nodes on the other side
+            // the single node is not deemed one of the 8 closests so his data is not cached by anyone
+
             if (NearLow.UserBound <= user && user <= Network.Local.UserID)
                 return true;
 
