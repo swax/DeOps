@@ -9,6 +9,7 @@ using System.Text;
 
 using RiseOp.Services.Storage;
 using RiseOp.Services.Location;
+using RiseOp.Services.Transfer;
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
@@ -32,6 +33,31 @@ namespace RiseOp
 	{
 		internal Test()
         {
+
+            TransferPong pong = new TransferPong();
+
+            DhtClient client1 = new DhtClient(1, 1);
+            DhtClient client2 = new DhtClient(2, 2);
+
+            pong.Alts[client1] = new List<DhtAddress>();
+            pong.Alts[client2] = new List<DhtAddress>();
+
+            pong.Alts[client1].Add(new DhtAddress(1, 1, new IPAddress(1), 1));
+            pong.Alts[client1].Add(new DhtAddress(2, 2, new IPAddress(2), 2));
+
+            pong.Alts[client2].Add(new DhtAddress(3, 3, new IPAddress(3), 3));
+            pong.Alts[client2].Add(new DhtAddress(4, 4, new IPAddress(4), 4));
+
+            byte[] encoded = pong.Encode(new G2Protocol());
+
+            G2Header root = new G2Header(encoded);
+            if(G2Protocol.ReadPacket(root))
+                if (root.Name == TransferPacket.Pong)
+                {
+                    TransferPong check = TransferPong.Decode(root);
+
+                    int x = 0;
+                }
             // encode request
 
 

@@ -216,6 +216,8 @@ namespace RiseOp
 
         internal void AssignUploadSlots()
         {
+            //crit - call when upload of chunk is finished, unset upload active, set -= 1 active transfers
+
             int activeTransfers = 0;
             OpCore next = null;
 
@@ -225,7 +227,7 @@ namespace RiseOp
                 {
                     activeTransfers += core.Transfers.ActiveUploads;
 
-                    if (next == null || next.Transfers.NeedUpload > core.Transfers.NeedUpload)
+                    if (next == null || next.Transfers.NeedUploadWeight > core.Transfers.NeedUploadWeight)
                         next = core;
                 }
             });
@@ -234,16 +236,19 @@ namespace RiseOp
             if (activeTransfers >= 15)
                 return;
 
-            //crit - check bandwidth
-
-
-            // allow upload
-            next.Transfers.NeedUpload = 0;
-
-            next.RunInCoreAsync(delegate()
+            // allocate a min of 5kb/s per transfer
+            // allow a min of 2 transfers
+            // if more than 10kb/s free, after accounting for upload speed allow another transfer
+            // goal push transfers down to around 5kb/s, 30 secs to finish 256kb chunk
+            if (activeTransfers < 2 || FastestUploadSpeed - 5 * activeTransfers > 10)
             {
-                next.Transfers.StartUpload();
-            });
+                next.Transfers.NeedUploadWeight = 0; // do here so that if core is crashed/throwing exceptions - other cores can still u/l
+
+                next.RunInCoreAsync(delegate()
+                {
+                    next.Transfers.StartUpload();
+                });
+            }
         }
 
         internal void FastTimer_Tick(object sender, EventArgs e)

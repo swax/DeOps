@@ -35,7 +35,7 @@ namespace RiseOp.Services.Transfer
      
         // all transfers complete and incomplete and inactive partials
         internal int ActiveUploads;
-        internal int NeedUpload;
+        internal int NeedUploadWeight;
         internal Dictionary<DhtClient, UploadPeer> UploadPeers = new Dictionary<DhtClient, UploadPeer>(); // routing, info - peers that have requested an upload (ping)
         internal Dictionary<ulong, OpTransfer> Transfers = new Dictionary<ulong, OpTransfer>(); // file id, transfer
 
@@ -238,63 +238,17 @@ namespace RiseOp.Services.Transfer
                 Active.Remove(transfer);
             }
 
- 
-            // prune
+            
+            // lert context that we need to upload a piece
+            if (Transfers.Count > 0)
+                NeedUploadWeight++;
 
-
-            // -- deciding transfer next
-                // only transfer to 8 closest incomplete in peer list
+            ActiveUploads = UploadPeers.Values.Count(p => p.Active);
+            
 
             // on complete - if local complete, remove complete peers
 
 
-            /*
-             * 
-            if no transfers loaded
-			    set WaitingSince to now
-			
-            else if active transfer slots exist (total transfers across context must be less than  u/l bw / 7kb)
-			    bandwidth available for upload and 
-			    we have the oldest WaitingSince of whole context and
-			    select piece returns true
-    			
-			    add piece/host to active transfers list
-    				
-			    set WaitingSince to now
-             */
-
-            // test first with unlimited bandwidth
-            // determine max speed of current sim, vary pulses per second of sim, make configurable?
-
-            // probably should put this in own function that is called from timer and when piece is completed
-
-
-            // if context.bandwidthAvailable for 
-
-            // ability to go quickly from one chunk to the next
-
-            // context bandwidth totals just for transfers
-
-            /*
-
-        context counts active hosts per core, allocs 5kb/s to each
-        so when 1 transfer done, allocation immediately opened up and continuous transfers are possible
-             
- */
-            // upload slots available
-                // upload max = math.max(10, maxuploadrate)
-                // foreach core
-                // count the number of active transfres
-                // max number of active transfers 15
-                // if maxuploadrate - #active * 5 > 10, allow new transfer
-
-
-            // if this core starts a new transfre
-            if (Transfers.Count > 0)
-                NeedUpload++;
-
-            ActiveUploads = UploadPeers.Values.Count(p => p.Active);
-            
 
             /*foreach (int id in Active)
             {
