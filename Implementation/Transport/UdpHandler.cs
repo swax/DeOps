@@ -42,8 +42,6 @@ namespace RiseOp.Implementation.Transport
 
             Bandwidth = new BandwidthLog(Core.RecordBandwidthSeconds);
 
-            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
-
             Initialize();
         }
 
@@ -84,8 +82,6 @@ namespace RiseOp.Implementation.Transport
 
 		internal void Shutdown()
 		{
-            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
-
 			try
 			{
 				Socket oldSocket = UdpSocket; // do this to prevent listen exception
@@ -100,8 +96,11 @@ namespace RiseOp.Implementation.Transport
 			}
 		}
 
-        void Core_SecondTimer()
+        internal void SecondTimer()
         {
+            Core.Context.Bandwidth.InPerSec += Bandwidth.InPerSec;
+            Core.Context.Bandwidth.OutPerSec += Bandwidth.OutPerSec;
+
             Bandwidth.NextSecond();
         }
 

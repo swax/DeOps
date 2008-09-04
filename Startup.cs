@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Windows.Forms;
@@ -61,6 +62,8 @@ namespace RiseOp
         Queue<string[]> NewInstances = new Queue<string[]>();
 
         internal Dictionary<uint, string> KnownServices = new Dictionary<uint, string>();
+
+        internal BandwidthLog Bandwidth = new BandwidthLog(10);
 
 
         internal RiseOpContext(string[] args)
@@ -185,8 +188,12 @@ namespace RiseOp
             }
         }
 
+        float FastestUploadSpeed = 10;
+
         internal void SecondTimer_Tick(object sender, EventArgs e)
         {
+            // flag set, actual timer code run in thread per core
+
             if (Global != null)
                 Global.SecondTimer();
 
@@ -194,6 +201,48 @@ namespace RiseOp
             {
                 foreach (OpCore core in Cores)
                     core.SecondTimer();
+            });
+
+            // bandwidth
+            Bandwidth.NextSecond();
+
+            // fastest degrades over time, min is 10kb/s
+            FastestUploadSpeed--;
+            FastestUploadSpeed = Math.Max(Bandwidth.Average(Bandwidth.Out, 10), FastestUploadSpeed);
+            FastestUploadSpeed = Math.Max(10, FastestUploadSpeed);
+
+            AssignUploadSlots();
+        }
+
+        internal void AssignUploadSlots()
+        {
+            int activeTransfers = 0;
+            OpCore next = null;
+
+            Cores.LockReading(delegate()
+            {
+                foreach (OpCore core in Cores)
+                {
+                    activeTransfers += core.Transfers.ActiveUploads;
+
+                    if (next == null || next.Transfers.NeedUpload > core.Transfers.NeedUpload)
+                        next = core;
+                }
+            });
+
+            // max number of active transfers 15
+            if (activeTransfers >= 15)
+                return;
+
+            //crit - check bandwidth
+
+
+            // allow upload
+            next.Transfers.NeedUpload = 0;
+
+            next.RunInCoreAsync(delegate()
+            {
+                next.Transfers.StartUpload();
             });
         }
 

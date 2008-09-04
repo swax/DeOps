@@ -81,6 +81,28 @@ namespace RiseOp.Implementation.Transport
 
         }
 
+        internal void Connect(DhtClient client)
+        {
+            if (client.UserID == Network.Local.UserID && client.ClientID == Network.Local.ClientID)
+                return;
+
+            if (IsConnected(client))
+                return;
+
+            if (!SessionMap.ContainsKey(client.UserID))
+                SessionMap[client.UserID] = new List<RudpSession>();
+
+            RudpSession session = new RudpSession(this, client.UserID, client.ClientID, false);
+            SessionMap[client.UserID].Add(session);
+
+
+            if (Network.LightComm.Clients.ContainsKey(client))
+                foreach (RudpAddress address in Network.LightComm.Clients[client].Addresses)
+                    session.Comm.AddAddress(address);
+
+            session.Connect();
+        }
+
         internal void Connect(LocationData location)
         {
             if (location.UserID == Network.Local.UserID && location.Source.ClientID == Network.Local.ClientID)
@@ -111,6 +133,11 @@ namespace RiseOp.Implementation.Transport
             return GetActiveSession(location.UserID, location.Source.ClientID);
         }
 
+        internal RudpSession GetActiveSession(DhtClient client)
+        {
+            return GetActiveSession(client.UserID, client.ClientID);
+        }
+
         internal RudpSession GetActiveSession(ulong key, ushort client)
         {
             foreach (RudpSession session in GetActiveSessions(key))
@@ -129,6 +156,11 @@ namespace RiseOp.Implementation.Transport
                         sessions.Add(session);
 
             return sessions;
+        }
+
+        internal bool IsConnected(DhtClient client)
+        {
+            return (GetActiveSession(client) != null);
         }
 
         internal bool IsConnected(LocationData location)

@@ -393,7 +393,9 @@ namespace RiseOp.Services.Location
             // even if open add the GP because pinging them will let host know of an open node on the network to connect to
             foreach(DhtAddress server in location.TunnelServers)
                 Network.Routing.Add(new DhtContact(location.Source, location.IP, location.TunnelClient, server));
-    
+
+            Network.LightComm.Update(location);
+
             if (LocationUpdate != null)
                 LocationUpdate.Invoke(current.Data);
 

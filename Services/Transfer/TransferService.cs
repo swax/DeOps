@@ -34,7 +34,10 @@ namespace RiseOp.Services.Transfer
         internal List<OpTransfer> Active = new List<OpTransfer>(); // local incomplete transfers
      
         // all transfers complete and incomplete and inactive partials
-        Dictionary<ulong, OpTransfer> Transfers = new Dictionary<ulong, OpTransfer>(); // file id, transfer
+        internal int ActiveUploads;
+        internal int NeedUpload;
+        internal Dictionary<DhtClient, UploadPeer> UploadPeers = new Dictionary<DhtClient, UploadPeer>(); // routing, info - peers that have requested an upload (ping)
+        internal Dictionary<ulong, OpTransfer> Transfers = new Dictionary<ulong, OpTransfer>(); // file id, transfer
 
         internal ServiceEvent<FileSearchHandler> FileSearch = new ServiceEvent<FileSearchHandler>();
         internal ServiceEvent<FileRequestHandler> FileRequest = new ServiceEvent<FileRequestHandler>();
@@ -185,29 +188,33 @@ namespace RiseOp.Services.Transfer
                 }
             }
 
-            // -- pinging transfers --------
-                // only ping 8 closest peers in peer list
-                // max peer list at 16 closest
-                // only ping if transfer is incomplete
-                // ping a location once for multiple transfers
-                // remove dead peers / locations
 
-
-            // foreach transfer
+            // only ping 8 closest peers in peer list
+            // max peer list at 16 closest
+            // only ping if transfer is incomplete
+            // remove dead peers / transfers
             ulong localID = Core.Network.Routing.LocalRoutingID;
             Dictionary<ulong, List<OpTransfer>> pingLocs = new Dictionary<ulong, List<OpTransfer>>(); // routing id, file id lsit
 
+            // send pings, expire old peers/transfers
             foreach (OpTransfer transfer in Transfers.Values)
             {
-                // trim peers to 16 closest, remove furthest from local
-                while (transfer.Peers.Count > 16)
-                    transfer.Peers.Remove( transfer.Peers.Keys.Max(key => key ^ localID) );
-
                 // remove dead peers
-                foreach (ulong id in (from peer in transfer.Peers.Values
+                foreach (DhtClient client in (from peer in transfer.Peers.Values
                                       where Core.TimeNow > peer.Timeout && peer.Attempts > 2
-                                      select peer.Client.RoutingID).ToArray())
-                    transfer.Peers.Remove(id);
+                                      select peer.Client).ToArray())
+                    transfer.RemovePeer(this, client);
+                    
+
+
+                // trim peers to 16 closest, remove furthest from local
+                if (transfer.Peers.Count > 16)
+                {
+                    foreach(DhtClient furthest in (from p in transfer.Peers.Keys
+                                                 orderby p.RoutingID ^ localID descending 
+                                                 select p).Take(transfer.Peers.Count - 16).ToArray())
+                        transfer.RemovePeer(this, furthest);
+                }
 
                 // imcomplete transfers ping their sources to let them know to send us data
                 if (transfer.Status != TransferStatus.Complete)
@@ -222,30 +229,73 @@ namespace RiseOp.Services.Transfer
                 // completed rely on remotes to send pings to keep transfer loaded
             }
 
-            // remove transfers with 0 peers
+            // remove empty transfers with 0 peers, imcompletes hang around and are pruned seperately
             foreach (OpTransfer transfer in (from t in Transfers.Values
-                                             where t.Peers.Count == 0 && t.Searching == false && t.Status == TransferStatus.Empty
+                                             where t.Peers.Count == 0 && (t.Searching == false && t.Status == TransferStatus.Empty) || t.Status == TransferStatus.Complete
                                              select t).ToArray())
             {
                 Transfers.Remove(transfer.FileID);
                 Active.Remove(transfer);
             }
 
-
-             
-            // on send/recv ping set lastPing to now
-
-
-            // all this above really only needs to be done every 5 seconds
+ 
+            // prune
 
 
             // -- deciding transfer next
                 // only transfer to 8 closest incomplete in peer list
 
-            // on complete - remove complete peers
+            // on complete - if local complete, remove complete peers
 
+
+            /*
+             * 
+            if no transfers loaded
+			    set WaitingSince to now
+			
+            else if active transfer slots exist (total transfers across context must be less than  u/l bw / 7kb)
+			    bandwidth available for upload and 
+			    we have the oldest WaitingSince of whole context and
+			    select piece returns true
+    			
+			    add piece/host to active transfers list
+    				
+			    set WaitingSince to now
+             */
+
+            // test first with unlimited bandwidth
+            // determine max speed of current sim, vary pulses per second of sim, make configurable?
+
+            // probably should put this in own function that is called from timer and when piece is completed
+
+
+            // if context.bandwidthAvailable for 
+
+            // ability to go quickly from one chunk to the next
+
+            // context bandwidth totals just for transfers
+
+            /*
+
+        context counts active hosts per core, allocs 5kb/s to each
+        so when 1 transfer done, allocation immediately opened up and continuous transfers are possible
+             
+ */
+            // upload slots available
+                // upload max = math.max(10, maxuploadrate)
+                // foreach core
+                // count the number of active transfres
+                // max number of active transfers 15
+                // if maxuploadrate - #active * 5 > 10, allow new transfer
+
+
+            // if this core starts a new transfre
+            if (Transfers.Count > 0)
+                NeedUpload++;
+
+            ActiveUploads = UploadPeers.Values.Count(p => p.Active);
             
-            
+
             /*foreach (int id in Active)
             {
                 FileDownload download = DownloadMap[id];
@@ -317,6 +367,51 @@ namespace RiseOp.Services.Transfer
             }
         }
 
+        internal void StartUpload()
+        {
+            // this method ensures that if one host has multiple files queued they are completed sequentially
+
+            // pref long waited host in top 8 not completed, local incomplete, most completed remote file, something we have a piece for, select rarest (when transfer begins)
+             ulong localID = Core.Network.Routing.LocalRoutingID;
+            List<TransferPeer> allPeers = new List<TransferPeer>();
+
+            // pref 8 closest incomplete nodes of each transfer
+            foreach(OpTransfer transfer in Transfers.Values)
+                if(transfer.Status != TransferStatus.Empty)
+                    allPeers.AddRange( (from p in transfer.Peers.Values
+                                        where p.Status != TransferStatus.Complete 
+                                        orderby p.RoutingID ^ localID
+                                        select p).Take(8) );
+
+            allPeers = (from p in allPeers
+                        where !UploadPeers[p.Client].Active && p.CanSendPeice() 
+                        select p).ToList();
+
+            allPeers = (from p in allPeers // the order of these orderbys is very important
+                        orderby p.BytesUntilFinished // pref file closest to completion
+                        orderby UploadPeers[p.Client].LastAttempt // pref peer thats been waiting the longest
+                        orderby (int)p.Transfer.Status // prefsending local incomplete over complete
+                        select p).Take(1).ToList();
+
+
+            if (allPeers.Count == 0)
+                return;
+
+            TransferPeer selected = allPeers[0];
+            UploadPeer upload = UploadPeers[selected.Client];
+
+            upload.LastAttempt = Core.TimeNow;
+            upload.Active = true;
+
+            // if connected to source
+            RudpSession session = Network.RudpControl.GetActiveSession(selected.Client);
+
+            if (session != null)
+                Send_Request(session, selected);
+            else
+                Network.RudpControl.Connect(selected.Client);
+        }
+
         void LightComm_ReceiveData(DhtClient client, byte[] data)
         {
             G2Header root = new G2Header(data);
@@ -365,7 +460,7 @@ namespace RiseOp.Services.Transfer
 
         void ReceivePing(DhtClient client, TransferPing ping)
         {
-            // remote must be incomplete to recv ping
+            // remote must be incomplete to recv ping, this is basically an upload request
 
 
             ulong fileID = OpTransfer.GetFileID(ping.Details);
@@ -412,6 +507,11 @@ namespace RiseOp.Services.Transfer
                 TransferPeer peer = transfer.AddPeer(client);
                 peer.LastSeen = Core.TimeNow; // attempts used for outgoing pings
 
+                if(!UploadPeers.ContainsKey(client))
+                    UploadPeers[client] = new UploadPeer(client);
+                
+                if(!UploadPeers[client].Transfers.ContainsKey(fileID))
+                    UploadPeers[client].Transfers[fileID] = peer;
 
                 // we want a target of 20 pings per minute ( 1 every 3 seconds)
                 // pings per minute = RecentPings.count / (Core.TimeNow - RecentPings.Last).ToMinutes()
@@ -429,8 +529,8 @@ namespace RiseOp.Services.Transfer
                                                   orderby Core.RndGen.Next() 
                                                   select p).Take(3).ToArray())
                     {
-                        if (Network.LightComm.Clients.ContainsKey(alt.RoutingID))
-                            pong.Alts[alt.Client] = (from loc in Network.LightComm.Clients[alt.RoutingID].Addresses
+                        if (Network.LightComm.Clients.ContainsKey(alt.Client))
+                            pong.Alts[alt.Client] = (from loc in Network.LightComm.Clients[alt.Client].Addresses
                                                         select loc.Address).Take(3).ToList();
                     }
                 }
@@ -454,7 +554,7 @@ namespace RiseOp.Services.Transfer
 
             if (pong.Error)
             {
-                transfer.Peers.Remove(peer.RoutingID);
+                transfer.Peers.Remove(client);
                 return;
             }
 
@@ -558,10 +658,11 @@ namespace RiseOp.Services.Transfer
                     return;
                 }
 
-            //crit - only reply if we have at least one piece and know someone with 100% of original
-            // search if file is partial
+            // search if file is partial - only reply if we have at least one piece and know someone with 100% of original
             foreach (OpTransfer transfer in Transfers.Values)
-                if (transfer.Details.Equals(details))
+                if (transfer.Status != TransferStatus.Empty && 
+                    transfer.Peers.Values.Count(p => p.Status == TransferStatus.Complete) > 0 && 
+                    transfer.Details.Equals(details))
                 {
                     results.Add(Core.Locations.LocalLocation.Data.EncodeLight(Network.Protocol));
                     return;
@@ -651,6 +752,13 @@ namespace RiseOp.Services.Transfer
                         download.Status = DownloadStatus.None;
                 }
             }*/
+        }
+
+        void Send_Request(RudpSession session, TransferPeer transfer)
+        {
+            // if need updated bitfield ask for it
+
+            // select rarest piece, or if last piece not sent, send that first
         }
 
         void Send_Request(RudpSession session, FileDownload download)
@@ -896,7 +1004,7 @@ namespace RiseOp.Services.Transfer
 
     enum DownloadStatus { None, Transferring, Failed, Done };
 
-    enum TransferStatus { Empty, Incomplete, Complete };
+    enum TransferStatus { Empty, Incomplete, Complete }; // order important used for selecting next piece to send
 
     internal class OpTransfer
     {
@@ -908,7 +1016,7 @@ namespace RiseOp.Services.Transfer
         internal EndDownloadHandler EndEvent;
 
         internal bool Searching;
-        internal Dictionary<ulong, TransferPeer> Peers = new Dictionary<ulong, TransferPeer>(); // routing id, peer
+        internal Dictionary<DhtClient, TransferPeer> Peers = new Dictionary<DhtClient, TransferPeer>(); // routing id, peer
 
         internal string Destination;
 
@@ -935,12 +1043,12 @@ namespace RiseOp.Services.Transfer
             // if local complete, dont keep remote completes in mesh because a remotes own search will find completed sources
             // incomplete hosts will also return completed sources
 
-            if(Peers.ContainsKey(client.RoutingID))
-                return Peers[client.RoutingID];
+            if(Peers.ContainsKey(client))
+                return Peers[client];
 
-            TransferPeer peer = new TransferPeer(client);
+            TransferPeer peer = new TransferPeer(this, client);
 
-            Peers[client.RoutingID] = peer;
+            Peers[client] = peer;
 
             return peer;
         }
@@ -951,13 +1059,29 @@ namespace RiseOp.Services.Transfer
 
             return (ulong)(key ^ details.Size);
         }
+
+        internal void RemovePeer(TransferService service, DhtClient client)
+        {
+            Peers.Remove(client);
+
+            if (service.UploadPeers.ContainsKey(client))
+                service.UploadPeers[client].Transfers.Remove(FileID);
+
+            if (service.UploadPeers[client].Transfers.Count == 0)
+                service.UploadPeers.Remove(client);
+        }
     }
 
     internal class TransferPeer
     {
+        internal OpTransfer Transfer;
         internal ulong RoutingID;
         internal DhtClient Client;
+
+        internal TransferStatus Status;
         internal BitArray RemoteBitfield;
+        internal long BytesUntilFinished;
+        internal bool BitfieldOutofDate;
 
         internal bool FirstPing = true;
         internal DateTime NextPing; // next time a ping can be sent
@@ -973,10 +1097,46 @@ namespace RiseOp.Services.Transfer
         internal int Attempts;
 
 
-        internal TransferPeer(DhtClient client)
+        internal TransferPeer(OpTransfer transfer, DhtClient client)
         {
+            Transfer = transfer;
             Client = client;
             RoutingID = client.RoutingID;
+        }
+
+        internal bool CanSendPeice()
+        {
+ 
+            if (Transfer.Status == TransferStatus.Empty)
+                return false;
+
+            // if bitfield out of date, we just use last known bitfield, compared with our current status
+            // on connect to peer we'll request an updated field
+
+            // find the pieces each bit field has and the other needs
+            BitArray needs = Transfer.LocalBitfield.Xor(RemoteBitfield); 
+
+            // just the pieces we can send over
+            needs = needs.And(Transfer.LocalBitfield); 
+
+            return !needs.IsEmpty();
+        }
+
+
+    }
+
+    internal class UploadPeer
+    {
+        internal DhtClient Client;
+        internal bool Active;
+        internal DateTime LastAttempt;
+
+        internal Dictionary<ulong, TransferPeer> Transfers = new Dictionary<ulong, TransferPeer>();
+
+
+        internal UploadPeer(DhtClient client)
+        {
+            Client = client;
         }
     }
 

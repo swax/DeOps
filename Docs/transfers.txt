@@ -118,8 +118,7 @@ multi-source d/l
 				
 			set WaitingSince to now
 		
-		dont ping the same host more than x times per second (many transfers with same host)
-		
+	
 	select piece
 		preference local incomplete transfers\
 		preference last  piece (contains sub-hashes)

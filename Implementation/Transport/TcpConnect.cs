@@ -122,6 +122,8 @@ namespace RiseOp.Implementation.Transport
 			BytesSentinSec     = 0;
 			BytesReceivedinSec = 0;
 
+            Core.Context.Bandwidth.InPerSec += Bandwidth.InPerSec;
+            Core.Context.Bandwidth.OutPerSec += Bandwidth.OutPerSec;
             Bandwidth.NextSecond();
 
             if (Age < 60)

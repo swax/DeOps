@@ -118,6 +118,7 @@ namespace RiseOp.Implementation.Dht
             // timers
             Cache.SecondTimer();
             TcpControl.SecondTimer();
+            UdpControl.SecondTimer();
             RudpControl.SecondTimer();
             LightComm.SecondTimer();
             Routing.SecondTimer();

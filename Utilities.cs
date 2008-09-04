@@ -711,6 +711,15 @@ namespace RiseOp
 
             return quip;
         }
+
+        public static bool IsEmpty(this BitArray array)
+        {
+            foreach (bool bit in array)
+                if (bit == true)
+                    return false;
+
+            return true;
+        }
     }
 
 
