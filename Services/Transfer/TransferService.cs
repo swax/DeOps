@@ -710,6 +710,7 @@ namespace RiseOp.Services.Transfer
 
         void Send_Request(RudpSession session, TransferPeer transfer)
         {
+            int x = 0;
             // if need updated bitfield ask for it
 
             // select rarest piece, or if last piece not sent, send that first
@@ -964,7 +965,7 @@ namespace RiseOp.Services.Transfer
     {
         internal ulong FileID;
 
-        internal ulong Target;
+        internal ulong Target; // where file is located
         internal FileDetails Details;
         internal object[] Args;
         internal EndDownloadHandler EndEvent;
@@ -1018,8 +1019,10 @@ namespace RiseOp.Services.Transfer
         {
             Peers.Remove(client);
 
-            if (service.UploadPeers.ContainsKey(client))
-                service.UploadPeers[client].Transfers.Remove(FileID);
+            if (!service.UploadPeers.ContainsKey(client))
+                return;
+            
+            service.UploadPeers[client].Transfers.Remove(FileID);
 
             if (service.UploadPeers[client].Transfers.Count == 0)
                 service.UploadPeers.Remove(client);

@@ -216,7 +216,8 @@ namespace RiseOp
 
         internal void AssignUploadSlots()
         {
-            //crit - call when upload of chunk is finished, unset upload active, set -= 1 active transfers
+            //crit - call when upload of chunk is finished, 
+            // unset upload active, set -= 1 active transfers, do su-hash, update bitfield
 
             int activeTransfers = 0;
             OpCore next = null;
@@ -233,7 +234,7 @@ namespace RiseOp
             });
 
             // max number of active transfers 15
-            if (activeTransfers >= 15)
+            if (next == null || activeTransfers >= 15)
                 return;
 
             // allocate a min of 5kb/s per transfer

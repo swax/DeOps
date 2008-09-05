@@ -347,7 +347,7 @@ namespace RiseOp.Services.Transfer
     {
         const byte Packet_Details = 0x10;
 
-        internal ulong Target; //crit - implement
+        internal ulong Target; // where file is key'd
         internal FileDetails Details;
         internal bool RequestAlts;
 
@@ -358,11 +358,13 @@ namespace RiseOp.Services.Transfer
 
         internal override byte[] Encode(G2Protocol protocol)
         {
+            byte[] details = Details.Encode(protocol); // prevent protocol conflict
+
             lock (protocol.WriteSection)
             {
                 G2Frame ping = protocol.WritePacket(null, TransferPacket.Ping, null);
 
-                protocol.WritePacket(ping, Packet_Details, Details.Encode(protocol));
+                protocol.WritePacket(ping, Packet_Details, details);
 
                 return protocol.WriteFinish();
             }
