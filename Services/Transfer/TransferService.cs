@@ -434,10 +434,10 @@ namespace RiseOp.Services.Transfer
                 if (FileRequest.Contains(ping.Details.Service, ping.Details.DataType))
                     path = FileRequest[ping.Details.Service, ping.Details.DataType].Invoke(ping.Target, ping.Details);
 
-                if(path != null && File.Exists(path))
+                if (path != null && File.Exists(path))
                 {
                     transfer = new OpTransfer(Core, ping.Target, ping.Details, TransferStatus.Complete, null, null);
-                   Transfers[fileID] = transfer;
+                    Transfers[fileID] = transfer;
                 }
             }
 
@@ -991,6 +991,9 @@ namespace RiseOp.Services.Transfer
             Destination += Path.DirectorySeparatorChar + Utilities.CryptFilename(core, (ulong)Details.Size, Details.Hash);
 
             FileID = GetFileID(Details);
+
+            //crit - dont load sub-hashes until we really need them
+            // receive part - send back error should specify empty, incomplete, complete
         }
 
         internal TransferPeer AddPeer(DhtClient client)

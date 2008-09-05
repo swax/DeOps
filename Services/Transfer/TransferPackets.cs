@@ -345,7 +345,10 @@ namespace RiseOp.Services.Transfer
 
     internal class TransferPing : G2Packet
     {
-        const byte Packet_Details = 0x10;
+        const byte Packet_Target = 0x10;
+        const byte Packet_Details = 0x20;
+        const byte Packet_RequestAlts = 0x30;
+
 
         internal ulong Target; // where file is key'd
         internal FileDetails Details;
@@ -364,7 +367,11 @@ namespace RiseOp.Services.Transfer
             {
                 G2Frame ping = protocol.WritePacket(null, TransferPacket.Ping, null);
 
+                protocol.WritePacket(ping, Packet_Target, BitConverter.GetBytes(Target));
                 protocol.WritePacket(ping, Packet_Details, details);
+
+                if(RequestAlts)
+                    protocol.WritePacket(ping, Packet_RequestAlts, null);
 
                 return protocol.WriteFinish();
             }
@@ -378,11 +385,18 @@ namespace RiseOp.Services.Transfer
 
             while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
+                if(child.Name == Packet_RequestAlts)
+                    ping.RequestAlts = true;
+
                 if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
                 {
+                    case Packet_Target:
+                        ping.Target = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+
                     case Packet_Details:
                         ping.Details = FileDetails.Decode(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
                         break;
@@ -395,9 +409,11 @@ namespace RiseOp.Services.Transfer
 
     internal class TransferPong : G2Packet
     {
-        const byte Packet_Details = 0x10;
-        const byte Packet_AltClient = 0x10;
-        const byte Packet_AltAddress = 0x10;
+        const byte Packet_FileID    = 0x10;
+        const byte Packet_Error     = 0x20;
+        const byte Packet_Timeout   = 0x30;
+        const byte Packet_AltClient = 0x40;
+        const byte Packet_AltAddress = 0x50;
 
         internal ulong FileID;
         internal bool Error;
@@ -416,7 +432,9 @@ namespace RiseOp.Services.Transfer
             {
                 G2Frame pong = protocol.WritePacket(null, TransferPacket.Pong, null);
 
-                //protocol.WritePacket(pong, Packet_Details, Details.Encode(protocol));
+                protocol.WritePacket(pong, Packet_FileID, BitConverter.GetBytes(FileID));
+                protocol.WritePacket(pong, Packet_Error, null);
+                protocol.WritePacket(pong, Packet_Timeout, BitConverter.GetBytes(Timeout));
 
                 foreach (DhtClient client in Alts.Keys)
                 {
@@ -438,11 +456,22 @@ namespace RiseOp.Services.Transfer
 
             while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
+                if(child.Name == Packet_Error)
+                    pong.Error = true;
+
                 if (!G2Protocol.ReadPayload(child))
                     continue;
 
                 switch (child.Name)
                 {
+                    case Packet_FileID:
+                        pong.FileID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Timeout:
+                        pong.Timeout = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        break;
+
                     case Packet_AltClient:
                         DhtClient client = DhtClient.FromBytes(child.Data, child.PayloadPos);
                         pong.Alts[client] = new List<DhtAddress>();
