@@ -331,11 +331,11 @@ namespace RiseOp.Services.Transfer
 
             // pref 8 closest incomplete nodes of each transfer
             foreach(OpTransfer transfer in Transfers.Values)
-                if(transfer.Status != TransferStatus.Empty)
+                if(transfer.Status != TransferStatus.Empty) // cant upload piece if we dont have any
                     allPeers.AddRange( (from p in transfer.Peers.Values
-                                        where p.Status != TransferStatus.Complete 
+                                        where p.Status != TransferStatus.Complete // dont upload to someone who alredy has the whole file
                                         orderby p.RoutingID ^ localID
-                                        select p).Take(8) );
+                                        select p).Take(8) ); // only transfer to 8 closest in mesh that need a piece
 
             allPeers = (from p in allPeers
                         where !UploadPeers[p.Client].Active && p.CanSendPeice() 
@@ -344,8 +344,8 @@ namespace RiseOp.Services.Transfer
             allPeers = (from p in allPeers // the order of these orderbys is very important
                         orderby p.BytesUntilFinished // pref file closest to completion
                         orderby UploadPeers[p.Client].LastAttempt // pref peer thats been waiting the longest
-                        orderby (int)p.Transfer.Status // prefsending local incomplete over complete
-                        select p).Take(1).ToList();
+                        orderby (int)p.Transfer.Status // pref sending local incomplete over complete
+                        select p).Take(1).ToList(); 
 
 
             if (allPeers.Count == 0)
@@ -355,7 +355,7 @@ namespace RiseOp.Services.Transfer
             UploadPeer upload = UploadPeers[selected.Client];
 
             upload.LastAttempt = Core.TimeNow;
-            upload.Active = true;
+            upload.Active = true; //crit - ensure active removed eventually
 
             // if connected to source
             RudpSession session = Network.RudpControl.GetActiveSession(selected.Client);
@@ -438,6 +438,21 @@ namespace RiseOp.Services.Transfer
                 {
                     transfer = new OpTransfer(Core, ping.Target, ping.Details, TransferStatus.Complete, null, null);
                     Transfers[fileID] = transfer;
+
+                    // number of bits can be found from counting hashes at end of file
+                    // chunksize is specified in end-of-file packet
+                    // hash type should be specified there as well
+                    
+                    // load that info here, once transfer loaded we don't need to load again
+
+                    // pong contains chunksize, bit count, hash type
+                    // first host contact also contains this information
+
+                    // sending file
+                    // we specify start byte / bit # / last bit is end of file and not hashed
+
+        
+
                 }
             }
 
@@ -981,6 +996,13 @@ namespace RiseOp.Services.Transfer
 
         internal OpTransfer(OpCore core, ulong target, FileDetails details, TransferStatus status, object[] args, EndDownloadHandler endEvent)
         {
+            // take path as parameter, if it exists open it and get bitfield/chunksize
+            // else, create the file to the specified size (bitfield size?)
+            // dont initialize / create file until transfer starts, same with initializing sub-hash data filed
+            // both for up/down transfers
+
+            // need way to get bit count quickly, and transmit it efficiently
+           
             Target = target;
             Details = details;
             Status = status;
