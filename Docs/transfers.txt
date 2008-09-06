@@ -153,7 +153,12 @@ multi-source d/l
 		on last data piece
 			if contains sub-hashes - process sub-hashes (how many sub-hashes can 256kb chunk contain?)
 			sub-hash data (if bad mark host, 3 bad pieces tag host)
-			
+	on close
+		send 'going offline' to hosts in mesh
+		save partial transfers
+		do not auto-download on restart - but keep in case requested again
+		keep max 20 partials or 50MB, remove oldest over limit
+	
 	how to know bandwidth is available to send? set a mark at first, and then auto-figure out
 		max upload rate hit when transfers at full speed
 		record this high mark, and use to determine if room for concurrent transfers
@@ -162,18 +167,8 @@ multi-source d/l
 		allocate min of 7kb/s to each transfer (if we think we have 70kb up no more than 10 uploads)
 		implement max bandwidth in sim (drop packets over rate)
 		
-	on close
-		send 'going offline' to hosts in mesh
-		save partial transfers
-		do not auto-download on restart - but keep in case requested again
-		keep max 20 partials or 50MB, remove oldest over limit
-
 	serialize partials list every 15 seconds if changed
 
-	implmentation plan
-		create transfer service 2 that is empty (replace in core loading)
-		have transfer gui attach to service to show status
-	
 	interface
 		transfer tree / transfer log
 	

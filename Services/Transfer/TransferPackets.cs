@@ -345,14 +345,20 @@ namespace RiseOp.Services.Transfer
 
     internal class TransferPing : G2Packet
     {
-        const byte Packet_Target = 0x10;
-        const byte Packet_Details = 0x20;
-        const byte Packet_RequestAlts = 0x30;
+        const byte Packet_Target      = 0x10;
+        const byte Packet_Details     = 0x20;
+        const byte Packet_Status      = 0x30;
+        const byte Packet_RequestInfo = 0x40;
+        const byte Packet_RequestAlts = 0x50;
+        const byte Packet_BitfieldUpdated = 0x60;
 
 
         internal ulong Target; // where file is key'd
         internal FileDetails Details;
+        internal TransferStatus Status;
+        internal bool RequestInfo; 
         internal bool RequestAlts;
+        internal bool BitfieldUpdated;
 
 
         internal TransferPing()
@@ -369,9 +375,16 @@ namespace RiseOp.Services.Transfer
 
                 protocol.WritePacket(ping, Packet_Target, BitConverter.GetBytes(Target));
                 protocol.WritePacket(ping, Packet_Details, details);
+                protocol.WritePacket(ping, Packet_Status, BitConverter.GetBytes((int)Status));
+
+                if (RequestInfo)
+                    protocol.WritePacket(ping, Packet_RequestInfo, null);
 
                 if(RequestAlts)
                     protocol.WritePacket(ping, Packet_RequestAlts, null);
+
+                if(BitfieldUpdated)
+                    protocol.WritePacket(ping, Packet_BitfieldUpdated, null);
 
                 return protocol.WriteFinish();
             }
@@ -385,8 +398,15 @@ namespace RiseOp.Services.Transfer
 
             while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
+                if (child.Name == Packet_RequestInfo)
+                    ping.RequestInfo = true;
+
                 if(child.Name == Packet_RequestAlts)
                     ping.RequestAlts = true;
+
+                if (child.Name == Packet_BitfieldUpdated)
+                    ping.BitfieldUpdated = true;
+
 
                 if (!G2Protocol.ReadPayload(child))
                     continue;
@@ -400,6 +420,10 @@ namespace RiseOp.Services.Transfer
                     case Packet_Details:
                         ping.Details = FileDetails.Decode(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
                         break;
+
+                    case Packet_Status:
+                        ping.Status = (TransferStatus) BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        break;
                 }
             }
 
@@ -412,12 +436,22 @@ namespace RiseOp.Services.Transfer
         const byte Packet_FileID    = 0x10;
         const byte Packet_Error     = 0x20;
         const byte Packet_Timeout   = 0x30;
-        const byte Packet_AltClient = 0x40;
-        const byte Packet_AltAddress = 0x50;
+        const byte Packet_Status    = 0x40;
+        const byte Packet_AltClient = 0x50;
+        const byte Packet_AltAddress    = 0x60;
+        const byte Packet_InternalSize  = 0x70;
+        const byte Packet_ChunkSize     = 0x80;
+        const byte Packet_BitCount      = 0x90;
+
 
         internal ulong FileID;
         internal bool Error;
         internal int Timeout;
+        internal TransferStatus Status;
+
+        internal long InternalSize;
+        internal int ChunkSize;
+        internal int BitCount;
 
         internal Dictionary<DhtClient, List<DhtAddress>> Alts = new Dictionary<DhtClient, List<DhtAddress>>();
 
@@ -435,6 +469,14 @@ namespace RiseOp.Services.Transfer
                 protocol.WritePacket(pong, Packet_FileID, BitConverter.GetBytes(FileID));
                 protocol.WritePacket(pong, Packet_Error, null);
                 protocol.WritePacket(pong, Packet_Timeout, BitConverter.GetBytes(Timeout));
+                protocol.WritePacket(pong, Packet_Status, BitConverter.GetBytes((int)Status));
+
+                if (InternalSize != 0)
+                {
+                    protocol.WritePacket(pong, Packet_InternalSize, BitConverter.GetBytes(InternalSize));
+                    protocol.WritePacket(pong, Packet_ChunkSize, BitConverter.GetBytes(ChunkSize));
+                    protocol.WritePacket(pong, Packet_BitCount, BitConverter.GetBytes(BitCount));
+                }
 
                 foreach (DhtClient client in Alts.Keys)
                 {
@@ -472,6 +514,22 @@ namespace RiseOp.Services.Transfer
                         pong.Timeout = BitConverter.ToInt32(child.Data, child.PayloadPos);
                         break;
 
+                    case Packet_Status:
+                        pong.Status = (TransferStatus)BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_InternalSize:
+                        pong.InternalSize = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_ChunkSize:
+                        pong.ChunkSize = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_BitCount:
+                        pong.BitCount = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        break;
+
                     case Packet_AltClient:
                         DhtClient client = DhtClient.FromBytes(child.Data, child.PayloadPos);
                         pong.Alts[client] = new List<DhtAddress>();
@@ -490,6 +548,151 @@ namespace RiseOp.Services.Transfer
             }
 
             return pong;
+        }
+    }
+
+    internal class TransferRequest2 : G2Packet
+    {
+        const byte Packet_FileID     = 0x10;
+        const byte Packet_ChunkIndex = 0x20;
+        const byte Packet_StartByte  = 0x30;
+        const byte Packet_EndByte    = 0x40;
+        const byte Packet_GetBitfield = 0x50;
+
+
+        internal ulong FileID;
+        internal int   ChunkIndex;
+        internal long  StartByte;
+        internal long  EndByte;
+        internal bool GetBitfield;
+
+
+        internal TransferRequest2()
+        {
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame tr = protocol.WritePacket(null, TransferPacket.Request, null);
+
+                protocol.WritePacket(tr, Packet_FileID, BitConverter.GetBytes(FileID));
+                protocol.WritePacket(tr, Packet_ChunkIndex, BitConverter.GetBytes(ChunkIndex));
+                protocol.WritePacket(tr, Packet_StartByte, BitConverter.GetBytes(StartByte));
+                protocol.WritePacket(tr, Packet_EndByte, BitConverter.GetBytes(EndByte));
+
+                if(GetBitfield)
+                    protocol.WritePacket(tr, Packet_GetBitfield, null);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static TransferRequest2 Decode(G2Header root)
+        {
+            TransferRequest2 tr = new TransferRequest2();
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (child.Name == Packet_GetBitfield)
+                    tr.GetBitfield = true;
+
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_FileID:
+                        tr.FileID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_ChunkIndex:
+                        tr.ChunkIndex = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_StartByte:
+                        tr.StartByte = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_EndByte:
+                        tr.EndByte = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        break;
+                }
+            }
+
+            return tr;
+        }
+    }
+
+    internal class TransferAck2 : G2Packet
+    {
+        const byte Packet_FileID = 0x10;
+        const byte Packet_Error = 0x20;
+        const byte Packet_StartByte = 0x30;
+        const byte Packet_Bitfield = 0x20;
+
+
+        internal ulong FileID;
+        internal bool Error;
+        internal long StartByte;
+        internal byte[] Bitfield;
+
+
+        internal TransferAck2()
+        {
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame ack = protocol.WritePacket(null, TransferPacket.Ack, null);
+
+                protocol.WritePacket(ack, Packet_FileID, BitConverter.GetBytes(FileID));
+                protocol.WritePacket(ack, Packet_Error, null);
+                protocol.WritePacket(ack, Packet_StartByte, BitConverter.GetBytes(StartByte));
+
+                if(Bitfield != null)
+                    protocol.WritePacket(ack, Packet_Bitfield, Bitfield);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static TransferAck2 Decode(G2Header root)
+        {
+            TransferAck2 ack = new TransferAck2();
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (child.Name == Packet_Error)
+                    ack.Error = true;
+
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_FileID:
+                        ack.FileID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_StartByte:
+                        ack.StartByte = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Bitfield:
+                        ack.Bitfield = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+                }
+            }
+
+            return ack;
         }
     }
 }

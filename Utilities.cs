@@ -251,13 +251,13 @@ namespace RiseOp
             // record size of file
             long originalSize = file.Length;
 
-            // md5 hash 128k chunks of file
+            // sha hash 128k chunks of file
             SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
             
             int read = 0;
-            int chunkBytes = 128; // 128kb chunks
-            int chunkSize = chunkBytes * 1024;
-            int buffSize = file.Length > chunkSize ? chunkSize : (int) file.Length;
+            int chunkSize = 128; // 128kb chunks
+            int chunkBytes = chunkSize * 1024;
+            int buffSize = file.Length > chunkBytes ? chunkBytes : (int) file.Length;
             byte[] chunk = new byte[buffSize];
             List<byte[]> hashes = new List<byte[]>();
 
@@ -281,7 +281,10 @@ namespace RiseOp
                 hashesLeft -= writeCount;
 
                 SubHashPacket packet = new SubHashPacket();
-                packet.HashResKB = chunkBytes;
+                packet.ChunkSize = chunkSize;
+                packet.HashType = "sha1";
+                packet.HashSize = 20;
+                packet.TotalCount = hashes.Count;
                 packet.SubHashes = new byte[20 * writeCount];
 
                 for (int i = 0; i < writeCount; i++)
@@ -719,6 +722,47 @@ namespace RiseOp
                     return false;
 
             return true;
+        }
+
+        public static byte[] ToBytes(this BitArray array)
+        {
+            // size info not transmitted, must be send seperately
+
+            int size = array.Length / 8;
+
+            if (array.Length % 8 > 0)
+                size += 1;
+
+            byte[] bytes = new byte[size];
+
+            for(int i = 0; i < size; i++)
+                for (int x = 0; x < 8; x++)
+                {
+                    int index = i * 8 + x ;
+                    if (index < array.Length && array[index])
+                        bytes[i] = (byte)(bytes[i] | (1 << x));
+                }
+
+            return bytes;
+        }
+
+        public static BitArray FromBytes(this  byte[] bytes, int length)
+        {
+            BitArray array = new BitArray(length);
+
+            for(int i = 0; i < bytes.Length; i++)
+                for (int x = 0; x < 8; x++)
+                {
+                    int index = i * 8 + x;
+
+                    if (index >= length)
+                        break;
+
+                    if ((bytes[i] & (1 << x)) > 0)
+                        array.Set(index, true);
+                }
+
+            return array;
         }
     }
 
