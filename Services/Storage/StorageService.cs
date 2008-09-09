@@ -676,7 +676,7 @@ namespace RiseOp.Services.Storage
 
             try
             {
-                File.Move(path, GetFilePath(file.HashID));
+                File.Copy(path, GetFilePath(file.HashID), true);
             }
             catch { return; }
 

@@ -171,12 +171,41 @@ multi-source d/l
 
 	interface
 		transfer tree / transfer log
+
+		root
+			time started, service, fileID, completed x/X
+			flags: searching, file loaded, sub-hashes  SRCH / FL / SH
+			bitfield
+		peers
+			remote name / IP - last seen, timeout: x
+			flags: UL (active?, chunk index, progress) / DL (chunk index, progress) / RBU
+			bitfield 
+			
+		bitfield
+			black has chunk, white doesnt
+			
+		pending?
 	
+	bugs
+		count number of incomplete / recent active / not partial transfers, make that the min 15
+		
+		storage transfer controls
+		partial transfer saving
+		peer bandwidth
+		global transfer progress
+		
+		turn logging on/off
+	
+		light comm overflow
+
+		transfers not being unloaded
+
 	testing
 		put hash into sim network view
 		if enabled each peer shows a file completed bar and percentage
 		publish new file in storage at top of network
 		time how long it takes to distribute file across entire network
+		partials
 
 		generate random bitfields and determine network rarest
 		build operations to add/subtrant bitfields to determine rarest that local has
@@ -186,6 +215,9 @@ multi-source d/l
 		5mb file on 128 peer network, how bogged down does source get? optimize for min bog
 		100 mp3s, syncing around network of 32
 
+
+
+-------------------------------------------------------------------------------------------
 
 	analyze current algorithm
 		how to pause re-request file transfers? encapsulate in g2?

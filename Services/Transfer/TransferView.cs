@@ -1,35 +1,42 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
 using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
+using RiseOp.Implementation;
 using RiseOp.Implementation.Transport;
 
 namespace RiseOp.Services.Transfer
 {
     internal partial class TransferView : CustomIconForm
     {
-        TransferService Transfers;
+
+        internal OpCore Core;
+        internal TransferService Service;
+
+        Dictionary<ulong, bool> TransferMap = new Dictionary<ulong, bool>();
 
 
-        internal TransferView(TransferService transfers)
+        internal TransferView(TransferService service)
         {
             InitializeComponent();
 
-            Transfers = transfers;
+            Core = service.Core;
+            Service = service;
         }
 
         private void TransferView_Load(object sender, EventArgs e)
         {
             RefreshView();
 
-
-            Text = Transfers.Core.Trust.GetName(Transfers.Core.UserID) + "'s Transfers";
+            Text = Core.Trust.GetName(Core.UserID) + "'s Transfers";
         }
 
         private void FastTimer_Tick(object sender, EventArgs e)
@@ -39,192 +46,204 @@ namespace RiseOp.Services.Transfer
 
         private void RefreshView()
         {
-            // Downloads
-            List<TreeListNode> missing = DownloadList.Nodes.GetList();
+            // remove
+            var remove = (from TransferNode node in TransferList.Nodes
+                          where !Service.Transfers.ContainsKey(node.FileID)
+                          select node).ToList();
 
-            foreach (FileDownload download in Transfers.DownloadMap.Values)
+            foreach(TransferNode node in remove)
             {
-                DownloadNode node = FindDownload(download);
-
-                if (node == null)
-                {
-                    string who = Transfers.Core.Trust.GetName(download.Target);
-                    DownloadList.Nodes.Add(new DownloadNode(who, download));
-                }
-                else
-                {
-                    missing.Remove(node);
-                    node.RefreshNode();
-                }
+                TransferMap.Remove(node.FileID);
+                TransferList.Nodes.Remove(node);
             }
 
-            foreach (TreeListNode node in missing)
-                DownloadList.Nodes.Remove(node);
-   
-            DownloadList.ExpandAll();
+            // add missing
+            var add = from transfer in Service.Transfers.Values 
+                      where !TransferMap.ContainsKey(transfer.FileID)
+                      select transfer;
+
+            foreach (OpTransfer transfer in add)
+            {
+                TransferMap[transfer.FileID] = true;
+                TransferList.Nodes.Add(new TransferNode(Service, transfer.FileID));
+            }
+
+            foreach (TransferNode transfer in TransferList.Nodes)
+                transfer.Refresh();
+
+            TransferList.ExpandAll();
+
+            TransferList.Invalidate();
+        }
+    }
+
+    internal class TransferNode : TreeListNode
+    {
+        TransferService Service;
+        internal ulong FileID;
+
+        BitfieldControl Bitfield = new BitfieldControl();
+        Dictionary<ulong, bool> PeerMap = new Dictionary<ulong, bool>();
+
+
+        internal TransferNode(TransferService service, ulong id)
+        {
+            Service = service;
+            FileID = id;
+
+            SubItems.Add(Bitfield);
+        }
+
+        internal void Refresh()
+        {
+            if(!Service.Transfers.ContainsKey(FileID))
+            {
+                Text = "Error";
+                return;
+            }
+
+            OpTransfer transfer = Service.Transfers[FileID];
+
+            Bitfield.UpdateField(transfer.LocalBitfield);
+
+            string text = "";
+            // set transfer text / columns
+            // time started, service, fileID, completed x of X
+			// flags: searching, file loaded, sub-hashes
+
+            text += Service.Core.Context.KnownServices[transfer.Details.Service] + "-" + transfer.FileID.ToString().Substring(0, 4) + ", ";
+            text += "Started: " + transfer.Created.ToShortTimeString() + ", ";
             
 
-            // Uploads
-            missing = UploadList.Nodes.GetList();
+            if (transfer.LocalBitfield != null)
+                text += transfer.LocalBitfield.Length + " Pieces, ";
 
-            foreach (List<FileUpload> list in Transfers.UploadMap.Values)
-                foreach (FileUpload upload in list)
-                {
-                    UploadNode node = FindUpload(upload);
+            if (transfer.Status == TransferStatus.Complete)
+                text += "Completed, ";
+            else
+            {
+                text += "Progress: " + transfer.GetProgress() + " of " + Utilities.CommaIze(transfer.Details.Size) + ", ";
+            }
 
-                    if (node == null)
-                        UploadList.Nodes.Add(new UploadNode(upload));
-                    else
-                    {
-                        missing.Remove(node);
-                        node.RefreshNode();
-                    }
-                }
+            if (transfer.Searching)
+                text += "Searching, ";
 
-            foreach (TreeListNode node in missing)
-                UploadList.Nodes.Remove(node);
+            if (transfer.LocalFile == null)
+                text += "Unloaded, ";
 
-            UploadList.ExpandAll();
-         
+            Text = text.Substring(0, text.Length - 2);
 
-        }
 
-        private DownloadNode FindDownload(FileDownload download)
-        {
-            foreach (DownloadNode node in DownloadList.Nodes)
-                if (node.Download == download)
-                    return node;
+            // update sub items
+            var remove = (from PeerNode peer in Nodes
+                          where !transfer.Peers.ContainsKey(peer.RoutingID)
+                          select peer).ToList();
 
-            return null;
-        }
+            foreach (PeerNode peer in remove)
+            {
+                PeerMap.Remove(peer.RoutingID);
+                Nodes.Remove(peer);
+            }
 
-        private UploadNode FindUpload(FileUpload upload)
-        {
-            foreach (UploadNode node in UploadList.Nodes)
-                if (node.Upload == upload)
-                    return node;
+            // add missing
+            var add = from peer in transfer.Peers.Values
+                      where !PeerMap.ContainsKey(peer.RoutingID)
+                      select peer;
 
-            return null;
+            foreach (RemotePeer peer in add)
+            {
+                PeerMap[peer.RoutingID] = true;
+                Nodes.Add(new PeerNode(Service, peer.RoutingID));
+            }
+
+            foreach (PeerNode peer in Nodes)
+                peer.Refresh(transfer);
         }
     }
 
-    internal class DownloadNode : TreeListNode
+    internal class PeerNode : TreeListNode
     {
-        internal FileDownload Download;
-        string Who = "";
+        TransferService Service;
+        internal ulong RoutingID;
+        BitfieldControl Bitfield = new BitfieldControl();
 
-        internal DownloadNode(string who, FileDownload download)
+
+        internal PeerNode(TransferService service, ulong id)
         {
-            Who = who;
-            Download = download;
+            Service = service;
+            RoutingID = id;
 
-            RefreshNode();
+            SubItems.Add(Bitfield);
         }
 
-        internal void RefreshNode()
+        internal void Refresh(OpTransfer transfer)
         {
-            // who component  hash  completed/total sources searching
-            string status = Who + ",  " +
-                Download.Details.Service.ToString() + ",  " +
-                Utilities.BytestoHex(Download.Details.Hash).Substring(0, 6).ToUpper() + ",  " +
-                Utilities.CommaIze(Download.FilePos.ToString()) + " / " + Utilities.CommaIze(Download.Details.Size.ToString()) + "   ";
-
-            if (Download.Sources.Count > 0)
-                status += Download.Sources.Count.ToString() + " Sources";
-
-            if (Download.Searching)
-                status += "   Searching";
-
-            Text = status;
-
-            // sessions
-            List<TreeListNode> missing = Nodes.GetList();
-
-            foreach (RudpSession session in Download.Sessions)
+            if (!transfer.Peers.ContainsKey(RoutingID))
             {
-                SessionNode node = FindSession(session);
+                Text = "Error";
+                return;
+            }
 
-                if (node == null)
-                    Nodes.Add(new SessionNode(session));
-                else
+            RemotePeer peer = transfer.Peers[RoutingID];
+
+            int upPiece = -1, downPiece = -1;
+  
+            string text = "";
+            // remote name / IP - last seen, timeout: x
+			// flags: UL (active?, chunk index, progress) / DL (chunk index, progress) / RBU
+
+            text += "      " + Service.Core.Trust.GetName(peer.Client.UserID) + ", ";
+            text += "Last Seen: " + peer.LastSeen.ToShortTimeString() + ", ";
+            //text += "Timeout: " + peer.PingTimeout + ", ";
+
+            if (peer.RemoteBitfieldUpdated)
+                text += "Out of Date, ";
+
+            if (Service.UploadPeers.ContainsKey(peer.RoutingID))
+            {
+                UploadPeer upload = Service.UploadPeers[peer.RoutingID];
+                text += "Last Upload: " + upload.LastAttempt.ToShortTimeString() + ", ";
+
+                if (upload.Active == peer)
                 {
-                    missing.Remove(node);
-                    node.RefreshNode();
+                    text += "Upload: ";
+
+                    if (upload.Active.LastRequest != null && upload.Active.CurrentPos != 0)
+                    {
+                        TransferRequest req = upload.Active.LastRequest;
+                        upPiece = req.ChunkIndex;
+                        int percent = (int) ((req.EndByte - upload.Active.CurrentPos) * 100 / (req.EndByte - req.StartByte));
+
+                        // Piece 4 - 34%,
+                        text += "Piece " + upPiece + " - " + percent + "%, ";
+                    }
+                    else
+                        text += "Pending, ";
                 }
             }
 
-            foreach (TreeListNode node in missing)
-                Nodes.Remove(node);
-        }
+            if(Service.DownloadPeers.ContainsKey(peer.RoutingID))
+                if (Service.DownloadPeers[peer.RoutingID].Requests.ContainsKey(transfer.FileID))
+                {
+                    TransferRequest req = Service.DownloadPeers[peer.RoutingID].Requests[transfer.FileID];
 
-        private SessionNode FindSession(RudpSession session)
-        {
-            foreach (SessionNode node in Nodes)
-                if (node.Session == session)
-                    return node;
+                    text += "Download: ";
 
-            return null;
-        }
-    }
+                    if (req.CurrentPos != 0)
+                    {
+                        downPiece = req.ChunkIndex;
+                        int percent = (int)((req.EndByte - req.CurrentPos) * 100 / (req.EndByte - req.StartByte));
+         
+                        // Piece 4 - 34%,
+                        text += "Piece " + downPiece + " - " + percent + "%, ";
+                    }
+                    else
+                        text += "Pending, ";
+                }
 
-    internal class SessionNode : TreeListNode
-    {
-        internal RudpSession Session;
-
-        internal SessionNode(RudpSession session)
-        {
-            Session = session;
-
-            RefreshNode();
-        }
-
-        internal void RefreshNode()
-        {
-            // who   status
-
-            Text = Session.Name + ",  " + Session.Status.ToString();
+            Text = text.Substring(0, text.Length - 2);
+ 
+            Bitfield.UpdateField(peer.RemoteBitfield, upPiece, downPiece);
         }
     }
-
-    internal class UploadNode : TreeListNode
-    {
-        internal FileUpload Upload;
-
-        internal UploadNode(FileUpload upload)
-        {
-            Upload = upload;
-
-            Nodes.Add(new TreeListNode());
-
-            RefreshNode();
-        }
-
-        internal void RefreshNode()
-        {
-            // who  component  hash  completed/total  session.status 
-            string status = Upload.Session.Name + ",  " +
-                Upload.Details.Service.ToString() + ",  " +
-                Utilities.BytestoHex(Upload.Details.Hash).Substring(0, 6).ToUpper() + ",  " +
-                Utilities.CommaIze(Upload.FilePos.ToString()) + " / " + Utilities.CommaIze(Upload.Details.Size.ToString()) + "   " +
-                Upload.Session.Status.ToString() + "   ";
-
-            if (Upload.Done)
-                status += "Done    ";
-
-            Text = status;
-
-
-            // session sendbuff, session encryptbuff, comm sendbuff, comm sendbuff
-            status = "Session.SendBuff " + Upload.Session.SendBuffSize.ToString() + " / " + RudpSession.BUFF_SIZE.ToString() + "    " +
-                "Session.EncryptBuff " + Upload.Session.EncryptBuffSize.ToString() + " / " + RudpSession.BUFF_SIZE.ToString() + "    " +
-                "Comm.SendBuff " + Upload.Session.Comm.SendBuffLength.ToString() + " / " + RudpSocket.SEND_BUFFER_SIZE.ToString() + "    ";
-
-            if (Upload.Session.Comm.RudpSendBlock)
-                status += "Blocking    ";
-
-
-            Nodes[0].Text = status;
-        }
-    }
-
 }

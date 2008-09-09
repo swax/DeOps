@@ -36,7 +36,7 @@ namespace RiseOp.Services.Storage
 
             NameBox.Text = file.Text;
 
-            SizeLabel.Text = Utilities.CommaIze(((StorageFile)file.Details).InternalSize.ToString()) + " Bytes";
+            SizeLabel.Text = Utilities.CommaIze(((StorageFile)file.Details).InternalSize) + " Bytes";
 
             LoadVis(file.Details.Scope);
         }
@@ -53,7 +53,7 @@ namespace RiseOp.Services.Storage
 
             NameBox.Text = folder.Text;
 
-            SizeLabel.Text = "Contains " + Utilities.CommaIze(CalculateFolderSize(folder, 0).ToString()) + " Bytes";
+            SizeLabel.Text = "Contains " + Utilities.CommaIze(CalculateFolderSize(folder, 0)) + " Bytes";
 
             LoadVis(folder.Details.Scope);
         }

@@ -2093,6 +2093,7 @@ namespace RiseOp.Interface.TLVex
 			
 		}
 
+        
 		#endregion
 
 	}
@@ -2300,6 +2301,8 @@ namespace RiseOp.Interface.TLVex
 
 		public void Remove(TreeListNode item)
 		{
+            DisposeSubs(item);
+
 			List.Remove(item);
 
 			// Reverse the changes made when adding
@@ -2320,6 +2323,15 @@ namespace RiseOp.Interface.TLVex
 
 			OnNodesChanged();
 		}
+
+        private void DisposeSubs(TreeListNode node)
+        {
+            foreach (ContainerSubListViewItem sub in node.SubItems)
+                sub.Dispose();
+
+            foreach (TreeListNode child in node.Nodes)
+                DisposeSubs(child);
+        }
 
 		public new void Clear()
 		{

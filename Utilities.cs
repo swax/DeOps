@@ -282,8 +282,6 @@ namespace RiseOp
 
                 SubHashPacket packet = new SubHashPacket();
                 packet.ChunkSize = chunkSize;
-                packet.HashType = "sha1";
-                packet.HashSize = 20;
                 packet.TotalCount = hashes.Count;
                 packet.SubHashes = new byte[20 * writeCount];
 
@@ -592,8 +590,9 @@ namespace RiseOp
             prc.Start();
         }
 
-        internal static string CommaIze(string num)
+        internal static string CommaIze(long value)
         {
+            string num = value.ToString();
             string final = "";
 
             while (num.Length > 3)
@@ -715,10 +714,10 @@ namespace RiseOp
             return quip;
         }
 
-        public static bool IsEmpty(this BitArray array)
+        public static bool AreAllSet(this BitArray array, bool value)
         {
             foreach (bool bit in array)
-                if (bit == true)
+                if (bit != value)
                     return false;
 
             return true;
@@ -746,7 +745,19 @@ namespace RiseOp
             return bytes;
         }
 
-        public static BitArray FromBytes(this  byte[] bytes, int length)
+        public static bool Compare(this BitArray array, BitArray check)
+        {
+            if (array.Length != check.Length)
+                return false;
+
+            for (int i = 0; i < array.Length; i++)
+                if (array[i] != check[i])
+                    return false;
+
+            return true;
+        }
+
+        public static BitArray ToBitArray(byte[] bytes, int length)
         {
             BitArray array = new BitArray(length);
 

@@ -27,7 +27,7 @@ namespace RiseOp.Implementation.Transport
         DhtNetwork Network;
 
         List<LightClient> Active = new List<LightClient>();
-        internal Dictionary<DhtClient, LightClient> Clients = new Dictionary<DhtClient, LightClient>();
+        internal Dictionary<ulong, LightClient> Clients = new Dictionary<ulong, LightClient>();
 
         internal ServiceEvent<LightDataHandler> Data = new ServiceEvent<LightDataHandler>();
 
@@ -61,7 +61,7 @@ namespace RiseOp.Implementation.Transport
                         if (old.LastSeen.AddMinutes(5) > Core.TimeNow)
                             continue;
 
-                        Clients.Remove(old.Client);
+                        Clients.Remove(old.RoutingID);
                     }
             }
         }
@@ -70,10 +70,10 @@ namespace RiseOp.Implementation.Transport
         {
             DhtClient client = new DhtClient(location.Source);
 
-            if (!Clients.ContainsKey(client))
-                Clients[client] = new LightClient(client);
+            if (!Clients.ContainsKey(client.RoutingID))
+                Clients[client.RoutingID] = new LightClient(client);
 
-            LightClient light = Clients[client];
+            LightClient light = Clients[client.RoutingID];
 
            light.AddAddress(Core, new DhtAddress(location.IP, location.Source), false);
 
@@ -86,10 +86,10 @@ namespace RiseOp.Implementation.Transport
 
         internal void Update(DhtClient client, DhtAddress address)
         {
-            if (!Clients.ContainsKey(client))
-                Clients[client] = new LightClient(client);
+            if (!Clients.ContainsKey(client.RoutingID))
+                Clients[client.RoutingID] = new LightClient(client);
 
-            Clients[client].AddAddress(Core, address, false);
+            Clients[client.RoutingID].AddAddress(Core, address, false);
         }
 
         internal void SendPacket(DhtClient client, uint service, int type, G2Packet packet)
@@ -105,11 +105,11 @@ namespace RiseOp.Implementation.Transport
             comm.Sequence       = 0;
 
 
-            if (!Clients.ContainsKey(client))
+            if (!Clients.ContainsKey(client.RoutingID))
                 return;
 
 
-            LightClient target = Clients[client];
+            LightClient target = Clients[client.RoutingID];
             Active.Add(target);
 
             target.Packets.AddLast(new Tuple<uint, RudpPacket>(service, comm));
@@ -126,10 +126,10 @@ namespace RiseOp.Implementation.Transport
         {
             DhtClient client = new DhtClient(packet.SenderID, packet.SenderClient);
 
-            if (!Clients.ContainsKey(client))
-                Clients[client] = new LightClient(client);
+            if (!Clients.ContainsKey(client.RoutingID))
+                Clients[client.RoutingID] = new LightClient(client);
 
-            LightClient light = Clients[client];
+            LightClient light = Clients[client.RoutingID];
             light.LastSeen = Core.TimeNow;
 
             light.AddAddress(Core, new RudpAddress(raw.Source), true);
@@ -148,7 +148,7 @@ namespace RiseOp.Implementation.Transport
                     Core.ServiceBandwidth[info.Service].InPerSec += raw.Root.Data.Length;
 
                 if (Data.Contains(info.Service, info.Type))
-                    Data[info.Service, info.Type].Invoke(raw.Source, info.Data);
+                    Data[info.Service, info.Type].Invoke(client, info.Data);
 
                 SendAck(light, packet, info.Service);
             }
@@ -189,6 +189,7 @@ namespace RiseOp.Implementation.Transport
                 if(tuple.Second.PeerID == packet.PeerID)
                 {
                     client.Packets.Remove(tuple);
+                    client.Attempts = 0;
                     break;
                 }
 
@@ -212,18 +213,20 @@ namespace RiseOp.Implementation.Transport
     internal class LightClient
     {
         internal DhtClient Client;
+        internal ulong RoutingID;
 
         internal LinkedList<RudpAddress> Addresses = new LinkedList<RudpAddress>();
         internal LinkedList<Tuple<uint, RudpPacket>> Packets = new LinkedList<Tuple<uint, RudpPacket>>(); // service, packet
 
         internal DateTime LastSeen;
         internal DateTime NextTry;
-        int Attempts;
+        internal int Attempts;
 
 
         internal LightClient(DhtClient client)
         {
-            Client = client;
+            Client = new DhtClient(client);
+            RoutingID = Client.RoutingID;
         }
 
         internal void AddAddress(OpCore core, DhtAddress address, bool moveFront)
@@ -277,6 +280,7 @@ namespace RiseOp.Implementation.Transport
             Attempts++;
             if (Attempts >= Addresses.Count * 2)
             {
+                Attempts = 0;
                 Packets.RemoveFirst();
                 return;
             }

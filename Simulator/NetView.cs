@@ -288,8 +288,8 @@ namespace RiseOp.Simulator
 
         private bool IsTransferring(OpCore core)
         {
-            foreach (FileDownload download in core.Transfers.DownloadMap.Values)
-                if (Utilities.MemCompare(download.Details.Hash, TrackHash))
+            foreach (OpTransfer transfer in core.Transfers.Transfers.Values)
+                if (Utilities.MemCompare(transfer.Details.Hash, TrackHash))
                     return true;
 
             return false;

@@ -96,8 +96,8 @@ namespace RiseOp.Implementation.Transport
             SessionMap[client.UserID].Add(session);
 
 
-            if (Network.LightComm.Clients.ContainsKey(client))
-                foreach (RudpAddress address in Network.LightComm.Clients[client].Addresses)
+            if (Network.LightComm.Clients.ContainsKey(client.RoutingID))
+                foreach (RudpAddress address in Network.LightComm.Clients[client.RoutingID].Addresses)
                     session.Comm.AddAddress(address);
 
             session.Connect();

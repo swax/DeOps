@@ -33,32 +33,33 @@ namespace RiseOp
 	{
 		internal Test()
         {
+            // test serializing Bitarray
+            /*
+             * Random rnd = new Random();
 
-            TransferPong pong = new TransferPong();
+            for (int runs = 0; runs < 10000; runs++)
+            {
+                int bits = rnd.Next(1, 2000);
 
-            DhtClient client1 = new DhtClient(1, 1);
-            DhtClient client2 = new DhtClient(2, 2);
+                BitArray original = new BitArray(bits);
 
-            pong.Alts[client1] = new List<DhtAddress>();
-            pong.Alts[client2] = new List<DhtAddress>();
+                for (int i = 0; i < bits; i++)
+                    original.Set(i, rnd.Next(2) == 1);
 
-            pong.Alts[client1].Add(new DhtAddress(1, 1, new IPAddress(1), 1));
-            pong.Alts[client1].Add(new DhtAddress(2, 2, new IPAddress(2), 2));
+                byte[] buff = original.ToBytes();
 
-            pong.Alts[client2].Add(new DhtAddress(3, 3, new IPAddress(3), 3));
-            pong.Alts[client2].Add(new DhtAddress(4, 4, new IPAddress(4), 4));
+                BitArray check = Utilities.ToBitArray(buff, bits);
 
-            byte[] encoded = pong.Encode(new G2Protocol());
+                byte[] buff2 = check.ToBytes();
 
-            G2Header root = new G2Header(encoded);
-            if(G2Protocol.ReadPacket(root))
-                if (root.Name == TransferPacket.Pong)
-                {
-                    TransferPong check = TransferPong.Decode(root);
 
-                    int x = 0;
-                }
-            // encode request
+                Debug.Assert(Utilities.MemCompare(buff, buff2));
+            }*/
+
+
+
+
+            // test encode web request and get reply
 
 
                 /*string cacheKey = "O+6IRs7GY1r/JIk+DFY/VK+i8pFTWhsDfNH9R3j3f9Q=";

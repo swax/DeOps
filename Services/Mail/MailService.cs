@@ -1183,7 +1183,7 @@ namespace RiseOp.Services.Mail
 
             try
             {
-                File.Move(path, GetCachePath(header));
+                File.Copy(path, GetCachePath(header), true);
             }
             catch { return; }
 

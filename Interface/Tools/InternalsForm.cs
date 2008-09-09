@@ -748,8 +748,8 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Property", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
-            listValues.Items.Add(new ListViewItem(new string[] { "TransferMap", xStr(Core.Transfers.DownloadMap.Count) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "UploadMap",   xStr(Core.Transfers.UploadMap.Count) }));
+            //listValues.Items.Add(new ListViewItem(new string[] { "TransferMap", xStr(Core.Transfers.DownloadMap.Count) }));
+            //listValues.Items.Add(new ListViewItem(new string[] { "UploadMap",   xStr(Core.Transfers.UploadMap.Count) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Active",      xStr(Core.Transfers.Active.Count) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Pending",     xStr(Core.Transfers.Pending.Count) }));
         
@@ -757,7 +757,7 @@ namespace RiseOp.Interface.Tools
 
         internal void ShowUploads(object pass)
         {
-            listValues.Columns.Clear();
+            /*listValues.Columns.Clear();
             listValues.Items.Clear();
 
             listValues.Columns.Add("Name",      100, HorizontalAlignment.Left);
@@ -785,12 +785,12 @@ namespace RiseOp.Interface.Tools
 						Utilities.BytestoHex(upload.Details.Hash),
 						xStr(upload.FilePos),
                         xStr(upload.Path)
-					}));
+					}));*/
         }
 
         internal void ShowDownloads(object pass)
         {
-            listValues.Columns.Clear();
+            /*listValues.Columns.Clear();
             listValues.Items.Clear();
 
             listValues.Columns.Add("Target", 100, HorizontalAlignment.Left);
@@ -822,7 +822,7 @@ namespace RiseOp.Interface.Tools
 						xStr(download.Sources.Count),		
 						xStr(download.Attempted.Count),
 						xStr(download.Sessions.Count)
-					}));
+					}));*/
         }
 
 

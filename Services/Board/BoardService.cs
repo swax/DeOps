@@ -760,7 +760,7 @@ namespace RiseOp.Services.Board
 
             try
             {
-                File.Move(path, GetPostPath(header));
+                File.Copy(path, GetPostPath(header), true);
             }
             catch { return; }
 

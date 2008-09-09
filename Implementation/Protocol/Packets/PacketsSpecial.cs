@@ -235,14 +235,10 @@ namespace RiseOp.Implementation.Protocol.Special
     internal class SubHashPacket : G2Packet
     {
         const byte Packet_ChunkSize  = 0x10;
-        const byte Packet_HashType   = 0x20;
-        const byte Packet_HashSize   = 0x30;
-        const byte Packet_TotalCount = 0x40;
-        const byte Packet_SubHashes  = 0x50;
+        const byte Packet_TotalCount = 0x20;
+        const byte Packet_SubHashes  = 0x30;
 
         internal int    ChunkSize;  // in KB, 128kb chunks
-        internal string HashType;
-        internal int    HashSize; // 20 bytes for sha
         internal int    TotalCount;
         internal byte[] SubHashes;
 
@@ -255,8 +251,6 @@ namespace RiseOp.Implementation.Protocol.Special
                 G2Frame subhash = protocol.WritePacket(null, FilePacket.SubHash, null);
 
                 protocol.WritePacket(subhash, Packet_ChunkSize, BitConverter.GetBytes(ChunkSize));
-                protocol.WritePacket(subhash, Packet_HashType, UTF8Encoding.UTF8.GetBytes(HashType));
-                protocol.WritePacket(subhash, Packet_HashSize, BitConverter.GetBytes(HashSize));
                 protocol.WritePacket(subhash, Packet_TotalCount, BitConverter.GetBytes(TotalCount));
                 protocol.WritePacket(subhash, Packet_SubHashes, SubHashes);
 
@@ -279,14 +273,6 @@ namespace RiseOp.Implementation.Protocol.Special
                 {
                     case Packet_ChunkSize:
                         subhash.ChunkSize = BitConverter.ToInt32(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_HashType:
-                        subhash.HashType = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-
-                    case Packet_HashSize:
-                        subhash.HashSize = BitConverter.ToInt32(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_TotalCount:

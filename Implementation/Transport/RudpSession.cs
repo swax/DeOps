@@ -282,7 +282,7 @@ namespace RiseOp.Implementation.Transport
             if(Status == SessionStatus.Active)
 			{
                 if (FlushSend(true))
-                    Core.Transfers.OnMoreData(this); // a hack for stalled transfers
+                    Core.Transfers.Send_Data(this); // a hack for stalled transfers
 			}
 		}
 
@@ -669,7 +669,7 @@ namespace RiseOp.Implementation.Transport
             if (!FlushSend(false))
                 return;
 
-            Core.Transfers.OnMoreData(this);
+            Core.Transfers.Send_Data(this);
 		}
 
 		internal void OnClose()

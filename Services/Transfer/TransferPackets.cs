@@ -14,9 +14,9 @@ namespace RiseOp.Services.Transfer
         internal const byte Request = 0x20;
         internal const byte Ack = 0x30;
         internal const byte Data = 0x40;
-
         internal const byte Ping = 0x50;
         internal const byte Pong = 0x60;
+        internal const byte Stop = 0x70;
     }
 
     internal class FileDetails : G2Packet
@@ -133,213 +133,6 @@ namespace RiseOp.Services.Transfer
             }
 
             return packet;
-        }
-    }
-
-    internal class TransferRequest : G2Packet
-    {
-        const byte Packet_ID = 0x10;
-        const byte Packet_Target = 0x20;
-        const byte Packet_Details = 0x30;
-        const byte Packet_Start = 0x40;
-
-        internal int TransferID;
-        internal ulong Target;
-        internal byte[] Details;
-        internal long StartByte;
-
-        internal TransferRequest()
-        {
-        }
-
-        internal TransferRequest(FileDownload file, G2Protocol protocol)
-        {
-            TransferID = file.ID;
-            Target = file.Target;
-            Details = file.Details.Encode(protocol);
-            StartByte  = file.FilePos;
-
-        }
-
-        internal override byte[] Encode(G2Protocol protocol)
-        {
-            lock (protocol.WriteSection)
-            {
-                G2Frame tr = protocol.WritePacket(null, TransferPacket.Request, null);
-
-                protocol.WritePacket(tr, Packet_ID, BitConverter.GetBytes(TransferID));
-                protocol.WritePacket(tr, Packet_Target, BitConverter.GetBytes(Target));
-                protocol.WritePacket(tr, Packet_Details, Details);
-                protocol.WritePacket(tr, Packet_Start, CompactNum.GetBytes(StartByte));
-
-                return protocol.WriteFinish();
-            }
-        }
-
-        internal static TransferRequest Decode(G2Header root)
-        {
-            TransferRequest tr = new TransferRequest();
-
-            G2Header child = new G2Header(root.Data);
-
-            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                switch (child.Name)
-                {
-                    case Packet_ID:
-                        tr.TransferID = BitConverter.ToInt32(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_Target:
-                        tr.Target = BitConverter.ToUInt64(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_Details:
-                        tr.Details = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-
-                    case Packet_Start:
-                        tr.StartByte = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-                }
-            }
-
-            return tr;
-        }
-    }
-
-    internal class TransferAck : G2Packet
-    {
-        const byte Packet_ID = 0x10;
-        const byte Packet_Accept = 0x20;
-        const byte Packet_Start = 0x30;
-
-
-        internal int TransferID;
-        internal bool Accept;
-        internal long StartByte;
-
-
-        internal TransferAck()
-        {
-        }
-
-        internal override byte[] Encode(G2Protocol protocol)
-        {
-            lock (protocol.WriteSection)
-            {
-                G2Frame ta = protocol.WritePacket(null, TransferPacket.Ack, null);
-
-                protocol.WritePacket(ta, Packet_ID, BitConverter.GetBytes(TransferID));
-                protocol.WritePacket(ta, Packet_Accept, BitConverter.GetBytes(Accept));
-                protocol.WritePacket(ta, Packet_Start, CompactNum.GetBytes(StartByte));
-
-                return protocol.WriteFinish();
-            }
-        }
-
-        internal static TransferAck Decode(G2Header root)
-        {
-            TransferAck ta = new TransferAck();
-
-            G2Header child = new G2Header(root.Data);
-
-            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                switch (child.Name)
-                {
-                    case Packet_ID:
-                        ta.TransferID = BitConverter.ToInt32(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_Accept:
-                        ta.Accept = BitConverter.ToBoolean(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_Start:
-                        ta.StartByte = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-                }
-            }
-
-            return ta;
-        }
-    }
-
-    internal class TransferData : G2Packet
-    {
-        const byte Packet_ID = 0x10;
-        const byte Packet_Start = 0x20;
-
-
-        internal int TransferID;
-        internal long StartByte;
-        internal byte[] Data;
-
-
-        internal TransferData()
-        {
-        }
-
-        internal TransferData(FileUpload upload)
-        {
-            TransferID = upload.Request.TransferID;
-            StartByte = upload.FilePos - upload.BuffSize;
-
-            if (upload.BuffSize == FileUpload.READ_SIZE)
-                Data = upload.Buff;
-            else
-                Data = Utilities.ExtractBytes(upload.Buff, 0, upload.BuffSize);
-        }
-
-        internal override byte[] Encode(G2Protocol protocol)
-        {
-            lock (protocol.WriteSection)
-            {
-                G2Frame td = protocol.WritePacket(null, TransferPacket.Data, Data);
-
-                protocol.WritePacket(td, Packet_ID, BitConverter.GetBytes(TransferID));
-                protocol.WritePacket(td, Packet_Start, CompactNum.GetBytes(StartByte));
-
-                return protocol.WriteFinish();
-            }
-        }
-
-        internal static TransferData Decode(G2Header root)
-        {
-            TransferData td = new TransferData();
-
-            if (G2Protocol.ReadPayload(root))
-                td.Data = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
-
-            G2Protocol.ResetPacket(root);
-
-            G2Header child = new G2Header(root.Data);
-
-            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                switch (child.Name)
-                {
-                    case Packet_ID:
-                        td.TransferID = BitConverter.ToInt32(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_Start:
-                        td.StartByte = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-                }
-            }
-
-            return td;
         }
     }
 
@@ -467,9 +260,11 @@ namespace RiseOp.Services.Transfer
                 G2Frame pong = protocol.WritePacket(null, TransferPacket.Pong, null);
 
                 protocol.WritePacket(pong, Packet_FileID, BitConverter.GetBytes(FileID));
-                protocol.WritePacket(pong, Packet_Error, null);
                 protocol.WritePacket(pong, Packet_Timeout, BitConverter.GetBytes(Timeout));
                 protocol.WritePacket(pong, Packet_Status, BitConverter.GetBytes((int)Status));
+
+                if (Error)
+                    protocol.WritePacket(pong, Packet_Error, null);
 
                 if (InternalSize != 0)
                 {
@@ -551,7 +346,7 @@ namespace RiseOp.Services.Transfer
         }
     }
 
-    internal class TransferRequest2 : G2Packet
+    internal class TransferRequest : G2Packet
     {
         const byte Packet_FileID     = 0x10;
         const byte Packet_ChunkIndex = 0x20;
@@ -566,8 +361,10 @@ namespace RiseOp.Services.Transfer
         internal long  EndByte;
         internal bool GetBitfield;
 
+        internal long CurrentPos; // temp var used to get d/l info
 
-        internal TransferRequest2()
+
+        internal TransferRequest()
         {
         }
 
@@ -589,9 +386,9 @@ namespace RiseOp.Services.Transfer
             }
         }
 
-        internal static TransferRequest2 Decode(G2Header root)
+        internal static TransferRequest Decode(G2Header root)
         {
-            TransferRequest2 tr = new TransferRequest2();
+            TransferRequest tr = new TransferRequest();
 
             G2Header child = new G2Header(root.Data);
 
@@ -627,21 +424,23 @@ namespace RiseOp.Services.Transfer
         }
     }
 
-    internal class TransferAck2 : G2Packet
+    internal class TransferAck : G2Packet
     {
-        const byte Packet_FileID = 0x10;
-        const byte Packet_Error = 0x20;
-        const byte Packet_StartByte = 0x30;
-        const byte Packet_Bitfield = 0x20;
+        const byte Packet_FileID    = 0x10;
+        const byte Packet_Error     = 0x20;
+        const byte Packet_Uninitialized = 0x30;
+        const byte Packet_StartByte = 0x40;
+        const byte Packet_Bitfield  = 0x50;
 
 
         internal ulong FileID;
         internal bool Error;
+        internal bool Uninitialized;
         internal long StartByte;
         internal byte[] Bitfield;
 
 
-        internal TransferAck2()
+        internal TransferAck()
         {
         }
 
@@ -652,8 +451,13 @@ namespace RiseOp.Services.Transfer
                 G2Frame ack = protocol.WritePacket(null, TransferPacket.Ack, null);
 
                 protocol.WritePacket(ack, Packet_FileID, BitConverter.GetBytes(FileID));
-                protocol.WritePacket(ack, Packet_Error, null);
                 protocol.WritePacket(ack, Packet_StartByte, BitConverter.GetBytes(StartByte));
+
+                if(Uninitialized)
+                    protocol.WritePacket(ack, Packet_Uninitialized, null);
+
+                if(Error)
+                    protocol.WritePacket(ack, Packet_Error, null);
 
                 if(Bitfield != null)
                     protocol.WritePacket(ack, Packet_Bitfield, Bitfield);
@@ -662,14 +466,17 @@ namespace RiseOp.Services.Transfer
             }
         }
 
-        internal static TransferAck2 Decode(G2Header root)
+        internal static TransferAck Decode(G2Header root)
         {
-            TransferAck2 ack = new TransferAck2();
+            TransferAck ack = new TransferAck();
 
             G2Header child = new G2Header(root.Data);
 
             while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
+                if (child.Name == Packet_Uninitialized)
+                    ack.Uninitialized = true;
+
                 if (child.Name == Packet_Error)
                     ack.Error = true;
 
@@ -695,4 +502,124 @@ namespace RiseOp.Services.Transfer
             return ack;
         }
     }
+
+
+    internal class TransferData : G2Packet
+    {
+        const byte Packet_FileID    = 0x10;
+        const byte Packet_StartByte = 0x20;
+        const byte Packet_Block     = 0x30;
+
+        internal ulong  FileID;
+        internal long   StartByte;
+        internal byte[] Block;
+
+
+        internal TransferData()
+        {
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame td = protocol.WritePacket(null, TransferPacket.Data, Block);
+
+                protocol.WritePacket(td, Packet_FileID, BitConverter.GetBytes(FileID));
+                protocol.WritePacket(td, Packet_StartByte, CompactNum.GetBytes(StartByte));
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static TransferData Decode(G2Header root)
+        {
+            TransferData td = new TransferData();
+
+            if (G2Protocol.ReadPayload(root))
+                td.Block = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
+
+            G2Protocol.ResetPacket(root);
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_FileID:
+                        td.FileID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_StartByte:
+                        td.StartByte = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+                }
+            }
+
+            return td;
+        }
+    }
+
+    internal class TransferStop : G2Packet
+    {
+        const byte Packet_FileID = 0x10;
+        const byte Packet_Retry = 0x20;
+
+
+        internal ulong  FileID;
+        internal bool Retry;
+
+        internal TransferStop() { }
+
+        internal TransferStop(ulong id, bool retry)
+        {
+            FileID = id;
+            Retry = retry;
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame stop = protocol.WritePacket(null, TransferPacket.Stop, null);
+
+                protocol.WritePacket(stop, Packet_FileID, BitConverter.GetBytes(FileID));
+
+                if(Retry)
+                    protocol.WritePacket(stop, Packet_Retry, null);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static TransferStop Decode(G2Header root)
+        {
+            TransferStop stop = new TransferStop();
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (child.Name == Packet_Retry)
+                    stop.Retry = true;
+
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_FileID:
+                        stop.FileID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+                }
+            }
+
+            return stop;
+        }
+    }
+
 }

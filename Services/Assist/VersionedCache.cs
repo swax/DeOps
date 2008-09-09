@@ -500,7 +500,7 @@ namespace RiseOp.Services.Assist
 
             try
             {
-                File.Move(path, GetFilePath(header));
+                File.Copy(path, GetFilePath(header), true);
             }
             catch { return; }
 

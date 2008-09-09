@@ -216,9 +216,6 @@ namespace RiseOp
 
         internal void AssignUploadSlots()
         {
-            //crit - call when upload of chunk is finished, 
-            // unset upload active, set -= 1 active transfers, do su-hash, update bitfield
-
             int activeTransfers = 0;
             OpCore next = null;
 

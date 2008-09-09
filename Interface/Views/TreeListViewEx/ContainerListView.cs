@@ -344,8 +344,11 @@ namespace RiseOp.Interface.TLVex
 		}
 
 		public void Remove(ContainerListViewItem item)
-		{
-			item.MouseDown -= new MouseEventHandler(OnMouseDown);
+        {
+            foreach (ContainerSubListViewItem sub in item.SubItems)
+                sub.Dispose();
+
+            item.MouseDown -= new MouseEventHandler(OnMouseDown);
 			List.Remove(item);
 		}
 
@@ -428,7 +431,7 @@ namespace RiseOp.Interface.TLVex
 
 	#region ContainerSubListViewItem classes
 	[DesignTimeVisible(false), TypeConverter("Lyquidity.Controls.ExtendedListViews.SubListViewItemConverter")]
-	public class ContainerSubListViewItem: ICloneable
+	public class ContainerSubListViewItem: ICloneable, IDisposable
 	{
 		public event MouseEventHandler MouseDown;
 
@@ -503,7 +506,15 @@ namespace RiseOp.Interface.TLVex
 		{
 			return (childControl == null ? text : childControl.ToString());
 		}
-	}
+
+        public void Dispose()
+        {
+            if (childControl != null)
+                childControl.Dispose();
+
+            childControl = null;
+        }
+    }
 
 	public class ContainerSubListViewItemCollection: CollectionBase
 	{
