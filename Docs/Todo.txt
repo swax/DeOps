@@ -172,10 +172,11 @@ summer release
 	multisource downloading 
 		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
 		right click to cancel, increase/decrease priority
-	live locations/chat
-	realignment
 	location redo
 	global buddy list - facilites invites
+	live locations/chat
+	realignment
+	
 	
 	web caching files?
 	implement upnp?

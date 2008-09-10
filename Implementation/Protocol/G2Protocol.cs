@@ -488,6 +488,70 @@ namespace RiseOp.Implementation.Protocol
         }
     }
 
+    internal static class CompactNum2
+    {
+        internal static byte[] GetBytes(long num)
+        {
+            if (sbyte.MinValue <= num && num <= sbyte.MaxValue)
+                return new byte[] { (byte)num };
+
+            else if (short.MinValue <= num && num <= short.MaxValue)
+                return BitConverter.GetBytes((short)num);
+
+            else if (int.MinValue <= num && num <= int.MaxValue)
+                return BitConverter.GetBytes((int)num);
+
+            else
+                return BitConverter.GetBytes(num);
+        }
+
+        internal static byte[] GetBytes(ulong num)
+        {
+            if (byte.MinValue <= num && num <= byte.MaxValue)
+                return new byte[] { (byte)num };
+
+            else if (ushort.MinValue <= num && num <= ushort.MaxValue)
+                return BitConverter.GetBytes((ushort)num);
+
+            else if (uint.MinValue <= num && num <= uint.MaxValue)
+                return BitConverter.GetBytes((uint)num);
+
+            else
+                return BitConverter.GetBytes(num);
+        }
+
+        internal static ulong ToUnsigned(byte[] data, int pos, int size)
+        {
+            if (size == 1)
+                return data[pos];
+
+            else if (size == 2)
+                return BitConverter.ToUInt16(data, pos);
+
+            else if (size == 4)
+                return BitConverter.ToUInt32(data, pos);
+
+            else
+                return BitConverter.ToUInt64(data, pos);
+        }
+
+        internal static long ToSigned(byte[] data, int pos, int size)
+        {
+            if (size == 1)
+                return (sbyte)data[pos];
+
+            else if (size == 2)
+                return BitConverter.ToInt16(data, pos);
+
+            else if (size == 4)
+                return BitConverter.ToInt32(data, pos);
+
+            else
+                return BitConverter.ToInt64(data, pos);
+        }
+
+
+    }
     internal static class CompactNum
     {
         internal static byte[] GetBytes(uint num)
@@ -512,6 +576,8 @@ namespace RiseOp.Implementation.Protocol
             else
                 return BitConverter.GetBytes(num);
         }
+
+
 
         internal static uint ToUInt32(byte[] data, int pos, int size)
         {

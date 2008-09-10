@@ -28,8 +28,19 @@ namespace RiseOp
 	{
 		internal Test()
         {
+            // compact num to/from bytes test
 
-            /*
+            // gen number pos / neg, 
+            // if shift bytes over 16 is the same, try again
+            // figure out how negative nums are represented in binary
+
+            
+            // gen rand byte/char/short/ushort/long/ulong pass into compact num function and checck
+            // also check maxes of values that they are converted correctly
+
+            //CompactNum.GetBytes(
+
+            /*  // bitarray to/from bytes test
              * Random rnd = new Random();
 
             for (int runs = 0; runs < 10000; runs++)

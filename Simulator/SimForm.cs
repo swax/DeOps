@@ -433,7 +433,7 @@ namespace RiseOp.Simulator
         private void Click_Transfers(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in ListInstances.SelectedItems)
-                new TransferView(item.Core.Transfers).Show(this);
+                new TransferView(item.Core.Transfers).Show();
         }
 
         private void Click_GlobalCrawler(object sender, EventArgs e)

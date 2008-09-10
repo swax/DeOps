@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
@@ -17,6 +18,8 @@ namespace RiseOp.Services.Transfer
         internal const byte Ping = 0x50;
         internal const byte Pong = 0x60;
         internal const byte Stop = 0x70;
+        internal const byte Partial = 0x80;
+
     }
 
     internal class FileDetails : G2Packet
@@ -624,4 +627,101 @@ namespace RiseOp.Services.Transfer
         }
     }
 
+    internal class TransferPartial : G2Packet
+    {
+        const byte Packet_Created   = 0x10;
+        const byte Packet_Details   = 0x20;
+        const byte Packet_Target    = 0x30;
+        const byte Packet_BitCount = 0x40;
+        const byte Packet_Bitfield  = 0x50;
+        const byte Packet_InternalSize = 0x60;
+        const byte Packet_ChunkSize = 0x70;
+
+        internal DateTime Created;
+        internal FileDetails Details;
+        internal ulong Target;
+        internal int BitCount;
+        internal BitArray Bitfield;
+        internal long InternalSize;
+        internal int ChunkSize;
+
+        internal TransferPartial() { }
+
+        internal TransferPartial(OpTransfer transfer)
+        {
+            Created = transfer.Created;
+            Details = transfer.Details;
+            Target = transfer.Target;
+            BitCount = transfer.LocalBitfield.Length;
+            Bitfield = transfer.LocalBitfield;
+            InternalSize = transfer.InternalSize;
+            ChunkSize = transfer.ChunkSize;
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            byte[] details = Details.Encode(protocol); // prevent protocol conflict
+
+            lock (protocol.WriteSection)
+            {
+                G2Frame partial = protocol.WritePacket(null, TransferPacket.Partial, null);
+
+                protocol.WritePacket(partial, Packet_Created, BitConverter.GetBytes(Created.ToBinary()));
+                protocol.WritePacket(partial, Packet_Details, details);
+                protocol.WritePacket(partial, Packet_Target, BitConverter.GetBytes(Target));
+                protocol.WritePacket(partial, Packet_BitCount, BitConverter.GetBytes(BitCount));
+                protocol.WritePacket(partial, Packet_Bitfield, Bitfield.ToBytes());
+                protocol.WritePacket(partial, Packet_InternalSize, BitConverter.GetBytes(InternalSize));
+                protocol.WritePacket(partial, Packet_ChunkSize, BitConverter.GetBytes(ChunkSize));
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static TransferPartial Decode(G2Header root)
+        {
+            TransferPartial partial = new TransferPartial();
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_Created:
+                        partial.Created = DateTime.FromBinary(BitConverter.ToInt64(child.Data, child.PayloadPos));
+                        break;
+
+                    case Packet_Details:
+                        partial.Details = FileDetails.Decode(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
+                        break;
+
+                    case Packet_Target:
+                        partial.Target = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_BitCount:
+                        partial.BitCount = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Bitfield:
+                        partial.Bitfield = Utilities.ToBitArray(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize), partial.BitCount);
+                        break;
+
+                    case Packet_InternalSize:
+                        partial.InternalSize = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_ChunkSize:
+                        partial.ChunkSize = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        break;
+                }
+            }
+
+            return partial;
+        }
+    }
 }

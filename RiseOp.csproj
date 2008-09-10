@@ -193,9 +193,6 @@
     <Compile Include="Services\Plan\PlanService.cs" />
     <Compile Include="Services\Profile\ProfileService.cs" />
     <Compile Include="Services\Storage\StorageService.cs" />
-    <None Include="Services\Transfer\TransferServiceOld.cs">
-      <SubType>Code</SubType>
-    </None>
     <Compile Include="Services\Transfer\BitfieldControl.cs">
       <SubType>UserControl</SubType>
     </Compile>

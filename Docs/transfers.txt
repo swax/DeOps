@@ -187,29 +187,41 @@ multi-source d/l
 		pending?
 	
 	bugs
-		count number of incomplete / recent active / not partial transfers, make that the min 15
 		
 		partial transfer saving
-		peer bandwidth limits, investigation?
-		global transfer progress
+			when transfer completed (removed), if in transfer dir, delete file
+			every 15 secs, save current optransfers to a partial info file, only if incomplete
+			on load, load partial info file, mark partial for removal on close
+				all otherm files in transfer dir deleted
+			if trasfer on a partial started, remove the mark
+			incompletes saved for 1 run
+			strat: keep active transfers between runs, but remove inactive transfers
+		
+		investigate transfers not being unloaded
+		sim clean command storage / transfers
+		
+		count number of incomplete / recent active / not partial transfers, make that the min 15
+			ensure partials are not counted as active
+			
+		if transfer stalled for more than a minute and other transfers are pending switch it out
+			how long is transfer stalled before it is moved back to pending?
+		
+		time out transfer request, use unique ids?, null on disconnect
 		
 		turn logging on/off
-	
+		peer bandwidth limits, investigation?
 		light comm overflow
+		revise compact num
 
-		investigate transfers not being unloaded
+		lan mode breakpoint?
+		search for anything int x, y and evaluate
 
 	testing
-		put hash into sim network view
-		if enabled each peer shows a file completed bar and percentage
+		
 		publish new file in storage at top of network
 		time how long it takes to distribute file across entire network
-		partials
 		
 		large random linked network, time how long file propagates, sim clean up to run test again quickly
-
-		generate random bitfields and determine network rarest
-		build operations to add/subtrant bitfields to determine rarest that local has
 
 		transfers work between 2 open, open/nat, 2 nat, 2 blocked, global proxy
 		5mb file on 8 peer network, peers limited in bandwidth, does multisource work

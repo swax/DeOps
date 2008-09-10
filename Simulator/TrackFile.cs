@@ -25,30 +25,37 @@ namespace RiseOp.Simulator
         private void TrackFile_Load(object sender, EventArgs e)
         {
             if (View.TrackHash != null)
-                HashBox.Text = Utilities.BytestoHex(View.TrackHash);
+                HashBox.Text = Utilities.ToBase64String(View.TrackHash);
 
             UpdateTrackButton();
         }
 
         private void TrackButton_Click(object sender, EventArgs e)
         {
+            View.TrackString = HashBox.Text;
             View.TrackHash = Utilities.FromBase64String(HashBox.Text);
             View.TrackHashID = BitConverter.ToUInt64(View.TrackHash, 0);
 
             UpdateTrackButton();
             
             View.OnUpdateView();
+
+            Close();
         }
 
         private void ClearButton_Click(object sender, EventArgs e)
         {
             View.TrackHash = null;
+            View.TrackHashID = 0;
+            View.TrackString = null;
 
             HashBox.Text = "";
 
             UpdateTrackButton();
 
             View.OnUpdateView();
+
+            Close();
         }
 
         private void HashBox_TextChanged(object sender, EventArgs e)

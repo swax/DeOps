@@ -287,8 +287,8 @@ namespace RiseOp.Services.Assist
 
 
                 string finalPath = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "VersionedFileHeaders");
-                File.Delete(finalPath);
-                File.Move(tempPath, finalPath);
+                File.Copy(tempPath, finalPath, true);
+                File.Delete(tempPath);
             }
             catch (Exception ex)
             {

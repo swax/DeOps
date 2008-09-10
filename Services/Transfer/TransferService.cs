@@ -197,6 +197,9 @@ namespace RiseOp.Services.Transfer
 
             OpTransfer transfer = Transfers[id];
 
+            if (transfer.Status == TransferStatus.Complete)
+                return null; 
+
             int active = 0;
             foreach (RemotePeer peer in transfer.Peers.Values)
                 if (DownloadPeers.ContainsKey(peer.RoutingID))
@@ -364,6 +367,92 @@ namespace RiseOp.Services.Transfer
                 NeedUploadWeight++;
 
             ActiveUploads = UploadPeers.Values.Count(p => p.Active != null);
+
+            // save partials every 20 seconds
+            if (Core.TimeNow.Second % 15 == 0)
+                SavePartials();
+        }
+
+        void SavePartials()
+        {
+            try
+            {
+                string tempPath = Core.GetTempPath();
+                CryptoStream crypto = IVCryptoStream.Save(tempPath, Core.User.Settings.FileKey);
+                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Write);
+
+                // write each incomplete transfer, from pending and transfers
+                Func<OpTransfer, bool> shouldSave = (t => t.SavePartial && t.Status == TransferStatus.Incomplete);
+
+                var save = Pending.Where(shouldSave).Concat(Transfers.Values.Where(shouldSave));
+
+                foreach (OpTransfer transfer in save)
+                    stream.WritePacket(new TransferPartial(transfer));
+
+                stream.Close();
+
+
+                string finalPath = TransferPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "PartialFileHeaders");
+                File.Copy(tempPath, finalPath, true);
+                File.Delete(tempPath);
+            }
+            catch (Exception ex)
+            {
+                Core.Network.UpdateLog("Transfers", "Error saving partials " + ex.Message);
+            }
+        }
+
+        void LoadPartials()
+        {
+            // if transfer found in start download
+            // set args and endevent for transfer (if endevent is null, TEST)
+            // load sub hashes
+
+            // how do clean up commands in others services not delete the primary header file
+
+            // after 10 mintues of network established, set save partial of those loaded from file to false
+
+            try
+            {
+                string path = TransferPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "PartialFileHeaders");
+
+                if (!File.Exists(path))
+                    return;
+
+                CryptoStream crypto = IVCryptoStream.Load(path, Core.User.Settings.FileKey);
+                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
+
+                G2Header root = null;
+
+                while (stream.ReadPacket(ref root))
+                    if (root.Name == TransferPacket.Partial)
+                    {
+                        TransferPartial partial = TransferPartial.Decode(root);
+                             
+                        /*
+
+                        internal bool SavePartial = true;
+
+
+                        byte[] Subhashes;
+                              
+                         */
+                        OpTransfer transfer = new OpTransfer(this, path, partial.Target, partial.Details, TransferStatus.Incomplete, null, null);
+                        
+                        transfer.Created = partial.Created;
+                        transfer.InternalSize = partial.InternalSize;
+                        transfer.ChunkSize = partial.ChunkSize;
+                        transfer.LocalBitfield = partial.Bitfield;
+
+                        // load sub hashes?
+                    }
+
+                stream.Close();
+            }
+            catch (Exception ex)
+            {
+                Core.Network.UpdateLog("Transfers", "Error loading partials " + ex.Message);
+            }
         }
 
         void Search_Local(ulong key, byte[] parameters, List<byte[]> results)
@@ -1299,6 +1388,7 @@ namespace RiseOp.Services.Transfer
         internal EndDownloadHandler EndEvent;
 
         internal bool Searching;
+        internal bool SavePartial = true;
         internal Dictionary<ulong, RemotePeer> Peers = new Dictionary<ulong, RemotePeer>(); // routing id, peer
 
         internal BitArray LocalBitfield;

@@ -10,8 +10,10 @@ using System.Windows.Forms;
 
 using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
+using RiseOp.Interface.Views;
 using RiseOp.Implementation;
 using RiseOp.Implementation.Transport;
+
 
 namespace RiseOp.Services.Transfer
 {
@@ -83,20 +85,18 @@ namespace RiseOp.Services.Transfer
 
             TreeListNode node = TransferList.GetNodeAt(e.Location) as TreeListNode;
 
-            if (item == null)
+            if (node == null || node.GetType() != typeof(TransferNode))
                 return;
 
             ContextMenuStripEx menu = new ContextMenuStripEx();
 
-            if (node.GetType() == typeof(TransferNode))
-            {
-                
-            }
+            TransferNode transfer = node as TransferNode;
 
-            else if (node.GetType() == typeof(PeerNode))
+            menu.Items.Add(new ToolStripMenuItem("Copy Hash to Clipboaard", null, (s, o) =>
             {
-
-            }
+                if (Service.Transfers.ContainsKey(transfer.FileID))
+                    Clipboard.SetText(Utilities.ToBase64String(Service.Transfers[transfer.FileID].Details.Hash));
+            }));
 
             menu.Show(TransferList, e.Location);
         }

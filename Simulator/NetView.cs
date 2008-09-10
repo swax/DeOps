@@ -1,9 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
@@ -57,9 +59,11 @@ namespace RiseOp.Simulator
         Dictionary<ulong, Point> NodePoints = new Dictionary<ulong, Point>();
         List<Point> TrackPoints = new List<Point>();
         List<Point> TransferPoints = new List<Point>();
+        Dictionary<ulong, BitArray> NodeBitfields = new Dictionary<ulong, BitArray>();
 
         G2Protocol Protocol = new G2Protocol();
 
+        internal string TrackString;
         internal byte[] TrackHash;
         internal ulong TrackHashID;
 
@@ -161,20 +165,31 @@ namespace RiseOp.Simulator
                                 networks[core.UserID] = core.Network;
                     });
             }
-        
+
+
+            NodeBitfields.Clear();
 
             foreach (DhtNetwork network in networks.Values)
             {
+                ulong userID = network.Core.UserID;
                 int nodeRadius = (network.Core.Firewall == FirewallType.Open) ? maxRadius - 30 : maxRadius;
 
-                NodePoints[network.Local.UserID] = GetCircumPoint(centerPoint, nodeRadius, IDto32(network.Local.UserID));
+                NodePoints[userID] = GetCircumPoint(centerPoint, nodeRadius, IDto32(userID));
 
                 if (TrackHash != null)
                 {
                     if (IsTracked(network.Core))
-                        TrackPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.Local.UserID)));
-                    else if (IsTransferring(network.Core))
-                        TransferPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(network.Local.UserID)));
+                        TrackPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(userID)));
+
+             
+                    foreach (OpTransfer transfer in network.Core.Transfers.Transfers.Values)
+                        if (Utilities.MemCompare(transfer.Details.Hash, TrackHash))
+                        {
+                            TransferPoints.Add(GetCircumPoint(centerPoint, nodeRadius + 7, IDto32(userID)));
+
+                            if(transfer.LocalBitfield != null)  
+                                NodeBitfields[userID] = transfer.LocalBitfield;
+                        }
                 }
             }
 
@@ -216,18 +231,48 @@ namespace RiseOp.Simulator
 
             int barwidth = 150;
 
-            foreach (Rectangle box in NodeBoxes.Values)
+            MissingBrush.Color = Color.White;
+            int[] popularity = null;
+            // popularity is nodes who have the transfer loaded (up/down)
+            foreach(ulong user in NodeBitfields.Keys)
             {
+                BitArray bitfield = NodeBitfields[user];
+                Rectangle box = NodeBoxes[user];
+
+                // determine popularity
+                if (popularity == null)
+                    popularity = new int[bitfield.Length];
+
+                for (int i = 0; i < bitfield.Length; i++)
+                    if (bitfield[i])
+                        popularity[i]++;
+                 
+                // draw bar
                 int x = (box.X < width / 2) ? box.X + box.Width + 1 : // right sie
                                               box.X - 1 - barwidth; // right side
 
                 Rectangle bar = new Rectangle(x, box.Y, barwidth, box.Height);
-                
-                buffer.FillRectangle(TransferMissing, bar);
-                buffer.DrawRectangle(TransferBorder, bar);
+
+                DrawBitfield(buffer, bar, bitfield);
             }
 
             // draw total completed bar in bottom right
+            if (popularity != null)
+            {
+                int max = popularity.Max();
+
+                Rectangle totalBox = new Rectangle(width - 300 - 5, height - 16 - 5, 300, 16);
+                buffer.FillRectangle(CompletedBrush, totalBox);
+
+                for (int i = 0; i < popularity.Length; i++)
+                {
+                    int brightness = 255 - popularity[i] * 255 / max; // high brighness -> white -> less people have file
+                    MissingBrush.Color = Color.FromArgb(brightness, brightness, 255);
+                    DrawPiece(buffer, popularity.Length, totalBox, i, i + 1);
+                }
+
+                buffer.DrawRectangle(BorderPen, totalBox);
+            }
 
             // mark selected
             if (SelectedID != 0 && NodeBoxes.ContainsKey(SelectedID))
@@ -247,13 +292,59 @@ namespace RiseOp.Simulator
             if(OpID == 0)
                 buffer.DrawString(Sim.WebCacheHits + " WebCache Hits", TahomaFont, BlackBrush, new PointF(3, 25));
 
+            if (TrackString != null)
+                buffer.DrawString("Tracking: " + TrackString, TahomaFont, BlackBrush, 3, height - 20);
+            
             // Copy buffer to display
             e.Graphics.DrawImage(DisplayBuffer, e.ClipRectangle.X, e.ClipRectangle.Y);
 
         }
 
-        SolidBrush TransferMissing = new SolidBrush(Color.White);
-        Pen TransferBorder = new Pen(Color.Black);
+
+        SolidBrush CompletedBrush = new SolidBrush(Color.CornflowerBlue);
+        SolidBrush MissingBrush = new SolidBrush(Color.White);
+        Pen BorderPen = new Pen(Color.Black);
+
+        private void DrawBitfield(Graphics buffer, Rectangle bar, BitArray bitfield)
+        {
+            buffer.FillRectangle(CompletedBrush, bar);
+
+            // cut out missing pieces, so worst case they are visible
+            // opposed to other way where they'd be hidden
+
+            int start = -1;
+
+            for (int i = 0; i < bitfield.Length; i++)
+                // has
+                if (bitfield[i])
+                {
+                    if (start != -1)
+                    {
+                        DrawPiece(buffer, bitfield.Length, bar, start, i);
+                        start = -1;
+                    }
+                }
+                // missing
+                else if (start == -1)
+                    start = i;
+
+            // draw last missing piece
+            if (start != -1)
+                DrawPiece(buffer, bitfield.Length, bar, start, bitfield.Length);
+
+            buffer.DrawRectangle(BorderPen, bar);
+        }
+
+
+        private void DrawPiece(Graphics buffer, int bits, Rectangle box, float start, float end)
+        {
+            float scale = (float)box.Width / (float)bits;
+
+            int x1 = (int)(start * scale);
+            int x2 = (int)(end * scale);
+
+            buffer.FillRectangle(MissingBrush, box.X + x1, box.Y, x2 - x1, box.Height);
+        }
 
         private bool IsTracked(OpCore core)
         {
@@ -331,15 +422,6 @@ namespace RiseOp.Simulator
                 });
 
             return found;
-        }
-
-        private bool IsTransferring(OpCore core)
-        {
-            foreach (OpTransfer transfer in core.Transfers.Transfers.Values)
-                if (Utilities.MemCompare(transfer.Details.Hash, TrackHash))
-                    return true;
-
-            return false;
         }
 
         Point GetCircumPoint(Point center, int rad, uint position)
@@ -651,14 +733,14 @@ namespace RiseOp.Simulator
         {
             LegendForm form = new LegendForm();
 
-            form.Show(this);
+            form.Show();
         }
 
         private void TrackMenuItem_Click(object sender, EventArgs e)
         {
             TrackFile form = new TrackFile(this);
 
-            form.Show(this);
+            form.Show();
 
         }
     }
