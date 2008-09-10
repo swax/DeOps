@@ -85,12 +85,12 @@ namespace RiseOp.Services.Transfer
                 Directory.CreateDirectory(TransferPath);
 
                 //crit - load partials, but dont begin transferring them, keep on standby
-                /*
+                
                 string[] files = Directory.GetFiles(TransferPath);
 
                 foreach (string filepath in files)
                     try { File.Delete(filepath); }
-                    catch { }*/
+                    catch { }
 
                 // on remove transfer, if in transfers dir, delete it as well
 
@@ -157,36 +157,79 @@ namespace RiseOp.Services.Transfer
             return ;
         }
 
-        internal void CancelDownload(uint id, byte[] hash, long size)
+        internal void CancelDownload(uint service, byte[] hash, long size)
         {
             if (Core.InvokeRequired)
-                Debug.Assert(false);
-
-            /*FileDownload target = null;
-
-            foreach (FileDownload download in DownloadMap.Values)
-                if (download.Details.Service == id &&
-                   download.Details.Size == size &&
-                   Utilities.MemCompare(download.Details.Hash, hash))
-                {
-                    target = download;
-                    break;
-                }
-
-            if (target != null)
             {
-                if (Pending.Contains(target.ID))
-                    Pending.Remove(target.ID);
+                Core.RunInCoreBlocked(delegate() { CancelDownload(service, hash, size); });
+                return;
+            }
 
-                if (Active.Contains(target.ID))
-                    Active.Remove(target.ID);
+            ulong id = OpTransfer.GetFileID(service, hash, size);
 
-                DownloadMap.Remove(target.ID);
-            }*/
+            foreach (OpTransfer pending in (from p in Pending 
+                                             where p.FileID == id 
+                                             select p).ToArray())
+            {
+                Pending.Remove(pending);
+                return;
+            }
+
+            if (!Transfers.ContainsKey(id))
+                return;
+
+            OpTransfer transfer = Transfers[id];
+
+            transfer.Dispose();
+
+            Transfers.Remove(id);
         }
 
-        internal string GetStatus(uint id, byte[] hash, long size)
+        internal string GetDownloadStatus(uint service, byte[] hash, long size)
         {
+            ulong id = OpTransfer.GetFileID(service, hash, size);
+
+            if ((from p in Pending where p.FileID == id select p).Count() > 0)
+                return "Pending";
+
+            if (!Transfers.ContainsKey(id))
+                return null;
+
+            OpTransfer transfer = Transfers[id];
+
+            int active = 0;
+            foreach (RemotePeer peer in transfer.Peers.Values)
+                if (DownloadPeers.ContainsKey(peer.RoutingID))
+                    if (DownloadPeers[peer.RoutingID].Requests.ContainsKey(transfer.FileID))
+                        active++;
+
+            long progress = transfer.GetProgress() * 100 / transfer.Details.Size;
+
+            if (progress == 0 && transfer.Searching)
+                return "Searching...";
+
+            if (progress == 0 && transfer.Peers.Count == 0)
+                return "No sources found";
+
+            string text = "";
+
+            if (active == 0)
+            {
+                text = progress + "% complete, " + transfer.Peers.Count + " source";
+                return (transfer.Peers.Count != 1) ? text + "s" : text;
+            }
+
+            text = "Downloading, " + progress + "% complete from " + active + " of " + transfer.Peers.Count + " source";
+            return (transfer.Peers.Count != 1) ? text + "s" : text;
+
+            // get 
+
+            // for each peer
+
+            // see if its in download 
+
+            // 25% complete, no sources active
+
             /*FileDownload target = null;
 
             foreach (FileDownload download in DownloadMap.Values)
@@ -222,7 +265,7 @@ namespace RiseOp.Services.Transfer
                 return "Connecting";
             }*/
 
-            return null;
+
         }
 
         void Core_SecondTimer()
@@ -1078,7 +1121,7 @@ namespace RiseOp.Services.Transfer
 
             if(!Transfers.ContainsKey(data.FileID))
             {
-                session.SendData(ServiceID, 0, new TransferStop(data.FileID, false), true);
+                Send_Stop(session, data, false);
                 return;
             }
 
@@ -1086,7 +1129,7 @@ namespace RiseOp.Services.Transfer
             if (!DownloadPeers.ContainsKey(client.RoutingID) ||
                 !DownloadPeers[client.RoutingID].Requests.ContainsKey(data.FileID))
             {
-                session.SendData(ServiceID, 0, new TransferStop(data.FileID, true), true);
+                Send_Stop(session, data, true);
                 return;
             }
 
@@ -1098,7 +1141,7 @@ namespace RiseOp.Services.Transfer
                 data.Block == null ||
                 data.StartByte + data.Block.Length > request.EndByte)
             {
-                session.SendData(ServiceID, 0, new TransferStop(data.FileID, true), true);
+                Send_Stop(session, data, true);
                 return;
             }
 
@@ -1107,14 +1150,14 @@ namespace RiseOp.Services.Transfer
             
             if(transfer.LocalBitfield == null)
             {
-                session.SendData(ServiceID, 0, new TransferStop(data.FileID, true), true);
+                Send_Stop(session, data, true);
                 return;
             }
 
             // write data
             if (!transfer.WriteBlock(data.StartByte, data.Block))
             {
-                session.SendData(ServiceID, 0, new TransferStop(data.FileID, false), true);
+                Send_Stop(session, data, false);
                 return;
             }
             
@@ -1196,26 +1239,20 @@ namespace RiseOp.Services.Transfer
             }
         }
 
+        private void Send_Stop(RudpSession session, TransferData data, bool retry)
+        {
+            TransferStop stop = new TransferStop();
+            stop.FileID = data.FileID;
+            stop.StartByte = data.StartByte;
+            stop.Retry = retry;
+
+            session.SendData(ServiceID, 0, stop, true);
+        }
+
         void Receive_Stop(RudpSession session, TransferStop stop)
         {
-            /*
-             * acks should just be resopnse to request, not triggered by data error, use diff packet, or just close connection
-                stop transfer packet
-
-                on receive send new request, ignore further stop transfers, until the next ack is received
-                acks only sent in response to transfer requests now
-
-                timeout transfer after 10 seconds waiting after request sent
-             */
-
-
-            // find transfer, call stop upload
-
-            // call assign transfer
-
-            // set peer dataError, if already set, ignore
-
-            // reset dataError only when ack comes in (signaling all bad data packets have been received)
+            // 1 request should result in 1 ack, if desynched problems happen
+            // stop packet signals we dont need the data packets your sending, try again
 
             DhtClient client = new DhtClient(session.UserID, session.ClientID);
 
@@ -1229,6 +1266,12 @@ namespace RiseOp.Services.Transfer
 
             RemotePeer peer = UploadPeers[id].Active;
 
+            // if we already sent a new request, and this stop is for a previous chunk, ignore
+            if (peer.LastRequest == null ||
+                stop.StartByte < peer.LastRequest.StartByte || peer.LastRequest.EndByte < stop.StartByte)
+                return;
+
+            // reset dataError only when ack comes in (signaling all bad data packet stops have been received)
             if (peer.DataError)
                 return;
 
@@ -1240,19 +1283,6 @@ namespace RiseOp.Services.Transfer
 
             Core.Context.AssignUploadSlots();
         }
-
-        /*private void Send_ProblemAck(RudpSession session, ulong id, bool tryAgain)
-        {
-            TransferAck ack = new TransferAck();
-            ack.FileID = id;
-
-            if (tryAgain)
-                ack.StartByte = -1;
-            else
-                ack.Error = true;
-
-            session.SendData(ServiceID, 0, ack, true);
-        }*/
     }
 
     enum TransferStatus { Empty, Incomplete, Complete }; // order important used for selecting next piece to send
@@ -1272,7 +1302,6 @@ namespace RiseOp.Services.Transfer
         internal Dictionary<ulong, RemotePeer> Peers = new Dictionary<ulong, RemotePeer>(); // routing id, peer
 
         internal BitArray LocalBitfield;
-        string DebugName { get { return Utilities.BytestoHex(Details.Hash).Substring(0, 6); } }
         string DebugBitfield
         {
             get
@@ -1324,9 +1353,14 @@ namespace RiseOp.Services.Transfer
 
         static internal ulong GetFileID(FileDetails details)
         {
-            long key = BitConverter.ToInt64(details.Hash, 0);
+            return GetFileID(details.Service, details.Hash, details.Size);
+        }
 
-            return (ulong)(key ^ details.Size);
+        static internal ulong GetFileID(uint service, byte[] hash, long size)
+        {
+            long key = BitConverter.ToInt64(hash, 0);
+
+            return (ulong)(key ^ size ^ service);
         }
 
         internal RemotePeer AddPeer(DhtClient client)
@@ -1577,7 +1611,7 @@ namespace RiseOp.Services.Transfer
 
         internal int PingAttempts;
 
-        internal string DebugDownload = "";
+        internal string DebugDownload = ""; //crit - switch logs on / off
         internal string DebugUpload = "";
 
         internal bool DataError;

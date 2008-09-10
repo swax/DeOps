@@ -2285,7 +2285,7 @@ namespace RiseOp.Services.Storage
 
                 item.UpdateOverlay();
 
-                if (!item.IsFolder && Storages.FileStatus((StorageFile)item.Details) != null)
+                if (!item.IsFolder && Storages.DownloadStatus((StorageFile)item.Details) != null)
                 {
                     item.Overlays.Add(2);
                     WatchTransfers = true;

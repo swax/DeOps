@@ -24,16 +24,11 @@ namespace RiseOp
     }
 
 
-
-
-	/// <summary>
-	/// Summary description for Tests.
-	/// </summary>
 	internal class Test
 	{
 		internal Test()
         {
-            // test serializing Bitarray
+
             /*
              * Random rnd = new Random();
 

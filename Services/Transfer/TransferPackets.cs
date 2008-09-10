@@ -567,19 +567,16 @@ namespace RiseOp.Services.Transfer
     internal class TransferStop : G2Packet
     {
         const byte Packet_FileID = 0x10;
-        const byte Packet_Retry = 0x20;
+        const byte Packet_StartByte = 0x20;
+        const byte Packet_Retry = 0x30;
 
 
         internal ulong  FileID;
+        internal long StartByte;
         internal bool Retry;
 
         internal TransferStop() { }
 
-        internal TransferStop(ulong id, bool retry)
-        {
-            FileID = id;
-            Retry = retry;
-        }
 
         internal override byte[] Encode(G2Protocol protocol)
         {
@@ -588,6 +585,7 @@ namespace RiseOp.Services.Transfer
                 G2Frame stop = protocol.WritePacket(null, TransferPacket.Stop, null);
 
                 protocol.WritePacket(stop, Packet_FileID, BitConverter.GetBytes(FileID));
+                protocol.WritePacket(stop, Packet_FileID, BitConverter.GetBytes(StartByte));
 
                 if(Retry)
                     protocol.WritePacket(stop, Packet_Retry, null);
@@ -614,6 +612,10 @@ namespace RiseOp.Services.Transfer
                 {
                     case Packet_FileID:
                         stop.FileID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_StartByte:
+                        stop.StartByte = BitConverter.ToInt64(child.Data, child.PayloadPos);
                         break;
                 }
             }

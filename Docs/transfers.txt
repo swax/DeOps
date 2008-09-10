@@ -189,16 +189,15 @@ multi-source d/l
 	bugs
 		count number of incomplete / recent active / not partial transfers, make that the min 15
 		
-		storage transfer controls
 		partial transfer saving
-		peer bandwidth
+		peer bandwidth limits, investigation?
 		global transfer progress
 		
 		turn logging on/off
 	
 		light comm overflow
 
-		transfers not being unloaded
+		investigate transfers not being unloaded
 
 	testing
 		put hash into sim network view
@@ -206,6 +205,8 @@ multi-source d/l
 		publish new file in storage at top of network
 		time how long it takes to distribute file across entire network
 		partials
+		
+		large random linked network, time how long file propagates, sim clean up to run test again quickly
 
 		generate random bitfields and determine network rarest
 		build operations to add/subtrant bitfields to determine rarest that local has

@@ -8,11 +8,12 @@ using System.Text;
 using System.Windows.Forms;
 
 using RiseOp.Services;
-using RiseOp.Services.Trust;
-using RiseOp.Services.Profile;
-using RiseOp.Services.Mail;
 using RiseOp.Services.Board;
+using RiseOp.Services.Mail;
+using RiseOp.Services.Profile;
+using RiseOp.Services.Storage;
 using RiseOp.Services.Transfer;
+using RiseOp.Services.Trust;
 
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
@@ -33,6 +34,7 @@ namespace RiseOp.Simulator
 
         Bitmap DisplayBuffer;
         bool Redraw;
+        bool ReInitBuffer;
 
         Pen BluePen  = new Pen(Color.LightBlue, 1);
         Pen TrafficPen  = new Pen(Color.WhiteSmoke, 1);
@@ -59,6 +61,7 @@ namespace RiseOp.Simulator
         G2Protocol Protocol = new G2Protocol();
 
         internal byte[] TrackHash;
+        internal ulong TrackHashID;
 
         ToolTip NodeTip = new ToolTip();
 
@@ -106,14 +109,17 @@ namespace RiseOp.Simulator
             Redraw = true;
             Invalidate();
         }
-
+        
         private void NetView_Paint(object sender, PaintEventArgs e)
         {
-            if (ClientSize.Width == 0 || ClientSize.Height == 0)
-                return;
+            int width = e.ClipRectangle.Width;
+            int height = e.ClipRectangle.Height;
 
-            if (DisplayBuffer == null)
-                DisplayBuffer = new Bitmap(ClientSize.Width, ClientSize.Height);
+            if (width == 0 || height == 0)
+                return;
+            
+            if (DisplayBuffer == null || ReInitBuffer)
+                DisplayBuffer = new Bitmap(width, height);
 
             if (!Redraw)
             {
@@ -129,10 +135,10 @@ namespace RiseOp.Simulator
             buffer.SmoothingMode = SmoothingMode.AntiAlias;
 
             // calc radii
-            Point centerPoint = new Point(ClientSize.Width / 2, ClientSize.Height / 2);
+            Point centerPoint = new Point(width / 2, height / 2);
 
-            int maxRadius = (ClientSize.Height > ClientSize.Width) ? ClientSize.Width / 2 : ClientSize.Height / 2;
-            maxRadius -= 5;
+            int maxRadius = (height > width) ? width / 2 : height / 2;
+            maxRadius -= 15;
 
             // get node points
             NodePoints.Clear();
@@ -208,6 +214,21 @@ namespace RiseOp.Simulator
             foreach (Point point in TransferPoints)
                 buffer.FillEllipse(PurpleBrush, GetBoundingBox(point, 3));
 
+            int barwidth = 150;
+
+            foreach (Rectangle box in NodeBoxes.Values)
+            {
+                int x = (box.X < width / 2) ? box.X + box.Width + 1 : // right sie
+                                              box.X - 1 - barwidth; // right side
+
+                Rectangle bar = new Rectangle(x, box.Y, barwidth, box.Height);
+                
+                buffer.FillRectangle(TransferMissing, bar);
+                buffer.DrawRectangle(TransferBorder, bar);
+            }
+
+            // draw total completed bar in bottom right
+
             // mark selected
             if (SelectedID != 0 && NodeBoxes.ContainsKey(SelectedID))
             {
@@ -227,17 +248,24 @@ namespace RiseOp.Simulator
                 buffer.DrawString(Sim.WebCacheHits + " WebCache Hits", TahomaFont, BlackBrush, new PointF(3, 25));
 
             // Copy buffer to display
-            e.Graphics.DrawImage(DisplayBuffer, 0, 0);
+            e.Graphics.DrawImage(DisplayBuffer, e.ClipRectangle.X, e.ClipRectangle.Y);
 
         }
+
+        SolidBrush TransferMissing = new SolidBrush(Color.White);
+        Pen TransferBorder = new Pen(Color.Black);
 
         private bool IsTracked(OpCore core)
         {
             bool found = false;
 
-            BoardService boards = core.GetService("Board") as BoardService;
-            MailService mail = core.GetService("Mail") as MailService;
-            ProfileService profiles = core.GetService("Profile") as ProfileService;
+        
+            // storage
+            StorageService storage = core.GetService("Storage") as StorageService;
+            
+            if (!found && storage != null)
+                if (storage.FileMap.SafeContainsKey(TrackHashID))
+                    found = true;
 
             // link
             if(!found)
@@ -245,20 +273,30 @@ namespace RiseOp.Simulator
                 {
                     foreach (OpTrust trust in core.Trust.TrustMap.Values)
                         if (trust.Loaded && Utilities.MemCompare(trust.File.Header.FileHash, TrackHash))
+                        {
                             found = true;
+                            break;
+                        }
                 });
 
             // profile
+            ProfileService profiles = core.GetService("Profile") as ProfileService;
+
             if (!found && profiles != null)
                 profiles.ProfileMap.LockReading(delegate()
                 {
                     foreach (OpProfile profile in profiles.ProfileMap.Values)
                         if (Utilities.MemCompare(profile.File.Header.FileHash, TrackHash))
-                            found = true ;
+                        {
+                            found = true;
+                            break;
+                        }
                 });
 
             // mail
-            if (mail != null)
+            MailService mail = core.GetService("Mail") as MailService;
+
+            if (!found && mail != null)
             {
                 foreach (CachedPending pending in mail.PendingMap.Values)
                     if (Utilities.MemCompare(pending.Header.FileHash, TrackHash))
@@ -267,20 +305,29 @@ namespace RiseOp.Simulator
                 foreach (List<CachedMail> list in mail.MailMap.Values)
                     foreach (CachedMail cached in list)
                         if (Utilities.MemCompare(cached.Header.FileHash, TrackHash))
-                            return true;
+                        {
+                            found = true;
+                            break;
+                        }
             }
 
             // board
+            BoardService boards = core.GetService("Board") as BoardService;
+
             if (!found && boards != null)
                 boards.BoardMap.LockReading(delegate()
                 {
                     foreach (OpBoard board in boards.BoardMap.Values)
-                        board.Posts.LockReading(delegate()
-                        {
-                            foreach (OpPost post in board.Posts.Values)
-                                if (Utilities.MemCompare(post.Header.FileHash, TrackHash))
-                                    found = true;
-                        });
+                        if (!found)
+                            board.Posts.LockReading(delegate()
+                            {
+                                foreach (OpPost post in board.Posts.Values)
+                                    if (Utilities.MemCompare(post.Header.FileHash, TrackHash))
+                                    {
+                                        found = true;
+                                        break;
+                                    }
+                            });
                 });
 
             return found;
@@ -307,24 +354,17 @@ namespace RiseOp.Simulator
 
         private void NetView_Resize(object sender, EventArgs e)
         {
-            if (ClientSize.Width > 0 && ClientSize.Height > 0)
+            if (Width > 0 && Height > 0)
             {
-                DisplayBuffer = new Bitmap(ClientSize.Width, ClientSize.Height);
+                ReInitBuffer = true;
                 Redraw = true;
                 Invalidate();
             }
         }
 
-        // needs to be optimized, also used in graph function
         uint IDto32(UInt64 id)
         {
-            uint retVal = 0;
-
-            for (int i = 0; i < 32; i++)
-                if (Utilities.GetBit(id, i) == 1)
-                    retVal |= ((uint)1) << (31 - i);
-
-            return retVal;
+            return (uint)(id >> 32);
         }
 
         Rectangle GetBoundingBox(Point center, int rad)

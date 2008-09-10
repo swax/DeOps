@@ -33,6 +33,7 @@ namespace RiseOp.Simulator
         private void TrackButton_Click(object sender, EventArgs e)
         {
             View.TrackHash = Utilities.FromBase64String(HashBox.Text);
+            View.TrackHashID = BitConverter.ToUInt64(View.TrackHash, 0);
 
             UpdateTrackButton();
             

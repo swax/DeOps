@@ -53,6 +53,7 @@ namespace RiseOp.Services.Transfer
             toggleColumnHeader1.Text = "Details";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader1.Visible = true;
+            toggleColumnHeader1.Width = 438;
             toggleColumnHeader2.Hovered = false;
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
@@ -83,6 +84,7 @@ namespace RiseOp.Services.Transfer
             this.TransferList.StateImageList = null;
             this.TransferList.TabIndex = 1;
             this.TransferList.Text = "treeListViewEx2";
+            this.TransferList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.TransferList_MouseClick);
             // 
             // TransferView
             // 

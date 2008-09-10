@@ -698,7 +698,7 @@ namespace RiseOp.Services.Storage
                     }
                     else
                     {
-                        string status = Storages.FileStatus(file);
+                        string status = Storages.DownloadStatus(file);
 
                         if (status == null)
                             html.Replace("<?=next_menu_row?>", GetMenuRow("change.download." + row.ID.ToString(), "Download", ImgDownload));
@@ -843,7 +843,7 @@ namespace RiseOp.Services.Storage
                     }
                     else
                     {
-                        string status = Storages.FileStatus(file);
+                        string status = Storages.DownloadStatus(file);
 
                         if (status == null)
                             html.Replace("<?=next_menu_row?>", GetMenuRow("integrate.download." + row.ID.ToString(), "Download", ImgDownload));
@@ -955,7 +955,7 @@ namespace RiseOp.Services.Storage
                         }
                         else
                         {
-                            string status = Storages.FileStatus(file);
+                            string status = Storages.DownloadStatus(file);
 
                             if (status == null)
                                 html.Replace("<?=next_menu_row?>", GetMenuRow("history.download." + i.ToString(), "Download", ImgDownload));
@@ -1298,10 +1298,7 @@ namespace RiseOp.Services.Storage
 
             if (parts[1] == "dlcancel")
             {
-                ParentView.Core.RunInCoreBlocked(delegate() 
-                {
-                    ParentView.Core.Transfers.CancelDownload(Storages.ServiceID, file.Hash, file.Size);
-                });
+                ParentView.Core.Transfers.CancelDownload(Storages.ServiceID, file.Hash, file.Size);
 
                 transferChange = true;
             }
@@ -1354,7 +1351,7 @@ namespace RiseOp.Services.Storage
 
             for (int i = 0; i < StatusList.Count; i++)
             {
-                string status = Storages.FileStatus(StatusList[i]);
+                string status = Storages.DownloadStatus(StatusList[i]);
 
                 if (status == null)
                 {

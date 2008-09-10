@@ -75,6 +75,31 @@ namespace RiseOp.Services.Transfer
 
             TransferList.Invalidate();
         }
+
+        private void TransferList_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right)
+                return;
+
+            TreeListNode node = TransferList.GetNodeAt(e.Location) as TreeListNode;
+
+            if (item == null)
+                return;
+
+            ContextMenuStripEx menu = new ContextMenuStripEx();
+
+            if (node.GetType() == typeof(TransferNode))
+            {
+                
+            }
+
+            else if (node.GetType() == typeof(PeerNode))
+            {
+
+            }
+
+            menu.Show(TransferList, e.Location);
+        }
     }
 
     internal class TransferNode : TreeListNode

@@ -262,13 +262,7 @@ namespace RiseOp.Interface.Tools
 
 		uint IDto32(UInt64 id)
 		{
-			uint retVal = 0;
-
-			for(int i = 0; i < 32; i++)
-				if( Utilities.GetBit(id, i) == 1)
-					retVal |= ((uint) 1) << (31 - i);
-
-			return retVal;
+            return (uint)(id >> 32);
 		}
 
     }

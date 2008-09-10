@@ -941,11 +941,14 @@ namespace RiseOp.Services.Storage
             return false;
         }
 
-        internal string FileStatus(StorageFile file)
+        internal string DownloadStatus(StorageFile file)
         {
             // returns null if file not being handled by transfer component
 
-            return Core.Transfers.GetStatus(ServiceID, file.Hash, file.Size);
+            if (file.Hash == null) // happens if file is being added to storage
+                return null;
+
+            return Core.Transfers.GetDownloadStatus(ServiceID, file.Hash, file.Size);
         }
 
         internal bool IsFileUnlocked(ulong dht, uint project, string path, StorageFile file, bool history)
