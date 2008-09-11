@@ -157,7 +157,7 @@ multi-source d/l
 		send 'going offline' to hosts in mesh
 		save partial transfers
 		do not auto-download on restart - but keep in case requested again
-		keep max 20 partials or 50MB, remove oldest over limit
+		partials are not saved a second time unless utilized during next run
 	
 	how to know bandwidth is available to send? set a mark at first, and then auto-figure out
 		max upload rate hit when transfers at full speed
@@ -187,36 +187,55 @@ multi-source d/l
 		pending?
 	
 	bugs
+
+		dont keep active list, just count local empty / incomplete in transfers
+		
+		if havent received data for 3 mins, move transfer to back of pending (cycle quick back to active)
+			when moving transfer from pending to active, reset last seen so peers not auto removed
+			
+		0 peers, and incomplete move to partials list
+		
+		only delete file on remove from transfer list when complete?
+
+		ensure when transfer started from partials that args and endevent are reset
 		
 		partial transfer saving
 			when transfer completed (removed), if in transfer dir, delete file
 			every 15 secs, save current optransfers to a partial info file, only if incomplete
+			
+			
 			on load, load partial info file, mark partial for removal on close
 				all otherm files in transfer dir deleted
 			if trasfer on a partial started, remove the mark
-			incompletes saved for 1 run
-			strat: keep active transfers between runs, but remove inactive transfers
-		
-		investigate transfers not being unloaded
+
+		partials can be 'pulled out' by starting a new transfer
+		otherwise, never saved and deleted
+
+
+
 		sim clean command storage / transfers
 		
 		count number of incomplete / recent active / not partial transfers, make that the min 15
-			ensure partials are not counted as active
 			
-		if transfer stalled for more than a minute and other transfers are pending switch it out
-			how long is transfer stalled before it is moved back to pending?
+		if transfer stalled for more than a 3 minutes and other transfers are pending switch it out
 		
 		time out transfer request, use unique ids?, null on disconnect
 		
 		turn logging on/off
 		peer bandwidth limits, investigation?
 		light comm overflow
-		revise compact num
+		
+		add to transfer view, view of partials, pending, and transfers complete / incomplete
 
 		lan mode breakpoint?
 		search for anything int x, y and evaluate
 
 	testing
+		transfers save to partials
+		partials saved moved to active
+		change concurrent to 3 and ensure that transfers are queued 
+		kill a source mid transfer and ensure transfer gets moved back to pending
+		when sources gone ensure moved to partials
 		
 		publish new file in storage at top of network
 		time how long it takes to distribute file across entire network

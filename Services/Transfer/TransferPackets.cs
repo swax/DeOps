@@ -263,17 +263,17 @@ namespace RiseOp.Services.Transfer
                 G2Frame pong = protocol.WritePacket(null, TransferPacket.Pong, null);
 
                 protocol.WritePacket(pong, Packet_FileID, BitConverter.GetBytes(FileID));
-                protocol.WritePacket(pong, Packet_Timeout, BitConverter.GetBytes(Timeout));
-                protocol.WritePacket(pong, Packet_Status, BitConverter.GetBytes((int)Status));
+                protocol.WritePacket(pong, Packet_Timeout, CompactNum.GetBytes(Timeout));
+                protocol.WritePacket(pong, Packet_Status, CompactNum.GetBytes((int)Status));
 
                 if (Error)
                     protocol.WritePacket(pong, Packet_Error, null);
 
                 if (InternalSize != 0)
                 {
-                    protocol.WritePacket(pong, Packet_InternalSize, BitConverter.GetBytes(InternalSize));
-                    protocol.WritePacket(pong, Packet_ChunkSize, BitConverter.GetBytes(ChunkSize));
-                    protocol.WritePacket(pong, Packet_BitCount, BitConverter.GetBytes(BitCount));
+                    protocol.WritePacket(pong, Packet_InternalSize, CompactNum.GetBytes(InternalSize));
+                    protocol.WritePacket(pong, Packet_ChunkSize, CompactNum.GetBytes(ChunkSize));
+                    protocol.WritePacket(pong, Packet_BitCount, CompactNum.GetBytes(BitCount));
                 }
 
                 foreach (DhtClient client in Alts.Keys)
@@ -309,23 +309,23 @@ namespace RiseOp.Services.Transfer
                         break;
 
                     case Packet_Timeout:
-                        pong.Timeout = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        pong.Timeout = CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Status:
-                        pong.Status = (TransferStatus)BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        pong.Status = (TransferStatus)CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_InternalSize:
-                        pong.InternalSize = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        pong.InternalSize = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_ChunkSize:
-                        pong.ChunkSize = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        pong.ChunkSize = CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_BitCount:
-                        pong.BitCount = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        pong.BitCount = CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_AltClient:
@@ -378,9 +378,9 @@ namespace RiseOp.Services.Transfer
                 G2Frame tr = protocol.WritePacket(null, TransferPacket.Request, null);
 
                 protocol.WritePacket(tr, Packet_FileID, BitConverter.GetBytes(FileID));
-                protocol.WritePacket(tr, Packet_ChunkIndex, BitConverter.GetBytes(ChunkIndex));
-                protocol.WritePacket(tr, Packet_StartByte, BitConverter.GetBytes(StartByte));
-                protocol.WritePacket(tr, Packet_EndByte, BitConverter.GetBytes(EndByte));
+                protocol.WritePacket(tr, Packet_ChunkIndex, CompactNum.GetBytes(ChunkIndex));
+                protocol.WritePacket(tr, Packet_StartByte, CompactNum.GetBytes(StartByte));
+                protocol.WritePacket(tr, Packet_EndByte, CompactNum.GetBytes(EndByte));
 
                 if(GetBitfield)
                     protocol.WritePacket(tr, Packet_GetBitfield, null);
@@ -410,15 +410,15 @@ namespace RiseOp.Services.Transfer
                         break;
 
                     case Packet_ChunkIndex:
-                        tr.ChunkIndex = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        tr.ChunkIndex = CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_StartByte:
-                        tr.StartByte = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        tr.StartByte = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_EndByte:
-                        tr.EndByte = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        tr.EndByte = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }
@@ -454,7 +454,7 @@ namespace RiseOp.Services.Transfer
                 G2Frame ack = protocol.WritePacket(null, TransferPacket.Ack, null);
 
                 protocol.WritePacket(ack, Packet_FileID, BitConverter.GetBytes(FileID));
-                protocol.WritePacket(ack, Packet_StartByte, BitConverter.GetBytes(StartByte));
+                protocol.WritePacket(ack, Packet_StartByte, CompactNum.GetBytes(StartByte));
 
                 if(Uninitialized)
                     protocol.WritePacket(ack, Packet_Uninitialized, null);
@@ -493,7 +493,7 @@ namespace RiseOp.Services.Transfer
                         break;
 
                     case Packet_StartByte:
-                        ack.StartByte = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        ack.StartByte = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Bitfield:
@@ -588,7 +588,7 @@ namespace RiseOp.Services.Transfer
                 G2Frame stop = protocol.WritePacket(null, TransferPacket.Stop, null);
 
                 protocol.WritePacket(stop, Packet_FileID, BitConverter.GetBytes(FileID));
-                protocol.WritePacket(stop, Packet_FileID, BitConverter.GetBytes(StartByte));
+                protocol.WritePacket(stop, Packet_StartByte, CompactNum.GetBytes(StartByte));
 
                 if(Retry)
                     protocol.WritePacket(stop, Packet_Retry, null);
@@ -618,7 +618,7 @@ namespace RiseOp.Services.Transfer
                         break;
 
                     case Packet_StartByte:
-                        stop.StartByte = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        stop.StartByte = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }
@@ -669,10 +669,10 @@ namespace RiseOp.Services.Transfer
                 protocol.WritePacket(partial, Packet_Created, BitConverter.GetBytes(Created.ToBinary()));
                 protocol.WritePacket(partial, Packet_Details, details);
                 protocol.WritePacket(partial, Packet_Target, BitConverter.GetBytes(Target));
-                protocol.WritePacket(partial, Packet_BitCount, BitConverter.GetBytes(BitCount));
+                protocol.WritePacket(partial, Packet_BitCount, CompactNum.GetBytes(BitCount));
                 protocol.WritePacket(partial, Packet_Bitfield, Bitfield.ToBytes());
-                protocol.WritePacket(partial, Packet_InternalSize, BitConverter.GetBytes(InternalSize));
-                protocol.WritePacket(partial, Packet_ChunkSize, BitConverter.GetBytes(ChunkSize));
+                protocol.WritePacket(partial, Packet_InternalSize, CompactNum.GetBytes(InternalSize));
+                protocol.WritePacket(partial, Packet_ChunkSize, CompactNum.GetBytes(ChunkSize));
 
                 return protocol.WriteFinish();
             }
@@ -704,7 +704,7 @@ namespace RiseOp.Services.Transfer
                         break;
 
                     case Packet_BitCount:
-                        partial.BitCount = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        partial.BitCount = CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Bitfield:
@@ -712,11 +712,11 @@ namespace RiseOp.Services.Transfer
                         break;
 
                     case Packet_InternalSize:
-                        partial.InternalSize = BitConverter.ToInt64(child.Data, child.PayloadPos);
+                        partial.InternalSize = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_ChunkSize:
-                        partial.ChunkSize = BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        partial.ChunkSize = CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }

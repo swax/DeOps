@@ -28,17 +28,23 @@ namespace RiseOp
 	{
 		internal Test()
         {
-            // compact num to/from bytes test
+            // test compact num
+            /*
+            sbyte a = CompactNum.ToInt8(CompactNum.GetBytes(sbyte.MaxValue), 0, 1);
+            short b = CompactNum.ToInt16(CompactNum.GetBytes(short.MaxValue), 0, 2);
+            int c = CompactNum.ToInt32(CompactNum.GetBytes(int.MaxValue), 0, 4);
+            long d = CompactNum.ToInt64(CompactNum.GetBytes(long.MaxValue), 0, 8);
 
-            // gen number pos / neg, 
-            // if shift bytes over 16 is the same, try again
-            // figure out how negative nums are represented in binary
+            sbyte e = CompactNum.ToInt8(CompactNum.GetBytes(sbyte.MinValue), 0, 1);
+            short f = CompactNum.ToInt16(CompactNum.GetBytes(short.MinValue), 0, 2);
+            int g = CompactNum.ToInt32(CompactNum.GetBytes(int.MinValue), 0, 4);
+            long h = CompactNum.ToInt64(CompactNum.GetBytes(long.MinValue), 0, 8);
 
-            
-            // gen rand byte/char/short/ushort/long/ulong pass into compact num function and checck
-            // also check maxes of values that they are converted correctly
-
-            //CompactNum.GetBytes(
+            byte i = CompactNum.ToUInt8(CompactNum.GetBytes(byte.MaxValue), 0, 1);
+            ushort j = CompactNum.ToUInt16(CompactNum.GetBytes(ushort.MaxValue), 0, 2);
+            uint k = CompactNum.ToUInt32(CompactNum.GetBytes(uint.MaxValue), 0, 4);
+            ulong l = CompactNum.ToUInt64(CompactNum.GetBytes(ulong.MaxValue), 0, 8);
+            */
 
             /*  // bitarray to/from bytes test
              * Random rnd = new Random();

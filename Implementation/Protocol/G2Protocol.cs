@@ -488,118 +488,126 @@ namespace RiseOp.Implementation.Protocol
         }
     }
 
-    internal static class CompactNum2
+    internal static class CompactNum
     {
-        internal static byte[] GetBytes(long num)
+        // unsigned to bytes
+        internal static byte[] GetBytes(byte num)
         {
-            if (sbyte.MinValue <= num && num <= sbyte.MaxValue)
-                return new byte[] { (byte)num };
+            return new byte[] { num };
+        }
 
-            else if (short.MinValue <= num && num <= short.MaxValue)
-                return BitConverter.GetBytes((short)num);
+        internal static byte[] GetBytes(ushort num)
+        {
+            if (byte.MinValue <= num && num <= byte.MaxValue)
+                return GetBytes((byte)num);
+            else
+                return BitConverter.GetBytes(num);
+        }
 
-            else if (int.MinValue <= num && num <= int.MaxValue)
-                return BitConverter.GetBytes((int)num);
-
+        internal static byte[] GetBytes(uint num)
+        {
+            if (ushort.MinValue <= num && num <= ushort.MaxValue)
+                return GetBytes((ushort)num);
             else
                 return BitConverter.GetBytes(num);
         }
 
         internal static byte[] GetBytes(ulong num)
         {
-            if (byte.MinValue <= num && num <= byte.MaxValue)
-                return new byte[] { (byte)num };
-
-            else if (ushort.MinValue <= num && num <= ushort.MaxValue)
-                return BitConverter.GetBytes((ushort)num);
-
-            else if (uint.MinValue <= num && num <= uint.MaxValue)
-                return BitConverter.GetBytes((uint)num);
-
+            if (uint.MinValue <= num && num <= uint.MaxValue)
+                return GetBytes((uint)num);
             else
                 return BitConverter.GetBytes(num);
         }
 
-        internal static ulong ToUnsigned(byte[] data, int pos, int size)
+        // signed to bytes
+        internal static byte[] GetBytes(sbyte num)
         {
-            if (size == 1)
-                return data[pos];
-
-            else if (size == 2)
-                return BitConverter.ToUInt16(data, pos);
-
-            else if (size == 4)
-                return BitConverter.ToUInt32(data, pos);
-
-            else
-                return BitConverter.ToUInt64(data, pos);
+            return new byte[] { (byte) num };
         }
 
-        internal static long ToSigned(byte[] data, int pos, int size)
+        internal static byte[] GetBytes(short num)
         {
-            if (size == 1)
-                return (sbyte)data[pos];
-
-            else if (size == 2)
-                return BitConverter.ToInt16(data, pos);
-
-            else if (size == 4)
-                return BitConverter.ToInt32(data, pos);
-
+            if (sbyte.MinValue <= num && num <= sbyte.MaxValue)
+                return GetBytes((sbyte)num);
             else
-                return BitConverter.ToInt64(data, pos);
+                return BitConverter.GetBytes(num);
         }
 
-
-    }
-    internal static class CompactNum
-    {
-        internal static byte[] GetBytes(uint num)
+        internal static byte[] GetBytes(int num)
         {
-            if (num <= byte.MaxValue)
-                return new byte[] {(byte)num};
-
-            else if (num <= ushort.MaxValue)
-                return BitConverter.GetBytes((ushort)num);
-
+            if (short.MinValue <= num && num <= short.MaxValue)
+                return GetBytes((short)num);
             else
                 return BitConverter.GetBytes(num);
         }
 
         internal static byte[] GetBytes(long num)
         {
-            Debug.Assert(num >= 0); // kinda stupid, all the file size nums are long, compact doesnt support negs yet
-
-            if (num <= uint.MaxValue)
-                return CompactNum.GetBytes((uint)num);
-
+            if (int.MinValue <= num && num <= int.MaxValue)
+                return GetBytes((int)num);
             else
                 return BitConverter.GetBytes(num);
         }
 
+        // unsigned from bytes
+        internal static byte ToUInt8(byte[] data, int pos, int size)
+        {
+            return data[pos];
+        }
 
+        internal static ushort ToUInt16(byte[] data, int pos, int size)
+        {
+            if (size == 1)
+                return ToUInt8(data, pos, size);
+            else
+                return BitConverter.ToUInt16(data, pos);
+        }
 
         internal static uint ToUInt32(byte[] data, int pos, int size)
         {
-            if (size == 1)
-                return (uint)data[pos];
-
-            else if (size == 2)
-                return (uint)BitConverter.ToUInt16(data, pos);
-
+            if (size <= 2)
+                return ToUInt16(data, pos, size);
             else
                 return BitConverter.ToUInt32(data, pos);
+        }
 
+        internal static ulong ToUInt64(byte[] data, int pos, int size)
+        {
+            if (size <= 4)
+                return ToUInt32(data, pos, size);
+            else
+                return BitConverter.ToUInt64(data, pos);
+        }
+
+        // signed from bytes
+        internal static sbyte ToInt8(byte[] data, int pos, int size)
+        {
+            return (sbyte) data[pos];
+        }
+
+        internal static short ToInt16(byte[] data, int pos, int size)
+        {
+            if (size == 1)
+                return ToInt8(data, pos, size);
+            else
+                return BitConverter.ToInt16(data, pos);
+        }
+
+        internal static int ToInt32(byte[] data, int pos, int size)
+        {
+            if (size <= 2)
+                return ToInt16(data, pos, size);
+            else
+                return BitConverter.ToInt32(data, pos);
         }
 
         internal static long ToInt64(byte[] data, int pos, int size)
         {
             if (size <= 4)
-                return (long)CompactNum.ToUInt32(data, pos, size);
-
+                return ToInt32(data, pos, size);
             else
                 return BitConverter.ToInt64(data, pos);
-
         }
     }
 }

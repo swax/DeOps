@@ -32,8 +32,8 @@ namespace RiseOp.Services.Transfer
         DhtNetwork Network;
 
         int ConcurrentDownloads = 15;
-        internal LinkedList<OpTransfer> Pending = new LinkedList<OpTransfer>();
-        internal List<OpTransfer> Active = new List<OpTransfer>(); // local incomplete transfers
+        internal LinkedList<OpTransfer> Partials = new LinkedList<OpTransfer>(); // 0 peer incomplete
+        internal LinkedList<OpTransfer> Pending = new LinkedList<OpTransfer>(); // untried or >0 peer incomplete
      
         // all transfers complete and incomplete and inactive partials
         internal int ActiveUploads;
@@ -46,6 +46,7 @@ namespace RiseOp.Services.Transfer
         internal Dictionary<ulong, UploadPeer> UploadPeers = new Dictionary<ulong, UploadPeer>(); // routing, info - peers that have requested an upload (ping)
         
         // downloads/uploads are all treated the same (a transfer) which exists as long as a file is wanted
+        // only files in this list are (active) we actively are distributing them to peers
         internal Dictionary<ulong, OpTransfer> Transfers = new Dictionary<ulong, OpTransfer>(); // file id, transfer
 
         internal ServiceEvent<FileSearchHandler> FileSearch = new ServiceEvent<FileSearchHandler>();
@@ -58,6 +59,7 @@ namespace RiseOp.Services.Transfer
         internal SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider();
 
         string DebugLog = "";
+        string PartialHeaderPath = "";
 
 
         internal TransferService(OpCore core)
@@ -84,17 +86,21 @@ namespace RiseOp.Services.Transfer
                 TransferPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
                 Directory.CreateDirectory(TransferPath);
 
-                //crit - load partials, but dont begin transferring them, keep on standby
+                PartialHeaderPath = TransferPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "PartialFileHeaders");
                 
+                LoadPartials();
+
+                // remove lingering files that are not either a partial or the partial info header
                 string[] files = Directory.GetFiles(TransferPath);
 
-                foreach (string filepath in files)
-                    try { File.Delete(filepath); }
+                var remove = (from path in files
+                              where path.CompareTo(TransferPath) != 0 &&
+                                    Partials.Count(p => p.FilePath.CompareTo(path) == 0) == 0
+                              select path);
+
+                foreach(string path in remove)
+                    try { File.Delete(path); }
                     catch { }
-
-                // on remove transfer, if in transfers dir, delete it as well
-
-                // load partials on startup, all others in transfers dir should be deleted
             }
             catch { }
         }
@@ -111,10 +117,8 @@ namespace RiseOp.Services.Transfer
 
             Network.LightComm.Data[ServiceID, 0] -= new LightDataHandler(LightComm_ReceiveData);
 
-            foreach (OpTransfer transfer in Transfers.Values)
-                transfer.Dispose();
-
-            Transfers.Clear();
+            foreach (OpTransfer trasfer in Pending.Concat(Partials).Concat(Transfers.Values))
+                trasfer.Dispose();
         }
   
         public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
@@ -139,6 +143,28 @@ namespace RiseOp.Services.Transfer
 
             ulong id = OpTransfer.GetFileID(details);
 
+            // if file in partials list, move to pending
+            var partials = Partials.Where(t => t.FileID == id).ToArray();
+
+            if (partials.Length > 0)
+            {
+                OpTransfer transfer = partials[0];
+
+                transfer.SavePartial = true;
+                transfer.Args = args;
+                transfer.EndEvent = endEvent;
+
+                if(transfer.LocalBitfield[transfer.LocalBitfield.Length -1])
+                    transfer.LoadSubhashes(); // if we have the last piece, load sub hashes
+
+                Partials.Remove(transfer);
+                Pending.AddLast(transfer);
+
+                return;
+            }
+
+
+            // if file already added to pending or transfers list, return
             if ((from p in Pending
                  where p.FileID == id
                  select p.FileID).Concat(
@@ -147,8 +173,9 @@ namespace RiseOp.Services.Transfer
                     select t.FileID).Count() > 0)
                 return;
 
+
             string path = TransferPath + Path.DirectorySeparatorChar + 
-                            Utilities.CryptFilename(Core, (ulong)details.Size, details.Hash);
+                          Utilities.CryptFilename(Core, (ulong)details.Size, details.Hash);
 
             OpTransfer pending = new OpTransfer(this, path, target, details, TransferStatus.Empty, args, endEvent);
 
@@ -179,10 +206,10 @@ namespace RiseOp.Services.Transfer
                 return;
 
             OpTransfer transfer = Transfers[id];
-
-            transfer.Dispose();
-
+            transfer.SavePartial = false;
             Transfers.Remove(id);
+            
+            transfer.Dispose();
         }
 
         internal string GetDownloadStatus(uint service, byte[] hash, long size)
@@ -276,12 +303,19 @@ namespace RiseOp.Services.Transfer
             if (!Network.Established)
                 return;
 
+            int active = (from t in Transfers.Values
+                          where t.Status != TransferStatus.Complete
+                          select t).Count();
+
             // move downloads from pending to active
-            if (Active.Count < ConcurrentDownloads && Pending.Count > 0)
+            if (active < ConcurrentDownloads && Pending.Count > 0)
             {
                 OpTransfer transfer = Pending.First.Value;
                 Pending.RemoveFirst();
-                Active.Add(transfer);
+
+                transfer.LastDataReceived = Core.TimeNow; // reset
+                foreach (RemotePeer peer in transfer.Peers.Values)
+                    peer.LastSeen = Core.TimeNow; // prevent a pending going back to active after a while from having its peers auto-deleted
 
                 Transfers[transfer.FileID] = transfer;
              
@@ -309,7 +343,7 @@ namespace RiseOp.Services.Transfer
             {
                 // remove dead peers
                 foreach (ulong id in (from peer in transfer.Peers.Values
-                                      where Core.TimeNow > peer.Timeout && peer.PingAttempts > 2
+                                      where Core.TimeNow > peer.Timeout
                                       select peer.RoutingID).ToArray())
                     transfer.RemovePeer(id);
                     
@@ -341,19 +375,39 @@ namespace RiseOp.Services.Transfer
                                                    select peer).Take(8))
                         Send_Ping(transfer, peer);
                 }
+
                 // completed rely on remotes to send pings to keep transfer loaded
             }
 
-            // remove empty transfers with 0 peers, imcompletes hang around and are pruned seperately
+
+            // 0 peers, and incomplete move to partials list
+            foreach (OpTransfer transfer in (from t in Transfers.Values
+                                             where   t.Peers.Count == 0 && 
+                                                     !t.Searching &&
+                                                     t.Status == TransferStatus.Incomplete
+                                             select t).ToArray())
+            {
+                MoveTransferTo(Partials, transfer);
+            }
+
+            // remove dead empty and complete transfers with 0 peers (no one interested)
             foreach (OpTransfer transfer in (from t in Transfers.Values
                                              where t.Peers.Count == 0 && 
-                                             ((t.Searching == false && t.Status == TransferStatus.Empty) || t.Status == TransferStatus.Complete)
+                                                   (( !t.Searching && t.Status == TransferStatus.Empty) || t.Status == TransferStatus.Complete)
                                              select t).ToArray())
             {
                 transfer.Dispose();
                 Transfers.Remove(transfer.FileID);
-                Active.Remove(transfer);
             }
+
+            // move stalled transfers back to end of partials list (remove download / uploads)
+            if (active >= ConcurrentDownloads && Pending.Count > 0)
+                foreach (OpTransfer stalled in (from t in Transfers.Values
+                                                where Core.TimeNow > t.LastDataReceived.AddMinutes(3)
+                                                select t).ToArray())
+                {
+                    MoveTransferTo(Pending, stalled);
+                }
 
             // clean download peers
             foreach (ulong id in (from download in DownloadPeers.Values
@@ -362,15 +416,27 @@ namespace RiseOp.Services.Transfer
                 DownloadPeers.Remove(id);
 
             
-            // lert context that we need to upload a piece
+            // let context know that we need to upload a piece
             if (Transfers.Count > 0)
                 NeedUploadWeight++;
 
             ActiveUploads = UploadPeers.Values.Count(p => p.Active != null);
 
+
             // save partials every 20 seconds
             if (Core.TimeNow.Second % 15 == 0)
                 SavePartials();
+        }
+
+        private void MoveTransferTo(LinkedList<OpTransfer> list, OpTransfer transfer)
+        {
+            Transfers.Remove(transfer.FileID);
+
+            // remove peers from transfers, but dont delete them
+            foreach (RemotePeer peer in transfer.Peers.Values)
+                peer.Clean(); // removes from up/down list
+
+            list.AddLast(transfer);
         }
 
         void SavePartials()
@@ -392,8 +458,7 @@ namespace RiseOp.Services.Transfer
                 stream.Close();
 
 
-                string finalPath = TransferPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "PartialFileHeaders");
-                File.Copy(tempPath, finalPath, true);
+                File.Copy(tempPath, PartialHeaderPath, true);
                 File.Delete(tempPath);
             }
             catch (Exception ex)
@@ -414,12 +479,10 @@ namespace RiseOp.Services.Transfer
 
             try
             {
-                string path = TransferPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "PartialFileHeaders");
-
-                if (!File.Exists(path))
+                if (!File.Exists(PartialHeaderPath))
                     return;
 
-                CryptoStream crypto = IVCryptoStream.Load(path, Core.User.Settings.FileKey);
+                CryptoStream crypto = IVCryptoStream.Load(PartialHeaderPath, Core.User.Settings.FileKey);
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
                 G2Header root = null;
@@ -429,22 +492,15 @@ namespace RiseOp.Services.Transfer
                     {
                         TransferPartial partial = TransferPartial.Decode(root);
                              
-                        /*
-
-                        internal bool SavePartial = true;
-
-
-                        byte[] Subhashes;
-                              
-                         */
-                        OpTransfer transfer = new OpTransfer(this, path, partial.Target, partial.Details, TransferStatus.Incomplete, null, null);
+                        OpTransfer transfer = new OpTransfer(this, PartialHeaderPath, partial.Target, partial.Details, TransferStatus.Incomplete, null, null);
                         
                         transfer.Created = partial.Created;
                         transfer.InternalSize = partial.InternalSize;
                         transfer.ChunkSize = partial.ChunkSize;
                         transfer.LocalBitfield = partial.Bitfield;
-
-                        // load sub hashes?
+                        transfer.SavePartial = false; // reset when this current instance utilizes partial file
+                        
+                        // subhashes loaded when partial is
                     }
 
                 stream.Close();
@@ -682,7 +738,6 @@ namespace RiseOp.Services.Transfer
 
         private void Send_Ping(OpTransfer transfer, RemotePeer peer)
         {
-            peer.PingAttempts++;
             peer.NextPing = Core.TimeNow.AddSeconds(peer.PingTimeout);
 
             // why decided to not group pings to the same location -
@@ -805,7 +860,6 @@ namespace RiseOp.Services.Transfer
 
                 // add remote as peer
                 RemotePeer peer = transfer.AddPeer(client);
-                peer.LastSeen = Core.TimeNow; // attempts used for outgoing pings
                 peer.Status = ping.Status;
 
                 if (ping.BitfieldUpdated)
@@ -856,7 +910,6 @@ namespace RiseOp.Services.Transfer
             OpTransfer transfer = Transfers[pong.FileID];
 
             RemotePeer peer = transfer.AddPeer(client);
-            peer.LastSeen = Core.TimeNow; // attempts used for outgoing pings
 
             if (pong.Error)
             {
@@ -867,7 +920,6 @@ namespace RiseOp.Services.Transfer
             peer.PingTimeout = pong.Timeout;
             
             peer.NextPing = Core.TimeNow.AddSeconds(pong.Timeout);
-            peer.PingAttempts = 0;
 
             if (pong.InternalSize != 0 && peer.Transfer.InternalSize == 0)
             {
@@ -1249,7 +1301,8 @@ namespace RiseOp.Services.Transfer
                 Send_Stop(session, data, false);
                 return;
             }
-            
+
+            transfer.LastDataReceived = Core.TimeNow;
 
             request.CurrentPos = data.StartByte + data.Block.Length;
 
@@ -1314,8 +1367,8 @@ namespace RiseOp.Services.Transfer
                     Debug.Assert(false);
 
                     Transfers.Remove(transfer.FileID);
+                    transfer.SavePartial = false;
                     transfer.Dispose();
-                    File.Delete(transfer.FilePath);
 
                     return;
                 }
@@ -1378,7 +1431,7 @@ namespace RiseOp.Services.Transfer
 
     internal class OpTransfer : IDisposable
     {
-        TransferService Control;
+        internal TransferService Control;
         internal ulong FileID;
 
         internal DateTime Created;
@@ -1407,6 +1460,8 @@ namespace RiseOp.Services.Transfer
             }
         }
         internal TransferStatus Status;
+
+        internal DateTime LastDataReceived;
 
         // file
         internal long InternalSize;
@@ -1467,6 +1522,8 @@ namespace RiseOp.Services.Transfer
                 DebugLog += "Peer Added " + id + "\r\n";
             }
 
+            peer.LastSeen = Control.Core.TimeNow;
+
             Peers[id] = peer;
 
             if (!Control.UploadPeers.ContainsKey(id))
@@ -1483,26 +1540,10 @@ namespace RiseOp.Services.Transfer
         internal void RemovePeer(ulong id)
         {
             if (Peers.ContainsKey(id))
+            {
+                Peers[id].Clean();
                 Peers.Remove(id);
-
-            // remove upload entry
-            if (!Control.UploadPeers.ContainsKey(id))
-                return;
-
-            UploadPeer upload = Control.UploadPeers[id];
-
-            if (upload.Active != null && upload.Active.Transfer.FileID == FileID)
-                upload.Active = null;
-
-            upload.Transfers.Remove(FileID);
-
-            if (upload.Transfers.Count == 0)
-                Control.UploadPeers.Remove(id);
-
-            // remove download entry
-            if (Control.DownloadPeers.ContainsKey(id) &&
-                Control.DownloadPeers[id].Requests.ContainsKey(FileID))
-                Control.DownloadPeers[id].Requests.Remove(FileID);
+            }
 
             DebugLog += "Peer Removed " + id + "\r\n";
         }
@@ -1557,6 +1598,17 @@ namespace RiseOp.Services.Transfer
                 LocalFile.Dispose();
                 LocalFile = null;
             }
+
+            // if file not in transfer directory, dont delete it 
+            if (!FilePath.StartsWith(Control.TransferPath))
+                return;
+
+            // if file not incomplete or save partial is false delete 
+            if(Status != TransferStatus.Incomplete || !SavePartial)
+                try { File.Delete(FilePath); }
+                catch { }
+
+            // otherwise partial is saved to be tried on the next run
         }
 
         internal bool WriteBlock(long start, byte[] block)
@@ -1579,9 +1631,8 @@ namespace RiseOp.Services.Transfer
         internal bool LoadSubhashes()
         {
             DhtNetwork network = Control.Core.Network;
-            
-            if (LocalFile == null)
-                return false;
+
+            LoadFile();
 
             try
             {
@@ -1699,8 +1750,6 @@ namespace RiseOp.Services.Transfer
             get { return LastSeen.AddSeconds(PingTimeout + 30); }
         }
 
-        internal int PingAttempts;
-
         internal string DebugDownload = ""; //crit - switch logs on / off
         internal string DebugUpload = "";
 
@@ -1785,6 +1834,9 @@ namespace RiseOp.Services.Transfer
             if (Transfer.Status == TransferStatus.Empty)
                 return false;
 
+            if (Transfer.LocalBitfield != null && RemoteBitfield == null)
+                return true; // on connect we'll get remote's bitfield
+
             if (Transfer.LocalBitfield == null || RemoteBitfield == null)
                 return false;
 
@@ -1814,6 +1866,31 @@ namespace RiseOp.Services.Transfer
 
             if (RemoteBitfield.AreAllSet(true))
                 Status = TransferStatus.Complete;
+        }
+
+        internal void Clean()
+        {
+            ulong fileID = Transfer.FileID;
+            TransferService service = Transfer.Control;
+
+            // remove upload entry
+            if (!service.UploadPeers.ContainsKey(RoutingID))
+                return;
+
+            UploadPeer upload = service.UploadPeers[RoutingID];
+
+            if (upload.Active != null && upload.Active.Transfer.FileID == fileID)
+                upload.Active = null;
+
+            upload.Transfers.Remove(fileID);
+
+            if (upload.Transfers.Count == 0)
+                service.UploadPeers.Remove(RoutingID);
+
+            // remove download entry
+            if (service.DownloadPeers.ContainsKey(RoutingID) &&
+                service.DownloadPeers[RoutingID].Requests.ContainsKey(fileID))
+                service.DownloadPeers[RoutingID].Requests.Remove(fileID);
         }
     }
 

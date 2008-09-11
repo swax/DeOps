@@ -124,12 +124,12 @@ namespace RiseOp.Interface.Tools
                 foreach (TcpConnect tcp in item.Core.Network.TcpControl.SocketList)
                     coreAvg += tcp.Bandwidth.InOutAvg(AverageSeconds);
 
-                item.SubItems[1].Text = coreAvg.ToString("0");
+                item.SubItems[1].Text = AvgFormat(coreAvg);
 
                 netAvg += coreAvg;
             }
 
-            CoresLabel.Text = "Cores: " + netAvg.ToString("0");
+            CoresLabel.Text = "Cores: " + AvgFormat(netAvg);
 
 
             // get selected core averages
@@ -195,19 +195,19 @@ namespace RiseOp.Interface.Tools
 
             float transAvg = tcpAvg + udpAvg;
 
-            TransportRadio.Text = "Transport: " + transAvg.ToString("0");
-            TcpBox.Text = "TCP: " + tcpAvg.ToString("0");
-            UdpBox.Text = "UDP: " + udpAvg.ToString("0");
-            RudpRadio.Text = "RUDP: " + rudpAvg.ToString("0");
+            TransportRadio.Text = "Transport: " + AvgFormat(transAvg);
+            TcpBox.Text = "TCP: " + AvgFormat(tcpAvg);
+            UdpBox.Text = "UDP: " + AvgFormat(udpAvg);
+            RudpRadio.Text = "RUDP: " + AvgFormat(rudpAvg);
 
             float serviceAvg = 0;
             foreach (ServiceItem service in ServiceList.Items)
             {
-                service.SubItems[1].Text = service.BandwidthAverage.ToString("0");
+                service.SubItems[1].Text = AvgFormat(service.BandwidthAverage);
                 serviceAvg += service.BandwidthAverage;
             }
 
-            ServiceRadio.Text = "Services: " + serviceAvg.ToString("0");
+            ServiceRadio.Text = "Services: " + AvgFormat(serviceAvg);
 
 
             // title
@@ -254,6 +254,11 @@ namespace RiseOp.Interface.Tools
 
             BandwidthGraph.AxisChange();
             BandwidthGraph.Invalidate();
+        }
+
+        private string AvgFormat(float avg)
+        {
+            return Utilities.CommaIze(avg.ToString("0"));
         }
 
         private double GetMaxAxis(double[] array)

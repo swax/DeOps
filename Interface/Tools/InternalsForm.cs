@@ -750,7 +750,7 @@ namespace RiseOp.Interface.Tools
 
             //listValues.Items.Add(new ListViewItem(new string[] { "TransferMap", xStr(Core.Transfers.DownloadMap.Count) }));
             //listValues.Items.Add(new ListViewItem(new string[] { "UploadMap",   xStr(Core.Transfers.UploadMap.Count) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "Active",      xStr(Core.Transfers.Active.Count) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "Active",      xStr(Core.Transfers.Transfers.Count) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Pending",     xStr(Core.Transfers.Pending.Count) }));
         
         }
