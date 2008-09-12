@@ -23,7 +23,7 @@ namespace RiseOp.Services.Transfer
         internal OpCore Core;
         internal TransferService Service;
 
-        Dictionary<ulong, bool> TransferMap = new Dictionary<ulong, bool>();
+        Dictionary<ulong, TransferNode> TransferMap = new Dictionary<ulong, TransferNode>();
 
 
         internal TransferView(TransferService service)
@@ -48,26 +48,46 @@ namespace RiseOp.Services.Transfer
 
         private void RefreshView()
         {
+            Dictionary<ulong, OpTransfer> displayMap = new Dictionary<ulong, OpTransfer>();
+
+            if (ShowDownloads.Checked)
+                foreach (OpTransfer download in Service.Transfers.Values.Where(t => t.Status != TransferStatus.Complete))
+                    displayMap[download.FileID] = download;
+
+            if (ShowUploads.Checked)
+                foreach (OpTransfer upload in Service.Transfers.Values.Where(t => t.Status == TransferStatus.Complete))
+                    displayMap[upload.FileID] = upload;
+
+            if (ShowPending.Checked)
+                foreach (OpTransfer pending in Service.Pending)
+                    displayMap[pending.FileID] = pending;
+
+
+            if (ShowPartials.Checked)
+                foreach (OpTransfer partial in Service.Partials)
+                    displayMap[partial.FileID] = partial;
+
             // remove
             var remove = (from TransferNode node in TransferList.Nodes
-                          where !Service.Transfers.ContainsKey(node.FileID)
+                          where !displayMap.ContainsKey(node.Transfer.FileID)
                           select node).ToList();
 
-            foreach(TransferNode node in remove)
+            foreach (TransferNode node in remove)
             {
-                TransferMap.Remove(node.FileID);
+                TransferMap.Remove(node.Transfer.FileID);
                 TransferList.Nodes.Remove(node);
             }
 
             // add missing
-            var add = from transfer in Service.Transfers.Values 
+            var add = from transfer in displayMap.Values
                       where !TransferMap.ContainsKey(transfer.FileID)
                       select transfer;
 
             foreach (OpTransfer transfer in add)
             {
-                TransferMap[transfer.FileID] = true;
-                TransferList.Nodes.Add(new TransferNode(Service, transfer.FileID));
+                TransferNode node = new TransferNode(Service, transfer);
+                TransferMap[transfer.FileID] = node;
+                TransferList.Nodes.Add(node);
             }
 
             foreach (TransferNode transfer in TransferList.Nodes)
@@ -94,66 +114,77 @@ namespace RiseOp.Services.Transfer
 
             menu.Items.Add(new ToolStripMenuItem("Copy Hash to Clipboaard", null, (s, o) =>
             {
-                if (Service.Transfers.ContainsKey(transfer.FileID))
-                    Clipboard.SetText(Utilities.ToBase64String(Service.Transfers[transfer.FileID].Details.Hash));
+                Clipboard.SetText(Utilities.ToBase64String(transfer.Transfer.Details.Hash));
             }));
 
             menu.Show(TransferList, e.Location);
+        }
+
+        private void DownloadsCheck_CheckedChanged(object sender, EventArgs e)
+        {
+            RefreshView();
+        }
+
+        private void UploadsCheck_CheckedChanged(object sender, EventArgs e)
+        {
+            RefreshView();
+        }
+
+        private void PendingCheck_CheckedChanged(object sender, EventArgs e)
+        {
+            RefreshView();
+        }
+
+        private void PartialsCheck_CheckedChanged(object sender, EventArgs e)
+        {
+            RefreshView();
         }
     }
 
     internal class TransferNode : TreeListNode
     {
         TransferService Service;
-        internal ulong FileID;
+        internal OpTransfer Transfer;
 
         BitfieldControl Bitfield = new BitfieldControl();
         Dictionary<ulong, bool> PeerMap = new Dictionary<ulong, bool>();
 
 
-        internal TransferNode(TransferService service, ulong id)
+        internal TransferNode(TransferService service, OpTransfer t)
         {
             Service = service;
-            FileID = id;
+            Transfer = t;
 
             SubItems.Add(Bitfield);
         }
 
         internal void Refresh()
         {
-            if(!Service.Transfers.ContainsKey(FileID))
-            {
-                Text = "Error";
-                return;
-            }
-
-            OpTransfer transfer = Service.Transfers[FileID];
-
-            Bitfield.UpdateField(transfer.LocalBitfield);
+            Bitfield.UpdateField(Transfer.LocalBitfield);
 
             string text = "";
             // set transfer text / columns
             // time started, service, fileID, completed x of X
 			// flags: searching, file loaded, sub-hashes
 
-            text += Service.Core.Context.KnownServices[transfer.Details.Service] + "-" + transfer.FileID.ToString().Substring(0, 4) + ", ";
-            text += "Started: " + transfer.Created.ToShortTimeString() + ", ";
+            text += Service.Core.Context.KnownServices[Transfer.Details.Service] + "-" + Transfer.FileID.ToString().Substring(0, 4) + ", ";
+            text += "Started: " + Transfer.Created.ToShortTimeString() + ", ";
             
 
-            if (transfer.LocalBitfield != null)
-                text += transfer.LocalBitfield.Length + " Pieces, ";
+            if (Transfer.LocalBitfield != null)
+                text += Transfer.LocalBitfield.Length + " Pieces, ";
 
-            if (transfer.Status == TransferStatus.Complete)
+            if (Transfer.Status == TransferStatus.Complete)
                 text += "Completed, ";
             else
             {
-                text += "Progress: " + transfer.GetProgress() + " of " + Utilities.CommaIze(transfer.Details.Size) + ", ";
+                text += "Progress: " + Transfer.GetProgress() + " of " + Utilities.CommaIze(Transfer.Details.Size) + ", ";
             }
 
-            if (transfer.Searching)
+            if (Transfer.Searching)
                 text += "Searching, ";
 
-            if (transfer.LocalFile == null)
+            if (Transfer.LocalFile == null)
                 text += "Unloaded, ";
 
             Text = text.Substring(0, text.Length - 2);
@@ -161,7 +192,7 @@ namespace RiseOp.Services.Transfer
 
             // update sub items
             var remove = (from PeerNode peer in Nodes
-                          where !transfer.Peers.ContainsKey(peer.RoutingID)
+                          where !Transfer.Peers.ContainsKey(peer.RoutingID)
                           select peer).ToList();
 
             foreach (PeerNode peer in remove)
@@ -171,7 +202,7 @@ namespace RiseOp.Services.Transfer
             }
 
             // add missing
-            var add = from peer in transfer.Peers.Values
+            var add = from peer in Transfer.Peers.Values
                       where !PeerMap.ContainsKey(peer.RoutingID)
                       select peer;
 
@@ -182,7 +213,7 @@ namespace RiseOp.Services.Transfer
             }
 
             foreach (PeerNode peer in Nodes)
-                peer.Refresh(transfer);
+                peer.Refresh(Transfer);
         }
     }
 
@@ -217,7 +248,7 @@ namespace RiseOp.Services.Transfer
             // remote name / IP - last seen, timeout: x
 			// flags: UL (active?, chunk index, progress) / DL (chunk index, progress) / RBU
 
-            text += "      " + Service.Core.Trust.GetName(peer.Client.UserID) + ", ";
+            text += Service.Core.Trust.GetName(peer.Client.UserID) + ", ";
             text += "Last Seen: " + peer.LastSeen.ToShortTimeString() + ", ";
             //text += "Timeout: " + peer.PingTimeout + ", ";
 

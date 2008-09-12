@@ -383,7 +383,7 @@ namespace RiseOp.Services.Transfer
             // 0 peers, and incomplete move to partials list
             foreach (OpTransfer transfer in (from t in Transfers.Values
                                              where   t.Peers.Count == 0 && 
-                                                     !t.Searching &&
+                                                    !t.Searching &&
                                                      t.Status == TransferStatus.Incomplete
                                              select t).ToArray())
             {
@@ -500,7 +500,9 @@ namespace RiseOp.Services.Transfer
                         transfer.LocalBitfield = partial.Bitfield;
                         transfer.SavePartial = false; // reset when this current instance utilizes partial file
                         
-                        // subhashes loaded when partial is
+                        // subhashes loaded when partial goes to pending
+
+                        Partials.AddLast(transfer);
                     }
 
                 stream.Close();

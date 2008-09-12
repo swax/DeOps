@@ -215,8 +215,6 @@ multi-source d/l
 
 		sim clean command storage / transfers
 		
-		count number of incomplete / recent active / not partial transfers, make that the min 15
-			
 		if transfer stalled for more than a 3 minutes and other transfers are pending switch it out
 		
 		time out transfer request, use unique ids?, null on disconnect

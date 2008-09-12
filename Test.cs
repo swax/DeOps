@@ -3,6 +3,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -28,6 +29,30 @@ namespace RiseOp
 	{
 		internal Test()
         {
+            /*List<Tuple<int, string>> tups = new List<Tuple<int, string>>();
+
+            tups.Add(new Tuple<int, string>(1, "a"));
+            tups.Add(new Tuple<int, string>(2, "b"));
+            tups.Add(new Tuple<int, string>(3, "c"));
+            tups.Add(new Tuple<int, string>(4, "d"));
+
+            var z = tups.ToDictionary(t => t.First);
+
+
+            Dictionary<int, string> d1 = new Dictionary<int, string>();
+            Dictionary<int, string> d2 = new Dictionary<int, string>();
+
+
+            d1[1] = "a";
+            d1[2] = "b";
+
+            d1[3] = "c";
+            d1[4] = "d";
+
+            var x = d1.Concat(d2);
+
+            int y = 1;*/
+
             // test compact num
             /*
             sbyte a = CompactNum.ToInt8(CompactNum.GetBytes(sbyte.MaxValue), 0, 1);
