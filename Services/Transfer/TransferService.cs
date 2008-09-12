@@ -175,7 +175,7 @@ namespace RiseOp.Services.Transfer
 
 
             string path = TransferPath + Path.DirectorySeparatorChar + 
-                          Utilities.CryptFilename(Core, (ulong)details.Size, details.Hash);
+                          Utilities.CryptFilename(Core, id, details.Hash);
 
             OpTransfer pending = new OpTransfer(this, path, target, details, TransferStatus.Empty, args, endEvent);
 
@@ -455,8 +455,9 @@ namespace RiseOp.Services.Transfer
                 foreach (OpTransfer transfer in save)
                     stream.WritePacket(new TransferPartial(transfer));
 
+                crypto.FlushFinalBlock();
                 stream.Close();
-
+                
 
                 File.Copy(tempPath, PartialHeaderPath, true);
                 File.Delete(tempPath);
@@ -491,8 +492,16 @@ namespace RiseOp.Services.Transfer
                     if (root.Name == TransferPacket.Partial)
                     {
                         TransferPartial partial = TransferPartial.Decode(root);
-                             
-                        OpTransfer transfer = new OpTransfer(this, PartialHeaderPath, partial.Target, partial.Details, TransferStatus.Incomplete, null, null);
+
+                        ulong id = OpTransfer.GetFileID(partial.Details);
+
+                        string path = TransferPath + Path.DirectorySeparatorChar +
+                                    Utilities.CryptFilename(Core, id, partial.Details.Hash);
+
+                        if (!File.Exists(path))
+                            continue;
+
+                        OpTransfer transfer = new OpTransfer(this, path, partial.Target, partial.Details, TransferStatus.Incomplete, null, null);
                         
                         transfer.Created = partial.Created;
                         transfer.InternalSize = partial.InternalSize;
@@ -1597,6 +1606,7 @@ namespace RiseOp.Services.Transfer
 
             if (LocalFile != null)
             {
+                LocalFile.Close();
                 LocalFile.Dispose();
                 LocalFile = null;
             }

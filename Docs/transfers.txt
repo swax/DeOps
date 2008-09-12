@@ -223,14 +223,10 @@ multi-source d/l
 		peer bandwidth limits, investigation?
 		light comm overflow
 		
-		add to transfer view, view of partials, pending, and transfers complete / incomplete
-
 		lan mode breakpoint?
 		search for anything int x, y and evaluate
 
 	testing
-		transfers save to partials
-		partials saved moved to active
 		change concurrent to 3 and ensure that transfers are queued 
 		kill a source mid transfer and ensure transfer gets moved back to pending
 		when sources gone ensure moved to partials
