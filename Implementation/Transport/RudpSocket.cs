@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Collections;
 using System.Collections.Generic;
@@ -803,6 +804,8 @@ namespace RiseOp.Implementation.Transport
 
         private void SendPacket(TrackPacket tracked, RudpAddress target)
         {
+            Debug.Assert(tracked.Packet.Payload != null);
+
             // sending syn  to (tracked target) through (address target) udp / tcp
 
             /*string log = "Sending " + tracked.Packet.PacketType.ToString();

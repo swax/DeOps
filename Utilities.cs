@@ -590,14 +590,11 @@ namespace RiseOp
             prc.Start();
         }
 
-        internal static string CommaIze(long num)
-        {
-            return CommaIze(num.ToString());
-        }
-
-        internal static string CommaIze(string num)
+        internal static string CommaIze(object value)
         {
             string final = "";
+
+            string num = value.ToString();
 
             while (num.Length > 3)
             {

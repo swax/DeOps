@@ -11,7 +11,9 @@ using System.Windows.Forms;
 using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
 using RiseOp.Interface.Views;
+
 using RiseOp.Implementation;
+using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Transport;
 
 
@@ -26,12 +28,24 @@ namespace RiseOp.Services.Transfer
         Dictionary<ulong, TransferNode> TransferMap = new Dictionary<ulong, TransferNode>();
 
 
+
+        internal static void Show(DhtNetwork network)
+        {
+            if (network.GuiTransfers == null)
+                network.GuiTransfers = new TransferView(network.Core.Transfers);
+
+            network.GuiTransfers.Show();
+            network.GuiTransfers.Activate();
+        }
+
         internal TransferView(TransferService service)
         {
             InitializeComponent();
 
             Core = service.Core;
             Service = service;
+
+            Service.Logging = true;
         }
 
         private void TransferView_Load(object sender, EventArgs e)
@@ -88,12 +102,11 @@ namespace RiseOp.Services.Transfer
                 TransferNode node = new TransferNode(Service, transfer);
                 TransferMap[transfer.FileID] = node;
                 TransferList.Nodes.Add(node);
+                node.Expand();
             }
 
             foreach (TransferNode transfer in TransferList.Nodes)
                 transfer.Refresh();
-
-            TransferList.ExpandAll();
 
             TransferList.Invalidate();
         }
@@ -139,6 +152,12 @@ namespace RiseOp.Services.Transfer
         {
             RefreshView();
         }
+
+        private void TransferView_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Service.Logging = false;
+            Service.Core.Network.GuiTransfers = null;
+        }
     }
 
     internal class TransferNode : TreeListNode
@@ -178,7 +197,7 @@ namespace RiseOp.Services.Transfer
                 text += "Completed, ";
             else
             {
-                text += "Progress: " + Transfer.GetProgress() + " of " + Utilities.CommaIze(Transfer.Details.Size) + ", ";
+                text += "Progress: " + Utilities.CommaIze(Transfer.GetProgress()) + " of " + Utilities.CommaIze(Transfer.Details.Size) + ", ";
             }
 
             if (Transfer.Searching)

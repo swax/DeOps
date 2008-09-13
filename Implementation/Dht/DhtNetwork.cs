@@ -9,13 +9,17 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 
-using RiseOp.Services;
+
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Comm;
 using RiseOp.Implementation.Protocol.Net;
 using RiseOp.Implementation.Protocol.Special;
 using RiseOp.Implementation.Transport;
+
+using RiseOp.Services;
 using RiseOp.Services.Location;
+using RiseOp.Services.Transfer;
+
 using RiseOp.Interface.Tools;
 
 
@@ -68,9 +72,10 @@ namespace RiseOp.Implementation.Dht
         internal Dictionary<string, Queue<string>> LogTable = new Dictionary<string, Queue<string>>();
 
         // gui
-        internal PacketsForm GuiPackets;
-        internal CrawlerForm GuiCrawler;
-        internal GraphForm GuiGraph;
+        internal PacketsForm  GuiPackets;
+        internal CrawlerForm  GuiCrawler;
+        internal GraphForm    GuiGraph;
+        internal TransferView GuiTransfers;
 
 
         internal DhtNetwork(OpCore core, bool global)
@@ -412,6 +417,13 @@ namespace RiseOp.Implementation.Dht
         {
             try
             {
+                if (packet.PacketType == RudpPacketType.Light ||
+                    packet.PacketType == RudpPacketType.LightAck)
+                {
+                    LightComm.ReceivePacket(raw, packet);
+                    return;
+                }
+
                 // if a socket already set up
                 lock (RudpControl.SocketMap)
                     if (RudpControl.SocketMap.ContainsKey(packet.PeerID))
@@ -419,13 +431,6 @@ namespace RiseOp.Implementation.Dht
                         RudpControl.SocketMap[packet.PeerID].RudpReceive(raw, packet, IsGlobal);
                         return;
                     }
-
-                if (packet.PacketType == RudpPacketType.Light ||
-                    packet.PacketType == RudpPacketType.LightAck)
-                {
-                    LightComm.ReceivePacket(raw, packet);
-                    return;
-                }
 
                 // if starting new session
                 if (packet.PacketType != RudpPacketType.Syn)
@@ -439,23 +444,23 @@ namespace RiseOp.Implementation.Dht
 
 
                 // find connecting session with same or unknown client id
-                if (RudpControl.SessionMap.ContainsKey(syn.SenderID))
-                    foreach (RudpSession session in RudpControl.SessionMap[syn.SenderID])
-                    {
-                        if (session.ClientID == syn.ClientID)
-                        {
-                            // if session id zero or matches forward
-                            if ((session.Comm.State == RudpState.Connecting && session.Comm.RemotePeerID == 0) ||
-                                (session.Comm.State != RudpState.Closed && session.Comm.RemotePeerID == syn.ConnID)) // duplicate syn
-                            {
-                                session.Comm.RudpReceive(raw, packet, IsGlobal);
-                            }
-                            else
-                                session.Log("Session request denied (already active)");
+                ulong id = syn.SenderID ^ syn.ClientID;
 
-                            return;
-                        }
+                if (RudpControl.SessionMap.ContainsKey(id))
+                {
+                    RudpSession session = RudpControl.SessionMap[id];
+
+                    // if session id zero or matches forward
+                    if ((session.Comm.State == RudpState.Connecting && session.Comm.RemotePeerID == 0) ||
+                        (session.Comm.State != RudpState.Closed && session.Comm.RemotePeerID == syn.ConnID)) // duplicate syn
+                    {
+                        session.Comm.RudpReceive(raw, packet, IsGlobal);
                     }
+                    else
+                        session.Log("Session request denied (already active)");
+
+                    return;
+                }
 
                 //crit check if this is the peer id of a failed connection attempt
                 /*if (buddy.LastPeerIDs.Contains(syn.ConnID))
@@ -468,10 +473,7 @@ namespace RiseOp.Implementation.Dht
                 // if clientid not in session, create new session
                 RudpSession newSession = new RudpSession(RudpControl, syn.SenderID, syn.ClientID, true);
 
-                if (!RudpControl.SessionMap.ContainsKey(syn.SenderID))
-                    RudpControl.SessionMap[syn.SenderID] = new List<RudpSession>();
-
-                RudpControl.SessionMap[syn.SenderID].Add(newSession);
+                RudpControl.SessionMap[id] = newSession;
 
                 // send ack before sending our own syn (connect)
                 // ack tells remote which address is good so that our syn's ack comes back quickly

@@ -728,16 +728,15 @@ namespace RiseOp.Interface.Tools
 			listValues.Columns.Add("Status",	100, HorizontalAlignment.Left);
             listValues.Columns.Add("Startup",	100, HorizontalAlignment.Left);
 
-            foreach (List<RudpSession> list in network.RudpControl.SessionMap.Values)
-                foreach (RudpSession session in list)
-                    listValues.Items.Add(new ListViewItem(new string[]
-					{
-						xStr(session.Name),
-						IDtoStr(session.UserID),		
-						xStr(session.ClientID),
-						xStr(session.Status),
-						xStr(session.Startup)	
-					}));
+            foreach (RudpSession session in network.RudpControl.SessionMap.Values)
+                listValues.Items.Add(new ListViewItem(new string[]
+				{
+					xStr(session.Name),
+					IDtoStr(session.UserID),		
+					xStr(session.ClientID),
+					xStr(session.Status),
+					xStr(session.Startup)	
+				}));
 		}
 
         internal void ShowTransfers(object pass)

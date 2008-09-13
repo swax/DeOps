@@ -77,6 +77,7 @@ namespace RiseOp.Simulator
             this.ElapsedLabel = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.LoadProgress = new System.Windows.Forms.ProgressBar();
+            this.columnHeader11 = new System.Windows.Forms.ColumnHeader();
             this.menuStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -128,7 +129,8 @@ namespace RiseOp.Simulator
             this.columnHeader5,
             this.columnHeader6,
             this.columnHeader8,
-            this.columnHeader9});
+            this.columnHeader9,
+            this.columnHeader11});
             this.ListInstances.FullRowSelect = true;
             this.ListInstances.HideSelection = false;
             this.ListInstances.Location = new System.Drawing.Point(12, 144);
@@ -180,7 +182,7 @@ namespace RiseOp.Simulator
             // 
             // columnHeader9
             // 
-            this.columnHeader9.Text = "Bandwidth";
+            this.columnHeader9.Text = "Bytes In";
             // 
             // SecondTimer
             // 
@@ -487,6 +489,10 @@ namespace RiseOp.Simulator
             this.LoadProgress.TabIndex = 18;
             this.LoadProgress.Visible = false;
             // 
+            // columnHeader11
+            // 
+            this.columnHeader11.Text = "Bytes Out";
+            // 
             // SimForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -564,5 +570,6 @@ namespace RiseOp.Simulator
         private System.Windows.Forms.ToolStripMenuItem TestServicesMenu;
         private System.Windows.Forms.ToolStripMenuItem CleanupServicesMenu;
         internal System.Windows.Forms.ListView ListInstances;
+        private System.Windows.Forms.ColumnHeader columnHeader11;
     }
 }

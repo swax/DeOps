@@ -167,61 +167,41 @@ multi-source d/l
 		allocate min of 7kb/s to each transfer (if we think we have 70kb up no more than 10 uploads)
 		implement max bandwidth in sim (drop packets over rate)
 		
-	serialize partials list every 15 seconds if changed
-
-	interface
-		transfer tree / transfer log
-
-		root
-			time started, service, fileID, completed x/X
-			flags: searching, file loaded, sub-hashes  SRCH / FL / SH
-			bitfield
-		peers
-			remote name / IP - last seen, timeout: x
-			flags: UL (active?, chunk index, progress) / DL (chunk index, progress) / RBU
-			bitfield 
-			
-		bitfield
-			black has chunk, white doesnt
-			
-		pending?
-	
-	bugs
-
+	partials	
+		serialize partials list every 15 seconds if changed
 		dont keep active list, just count local empty / incomplete in transfers
-		
 		if havent received data for 3 mins, move transfer to back of pending (cycle quick back to active)
 			when moving transfer from pending to active, reset last seen so peers not auto removed
-			
 		0 peers, and incomplete move to partials list
-		
-		only delete file on remove from transfer list when complete?
-
 		ensure when transfer started from partials that args and endevent are reset
-		
-		partial transfer saving
-			when transfer completed (removed), if in transfer dir, delete file
-			every 15 secs, save current optransfers to a partial info file, only if incomplete
-			
-			
-			on load, load partial info file, mark partial for removal on close
-				all otherm files in transfer dir deleted
-			if trasfer on a partial started, remove the mark
-
+		on load, load partial info file, mark partial for removal on close
+			all otherm files in transfer dir deleted
+		if trasfer on a partial started, remove the mark
 		partials can be 'pulled out' by starting a new transfer
 		otherwise, never saved and deleted
 
-
-
+	tests 
+		3 node network
+		if transfer stalled for more than a 3 minutes and other transfers are pending switch it out
+		64 node network
+			disable most services
+			turn logging off
+			random linkup
+			distribute file from top
+		
+	bugs
 		sim clean command storage / transfers
 		
-		if transfer stalled for more than a 3 minutes and other transfers are pending switch it out
-		
-		time out transfer request, use unique ids?, null on disconnect
-		
-		turn logging on/off
 		peer bandwidth limits, investigation?
+		speeds at diff latencies? time total file transfer time
+			a 100 ping would be 50ms each way or 20 pulse rate
+		
 		light comm overflow
+		investigate data comm error
+	
+		session already active problems, many requests in a row, flag and investigate both sides
+		
+		time to have all files opened logged for when they are created / read / and disposed so conflicts are resolved
 		
 		lan mode breakpoint?
 		search for anything int x, y and evaluate
@@ -241,6 +221,9 @@ multi-source d/l
 		5mb file on 128 peer network, how bogged down does source get? optimize for min bog
 		100 mp3s, syncing around network of 32
 
+		test with nats and firewalls
+		
+		log session count
 
 
 -------------------------------------------------------------------------------------------

@@ -158,9 +158,8 @@ namespace RiseOp.Interface.Tools
                 foreach (TcpConnect tcp in item.Core.Network.TcpControl.SocketList)
                     tcpAvg += tcp.Bandwidth.InOutAvg(AverageSeconds);
 
-                foreach (List<RudpSession> sessions in item.Core.Network.RudpControl.SessionMap.Values)
-                    foreach (RudpSession session in sessions)
-                        rudpAvg += session.Comm.Bandwidth.InOutAvg(AverageSeconds);
+                foreach (RudpSession session in item.Core.Network.RudpControl.SessionMap.Values)
+                    rudpAvg += session.Comm.Bandwidth.InOutAvg(AverageSeconds);
 
                 foreach (ServiceItem service in ServiceList.Items)
                     if (item.Core.ServiceBandwidth.ContainsKey(service.ID))
@@ -179,9 +178,8 @@ namespace RiseOp.Interface.Tools
 
                 else if (RudpRadio.Checked)
                 {
-                    foreach (List<RudpSession> sessions in item.Core.Network.RudpControl.SessionMap.Values)
-                        foreach (RudpSession session in sessions)
-                            AddtoArrays(inBytes, outBytes, session.Comm.Bandwidth);
+                    foreach (RudpSession session in item.Core.Network.RudpControl.SessionMap.Values)
+                        AddtoArrays(inBytes, outBytes, session.Comm.Bandwidth);
                 }
 
                 else if (ServiceRadio.Checked)

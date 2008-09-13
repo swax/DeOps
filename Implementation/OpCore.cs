@@ -169,12 +169,12 @@ namespace RiseOp.Implementation
  
 
             // optional
-            AddService(new IMService(this));
-            AddService(new ChatService(this));
-            AddService(new ProfileService(this));
-            AddService(new MailService(this));
-            AddService(new BoardService(this));
-            AddService(new PlanService(this));
+            //AddService(new IMService(this));
+            //AddService(new ChatService(this));
+            //AddService(new ProfileService(this));
+            //AddService(new MailService(this));
+            //AddService(new BoardService(this));
+            //AddService(new PlanService(this));
             AddService(new StorageService(this));
 
             if (Sim != null)
@@ -768,9 +768,8 @@ namespace RiseOp.Implementation
 
             Network.UdpControl.Bandwidth.Resize(seconds);
 
-            foreach (List<RudpSession> sessions in Network.RudpControl.SessionMap.Values)
-                foreach (RudpSession session in sessions)
-                    session.Comm.Bandwidth.Resize(seconds);
+            foreach (RudpSession session in Network.RudpControl.SessionMap.Values)
+                session.Comm.Bandwidth.Resize(seconds);
 
             RecordBandwidthSeconds = seconds; // do this last to ensure all buffers set
         }

@@ -707,8 +707,8 @@ namespace RiseOp.Interface
             tools.DropDownItems.Add(new ManageItem("Graph", null, delegate()  { GraphForm.Show(Core.Network); }));
             tools.DropDownItems.Add(new ManageItem("Internals", null, delegate() { InternalsForm.Show(Core); }));
             tools.DropDownItems.Add(new ManageItem("Packets", null, delegate() { PacketsForm.Show(Core.Network); }));
-            tools.DropDownItems.Add(new ManageItem("Search", null, delegate() { SearchForm.Show(Core.Network); }));        
-            tools.DropDownItems.Add(new ManageItem("Transfers", null, delegate() { new TransferView(Core.Transfers).Show(); }));
+            tools.DropDownItems.Add(new ManageItem("Search", null, delegate() { SearchForm.Show(Core.Network); }));
+            tools.DropDownItems.Add(new ManageItem("Transfers", null, delegate() { TransferView.Show(Core.Network); }));
 
             items.Add(tools);
 

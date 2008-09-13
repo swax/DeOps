@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Diagnostics;
@@ -36,6 +37,7 @@ namespace RiseOp.Implementation.Transport
 		internal RijndaelManaged InboundEnc;
 		internal RijndaelManaged OutboundEnc;
 
+        bool RequestReceived;
         bool ConnectAckSent;
 
         internal DateTime NegotiateTimeout;
@@ -220,6 +222,8 @@ namespace RiseOp.Implementation.Transport
             return EncryptBuffSize == 0;
         }
 
+        bool RecvStarted;
+
 		internal void ReceivePacket(G2ReceivedPacket packet)
 		{
 			if(packet.Root.Name == CommPacket.Close)
@@ -249,6 +253,9 @@ namespace RiseOp.Implementation.Transport
 
                 else if (packet.Root.Name == CommPacket.CryptStart)
                 {
+                    Debug.Assert(!RecvStarted);
+                    RecvStarted = true;
+
                     InboundEnc.Padding = PaddingMode.None;
                     RecvDecryptor = InboundEnc.CreateDecryptor();
                 }
@@ -286,18 +293,27 @@ namespace RiseOp.Implementation.Transport
 			}
 		}
 
-		internal void Send_KeyRequest(SessionRequest request)
-		{
-            // generate inbound key
-            InboundEnc = new RijndaelManaged();
-            InboundEnc.GenerateKey();
-            InboundEnc.GenerateIV();
-            
-            // make packet
+		internal void Send_KeyRequest()
+		{   
+            // A connecting to B
+            // if A doesnt know B's key, the connection starts with a key request
+            // if B doesnt know A's key, once request received from A, B sends a key req
+
             KeyRequest keyRequest = new KeyRequest();
-            keyRequest.Encryption = Utilities.CryptType(InboundEnc);
-            keyRequest.Key = InboundEnc.Key;
-            keyRequest.IV = InboundEnc.IV;
+            
+            if (RequestReceived)
+            {
+                // generate inbound key
+                Debug.Assert(InboundEnc == null);
+                InboundEnc = new RijndaelManaged();
+                InboundEnc.GenerateKey();
+                InboundEnc.GenerateIV();
+
+                // make packet
+                keyRequest.Encryption = Utilities.CryptType(InboundEnc);
+                keyRequest.Key = InboundEnc.Key;
+                keyRequest.IV = InboundEnc.IV;
+            }
 
             Log("Key Request Sent");
 
@@ -308,11 +324,15 @@ namespace RiseOp.Implementation.Transport
 		{
 			KeyRequest request = KeyRequest.Decode(embeddedPacket);
 
-            OutboundEnc = new RijndaelManaged();
-            OutboundEnc.Key = request.Key;
-            OutboundEnc.IV = request.IV;
+            if (request.Key != null)
+            {
+                OutboundEnc = new RijndaelManaged();
+                OutboundEnc.Key = request.Key;
+                OutboundEnc.IV = request.IV;
 
-            StartEncryption();
+                StartEncryption();
+            }
+
 			Send_KeyAck();
 		}
 
@@ -338,8 +358,12 @@ namespace RiseOp.Implementation.Transport
 
             // send session request with encrypted current key
             Send_SessionRequest();
-            Send_SessionAck();
-            ConnectAckSent = true;
+
+            if (RequestReceived)
+            {
+                Send_SessionAck();
+                ConnectAckSent = true;
+            }
 
             // receiving session gets, verifies sender can encrypt with public key and goes alriiight alriight
 		}
@@ -373,6 +397,7 @@ namespace RiseOp.Implementation.Transport
 			SessionRequest request = SessionRequest.Decode(embeddedPacket);
 
             Log("Session Request Received");
+            RequestReceived = true;
 
             byte[] sessionKey = Core.User.Settings.KeyPair.Decrypt(request.EncryptedKey, false);
 
@@ -403,7 +428,7 @@ namespace RiseOp.Implementation.Transport
 			if(!Core.KeyMap.ContainsKey(UserID))
 			{
                 StartEncryption();
-				Send_KeyRequest(request);
+				Send_KeyRequest();
 				return;
 			}
 
@@ -416,8 +441,13 @@ namespace RiseOp.Implementation.Transport
             ConnectAckSent = true;
 		}
 
+        bool EncryptionStarted = false;
+
         private void StartEncryption()
         {
+            Debug.Assert(!EncryptionStarted);
+            EncryptionStarted = true;
+            
             SendPacket( new EncryptionUpdate(true), false ); // dont expedite because very next packet is expedited
 
             OutboundEnc.Padding = PaddingMode.None;
@@ -498,6 +528,12 @@ namespace RiseOp.Implementation.Transport
 		{
 			CommClose close = CommClose.Decode(embeddedPacket);
 			
+            //crit delete
+            if(close.Reason == "Session Packet Error")
+            {
+                Debug.Assert(false);
+            }
+
 			Log("Received Close (" + close.Reason + ")");
 
 			UpdateStatus(SessionStatus.Closed);
@@ -529,14 +565,15 @@ namespace RiseOp.Implementation.Transport
             Log("Received Proxy Update (" + update.Proxy + ")");
         }
 
-		internal bool AlreadyActive()
-		{
-			foreach(RudpSession session in RudpControl.SessionMap[UserID])
-				if(session != this && session.ClientID == ClientID && session.Status == SessionStatus.Active)
-					return true;
+        internal bool AlreadyActive()
+        {
+            int activeCount = RudpControl.SessionMap.Values.Where( s =>
+                                    s != this &&
+                                    s.ClientID == ClientID &&
+                                    s.Status == SessionStatus.Active).Count();
 
-			return false;
-		}
+            return activeCount > 0;
+        }
 
 		internal void Log(string entry)
 		{
@@ -568,8 +605,11 @@ namespace RiseOp.Implementation.Transport
             // it can take a while to get the rudp session up
             // especially between two blocked hosts
             NegotiateTimeout = Core.TimeNow.AddSeconds(10);
-            
-            Send_SessionRequest();
+
+            if (Core.KeyMap.ContainsKey(UserID))
+                Send_SessionRequest();
+            else
+                Send_KeyRequest();
 		}
 
 		internal void OnAccept()
@@ -647,7 +687,19 @@ namespace RiseOp.Implementation.Transport
 
                     // read packets from decrypt buffer
                     packet.Root = new G2Header(DecryptBuffer);
+                    
+                    //crit - delete
+                    int lastStart = start;
+                    int lastBuffSize = DecryptBuffSize;
+                    byte[] lastBuffer = Utilities.ExtractBytes(DecryptBuffer, 0, DecryptBuffSize);
+              
                     streamStatus = G2Protocol.ReadNextPacket(packet.Root, ref start, ref DecryptBuffSize);
+
+                    if (streamStatus == G2ReadResult.PACKET_ERROR)
+                    {
+                        Send_Close("Session Packet Error");
+                        break ;
+                    }
 
                     if (streamStatus != G2ReadResult.PACKET_GOOD)
                         break;

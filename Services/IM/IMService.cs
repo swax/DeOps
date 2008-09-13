@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
@@ -211,35 +212,31 @@ namespace RiseOp.Services.IM
             string awayMessage = "";
             int activeCount = 0;
 
+            foreach(RudpSession session in Network.RudpControl.SessionMap.Values.Where(s => s.UserID == key))
+            {
+                if (session.Status == SessionStatus.Closed)
+                    continue;
 
-            if (Network.RudpControl.SessionMap.ContainsKey(key))
-                foreach (RudpSession session in Network.RudpControl.SessionMap[key])
+                status.Connecting = true;
+
+                if (session.Status == SessionStatus.Active)
                 {
-                    if (session.Status == SessionStatus.Closed)
-                        continue;
+                    status.Connected = true;
 
-                    status.Connecting = true;
+                    ClientInfo info = Locations.GetLocationInfo(key, session.ClientID);
 
-                    if (session.Status == SessionStatus.Active)
-                    {
-                        status.Connected = true;
+                    awayMessage = "";
+                    if (info != null)
+                        if (info.Data.Away)
+                        {
+                            status.Away = true;
+                            awayMessage = " " + info.Data.AwayMessage;
+                        }
 
-                        ClientInfo info = Locations.GetLocationInfo(key, session.ClientID);
-
-                        awayMessage = "";
-                        if (info != null)
-                            if (info.Data.Away)
-                            {
-                                status.Away = true;
-                                awayMessage = " " + info.Data.AwayMessage;
-                            }
-
-                        activeCount++;
-                        places += " @" + Locations.GetLocationName(key, session.ClientID) + awayMessage + ",";
-                    }
+                    activeCount++;
+                    places += " @" + Locations.GetLocationName(key, session.ClientID) + awayMessage + ",";
                 }
-
-
+            }
 
             if (status.Away)
             {

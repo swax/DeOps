@@ -298,6 +298,8 @@ namespace RiseOp.Implementation.Transport
 
         internal int SendtoAddress(DhtNetwork network, RudpAddress target, RudpPacket packet)
         {
+            Debug.Assert(packet.Payload != null || packet.PacketType == RudpPacketType.LightAck);
+
             int sentBytes = 0;
 
             // same code used in rudpSocket

@@ -248,6 +248,16 @@ namespace RiseOp.Services.Storage
 
         public void SimCleanup()
         {
+            FileMap.SafeClear();
+            InternalFileMap.SafeClear();
+
+            WorkingStorage x = Working[0];
+
+            StorageFolder packet = new StorageFolder();
+            packet.Name = Core.Trust.GetProjectName(0) + " Files";
+            x.RootFolder = new LocalFolder(null, packet);
+
+            SaveLocal(0);
         }
 
         void Cache_FileRemoved(OpVersionedFile file)

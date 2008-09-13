@@ -433,7 +433,7 @@ namespace RiseOp.Simulator
         private void Click_Transfers(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in ListInstances.SelectedItems)
-                new TransferView(item.Core.Transfers).Show();
+                TransferView.Show(item.Core.Network);
         }
 
         private void Click_GlobalCrawler(object sender, EventArgs e)
@@ -710,7 +710,7 @@ namespace RiseOp.Simulator
 
         internal void Refresh()
         {
-            int SUBITEM_COUNT = 10;
+            int SUBITEM_COUNT = 11;
 
             while (SubItems.Count < SUBITEM_COUNT)
                 SubItems.Add("");
@@ -722,23 +722,25 @@ namespace RiseOp.Simulator
                 SubItems[1].Text = "Login: " + Path.GetFileNameWithoutExtension(Instance.Path);
                 ForeColor = Color.Gray;
 
-                SubItems[2].Text = ""; SubItems[2].Text = ""; SubItems[3].Text = ""; SubItems[4].Text = "";
-                SubItems[6].Text = ""; SubItems[6].Text = ""; SubItems[7].Text = ""; 
+                for(int i = 2; i < SUBITEM_COUNT; i++)
+                    SubItems[i].Text = "";
 
                 return;
             }
 
             ForeColor = Color.Black;
             
-            // 0 user
-            // 1 op
-            // 2 Dht id
-            // 3 client id
-            // 4 firewall
-            // 5 alerts
-            // 6 proxies
-            // 7 Notes
-            // 8 bandwidth
+            // 0 context index
+            // 1 user
+            // 2 op
+            // 3 Dht id
+            // 4 client id
+            // 5 firewall
+            // 6 alerts
+            // 7 proxies
+            // 8 Notes
+            // 9 bytes in
+            // 10 bytes out
 
             // alerts...
             string alerts = "";
@@ -787,19 +789,20 @@ namespace RiseOp.Simulator
                 SubItems[8].Text = NotesSummary();
             }
 
-            SubItems[9].Text = Instance.BytesRecvd.ToString() + " in / " + Instance.BytesSent.ToString() + " out";
+            SubItems[9].Text = Utilities.CommaIze(Instance.BytesRecvd);
+            SubItems[10].Text = Utilities.CommaIze(Instance.BytesSent);
         }
 
         private string ProxySummary(TcpHandler control)
         {
             StringBuilder summary = new StringBuilder();
 
-            lock(control.SocketList)
-                foreach(TcpConnect connect in control.SocketList)
-                    if(connect.State == TcpState.Connected)
-                        if (connect.Proxy == ProxyType.ClientBlocked || connect.Proxy == ProxyType.ClientNAT)
-                            if (Instance.Internet.UserNames.ContainsKey(connect.UserID))
-                                summary.Append(Instance.Internet.UserNames[connect.UserID] + ", ");
+            lock (control.SocketList)
+                foreach (TcpConnect connect in control.SocketList)
+                    if (connect.State == TcpState.Connected &&
+                        (connect.Proxy == ProxyType.ClientBlocked || connect.Proxy == ProxyType.ClientNAT) &&
+                         Instance.Internet.UserNames.ContainsKey(connect.UserID))
+                        summary.Append(Instance.Internet.UserNames[connect.UserID] + ", ");
 
             return summary.ToString();
         }
@@ -811,13 +814,15 @@ namespace RiseOp.Simulator
 
             StringBuilder summary = new StringBuilder();
 
-            summary.Append(Core.Trust.TrustMap.SafeCount.ToString() + " links, ");
+            summary.Append(Core.Trust.TrustMap.SafeCount.ToString() + " trust, ");
 
             summary.Append(Core.Locations.LocationMap.SafeCount.ToString() + " locs, ");
 
             summary.Append(Core.Network.Searches.Pending.Count.ToString() + " searches, ");
 
-            summary.Append(Core.Transfers.Pending.Count.ToString() + " transfers");
+            summary.Append(Core.Transfers.Transfers.Count.ToString() + " transfers, ");
+
+            summary.Append(Core.Network.RudpControl.SessionMap.Count.ToString() + " sessions");
 
             //foreach (ulong key in store.Index.Keys)
             //    foreach (StoreData data in store.Index[key])

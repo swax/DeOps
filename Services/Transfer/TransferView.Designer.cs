@@ -92,48 +92,48 @@ namespace RiseOp.Services.Transfer
             this.TransferList.Text = "treeListViewEx2";
             this.TransferList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.TransferList_MouseClick);
             // 
-            // DownloadsCheck
+            // ShowDownloads
             // 
             this.ShowDownloads.AutoSize = true;
             this.ShowDownloads.Checked = true;
             this.ShowDownloads.CheckState = System.Windows.Forms.CheckState.Checked;
             this.ShowDownloads.Location = new System.Drawing.Point(12, 12);
-            this.ShowDownloads.Name = "DownloadsCheck";
+            this.ShowDownloads.Name = "ShowDownloads";
             this.ShowDownloads.Size = new System.Drawing.Size(79, 17);
             this.ShowDownloads.TabIndex = 2;
             this.ShowDownloads.Text = "Downloads";
             this.ShowDownloads.UseVisualStyleBackColor = true;
             this.ShowDownloads.CheckedChanged += new System.EventHandler(this.DownloadsCheck_CheckedChanged);
             // 
-            // UploadsCheck
+            // ShowUploads
             // 
             this.ShowUploads.AutoSize = true;
             this.ShowUploads.Checked = true;
             this.ShowUploads.CheckState = System.Windows.Forms.CheckState.Checked;
             this.ShowUploads.Location = new System.Drawing.Point(97, 12);
-            this.ShowUploads.Name = "UploadsCheck";
+            this.ShowUploads.Name = "ShowUploads";
             this.ShowUploads.Size = new System.Drawing.Size(65, 17);
             this.ShowUploads.TabIndex = 3;
             this.ShowUploads.Text = "Uploads";
             this.ShowUploads.UseVisualStyleBackColor = true;
             this.ShowUploads.CheckedChanged += new System.EventHandler(this.UploadsCheck_CheckedChanged);
             // 
-            // PendingCheck
+            // ShowPending
             // 
             this.ShowPending.AutoSize = true;
             this.ShowPending.Location = new System.Drawing.Point(168, 12);
-            this.ShowPending.Name = "PendingCheck";
+            this.ShowPending.Name = "ShowPending";
             this.ShowPending.Size = new System.Drawing.Size(65, 17);
             this.ShowPending.TabIndex = 4;
             this.ShowPending.Text = "Pending";
             this.ShowPending.UseVisualStyleBackColor = true;
             this.ShowPending.CheckedChanged += new System.EventHandler(this.PendingCheck_CheckedChanged);
             // 
-            // PartialsCheck
+            // ShowPartials
             // 
             this.ShowPartials.AutoSize = true;
             this.ShowPartials.Location = new System.Drawing.Point(239, 12);
-            this.ShowPartials.Name = "PartialsCheck";
+            this.ShowPartials.Name = "ShowPartials";
             this.ShowPartials.Size = new System.Drawing.Size(60, 17);
             this.ShowPartials.TabIndex = 5;
             this.ShowPartials.Text = "Partials";
@@ -154,6 +154,7 @@ namespace RiseOp.Services.Transfer
             this.Name = "TransferView";
             this.Text = "Transfers";
             this.Load += new System.EventHandler(this.TransferView_Load);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.TransferView_FormClosing);
             this.ResumeLayout(false);
             this.PerformLayout();
 

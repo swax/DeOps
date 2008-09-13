@@ -230,9 +230,9 @@ namespace RiseOp.Implementation.Protocol
 				packet.InternalSize = BitConverter.ToInt32(lenData, 0); // only 4 bytes supported so far
 
 				Debug.Assert(MAX_FINAL_SIZE < G2_PACKET_BUFF);
-				if(packet.InternalSize >= MAX_FINAL_SIZE)
+                if (packet.InternalSize < 0 || MAX_FINAL_SIZE < packet.InternalSize)
 				{
-					//Debug.Assert(false);
+					Debug.Assert(false);
 					return G2ReadResult.PACKET_ERROR;
 				}
 

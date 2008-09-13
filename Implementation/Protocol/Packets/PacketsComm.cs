@@ -410,9 +410,12 @@ namespace RiseOp.Implementation.Protocol.Comm
             {
                 G2Frame kr = protocol.WritePacket(null, CommPacket.KeyRequest, null);
 
-                protocol.WritePacket(kr, Packet_Encryption, UTF8Encoding.UTF8.GetBytes(Encryption));
-                protocol.WritePacket(kr, Packet_Key, Key);
-                protocol.WritePacket(kr, Packet_IV, IV);
+                if (Encryption != null)
+                {
+                    protocol.WritePacket(kr, Packet_Encryption, UTF8Encoding.UTF8.GetBytes(Encryption));
+                    protocol.WritePacket(kr, Packet_Key, Key);
+                    protocol.WritePacket(kr, Packet_IV, IV);
+                }
 
                 return protocol.WriteFinish();
             }

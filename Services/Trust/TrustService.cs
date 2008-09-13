@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Security.Cryptography;
 using System.Windows.Forms;
@@ -1651,24 +1652,17 @@ namespace RiseOp.Services.Trust
         {
             OpTrust result = null;
 
-            List<OpTrust> list = new List<OpTrust>();
-
             TrustMap.LockReading(delegate()
             {
                 int index = Core.RndGen.Next(TrustMap.Count);
 
-                int i = 0;
-                foreach (OpTrust trust in TrustMap.Values)
-                    if (trust != LocalTrust && trust.Loaded)
-                    {
-                        if (i >= index)
-                        {
-                            result = trust;
-                            break;
-                        }
+                var x = (from trust in TrustMap.Values
+                         where trust != LocalTrust && trust.Loaded
+                         orderby Core.RndGen.Next()
+                         select trust).Take(1).ToArray();
 
-                        i++;
-                    }
+                if (x.Length > 0)
+                    result = x[0];
             });
 
             return result;

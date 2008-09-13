@@ -157,6 +157,16 @@ default views
 	chat - help (introduction to 'trust')
 	profile - (right click to edit)
 	
+re-alignment
+	leave old network once all subs confirmed to be re-aligned
+	publish new tagged trust on re-align confirming current network
+	if we get an updated trust from parent with new op key, re-align to that
+	automatically cascades down in the background
+	on re-align warn if any current subs have not be re-aligned to current yet
+	only allow re-alignment if user is root 
+	on receieve re-align request, confirm parents parent's up to root have been realigned
+	public keys, names, files all stay the same
+	anything new created is with new file keys that anyone left out doesnt have access to
 	
 summer release
 	licensing
@@ -169,15 +179,13 @@ summer release
 	network bandwidth limits/audit - tracking in sim triggers node to start logging bw data
 	do larger sim (128) - test create/find public ops
 	
-	multisource downloading 
-		interface - drop down component combo, shows treelist of d/l u/l, expand to show clients
-		right click to cancel, increase/decrease priority
 	location redo
-	global buddy list - facilites invites
-	live locations/chat
+	global buddy list
+		invites over global
+		right click invite to current op (works for secret)
 	realignment
-	
-	
+	live locations/chat
+
 	web caching files?
 	implement upnp?
 	

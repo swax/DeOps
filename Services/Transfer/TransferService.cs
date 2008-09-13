@@ -58,8 +58,9 @@ namespace RiseOp.Services.Transfer
 
         internal SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider();
 
-        string DebugLog = "";
         string PartialHeaderPath = "";
+
+        internal bool Logging = true; //crit - turn off
 
 
         internal TransferService(OpCore core)
@@ -403,7 +404,8 @@ namespace RiseOp.Services.Transfer
             // move stalled transfers back to end of partials list (remove download / uploads)
             if (active >= ConcurrentDownloads && Pending.Count > 0)
                 foreach (OpTransfer stalled in (from t in Transfers.Values
-                                                where Core.TimeNow > t.LastDataReceived.AddMinutes(3)
+                                                where t.Status == TransferStatus.Incomplete &&
+                                                      Core.TimeNow > t.LastDataReceived.AddMinutes(3)
                                                 select t).ToArray())
                 {
                     MoveTransferTo(Pending, stalled);
@@ -621,7 +623,6 @@ namespace RiseOp.Services.Transfer
             Debug.Assert(upload.Active == null);
             upload.Active = selected;
             upload.LastAttempt = Core.TimeNow;
-            upload.DebugLog += selected.Transfer.FileID + " Activated\r\n";
 
             // if connected to source
             RudpSession session = Network.RudpControl.GetActiveSession(upload.Active.Client);
@@ -648,7 +649,7 @@ namespace RiseOp.Services.Transfer
             peer.UploadData = false;
             peer.CurrentPos = 0;
 
-            peer.DebugUpload += "Upload Stopped\r\n";
+            if (Logging) peer.DebugUpload += "Upload Stopped\r\n";
 
             // removes from upload list as well
             if (deletePeer)
@@ -715,8 +716,15 @@ namespace RiseOp.Services.Transfer
             DhtClient client = new DhtClient(session.UserID, session.ClientID);
 
             if (session.Status == SessionStatus.Closed && DownloadPeers.ContainsKey(client.RoutingID))
-                DownloadPeers.Remove(client.RoutingID);
+            {
+                if (Logging)
+                    foreach (ulong fileID in DownloadPeers[client.RoutingID].Requests.Keys)
+                        if (Transfers.ContainsKey(fileID))
+                            if (Transfers[fileID].Peers.ContainsKey(client.RoutingID))
+                                Transfers[fileID].Peers[client.RoutingID].DebugDownload += "Closed\r\n";
 
+                DownloadPeers.Remove(client.RoutingID);
+            }
 
             UploadPeer upload;
             if (UploadPeers.TryGetValue(client.RoutingID, out upload) && upload.Active != null)
@@ -725,13 +733,14 @@ namespace RiseOp.Services.Transfer
                 // if session closed, remove from active list, check if we should transfer to someone else
                 if (session.Status == SessionStatus.Closed)
                 {
+                    if (Logging) upload.Active.DebugUpload += "Closed\r\n";
                     StopUpload(upload.Active, false);
                 }
 
                 // a node goes active when it is decided that we want to send that node a piece
                 else if (session.Status == SessionStatus.Active)
                 {
-                    upload.Active.DebugUpload += "Connected\r\n";
+                    if (Logging) upload.Active.DebugUpload += "Connected\r\n";
                     Send_Request(session, upload.Active);
                 }
             }
@@ -976,6 +985,12 @@ namespace RiseOp.Services.Transfer
 
             int bits = transfer.LocalBitfield.Length;
 
+            if (peer.RemoteBitfield == null)
+            {
+                peer.RemoteBitfield = new BitArray(bits);
+                peer.RemoteBitfieldUpdated = true;
+            }
+
             // generate of each bit and its popularity
             ChunkBit[] chunks = new ChunkBit[bits];
             for (int i = 0; i < bits; i++)
@@ -990,8 +1005,8 @@ namespace RiseOp.Services.Transfer
 
             // from the least popular pieces, select a random one
             var selected = (from chunk in chunks 
-                            where transfer.LocalBitfield[chunk.Index] && 
-                                    !peer.RemoteBitfield[chunk.Index] // we have the piece and remote doesnt
+                            where  transfer.LocalBitfield[chunk.Index] && 
+                                  !peer.RemoteBitfield[chunk.Index] // we have the piece and remote doesnt
                             orderby chunk.Popularity 
                             orderby Core.RndGen.Next() 
                             select chunk).Take(1).ToArray();
@@ -1041,7 +1056,7 @@ namespace RiseOp.Services.Transfer
 
             peer.LastRequest = request;
 
-            peer.DebugUpload += "Request Sent for " + selectedIndex + "\r\n";
+            if(Logging) peer.DebugUpload += "Request Sent for " + selectedIndex + "\r\n";
 
             //crit peer must be acknowledged by x or upload is de-activated
 
@@ -1066,7 +1081,7 @@ namespace RiseOp.Services.Transfer
             DhtClient client = new DhtClient(session.UserID, session.ClientID);
             RemotePeer peer = transfer.AddPeer(client);
 
-            peer.DebugDownload += "Request Received for " + request.ChunkIndex + "\r\n";
+            if (Logging) peer.DebugDownload += "Request Received for " + request.ChunkIndex + "\r\n";
 
             if (transfer.LocalBitfield == null)
             {
@@ -1085,12 +1100,15 @@ namespace RiseOp.Services.Transfer
             }
 
             
-            
+            int lastIndex = transfer.LocalBitfield.Length - 1; 
+
             // allow the same piece to be transmitted simultaneously
             // pieces are so small, conflicts will be short lived, transfers will end quicker
 
             // if we already have the piece, send our bitfield
-            if (transfer.LocalBitfield[request.ChunkIndex])
+            // or we are still missing the last piece (get that asap so we can verify other pieces)
+            if (transfer.LocalBitfield[request.ChunkIndex] ||
+                (request.ChunkIndex != lastIndex && !transfer.LocalBitfield[lastIndex]))
             {
                 ack.StartByte = -1;
                 ack.Bitfield = transfer.LocalBitfield.ToBytes();
@@ -1115,7 +1133,7 @@ namespace RiseOp.Services.Transfer
 
                 download.Requests[ack.FileID] = request;
 
-                peer.DebugDownload += "Request Accepted for " + request.ChunkIndex + "\r\n";
+                if (Logging) peer.DebugDownload += "Request Accepted for " + request.ChunkIndex + "\r\n";
             }
 
             session.SendData(ServiceID, 0, ack, true);
@@ -1140,7 +1158,7 @@ namespace RiseOp.Services.Transfer
 
             peer.DataError = false;
 
-            peer.DebugUpload += "Ack Received for " + ack.StartByte + ", req was " + peer.LastRequest.StartByte + "\r\n";
+            if (Logging) peer.DebugUpload += "Ack Received for " + ack.StartByte + ", req was " + peer.LastRequest.StartByte + "\r\n";
 
             // handle remote error - remote removed transfer for ex
             if (ack.Error)
@@ -1201,7 +1219,7 @@ namespace RiseOp.Services.Transfer
                 peer.CurrentPos = peer.LastRequest.StartByte;
                 peer.UploadData = true;
 
-                peer.DebugUpload += "Ack Accepts start " + ack.StartByte + ", chunk " + peer.LastRequest.ChunkIndex + "\r\n";
+                if (Logging) peer.DebugUpload += "Ack Accepts start " + ack.StartByte + ", chunk " + peer.LastRequest.ChunkIndex + "\r\n";
 
                 Send_Data(session);
             }
@@ -1258,7 +1276,7 @@ namespace RiseOp.Services.Transfer
 
                     peer.RemoteHasChunk(peer.LastRequest.ChunkIndex);
 
-                    peer.DebugUpload += "Finished Sending chunk " + peer.LastRequest.ChunkIndex + "\r\n";
+                    if (Logging) peer.DebugUpload += "Finished Sending chunk " + peer.LastRequest.ChunkIndex + "\r\n";
 
                     StopUpload(peer, false); // assigns next upload, sends request
                     return; // loop again will cause exception
@@ -1338,7 +1356,7 @@ namespace RiseOp.Services.Transfer
             {
                 transfer.LocalBitfield.Set(request.ChunkIndex, true);
 
-                peer.DebugDownload += "Finished Receiving chunk " + request.ChunkIndex + "\r\n";
+                if (Logging) peer.DebugDownload += "Finished Receiving chunk " + request.ChunkIndex + "\r\n";
 
 
                 // kill concurrent transfers
@@ -1530,7 +1548,7 @@ namespace RiseOp.Services.Transfer
             if (!Peers.TryGetValue(id, out peer))
             {
                 peer = new RemotePeer(this, client);
-                DebugLog += "Peer Added " + id + "\r\n";
+                if (Control.Logging) DebugLog += "Peer Added " + id + "\r\n";
             }
 
             peer.LastSeen = Control.Core.TimeNow;
@@ -1556,7 +1574,7 @@ namespace RiseOp.Services.Transfer
                 Peers.Remove(id);
             }
 
-            DebugLog += "Peer Removed " + id + "\r\n";
+            if (Control.Logging) DebugLog += "Peer Removed " + id + "\r\n";
         }
 
         internal byte[] ReadBlock(long start, long end)
@@ -1593,7 +1611,7 @@ namespace RiseOp.Services.Transfer
             if (LocalFile != null)
                 return;
 
-            LocalFile = new FileStream(FilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            LocalFile = new FileStream(FilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
 
             if (LocalFile.Length != Details.Size)
                 LocalFile.SetLength(Details.Size);
@@ -1683,6 +1701,10 @@ namespace RiseOp.Services.Transfer
             if (LocalFile == null)
                 return false;
 
+            Debug.Assert(Subhashes != null);
+            if (Subhashes == null)
+                return false;
+
            if( VerifyBuffer == null)
                VerifyBuffer = new byte[ChunkSize * 1024];
 
@@ -1762,7 +1784,7 @@ namespace RiseOp.Services.Transfer
             get { return LastSeen.AddSeconds(PingTimeout + 30); }
         }
 
-        internal string DebugDownload = ""; //crit - switch logs on / off
+        internal string DebugDownload = "";
         internal string DebugUpload = "";
 
         internal bool DataError;
@@ -1795,7 +1817,7 @@ namespace RiseOp.Services.Transfer
 
                 int blocks = 0;
                 for (int i = 0; i < RemoteBitfield.Length; i++)
-                    if (RemoteBitfield[i])
+                    if (!RemoteBitfield[i])
                         blocks++;
 
                 return blocks;
@@ -1913,7 +1935,6 @@ namespace RiseOp.Services.Transfer
         internal DateTime   LastAttempt;
         internal Dictionary<ulong, RemotePeer> Transfers = new Dictionary<ulong, RemotePeer>();
 
-        internal string DebugLog = "";
 
         internal UploadPeer(DhtClient client)
         {
