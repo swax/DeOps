@@ -427,22 +427,20 @@ namespace RiseOp.Services.Mail
             try
             {
                 string tempPath = Core.GetTempPath();
-                CryptoStream stream = IVCryptoStream.Save(tempPath, LocalFileKey);
+                using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, LocalFileKey))
+                {
+                    // mail headers
+                    foreach (List<CachedMail> list in MailMap.Values)
+                        foreach (CachedMail mail in list)
+                            stream.Write(mail.SignedHeader, 0, mail.SignedHeader.Length);
 
-                // mail headers
-                foreach (List<CachedMail> list in MailMap.Values)
-                    foreach (CachedMail mail in list)
-                        stream.Write(mail.SignedHeader, 0, mail.SignedHeader.Length);
+                    // acks
+                    foreach (List<CachedAck> list in AckMap.Values)
+                        foreach (CachedAck ack in list)
+                            stream.Write(ack.SignedAck, 0, ack.SignedAck.Length);
 
-                // acks
-                foreach (List<CachedAck> list in AckMap.Values)
-                    foreach (CachedAck ack in list)
-                        stream.Write(ack.SignedAck, 0, ack.SignedAck.Length);
-
-
-                stream.FlushFinalBlock();
-                stream.Close();
-
+                    stream.FlushFinalBlock();
+                }
 
                 string finalPath = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "headers");
                 File.Delete(finalPath);
@@ -463,29 +461,29 @@ namespace RiseOp.Services.Mail
                 if (!File.Exists(path))
                     return;
 
-                CryptoStream crypto = IVCryptoStream.Load(path, LocalFileKey);
-                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
+                using (IVCryptoStream crypto = IVCryptoStream.Load(path, LocalFileKey))
+                {
+                    PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
-                G2Header root = null;
+                    G2Header root = null;
 
-                while (stream.ReadPacket(ref root))
-                    if (root.Name == DataPacket.SignedData)
-                    {
-                        SignedData signed = SignedData.Decode(root);
-                        G2Header embedded = new G2Header(signed.Data);
-
-                        // figure out data contained
-                        if (G2Protocol.ReadPacket(embedded))
+                    while (stream.ReadPacket(ref root))
+                        if (root.Name == DataPacket.SignedData)
                         {
-                            if (embedded.Name == MailPacket.MailHeader)
-                                Process_MailHeader(null, signed, MailHeader.Decode(embedded));
+                            SignedData signed = SignedData.Decode(root);
+                            G2Header embedded = new G2Header(signed.Data);
 
-                            else if (embedded.Name == MailPacket.Ack)
-                                Process_MailAck(null, signed, MailAck.Decode(embedded), true);
+                            // figure out data contained
+                            if (G2Protocol.ReadPacket(embedded))
+                            {
+                                if (embedded.Name == MailPacket.MailHeader)
+                                    Process_MailHeader(null, signed, MailHeader.Decode(embedded));
+
+                                else if (embedded.Name == MailPacket.Ack)
+                                    Process_MailAck(null, signed, MailAck.Decode(embedded), true);
+                            }
                         }
-                    }
-
-                stream.Close();
+                }
             }
             catch (Exception ex)
             {
@@ -503,19 +501,19 @@ namespace RiseOp.Services.Mail
             try
             {
                 string tempPath = Core.GetTempPath();
-                CryptoStream stream = IVCryptoStream.Save(tempPath, LocalFileKey);
-
-                LocalMailbox.LockReading(delegate()
+                using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, LocalFileKey))
                 {
-                    foreach (LocalMail local in LocalMailbox.Values)
+                    LocalMailbox.LockReading(delegate()
                     {
-                        byte[] encoded = local.Header.Encode(Network.Protocol, true);
-                        stream.Write(encoded, 0, encoded.Length);
-                    }
-                });
+                        foreach (LocalMail local in LocalMailbox.Values)
+                        {
+                            byte[] encoded = local.Header.Encode(Network.Protocol, true);
+                            stream.Write(encoded, 0, encoded.Length);
+                        }
+                    });
 
-                stream.FlushFinalBlock();
-                stream.Close();
+                    stream.FlushFinalBlock();
+                }
 
 
                 string finalPath = MailPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "mailbox");
@@ -538,28 +536,28 @@ namespace RiseOp.Services.Mail
             if (File.Exists(path))
                 try
                 {
-                    CryptoStream crypto = IVCryptoStream.Load(path, LocalFileKey);
-                    PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
+                    using (IVCryptoStream crypto = IVCryptoStream.Load(path, LocalFileKey))
+                    {
+                        PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
-                    G2Header root = null;
+                        G2Header root = null;
 
-                    while (stream.ReadPacket(ref root))
-                        if (root.Name == MailPacket.MailHeader)
-                        {
-                            MailHeader header = MailHeader.Decode(root);
+                        while (stream.ReadPacket(ref root))
+                            if (root.Name == MailPacket.MailHeader)
+                            {
+                                MailHeader header = MailHeader.Decode(root);
 
-                            if (header == null)
-                                continue;
+                                if (header == null)
+                                    continue;
 
-                            Core.IndexKey(header.SourceID, ref header.Source);
+                                Core.IndexKey(header.SourceID, ref header.Source);
 
-                            if(header.Target != null)
-                                Core.IndexKey(header.TargetID, ref header.Target);
+                                if (header.Target != null)
+                                    Core.IndexKey(header.TargetID, ref header.Target);
 
-                            headers.Add(header);
-                        }
-
-                    stream.Close();
+                                headers.Add(header);
+                            }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -591,33 +589,33 @@ namespace RiseOp.Services.Mail
                 if (!File.Exists(path))
                     return null;
 
-                TaggedStream file = new TaggedStream(path, Network.Protocol);
-                CryptoStream crypto = IVCryptoStream.Load(file, header.LocalKey);
-                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
-
-                G2Header root = null;
-
-                while (stream.ReadPacket(ref root))
+                using (TaggedStream file = new TaggedStream(path, Network.Protocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(file, header.LocalKey))
                 {
-                    if (root.Name == MailPacket.MailInfo)
-                        local.Info = MailInfo.Decode(root);
+                    PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
-                    else if (root.Name == MailPacket.MailDest)
+                    G2Header root = null;
+
+                    while (stream.ReadPacket(ref root))
                     {
-                        MailDestination dest = MailDestination.Decode(root);
-                        Core.IndexKey(dest.KeyID, ref dest.Key);
+                        if (root.Name == MailPacket.MailInfo)
+                            local.Info = MailInfo.Decode(root);
 
-                        if (dest.CC)
-                            local.CC.Add(dest.KeyID);
-                        else
-                            local.To.Add(dest.KeyID);
+                        else if (root.Name == MailPacket.MailDest)
+                        {
+                            MailDestination dest = MailDestination.Decode(root);
+                            Core.IndexKey(dest.KeyID, ref dest.Key);
+
+                            if (dest.CC)
+                                local.CC.Add(dest.KeyID);
+                            else
+                                local.To.Add(dest.KeyID);
+                        }
+
+                        else if (root.Name == MailPacket.MailFile)
+                            local.Attached.Add(MailFile.Decode(root));
                     }
-
-                    else if (root.Name == MailPacket.MailFile)
-                        local.Attached.Add( MailFile.Decode(root));
                 }
-
-                stream.Close();
             }
             catch (Exception ex)
             {
@@ -703,50 +701,48 @@ namespace RiseOp.Services.Mail
 
             // setup temp file
             string tempPath = Core.GetTempPath();
-            CryptoStream stream = IVCryptoStream.Save(tempPath, header.LocalKey);
-            int written = 0;
-
-            // build mail file
-            written += Protocol.WriteToFile(new MailInfo(subject, Utilities.GetQuip(body), Core.TimeNow.ToUniversalTime(), files.Count > 0), stream);
-
-            foreach (ulong id in to)
-                written += Protocol.WriteToFile(new MailDestination(Core.KeyMap[id], false), stream);
-
-            byte[] bodyBytes = UTF8Encoding.UTF8.GetBytes(body);
-            written += Protocol.WriteToFile(new MailFile("body", bodyBytes.Length), stream);
-
-            foreach (AttachedFile attached in files)
-                written += Protocol.WriteToFile(new MailFile(attached.Name, attached.Size), stream);
-
-            stream.WriteByte(0); // end packets
-            header.FileStart = (ulong)written + 1;
-
-            // write files
-            stream.Write(bodyBytes, 0, bodyBytes.Length);
-
-            if (files != null)
+            using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, header.LocalKey))
             {
-                int buffSize = 4096;
-                byte[] buffer = new byte[buffSize];
+                int written = 0;
+
+                // build mail file
+                written += Protocol.WriteToFile(new MailInfo(subject, Utilities.GetQuip(body), Core.TimeNow.ToUniversalTime(), files.Count > 0), stream);
+
+                foreach (ulong id in to)
+                    written += Protocol.WriteToFile(new MailDestination(Core.KeyMap[id], false), stream);
+
+                byte[] bodyBytes = UTF8Encoding.UTF8.GetBytes(body);
+                written += Protocol.WriteToFile(new MailFile("body", bodyBytes.Length), stream);
 
                 foreach (AttachedFile attached in files)
+                    written += Protocol.WriteToFile(new MailFile(attached.Name, attached.Size), stream);
+
+                stream.WriteByte(0); // end packets
+                header.FileStart = (ulong)written + 1;
+
+                // write files
+                stream.Write(bodyBytes, 0, bodyBytes.Length);
+
+                if (files != null)
                 {
-                    FileStream embed = new FileStream(attached.FilePath, FileMode.Open, FileAccess.Read);
+                    int buffSize = 4096;
+                    byte[] buffer = new byte[buffSize];
 
-                    int read = buffSize;
-                    while (read == buffSize)
-                    {
-                        read = embed.Read(buffer, 0, buffSize);
-                        stream.Write(buffer, 0, read);
-                    }
+                    foreach (AttachedFile attached in files)
+                        using (FileStream embed = File.OpenRead(attached.FilePath))
+                        {
 
-                    embed.Close();
+                            int read = buffSize;
+                            while (read == buffSize)
+                            {
+                                read = embed.Read(buffer, 0, buffSize);
+                                stream.Write(buffer, 0, read);
+                            }
+                        }
                 }
+
+                stream.FlushFinalBlock();
             }
-
-            stream.FlushFinalBlock();
-            stream.Close();
-
 
             // finish building header
             Utilities.HashTagFile(tempPath, Network.Protocol, ref header.FileHash, ref header.FileSize);
@@ -1325,34 +1321,30 @@ namespace RiseOp.Services.Mail
             {
                 string path = PendingCache.GetFilePath(pending.Header);
 
-                TaggedStream file = new TaggedStream(path, Network.Protocol);
-                CryptoStream crypto = IVCryptoStream.Load(file, pending.Header.FileKey);
-
-                byte[] divider = new byte[16];
-                byte[] buffer = new byte[4096];
-
-                int read = buffer.Length;
-                while (read == buffer.Length)
+                using (TaggedStream file = new TaggedStream(path, Network.Protocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(file, pending.Header.FileKey))
                 {
-                    read = crypto.Read(buffer, 0, buffer.Length);
+                    byte[] divider = new byte[16];
+                    byte[] buffer = new byte[4096];
 
-                    if (read % 16 != 0)
-                        return false;
-
-                    for (int i = 0; i < read; i += 16)
+                    int read = buffer.Length;
+                    while (read == buffer.Length)
                     {
-                        if (Utilities.MemCompare(divider, 0, buffer, i, 16))
+                        read = crypto.Read(buffer, 0, buffer.Length);
+
+                        if (read % 16 != 0)
                             return false;
 
-                        if (Utilities.MemCompare(mailID, 0, buffer, i, 16))
+                        for (int i = 0; i < read; i += 16)
                         {
-                            crypto.Close();
-                            return true;
+                            if (Utilities.MemCompare(divider, 0, buffer, i, 16))
+                                return false;
+
+                            if (Utilities.MemCompare(mailID, 0, buffer, i, 16))
+                                return true;
                         }
                     }
                 }
-
-                crypto.Close();
             }
             catch (Exception ex)
             {
@@ -1368,35 +1360,31 @@ namespace RiseOp.Services.Mail
             {
                 string path = PendingCache.GetFilePath(pending.Header);
 
-                TaggedStream file = new TaggedStream(path, Network.Protocol);
-                CryptoStream crypto = IVCryptoStream.Load(file, pending.Header.FileKey);
-
-                bool dividerReached = false;
-                byte[] divider = new byte[16];
-                byte[] buffer = new byte[4096];
-
-                int read = buffer.Length;
-                while (read == buffer.Length)
+                using (TaggedStream file = new TaggedStream(path, Network.Protocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(file, pending.Header.FileKey))
                 {
-                    read = crypto.Read(buffer, 0, buffer.Length);
+                    bool dividerReached = false;
+                    byte[] divider = new byte[16];
+                    byte[] buffer = new byte[4096];
 
-                    if (read % 16 != 0)
-                        return false;
-
-                    for (int i = 0; i < read; i += 16)
+                    int read = buffer.Length;
+                    while (read == buffer.Length)
                     {
-                        if (Utilities.MemCompare(divider, 0, buffer, i, 16))
-                            dividerReached = true;
+                        read = crypto.Read(buffer, 0, buffer.Length);
 
-                        else if (dividerReached && Utilities.MemCompare(mailID, 0, buffer, i, 16))
+                        if (read % 16 != 0)
+                            return false;
+
+                        for (int i = 0; i < read; i += 16)
                         {
-                            crypto.Close();
-                            return true;
+                            if (Utilities.MemCompare(divider, 0, buffer, i, 16))
+                                dividerReached = true;
+
+                            else if (dividerReached && Utilities.MemCompare(mailID, 0, buffer, i, 16))
+                                return true;
                         }
                     }
                 }
-
-                crypto.Close();
             }
             catch (Exception ex)
             {
@@ -1511,39 +1499,38 @@ namespace RiseOp.Services.Mail
                 List<byte[]> pendingMailIDs = new List<byte[]>();
                 List<byte[]> pendingAckIDs = new List<byte[]>();
 
+                byte[] buffer = new byte[4096];
 
                 // load pending file
-                TaggedStream file = new TaggedStream(PendingCache.GetFilePath(cachedfile.Header), Network.Protocol);
-                CryptoStream crypto = IVCryptoStream.Load(file, cachedfile.Header.FileKey);
-
-                bool dividerPassed = false;
-                byte[] divider = new byte[16];
-                byte[] buffer = new byte[4096];
-                
-                int read = buffer.Length;
-                while (read == buffer.Length)
+                using (TaggedStream file = new TaggedStream(PendingCache.GetFilePath(cachedfile.Header), Network.Protocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(file, cachedfile.Header.FileKey))
                 {
-                    read = crypto.Read(buffer, 0, buffer.Length);
-
-                    if (read % 16 != 0)
-                        throw new Exception("Bad read pending file");
-
-                    for (int i = 0; i < read; i += 16)
-                    {
-                        byte[] id = Utilities.ExtractBytes(buffer, i, 16);
-
-                        if (Utilities.MemCompare(id, divider))
-                            dividerPassed = true;
-
-                        else if (!dividerPassed)
-                            pendingMailIDs.Add(id);
-
-                        else
-                            pendingAckIDs.Add(id);
-                    }  
-                }
+                    bool dividerPassed = false;
+                    byte[] divider = new byte[16];        
                 
-                crypto.Close();
+                    int read = buffer.Length;
+                    while (read == buffer.Length)
+                    {
+                        read = crypto.Read(buffer, 0, buffer.Length);
+
+                        if (read % 16 != 0)
+                            throw new Exception("Bad read pending file");
+
+                        for (int i = 0; i < read; i += 16)
+                        {
+                            byte[] id = Utilities.ExtractBytes(buffer, i, 16);
+
+                            if (Utilities.MemCompare(id, divider))
+                                dividerPassed = true;
+
+                            else if (!dividerPassed)
+                                pendingMailIDs.Add(id);
+
+                            else
+                                pendingAckIDs.Add(id);
+                        }
+                    }
+                }
 
 
                 // if the local pending file that we are loading
@@ -1572,21 +1559,20 @@ namespace RiseOp.Services.Mail
 
                     if (File.Exists(localpath))
                     {
-                        crypto = IVCryptoStream.Load(localpath, LocalFileKey);
-
-                        read = buffer.Length;
-                        while (read == buffer.Length)
+                        using (IVCryptoStream crypto = IVCryptoStream.Load(localpath, LocalFileKey))
                         {
-                            read = crypto.Read(buffer, 0, buffer.Length);
+                            int read = buffer.Length;
+                            while (read == buffer.Length)
+                            {
+                                read = crypto.Read(buffer, 0, buffer.Length);
 
-                            if (read % 8 != 0)
-                                throw new Exception("Bad read targets file");
+                                if (read % 8 != 0)
+                                    throw new Exception("Bad read targets file");
 
-                            for (int i = 0; i < read; i += 8)
-                                targets.Add(BitConverter.ToUInt64(buffer, i));
+                                for (int i = 0; i < read; i += 8)
+                                    targets.Add(BitConverter.ToUInt64(buffer, i));
+                            }
                         }
-
-                        crypto.Close();
 
                         //crit Debug.Assert(targets.Count == pendingAckIDs.Count);
 
@@ -1800,29 +1786,29 @@ namespace RiseOp.Services.Mail
             {
                 string tempPath = Core.GetTempPath();
                 byte[] key = Utilities.GenerateKey(Core.StrongRndGen, 256);
-                CryptoStream stream = IVCryptoStream.Save(tempPath, key);
+                using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, key))
+                {
+                    byte[] buffer = null;
 
-                byte[] buffer = null;
+                    // write pending mail
+                    foreach (ulong hashID in PendingMail.Keys)
+                        foreach (ulong userID in PendingMail[hashID])
+                        {
+                            buffer = GetMailID(hashID, userID);
+                            stream.Write(buffer, 0, buffer.Length);
+                        }
 
-                // write pending mail
-                foreach(ulong hashID in PendingMail.Keys)
-                    foreach (ulong userID in PendingMail[hashID])
-                    {
-                        buffer = GetMailID(hashID, userID);
-                        stream.Write(buffer, 0, buffer.Length);
-                    }
+                    // divider
+                    buffer = new byte[16];
+                    stream.Write(buffer, 0, buffer.Length);
 
-                // divider
-                buffer = new byte[16];
-                stream.Write(buffer, 0, buffer.Length);
+                    // write pending acks
+                    foreach (ulong target in PendingAcks.Keys)
+                        foreach (byte[] mailID in PendingAcks[target])
+                            stream.Write(mailID, 0, mailID.Length);
 
-                // write pending acks
-                foreach (ulong target in PendingAcks.Keys)
-                    foreach (byte[] mailID in PendingAcks[target])
-                        stream.Write(mailID, 0, mailID.Length);
-
-                stream.FlushFinalBlock();
-                stream.Close();
+                    stream.FlushFinalBlock();
+                }
 
 
                 // save pending ack targets in local file
@@ -1830,13 +1816,13 @@ namespace RiseOp.Services.Mail
 
                 if (PendingAcks.Count > 0)
                 {
-                    stream = IVCryptoStream.Save(localpath, LocalFileKey);
+                    using (IVCryptoStream stream = IVCryptoStream.Save(localpath, LocalFileKey))
+                    {
+                        foreach (ulong target in PendingAcks.Keys)
+                            stream.Write(BitConverter.GetBytes(target), 0, 8);
 
-                    foreach (ulong target in PendingAcks.Keys)
-                        stream.Write(BitConverter.GetBytes(target), 0, 8);
-
-                    stream.FlushFinalBlock();
-                    stream.Close();
+                        stream.FlushFinalBlock();
+                    }
                 }
                 else if (File.Exists(localpath))
                     File.Delete(localpath);

@@ -410,12 +410,21 @@ namespace RiseOp.Services.Trust
                 return;
             }
 
+            // link up to anyone with a 'higher' name
             OpLink localLink = LocalTrust.Links[0];
 
             if (localLink.Uplink == null)
             {
                 // linkup to random untrusted nodes
-                OpTrust randTrust = GetRandomTrust();
+                OpTrust randTrust = null;
+
+                TrustMap.LockReading(delegate()
+                {
+                    randTrust = (from t in TrustMap.Values
+                                 where LocalTrust.Name.CompareTo(t.Name) > 0
+                                 orderby Core.RndGen.Next()
+                                 select t).ElementAtOrDefault(0);
+                });
 
                 if (randTrust != null)
                 {
@@ -661,67 +670,67 @@ namespace RiseOp.Services.Trust
                 // create new link file in temp dir
                 string tempPath = Core.GetTempPath();
                 byte[] key = Utilities.GenerateKey(Core.StrongRndGen, 256);
-                CryptoStream stream = IVCryptoStream.Save(tempPath, key);
-
-                // project packets
-                foreach (OpLink link in LocalTrust.Links.Values)
-                    if (link.Active)
-                    {
-                        ProjectData project = new ProjectData();
-                        project.ID = link.Project;
-                        project.Name = GetProjectName(link.Project);
-
-                        if (link.Project == 0)
-                            project.UserName = Core.User.Settings.UserName;
-
-                        project.UserTitle = link.Title;
-
-                        byte[] packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, project);
-                        stream.Write(packet, 0, packet.Length);
-
-
-                        // uplinks
-                        if (link.Uplink != null)
+                using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, key))
+                {
+                    // project packets
+                    foreach (OpLink link in LocalTrust.Links.Values)
+                        if (link.Active)
                         {
-                            LinkData data = new LinkData(link.Project, link.Uplink.Trust.File.Key, true);
-                            packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, data);
-                            stream.Write(packet, 0, packet.Length);
-                        }
+                            ProjectData project = new ProjectData();
+                            project.ID = link.Project;
+                            project.Name = GetProjectName(link.Project);
 
-                        // downlinks
-                        foreach (OpLink downlink in link.Downlinks)
-                            if (link.Confirmed.Contains(downlink.UserID))
+                            if (link.Project == 0)
+                                project.UserName = Core.User.Settings.UserName;
+
+                            project.UserTitle = link.Title;
+
+                            byte[] packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, project);
+                            stream.Write(packet, 0, packet.Length);
+
+
+                            // uplinks
+                            if (link.Uplink != null)
                             {
-                                LinkData data = new LinkData(link.Project, downlink.Trust.File.Key, false);
+                                LinkData data = new LinkData(link.Project, link.Uplink.Trust.File.Key, true);
                                 packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, data);
                                 stream.Write(packet, 0, packet.Length);
                             }
-                    }
 
-                PacketStream streamEx = new PacketStream(stream, Network.Protocol, FileAccess.Write);
+                            // downlinks
+                            foreach (OpLink downlink in link.Downlinks)
+                                if (link.Confirmed.Contains(downlink.UserID))
+                                {
+                                    LinkData data = new LinkData(link.Project, downlink.Trust.File.Key, false);
+                                    packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, data);
+                                    stream.Write(packet, 0, packet.Length);
+                                }
+                        }
 
-                // save top 5 web caches
-                foreach (WebCache cache in Network.Cache.GetLastSeen(5))
-                    streamEx.WritePacket(new WebCache(cache, TrustPacket.WebCache));
+                    PacketStream streamEx = new PacketStream(stream, Network.Protocol, FileAccess.Write);
+
+                    // save top 5 web caches
+                    foreach (WebCache cache in Network.Cache.GetLastSeen(5))
+                        streamEx.WritePacket(new WebCache(cache, TrustPacket.WebCache));
 
 
-                // save inheritable settings only if they can be inherited
-                if (IsInheritNode(Core.UserID))
-                {
-                    if (Core.User.OpIcon != null)
-                        streamEx.WritePacket(new IconPacket(TrustPacket.Icon, Core.User.OpIcon));
-
-                    if (Core.User.OpSplash != null)
+                    // save inheritable settings only if they can be inherited
+                    if (IsInheritNode(Core.UserID))
                     {
-                        MemoryStream splash = new MemoryStream();
-                        Core.User.OpSplash.Save(splash, ImageFormat.Jpeg);
-                        LargeDataPacket.Write(streamEx, TrustPacket.Splash, splash.ToArray());
+                        if (Core.User.OpIcon != null)
+                            streamEx.WritePacket(new IconPacket(TrustPacket.Icon, Core.User.OpIcon));
+
+                        if (Core.User.OpSplash != null)
+                        {
+                            MemoryStream splash = new MemoryStream();
+                            Core.User.OpSplash.Save(splash, ImageFormat.Jpeg);
+                            LargeDataPacket.Write(streamEx, TrustPacket.Splash, splash.ToArray());
+                        }
                     }
+
+                    stream.WriteByte(0); // signal last packet
+                    stream.FlushFinalBlock();
                 }
-
-                stream.WriteByte(0); // signal last packet
-
-                stream.Close();
 
                 OpVersionedFile file = Cache.UpdateLocal(tempPath, key, null);
 
@@ -742,18 +751,18 @@ namespace RiseOp.Services.Trust
             try
             {
                 string tempPath = Core.GetTempPath();
-                CryptoStream stream = IVCryptoStream.Save(tempPath, LocalFileKey);
-
-                TrustMap.LockReading(delegate()
+                using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, LocalFileKey))
                 {
-                    foreach (OpTrust trust in TrustMap.Values)
-                        foreach (OpLink link in trust.Links.Values)
-                            foreach (UplinkRequest request in link.Requests)
-                                stream.Write(request.Signed, 0, request.Signed.Length);
-                });
+                    TrustMap.LockReading(delegate()
+                    {
+                        foreach (OpTrust trust in TrustMap.Values)
+                            foreach (OpLink link in trust.Links.Values)
+                                foreach (UplinkRequest request in link.Requests)
+                                    stream.Write(request.Signed, 0, request.Signed.Length);
+                    });
 
-                stream.FlushFinalBlock();
-                stream.Close();
+                    stream.FlushFinalBlock();
+                }
 
 
                 string finalPath = LinkPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "uplinks");
@@ -775,24 +784,24 @@ namespace RiseOp.Services.Trust
                 if (!File.Exists(path))
                     return;
 
-                CryptoStream crypto = IVCryptoStream.Load(path, LocalFileKey);
-                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
+                using (IVCryptoStream crypto = IVCryptoStream.Load(path, LocalFileKey))
+                {
+                    PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
-                G2Header root = null;
+                    G2Header root = null;
 
-                while (stream.ReadPacket(ref root))
-                    if (root.Name == DataPacket.SignedData)
-                    {
-                        SignedData signed = SignedData.Decode(root);
-                        G2Header embedded = new G2Header(signed.Data);
+                    while (stream.ReadPacket(ref root))
+                        if (root.Name == DataPacket.SignedData)
+                        {
+                            SignedData signed = SignedData.Decode(root);
+                            G2Header embedded = new G2Header(signed.Data);
 
-                        // figure out data contained
-                        if (G2Protocol.ReadPacket(embedded))
-                            if (embedded.Name == TrustPacket.UplinkReq)
-                                Process_UplinkReq(null, signed, UplinkRequest.Decode(embedded));
-                    }
-
-                stream.Close();
+                            // figure out data contained
+                            if (G2Protocol.ReadPacket(embedded))
+                                if (embedded.Name == TrustPacket.UplinkReq)
+                                    Process_UplinkReq(null, signed, UplinkRequest.Decode(embedded));
+                        }
+                }
             }
             catch (Exception ex)
             {
@@ -924,55 +933,55 @@ namespace RiseOp.Services.Trust
                 Bitmap inheritIcon = null;
                 byte[] inheritSplash = null;
 
-                TaggedStream file = new TaggedStream(Cache.GetFilePath(cachefile.Header), Network.Protocol);
-                CryptoStream crypto = IVCryptoStream.Load(file, cachefile.Header.FileKey);
-                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
-
-                G2Header packetRoot = null;
-
-                while (stream.ReadPacket(ref packetRoot))
+                using (TaggedStream file = new TaggedStream(Cache.GetFilePath(cachefile.Header), Network.Protocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(file, cachefile.Header.FileKey))
                 {
-                    if (packetRoot.Name == DataPacket.SignedData)
+                    PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
+
+                    G2Header packetRoot = null;
+
+                    while (stream.ReadPacket(ref packetRoot))
                     {
-                        SignedData signed = SignedData.Decode(packetRoot);
-                        G2Header embedded = new G2Header(signed.Data);
-
-                        // figure out data contained
-                        if (G2Protocol.ReadPacket(embedded))
+                        if (packetRoot.Name == DataPacket.SignedData)
                         {
-                            if (embedded.Name == TrustPacket.ProjectData)
+                            SignedData signed = SignedData.Decode(packetRoot);
+                            G2Header embedded = new G2Header(signed.Data);
+
+                            // figure out data contained
+                            if (G2Protocol.ReadPacket(embedded))
                             {
-                                ProjectData project = ProjectData.Decode(embedded);
-                                Process_ProjectData(trust, signed, project);
-
-                                if (project.ID == 0)
+                                if (embedded.Name == TrustPacket.ProjectData)
                                 {
-                                    inheritName = project.UserName;
-                                    inheritOp = project.Name;
-                                }
-                            }
+                                    ProjectData project = ProjectData.Decode(embedded);
+                                    Process_ProjectData(trust, signed, project);
 
-                            else if (embedded.Name == TrustPacket.LinkData)
-                                Process_LinkData(trust, signed, LinkData.Decode(embedded));
+                                    if (project.ID == 0)
+                                    {
+                                        inheritName = project.UserName;
+                                        inheritOp = project.Name;
+                                    }
+                                }
+
+                                else if (embedded.Name == TrustPacket.LinkData)
+                                    Process_LinkData(trust, signed, LinkData.Decode(embedded));
+                            }
+                        }
+
+                        else if (packetRoot.Name == TrustPacket.WebCache)
+                            Network.Cache.AddCache(WebCache.Decode(packetRoot));
+
+                        else if (packetRoot.Name == TrustPacket.Icon)
+                            inheritIcon = IconPacket.Decode(packetRoot).OpIcon;
+
+                        else if (packetRoot.Name == TrustPacket.Splash)
+                        {
+                            LargeDataPacket splash = LargeDataPacket.Decode(packetRoot);
+
+                            if (splash.Size > 0)
+                                inheritSplash = LargeDataPacket.Read(splash, stream, TrustPacket.Splash);
                         }
                     }
-
-                    else if (packetRoot.Name == TrustPacket.WebCache)
-                        Network.Cache.AddCache(WebCache.Decode(packetRoot));
-
-                    else if (packetRoot.Name == TrustPacket.Icon)
-                        inheritIcon = IconPacket.Decode(packetRoot).OpIcon;
-
-                    else if (packetRoot.Name == TrustPacket.Splash)
-                    {
-                        LargeDataPacket splash = LargeDataPacket.Decode(packetRoot);
-
-                        if (splash.Size > 0)
-                            inheritSplash = LargeDataPacket.Read(splash, stream, TrustPacket.Splash);
-                    }
                 }
-
-                stream.Close();
 
                 // set new header
                 trust.Loaded = true;
@@ -1290,7 +1299,7 @@ namespace RiseOp.Services.Trust
             if (link != null)
                 foreach (OpLink child in link.Downlinks)
                     if (child.UserID != root && !AddLinkLocations(child, locations))
-                        GetLocsBelow(child.UserID, project, locations);
+                        GetLocsBelow(child.UserID, root, project, locations);
         }
         private void GetLinkLocs(OpLink parent, int depth, List<LocationData> locations)
         {
@@ -1310,6 +1319,8 @@ namespace RiseOp.Services.Trust
             {
                 if (info.Data.UserID == Core.UserID && info.Data.Source.ClientID == Core.Network.Local.ClientID)
                     continue;
+
+                Debug.Assert(!locations.Contains(info.Data)); //crit - delete
 
                 if (!locations.Contains(info.Data))
                     locations.Add(info.Data);
@@ -1654,15 +1665,10 @@ namespace RiseOp.Services.Trust
 
             TrustMap.LockReading(delegate()
             {
-                int index = Core.RndGen.Next(TrustMap.Count);
-
-                var x = (from trust in TrustMap.Values
-                         where trust != LocalTrust && trust.Loaded
-                         orderby Core.RndGen.Next()
-                         select trust).Take(1).ToArray();
-
-                if (x.Length > 0)
-                    result = x[0];
+                result = (from trust in TrustMap.Values
+                          where trust != LocalTrust && trust.Loaded
+                          orderby Core.RndGen.Next()
+                          select trust).ElementAtOrDefault(0);
             });
 
             return result;

@@ -363,149 +363,149 @@ namespace RiseOp.Services.Storage
 
             try
             {
-                TaggedStream filex = new TaggedStream(path, Core.GuiProtocol);
-                CryptoStream crypto = IVCryptoStream.Load(filex, storage.File.Header.FileKey);
-                PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
-
-                ulong remoteUID = 0;
-                FolderNode currentFolder = RootFolder;
-                bool readingProject = false;
-
-                G2Header header = null;
-
-                while (stream.ReadPacket(ref header))
+                using (TaggedStream filex = new TaggedStream(path, Core.GuiProtocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(filex, storage.File.Header.FileKey))
                 {
-                    if (header.Name == StoragePacket.Root)
-                    {
-                        StorageRoot root = StorageRoot.Decode(header);
+                    PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
 
-                        readingProject = (root.ProjectID == ProjectID);
-                    }
+                    ulong remoteUID = 0;
+                    FolderNode currentFolder = RootFolder;
+                    bool readingProject = false;
 
-                    if (readingProject)
+                    G2Header header = null;
+
+                    while (stream.ReadPacket(ref header))
                     {
-                        if (header.Name == StoragePacket.Folder)
+                        if (header.Name == StoragePacket.Root)
                         {
-                            StorageFolder folder = StorageFolder.Decode(header);
+                            StorageRoot root = StorageRoot.Decode(header);
 
-                            // if new UID 
-                            if (remoteUID == folder.UID)
-                                continue;
-
-                            remoteUID = folder.UID;
-
-                            // check scope
-                            bool ignore = false;
-                            if (folder.Scope.Count > 0 && !Trust.IsInScope(folder.Scope, UserID, ProjectID))
-                                ignore = true;
-
-                            bool added = false;
-
-                            while (!added)
-                            {
-                                if (currentFolder.Details.UID == folder.ParentUID)
-                                {
-                                    // if folder exists with UID
-                                    if (currentFolder.Folders.ContainsKey(remoteUID))
-                                        currentFolder = currentFolder.Folders[remoteUID];
-
-                                    // else add folder as temp, mark as changed
-                                    else
-                                    {
-                                        if (ignore) // temp so traverse works, but not saved in structure
-                                        {
-                                            currentFolder = new FolderNode(this, folder, currentFolder, false);
-                                            break;
-                                        }
-                                        else
-                                            currentFolder = currentFolder.AddFolderInfo(folder, true);
-                                    }
-
-                                    bool found = false;
-
-
-                                    currentFolder.Archived.LockReading(delegate()
-                                    {
-                                        foreach (StorageFolder archive in currentFolder.Archived)
-                                            if (Storages.ItemDiff(archive, folder) == StorageActions.None)
-                                                if (archive.Date == folder.Date)
-                                                {
-                                                    found = true;
-                                                    break;
-                                                }
-                                    });
-
-                                    if (!found)
-                                    {
-                                        currentFolder.Changes[id] = folder;
-                                        currentFolder.UpdateOverlay();
-                                    }
-
-                                    // diff file properties, if different, add as change
-                                    /*if (currentFolder.Temp || Storages.ItemDiff(currentFolder.Details, folder) != StorageActions.None)
-                                    {
-                                        currentFolder.Changes[id] = folder;
-                                        currentFolder.UpdateOverlay();
-                                    }*/
-
-                                    added = true;
-                                }
-                                else if (currentFolder.Parent.GetType() == typeof(FolderNode))
-                                    currentFolder = (FolderNode)currentFolder.Parent;
-                                else
-                                    break;
-                            }
+                            readingProject = (root.ProjectID == ProjectID);
                         }
 
-                        if (header.Name == StoragePacket.File)
+                        if (readingProject)
                         {
-                            StorageFile file = StorageFile.Decode(header);
+                            if (header.Name == StoragePacket.Folder)
+                            {
+                                StorageFolder folder = StorageFolder.Decode(header);
 
-                            // if new UID 
-                            if (remoteUID == file.UID)
-                                continue;
+                                // if new UID 
+                                if (remoteUID == folder.UID)
+                                    continue;
 
-                            remoteUID = file.UID;
+                                remoteUID = folder.UID;
 
-                            // check scope
-                            if (file.Scope.Count > 0 && !Trust.IsInScope(file.Scope, UserID, ProjectID))
-                                continue;
+                                // check scope
+                                bool ignore = false;
+                                if (folder.Scope.Count > 0 && !Trust.IsInScope(folder.Scope, UserID, ProjectID))
+                                    ignore = true;
 
-                            FileItem currentFile = null;
+                                bool added = false;
 
-                            // if file exists with UID
-                            if (currentFolder.Files.ContainsKey(remoteUID))
-                                currentFile = currentFolder.Files[remoteUID];
+                                while (!added)
+                                {
+                                    if (currentFolder.Details.UID == folder.ParentUID)
+                                    {
+                                        // if folder exists with UID
+                                        if (currentFolder.Folders.ContainsKey(remoteUID))
+                                            currentFolder = currentFolder.Folders[remoteUID];
 
-                            // else add file as temp, mark as changed
-                            else
-                                currentFile = currentFolder.AddFileInfo(file, true);
+                                        // else add folder as temp, mark as changed
+                                        else
+                                        {
+                                            if (ignore) // temp so traverse works, but not saved in structure
+                                            {
+                                                currentFolder = new FolderNode(this, folder, currentFolder, false);
+                                                break;
+                                            }
+                                            else
+                                                currentFolder = currentFolder.AddFolderInfo(folder, true);
+                                        }
 
-                            // if file is integrated, still add, so that reject functions
+                                        bool found = false;
 
-                            // true if file doesnt exist in local file history
+
+                                        currentFolder.Archived.LockReading(delegate()
+                                        {
+                                            foreach (StorageFolder archive in currentFolder.Archived)
+                                                if (Storages.ItemDiff(archive, folder) == StorageActions.None)
+                                                    if (archive.Date == folder.Date)
+                                                    {
+                                                        found = true;
+                                                        break;
+                                                    }
+                                        });
+
+                                        if (!found)
+                                        {
+                                            currentFolder.Changes[id] = folder;
+                                            currentFolder.UpdateOverlay();
+                                        }
+
+                                        // diff file properties, if different, add as change
+                                        /*if (currentFolder.Temp || Storages.ItemDiff(currentFolder.Details, folder) != StorageActions.None)
+                                        {
+                                            currentFolder.Changes[id] = folder;
+                                            currentFolder.UpdateOverlay();
+                                        }*/
+
+                                        added = true;
+                                    }
+                                    else if (currentFolder.Parent.GetType() == typeof(FolderNode))
+                                        currentFolder = (FolderNode)currentFolder.Parent;
+                                    else
+                                        break;
+                                }
+                            }
+
+                            if (header.Name == StoragePacket.File)
+                            {
+                                StorageFile file = StorageFile.Decode(header);
+
+                                // if new UID 
+                                if (remoteUID == file.UID)
+                                    continue;
+
+                                remoteUID = file.UID;
+
+                                // check scope
+                                if (file.Scope.Count > 0 && !Trust.IsInScope(file.Scope, UserID, ProjectID))
+                                    continue;
+
+                                FileItem currentFile = null;
+
+                                // if file exists with UID
+                                if (currentFolder.Files.ContainsKey(remoteUID))
+                                    currentFile = currentFolder.Files[remoteUID];
+
+                                // else add file as temp, mark as changed
+                                else
+                                    currentFile = currentFolder.AddFileInfo(file, true);
+
+                                // if file is integrated, still add, so that reject functions
+
+                                // true if file doesnt exist in local file history
                                 // if it does exist and file is newer than latest, true
 
-                            bool found = false;
+                                bool found = false;
 
-                            currentFile.Archived.LockReading(delegate()
-                            {
-                                foreach (StorageFile archive in currentFile.Archived)
-                                    if (Storages.ItemDiff(archive, file) == StorageActions.None)
-                                        if (archive.Date == file.Date)
-                                        {
-                                            found = true;
-                                            break;
-                                        }
-                            });
+                                currentFile.Archived.LockReading(delegate()
+                                {
+                                    foreach (StorageFile archive in currentFile.Archived)
+                                        if (Storages.ItemDiff(archive, file) == StorageActions.None)
+                                            if (archive.Date == file.Date)
+                                            {
+                                                found = true;
+                                                break;
+                                            }
+                                });
 
-                            if(!found)
-                                currentFile.Changes[id] = file;
+                                if (!found)
+                                    currentFile.Changes[id] = file;
+                            }
                         }
                     }
                 }
-
-                stream.Close();
             }
             catch
             {
@@ -694,72 +694,72 @@ namespace RiseOp.Services.Storage
         {
             try
             {
-                TaggedStream filex = new TaggedStream(path, Core.GuiProtocol);
-                CryptoStream crypto = IVCryptoStream.Load(filex, key);
-                PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
-
-                FolderNode currentFolder = RootFolder;
-                bool readingProject = false;
-
-                G2Header header = null;
-
-                while (stream.ReadPacket(ref header))
+                using (TaggedStream filex = new TaggedStream(path, Core.GuiProtocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(filex, key))
                 {
-                    if (header.Name == StoragePacket.Root)
+                    PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
+
+                    FolderNode currentFolder = RootFolder;
+                    bool readingProject = false;
+
+                    G2Header header = null;
+
+                    while (stream.ReadPacket(ref header))
                     {
-                        StorageRoot root = StorageRoot.Decode(header);
-
-                        readingProject = (root.ProjectID == ProjectID);
-                    }
-
-                    // show archived if selected, only add top uid, not copies
-
-                    if (readingProject)
-                    {
-                        if (header.Name == StoragePacket.Folder)
+                        if (header.Name == StoragePacket.Root)
                         {
-                            StorageFolder folder = StorageFolder.Decode(header);
+                            StorageRoot root = StorageRoot.Decode(header);
 
-                            bool added = false;
-
-                            while (!added)
-                            {
-                                if (currentFolder.Details.UID == folder.ParentUID)
-                                {
-                                    currentFolder = currentFolder.AddFolderInfo(folder, false);
-
-                                    // re-select on re-load
-                                    if (SelectedFolder != null && currentFolder.Details.UID == SelectedFolder.Details.UID)
-                                    {
-                                        currentFolder.Selected = true;
-                                        SelectedFolder = currentFolder;
-                                    }
-
-                                    added = true;
-                                }
-                                else if (currentFolder.Parent.GetType() == typeof(FolderNode))
-                                    currentFolder = (FolderNode)currentFolder.Parent;
-                                else
-                                    break;
-                            }
-
-                            if (!added)
-                            {
-                                Debug.Assert(false);
-                                throw new Exception("Error loading CFS");
-                            }
+                            readingProject = (root.ProjectID == ProjectID);
                         }
 
-                        if (header.Name == StoragePacket.File)
-                        {
-                            StorageFile file = StorageFile.Decode(header);
+                        // show archived if selected, only add top uid, not copies
 
-                            currentFolder.AddFileInfo(file, false);
+                        if (readingProject)
+                        {
+                            if (header.Name == StoragePacket.Folder)
+                            {
+                                StorageFolder folder = StorageFolder.Decode(header);
+
+                                bool added = false;
+
+                                while (!added)
+                                {
+                                    if (currentFolder.Details.UID == folder.ParentUID)
+                                    {
+                                        currentFolder = currentFolder.AddFolderInfo(folder, false);
+
+                                        // re-select on re-load
+                                        if (SelectedFolder != null && currentFolder.Details.UID == SelectedFolder.Details.UID)
+                                        {
+                                            currentFolder.Selected = true;
+                                            SelectedFolder = currentFolder;
+                                        }
+
+                                        added = true;
+                                    }
+                                    else if (currentFolder.Parent.GetType() == typeof(FolderNode))
+                                        currentFolder = (FolderNode)currentFolder.Parent;
+                                    else
+                                        break;
+                                }
+
+                                if (!added)
+                                {
+                                    Debug.Assert(false);
+                                    throw new Exception("Error loading CFS");
+                                }
+                            }
+
+                            if (header.Name == StoragePacket.File)
+                            {
+                                StorageFile file = StorageFile.Decode(header);
+
+                                currentFolder.AddFileInfo(file, false);
+                            }
                         }
                     }
                 }
-
-                stream.Close();
             }
             catch (Exception ex)
             {
@@ -2050,115 +2050,115 @@ namespace RiseOp.Services.Storage
 
             try
             {
-                TaggedStream filex = new TaggedStream(path, Core.GuiProtocol);
-                CryptoStream crypto = IVCryptoStream.Load(filex, storage.File.Header.FileKey);
-                PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
-
-                ulong remoteUID = 0;
-                FolderNode currentFolder = RootFolder;
-                bool readingProject = false;
-
-                G2Header header = null;
-
-                List<ulong> Recursing = new List<ulong>();
-
-
-                while (stream.ReadPacket(ref header))
+                using (TaggedStream filex = new TaggedStream(path, Core.GuiProtocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(filex, storage.File.Header.FileKey))
                 {
-                    if (header.Name == StoragePacket.Root)
-                    {
-                        StorageRoot root = StorageRoot.Decode(header);
+                    PacketStream stream = new PacketStream(crypto, Storages.Protocol, FileAccess.Read);
 
-                        readingProject = (root.ProjectID == ProjectID);
-                    }
+                    ulong remoteUID = 0;
+                    FolderNode currentFolder = RootFolder;
+                    bool readingProject = false;
 
-                    if (readingProject)
+                    G2Header header = null;
+
+                    List<ulong> Recursing = new List<ulong>();
+
+
+                    while (stream.ReadPacket(ref header))
                     {
-                        if (header.Name == StoragePacket.Folder)
+                        if (header.Name == StoragePacket.Root)
                         {
-                            StorageFolder folder = StorageFolder.Decode(header);
+                            StorageRoot root = StorageRoot.Decode(header);
 
-                            // if new UID 
-                            if (remoteUID == folder.UID)
-                                continue;
-
-                            remoteUID = folder.UID;
-
-                           if (RescanFolderMap.ContainsKey(remoteUID))
-                                if (RescanFolderMap[remoteUID].Recurse)
-                                    Recursing.Add(remoteUID);
-
-                            if (Recursing.Count > 0 || RescanFolderMap.ContainsKey(remoteUID))
-                            {
-                                bool added = false;
-
-                                while (!added)
-                                {
-                                    if (currentFolder.Details.UID == folder.ParentUID)
-                                    {
-                                        // if folder exists with UID
-                                        if (currentFolder.Folders.ContainsKey(remoteUID))
-                                            currentFolder = currentFolder.Folders[remoteUID];
-
-                                        // else add folder as temp, mark as changed
-                                        else
-                                            currentFolder = currentFolder.AddFolderInfo(folder, true);
-
-                                        // diff file properties, if different, add as change
-                                        if (currentFolder.Temp || Storages.ItemDiff(currentFolder.Details, folder) != StorageActions.None)
-                                        {
-                                            currentFolder.Changes[id] = folder;
-                                            currentFolder.UpdateOverlay();
-                                        }
-
-                                        added = true;
-                                    }
-                                    else if (currentFolder.Parent.GetType() == typeof(FolderNode))
-                                    {
-                                        // if current folder id equals recurse marker stop recursing
-                                        if (Recursing.Contains(currentFolder.Details.UID))
-                                            Recursing.Remove(currentFolder.Details.UID);
-
-                                        currentFolder = (FolderNode)currentFolder.Parent;
-                                    }
-                                    else
-                                        break;
-                                }
-                            }
+                            readingProject = (root.ProjectID == ProjectID);
                         }
 
-                        if (header.Name == StoragePacket.File)
+                        if (readingProject)
                         {
-                            StorageFile file = StorageFile.Decode(header);
-
-                            // if new UID 
-                            if (remoteUID == file.UID)
-                                continue;
-
-                            remoteUID = file.UID;
-
-                            if (Recursing.Count > 0 /*|| RescanFileMap.ContainsKey(remoteUID)*/)
+                            if (header.Name == StoragePacket.Folder)
                             {
-                                FileItem currentFile = null;
+                                StorageFolder folder = StorageFolder.Decode(header);
 
-                                // if file exists with UID
-                                if (currentFolder.Files.ContainsKey(remoteUID))
-                                    currentFile = currentFolder.Files[remoteUID];
+                                // if new UID 
+                                if (remoteUID == folder.UID)
+                                    continue;
 
-                                // else add file as temp, mark as changed
-                                else
-                                    currentFile = currentFolder.AddFileInfo(file, true);
+                                remoteUID = folder.UID;
 
-                                //crit check if file is integrated
+                                if (RescanFolderMap.ContainsKey(remoteUID))
+                                    if (RescanFolderMap[remoteUID].Recurse)
+                                        Recursing.Add(remoteUID);
 
-                                if (currentFile.Temp || Storages.ItemDiff(currentFile.Details, file) != StorageActions.None)
-                                    currentFile.Changes[id] = file;
+                                if (Recursing.Count > 0 || RescanFolderMap.ContainsKey(remoteUID))
+                                {
+                                    bool added = false;
+
+                                    while (!added)
+                                    {
+                                        if (currentFolder.Details.UID == folder.ParentUID)
+                                        {
+                                            // if folder exists with UID
+                                            if (currentFolder.Folders.ContainsKey(remoteUID))
+                                                currentFolder = currentFolder.Folders[remoteUID];
+
+                                            // else add folder as temp, mark as changed
+                                            else
+                                                currentFolder = currentFolder.AddFolderInfo(folder, true);
+
+                                            // diff file properties, if different, add as change
+                                            if (currentFolder.Temp || Storages.ItemDiff(currentFolder.Details, folder) != StorageActions.None)
+                                            {
+                                                currentFolder.Changes[id] = folder;
+                                                currentFolder.UpdateOverlay();
+                                            }
+
+                                            added = true;
+                                        }
+                                        else if (currentFolder.Parent.GetType() == typeof(FolderNode))
+                                        {
+                                            // if current folder id equals recurse marker stop recursing
+                                            if (Recursing.Contains(currentFolder.Details.UID))
+                                                Recursing.Remove(currentFolder.Details.UID);
+
+                                            currentFolder = (FolderNode)currentFolder.Parent;
+                                        }
+                                        else
+                                            break;
+                                    }
+                                }
+                            }
+
+                            if (header.Name == StoragePacket.File)
+                            {
+                                StorageFile file = StorageFile.Decode(header);
+
+                                // if new UID 
+                                if (remoteUID == file.UID)
+                                    continue;
+
+                                remoteUID = file.UID;
+
+                                if (Recursing.Count > 0 /*|| RescanFileMap.ContainsKey(remoteUID)*/)
+                                {
+                                    FileItem currentFile = null;
+
+                                    // if file exists with UID
+                                    if (currentFolder.Files.ContainsKey(remoteUID))
+                                        currentFile = currentFolder.Files[remoteUID];
+
+                                    // else add file as temp, mark as changed
+                                    else
+                                        currentFile = currentFolder.AddFileInfo(file, true);
+
+                                    //crit check if file is integrated
+
+                                    if (currentFile.Temp || Storages.ItemDiff(currentFile.Details, file) != StorageActions.None)
+                                        currentFile.Changes[id] = file;
+                                }
                             }
                         }
                     }
                 }
-
-                stream.Close();
             }
             catch
             {

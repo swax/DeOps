@@ -449,11 +449,10 @@ namespace RiseOp.Implementation.Protocol.Comm
 	internal class KeyAck : G2Packet
 	{
         const byte Packet_Name = 0x10;
-        const byte Packet_Mod = 0x20;
-        const byte Packet_Exp = 0x30;
+        const byte Packet_Key = 0x20;
 
 
-		internal RSAParameters SenderPubKey;
+        internal byte[] PublicKey;
         internal string Name;	
 	
 
@@ -468,8 +467,7 @@ namespace RiseOp.Implementation.Protocol.Comm
                 G2Frame ka = protocol.WritePacket(null, CommPacket.KeyAck, null);
 
                 protocol.WritePacket(ka, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
-                protocol.WritePacket(ka, Packet_Mod, SenderPubKey.Modulus);
-                protocol.WritePacket(ka, Packet_Exp, SenderPubKey.Exponent);
+                protocol.WritePacket(ka, Packet_Key, PublicKey);
 
                 return protocol.WriteFinish();
             }
@@ -481,20 +479,17 @@ namespace RiseOp.Implementation.Protocol.Comm
 
 			G2Header child = new G2Header(packet.Root.Data);
 
-			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
-			{
+            while (G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue ;
+
                 if (child.Name == Packet_Name)
-                    if (G2Protocol.ReadPayload(child))
-                        ka.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                    ka.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
 
-                if (child.Name == Packet_Mod)
-					if( G2Protocol.ReadPayload(child) )
-						ka.SenderPubKey.Modulus = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-
-                if (child.Name == Packet_Exp)
-					if( G2Protocol.ReadPayload(child) )
-						ka.SenderPubKey.Exponent = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-			}
+                if (child.Name == Packet_Key)
+                    ka.PublicKey = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+            }
 
 			return ka;
 		}

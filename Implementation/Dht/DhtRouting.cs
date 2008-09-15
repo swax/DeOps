@@ -9,6 +9,9 @@ using RiseOp.Services;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
 
+
+// network size = bucket size * 2 ^ (bucket count - 1)
+
 namespace RiseOp.Implementation.Dht
 {
 	internal class DhtRouting
@@ -133,12 +136,6 @@ namespace RiseOp.Implementation.Dht
 			// find oldest can attempt, send ping, remove expired
             if (oldest != null && Core.TimeNow > oldest.NextTry)
             {
-				//crit - delete
-                if (!Network.IsGlobal)
-                {
-                    int z = 0;
-                }
-
                 Network.Send_Ping(oldest);
 
                 oldest.Attempts++;
@@ -160,12 +157,6 @@ namespace RiseOp.Implementation.Dht
             if (DhtResponsive == responsive)
                 return;
             
-            //crit - delete
-            if (responsive == false && !Network.IsGlobal)
-            {
-                int x = 0;
-            }
-
             // reset attempts when re-entering responsive mode
             if (responsive)
                 foreach (DhtContact contact in ContactMap.Values)
@@ -686,80 +677,21 @@ namespace RiseOp.Implementation.Dht
                 results.Add(contact);
 
             return results;
-
-
-            /*
-            // buckets aren't sorted, so just cant grab contacts till max is reached
-            // need to grab all contacts from bucket then sort for closest to target
-
-            int  depth       = 0;
-			int  pos         = 1;
-			bool needExtra   = false;
-			
-			DhtBucket prevBucket = null;
-
-            SortedList<ulong, List<DhtContact>> closest = new SortedList<ulong, List<DhtContact>>();
-
-			lock(BucketList)
-            {
-                foreach(DhtBucket bucket in BucketList)
-				{
-					// find right bucket to get contacts from
-                    if(!bucket.Last)
-                        if (needExtra == false && Utilities.GetBit(Core.LocalDhtID, depth) == Utilities.GetBit(targetID, depth))
-					    {
-						    prevBucket = bucket;
-						    depth++;
-						    pos++;
-						    continue;
-					    }
-
-                    foreach (DhtContact contact in bucket.ContactList)
-                    {
-                        ulong distance = contact.DhtID ^ targetID;
-
-                        if (!closest.ContainsKey(distance))
-                            closest[distance] = new List<DhtContact>();
-
-                        closest[distance].Add(contact);
-                    }
-
-                    if (closest.Count > resultMax || bucket.Last)
-						break;
-
-                    // if still need more contacts get them from next bucket down
-					needExtra = true;
-				}
-			
-			    // if still need more conacts get from bucket up from target
-                if (closest.Count < resultMax && prevBucket != null)
-                    foreach (DhtContact contact in prevBucket.ContactList)
-                    {
-                        ulong distance = contact.DhtID ^ targetID;
-
-                        if (!closest.ContainsKey(distance))
-                            closest[distance] = new List<DhtContact>();
-
-                        closest[distance].Add(contact);
-                    }
-            }
-
-            // just built and return
-            List<DhtContact> results = new List<DhtContact>();
-
-            foreach(List<DhtContact> list in closest.Values)
-                foreach (DhtContact contact in list)
-                {
-                    results.Add(contact);
-
-                    if (results.Count >= resultMax)
-                        return results;
-                }
-
-            return results;*/
         }
 
-   
+
+        internal int GetBucketIndex(ulong remoteRouting)
+        {
+            int index = 0;
+
+            for (int x = 0; x < 64; x++)
+                if (Utilities.GetBit(remoteRouting, x) != Utilities.GetBit(LocalRoutingID, x))
+                    break;
+                else
+                    index++;
+
+            return index;
+        }
     }
 
     internal class DhtBound

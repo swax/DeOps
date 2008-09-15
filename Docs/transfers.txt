@@ -198,14 +198,12 @@ multi-source d/l
 		
 		light comm overflow
 		investigate data comm error
-	
-		session already active problems, many requests in a row, flag and investigate both sides
-		
-		time to have all files opened logged for when they are created / read / and disposed so conflicts are resolved
-		
-		lan mode breakpoint?
-		search for anything int x, y and evaluate
 
+		lan mode breakpoint?
+
+		remove trash files from service folder because delete can fail if file in use, next load clean
+
+		
 	testing
 		change concurrent to 3 and ensure that transfers are queued 
 		kill a source mid transfer and ensure transfer gets moved back to pending
@@ -222,8 +220,6 @@ multi-source d/l
 		100 mp3s, syncing around network of 32
 
 		test with nats and firewalls
-		
-		log session count
 
 
 -------------------------------------------------------------------------------------------

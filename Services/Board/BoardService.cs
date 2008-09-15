@@ -367,24 +367,24 @@ namespace RiseOp.Services.Board
                 if (!File.Exists(path))
                     return;
 
-                CryptoStream crypto = IVCryptoStream.Load(path, LocalFileKey);
-                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
+                using (IVCryptoStream crypto = IVCryptoStream.Load(path, LocalFileKey))
+                {
+                    PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
-                G2Header root = null;
+                    G2Header root = null;
 
-                while (stream.ReadPacket(ref root))
-                    if (root.Name == DataPacket.SignedData)
-                    {
-                        SignedData signed = SignedData.Decode(root);
-                        G2Header embedded = new G2Header(signed.Data);
+                    while (stream.ReadPacket(ref root))
+                        if (root.Name == DataPacket.SignedData)
+                        {
+                            SignedData signed = SignedData.Decode(root);
+                            G2Header embedded = new G2Header(signed.Data);
 
-                        // figure out data contained
-                        if (G2Protocol.ReadPacket(embedded))
-                            if (embedded.Name == BoardPacket.PostHeader)
-                                Process_PostHeader(null, signed, PostHeader.Decode(embedded));
-                    }
-
-                stream.Close();
+                            // figure out data contained
+                            if (G2Protocol.ReadPacket(embedded))
+                                if (embedded.Name == BoardPacket.PostHeader)
+                                    Process_PostHeader(null, signed, PostHeader.Decode(embedded));
+                        }
+                }
             }
             catch(Exception ex)
             {
@@ -402,16 +402,16 @@ namespace RiseOp.Services.Board
             try
             {
                 string tempPath = Core.GetTempPath();
-                CryptoStream stream = IVCryptoStream.Save(tempPath, LocalFileKey);
-
-                board.Posts.LockReading(delegate()
+                using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, LocalFileKey))
                 {
-                    foreach (OpPost post in board.Posts.Values)
-                        stream.Write(post.SignedHeader, 0, post.SignedHeader.Length);
-                });
+                    board.Posts.LockReading(delegate()
+                    {
+                        foreach (OpPost post in board.Posts.Values)
+                            stream.Write(post.SignedHeader, 0, post.SignedHeader.Length);
+                    });
 
-                stream.FlushFinalBlock();
-                stream.Close();
+                    stream.FlushFinalBlock();
+                }
 
 
                 string finalPath = GetTargetDir(id) + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "headers" + id.ToString());
@@ -499,48 +499,46 @@ namespace RiseOp.Services.Board
 
             // setup temp file
             string tempPath = Core.GetTempPath();
-            CryptoStream stream = IVCryptoStream.Save(tempPath, header.FileKey);
-            int written = 0;
-
-            // write post file
-            written += Protocol.WriteToFile(new PostInfo(subject, Utilities.GetQuip(message), Core.RndGen), stream);
-
-            byte[] msgBytes = UTF8Encoding.UTF8.GetBytes(message);
-            written += Protocol.WriteToFile(new PostFile("body", msgBytes.Length), stream);
-
-            foreach (AttachedFile attached in files)
-                written += Protocol.WriteToFile(new PostFile(attached.Name, attached.Size), stream);
-
-            stream.WriteByte(0); // end packets
-            header.FileStart = (long)written + 1;
-
-            // write files
-            stream.Write(msgBytes, 0, msgBytes.Length);
-
-            if (files != null)
+            using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, header.FileKey))
             {
-                int buffSize = 4096;
-                byte[] buffer = new byte[buffSize];
+                int written = 0;
+
+                // write post file
+                written += Protocol.WriteToFile(new PostInfo(subject, Utilities.GetQuip(message), Core.RndGen), stream);
+
+                byte[] msgBytes = UTF8Encoding.UTF8.GetBytes(message);
+                written += Protocol.WriteToFile(new PostFile("body", msgBytes.Length), stream);
 
                 foreach (AttachedFile attached in files)
+                    written += Protocol.WriteToFile(new PostFile(attached.Name, attached.Size), stream);
+
+                stream.WriteByte(0); // end packets
+                header.FileStart = (long)written + 1;
+
+                // write files
+                stream.Write(msgBytes, 0, msgBytes.Length);
+
+                if (files != null)
                 {
-                    FileStream embed = new FileStream(attached.FilePath, FileMode.Open, FileAccess.Read);
+                    int buffSize = 4096;
+                    byte[] buffer = new byte[buffSize];
 
-                    int read = buffSize;
-                    while (read == buffSize)
-                    {
-                        read = embed.Read(buffer, 0, buffSize);
-                        stream.Write(buffer, 0, read);
-                    }
-
-                    embed.Close();
+                    foreach (AttachedFile attached in files)
+                        using (FileStream embed = File.OpenRead(attached.FilePath))
+                        {
+                            int read = buffSize;
+                            while (read == buffSize)
+                            {
+                                read = embed.Read(buffer, 0, buffSize);
+                                stream.Write(buffer, 0, read);
+                            }
+                        }
                 }
+
+                stream.WriteByte(0); // signal last packet
+
+                stream.FlushFinalBlock();
             }
-
-            stream.WriteByte(0); // signal last packet
-
-            stream.FlushFinalBlock();
-            stream.Close();
 
             // finish building header
             Utilities.HashTagFile(tempPath, Network.Protocol, ref header.FileHash, ref header.FileSize);
@@ -1131,22 +1129,22 @@ namespace RiseOp.Services.Board
 
                     post.Attached = new List<PostFile>();
 
-                    TaggedStream file = new TaggedStream(path, Network.Protocol);
-                    CryptoStream crypto = IVCryptoStream.Load(file, post.Header.FileKey);
-                    PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
-
-                    G2Header root = null;
-
-                    while (stream.ReadPacket(ref root))
+                    using (TaggedStream file = new TaggedStream(path, Network.Protocol))
+                    using (IVCryptoStream crypto = IVCryptoStream.Load(file, post.Header.FileKey))
                     {
-                        if (root.Name == BoardPacket.PostInfo)
-                            post.Info = PostInfo.Decode(root);
+                        PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
-                        else if (root.Name == BoardPacket.PostFile)
-                            post.Attached.Add(PostFile.Decode(root));
+                        G2Header root = null;
+
+                        while (stream.ReadPacket(ref root))
+                        {
+                            if (root.Name == BoardPacket.PostInfo)
+                                post.Info = PostInfo.Decode(root);
+
+                            else if (root.Name == BoardPacket.PostFile)
+                                post.Attached.Add(PostFile.Decode(root));
+                        }
                     }
-
-                    stream.Close();
                 }
                 catch (Exception ex)
                 {

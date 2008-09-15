@@ -54,8 +54,9 @@ namespace RiseOp.Implementation.Dht
 			for(int x = 0; x < Depth; x++)
 				Utilities.SetBit(ref randomID, x, Utilities.GetBit(localID, x)); 
 
-			if( !Last )
-				Utilities.SetBit(ref randomID, Depth, Utilities.GetBit(localID, Depth) ^ 0x1);
+            // if this is the last bucket, keep id the same in the final bit
+            bool finalBit = Utilities.GetBit(localID, Depth);
+            Utilities.SetBit(ref randomID, Depth, Last ? finalBit : !finalBit);
 
 			return randomID;
 		}
@@ -78,15 +79,6 @@ namespace RiseOp.Implementation.Dht
 
 	internal class DhtContact : DhtAddress
 	{
-        
-        // RoutingID: slightly mod the user's lower bits so that dhtid is unique (max 64k uniques)
-        // needed so that 1000 of the same user are online, the routing table still works
-        // high/low/xor cache area is still fair and balanced
-        internal ulong RoutingID
-        {
-            get { return UserID ^ ClientID; }
-        }
-
         new const int PAYLOAD_SIZE = 14;
 
         const byte Packet_IP = 0x10;

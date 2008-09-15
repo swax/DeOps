@@ -374,9 +374,9 @@ namespace RiseOp.Services.Storage
             if (!File.Exists(ResPath + Path.DirectorySeparatorChar + filename + ".gif"))
             {
                 Bitmap image = (Bitmap)StorageRes.ResourceManager.GetObject(filename);
-                FileStream stream = new FileStream(ResPath + Path.DirectorySeparatorChar + filename + ".gif", FileMode.CreateNew, FileAccess.Write);
-                image.Save(stream, System.Drawing.Imaging.ImageFormat.Gif);
-                stream.Close();
+                
+                using(FileStream stream = new FileStream(ResPath + Path.DirectorySeparatorChar + filename + ".gif", FileMode.CreateNew, FileAccess.Write))
+                    image.Save(stream, System.Drawing.Imaging.ImageFormat.Gif);
             }
 
             string path = "file:///" + ResPath + "/" + filename + ".gif";

@@ -351,39 +351,39 @@ namespace RiseOp.Services.Plan
             {
                 string tempPath = Core.GetTempPath();
                 byte[] key = Utilities.GenerateKey(Core.StrongRndGen, 256);
-                CryptoStream stream = IVCryptoStream.Save(tempPath, key);
-
-                // write dummy block if nothing to write
-                OpPlan plan = GetPlan(Core.UserID, true);
-
-                if (plan == null ||
-                    plan.Blocks == null ||
-                    plan.Blocks.Count == 0)
-                    Protocol.WriteToFile(new PlanBlock(), stream);
-
-
-                if (plan != null)
+                using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, key))
                 {
-                    foreach (List<PlanBlock> list in plan.Blocks.Values)
-                        foreach (PlanBlock block in list)
-                            Protocol.WriteToFile(block, stream);
+                    // write dummy block if nothing to write
+                    OpPlan plan = GetPlan(Core.UserID, true);
 
-                    foreach (List<PlanGoal> list in plan.GoalMap.Values)
-                        foreach (PlanGoal goal in list)
-                        {
-                            GetEstimate(goal, ref goal.EstCompleted, ref goal.EstTotal);
-                            Protocol.WriteToFile(goal, stream);
-                        }
+                    if (plan == null ||
+                        plan.Blocks == null ||
+                        plan.Blocks.Count == 0)
+                        Protocol.WriteToFile(new PlanBlock(), stream);
 
-                    foreach (List<PlanItem> list in plan.ItemMap.Values)
-                        foreach (PlanItem item in list)
-                            Protocol.WriteToFile(item, stream);
+
+                    if (plan != null)
+                    {
+                        foreach (List<PlanBlock> list in plan.Blocks.Values)
+                            foreach (PlanBlock block in list)
+                                Protocol.WriteToFile(block, stream);
+
+                        foreach (List<PlanGoal> list in plan.GoalMap.Values)
+                            foreach (PlanGoal goal in list)
+                            {
+                                GetEstimate(goal, ref goal.EstCompleted, ref goal.EstTotal);
+                                Protocol.WriteToFile(goal, stream);
+                            }
+
+                        foreach (List<PlanItem> list in plan.ItemMap.Values)
+                            foreach (PlanItem item in list)
+                                Protocol.WriteToFile(item, stream);
+                    }
+
+                    stream.WriteByte(0); // signal last packet
+
+                    stream.FlushFinalBlock();
                 }
-
-                stream.WriteByte(0); // signal last packet
-
-                stream.FlushFinalBlock();
-                stream.Close();
 
                 OpVersionedFile file = Cache.UpdateLocal(tempPath, key, null);
 
@@ -428,40 +428,40 @@ namespace RiseOp.Services.Plan
 
                 List<int> myjobs = new List<int>();
 
-                TaggedStream file = new TaggedStream(path, Network.Protocol);
-                CryptoStream crypto = IVCryptoStream.Load(file, plan.File.Header.FileKey);
-                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
-
-                G2Header root = null;
-
-                while (stream.ReadPacket(ref root))
+                using (TaggedStream file = new TaggedStream(path, Network.Protocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(file, plan.File.Header.FileKey))
                 {
-                    if (root.Name == PlanPacket.Block)
+                    PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
+
+                    G2Header root = null;
+
+                    while (stream.ReadPacket(ref root))
                     {
-                        PlanBlock block = PlanBlock.Decode(root);
+                        if (root.Name == PlanPacket.Block)
+                        {
+                            PlanBlock block = PlanBlock.Decode(root);
 
-                        if (block != null)
-                            plan.AddBlock(block);
-                    }
+                            if (block != null)
+                                plan.AddBlock(block);
+                        }
 
-                    if (root.Name == PlanPacket.Goal)
-                    {
-                        PlanGoal goal = PlanGoal.Decode(root);
+                        if (root.Name == PlanPacket.Goal)
+                        {
+                            PlanGoal goal = PlanGoal.Decode(root);
 
-                        if (goal != null)
-                            plan.AddGoal(goal);
-                    }
+                            if (goal != null)
+                                plan.AddGoal(goal);
+                        }
 
-                    if (root.Name == PlanPacket.Item)
-                    {
-                        PlanItem item = PlanItem.Decode(root);
+                        if (root.Name == PlanPacket.Item)
+                        {
+                            PlanItem item = PlanItem.Decode(root);
 
-                        if (item != null)
-                            plan.AddItem(item);
+                            if (item != null)
+                                plan.AddItem(item);
+                        }
                     }
                 }
-
-                stream.Close();
 
                 plan.Loaded = true;
 

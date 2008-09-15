@@ -307,32 +307,30 @@ namespace RiseOp.Services.Mail
 
             try
             {
-                TaggedStream stream = new TaggedStream(Mail.GetLocalPath(message.Header), Core.GuiProtocol);
-                CryptoStream crypto = IVCryptoStream.Load(stream, message.Header.LocalKey);
-
-                int buffSize = 4096;
-                byte[] buffer = new byte[4096];
-                ulong bytesLeft = message.Header.FileStart;
-                while (bytesLeft > 0)
+                using (TaggedStream stream = new TaggedStream(Mail.GetLocalPath(message.Header), Core.GuiProtocol))
+                using (CryptoStream crypto = IVCryptoStream.Load(stream, message.Header.LocalKey))
                 {
-                    int readSize = (bytesLeft > (ulong)buffSize) ? buffSize : (int)bytesLeft;
-                    int read = crypto.Read(buffer, 0, readSize);
-                    bytesLeft -= (ulong)read;
-                }
-
-                // load file
-                foreach (MailFile file in message.Attached)
-                    if (file.Name == "body")
+                    int buffSize = 4096;
+                    byte[] buffer = new byte[4096];
+                    ulong bytesLeft = message.Header.FileStart;
+                    while (bytesLeft > 0)
                     {
-                        byte[] htmlBytes = new byte[file.Size];
-                        crypto.Read(htmlBytes, 0, (int)file.Size);
-
-                        UTF8Encoding utf = new UTF8Encoding();
-                        MessageBody.Rtf = utf.GetString(htmlBytes);
+                        int readSize = (bytesLeft > (ulong)buffSize) ? buffSize : (int)bytesLeft;
+                        int read = crypto.Read(buffer, 0, readSize);
+                        bytesLeft -= (ulong)read;
                     }
 
-                Utilities.ReadtoEnd(crypto);
-                crypto.Close();
+                    // load file
+                    foreach (MailFile file in message.Attached)
+                        if (file.Name == "body")
+                        {
+                            byte[] htmlBytes = new byte[file.Size];
+                            crypto.Read(htmlBytes, 0, (int)file.Size);
+
+                            UTF8Encoding utf = new UTF8Encoding();
+                            MessageBody.Rtf = utf.GetString(htmlBytes);
+                        }
+                }
             }
             catch (Exception ex)
             {
@@ -408,43 +406,40 @@ namespace RiseOp.Services.Mail
         {
             try
             {
-                CryptoStream crypto = IVCryptoStream.Save(Mail.GetLocalPath(message.Header), message.Header.LocalKey);
-
-                // get past packet section of file
-                const int buffSize = 4096;
-                byte[] buffer = new byte[4096];
-               
-                ulong bytesLeft = message.Header.FileStart;
-                while (bytesLeft > 0)
+                using (IVCryptoStream crypto = IVCryptoStream.Load(Mail.GetLocalPath(message.Header), message.Header.LocalKey))
                 {
-                    int readSize = (bytesLeft > (ulong)buffSize) ? buffSize : (int)bytesLeft;
-                    int read = crypto.Read(buffer, 0, readSize);
-                    bytesLeft -= (ulong)read;
-                }
+                    // get past packet section of file
+                    const int buffSize = 4096;
+                    byte[] buffer = new byte[4096];
 
-                // setup write file
-                FileStream outstream = new FileStream(path, FileMode.Create, FileAccess.Write);
-
-                // read files, write the right one :P
-                foreach (MailFile attached in message.Attached)
-                {
-                    bytesLeft = (ulong)attached.Size;
-                    
+                    ulong bytesLeft = message.Header.FileStart;
                     while (bytesLeft > 0)
                     {
                         int readSize = (bytesLeft > (ulong)buffSize) ? buffSize : (int)bytesLeft;
                         int read = crypto.Read(buffer, 0, readSize);
                         bytesLeft -= (ulong)read;
+                    }
 
-                        if (attached == file)
-                            outstream.Write(buffer, 0, read);
+                    // setup write file
+                    using (FileStream outstream = new FileStream(path, FileMode.Create, FileAccess.Write))
+                    {
+                        // read files, write the right one :P
+                        foreach (MailFile attached in message.Attached)
+                        {
+                            bytesLeft = (ulong)attached.Size;
+
+                            while (bytesLeft > 0)
+                            {
+                                int readSize = (bytesLeft > (ulong)buffSize) ? buffSize : (int)bytesLeft;
+                                int read = crypto.Read(buffer, 0, readSize);
+                                bytesLeft -= (ulong)read;
+
+                                if (attached == file)
+                                    outstream.Write(buffer, 0, read);
+                            }
+                        }
                     }
                 }
-
-                outstream.Close();
-
-                Utilities.ReadtoEnd(crypto);
-                crypto.Close();
             }
             catch (Exception ex)
             {

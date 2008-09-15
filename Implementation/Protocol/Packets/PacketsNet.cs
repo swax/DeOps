@@ -20,6 +20,9 @@ namespace RiseOp.Implementation.Protocol.Net
         internal ulong UserID;
         internal ushort ClientID;
 
+        // RoutingID: slightly mod the user's lower bits so that dhtid is unique (max 64k uniques)
+        // needed so that 1000 of the same user are online, the routing table still works
+        // high/low/xor cache area is still fair and balanced
         public ulong RoutingID
         {
             get { return UserID ^ ClientID; }

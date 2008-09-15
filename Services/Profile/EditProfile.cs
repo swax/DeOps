@@ -142,34 +142,32 @@ namespace RiseOp.Services.Profile
             
             try
             {
-                TaggedStream stream = new TaggedStream(template.FilePath, Core.GuiProtocol);
-                CryptoStream crypto = IVCryptoStream.Load(stream, template.FileKey);
-
-                int buffSize = 4096;
-                byte[] buffer = new byte[4096];
-                long bytesLeft = profile.EmbeddedStart;
-                while (bytesLeft > 0)
+                using (TaggedStream stream = new TaggedStream(template.FilePath, Core.GuiProtocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(stream, template.FileKey))
                 {
-                    int readSize = (bytesLeft > (long)buffSize) ? buffSize : (int)bytesLeft;
-                    int read = crypto.Read(buffer, 0, readSize);
-                    bytesLeft -= (long)read;
-                }
-
-                foreach (ProfileAttachment attach in profile.Attached)
-                    if (attach.Name.StartsWith("template"))
+                    int buffSize = 4096;
+                    byte[] buffer = new byte[4096];
+                    long bytesLeft = profile.EmbeddedStart;
+                    while (bytesLeft > 0)
                     {
-                        byte[] html = new byte[attach.Size];
-                        crypto.Read(html, 0, (int)attach.Size);
-
-                        template.Html = UTF8Encoding.UTF8.GetString(html);
-                        SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider();
-                        template.Hash = sha1.ComputeHash(html);
-
-                        break;
+                        int readSize = (bytesLeft > (long)buffSize) ? buffSize : (int)bytesLeft;
+                        int read = crypto.Read(buffer, 0, readSize);
+                        bytesLeft -= (long)read;
                     }
 
-                Utilities.ReadtoEnd(crypto);
-                crypto.Close();
+                    foreach (ProfileAttachment attach in profile.Attached)
+                        if (attach.Name.StartsWith("template"))
+                        {
+                            byte[] html = new byte[attach.Size];
+                            crypto.Read(html, 0, (int)attach.Size);
+
+                            template.Html = UTF8Encoding.UTF8.GetString(html);
+                            SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider();
+                            template.Hash = sha1.ComputeHash(html);
+
+                            break;
+                        }
+                }
             }
             catch
             {

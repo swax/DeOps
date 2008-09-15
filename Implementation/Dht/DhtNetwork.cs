@@ -89,7 +89,7 @@ namespace RiseOp.Implementation.Dht
                 GlobalConfig = GlobalSettings.Load(this);
 
             Local = new DhtClient();
-            Local.UserID = IsGlobal ? GlobalConfig.UserID : Utilities.KeytoID(Core.User.Settings.KeyPair.ExportParameters(false));
+            Local.UserID = IsGlobal ? GlobalConfig.UserID : Utilities.KeytoID(Core.User.Settings.KeyPublic);
             Local.ClientID = (ushort)Core.RndGen.Next(1, ushort.MaxValue);
 
             OpID = Utilities.KeytoID(IsGlobal ? GlobalKey : Core.User.Settings.OpKey);
@@ -826,12 +826,6 @@ namespace RiseOp.Implementation.Dht
             // if received tcp
             if (packet.ReceivedTcp)
             {
-                //crit - delete
-                if (!IsGlobal)
-                {
-                    int x = 0;
-                }
-
                 // if regular interval pong 
                 if (pong.Source == null)
                 {

@@ -54,14 +54,14 @@ namespace RiseOp.Services.Storage
             try
             {
                 string tempPath = Core.GetTempPath();
-                CryptoStream stream = IVCryptoStream.Save(tempPath, Storages.LocalFileKey);
+                using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, Storages.LocalFileKey))
+                {
+                    Protocol.WriteToFile(new StorageRoot(ProjectID), stream);
 
-                Protocol.WriteToFile(new StorageRoot(ProjectID), stream);
+                    WriteWorkingFile(stream, RootFolder, false); // record all so working can be browsed while locked
 
-                WriteWorkingFile(stream, RootFolder, false); // record all so working can be browsed while locked
-
-                stream.FlushFinalBlock();
-                stream.Close();
+                    stream.FlushFinalBlock();
+                }
                 
                 byte[] hash = null;
                 long size = 0;
@@ -91,85 +91,82 @@ namespace RiseOp.Services.Storage
             {
                 string path = Storages.GetWorkingPath(ProjectID);
                 byte[] key = Storages.LocalFileKey;
-                Stream source = null;
 
                 if (File.Exists(path)) // use locally committed storage file
                 {
                     Modified = true; // working file present on startup, meaning there are changes lingering to be committed
-                    source = new TaggedStream(path, Protocol);
                 }
                 else
                 {
-
                     path = Storages.GetFilePath(local);
 
                     if (!File.Exists(path))
                         return;
 
                     key = local.File.Header.FileKey;
-                    source = new TaggedStream(path, Protocol);
                 }
 
-                CryptoStream crypto = IVCryptoStream.Load(source, key);
-                PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
-
-                G2Header header = null;
-                bool readingProject = false;
-
-                LocalFolder CurrentFolder = RootFolder;
-                string CurrentPath = RootPath;
-
-                while (stream.ReadPacket(ref header))
+                using (TaggedStream source = new TaggedStream(path, Protocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(source, key))
                 {
-                    if (header.Name == StoragePacket.Root)
-                    {
-                        StorageRoot root = StorageRoot.Decode(header);
+                    PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
-                        readingProject = (root.ProjectID == ProjectID);
-                    }
+                    G2Header header = null;
+                    bool readingProject = false;
 
-                    if (readingProject)
+                    LocalFolder CurrentFolder = RootFolder;
+                    string CurrentPath = RootPath;
+
+                    while (stream.ReadPacket(ref header))
                     {
-                        if (header.Name == StoragePacket.Folder)
+                        if (header.Name == StoragePacket.Root)
                         {
-                            StorageFolder folder = StorageFolder.Decode(header);
+                            StorageRoot root = StorageRoot.Decode(header);
 
-                            bool added = false;
-
-                            while (!added)
-                            {
-                                if (CurrentFolder.Info.UID == folder.ParentUID)
-                                {
-                                    // tracked, so need to add multiple folders (archives) with same UIDs
-                                    CurrentFolder = CurrentFolder.AddFolderInfo(folder);
-
-                                    added = true;
-                                }
-                                else if (CurrentFolder.Parent == null) // error
-                                    break;
-                                else if (CurrentFolder.Parent.GetType() == typeof(LocalFolder))
-                                    CurrentFolder = CurrentFolder.Parent;
-                                else
-                                    break;
-                            }
-
-                            if (!added)
-                            {
-                                Debug.Assert(false);
-                                throw new Exception("Error loading CFS");
-                            }
+                            readingProject = (root.ProjectID == ProjectID);
                         }
 
-                        if (header.Name == StoragePacket.File)
+                        if (readingProject)
                         {
-                            StorageFile file = StorageFile.Decode(header);
+                            if (header.Name == StoragePacket.Folder)
+                            {
+                                StorageFolder folder = StorageFolder.Decode(header);
 
-                            CurrentFolder.AddFileInfo(file);
+                                bool added = false;
+
+                                while (!added)
+                                {
+                                    if (CurrentFolder.Info.UID == folder.ParentUID)
+                                    {
+                                        // tracked, so need to add multiple folders (archives) with same UIDs
+                                        CurrentFolder = CurrentFolder.AddFolderInfo(folder);
+
+                                        added = true;
+                                    }
+                                    else if (CurrentFolder.Parent == null) // error
+                                        break;
+                                    else if (CurrentFolder.Parent.GetType() == typeof(LocalFolder))
+                                        CurrentFolder = CurrentFolder.Parent;
+                                    else
+                                        break;
+                                }
+
+                                if (!added)
+                                {
+                                    Debug.Assert(false);
+                                    throw new Exception("Error loading CFS");
+                                }
+                            }
+
+                            if (header.Name == StoragePacket.File)
+                            {
+                                StorageFile file = StorageFile.Decode(header);
+
+                                CurrentFolder.AddFileInfo(file);
+                            }
                         }
                     }
                 }
-
-                stream.Close();
             }
             catch (Exception ex)
             {
@@ -1135,174 +1132,174 @@ namespace RiseOp.Services.Storage
 
             try
             {
-                TaggedStream filex = new TaggedStream(path, Protocol);
-                CryptoStream crypto = IVCryptoStream.Load(filex, storage.File.Header.FileKey);
-                PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
-
-                ulong currentUID = 0;
-                LocalFolder currentFolder = RootFolder;
-                LocalFile currentFile = null;
-                bool ignoreCurrent = false;
-                bool readingProject = false;   
-
-                G2Header header = null;
-
-                while (stream.ReadPacket(ref header))
+                using (TaggedStream filex = new TaggedStream(path, Protocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(filex, storage.File.Header.FileKey))
                 {
-                    if (header.Name == StoragePacket.Root)
-                    {
-                        StorageRoot root = StorageRoot.Decode(header);
+                    PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
-                        readingProject = (root.ProjectID == ProjectID);
-                    }
+                    ulong currentUID = 0;
+                    LocalFolder currentFolder = RootFolder;
+                    LocalFile currentFile = null;
+                    bool ignoreCurrent = false;
+                    bool readingProject = false;
 
-                    if (readingProject)
+                    G2Header header = null;
+
+                    while (stream.ReadPacket(ref header))
                     {
-                        if (header.Name == StoragePacket.Folder)
+                        if (header.Name == StoragePacket.Root)
                         {
-                            StorageFolder readFolder = StorageFolder.Decode(header);
+                            StorageRoot root = StorageRoot.Decode(header);
 
-
-                            // if new uid
-                            if (currentUID != readFolder.UID)
-                            {
-                                // if only 1 entry in changes for previous file, remove it, its probably a dupe of local
-                                // and integration needs more than one file to happen
-                                if (currentFolder.HigherChanges.ContainsKey(id) && currentFolder.HigherChanges[id].Count == 1)
-                                    currentFolder.HigherChanges.Remove(id);
-
-                                // set new id
-                                currentUID = readFolder.UID;
-
-                                // check scope
-                                ignoreCurrent = false;
-                                if (readFolder.Scope.Count > 0 && !Core.Trust.IsInScope(readFolder.Scope, Core.UserID, ProjectID))
-                                    ignoreCurrent = true;
-
-
-                                bool added = false;
-
-                                while (!added)
-                                {
-                                    if (currentFolder.Info.UID == readFolder.ParentUID)
-                                    {
-                                        LocalFolder subFolder = null;
-                                        if (currentFolder.Folders.SafeTryGetValue(currentUID, out subFolder))
-                                            currentFolder = subFolder;
-                                        
-                                        else
-                                        {
-                                            // if ignoring, add folder so we can traverse id's file, but dont save changes to local storage mapping
-                                            if (ignoreCurrent)
-                                            {
-                                                currentFolder = new LocalFolder(currentFolder, readFolder);
-                                                break;
-                                            }
-
-                                            // check for conflicting name
-                                            currentFolder.Folders.LockReading(delegate()
-                                            {
-                                                foreach (LocalFolder subfolder in currentFolder.Folders.Values)
-                                                    if (!subfolder.Info.IsFlagged(StorageFlags.Archived) && subfolder.Info.Name == readFolder.Name)
-                                                        subfolder.Info.Name = subfolder.Info.Name + ".fix";
-                                            });
-
-                                            // if not found, create folder
-                                            currentFolder = currentFolder.AddFolderInfo(readFolder);
-                                            save = true;
-                                        }
-
-                                        added = true;
-                                    }
-
-                                    else if (currentFolder.Parent == null)
-                                        break; // error, couldn't find parent of folder that was read
-
-                                    else if (currentFolder.Parent.GetType() == typeof(LocalFolder))
-                                        currentFolder = currentFolder.Parent;
-
-                                    else
-                                        break;
-                                }
-                            }
-
-                            // if file does not equal null
-                            if (currentFolder != null && !ignoreCurrent)
-                            {
-                                // log change if file newer than ours
-                                // if if not in higher's history 
-                                // or if file integrated by higher by a node we would have inherited from
-
-                                // we look for our own file in higher changes, if there then we can auto integrate
-
-                                if (readFolder.Date >= currentFolder.Info.Date)
-                                    if (readFolder.IntegratedID == 0 ||
-                                        readFolder.IntegratedID == Core.UserID ||
-                                        Core.Trust.IsAdjacent(readFolder.IntegratedID, ProjectID))
-                                        currentFolder.AddHigherChange(id, readFolder);
-                            }
-
+                            readingProject = (root.ProjectID == ProjectID);
                         }
 
-                        if (header.Name == StoragePacket.File)
+                        if (readingProject)
                         {
-                            StorageFile readFile = StorageFile.Decode(header);
-
-                            // if new uid
-                            if (currentUID != readFile.UID)
+                            if (header.Name == StoragePacket.Folder)
                             {
-                                // if only 1 entry in changes for previous file, remove it, its probably a dupe of local
-                                // and integration needs more than one file to happen
-                                if (currentFile != null && currentFile.HigherChanges.ContainsKey(id) && currentFile.HigherChanges[id].Count == 1)
-                                    currentFile.HigherChanges.Remove(id);
+                                StorageFolder readFolder = StorageFolder.Decode(header);
 
-                                // set new id
-                                currentUID = readFile.UID;
 
-                                currentFile = null;
-
-                                // check scope
-                                ignoreCurrent = false;
-                                if (readFile.Scope.Count > 0 && !Core.Trust.IsInScope(readFile.Scope, Core.UserID, ProjectID))
+                                // if new uid
+                                if (currentUID != readFolder.UID)
                                 {
-                                    ignoreCurrent = true;
-                                    continue;
-                                }
+                                    // if only 1 entry in changes for previous file, remove it, its probably a dupe of local
+                                    // and integration needs more than one file to happen
+                                    if (currentFolder.HigherChanges.ContainsKey(id) && currentFolder.HigherChanges[id].Count == 1)
+                                        currentFolder.HigherChanges.Remove(id);
 
-                                // if file exists with UID, else add file as temp, mark as changed
-                                if(!currentFolder.Files.SafeTryGetValue(currentUID, out currentFile))
-                                {
-                                    // check for conflicting name
-                                    currentFolder.Files.LockReading(delegate()
+                                    // set new id
+                                    currentUID = readFolder.UID;
+
+                                    // check scope
+                                    ignoreCurrent = false;
+                                    if (readFolder.Scope.Count > 0 && !Core.Trust.IsInScope(readFolder.Scope, Core.UserID, ProjectID))
+                                        ignoreCurrent = true;
+
+
+                                    bool added = false;
+
+                                    while (!added)
                                     {
-                                        foreach (LocalFile checkFile in currentFolder.Files.Values)
-                                            if (!checkFile.Info.IsFlagged(StorageFlags.Archived) && checkFile.Info.Name == readFile.Name)
-                                                checkFile.Info.Name = checkFile.Info.Name + ".fix";
-                                    });
+                                        if (currentFolder.Info.UID == readFolder.ParentUID)
+                                        {
+                                            LocalFolder subFolder = null;
+                                            if (currentFolder.Folders.SafeTryGetValue(currentUID, out subFolder))
+                                                currentFolder = subFolder;
 
-                                    currentFile = currentFolder.AddFileInfo(readFile);
-                                    save = true;
+                                            else
+                                            {
+                                                // if ignoring, add folder so we can traverse id's file, but dont save changes to local storage mapping
+                                                if (ignoreCurrent)
+                                                {
+                                                    currentFolder = new LocalFolder(currentFolder, readFolder);
+                                                    break;
+                                                }
 
-                                    if(!Storages.FileExists(currentFile.Info))
-                                        Storages.DownloadFile(id, currentFile.Info );
+                                                // check for conflicting name
+                                                currentFolder.Folders.LockReading(delegate()
+                                                {
+                                                    foreach (LocalFolder subfolder in currentFolder.Folders.Values)
+                                                        if (!subfolder.Info.IsFlagged(StorageFlags.Archived) && subfolder.Info.Name == readFolder.Name)
+                                                            subfolder.Info.Name = subfolder.Info.Name + ".fix";
+                                                });
+
+                                                // if not found, create folder
+                                                currentFolder = currentFolder.AddFolderInfo(readFolder);
+                                                save = true;
+                                            }
+
+                                            added = true;
+                                        }
+
+                                        else if (currentFolder.Parent == null)
+                                            break; // error, couldn't find parent of folder that was read
+
+                                        else if (currentFolder.Parent.GetType() == typeof(LocalFolder))
+                                            currentFolder = currentFolder.Parent;
+
+                                        else
+                                            break;
+                                    }
                                 }
+
+                                // if file does not equal null
+                                if (currentFolder != null && !ignoreCurrent)
+                                {
+                                    // log change if file newer than ours
+                                    // if if not in higher's history 
+                                    // or if file integrated by higher by a node we would have inherited from
+
+                                    // we look for our own file in higher changes, if there then we can auto integrate
+
+                                    if (readFolder.Date >= currentFolder.Info.Date)
+                                        if (readFolder.IntegratedID == 0 ||
+                                            readFolder.IntegratedID == Core.UserID ||
+                                            Core.Trust.IsAdjacent(readFolder.IntegratedID, ProjectID))
+                                            currentFolder.AddHigherChange(id, readFolder);
+                                }
+
                             }
 
-                            // if file does not equal null
-                            if (currentFile != null && !ignoreCurrent)
+                            if (header.Name == StoragePacket.File)
                             {
-                                if (readFile.Date >= currentFile.Info.Date)
-                                    if (readFile.IntegratedID == 0 ||
-                                        readFile.IntegratedID == Core.UserID ||
-                                        Core.Trust.IsAdjacent(readFile.IntegratedID, ProjectID))
-                                        currentFile.AddHigherChange(id, readFile);
+                                StorageFile readFile = StorageFile.Decode(header);
+
+                                // if new uid
+                                if (currentUID != readFile.UID)
+                                {
+                                    // if only 1 entry in changes for previous file, remove it, its probably a dupe of local
+                                    // and integration needs more than one file to happen
+                                    if (currentFile != null && currentFile.HigherChanges.ContainsKey(id) && currentFile.HigherChanges[id].Count == 1)
+                                        currentFile.HigherChanges.Remove(id);
+
+                                    // set new id
+                                    currentUID = readFile.UID;
+
+                                    currentFile = null;
+
+                                    // check scope
+                                    ignoreCurrent = false;
+                                    if (readFile.Scope.Count > 0 && !Core.Trust.IsInScope(readFile.Scope, Core.UserID, ProjectID))
+                                    {
+                                        ignoreCurrent = true;
+                                        continue;
+                                    }
+
+                                    // if file exists with UID, else add file as temp, mark as changed
+                                    if (!currentFolder.Files.SafeTryGetValue(currentUID, out currentFile))
+                                    {
+                                        // check for conflicting name
+                                        currentFolder.Files.LockReading(delegate()
+                                        {
+                                            foreach (LocalFile checkFile in currentFolder.Files.Values)
+                                                if (!checkFile.Info.IsFlagged(StorageFlags.Archived) && checkFile.Info.Name == readFile.Name)
+                                                    checkFile.Info.Name = checkFile.Info.Name + ".fix";
+                                        });
+
+                                        currentFile = currentFolder.AddFileInfo(readFile);
+                                        save = true;
+
+                                        if (!Storages.FileExists(currentFile.Info))
+                                            Storages.DownloadFile(id, currentFile.Info);
+                                    }
+                                }
+
+                                // if file does not equal null
+                                if (currentFile != null && !ignoreCurrent)
+                                {
+                                    if (readFile.Date >= currentFile.Info.Date)
+                                        if (readFile.IntegratedID == 0 ||
+                                            readFile.IntegratedID == Core.UserID ||
+                                            Core.Trust.IsAdjacent(readFile.IntegratedID, ProjectID))
+                                            currentFile.AddHigherChange(id, readFile);
+                                }
+
                             }
-                          
                         }
                     }
                 }
-
-                stream.Close();
             }
             catch
             {

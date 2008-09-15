@@ -96,26 +96,34 @@ namespace RiseOp
 			return true;
 		}
 
-		internal static int GetBit(int bits, int pos)
+		internal static bool GetBit(int bits, int pos)
 		{
-			return (((1 << pos) & bits) >= 1) ? 1 : 0;
+			return (((1 << pos) & bits) > 0);
 		}
 
-		internal static int GetBit(UInt64 bits, int pos)
-		{
-            pos = 63 - pos;
-			return (((((UInt64) 1) << pos ) & bits) > 0) ? 1 : 0;
-		}
-
-		internal static void SetBit(ref UInt64 bits, int pos, int val)
+		internal static bool GetBit(UInt64 bits, int pos)
 		{
             pos = 63 - pos;
 
-			if(val == 0)
-				bits &= ~(((UInt64) 1) << pos);
-			else
-				bits |= ((UInt64) 1) << pos; 
+            return (((1UL << pos) & bits) > 0);
 		}
+
+		internal static void SetBit(ref UInt64 bits, int pos, bool val)
+		{
+            pos = 63 - pos;
+
+			if(val)
+                bits |= 1UL << pos;
+            else
+				bits &= ~1UL << pos; 
+		}
+
+        internal static ulong FlipBit(ulong value, int pos)
+        {
+            pos = 63 - pos;
+
+            return value ^= 1UL << pos;
+        }
 
 		internal static string IDtoBin(UInt64 id)
 		{
@@ -235,77 +243,75 @@ namespace RiseOp
 
         internal static void ShaHashFile(string path, ref byte[] hash, ref long size)
         {
-            FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-
-            SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
-            hash = sha.ComputeHash(file);
-            size = file.Length;
-
-            file.Close();
+            using (FileStream file = File.OpenRead(path))
+            {
+                SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
+                hash = sha.ComputeHash(file);
+                size = file.Length;
+            }
         }
 
         internal static void HashTagFile(string path, G2Protocol protocol, ref byte[] hash, ref long size)
         {
-            FileStream file = new FileStream(path, FileMode.Open, FileAccess.ReadWrite);
-
-            // record size of file
-            long originalSize = file.Length;
-
-            // sha hash 128k chunks of file
-            SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
-            
-            int read = 0;
-            int chunkSize = 128; // 128kb chunks
-            int chunkBytes = chunkSize * 1024;
-            int buffSize = file.Length > chunkBytes ? chunkBytes : (int) file.Length;
-            byte[] chunk = new byte[buffSize];
-            List<byte[]> hashes = new List<byte[]>();
-
-            read = 1;
-            while (read > 0)
+            using (FileStream file = new FileStream(path, FileMode.Open, FileAccess.ReadWrite))
             {
-                read = file.Read(chunk, 0, buffSize);
+                // record size of file
+                long originalSize = file.Length;
 
-                if (read > 0)
-                    hashes.Add(sha.ComputeHash(chunk, 0, read));
+                // sha hash 128k chunks of file
+                SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
+
+                int read = 0;
+                int chunkSize = 128; // 128kb chunks
+                int chunkBytes = chunkSize * 1024;
+                int buffSize = file.Length > chunkBytes ? chunkBytes : (int)file.Length;
+                byte[] chunk = new byte[buffSize];
+                List<byte[]> hashes = new List<byte[]>();
+
+                read = 1;
+                while (read > 0)
+                {
+                    read = file.Read(chunk, 0, buffSize);
+
+                    if (read > 0)
+                        hashes.Add(sha.ComputeHash(chunk, 0, read));
+                }
+
+                // write packets - 200 sub-hashes per packet
+                int writePos = 0;
+                int hashesLeft = hashes.Count;
+
+                while (hashesLeft > 0)
+                {
+                    int writeCount = (hashesLeft > 100) ? 100 : hashesLeft;
+
+                    hashesLeft -= writeCount;
+
+                    SubHashPacket packet = new SubHashPacket();
+                    packet.ChunkSize = chunkSize;
+                    packet.TotalCount = hashes.Count;
+                    packet.SubHashes = new byte[20 * writeCount];
+
+                    for (int i = 0; i < writeCount; i++)
+                        hashes[writePos++].CopyTo(packet.SubHashes, 20 * i);
+
+                    byte[] encoded = packet.Encode(protocol);
+
+                    file.Write(encoded, 0, encoded.Length);
+                }
+
+                // write null - end packets
+                file.WriteByte(0);
+
+                // attach original size to end of file
+                byte[] sizeBytes = BitConverter.GetBytes(originalSize);
+                file.Write(sizeBytes, 0, sizeBytes.Length);
+
+                // sha1 hash tagged file
+                file.Seek(0, SeekOrigin.Begin);
+                hash = sha.ComputeHash(file);
+                size = file.Length;
             }
-
-            // write packets - 200 sub-hashes per packet
-            int writePos = 0;
-            int hashesLeft = hashes.Count;
-
-            while (hashesLeft > 0)
-            {
-                int writeCount = (hashesLeft > 100) ? 100 : hashesLeft;
-
-                hashesLeft -= writeCount;
-
-                SubHashPacket packet = new SubHashPacket();
-                packet.ChunkSize = chunkSize;
-                packet.TotalCount = hashes.Count;
-                packet.SubHashes = new byte[20 * writeCount];
-
-                for (int i = 0; i < writeCount; i++)
-                    hashes[writePos++].CopyTo(packet.SubHashes, 20 * i);
-
-                byte[] encoded = packet.Encode(protocol);
-
-                file.Write(encoded, 0, encoded.Length);
-            }
-
-            // write null - end packets
-            file.WriteByte(0);
-
-            // attach original size to end of file
-            byte[] sizeBytes = BitConverter.GetBytes(originalSize);
-            file.Write(sizeBytes, 0, sizeBytes.Length);
-
-            // sha1 hash tagged file
-            file.Seek(0, SeekOrigin.Begin);
-            hash = sha.ComputeHash(file);
-            size = file.Length;
-
-            file.Close();
         }
 
         internal static string CryptType(object crypt)
@@ -914,18 +920,26 @@ namespace RiseOp.Implementation
         }
     }
 
-    internal class IVCryptoStream
+    internal class IVCryptoStream : CryptoStream
     {
-        // this class saves the IV at the beginning of the file and loads it again during reading
-        internal static CryptoStream Load(string path, byte[] key)
+
+        IVCryptoStream(Stream stream, ICryptoTransform transform, CryptoStreamMode mode)
+            : base(stream, transform, mode)
         {
-            FileStream file = new FileStream(path, FileMode.Open);
+
+        }
+
+        // this class saves the IV at the beginning of the file and loads it again during reading
+        internal static IVCryptoStream Load(string path, byte[] key)
+        {
+            FileStream file = File.OpenRead(path);
 
             return IVCryptoStream.Load(file, key);
         }
 
-        internal static CryptoStream Load(Stream stream, byte[] key)
+        internal static IVCryptoStream Load(Stream stream, byte[] key)
         {
+            // already disposed by called if fails
             byte[] iv = new byte[16];
             stream.Read(iv, 0, 16);
 
@@ -933,10 +947,10 @@ namespace RiseOp.Implementation
             crypt.Key = key;
             crypt.IV = iv;
 
-            return new CryptoStream(stream, crypt.CreateDecryptor(), CryptoStreamMode.Read);
+            return new IVCryptoStream(stream, crypt.CreateDecryptor(), CryptoStreamMode.Read);
         }
 
-        internal static CryptoStream Save(string path, byte[] key)
+        internal static IVCryptoStream Save(string path, byte[] key)
         {
             FileStream file = new FileStream(path, FileMode.Create);
 
@@ -944,9 +958,28 @@ namespace RiseOp.Implementation
             crypt.Key = key;
             crypt.GenerateIV();
 
-            file.Write(crypt.IV, 0, crypt.IV.Length);
+            try
+            {
+                file.Write(crypt.IV, 0, crypt.IV.Length);
+            }
+            catch
+            {
+                file.Dispose();
+            }
 
-            return new CryptoStream(file, crypt.CreateEncryptor(), CryptoStreamMode.Write);
+            return new IVCryptoStream(file, crypt.CreateEncryptor(), CryptoStreamMode.Write);
+
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (CanRead)
+                    Utilities.ReadtoEnd(this);
+            }
+
+            base.Dispose(disposing);
         }
     }
 

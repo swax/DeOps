@@ -147,6 +147,7 @@ namespace RiseOp.Services.Transfer
         const byte Packet_RequestInfo = 0x40;
         const byte Packet_RequestAlts = 0x50;
         const byte Packet_BitfieldUpdated = 0x60;
+        const byte Packet_MissingDepth = 0x70;
 
 
         internal ulong Target; // where file is key'd
@@ -155,6 +156,7 @@ namespace RiseOp.Services.Transfer
         internal bool RequestInfo; 
         internal bool RequestAlts;
         internal bool BitfieldUpdated;
+        internal int MissingDepth = -1;
 
 
         internal TransferPing()
@@ -172,6 +174,9 @@ namespace RiseOp.Services.Transfer
                 protocol.WritePacket(ping, Packet_Target, BitConverter.GetBytes(Target));
                 protocol.WritePacket(ping, Packet_Details, details);
                 protocol.WritePacket(ping, Packet_Status, BitConverter.GetBytes((int)Status));
+
+                if(MissingDepth >= 0)
+                    protocol.WritePacket(ping, Packet_MissingDepth, CompactNum.GetBytes(MissingDepth));
 
                 if (RequestInfo)
                     protocol.WritePacket(ping, Packet_RequestInfo, null);
@@ -219,6 +224,10 @@ namespace RiseOp.Services.Transfer
 
                     case Packet_Status:
                         ping.Status = (TransferStatus) BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_MissingDepth:
+                        ping.MissingDepth = CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }

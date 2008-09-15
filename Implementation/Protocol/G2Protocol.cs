@@ -478,14 +478,6 @@ namespace RiseOp.Implementation.Protocol
             data.CopyTo(ReadBuffer, 0);
             ReadStatus = G2ReadResult.PACKET_INCOMPLETE;
         }
-
-        internal void Close()
-        {
-            if(Access == FileAccess.Read)
-                Utilities.ReadtoEnd(ParentStream);
-
-            ParentStream.Close();
-        }
     }
 
     internal static class CompactNum

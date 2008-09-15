@@ -312,70 +312,66 @@ namespace RiseOp.Services.Storage
         {
             try
             {
-                PacketStream oldStream = null;
-
-                OpStorage local = GetStorage(Core.UserID);
-
-                if (local != null)
-                {
-                    string oldPath = GetFilePath(local);
-
-                    if (File.Exists(oldPath))
-                    {
-                        TaggedStream file = new TaggedStream(oldPath, Network.Protocol);
-                        CryptoStream crypto = IVCryptoStream.Load(file, local.File.Header.FileKey);
-                        oldStream = new PacketStream(crypto, Protocol, FileAccess.Read);
-                    }
-                }
-
                 string tempPath = Core.GetTempPath();
                 byte[] key = Utilities.GenerateKey(Core.StrongRndGen, 256);
-                CryptoStream stream = IVCryptoStream.Save(tempPath, key);
 
-                // write loaded projects
-                WorkingStorage working = null;
-                if (Working.ContainsKey(project))
-                    working = Working[project];
-
-                if(working != null)
+                using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, key))
                 {
-                    Protocol.WriteToFile(new StorageRoot(working.ProjectID), stream);
-                    working.WriteWorkingFile(stream, working.RootFolder, true);
+                    // write loaded projects
+                    WorkingStorage working = null;
+                    if (Working.ContainsKey(project))
+                        working = Working[project];
 
-                    working.Modified = false;
-
-                    try { File.Delete(GetWorkingPath(project)); }
-                    catch { }
-
-                }
-
-                // open old file and copy entries, except for working
-                if (oldStream != null)
-                {
-                    bool write = false;
-                    G2Header g2header = null;
-
-                    while (oldStream.ReadPacket(ref g2header))
+                    if (working != null)
                     {
-                        if (g2header.Name == StoragePacket.Root)
-                        {
-                            StorageRoot root = StorageRoot.Decode(g2header);
+                        Protocol.WriteToFile(new StorageRoot(working.ProjectID), stream);
+                        working.WriteWorkingFile(stream, working.RootFolder, true);
 
-                            write = (root.ProjectID != project);
-                        }
+                        working.Modified = false;
 
-                        //copy packet right to new file
-                        if (write) //crit test
-                            stream.Write(g2header.Data, g2header.PacketPos, g2header.PacketSize); 
+                        try { File.Delete(GetWorkingPath(project)); }
+                        catch { }
+
                     }
 
-                    oldStream.Close();
+                    // open old file and copy entries, except for working
+                    OpStorage local = GetStorage(Core.UserID);
+
+                    if (local != null)
+                    {
+                        string oldPath = GetFilePath(local);
+
+                        if (File.Exists(oldPath))
+                        {
+                            using (TaggedStream file = new TaggedStream(oldPath, Network.Protocol))
+                            using (IVCryptoStream crypto = IVCryptoStream.Load(file, local.File.Header.FileKey))
+                            {
+
+                                PacketStream oldStream = new PacketStream(crypto, Protocol, FileAccess.Read);
+                                bool write = false;
+                                G2Header g2header = null;
+
+                                while (oldStream.ReadPacket(ref g2header))
+                                {
+                                    if (g2header.Name == StoragePacket.Root)
+                                    {
+                                        StorageRoot root = StorageRoot.Decode(g2header);
+
+                                        write = (root.ProjectID != project);
+                                    }
+
+                                    //copy packet right to new file
+                                    if (write) //crit test
+                                        stream.Write(g2header.Data, g2header.PacketPos, g2header.PacketSize);
+                                }
+                            }
+                        }
+                    }
+
+                    stream.WriteByte(0); // signal last packet
+
+                    stream.FlushFinalBlock();
                 }
-
-                stream.WriteByte(0); // signal last packet
-
-                stream.FlushFinalBlock();
-                stream.Close();
 
                 SavingLocal = true; // prevents auto-integrate from re-calling saveLocal
                 OpVersionedFile vfile = Cache.UpdateLocal(tempPath, key, BitConverter.GetBytes(Core.TimeNow.ToUniversalTime().ToBinary()));
@@ -581,79 +577,79 @@ namespace RiseOp.Services.Storage
 
                 byte[] key = working ? LocalFileKey : storage.File.Header.FileKey;
 
-                TaggedStream filex = new TaggedStream(path, Network.Protocol);
-                CryptoStream crypto = IVCryptoStream.Load(filex, key);
-                PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
-
-                G2Header header = null;
-
-                ulong currentUID = 0;
-
-                while (stream.ReadPacket(ref header))
+                using (TaggedStream filex = new TaggedStream(path, Network.Protocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(filex, key))
                 {
-                    if (!working && header.Name == StoragePacket.Root)
+                    PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
+
+                    G2Header header = null;
+
+                    ulong currentUID = 0;
+
+                    while (stream.ReadPacket(ref header))
                     {
-                        StorageRoot packet = StorageRoot.Decode(header);
-
-                        local = Core.UserID == storage.UserID ||
-                                GetHigherRegion(Core.UserID, packet.ProjectID).Contains(storage.UserID) ||
-                                Trust.GetDownlinkIDs(Core.UserID, packet.ProjectID, 1).Contains(storage.UserID);
-                    }
-
-                    if (header.Name == StoragePacket.File)
-                    {
-                        StorageFile packet = StorageFile.Decode(header);
-
-                        if (packet == null)
-                            continue;
-
-                        bool historyFile = true;
-                        if(packet.UID != currentUID)
+                        if (!working && header.Name == StoragePacket.Root)
                         {
-                            historyFile = false;
-                            currentUID = packet.UID;
+                            StorageRoot packet = StorageRoot.Decode(header);
+
+                            local = Core.UserID == storage.UserID ||
+                                    GetHigherRegion(Core.UserID, packet.ProjectID).Contains(storage.UserID) ||
+                                    Trust.GetDownlinkIDs(Core.UserID, packet.ProjectID, 1).Contains(storage.UserID);
                         }
 
-                        OpFile file = null;
-                        if (!FileMap.SafeTryGetValue(packet.HashID, out file))
+                        if (header.Name == StoragePacket.File)
                         {
-                            file = new OpFile(packet);
-                            FileMap.SafeAdd(packet.HashID, file);
+                            StorageFile packet = StorageFile.Decode(header);
+
+                            if (packet == null)
+                                continue;
+
+                            bool historyFile = true;
+                            if (packet.UID != currentUID)
+                            {
+                                historyFile = false;
+                                currentUID = packet.UID;
+                            }
+
+                            OpFile file = null;
+                            if (!FileMap.SafeTryGetValue(packet.HashID, out file))
+                            {
+                                file = new OpFile(packet);
+                                FileMap.SafeAdd(packet.HashID, file);
+                            }
+
+                            InternalFileMap.SafeAdd(packet.InternalHashID, file);
+
+                            if (!reload)
+                                file.References++;
+
+                            if (!working) // if one ref is public, then whole file is marked public
+                                file.Working = false;
+
+                            if (packet.HashID == 0 || packet.InternalHash == null)
+                            {
+                                Debug.Assert(false);
+                                continue;
+                            }
+
+                            file.Downloaded = File.Exists(GetFilePath(packet.HashID));
+
+                            if (!file.Downloaded)
+                            {
+                                // if in local range only store latest 
+                                if (local && !historyFile)
+                                    DownloadFile(storage.UserID, packet);
+
+                                // if storage is in cache range, download all files
+                                else if (Network.Established && cached)
+                                    DownloadFile(storage.UserID, packet);
+                            }
+
+                            // on link update, if in local range, get latest files
+                            // (handled by location update, when it sees a new version of storage component is available)                 
                         }
-
-                        InternalFileMap.SafeAdd(packet.InternalHashID, file);
-
-                        if(!reload)
-                            file.References++;
-                        
-                        if (!working) // if one ref is public, then whole file is marked public
-                            file.Working = false;
-
-                        if (packet.HashID == 0 || packet.InternalHash == null)
-                        {
-                            Debug.Assert(false);
-                            continue;
-                        }
-
-                        file.Downloaded = File.Exists(GetFilePath(packet.HashID));
-
-                        if (!file.Downloaded)
-                        {
-                            // if in local range only store latest 
-                            if (local && !historyFile)
-                                DownloadFile(storage.UserID, packet);
-
-                            // if storage is in cache range, download all files
-                            else if (Network.Established && cached)
-                                DownloadFile(storage.UserID, packet);
-                        }
-
-                        // on link update, if in local range, get latest files
-                        // (handled by location update, when it sees a new version of storage component is available)                 
                     }
                 }
-
-                stream.Close();
             }
             catch (Exception ex)
             {
@@ -704,30 +700,30 @@ namespace RiseOp.Services.Storage
                 if (!File.Exists(path))
                     return;
 
-                TaggedStream filex = new TaggedStream(path, Network.Protocol);
-                CryptoStream crypto = IVCryptoStream.Load(filex, key);
-                PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
-
-                G2Header header = null;
-
-                while (stream.ReadPacket(ref header))
+                using (TaggedStream filex = new TaggedStream(path, Network.Protocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(filex, key))
                 {
-                    if (header.Name == StoragePacket.File)
+                    PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
+
+                    G2Header header = null;
+
+                    while (stream.ReadPacket(ref header))
                     {
-                        StorageFile packet = StorageFile.Decode(header);
+                        if (header.Name == StoragePacket.File)
+                        {
+                            StorageFile packet = StorageFile.Decode(header);
 
-                        if (packet == null)
-                            continue;
+                            if (packet == null)
+                                continue;
 
-                        OpFile commonFile = null;
-                        if (!FileMap.SafeTryGetValue(packet.HashID, out commonFile))
-                            continue;
+                            OpFile commonFile = null;
+                            if (!FileMap.SafeTryGetValue(packet.HashID, out commonFile))
+                                continue;
 
-                        commonFile.DeRef();
+                            commonFile.DeRef();
+                        }
                     }
                 }
-
-                stream.Close();
             }
             catch (Exception ex)
             {
@@ -835,20 +831,20 @@ namespace RiseOp.Services.Storage
 
                     // encrypt file to temp dir
                     string tempPath = Core.GetTempPath();
-                    CryptoStream stream = IVCryptoStream.Save(tempPath, info.FileKey);
-
-                    FileStream localfile = new FileStream(pack.Path, FileMode.Open, FileAccess.Read);
-
-                    int read = HashBufferSize;
-                    while (read == HashBufferSize)
+                    using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, info.FileKey))
                     {
-                        read = localfile.Read(HashBuffer, 0, HashBufferSize);
-                        stream.Write(HashBuffer, 0, read);
-                    }
+                        using (FileStream localfile = File.OpenRead(pack.Path))
+                        {
+                            int read = HashBufferSize;
+                            while (read == HashBufferSize)
+                            {
+                                read = localfile.Read(HashBuffer, 0, HashBufferSize);
+                                stream.Write(HashBuffer, 0, read);
+                            }
+                        }
 
-                    localfile.Close();
-                    stream.FlushFinalBlock();
-                    stream.Close();
+                        stream.FlushFinalBlock();
+                    }
 
                     // hash temp file
                     Utilities.HashTagFile(tempPath, Core.Network.Protocol, ref info.Hash, ref info.Size);
@@ -1069,20 +1065,18 @@ namespace RiseOp.Services.Storage
             try
             {
                 string tempPath = Core.GetTempPath();
-                FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew);
 
-                TaggedStream encFile = new TaggedStream(GetFilePath(file.HashID), Network.Protocol);
-                CryptoStream stream = IVCryptoStream.Load(encFile, file.FileKey);
-
-                int read = FileBufferSize;
-                while (read == FileBufferSize)
+                using (FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew))
+                using (TaggedStream encFile = new TaggedStream(GetFilePath(file.HashID), Network.Protocol))
+                using (IVCryptoStream stream = IVCryptoStream.Load(encFile, file.FileKey))
                 {
-                    read = stream.Read(FileBuffer, 0, FileBufferSize);
-                    tempFile.Write(FileBuffer, 0, read);
+                    int read = FileBufferSize;
+                    while (read == FileBufferSize)
+                    {
+                        read = stream.Read(FileBuffer, 0, FileBufferSize);
+                        tempFile.Write(FileBuffer, 0, read);
+                    }
                 }
-
-                tempFile.Close();
-                stream.Close();
 
                 // move to official path
                 File.Move(tempPath, finalpath);

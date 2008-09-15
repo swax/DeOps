@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 using RiseOp.Services;
@@ -70,7 +71,7 @@ namespace RiseOp.Implementation.Transport
             if (client.UserID == Network.Local.UserID && client.ClientID == Network.Local.ClientID)
                 return;
 
-            if (IsConnected(client))
+            if (IsConnectingOrActive(client.UserID, client.ClientID))
                 return;
 
             RudpSession session = new RudpSession(this, client.UserID, client.ClientID, false);
@@ -89,7 +90,7 @@ namespace RiseOp.Implementation.Transport
             if (location.UserID == Network.Local.UserID && location.Source.ClientID == Network.Local.ClientID)
                 return;
 
-            if (IsConnected(location))
+            if (IsConnectingOrActive(location.UserID, location.Source.ClientID))
                 return;
 
             ulong id = location.UserID ^ location.Source.ClientID;
@@ -108,9 +109,12 @@ namespace RiseOp.Implementation.Transport
             session.Connect(); 
         }
 
-        internal RudpSession GetActiveSession(LocationData location)
+        internal List<RudpSession> GetActiveSessions(ulong key)
         {
-            return GetActiveSession(location.UserID, location.Source.ClientID);
+            return (from session in SessionMap.Values
+                    where session.Status == SessionStatus.Active &&
+                          session.UserID == key
+                    select session).ToList();
         }
 
         internal RudpSession GetActiveSession(DhtClient client)
@@ -120,36 +124,30 @@ namespace RiseOp.Implementation.Transport
 
         internal RudpSession GetActiveSession(ulong key, ushort client)
         {
-            foreach (RudpSession session in GetActiveSessions(key))
-                if (session.ClientID == client)
-                    return session;
-
-            return null;
-        }
-        internal List<RudpSession> GetActiveSessions(ulong key)
-        {
-            List<RudpSession> sessions = new List<RudpSession>();
-
-            foreach (RudpSession session in SessionMap.Values)
-                if (session.Status == SessionStatus.Active)
-                    sessions.Add(session);
-
-            return sessions;
+            return (from session in SessionMap.Values
+                    where session.Status == SessionStatus.Active &&
+                          session.UserID == key && session.ClientID == client
+                    select session).ElementAtOrDefault(0);
         }
 
-        internal bool IsConnected(DhtClient client)
+        internal bool IsConnectingOrActive(ulong key, ushort client)
         {
-            return (GetActiveSession(client) != null);
-        }
+            int notClosed = (from session in SessionMap.Values
+                             where session.Status != SessionStatus.Closed &&
+                                   session.UserID == key && session.ClientID == client
+                             select session).Count();
 
-        internal bool IsConnected(LocationData location)
-        {
-            return ( GetActiveSession(location) != null );
+            return (notClosed > 0);
         }
 
         internal bool IsConnected(ulong id)
         {
-            return (GetActiveSessions(id).Count > 0);
+            int active = (from session in SessionMap.Values
+                          where session.Status == SessionStatus.Active &&
+                                session.UserID == id
+                          select session).Count();
+
+            return (active > 0);
         }
 
         internal void AnnounceProxy(TcpConnect tcp)

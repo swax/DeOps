@@ -29,6 +29,51 @@ namespace RiseOp
 	{
 		internal Test()
         {
+            Random rnd = new Random();
+
+
+
+            /* // testing selecting next chunk to send
+            ChunkBit[] chunks = new ChunkBit[10];
+
+            for(int i = 0; i < chunks.Length; i++)
+            {
+                chunks[i].Index = i;
+                chunks[i].Popularity = rnd.Next(4);
+            }
+
+            ChunkBit[] selected = (from chunk in chunks
+                                   orderby rnd.Next() 
+                                   orderby chunk.Popularity
+                                   select chunk).ToArray();
+
+            */
+
+            /* test getting bucket index of remote node
+            Random rnd = new Random();
+            ulong local = Utilities.RandUInt64(rnd);
+            string localStr = Utilities.IDtoBin(local);
+
+            for (int i = 0; i < 1000; i++)
+            {
+                ulong remote = Utilities.RandUInt64(rnd);
+                string remoteStr = Utilities.IDtoBin(remote);
+
+                for (int x = 0; x < 64; x++)
+                    if (Utilities.GetBit(local, x) != Utilities.GetBit(remote, x))
+                        break;
+                    else
+                        index++;
+
+                int y = 0;
+            }*/
+
+
+            /*
+            TaggedStream file = new TaggedStream(oldPath, Network.Protocol);
+            CryptoStream crypto = IVCryptoStream.Load(file, local.File.Header.FileKey);
+            oldStream = new PacketStream(crypto, Protocol, FileAccess.Read);
+            */
 
             /*List<Tuple<int, string>> tups = new List<Tuple<int, string>>();
 

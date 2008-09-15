@@ -175,102 +175,96 @@ namespace RiseOp.Services.Profile
         {
             try
             {
+                long embeddedStart = 0;
+
                 string tempPath = Core.GetTempPath();
                 byte[] key = Utilities.GenerateKey(Core.StrongRndGen, 256);
-                CryptoStream stream = IVCryptoStream.Save(tempPath, key);
+                using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, key))
+                {
+                    int written = 0;
 
-                int written = 0;
-
-                // write template info
-                byte[] htmlBytes = UTF8Encoding.UTF8.GetBytes(template);
-                written += Protocol.WriteToFile(new ProfileAttachment("template", htmlBytes.Length), stream);
-                
-
-                // write fields info (convert into fields into packet list)
-                List<byte[]> fieldPackets = new List<byte[]>();
-
-                int fieldsTotalSize = 0;
-
-                if(textFields != null)
-                    foreach (KeyValuePair<string, string> pair in textFields)
-                    {
-                        if (pair.Value == null)
-                            continue;
-
-                        ProfileField field = new ProfileField();
-                        field.Name = pair.Key;
-                        field.Value = UTF8Encoding.UTF8.GetBytes(pair.Value);
-                        field.FieldType = ProfileFieldType.Text;
-
-                        byte[] packet = field.Encode(Network.Protocol);
-                        fieldPackets.Add(packet);
-                        fieldsTotalSize += packet.Length;
-                    }
-
-                if(fileFields != null)
-                    foreach (KeyValuePair<string, string> pair in fileFields)
-                    {
-                        if (pair.Value == null)
-                            continue;
-
-                        ProfileField field = new ProfileField();
-                        field.Name = pair.Key;
-                        field.Value = UTF8Encoding.UTF8.GetBytes(Path.GetFileName(pair.Value));
-                        field.FieldType = ProfileFieldType.File;
-
-                        byte[] packet = field.Encode(Network.Protocol);
-                        fieldPackets.Add(packet);
-                        fieldsTotalSize += packet.Length;
-                    }
-
-                if(fieldsTotalSize > 0)
-                    written += Protocol.WriteToFile(new ProfileAttachment("fields", fieldsTotalSize), stream); 
+                    // write template info
+                    byte[] htmlBytes = UTF8Encoding.UTF8.GetBytes(template);
+                    written += Protocol.WriteToFile(new ProfileAttachment("template", htmlBytes.Length), stream);
 
 
-                // write files info
-                if(fileFields != null)
-                    foreach (string path in fileFields.Values)
-                    {
-                        FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    // write fields info (convert into fields into packet list)
+                    List<byte[]> fieldPackets = new List<byte[]>();
 
-                        written += Protocol.WriteToFile(new ProfileAttachment("file=" + Path.GetFileName(path), file.Length), stream); 
+                    int fieldsTotalSize = 0;
 
-                        file.Close();
-                    }
-
-                stream.WriteByte(0); // end packets
-                long embeddedStart = written + 1;
-
-                // write template bytes
-                stream.Write(htmlBytes, 0, htmlBytes.Length);
-
-                // write field bytes
-                foreach(byte[] packet in fieldPackets)
-                    stream.Write(packet, 0, packet.Length);
-
-
-                // write file bytes
-                const int buffSize = 4096;
-                byte[] buffer = new byte[buffSize];
-
-                if (fileFields != null)
-                    foreach (string path in fileFields.Values)
-                    {
-                        FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-
-                        int read = buffSize;
-                        while (read == buffSize)
+                    if (textFields != null)
+                        foreach (KeyValuePair<string, string> pair in textFields)
                         {
-                            read = file.Read(buffer, 0, buffSize);
-                            stream.Write(buffer, 0, read);
+                            if (pair.Value == null)
+                                continue;
+
+                            ProfileField field = new ProfileField();
+                            field.Name = pair.Key;
+                            field.Value = UTF8Encoding.UTF8.GetBytes(pair.Value);
+                            field.FieldType = ProfileFieldType.Text;
+
+                            byte[] packet = field.Encode(Network.Protocol);
+                            fieldPackets.Add(packet);
+                            fieldsTotalSize += packet.Length;
                         }
 
-                        file.Close();
-                    }
+                    if (fileFields != null)
+                        foreach (KeyValuePair<string, string> pair in fileFields)
+                        {
+                            if (pair.Value == null)
+                                continue;
 
-                stream.FlushFinalBlock();
-                stream.Close();
+                            ProfileField field = new ProfileField();
+                            field.Name = pair.Key;
+                            field.Value = UTF8Encoding.UTF8.GetBytes(Path.GetFileName(pair.Value));
+                            field.FieldType = ProfileFieldType.File;
 
+                            byte[] packet = field.Encode(Network.Protocol);
+                            fieldPackets.Add(packet);
+                            fieldsTotalSize += packet.Length;
+                        }
+
+                    if (fieldsTotalSize > 0)
+                        written += Protocol.WriteToFile(new ProfileAttachment("fields", fieldsTotalSize), stream);
+
+
+                    // write files info
+                    if (fileFields != null)
+                        foreach (string path in fileFields.Values)
+                            using (FileStream file = File.OpenRead(path))
+                                written += Protocol.WriteToFile(new ProfileAttachment("file=" + Path.GetFileName(path), file.Length), stream);
+
+
+                    stream.WriteByte(0); // end packets
+                    embeddedStart = written + 1;
+
+                    // write template bytes
+                    stream.Write(htmlBytes, 0, htmlBytes.Length);
+
+                    // write field bytes
+                    foreach (byte[] packet in fieldPackets)
+                        stream.Write(packet, 0, packet.Length);
+
+
+                    // write file bytes
+                    const int buffSize = 4096;
+                    byte[] buffer = new byte[buffSize];
+
+                    if (fileFields != null)
+                        foreach (string path in fileFields.Values)
+                            using (FileStream file = File.OpenRead(path))
+                            {
+                                int read = buffSize;
+                                while (read == buffSize)
+                                {
+                                    read = file.Read(buffer, 0, buffSize);
+                                    stream.Write(buffer, 0, read);
+                                }
+                            }
+
+                    stream.FlushFinalBlock();
+                }
 
                 OpVersionedFile vfile = Cache.UpdateLocal(tempPath, key, BitConverter.GetBytes(embeddedStart));
 
@@ -346,24 +340,24 @@ namespace RiseOp.Services.Profile
 
                 profile.Attached = new List<ProfileAttachment>();
 
-                TaggedStream file = new TaggedStream(path, Network.Protocol);
-                CryptoStream crypto = IVCryptoStream.Load(file, profile.File.Header.FileKey);
-                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
+                using(TaggedStream file = new TaggedStream(path, Network.Protocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(file, profile.File.Header.FileKey))
+                {
+                    PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
-                G2Header root = null;
+                    G2Header root = null;
 
-                while (stream.ReadPacket(ref root))
-                    if (root.Name == ProfilePacket.Attachment)
-                    {
-                        ProfileAttachment packet = ProfileAttachment.Decode(root);
+                    while (stream.ReadPacket(ref root))
+                        if (root.Name == ProfilePacket.Attachment)
+                        {
+                            ProfileAttachment packet = ProfileAttachment.Decode(root);
 
-                        if (packet == null)
-                            continue;
+                            if (packet == null)
+                                continue;
 
-                        profile.Attached.Add(packet);
-                    }
-
-                stream.Close();
+                            profile.Attached.Add(packet);
+                        }
+                }
 
                 profile.Loaded = true;
             }

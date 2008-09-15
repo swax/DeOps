@@ -59,12 +59,13 @@ namespace RiseOp
             Protocol = Core.GuiProtocol;
 
             // get password salt, first 16 bytes IV, next 4 is salt
-            FileStream stream = new FileStream(filepath, FileMode.Open);
-            stream.Seek(16, SeekOrigin.Begin);
+            using (FileStream stream = File.OpenRead(filepath))
+            {
+                stream.Seek(16, SeekOrigin.Begin);
 
-            PasswordSalt = new byte[4];
-            stream.Read(PasswordSalt, 0, 4);
-            stream.Close();
+                PasswordSalt = new byte[4];
+                stream.Read(PasswordSalt, 0, 4);
+            }
 
             Init(filepath, password);
         }
@@ -99,8 +100,6 @@ namespace RiseOp
 
 		internal void Load(LoadModeType loadMode)
 		{
-			FileStream file = null;
-
             RijndaelManaged Password = new RijndaelManaged();
             Password.Key = PasswordKey;
 
@@ -111,55 +110,56 @@ namespace RiseOp
 
 			try
 			{
-                file = new TaggedStream(ProfilePath, Protocol, ProcessSplash); // tagged with splash
-
-                // first 16 bytes IV, next 4 bytes is salt
-                file.Read(iv, 0, 16);
-                file.Read(salt, 0, 4);
-                Password.IV = iv;
-                CryptoStream crypto = new CryptoStream(file, Password.CreateDecryptor(), CryptoStreamMode.Read);
-                PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
-
-                G2Header root = null;
-                while (stream.ReadPacket(ref root))
+                using (TaggedStream file = new TaggedStream(ProfilePath, Protocol, ProcessSplash)) // tagged with splash
                 {
-                    if (loadMode == LoadModeType.Settings)
+                    // first 16 bytes IV, next 4 bytes is salt
+                    file.Read(iv, 0, 16);
+                    file.Read(salt, 0, 4);
+                    Password.IV = iv;
+
+                    using (CryptoStream crypto = new CryptoStream(file, Password.CreateDecryptor(), CryptoStreamMode.Read))
                     {
-                        if (root.Name == IdentityPacket.OperationSettings)
-                            Settings = SettingsPacket.Decode(root);
+                        PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Read);
 
-                        // save icon to identity file because only root node saves icon/splash to link file
-                        // to minimize link file size, but allow user to set custom icon/splash if there are not overrides
-                        if (root.Name == IdentityPacket.Icon)
-                            OpIcon = IconPacket.Decode(root).OpIcon;
-                    }
+                        G2Header root = null;
+                        while (stream.ReadPacket(ref root))
+                        {
+                            if (loadMode == LoadModeType.Settings)
+                            {
+                                if (root.Name == IdentityPacket.OperationSettings)
+                                    Settings = SettingsPacket.Decode(root);
 
-                    if (global != null && (loadMode == LoadModeType.AllCaches || loadMode == LoadModeType.GlobalCache))
-                    {
-                        if (root.Name == IdentityPacket.GlobalCachedIP)
-                            global.Network.Cache.AddContact(CachedIP.Decode(root).Contact);
+                                // save icon to identity file because only root node saves icon/splash to link file
+                                // to minimize link file size, but allow user to set custom icon/splash if there are not overrides
+                                if (root.Name == IdentityPacket.Icon)
+                                    OpIcon = IconPacket.Decode(root).OpIcon;
+                            }
 
-                        if (root.Name == IdentityPacket.GlobalCachedWeb)
-                            global.Network.Cache.AddCache(WebCache.Decode(root));
-                    }
+                            if (global != null && (loadMode == LoadModeType.AllCaches || loadMode == LoadModeType.GlobalCache))
+                            {
+                                if (root.Name == IdentityPacket.GlobalCachedIP)
+                                    global.Network.Cache.AddContact(CachedIP.Decode(root).Contact);
 
-                    if (loadMode == LoadModeType.AllCaches)
-                    {
-                        if (root.Name == IdentityPacket.OpCachedIP)
-                            Core.Network.Cache.AddContact(CachedIP.Decode(root).Contact);
+                                if (root.Name == IdentityPacket.GlobalCachedWeb)
+                                    global.Network.Cache.AddCache(WebCache.Decode(root));
+                            }
 
-                        if (root.Name == IdentityPacket.OpCachedWeb)
-                            Core.Network.Cache.AddCache(WebCache.Decode(root));
+                            if (loadMode == LoadModeType.AllCaches)
+                            {
+                                if (root.Name == IdentityPacket.OpCachedIP)
+                                    Core.Network.Cache.AddContact(CachedIP.Decode(root).Contact);
+
+                                if (root.Name == IdentityPacket.OpCachedWeb)
+                                    Core.Network.Cache.AddCache(WebCache.Decode(root));
+                            }
+                        }
+
+                        Utilities.ReadtoEnd(crypto);
                     }
                 }
-
-                stream.Close();
             }
 			catch(Exception ex)
 			{
-				if(file != null)
-					file.Close();
-
 				throw ex;
 			}
 		}
@@ -196,59 +196,60 @@ namespace RiseOp
                 if (Core != null)
                     tempPath = Core.GetTempPath();
 
-                FileStream file = new FileStream(tempPath, FileMode.Create);
-
-                // write encrypted part of file
-                Password.GenerateIV();
-                file.Write(Password.IV, 0, Password.IV.Length);
-                file.Write(PasswordSalt, 0, PasswordSalt.Length);
-                CryptoStream crypto = new CryptoStream(file, Password.CreateEncryptor(), CryptoStreamMode.Write);
-                PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Write);
-
-                stream.WritePacket(Settings);
-  
-                if (Core != null)
+                using (FileStream file = new FileStream(tempPath, FileMode.Create))
                 {
-                    if (Core.Context.Global != null)
+                    // write encrypted part of file
+                    Password.GenerateIV();
+                    file.Write(Password.IV, 0, Password.IV.Length);
+                    file.Write(PasswordSalt, 0, PasswordSalt.Length);
+
+                    using (CryptoStream crypto = new CryptoStream(file, Password.CreateEncryptor(), CryptoStreamMode.Write))
                     {
-                        Core.Context.Global.Network.Cache.SaveIPs(stream);
-                        Core.Context.Global.Network.Cache.SaveWeb(stream);
+                        PacketStream stream = new PacketStream(crypto, Protocol, FileAccess.Write);
+
+                        stream.WritePacket(Settings);
+
+                        if (Core != null)
+                        {
+                            if (Core.Context.Global != null)
+                            {
+                                Core.Context.Global.Network.Cache.SaveIPs(stream);
+                                Core.Context.Global.Network.Cache.SaveWeb(stream);
+                            }
+
+                            Core.Network.Cache.SaveIPs(stream);
+                            Core.Network.Cache.SaveWeb(stream);
+                        }
+
+                        if (OpIcon != null)
+                            stream.WritePacket(new IconPacket(IdentityPacket.Icon, OpIcon));
                     }
-
-                    Core.Network.Cache.SaveIPs(stream);
-                    Core.Network.Cache.SaveWeb(stream);
                 }
-
-
-                if (OpIcon != null)
-                    stream.WritePacket(new IconPacket(IdentityPacket.Icon, OpIcon));
-
-                stream.Close();
 
                 // write unencrypted splash
-                file = new FileStream(tempPath, FileMode.Open);
-                file.Seek(0, SeekOrigin.End);
-
-                long startpos = file.Position;
-
-                stream = new PacketStream(file, Protocol, FileAccess.Write);
-
-                // get right splash image (only used for startup logo, main setting is in link file)
-                if (OpSplash != null)
+                using (FileStream file = new FileStream(tempPath, FileMode.Open))
                 {
-                    MemoryStream mem = new MemoryStream();
-                    OpSplash.Save(mem, ImageFormat.Jpeg);
-                    LargeDataPacket.Write(stream, IdentityPacket.Splash, mem.ToArray());
+                    file.Seek(0, SeekOrigin.End);
+
+                    long startpos = file.Position;
+
+                    PacketStream stream = new PacketStream(file, Protocol, FileAccess.Write);
+
+                    // get right splash image (only used for startup logo, main setting is in link file)
+                    if (OpSplash != null)
+                    {
+                        MemoryStream mem = new MemoryStream();
+                        OpSplash.Save(mem, ImageFormat.Jpeg);
+                        LargeDataPacket.Write(stream, IdentityPacket.Splash, mem.ToArray());
+                    }
+                    else
+                        LargeDataPacket.Write(stream, IdentityPacket.Splash, null);
+
+                    file.WriteByte(0); // end packet stream
+
+                    byte[] last = BitConverter.GetBytes(startpos);
+                    file.Write(last, 0, last.Length);
                 }
-                else
-                    LargeDataPacket.Write(stream, IdentityPacket.Splash, null);
-
-                file.WriteByte(0); // end packet stream
-                
-                byte[] last = BitConverter.GetBytes(startpos);
-                file.Write(last, 0, last.Length);
-
-                stream.Close();
 
 
                 File.Copy(tempPath, ProfilePath, true);
@@ -734,25 +735,25 @@ namespace RiseOp
 
                 try
                 {
-                    CryptoStream crypto = IVCryptoStream.Load(path, key);
-                    PacketStream stream = new PacketStream(crypto, network.Protocol, FileAccess.Read);
-
-                    G2Header root = null;
-
-                    while (stream.ReadPacket(ref root))
+                    using (IVCryptoStream crypto = IVCryptoStream.Load(path, key))
                     {
-                        if (root.Name == IdentityPacket.GlobalSettings)
-                            settings = GlobalSettings.Decode(root);
+                        PacketStream stream = new PacketStream(crypto, network.Protocol, FileAccess.Read);
 
-                        if (root.Name == IdentityPacket.GlobalCachedIP)
-                            network.Cache.AddContact(CachedIP.Decode(root).Contact);
+                        G2Header root = null;
 
-                        if (root.Name == IdentityPacket.GlobalCachedWeb)
-                            network.Cache.AddCache(WebCache.Decode(root));
+                        while (stream.ReadPacket(ref root))
+                        {
+                            if (root.Name == IdentityPacket.GlobalSettings)
+                                settings = GlobalSettings.Decode(root);
 
+                            if (root.Name == IdentityPacket.GlobalCachedIP)
+                                network.Cache.AddContact(CachedIP.Decode(root).Contact);
+
+                            if (root.Name == IdentityPacket.GlobalCachedWeb)
+                                network.Cache.AddCache(WebCache.Decode(root));
+
+                        }
                     }
-
-                    stream.Close();
                 }
                 catch (Exception ex)
                 {
@@ -787,15 +788,15 @@ namespace RiseOp
             try
             {
                 // Attach to crypto stream and write file
-                CryptoStream crypto = IVCryptoStream.Save(path, key);
-                PacketStream stream = new PacketStream(crypto, core.Network.Protocol, FileAccess.Write);
+                using (IVCryptoStream crypto = IVCryptoStream.Save(path, key))
+                {
+                    PacketStream stream = new PacketStream(crypto, core.Network.Protocol, FileAccess.Write);
 
-                stream.WritePacket(this);
+                    stream.WritePacket(this);
 
-                core.Network.Cache.SaveIPs(stream);
-                core.Network.Cache.SaveWeb(stream);
-
-                stream.Close();
+                    core.Network.Cache.SaveIPs(stream);
+                    core.Network.Cache.SaveWeb(stream);
+                }
             }
 
             catch (Exception ex)

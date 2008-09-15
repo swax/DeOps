@@ -223,102 +223,100 @@ namespace RiseOp.Services.Profile
             
             try
             {
-                TaggedStream stream = new TaggedStream(service.GetFilePath(profile), service.Core.GuiProtocol);
-                CryptoStream crypto = IVCryptoStream.Load(stream, profile.File.Header.FileKey);
-
-                int buffSize = 4096;
-                byte[] buffer = new byte[4096];
-                long bytesLeft = profile.EmbeddedStart;
-                while (bytesLeft > 0)
+                using (TaggedStream stream = new TaggedStream(service.GetFilePath(profile), service.Core.GuiProtocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(stream, profile.File.Header.FileKey))
                 {
-                    int readSize = (bytesLeft > (long)buffSize) ? buffSize : (int)bytesLeft;
-                    int read = crypto.Read(buffer, 0, readSize);
-                    bytesLeft -= (long)read;
-                }
-
-                // load file
-                foreach (ProfileAttachment attached in profile.Attached)
-                {
-                    if (attached.Name.StartsWith("template"))
+                    int buffSize = 4096;
+                    byte[] buffer = new byte[4096];
+                    long bytesLeft = profile.EmbeddedStart;
+                    while (bytesLeft > 0)
                     {
-                        byte[] html = new byte[attached.Size];
-                        crypto.Read(html, 0, (int)attached.Size);
-
-                        UTF8Encoding utf = new UTF8Encoding();
-                        template = utf.GetString(html);
+                        int readSize = (bytesLeft > (long)buffSize) ? buffSize : (int)bytesLeft;
+                        int read = crypto.Read(buffer, 0, readSize);
+                        bytesLeft -= (long)read;
                     }
 
-                    else if (attached.Name.StartsWith("fields"))
+                    // load file
+                    foreach (ProfileAttachment attached in profile.Attached)
                     {
-                        byte[] data = new byte[attached.Size];
-                        crypto.Read(data, 0, (int)attached.Size);
-
-                        int start = 0, length = data.Length;
-                        G2ReadResult streamStatus = G2ReadResult.PACKET_GOOD;
-
-                        while (streamStatus == G2ReadResult.PACKET_GOOD)
+                        if (attached.Name.StartsWith("template"))
                         {
-                            G2ReceivedPacket packet = new G2ReceivedPacket();
-                            packet.Root = new G2Header(data);
+                            byte[] html = new byte[attached.Size];
+                            crypto.Read(html, 0, (int)attached.Size);
 
-                            streamStatus = G2Protocol.ReadNextPacket(packet.Root, ref start, ref length);
-
-                            if (streamStatus != G2ReadResult.PACKET_GOOD)
-                                break;
-
-                            if (packet.Root.Name == ProfilePacket.Field)
-                            {
-                                ProfileField field = ProfileField.Decode(packet.Root);
-
-                                if (field.Value == null)
-                                    continue;
-
-                                if (field.FieldType == ProfileFieldType.Text)
-                                    textFields[field.Name] = UTF8Encoding.UTF8.GetString(field.Value);
-                                else if (field.FieldType == ProfileFieldType.File && fileFields != null)
-                                    fileFields[field.Name] = UTF8Encoding.UTF8.GetString(field.Value);
-                            }
+                            UTF8Encoding utf = new UTF8Encoding();
+                            template = utf.GetString(html);
                         }
-                    }
 
-                    else if (attached.Name.StartsWith("file=") && fileFields != null)
-                    {
-                        string name = attached.Name.Substring(5);
-
-                        try
+                        else if (attached.Name.StartsWith("fields"))
                         {
-                            string fileKey = null;
-                            foreach (string key in fileFields.Keys)
-                                if (name == fileFields[key])
-                                {
-                                    fileKey = key;
+                            byte[] data = new byte[attached.Size];
+                            crypto.Read(data, 0, (int)attached.Size);
+
+                            int start = 0, length = data.Length;
+                            G2ReadResult streamStatus = G2ReadResult.PACKET_GOOD;
+
+                            while (streamStatus == G2ReadResult.PACKET_GOOD)
+                            {
+                                G2ReceivedPacket packet = new G2ReceivedPacket();
+                                packet.Root = new G2Header(data);
+
+                                streamStatus = G2Protocol.ReadNextPacket(packet.Root, ref start, ref length);
+
+                                if (streamStatus != G2ReadResult.PACKET_GOOD)
                                     break;
+
+                                if (packet.Root.Name == ProfilePacket.Field)
+                                {
+                                    ProfileField field = ProfileField.Decode(packet.Root);
+
+                                    if (field.Value == null)
+                                        continue;
+
+                                    if (field.FieldType == ProfileFieldType.Text)
+                                        textFields[field.Name] = UTF8Encoding.UTF8.GetString(field.Value);
+                                    else if (field.FieldType == ProfileFieldType.File && fileFields != null)
+                                        fileFields[field.Name] = UTF8Encoding.UTF8.GetString(field.Value);
                                 }
-
-                            fileFields[fileKey] = tempPath + Path.DirectorySeparatorChar + name;
-                            FileStream extract = new FileStream(fileFields[fileKey], FileMode.CreateNew, FileAccess.Write);
-
-                            long remaining = attached.Size;
-                            byte[] buff = new byte[2096];
-
-                            while (remaining > 0)
-                            {
-                                int read = (remaining > 2096) ? 2096 : (int)remaining;
-                                remaining -= read;
-
-                                crypto.Read(buff, 0, read);
-                                extract.Write(buff, 0, read);
                             }
-
-                            extract.Close();
                         }
-                        catch
-                        { }
+
+                        else if (attached.Name.StartsWith("file=") && fileFields != null)
+                        {
+                            string name = attached.Name.Substring(5);
+
+                            try
+                            {
+                                string fileKey = null;
+                                foreach (string key in fileFields.Keys)
+                                    if (name == fileFields[key])
+                                    {
+                                        fileKey = key;
+                                        break;
+                                    }
+
+                                fileFields[fileKey] = tempPath + Path.DirectorySeparatorChar + name;
+
+                                using (FileStream extract = new FileStream(fileFields[fileKey], FileMode.CreateNew, FileAccess.Write))
+                                {
+                                    long remaining = attached.Size;
+                                    byte[] buff = new byte[2096];
+
+                                    while (remaining > 0)
+                                    {
+                                        int read = (remaining > 2096) ? 2096 : (int)remaining;
+                                        remaining -= read;
+
+                                        crypto.Read(buff, 0, read);
+                                        extract.Write(buff, 0, read);
+                                    }
+                                }
+                            }
+                            catch
+                            { }
+                        }
                     }
                 }
-
-                Utilities.ReadtoEnd(crypto);
-                crypto.Close();
             }
             catch (Exception)
             {

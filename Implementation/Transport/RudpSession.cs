@@ -33,6 +33,8 @@ namespace RiseOp.Implementation.Transport
 		// extra info
         internal string Name;
 
+        internal string CloseMsg;
+
 		// negotiation
 		internal RijndaelManaged InboundEnc;
 		internal RijndaelManaged OutboundEnc;
@@ -338,9 +340,9 @@ namespace RiseOp.Implementation.Transport
 
 		internal void Send_KeyAck()
 		{
-			KeyAck keyAck       = new KeyAck();
-			keyAck.SenderPubKey = Core.User.Settings.KeyPair.ExportParameters(false);
-            keyAck.Name         = Core.User.Settings.UserName;
+			KeyAck keyAck    = new KeyAck();
+            keyAck.PublicKey = Core.User.Settings.KeyPublic;
+            keyAck.Name      = Core.User.Settings.UserName;
 
 			Log("Key Ack Sent");
 
@@ -354,7 +356,7 @@ namespace RiseOp.Implementation.Transport
 
             Log("Key Ack Received");
 
-            Core.IndexKey(UserID, ref keyAck.SenderPubKey.Modulus);
+            Core.IndexKey(UserID, ref keyAck.PublicKey);
 
             // send session request with encrypted current key
             Send_SessionRequest();
@@ -513,6 +515,8 @@ namespace RiseOp.Implementation.Transport
 
 		internal void Send_Close(string reason)
 		{
+            CloseMsg = reason;
+
 			Log("Sending Close (" + reason + ")");
 
 			CommClose close = new CommClose();
@@ -527,7 +531,9 @@ namespace RiseOp.Implementation.Transport
 		internal void Receive_Close(G2ReceivedPacket embeddedPacket)
 		{
 			CommClose close = CommClose.Decode(embeddedPacket);
-			
+
+            CloseMsg = close.Reason;
+
             //crit delete
             if(close.Reason == "Session Packet Error")
             {
@@ -689,9 +695,9 @@ namespace RiseOp.Implementation.Transport
                     packet.Root = new G2Header(DecryptBuffer);
                     
                     //crit - delete
-                    int lastStart = start;
-                    int lastBuffSize = DecryptBuffSize;
-                    byte[] lastBuffer = Utilities.ExtractBytes(DecryptBuffer, 0, DecryptBuffSize);
+                    //int lastStart = start;
+                    //int lastBuffSize = DecryptBuffSize;
+                    //byte[] lastBuffer = Utilities.ExtractBytes(DecryptBuffer, 0, DecryptBuffSize);
               
                     streamStatus = G2Protocol.ReadNextPacket(packet.Root, ref start, ref DecryptBuffSize);
 

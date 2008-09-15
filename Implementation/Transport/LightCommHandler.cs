@@ -113,9 +113,9 @@ namespace RiseOp.Implementation.Transport
             Active.Add(target);
 
             target.Packets.AddLast(new Tuple<uint, RudpPacket>(service, comm));
-            while (target.Packets.Count > 10)
+            while (target.Packets.Count > 15)
             {
-                Debug.Assert(false);
+                //crit - log to console? Debug.Assert(false);
                 target.Packets.RemoveFirst();
             }
 
@@ -207,6 +207,14 @@ namespace RiseOp.Implementation.Transport
 
             // receieved ack, try to send next packet immediately
             client.TrySend(Network);
+        }
+
+        internal List<DhtAddress> GetAddresses(ulong id)
+        {
+            if (Clients.ContainsKey(id))
+                return Clients[id].Addresses.Select(a => a.Address).Take(3).ToList();
+
+            return null;
         }
     }
 

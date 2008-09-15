@@ -380,8 +380,8 @@ namespace RiseOp.Interface
             // read image
             try
             {
-                TaggedStream file = new TaggedStream(Fullpath, Login.Protocol, new ProcessTagsHandler(ProcessSplash));
-                file.Close();
+                using (TaggedStream file = new TaggedStream(Fullpath, Login.Protocol, new ProcessTagsHandler(ProcessSplash)))
+                { }
             }
             catch { }
         }

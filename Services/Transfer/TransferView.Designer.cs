@@ -37,6 +37,8 @@ namespace RiseOp.Services.Transfer
             this.ShowUploads = new System.Windows.Forms.CheckBox();
             this.ShowPending = new System.Windows.Forms.CheckBox();
             this.ShowPartials = new System.Windows.Forms.CheckBox();
+            this.ExpandLink = new System.Windows.Forms.LinkLabel();
+            this.CollapseLink = new System.Windows.Forms.LinkLabel();
             this.SuspendLayout();
             // 
             // FastTimer
@@ -140,12 +142,38 @@ namespace RiseOp.Services.Transfer
             this.ShowPartials.UseVisualStyleBackColor = true;
             this.ShowPartials.CheckedChanged += new System.EventHandler(this.PartialsCheck_CheckedChanged);
             // 
+            // ExpandLink
+            // 
+            this.ExpandLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.ExpandLink.AutoSize = true;
+            this.ExpandLink.Location = new System.Drawing.Point(506, 16);
+            this.ExpandLink.Name = "ExpandLink";
+            this.ExpandLink.Size = new System.Drawing.Size(57, 13);
+            this.ExpandLink.TabIndex = 6;
+            this.ExpandLink.TabStop = true;
+            this.ExpandLink.Text = "Expand All";
+            this.ExpandLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.ExpandLink_LinkClicked);
+            // 
+            // CollapseLink
+            // 
+            this.CollapseLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.CollapseLink.AutoSize = true;
+            this.CollapseLink.Location = new System.Drawing.Point(569, 16);
+            this.CollapseLink.Name = "CollapseLink";
+            this.CollapseLink.Size = new System.Drawing.Size(61, 13);
+            this.CollapseLink.TabIndex = 7;
+            this.CollapseLink.TabStop = true;
+            this.CollapseLink.Text = "Collapse All";
+            this.CollapseLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.CollapseLink_LinkClicked);
+            // 
             // TransferView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.ClientSize = new System.Drawing.Size(642, 280);
+            this.Controls.Add(this.CollapseLink);
+            this.Controls.Add(this.ExpandLink);
             this.Controls.Add(this.ShowPartials);
             this.Controls.Add(this.ShowPending);
             this.Controls.Add(this.ShowUploads);
@@ -168,5 +196,7 @@ namespace RiseOp.Services.Transfer
         private System.Windows.Forms.CheckBox ShowUploads;
         private System.Windows.Forms.CheckBox ShowPending;
         private System.Windows.Forms.CheckBox ShowPartials;
+        private System.Windows.Forms.LinkLabel ExpandLink;
+        private System.Windows.Forms.LinkLabel CollapseLink;
     }
 }

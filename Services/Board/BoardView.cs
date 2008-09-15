@@ -492,32 +492,30 @@ namespace RiseOp.Services.Board
 
             try
             {
-                TaggedStream stream = new TaggedStream(Boards.GetPostPath(post.Header), Core.GuiProtocol);
-                CryptoStream crypto = IVCryptoStream.Load(stream, post.Header.FileKey);
-
-                int buffSize = 4096;
-                byte[] buffer = new byte[4096];
-                long bytesLeft = post.Header.FileStart;
-                while (bytesLeft > 0)
+                using (TaggedStream stream = new TaggedStream(Boards.GetPostPath(post.Header), Core.GuiProtocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(stream, post.Header.FileKey))
                 {
-                    int readSize = (bytesLeft > (long)buffSize) ? buffSize : (int)bytesLeft;
-                    int read = crypto.Read(buffer, 0, readSize);
-                    bytesLeft -= (long)read;
-                }
-
-                // load file
-                foreach (PostFile file in post.Attached)
-                    if (file.Name == "body")
+                    int buffSize = 4096;
+                    byte[] buffer = new byte[4096];
+                    long bytesLeft = post.Header.FileStart;
+                    while (bytesLeft > 0)
                     {
-                        byte[] htmlBytes = new byte[file.Size];
-                        crypto.Read(htmlBytes, 0, (int)file.Size);
-
-                        UTF8Encoding utf = new UTF8Encoding();
-                        PostBody.Rtf = utf.GetString(htmlBytes);
+                        int readSize = (bytesLeft > (long)buffSize) ? buffSize : (int)bytesLeft;
+                        int read = crypto.Read(buffer, 0, readSize);
+                        bytesLeft -= (long)read;
                     }
 
-                Utilities.ReadtoEnd(crypto);
-                crypto.Close();
+                    // load file
+                    foreach (PostFile file in post.Attached)
+                        if (file.Name == "body")
+                        {
+                            byte[] htmlBytes = new byte[file.Size];
+                            crypto.Read(htmlBytes, 0, (int)file.Size);
+
+                            UTF8Encoding utf = new UTF8Encoding();
+                            PostBody.Rtf = utf.GetString(htmlBytes);
+                        }
+                }
             }
             catch (Exception ex)
             {

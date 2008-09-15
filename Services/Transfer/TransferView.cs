@@ -27,6 +27,7 @@ namespace RiseOp.Services.Transfer
 
         Dictionary<ulong, TransferNode> TransferMap = new Dictionary<ulong, TransferNode>();
 
+        bool DefaultCollapse = true;
 
 
         internal static void Show(DhtNetwork network)
@@ -102,7 +103,9 @@ namespace RiseOp.Services.Transfer
                 TransferNode node = new TransferNode(Service, transfer);
                 TransferMap[transfer.FileID] = node;
                 TransferList.Nodes.Add(node);
-                node.Expand();
+
+                if(!DefaultCollapse)
+                    node.Expand();
             }
 
             foreach (TransferNode transfer in TransferList.Nodes)
@@ -157,6 +160,22 @@ namespace RiseOp.Services.Transfer
         {
             Service.Logging = false;
             Service.Core.Network.GuiTransfers = null;
+        }
+
+        private void ExpandLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            DefaultCollapse = false;
+
+            foreach (TreeListNode node in TransferList.Nodes)
+                node.Expand();
+        }
+
+        private void CollapseLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            DefaultCollapse = true;
+
+            foreach (TreeListNode node in TransferList.Nodes)
+                node.Collapse();
         }
     }
 
@@ -267,6 +286,9 @@ namespace RiseOp.Services.Transfer
             // remote name / IP - last seen, timeout: x
 			// flags: UL (active?, chunk index, progress) / DL (chunk index, progress) / RBU
 
+            if (transfer.RoutingTable[peer.DhtIndex] == peer)
+                text += "(B" + peer.DhtIndex + ") ";
+
             text += Service.Core.Trust.GetName(peer.Client.UserID) + ", ";
             text += "Last Seen: " + peer.LastSeen.ToShortTimeString() + ", ";
             //text += "Timeout: " + peer.PingTimeout + ", ";
@@ -295,6 +317,9 @@ namespace RiseOp.Services.Transfer
                     else
                         text += "Pending, ";
                 }
+
+                if(peer.LastError != null)
+                    text += "Stopped: " + peer.LastError + ", ";
             }
 
             if(Service.DownloadPeers.ContainsKey(peer.RoutingID))

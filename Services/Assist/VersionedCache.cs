@@ -240,25 +240,25 @@ namespace RiseOp.Services.Assist
                 if (!File.Exists(path))
                     return;
 
-                CryptoStream crypto = IVCryptoStream.Load(path, LocalKey);
-                PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
+                using (IVCryptoStream crypto = IVCryptoStream.Load(path, LocalKey))
+                {
+                    PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
-                G2Header root = null;
+                    G2Header root = null;
 
-                while (stream.ReadPacket(ref root))
-                    if (root.Name == DataPacket.SignedData)
-                    {
-                        SignedData signed = SignedData.Decode(root);
-                        G2Header embedded = new G2Header(signed.Data);
+                    while (stream.ReadPacket(ref root))
+                        if (root.Name == DataPacket.SignedData)
+                        {
+                            SignedData signed = SignedData.Decode(root);
+                            G2Header embedded = new G2Header(signed.Data);
 
 
-                        // figure out data contained
-                        if (G2Protocol.ReadPacket(embedded))
-                            if (embedded.Name == DataPacket.VersionedFile)
-                                Process_VersionedFile(null, signed, VersionedFileHeader.Decode(embedded));
-                    }
-
-                stream.Close();
+                            // figure out data contained
+                            if (G2Protocol.ReadPacket(embedded))
+                                if (embedded.Name == DataPacket.VersionedFile)
+                                    Process_VersionedFile(null, signed, VersionedFileHeader.Decode(embedded));
+                        }
+                }
             }
             catch (Exception ex)
             {
@@ -273,18 +273,17 @@ namespace RiseOp.Services.Assist
             try
             {
                 string tempPath = Core.GetTempPath();
-                CryptoStream stream = IVCryptoStream.Save(tempPath, LocalKey);
-
-                FileMap.LockReading(delegate()
+                using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, LocalKey))
                 {
-                    foreach (OpVersionedFile vfile in FileMap.Values)
-                        if (vfile.SignedHeader != null)
-                            stream.Write(vfile.SignedHeader, 0, vfile.SignedHeader.Length);
-                });
+                    FileMap.LockReading(delegate()
+                    {
+                        foreach (OpVersionedFile vfile in FileMap.Values)
+                            if (vfile.SignedHeader != null)
+                                stream.Write(vfile.SignedHeader, 0, vfile.SignedHeader.Length);
+                    });
 
-                stream.FlushFinalBlock();
-                stream.Close();
-
+                    stream.FlushFinalBlock();
+                }
 
                 string finalPath = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "VersionedFileHeaders");
                 File.Copy(tempPath, finalPath, true);
