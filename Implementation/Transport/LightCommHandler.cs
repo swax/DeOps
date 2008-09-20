@@ -18,6 +18,11 @@ namespace RiseOp.Implementation.Transport
     internal delegate void LightDataHandler(DhtClient client, byte[] data);
 
 
+    // a 'light' reliable udp between users
+    // a user is a collection of addresses, a message sent to a user through lightComm
+    // will automatically try various addresses to send the packet without the service
+    // having to write complicated netcode for preferencing addresses, trying, and timeouts, etc..
+
     // only 1 packet outstanding to an address at a time
     // next packet not sent until ack received, or timeout
 
@@ -26,7 +31,7 @@ namespace RiseOp.Implementation.Transport
         OpCore Core;
         DhtNetwork Network;
 
-        List<LightClient> Active = new List<LightClient>();
+        Dictionary<ulong, LightClient> Active = new Dictionary<ulong, LightClient>();
         internal Dictionary<ulong, LightClient> Clients = new Dictionary<ulong, LightClient>();
 
         internal ServiceEvent<LightDataHandler> Data = new ServiceEvent<LightDataHandler>();
@@ -40,22 +45,22 @@ namespace RiseOp.Implementation.Transport
 
         internal void SecondTimer()
         {
-            foreach (LightClient client in Active)
+            foreach (LightClient client in Active.Values)
                 client.TrySend(Network);
 
-            foreach (LightClient client in (from c in Active where c.Packets.Count == 0 select c).ToArray())
-                Active.Remove(client);
+            foreach (LightClient client in Active.Values.Where(c => c.Packets.Count == 0).ToArray())
+                Active.Remove(client.RoutingID);
 
             // each minute clean locations
             if (Core.TimeNow.Second == 0)
             {
                 if(Clients.Count > 50)
-                    foreach (LightClient old in (from c in Clients.Values orderby c.LastSeen select c).ToArray())
+                    foreach (LightClient old in Clients.Values.OrderBy(c => c.LastSeen).ToArray())
                     {
                         if (Clients.Count <= 50)
                             break;
 
-                        if (Active.Contains(old))
+                        if (Active.ContainsKey(old.RoutingID))
                             continue;
 
                         if (old.LastSeen.AddMinutes(5) > Core.TimeNow)
@@ -94,6 +99,11 @@ namespace RiseOp.Implementation.Transport
 
         internal void SendPacket(DhtClient client, uint service, int type, G2Packet packet)
         {
+            SendPacket(client, service, type, packet, false);
+        }
+
+        internal void SendPacket(DhtClient client, uint service, int type, G2Packet packet, bool expedite)
+        {
             RudpPacket comm     = new RudpPacket();
             comm.SenderID       = Network.Local.UserID;
             comm.SenderClient   = Network.Local.ClientID;
@@ -108,9 +118,17 @@ namespace RiseOp.Implementation.Transport
             if (!Clients.ContainsKey(client.RoutingID))
                 return;
 
-
             LightClient target = Clients[client.RoutingID];
-            Active.Add(target);
+
+            if (expedite)
+            {
+                target.NextTry = Core.TimeNow;
+                target.Packets.AddFirst(new Tuple<uint, RudpPacket>(service, comm));
+                target.TrySend(Network);
+                return;
+            }
+
+            Active[client.RoutingID] = target;
 
             target.Packets.AddLast(new Tuple<uint, RudpPacket>(service, comm));
             while (target.Packets.Count > 15)
@@ -281,17 +299,17 @@ namespace RiseOp.Implementation.Transport
                 network.Core.TimeNow < NextTry)
                 return;
 
-            RudpAddress target = Addresses.First.Value;
-            Addresses.RemoveFirst();
-            Addresses.AddLast(target);
-
             Attempts++;
-            if (Attempts >= Addresses.Count * 2)
+            if (Attempts >= Addresses.Count * 2) // every address known tried twice
             {
                 Attempts = 0;
                 Packets.RemoveFirst();
                 return;
             }
+
+            RudpAddress target = Addresses.First.Value;
+            Addresses.RemoveFirst();
+            Addresses.AddLast(target);
 
             NextTry = network.Core.TimeNow.AddSeconds(3);
 

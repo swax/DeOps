@@ -169,12 +169,12 @@ namespace RiseOp.Implementation
  
 
             // optional
-            //AddService(new IMService(this));
-            //AddService(new ChatService(this));
-            //AddService(new ProfileService(this));
-            //AddService(new MailService(this));
-            //AddService(new BoardService(this));
-            //AddService(new PlanService(this));
+            AddService(new IMService(this));
+            AddService(new ChatService(this));
+            AddService(new ProfileService(this));
+            AddService(new MailService(this));
+            AddService(new BoardService(this));
+            AddService(new PlanService(this));
             AddService(new StorageService(this));
 
             if (Sim != null)
@@ -654,30 +654,36 @@ namespace RiseOp.Implementation
                 return;
             }
 
+
             CoreRunning = false;
 
             if(CoreThread != null && CoreThread.IsAlive)
             {
                 ProcessEvent.Set();
                 CoreThread.Join();
-                CoreThread = null;
             }
+            CoreThread = null;
 
-            //crit notify rudp / location signing off network
 
             if (Network.IsGlobal)
                 Network.GlobalConfig.Save(this);
             else
                 User.Save();
 
+
             foreach (OpService service in ServiceMap.Values)
                 service.Dispose();
 
-            ServiceMap.Clear();
 
-            Network.TcpControl.Shutdown();
+            Network.RudpControl.Shutdown();
             Network.UdpControl.Shutdown();
             Network.LanControl.Shutdown();
+            Network.TcpControl.Shutdown();
+
+
+            ServiceMap.Clear();
+            ServiceBandwidth.Clear();
+            
 
             if (Sim != null)
                 Sim.Internet.UnregisterAddress(this);

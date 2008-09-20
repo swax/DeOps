@@ -40,6 +40,7 @@ namespace RiseOp.Interface
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.ColorsButton = new System.Windows.Forms.ToolStripButton();
             this.InputBox = new System.Windows.Forms.RichTextBox();
+            this.RichTextButton = new System.Windows.Forms.ToolStripButton();
             this.FontToolStrip.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -55,10 +56,11 @@ namespace RiseOp.Interface
             this.ItalicsButton,
             this.UnderlineButton,
             this.toolStripSeparator2,
+            this.RichTextButton,
             this.ColorsButton});
             this.FontToolStrip.Location = new System.Drawing.Point(0, 0);
             this.FontToolStrip.Name = "FontToolStrip";
-            this.FontToolStrip.Size = new System.Drawing.Size(239, 25);
+            this.FontToolStrip.Size = new System.Drawing.Size(224, 25);
             this.FontToolStrip.TabIndex = 0;
             this.FontToolStrip.Text = "toolStrip1";
             // 
@@ -152,12 +154,24 @@ namespace RiseOp.Interface
             this.InputBox.Font = new System.Drawing.Font("Tahoma", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.InputBox.Location = new System.Drawing.Point(0, 25);
             this.InputBox.Name = "InputBox";
-            this.InputBox.Size = new System.Drawing.Size(239, 26);
+            this.InputBox.Size = new System.Drawing.Size(224, 26);
             this.InputBox.TabIndex = 1;
             this.InputBox.Text = "";
             this.InputBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.InputBox_KeyDown);
             this.InputBox.SelectionChanged += new System.EventHandler(this.InputBox_SelectionChanged);
             this.InputBox.LinkClicked += new System.Windows.Forms.LinkClickedEventHandler(this.InputBox_LinkClicked);
+            // 
+            // RichTextButton
+            // 
+            this.RichTextButton.CheckOnClick = true;
+            this.RichTextButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.RichTextButton.Image = ((System.Drawing.Image)(resources.GetObject("RichTextButton.Image")));
+            this.RichTextButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.RichTextButton.Name = "RichTextButton";
+            this.RichTextButton.Size = new System.Drawing.Size(23, 22);
+            this.RichTextButton.Text = "Enable Rich Text";
+            this.RichTextButton.CheckedChanged += new System.EventHandler(this.RichTextButton_CheckedChanged);
+            this.RichTextButton.Click += new System.EventHandler(this.RichTextButton_Click);
             // 
             // TextInput
             // 
@@ -166,7 +180,7 @@ namespace RiseOp.Interface
             this.Controls.Add(this.InputBox);
             this.Controls.Add(this.FontToolStrip);
             this.Name = "TextInput";
-            this.Size = new System.Drawing.Size(239, 51);
+            this.Size = new System.Drawing.Size(224, 51);
             this.FontToolStrip.ResumeLayout(false);
             this.FontToolStrip.PerformLayout();
             this.ResumeLayout(false);
@@ -187,5 +201,6 @@ namespace RiseOp.Interface
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripButton ColorsButton;
         internal System.Windows.Forms.RichTextBox InputBox;
+        private System.Windows.Forms.ToolStripButton RichTextButton;
     }
 }

@@ -52,6 +52,7 @@ namespace RiseOp.Services.IM
 
             Core.Trust.LinkUpdate += new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate += new LocationUpdateHandler(Location_Update);
+            Core.Locations.PingUsers += new PingUsersHandler(Location_PingUsers);
         }
 
         public void Dispose()
@@ -68,6 +69,7 @@ namespace RiseOp.Services.IM
 
             Core.Trust.LinkUpdate -= new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate -= new LocationUpdateHandler(Location_Update);
+            Core.Locations.PingUsers -= new PingUsersHandler(Location_PingUsers);
         }
 
         void Core_SecondTimer()
@@ -125,6 +127,16 @@ namespace RiseOp.Services.IM
             });
         }
 
+        void Location_PingUsers(List<ulong> users)
+        {
+            IMMap.LockReading(delegate()
+            {
+                foreach (ulong user in IMMap.Keys)
+                    if (!users.Contains(user))
+                        users.Add(user);
+            });
+        }
+
         //crit not thread locked/protected
         private List<IM_View> GetViews()
         {
@@ -147,7 +159,7 @@ namespace RiseOp.Services.IM
                 if (user == Core.UserID)
                     return null;
 
-                if (!Core.Locations.LocationMap.SafeContainsKey(user))
+                if (Core.Locations.ActiveClientCount(user) == 0)
                     return null;
 
                 menus.Add(new MenuItemInfo("Send IM", IMRes.Icon, new EventHandler(QuickMenu_View)));

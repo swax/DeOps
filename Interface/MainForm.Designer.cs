@@ -74,9 +74,9 @@ namespace RiseOp.Interface
             this.ProjectsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.SideButton = new System.Windows.Forms.ToolStripButton();
             this.LockButton = new System.Windows.Forms.ToolStripButton();
+            CommandTree = new RiseOp.Services.Trust.LinkTree();
             this.TreeImageList = new System.Windows.Forms.ImageList(this.components);
             this.NewsTimer = new System.Windows.Forms.Timer(this.components);
-            CommandTree = new RiseOp.Services.Trust.LinkTree();
             this.MainSplit.Panel1.SuspendLayout();
             this.MainSplit.Panel2.SuspendLayout();
             this.MainSplit.SuspendLayout();
@@ -210,7 +210,6 @@ namespace RiseOp.Interface
             this.CommandTree.StateImageList = null;
             this.CommandTree.TabIndex = 0;
             this.CommandTree.Text = "treeListViewEx1";
-            this.CommandTree.VisualStyles = false;
             this.CommandTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseClick);
             this.CommandTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseDoubleClick);
             this.CommandTree.SelectedItemChanged += new System.EventHandler(this.CommandTree_SelectedItemChanged);

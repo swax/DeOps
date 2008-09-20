@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -141,15 +142,8 @@ namespace RiseOp.Services.Assist
             // clean research map every 10 seconds
             if (Core.TimeNow.Second % 9 == 0)
             {
-                List<ulong> removeIDs = new List<ulong>();
-
-                foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
-                    if (Core.TimeNow > pair.Value)
-                        removeIDs.Add(pair.Key);
-
-                if (removeIDs.Count > 0)
-                    foreach (ulong id in removeIDs)
-                        NextResearch.Remove(id);
+                foreach (ulong user in NextResearch.Keys.Where(u => Core.TimeNow > NextResearch[u]).ToArray())
+                    NextResearch.Remove(user);
             }
         }
 
@@ -525,9 +519,6 @@ namespace RiseOp.Services.Assist
 
         List<byte[]> Store_Replicate(DhtContact contact)
         {
-            if (!Network.Established)
-                return null;
-
             List<byte[]> patches = new List<byte[]>();
 
             FileMap.LockReading(delegate()

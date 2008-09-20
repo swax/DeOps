@@ -8,16 +8,19 @@ using RiseOp.Implementation.Protocol.Net;
 
 namespace RiseOp.Services.Location
 {
-    internal class LocPacket
+    internal class LocationPacket
     {
-        internal const byte LocationData = 0x10;
-        internal const byte CryptLoc = 0x20;
+        internal const byte Data = 0x10;
+        internal const byte Ping = 0x20;
+        internal const byte Notify = 0x30;
+
+        internal const byte CryptLoc = 0x40;
     }
 
     internal class LocationData : G2Packet
     {
         internal const int GLOBAL_TTL = 60;
-        internal const int OP_TTL = 4;
+        internal const int OP_TTL = 6; // published to 8 closest so ~1 loc update per minute
 
 
         const byte Packet_Key       = 0x10;
@@ -62,13 +65,13 @@ namespace RiseOp.Services.Location
         {
             lock (protocol.WriteSection)
             {
-                G2Frame loc = protocol.WritePacket(null, LocPacket.LocationData, null);
+                G2Frame loc = protocol.WritePacket(null, LocationPacket.Data, null);
 
                 protocol.WritePacket(loc, Packet_Key, Key);
                 Source.WritePacket(protocol, loc, Packet_Source);
                 protocol.WritePacket(loc, Packet_IP, IP.GetAddressBytes());
                 protocol.WritePacket(loc, Packet_Place, UTF8Encoding.UTF8.GetBytes(Place));
-                protocol.WritePacket(loc, Packet_TTL, BitConverter.GetBytes(TTL));
+                protocol.WritePacket(loc, Packet_TTL, CompactNum.GetBytes(TTL));
                 protocol.WritePacket(loc, Packet_Version, CompactNum.GetBytes(Version));
                 protocol.WritePacket(loc, Packet_GMTOffset, BitConverter.GetBytes(GmtOffset));
                 protocol.WritePacket(loc, Packet_Away, BitConverter.GetBytes(Away));
@@ -94,7 +97,7 @@ namespace RiseOp.Services.Location
         {
             lock (protocol.WriteSection)
             {
-                G2Frame loc = protocol.WritePacket(null, LocPacket.LocationData, null);
+                G2Frame loc = protocol.WritePacket(null, LocationPacket.Data, null);
 
                 Source.WritePacket(protocol, loc, Packet_Source);
                 protocol.WritePacket(loc, Packet_IP, IP.GetAddressBytes());
@@ -118,7 +121,7 @@ namespace RiseOp.Services.Location
 
             G2Protocol.ReadPacket(root);
 
-            if (root.Name != LocPacket.LocationData)
+            if (root.Name != LocationPacket.Data)
                 return null;
 
             LocationData loc = new LocationData();
@@ -154,7 +157,7 @@ namespace RiseOp.Services.Location
                         break;
 
                     case Packet_TTL:
-                        loc.TTL = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        loc.TTL = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Version:
@@ -191,6 +194,119 @@ namespace RiseOp.Services.Location
         }
     }
 
+    internal class LocationPing : G2Packet
+    {
+        const byte Packet_RemoteVersion = 0x10;
+
+
+        internal uint RemoteVersion;
+
+
+        internal LocationPing()
+        {
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame ping = protocol.WritePacket(null, LocationPacket.Ping, null);
+
+                protocol.WritePacket(ping, Packet_RemoteVersion, CompactNum.GetBytes(RemoteVersion));
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static LocationPing Decode(G2Header root)
+        {
+            LocationPing ping = new LocationPing();
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_RemoteVersion:
+                        ping.RemoteVersion = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+                }
+            }
+
+            return ping;
+        }
+    }
+
+    internal class LocationNotify : G2Packet
+    {
+        const byte Packet_Timeout = 0x10;
+        const byte Packet_SignedLocation = 0x20;
+        const byte Packet_GoingOffline = 0x30;
+
+
+        internal int Timeout;
+        internal byte[] SignedLocation;
+        internal bool GoingOffline;
+
+
+        internal LocationNotify()
+        {
+        }
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame notify = protocol.WritePacket(null, LocationPacket.Notify, SignedLocation);
+
+                protocol.WritePacket(notify, Packet_Timeout, CompactNum.GetBytes(Timeout));
+
+                if(GoingOffline)
+                    protocol.WritePacket(notify, Packet_GoingOffline, null);
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static LocationNotify Decode(G2Header root)
+        {
+            LocationNotify notify = new LocationNotify();
+
+            if (G2Protocol.ReadPayload(root))
+            {
+                notify.SignedLocation = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
+                G2Protocol.ResetPacket(root);
+            }
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (child.Name == Packet_GoingOffline)
+                {
+                    notify.GoingOffline = true;
+                    continue;
+                }
+
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_Timeout:
+                        notify.Timeout = CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+                }
+            }
+
+            return notify;
+        }
+    }
+
     internal class CryptLoc : G2Packet
     {
         const byte Packet_TTL = 0x10;
@@ -214,7 +330,7 @@ namespace RiseOp.Services.Location
         {
             lock (protocol.WriteSection)
             {
-                G2Frame wrap = protocol.WritePacket(null, LocPacket.CryptLoc, null);
+                G2Frame wrap = protocol.WritePacket(null, LocationPacket.CryptLoc, null);
 
                 protocol.WritePacket(wrap, Packet_TTL, BitConverter.GetBytes(TTL));
                 protocol.WritePacket(wrap, Packet_Data, Data);
@@ -230,7 +346,7 @@ namespace RiseOp.Services.Location
             if (!G2Protocol.ReadPacket(root))
                 return null;
 
-            if (root.Name != LocPacket.CryptLoc)
+            if (root.Name != LocationPacket.CryptLoc)
                 return null;
 
             return CryptLoc.Decode(root);

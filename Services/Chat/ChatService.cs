@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
@@ -53,6 +54,7 @@ namespace RiseOp.Services.Chat
             Core.GetFocusedCore += new GetFocusedHandler(Core_GetFocusedCore);
 
             Trust.LinkUpdate += new LinkUpdateHandler(Link_Update);
+            Core.Locations.PingUsers += new PingUsersHandler(Location_PingUsers);
             Core.Locations.LocationUpdate += new LocationUpdateHandler(Location_Update);
 
             Link_Update(Trust.LocalTrust);
@@ -71,6 +73,7 @@ namespace RiseOp.Services.Chat
             Core.GetFocusedCore -= new GetFocusedHandler(Core_GetFocusedCore);
 
             Trust.LinkUpdate -= new LinkUpdateHandler(Link_Update);
+            Core.Locations.PingUsers -= new PingUsersHandler(Location_PingUsers);
             Core.Locations.LocationUpdate -= new LocationUpdateHandler(Location_Update);
         }
 
@@ -109,6 +112,20 @@ namespace RiseOp.Services.Chat
 
         void Core_GetFocusedCore()
         {
+            ForAllUsers(id => Core.Focused.SafeAdd(id, true));
+        }
+
+        void Location_PingUsers(List<ulong> users)
+        {
+            ForAllUsers(delegate(ulong id)
+            { 
+                if (!users.Contains(id)) 
+                    users.Add(id); 
+            });
+        }
+
+        void ForAllUsers(Action<ulong> action)
+        {
             RoomMap.LockReading(delegate()
             {
                 foreach (ChatRoom room in RoomMap.Values)
@@ -117,16 +134,16 @@ namespace RiseOp.Services.Chat
                         room.Members.LockReading(delegate()
                         {
                             foreach (ulong id in room.Members)
-                                Core.Focused.SafeAdd(id, true);
+                                action(id);
                         });
 
-                        if(room.Invites != null)
-                            foreach(ulong id in room.Invites.Keys)
-                                Core.Focused.SafeAdd(id, true);
+                        if (room.Invites != null)
+                            foreach (ulong id in room.Invites.Keys)
+                                action(id);
 
                         if (room.Verified != null)
-                            foreach(ulong id in room.Verified.Keys)
-                                Core.Focused.SafeAdd(id, true);
+                            foreach (ulong id in room.Verified.Keys)
+                                action(id);
                     }
             });
         }

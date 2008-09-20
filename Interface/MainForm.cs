@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Text;
-using System.Windows.Forms;
-using System.Diagnostics;
 using System.Threading;
-using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
@@ -142,6 +141,7 @@ namespace RiseOp.Interface
             Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
 
             CommandTree.SelectedLink = Core.UserID;
+            CommandTree.SearchOnline = true;
 
             TopToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
             NavStrip.Renderer = new ToolStripProfessionalRenderer(new NavColorTable());
@@ -762,7 +762,7 @@ namespace RiseOp.Interface
 
             OpMenuItem info = new OpMenuItem(item.Link.UserID, 0);
 
-            if (Core.Locations.LocationMap.SafeContainsKey(info.UserID))
+            if (Core.Locations.ActiveClientCount(info.UserID) > 0)
             {
                 IMService IM = Core.GetService("IM") as IMService;
 
@@ -775,22 +775,6 @@ namespace RiseOp.Interface
 
                 if (Mail != null)
                     Mail.QuickMenu_View(info, null);
-            }
-        }
-
-        [DllImport("user32.dll")]
-        public static extern IntPtr SendMessage(IntPtr hWnd,int wMsg, bool wParam, int lParam);
-
-
-        void SetRedraw(Control ctl, bool lfDraw)
-        {
-            int WM_SETREDRAW  = 0x000B;
-
-            SendMessage(ctl.Handle, WM_SETREDRAW, lfDraw, 0);
-            if (lfDraw)
-            {
-                ctl.Invalidate();
-                ctl.Refresh();
             }
         }
 

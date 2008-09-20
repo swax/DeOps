@@ -1,4 +1,50 @@
 ﻿
+	plot how bandwidth scales with latency - test with 3mb file
+		pumps	 ms		rate kb/s
+		 4		500		  35
+		 8 		250
+		20		100
+		40		 50
+	
+	**** debug 8 pump transfers, for some reason there are large spikes and then nothing, debug
+	
+	test limiting upload rate in context
+	test hard limit in simulator that drops udp / blocks tcp packets
+	
+	
+bugs
+	sim clean command storage / transfers
+	
+	peer bandwidth limits, investigation?
+	speeds at diff latencies? time total file transfer time
+		a 100 ping would be 50ms each way or 20 pulse rate
+	
+	light comm overflow
+	investigate data comm error
+
+	lan mode breakpoint?
+
+	remove trash files from service folder because delete can fail if file in use, next load clean
+
+	
+testing
+	change concurrent to 3 and ensure that transfers are queued 
+	kill a source mid transfer and ensure transfer gets moved back to pending
+	when sources gone ensure moved to partials
+	
+	publish new file in storage at top of network
+	time how long it takes to distribute file across entire network
+	
+	large random linked network, time how long file propagates, sim clean up to run test again quickly
+
+	transfers work between 2 open, open/nat, 2 nat, 2 blocked, global proxy
+	5mb file on 8 peer network, peers limited in bandwidth, does multisource work
+	5mb file on 128 peer network, how bogged down does source get? optimize for min bog
+	100 mp3s, syncing around network of 32
+
+	test with nats and firewalls
+		
+
 light comm
 	on end transfer search
 		add locations to light comm
@@ -189,38 +235,6 @@ multi-source d/l
 			random linkup
 			distribute file from top
 		
-	bugs
-		sim clean command storage / transfers
-		
-		peer bandwidth limits, investigation?
-		speeds at diff latencies? time total file transfer time
-			a 100 ping would be 50ms each way or 20 pulse rate
-		
-		light comm overflow
-		investigate data comm error
-
-		lan mode breakpoint?
-
-		remove trash files from service folder because delete can fail if file in use, next load clean
-
-		
-	testing
-		change concurrent to 3 and ensure that transfers are queued 
-		kill a source mid transfer and ensure transfer gets moved back to pending
-		when sources gone ensure moved to partials
-		
-		publish new file in storage at top of network
-		time how long it takes to distribute file across entire network
-		
-		large random linked network, time how long file propagates, sim clean up to run test again quickly
-
-		transfers work between 2 open, open/nat, 2 nat, 2 blocked, global proxy
-		5mb file on 8 peer network, peers limited in bandwidth, does multisource work
-		5mb file on 128 peer network, how bogged down does source get? optimize for min bog
-		100 mp3s, syncing around network of 32
-
-		test with nats and firewalls
-
 
 -------------------------------------------------------------------------------------------
 

@@ -969,10 +969,6 @@ namespace RiseOp.Services.Mail
 
         List<byte[]> Store_ReplicateMail(DhtContact contact)
         {
-            if (!Network.Established)
-                return null;
-
-
             List<byte[]> patches = new List<byte[]>();
 
             foreach (List<CachedMail> list in MailMap.Values)
@@ -985,10 +981,6 @@ namespace RiseOp.Services.Mail
 
         List<byte[]> Store_ReplicateAck(DhtContact contact)
         {
-            if (!Network.Established)
-                return null;
-
-
             List<byte[]> patches = new List<byte[]>();
 
             // acks

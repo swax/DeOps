@@ -209,5 +209,18 @@ namespace RiseOp.Interface
             System.Diagnostics.Process.Start(e.LinkText);
         }
 
+        private void RichTextButton_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void RichTextButton_CheckedChanged(object sender, EventArgs e)
+        {
+            // if checked enable buttons
+
+
+            // if not checked disable text buttons
+        }
+
     }
 }

@@ -38,6 +38,8 @@ namespace RiseOp.Services.Trust
 
         internal bool FirstLineBlank = true;
 
+        internal bool SearchOnline;
+
 
         internal LinkTree()
         {
@@ -204,7 +206,8 @@ namespace RiseOp.Services.Trust
             foreach (OpLink link in node.Link.Downlinks)
                 if (!node.Link.IsLoopedTo(link))
                 {
-                    Core.Locations.Research(link.UserID);
+                    if(SearchOnline)
+                        Core.Locations.Research(link.UserID);
 
                     // if doesnt exist search for it
                     if (!link.Trust.Loaded)
@@ -638,7 +641,7 @@ namespace RiseOp.Services.Trust
         private void UpdateOnline(LinkNode node)
         {
             // if node offline, remove
-            if (!Core.Locations.LocationMap.SafeContainsKey(node.Link.UserID))
+            if (Core.Locations.ActiveClientCount(node.Link.UserID) == 0)
             {
                 if (NodeMap.ContainsKey(node.Link.UserID))
                 {
@@ -782,7 +785,9 @@ namespace RiseOp.Services.Trust
                 {
                     LinkNode item = node as LinkNode;
                     Trust.Research(item.Link.UserID, Project, true);
-                    Core.Locations.Research(item.Link.UserID);
+
+                    if(SearchOnline)
+                        Core.Locations.Research(item.Link.UserID);
                 }
             }
         }
@@ -898,7 +903,7 @@ namespace RiseOp.Services.Trust
         {
             Color newColor = Color.Black;
 
-            if (Link.UserID == Trust.Core.UserID || Locations.LocationMap.SafeContainsKey(Link.UserID))
+            if (Link.UserID == Trust.Core.UserID || Locations.ActiveClientCount(Link.UserID) > 0)
                 newColor = Color.Black;
             else
                 newColor = Color.DarkGray;

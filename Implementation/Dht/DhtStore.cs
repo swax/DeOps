@@ -174,6 +174,11 @@ namespace RiseOp.Implementation.Dht
 
         internal void Replicate(DhtContact contact)
         {
+            // dont replicate to local region until we've established our position in the dht
+            if (!Network.Established)
+                return;
+
+
             // when new user comes into our cache area, we send them the data we have in our high/low/xor bounds
 
             // replicate is only for cached area

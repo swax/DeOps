@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -11,18 +12,27 @@ using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
 using RiseOp.Implementation.Transport;
-using RiseOp.Services.Trust;
 
 
 namespace RiseOp.Services.Location
 {
     internal delegate void LocationUpdateHandler(LocationData location);
     internal delegate void LocationGuiUpdateHandler(ulong key);
+    internal delegate void PingUsersHandler(List<ulong> users);
 
     internal delegate byte[] GetLocationTagHandler();
     internal delegate void LocationTagReceivedHandler(DhtAddress address, ulong user, byte[] tag);
 
-
+    /*
+     * The old location system published location every 3 mins, and everyone interested would search every 3 mins for
+     * the updated location info.  This was done to prevent flooding of the host itself, as popular location info would
+     * be replicated.
+     * 
+     * Location info still needs to be published periodically (a firewalled host that cant find a proxy close to his
+     * own userID).  But the entire network doesnt need to periodically search.  Once a user loc is found, it is pinged
+     * and that future loc updates are done direclty between the two.
+     */
+    
     internal class LocationService : OpService
     {
         public string Name { get { return "Location"; } }
@@ -32,16 +42,23 @@ namespace RiseOp.Services.Location
         DhtNetwork Network;
 
         internal uint LocationVersion = 1;
-        internal DateTime NextLocationUpdate;
         internal DateTime NextGlobalPublish;
 
-        internal ClientInfo LocalLocation;
-        internal ThreadedDictionary<ulong, ThreadedDictionary<ushort, ClientInfo>> LocationMap = new ThreadedDictionary<ulong, ThreadedDictionary<ushort, ClientInfo>>();
+        internal ClientInfo LocalClient;
+        internal ThreadedDictionary<ulong, ClientInfo> Clients = new ThreadedDictionary<ulong, ClientInfo>();
 
         Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
 
         internal LocationUpdateHandler LocationUpdate;
         internal LocationGuiUpdateHandler GuiUpdate;
+
+        internal PingUsersHandler PingUsers;
+        List<ulong> LocalPings = new List<ulong>(); // local users who we are interested in pinging
+
+        LinkedList<DateTime> RecentPings = new LinkedList<DateTime>();
+        Dictionary<DhtClient, DateTime> NotifyUsers = new Dictionary<DhtClient, DateTime>(); // users who are interested in our updates, and when that interest expires
+        LinkedList<DhtClient> PendingNotifications = new LinkedList<DhtClient>();
+
 
         internal ServiceEvent<GetLocationTagHandler> GetTag = new ServiceEvent<GetLocationTagHandler>();
         internal ServiceEvent<LocationTagReceivedHandler> TagReceived = new ServiceEvent<LocationTagReceivedHandler>();
@@ -61,25 +78,72 @@ namespace RiseOp.Services.Location
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
+            Network.StatusChange += new StatusChange(Network_StatusChange);
+
             Network.Store.StoreEvent[ServiceID, 0] += new StoreHandler(OperationStore_Local);
             Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(OperationSearch_Local);
 
+            Network.LightComm.Data[ServiceID, 0] += new LightDataHandler(LightComm_ReceiveData);
+
+            Network.Store.ReplicateEvent[ServiceID, 0] += new ReplicateHandler(Store_Replicate);
+
+            UpdateLocation();
 
             if (Core.Sim != null)
             {
-                PruneLocations     = 16;
+                PruneLocations = 16;
             }
         }
-
-       
 
         public void Dispose()
         {
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.SecondTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
+            Network.StatusChange -= new StatusChange(Network_StatusChange);
+
             Network.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(OperationStore_Local);
             Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(OperationSearch_Local);
+
+            Network.LightComm.Data[ServiceID, 0] -= new LightDataHandler(LightComm_ReceiveData);
+
+            Network.Store.ReplicateEvent[ServiceID, 0] -= new ReplicateHandler(Store_Replicate);
+
+            // shotgun udp, let everyone know we're going offline
+            foreach (DhtClient client in NotifyUsers.Keys)
+            {
+                LocationNotify notify = new LocationNotify();
+                notify.Timeout = CurrentTimeout;
+                notify.GoingOffline = true;
+                Network.LightComm.SendPacket(client, ServiceID, 0, notify, true);
+            }
+        }
+
+        void Network_StatusChange()
+        {
+            if (!Network.Established)
+                return;
+
+            // re-publish location on network
+            // afterwards when new nodes come in range - replicate directly
+            // local area pings us to keep their caches up to date
+            // other nodes only ping us if they are locally interetested (they dont ping on getting a search result)
+
+            UpdateLocation();
+
+            // locs are published for the main benefit of firewalled hosts
+            // they may have a proxy that is nowhere near their true dht position
+            Network.Store.PublishNetwork(Core.UserID, ServiceID, 0, LocalClient.SignedData);
+        }
+
+        List<byte[]> Store_Replicate(DhtContact contact)
+        {
+            DataReq req = new DataReq(null, Core.UserID, ServiceID, 0, LocalClient.SignedData); 
+
+            // only replicating to open nodes directly
+            Network.Store.Send_StoreReq(contact, null, req);
+
+            return null;
         }
 
         void Core_SecondTimer()
@@ -93,112 +157,104 @@ namespace RiseOp.Services.Location
                 Core.TimeNow > NextGlobalPublish)
                 PublishGlobal();
 
-            // operation publish
-            if (Network.Responsive && Core.TimeNow > NextLocationUpdate)
-                UpdateLocation();
-
-            // run code below every quarter second
-            int second = Core.TimeNow.Second + 1; // get 1 - 60 value
-            if (second % 15 != 0)
+            
+            if (!Network.Established)
                 return;
 
 
-            // operation ttl 
-            Dictionary<ulong, bool> affectedUsers = new Dictionary<ulong, bool>();
-            List<ushort> deadClients = new List<ushort>();
+            // run code below every quarter second
+            if (Core.TimeNow.Second % 15 != 0)
+                return;
 
-            LocationMap.LockReading(delegate()
+
+            // keep local client from being pinged, or removed
+            LocalClient.LastSeen = Core.TimeNow.AddMinutes(1);
+            LocalClient.NextPing = Core.TimeNow.AddMinutes(1); 
+
+
+            // remove expired clients - either from not notifying us, or we've lost interest and stopped pinging
+            Clients.LockWriting(delegate()
             {
-                foreach (ThreadedDictionary<ushort, ClientInfo> clients in LocationMap.Values)
+                foreach (ClientInfo client in Clients.Values.Where(c => Core.TimeNow > c.Timeout).ToArray())
                 {
-                    deadClients.Clear();
-
-                    clients.LockReading(delegate()
-                    {
-                        foreach (ClientInfo location in clients.Values)
-                        {
-                            if (second == 60)
-                            {
-                                if (location.TTL > 0)
-                                    location.TTL--;
-
-                                if (location.TTL == 0)
-                                {
-                                    deadClients.Add(location.ClientID);
-                                    affectedUsers[location.Data.UserID] = true;
-                                }
-                            }
-
-                            //crit hack - last 30 and 15 secs before loc destroyed do searches (working pretty good through...)
-                            if (location.TTL == 1 && (second == 15 || second == 30))
-                                StartSearch(location.Data.UserID, 0);
-                        }
-                    });
-
-                    foreach (ushort dead in deadClients)
-                        clients.SafeRemove(dead);
+                    Clients.Remove(client.RoutingID);
+                    SignalUpdate(client, false);
                 }
             });
 
-            LocationMap.LockWriting(delegate()
+
+            // get form services users that we should keep tabs on
+            LocalPings.Clear();
+            PingUsers.Invoke(LocalPings);
+
+
+            // ping clients that we are locally caching, or we have interest in
+            Clients.LockReading(delegate()
             {
-                foreach (ulong id in affectedUsers.Keys)
-                    if (LocationMap[id].SafeCount == 0)
-                        LocationMap.Remove(id);
+                foreach (ClientInfo client in (from c in Clients.Values
+                                               where Core.TimeNow > c.NextPing &&
+                                                     (Network.Routing.InCacheArea(c.UserID) || LocalPings.Contains(c.UserID))
+                                               select c).ToArray())
+                    Send_Ping(client);
+
             });
 
-            foreach (ulong id in affectedUsers.Keys)
-                Core.RunInGuiThread(GuiUpdate, id);
 
+            // remove users no longer interested in our upates
+            foreach (DhtClient expired in (from id in NotifyUsers.Keys
+                                           where Core.TimeNow > NotifyUsers[id]
+                                           select id).ToArray())
+            {
+                NotifyUsers.Remove(expired);
+
+                if (PendingNotifications.Contains(expired))
+                    PendingNotifications.Remove(expired);
+            }
+
+
+            // send 2 per second, if new update, start over again
+            foreach (DhtClient client in PendingNotifications.Take(2).ToArray())
+            {
+                LocationNotify notify = new LocationNotify();
+                notify.Timeout = CurrentTimeout;
+                notify.SignedLocation = LocalClient.SignedData;
+                Network.LightComm.SendPacket(client, ServiceID, 0, notify);
+
+                PendingNotifications.Remove(client);
+            }
         }
 
         void Core_MinuteTimer()
         {
+            if(Clients.SafeCount < PruneLocations)
+                return;
 
-            // prune op locs
-            List<ulong> removeIDs = new List<ulong>();
-            List<ushort> removeClients = new List<ushort>();
+            // second timer handles dead locs
 
-            LocationMap.LockReading(delegate()
+            // minute timer handles pruning of too many locs
+
+
+            Clients.LockWriting(delegate()
             {
-                foreach (ulong id in LocationMap.Keys)
+                var remove = (from c in Clients.Values
+                             where c.UserID != Core.UserID &&
+                                    !Network.Routing.InCacheArea(c.RoutingID) &&
+                                    !Core.Focused.SafeContainsKey(c.UserID) &&
+                                    !LocalPings.Contains(c.UserID)
+                             orderby c.RoutingID ^ Network.Routing.LocalRoutingID descending
+                             select c).Take(Clients.Count - PruneLocations).ToArray();
+
+                foreach (ClientInfo client in remove)
                 {
-                    if (LocationMap.Count > PruneLocations &&
-                        id != Core.UserID &&
-                        !Core.Focused.SafeContainsKey(id) &&
-                        !Network.Routing.InCacheArea(id))
-                        removeIDs.Add(id);
+                    Clients.Remove(client.RoutingID);
+                    SignalUpdate(client, false);
                 }
             });
 
-            if (removeIDs.Count > 0)
-                LocationMap.LockWriting(delegate()
-                {
-                    while (removeIDs.Count > 0 && LocationMap.Count > PruneLocations / 2)
-                    {
-                        ulong furthest = Core.UserID;
-
-                        foreach (ulong id in removeIDs)
-                            if ((id ^ Core.UserID) > (furthest ^ Core.UserID))
-                                furthest = id;
-
-                        LocationMap.Remove(furthest);
-                        Core.RunInGuiThread(GuiUpdate, furthest);
-                        removeIDs.Remove(furthest);
-                    }
-                });
-
    
             // clean research map
-            removeIDs.Clear();
-
-            foreach (KeyValuePair<ulong, DateTime> pair in NextResearch)
-                if (Core.TimeNow > pair.Value)
-                    removeIDs.Add(pair.Key);
-
-            if (removeIDs.Count > 0)
-                foreach (ulong id in removeIDs)
-                    NextResearch.Remove(id);
+            foreach(ulong user in NextResearch.Keys.Where(u => Core.TimeNow > NextResearch[u]).ToArray())
+                NextResearch.Remove(user);
         }
 
         public void SimTest()
@@ -253,17 +309,14 @@ namespace RiseOp.Services.Location
                 return;
             }
 
-            // do next update a minute before current update expires
-            NextLocationUpdate = Core.TimeNow.AddMinutes(LocationData.OP_TTL - 1);
-
             LocationData location = GetLocalLocation();
             
             byte[] signed = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, location);
 
-            Debug.Assert(location.TTL < 5);
-            Network.Store.PublishNetwork(Core.UserID, ServiceID, 0, signed);
-
             OperationStore_Local(new DataReq(null, Core.UserID, ServiceID, 0, signed));
+
+            // update oldest to newest (update oldest with new address/info before we ping timeout)
+            PendingNotifications = new LinkedList<DhtClient>(NotifyUsers.Keys.OrderBy(c => NotifyUsers[c]));
         }
 
         internal void StartSearch(ulong id, uint version)
@@ -285,8 +338,6 @@ namespace RiseOp.Services.Location
                 OperationStore_Local(store);
             }
         }
-
-        
 
         void OperationSearch_Local(ulong key, byte[] parameters, List<byte[]> results)
         {
@@ -312,13 +363,18 @@ namespace RiseOp.Services.Location
 
             // figure out data contained
             if (G2Protocol.ReadPacket(embedded))
-                if (embedded.Name == LocPacket.LocationData)
+                if (embedded.Name == LocationPacket.Data)
                 {
                     LocationData location = LocationData.Decode(signed.Data);
 
                     if (Utilities.CheckSignedData(location.Key, signed.Data, signed.Signature))
                         Process_LocationData(store, signed, location);
                 }
+        }
+
+        private void Process_LocationData(byte[] data)
+        {
+
         }
 
         private void Process_LocationData(DataReq data, SignedData signed, LocationData location)
@@ -330,19 +386,19 @@ namespace RiseOp.Services.Location
                 return;
 
 
-            ClientInfo current = GetLocationInfo(location.UserID, location.Source.ClientID);
+            ClientInfo client = GetLocationInfo(location.UserID, location.Source.ClientID);
            
             // check location version
-            if (current != null)
+            if (client != null)
             {
-                if (location.Version == current.Data.Version)
+                if (location.Version == client.Data.Version)
                     return;
 
-                else if (location.Version < current.Data.Version)
+                else if (location.Version < client.Data.Version)
                 {
                     if (data != null && data.Sources != null)
                         foreach (DhtAddress source in data.Sources)
-                            Network.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.Data.UserID, ServiceID, 0, current.SignedData));
+                            Network.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, client.Data.UserID, ServiceID, 0, client.SignedData));
 
                     return;
                 }
@@ -358,33 +414,28 @@ namespace RiseOp.Services.Location
 
 
             // add location
-            if (current == null)
+            if (client == null)
             {
-                ThreadedDictionary<ushort, ClientInfo> locations = null;
-
-                if (!LocationMap.SafeTryGetValue(location.UserID, out locations))
-                {
-                    locations = new ThreadedDictionary<ushort, ClientInfo>();
-                    LocationMap.SafeAdd(location.UserID, locations);
-                }
-
                 // if too many clients, and not us, return
-                if (location.UserID != Core.UserID && locations.SafeCount > MaxClientsperUser)
+                if (location.UserID != Core.UserID && ActiveClientCount(location.UserID) > MaxClientsperUser)
                     return;
 
-                current = new ClientInfo(location.Source.ClientID);
-                locations.SafeAdd(location.Source.ClientID, current);
+                client = new ClientInfo(location);
+
+                Clients.SafeAdd(client.RoutingID, client);
+
+                // dont need to worry about remote caching old locs indefinitely because if a loc is cached remotely
+                // that means the remote is being continuall pinged, or else the loc would expire
+                // if we're still interested in loc after a min, it will be pinged locally
             }
 
-            current.Data = location;
-            current.SignedData = signed.Encode(Network.Protocol);
+            client.Data = location;
+            client.SignedData = signed.Encode(Network.Protocol);
 
-            if (current.Data.UserID == Core.UserID && current.Data.Source.ClientID == Network.Local.ClientID)
-                LocalLocation = current;
+            if (client.Data.UserID == Core.UserID && client.Data.Source.ClientID == Network.Local.ClientID)
+                LocalClient = client;
 
-            current.TTL = location.TTL;
 
-            
             // if open and not global, add to routing
             if (location.Source.Firewall == FirewallType.Open)
                 Network.Routing.Add(new DhtContact(location.Source, location.IP));
@@ -396,10 +447,12 @@ namespace RiseOp.Services.Location
 
             Network.LightComm.Update(location);
 
-            if (LocationUpdate != null)
-                LocationUpdate.Invoke(current.Data);
+            // only get down here if loc was new version in first place (recently published)
+            // with live comm trickle down this prevents highers from being direct ping flooded to find their
+            // online status
+            client.LastSeen = Core.TimeNow;
 
-            Core.RunInGuiThread(GuiUpdate, current.Data.UserID);
+            SignalUpdate(client, true);
         }
 
         internal LocationData GetLocalLocation()
@@ -450,16 +503,105 @@ namespace RiseOp.Services.Location
             return location;
         }
 
+        void LightComm_ReceiveData(DhtClient client, byte[] data)
+        {
+            G2Header root = new G2Header(data);
+
+            if (G2Protocol.ReadPacket(root))
+            {
+                if (root.Name == LocationPacket.Ping)
+                    Receive_Ping(client, LocationPing.Decode(root));
+
+                if (root.Name == LocationPacket.Notify)
+                    Receive_Notify(client, LocationNotify.Decode(root));
+            }
+
+        }
+
+        private void Send_Ping(ClientInfo client)
+        {
+            client.NextPing = Core.TimeNow.AddSeconds(client.PingTimeout);
+
+            LocationPing ping = new LocationPing();
+
+            ping.RemoteVersion = client.Data.Version;
+
+            Network.LightComm.SendPacket(client, ServiceID, 0, ping);
+        }
+
+        int CurrentTimeout = 60;
+
+        void Receive_Ping(DhtClient client, LocationPing ping)
+        {
+            LocationNotify notify = new LocationNotify();
+
+            RecentPings.AddFirst(Core.TimeNow);
+            while (RecentPings.Count > 30)
+                RecentPings.RemoveLast();
+
+            // we want a target of 20 pings per minute ( 1 every 3 seconds)
+            // pings per minute = RecentPings.count / (Core.TimeNow - RecentPings.Last).ToMinutes()
+            float pingsPerMinute = (float)RecentPings.Count / (float)(Core.TimeNow - RecentPings.Last.Value).Minutes;
+            notify.Timeout = (int)(60.0 * pingsPerMinute / 20.0); // 20 is target rate, so if we have 40ppm, multiplier is 2, timeout 120seconds
+            notify.Timeout = Math.Max(60, notify.Timeout); // use 60 as lowest timeout
+            CurrentTimeout = notify.Timeout;
+
+            if (ping.RemoteVersion < LocalClient.Data.Version)
+                notify.SignedLocation = LocalClient.SignedData;
+
+            if (PendingNotifications.Contains(client))
+                PendingNotifications.Remove(client);
+
+            //put node on interested list
+            NotifyUsers[client] = Core.TimeNow.AddSeconds(notify.Timeout + 15);
+
+
+            // *** small security concern, notifies are not signed so they could be forged
+            // signing vs unsigning is 144 vs 7 bytes, the bandwidth benefits outweigh forging
+            // someone's online status at the moment
+            // byte[] unsigned = notify.Encode(Network.Protocol);
+            // byte[] signed = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, notify);
+
+
+            Network.LightComm.SendPacket(client, ServiceID, 0, notify);
+        }
+
+        void Receive_Notify(DhtClient client, LocationNotify notify)
+        {
+            if (notify.SignedLocation != null)
+                OperationStore_Local(new DataReq(null, client.UserID, ServiceID, 0, notify.SignedLocation));
+            
+
+            ClientInfo info;
+            if(!Clients.SafeTryGetValue(client.RoutingID, out info))
+                return;
+
+            if (notify.GoingOffline)
+            {
+                Clients.SafeRemove(client.RoutingID);
+                SignalUpdate(info, false);
+                return;
+            }
+
+            info.LastSeen = Core.TimeNow;
+            info.PingTimeout = notify.Timeout;
+            info.NextPing = Core.TimeNow.AddSeconds(notify.Timeout);
+        }
+
+        void SignalUpdate(ClientInfo client, bool online)
+        {
+            if (LocationUpdate != null)
+                LocationUpdate.Invoke(client.Data);
+
+            Core.RunInGuiThread(GuiUpdate, client.Data.UserID);
+        }
+
         internal ClientInfo GetLocationInfo(ulong user, ushort client)
         {
-            ThreadedDictionary<ushort, ClientInfo> locations = null;
-
-            if (LocationMap.SafeTryGetValue(user, out locations))
-            {
-                ClientInfo info = null;
-                if (locations.SafeTryGetValue(client, out info))
-                    return info;
-            }
+            ClientInfo info = null;
+         
+            if (Clients.SafeTryGetValue(user ^ client, out info))
+                return info;
 
             return null;
         }
@@ -481,6 +623,10 @@ namespace RiseOp.Services.Location
 
         internal void Research(ulong user)
         {
+            // sets local interested, but will probably be cleared
+            // searches for location, if still interested later, ping is sent for updated loc info
+            // location return is enough to trigger yea im online!
+
             if (Core.InvokeRequired)
             {
                 Core.RunInCoreAsync(delegate() { Research(user); });
@@ -505,14 +651,11 @@ namespace RiseOp.Services.Location
         internal int ActiveClientCount(ulong user)
         {
             int count = 0;
-            ThreadedDictionary<ushort, ClientInfo> locations = null;
 
-            if (LocationMap.SafeTryGetValue(user, out locations))
-                locations.LockReading(delegate()
-                {
-                    foreach (ClientInfo location in locations.Values)
-                        count++;
-                });
+            Clients.LockReading(delegate()
+            {
+                count = Clients.Values.Count(c => c.UserID == user); 
+            });
 
             return count;
         }
@@ -520,34 +663,38 @@ namespace RiseOp.Services.Location
         internal List<ClientInfo> GetClients(ulong user)
         {
             List<ClientInfo> results = new List<ClientInfo>();
-            
-            ThreadedDictionary<ushort, ClientInfo> clients = null;
 
-            if(!LocationMap.SafeTryGetValue(user, out clients))
-                return results;
-
-            clients.LockReading(delegate()
+            Clients.LockReading(delegate()
             {
-                foreach (ClientInfo info in clients.Values)
-                    results.Add(info);
+                results = Clients.Values.Where(c => c.UserID == user).ToList();
             });
 
             return results;
         }
     }
 
-    internal class ClientInfo
+    internal class ClientInfo : DhtClient
     {
         internal LocationData Data;
-
         internal byte[] SignedData;
 
-        internal uint TTL;
-        internal ushort ClientID;
+        internal DateTime NextPing; // next time a ping can be sent
+        internal DateTime LastSeen; // last time pong was received
 
-        internal ClientInfo(ushort id)
+        internal int PingTimeout = 60;
+
+        internal DateTime Timeout
         {
-            ClientID = id;
+            get { return LastSeen.AddSeconds(PingTimeout + 30); }
+        }
+
+
+        internal ClientInfo() { } // used only for InternalData debugging
+
+        internal ClientInfo(LocationData data) :
+            base(data.UserID, data.Source.ClientID)
+        {
+
         }
     }
 

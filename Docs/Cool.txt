@@ -1,0 +1,10 @@
+﻿
+uses
+	install on a private lan, instant file sync and communication
+	personal file sync over the internet or just at home, unlimited capacity
+
+features
+	next-gen multi-source downloading
+	
+security
+	full link specific encryption

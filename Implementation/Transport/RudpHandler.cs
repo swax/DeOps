@@ -165,6 +165,14 @@ namespace RiseOp.Implementation.Transport
                 if (session.Status == SessionStatus.Active)
                     session.Send_ProxyUpdate(tcp);
         }
+
+
+        internal void Shutdown()
+        {
+            foreach (RudpSession session in SessionMap.Values)
+                if (session.Status != SessionStatus.Closed)
+                    session.Send_Close("Going Offline");
+        }
     }
 
     internal class ActiveSessions

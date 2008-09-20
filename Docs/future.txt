@@ -383,6 +383,11 @@ components
 		posts, changes, etc.. uses this time to tag packets instead of computers own time
 		trial versions, invite expirations, etc.. can also use network time as opposed to system time
 
+		loc packet includes utc time
+		all times chat/im/mail/board logged utc, then changed dynamically to systems timezone
+		dictionary<nodeid, time offset>
+		if more than 3 nodes, and median is more than 5 mins offset, set network time to medien
+		
 	bootable riseOp
 		uses minimal linux distro/VM on USB key
 		doesnt allow any apps to be installed, just riseOp

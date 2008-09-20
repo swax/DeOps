@@ -1,18 +1,73 @@
 
-2test 
-	set fw to open and send back pong that reflects that
-	op fw changed t
-	nextTryIP the best way 2 solve the problem?
-	catch thrown expceptions
+Buddy list Component
+
+	hows the interface going to work, plug into tree command?
 	
-automated tests
-	2open, 1open1nat,  2op1open1nat, 2op2open... , run each until connected
+	how are global buddies going to be save in op's buddy list?
+	
+
+	test 
+		create network with just loc, transfer, IM (chat)
+
+	service
+		on established - search for buddies
+		
+		local synced only when trust is enabled
+		
+		buddy structure
+			public key
+			name
+			group
+		
+		global list saved with op list - if linked
+		
+		
+		
+	interface
+		online / offline area
+		group tabs
+		pretty much same as AIM lite
+		get local link
+		add remote buddy link
+		
+
+Global IM
+	Services: Location, IM, buddies
+	Later: Transfer, Chat
+	
+	remove direct trust references from location?
+	
+	Buddies component
+		Stores names / public keys on local drive
+		list can be exported / imported for moving between profiles
+		published only on op network
+		can be associated with other keys on other networks
+	
+	Buddies in buddy list are local interested
+		Confirmed if remote interested
+		Tag - puts it somwhere in the buddy list
+		
+	Budddies live on global IM list so if Op falls, they are still reachable
+	
+	how to carry the most over
+	
+	
+
+problem with too many rudp (already active) connection failures is that whena  FIN is sent the packet
+	is not getting through, we need FIN acks?
+	put socket in finished state, have finished time out, wait for fin ack
+
+having trouble with getting location offline message to user during logout in the sim
+
+in status panel - show LED indicator if online / searching / offline
+
+
+maybe put into input text toolbar a formatting off button that is on by default - msgs are encoded txt/rtf/html(for future)
+
 
 make title something assigned
 
 design re-alignment
-
-maybe put into input text toolbar a formatting off button that is on by default - msgs are encoded txt/rtf/html(for future)
 
 store caching 
 	keep track of when last result was sent
@@ -39,7 +94,25 @@ store caching
 		compare bandwidth at levels
 		bandwidth for root node with everyone updating its loc every 2 secs
 
-
+live
+	build test algorithms
+	acts as continously active real-time conduit between all members in trusted system (might want to pipe system msgs through this)
+	live based on rudp links, if no rudp link, live connect to next canidate, even if loc for someone exists
+	rapidly alert up/down links when going offilne so that live structure can be patched quickly wihout nodes thinking location file is still active
+	downlink determined by closest sub, if equal, highest rank where 2 nodes split tracks
+	uplink determined by highest offline where not challenged
+	show trusted/untrusted in live
+	ensure when random subset of nodes removed all links/chat rooms still connected through live
+	regular heart beats from the top? each link signs (itself and online subs) on way down tree
+		everyone in org now knows who's online
+		
+	instead of lowers continually pinging higher nodes
+	every minute highers broadcase location notify to subs
+		notifies should be signed in this instance
+		receive notify from higher, broadcast to lower
+	this also acts as the heart beat of the continually active live comm structure
+	
+		
 bandwidth
 	client
 		burst protection
@@ -48,36 +121,18 @@ bandwidth
 
 all help files online, no one needs offline help -yet- thats a $$ features
 	
-need to fix location scheme
-	maybe clicking on someone does a quick locations search 
-	shows searching... and green led if online
-	location publishes are fine, its the constant searching that needs to change
-		publish every 5 mins, or on proxy change, or when going offline (kill loc)
-	constant searching is not cool, maybe when online tab is active, location searches done on those nodes at intervals
-		when online tab closed, not focused, searches arent done
-		how do projects work - seeing who's online
-	combine this with 'live' strategy
-
-	
-	current loc
-		every 5 mins node publishes loc info on network
-			every 5 mins node searches for all peer's loc info on network
-			
-	new
-		when join network, search for peers loc info, lightComm tell them to notify us with heartbeats
-		send heartbeats at local's discresion to those who want to be notified
-		only keep track of local region online, dont go higher unless requested
-		if addresses change, notify in beat
-			also have messages to cut contacts, signoff, etc..
-			
-		LightComm keeps address list of user/clients
-			keeps last reponsive address on top
-			when message sent, wait for ack, if no ack try next address
-
 
 test
+	set fw to open and send back pong that reflects that
+	op fw changed t
+	nextTryIP the best way 2 solve the problem?
+	catch thrown expceptions
+	
 	in sim show web cache requests / publishes, ensure not too often
 	web cache pruning - create a / b / c /d /e / f caches
+	
+	automated tests - 2open, 1open1nat,  2op1open1nat, 2op2open... , run each until connected
+	
 	
 other
 	publisher unknown
@@ -168,7 +223,7 @@ re-alignment
 	public keys, names, files all stay the same
 	anything new created is with new file keys that anyone left out doesnt have access to
 	
-summer release
+fall release
 	licensing
 	
 	
@@ -179,10 +234,11 @@ summer release
 	network bandwidth limits/audit - tracking in sim triggers node to start logging bw data
 	do larger sim (128) - test create/find public ops
 	
-	location redo
 	global buddy list
 		invites over global
 		right click invite to current op (works for secret)
+		invite encrypted with remote's public key
+		need to make invite over global network only so no risk of public/secret links compramised
 	realignment
 	live locations/chat
 
@@ -491,23 +547,7 @@ Simulator
 	figure out why IO writes in FiresoftDemo so high, getting 2min/sec through, pretty damn good
 	record max udp burst sizes, or do packet size distribution histogram
 
-	***checksigned / idtokey throw exceptions, maybe just return false or something?
-	
-	
-live
-	build test algorithms
-	acts as continously active real-time conduit between all members in trusted system (might want to pipe system msgs through this)
-	live based on rudp links, if no rudp link, live connect to next canidate, even if loc for someone exists
-	rapidly alert up/down links when going offilne so that live structure can be patched quickly wihout nodes thinking location file is still active
-	downlink determined by closest sub, if equal, highest rank where 2 nodes split tracks
-	uplink determined by highest offline where not challenged
-	show trusted/untrusted in live
-	ensure when random subset of nodes removed all links/chat rooms still connected through live
-	regular heart beats from the top? each link signs (itself and online subs) on way down tree
-		everyone in org now knows who's online
-		
-		
-	
+	***checksigned / idtokey throw exceptions, maybe just return false or something?	
 			
 quick
 	test with null global, even have option for secret at this point?

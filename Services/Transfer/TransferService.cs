@@ -123,8 +123,8 @@ namespace RiseOp.Services.Transfer
 
             Network.LightComm.Data[ServiceID, 0] -= new LightDataHandler(LightComm_ReceiveData);
 
-            foreach (OpTransfer trasfer in Pending.Concat(Partials).Concat(Transfers.Values))
-                trasfer.Dispose();
+            foreach (OpTransfer transfer in Pending.Concat(Partials).Concat(Transfers.Values))
+                transfer.Dispose();
         }
   
         public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
@@ -512,14 +512,14 @@ namespace RiseOp.Services.Transfer
 
             FileDetails details = FileDetails.Decode(parameters);
 
-            if (details == null || Core.Locations.LocalLocation == null)
+            if (details == null || Core.Locations.LocalClient == null)
                 return;
 
             // reply with loc info if a component has the file
             if(FileSearch.Contains(details.Service, details.DataType))
                 if (FileSearch[details.Service, details.DataType].Invoke(key, details))
                 {
-                    results.Add(Core.Locations.LocalLocation.Data.EncodeLight(Network.Protocol));
+                    results.Add(Core.Locations.LocalClient.Data.EncodeLight(Network.Protocol));
                     return;
                 }
 
@@ -529,7 +529,7 @@ namespace RiseOp.Services.Transfer
                     transfer.Peers.Values.Count(p => p.Status == TransferStatus.Complete) > 0 && 
                     transfer.Details.Equals(details))
                 {
-                    results.Add(Core.Locations.LocalLocation.Data.EncodeLight(Network.Protocol));
+                    results.Add(Core.Locations.LocalClient.Data.EncodeLight(Network.Protocol));
                     return;
                 }
         }
@@ -991,12 +991,6 @@ namespace RiseOp.Services.Transfer
             {
                 transfer.RemovePeer(peer.RoutingID);
                 return;
-            }
-
-            //crit - delete
-            if (pong.Timeout > 60)
-            {
-                int x = 0;
             }
 
             peer.PingTimeout = pong.Timeout;

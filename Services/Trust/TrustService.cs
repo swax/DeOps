@@ -69,9 +69,13 @@ namespace RiseOp.Services.Trust
 
             Cache = new VersionedCache(Network, ServiceID, DataTypeFile, true);
 
+            Network.StatusChange += new StatusChange(Network_StatusChange);
+
             // piggyback searching for uplink requests on cache file data
             Store.StoreEvent[ServiceID, DataTypeFile] += new StoreHandler(Store_Local);
             Network.Searches.SearchEvent[ServiceID, DataTypeFile] += new SearchRequestHandler(Search_Local);
+
+            Core.Locations.PingUsers += new PingUsersHandler(Location_PingUsers);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
@@ -107,11 +111,16 @@ namespace RiseOp.Services.Trust
 
         public void Dispose()
         {
+            
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
             Core.GetFocusedCore -= new GetFocusedHandler(Core_GetFocusedCore);
 
+            Network.StatusChange -= new StatusChange(Network_StatusChange);
+
+            Store.StoreEvent[ServiceID, DataTypeFile] -= new StoreHandler(Store_Local);
             Network.Searches.SearchEvent[ServiceID, DataTypeFile] -= new SearchRequestHandler(Search_Local);
+            Core.Locations.PingUsers -= new PingUsersHandler(Location_PingUsers);
 
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);
@@ -230,6 +239,18 @@ namespace RiseOp.Services.Trust
             {
                 MessageBox.Show(Core.GuiMain, ex.Message);
             }
+        }
+
+        void Network_StatusChange()
+        {
+            if (!Network.Established)
+                return;
+
+            TrustMap.LockReading(delegate()
+            {
+                foreach (OpTrust trust in TrustMap.Values)
+                    trust.Searched = false;
+            });
         }
 
         private void LinkupRequest(OpLink remoteLink)
@@ -474,10 +495,11 @@ namespace RiseOp.Services.Trust
                             foreach(ulong id in link.GetHighers())
                                 Core.Focused.SafeAdd(id, true);
             });
+        }
 
-
-
-            //crit needs to update live tree as well
+        void Location_PingUsers()
+        {
+            // 2 up, 1 down, 1 down from each
         }
 
         void Cache_FileRemoved(OpVersionedFile file)
@@ -507,31 +529,43 @@ namespace RiseOp.Services.Trust
 
         void RefreshLinked()
         {
-            // unmark all nodes
-
             TrustMap.LockReading(delegate()
             {
+                // unmark all nodes
                 foreach (OpTrust trust in TrustMap.Values)
+                {
                     trust.InLocalLinkTree = false;
+                    trust.PingUser = false;
+                }
 
+                var shouldFocus = new Action<OpLink>(link => link.Trust.InLocalLinkTree = true);
+                var shouldPing = new Action<OpLink>(link => link.Trust.PingUser = true);
 
-                // TraverseDown 2 from self
+                // TraverseDown 2 from self for each project
                 foreach (OpLink link in LocalTrust.Links.Values)
                 {
                     uint project = link.Project;
 
-                    MarkBranchLinked(link, 2);
+                    DoToBranch(shouldFocus, link, 2);
+                    DoToBranch(shouldPing, link, 1);
 
                     // TraverseDown 1 from all parents above self
                     List<ulong> uplinks = GetUplinkIDs(LocalTrust.UserID, project, false, false);
 
+                    bool first = true;
                     foreach (ulong id in uplinks)
                     {
                         OpLink uplink = GetLink(id, project);
 
                         if (uplink != null)
-                            MarkBranchLinked(uplink, 1);
+                            DoToBranch(shouldFocus, uplink, 1);
+
+                        if(first)
+                            DoToBranch(shouldPing, uplink, 1);
+
+                        first = false;
                     }
+
 
                     // TraverseDown 2 from Roots
                     // dont keep focused on every untrusted node, will overwhelm us
@@ -548,23 +582,35 @@ namespace RiseOp.Services.Trust
                             MarkBranchLinked(root, 2);
                         }*/
                 }
+
+                if(Network.Responsive)
+                    foreach (OpTrust trust in TrustMap.Values.Where(t => !t.Searched))
+                    {
+                        Core.Locations.Research(trust.UserID);
+                        trust.Searched = true;
+                    }
             });
         }
 
-        void MarkBranchLinked(OpLink link, int depth)
+        void DoToBranch(Action<OpLink> action, OpLink link, int depth)
         {
-            link.Trust.InLocalLinkTree = true;
-
-            if (!link.Trust.Searched)
-            {
-                Core.Locations.StartSearch(link.UserID, 0);
-
-                link.Trust.Searched = true;
-            }
+            action(link);
 
             if (depth > 0)
                 foreach (OpLink downlink in link.Downlinks)
-                    MarkBranchLinked(downlink, depth - 1);
+                    DoToBranch(action, downlink, depth - 1);
+        }
+
+        void Location_PingUsers(List<ulong> users)
+        {
+            RefreshLinked();
+
+            TrustMap.LockReading(delegate()
+            {
+                foreach (OpTrust trust in TrustMap.Values.Where(t => t.PingUser))
+                    if (!users.Contains(trust.UserID))
+                        users.Add(trust.UserID);
+            });
         }
 
         internal void Research(ulong key, uint project, bool searchDownlinks)
@@ -1684,6 +1730,7 @@ namespace RiseOp.Services.Trust
         internal ulong LoopID;
 
         internal bool InLocalLinkTree;
+        internal bool PingUser;
         internal bool Searched;
 
         internal Dictionary<uint, OpLink> Links = new Dictionary<uint, OpLink>();

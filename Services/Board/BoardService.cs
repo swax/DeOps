@@ -811,10 +811,6 @@ namespace RiseOp.Services.Board
 
         List<byte[]> Store_Replicate(DhtContact contact)
         {
-            if (!Network.Established)
-                return null;
-
-
             List<byte[]> patches = new List<byte[]>();
 
             

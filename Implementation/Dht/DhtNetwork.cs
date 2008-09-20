@@ -53,8 +53,9 @@ namespace RiseOp.Implementation.Dht
         internal DhtClient Local;
         internal ulong OpID;
 
-        internal bool Established;
-        internal bool Responsive;
+        internal bool Responsive; // able to talk to dht
+        internal bool Established; // situated on dht, ready to publish to adjacents
+        
         internal int FireStatusChange; // timeout until established is called
         internal StatusChange StatusChange; // operation only
 

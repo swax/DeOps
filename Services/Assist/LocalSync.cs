@@ -190,6 +190,8 @@ namespace RiseOp.Services.Assist
 
         void Locations_TagReceived(DhtAddress address, ulong user, byte[] tag)
         {
+            // if user not cached, we only active search their info if in local cache area
+
             if (tag.Length == 0)
                 return;
 
@@ -278,7 +280,7 @@ namespace RiseOp.Services.Assist
 
             G2Protocol.ReadPacket(root);
 
-            if (root.Name != LocPacket.LocationData)
+            if (root.Name != LocationPacket.Data)
                 return null;
 
             ServiceData packet = new ServiceData();

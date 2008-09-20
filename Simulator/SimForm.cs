@@ -773,7 +773,7 @@ namespace RiseOp.Simulator
             }
 
             // locations
-            if (Core.Locations.LocationMap.SafeCount <= 1)
+            if (Core.Locations.Clients.SafeCount <= 1)
                 alerts += "Locs, ";
 
             SubItems[1].Text = Core.User.Settings.UserName;
@@ -816,7 +816,7 @@ namespace RiseOp.Simulator
 
             summary.Append(Core.Trust.TrustMap.SafeCount.ToString() + " trust, ");
 
-            summary.Append(Core.Locations.LocationMap.SafeCount.ToString() + " locs, ");
+            summary.Append(Core.Locations.Clients.SafeCount.ToString() + " locs, ");
 
             summary.Append(Core.Network.Searches.Pending.Count.ToString() + " searches, ");
 

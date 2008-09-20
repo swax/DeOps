@@ -362,7 +362,7 @@ namespace RiseOp.Services.Chat
 
             OpMenuItem info = new OpMenuItem(node.UserID, 0);
 
-            if (Locations.LocationMap.SafeContainsKey(node.UserID))
+            if (Locations.ActiveClientCount(node.UserID) > 0)
             {
                 IMService IM = Core.GetService("IM") as IMService;
 

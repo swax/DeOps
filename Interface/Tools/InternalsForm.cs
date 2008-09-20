@@ -495,8 +495,7 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
             listValues.Items.Add(new ListViewItem(new string[] { "LocationVersion", xStr(Core.Locations.LocationVersion) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "NextLocationUpdate", xStr(Core.Locations.NextLocationUpdate) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "LocationMap", xStr(Core.Locations.LocationMap.SafeCount) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "LocationMap", xStr(Core.Locations.Clients.SafeCount) }));
             
         }
 
@@ -520,9 +519,8 @@ namespace RiseOp.Interface.Tools
                         {
                             LocationData data = LocationData.Decode(signed.Data);
 
-                            ClientInfo info = new ClientInfo(0);
+                            ClientInfo info = new ClientInfo();
                             info.Data = data;
-                            info.TTL = loc.TTL;
 
                             DisplayLoc(opid, info);
                         }
@@ -534,14 +532,10 @@ namespace RiseOp.Interface.Tools
         {
             SetupLocationList();
 
-            Core.Locations.LocationMap.LockReading(delegate()
+            Core.Locations.Clients.LockReading(delegate()
             {
-                foreach (ThreadedDictionary<ushort, ClientInfo> dict in Core.Locations.LocationMap.Values)
-                    dict.LockReading(delegate()
-                    {
-                        foreach (ClientInfo info in dict.Values)
-                            DisplayLoc(Core.Network.OpID, info);
-                    });
+                foreach (ClientInfo info in Core.Locations.Clients.Values)
+                    DisplayLoc(Core.Network.OpID, info);
             });
 
         }
@@ -551,7 +545,6 @@ namespace RiseOp.Interface.Tools
             listValues.Items.Add(new ListViewItem(new string[]
 				{
                     xStr(opID),
-                    xStr(info.TTL),
                     IDtoStr(info.Data.UserID),
 					xStr(info.Data.Source.ClientID),		
 					xStr(info.Data.Source.TcpPort),
