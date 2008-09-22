@@ -17,7 +17,7 @@ namespace RiseOp.Implementation.Transport
 {
     internal enum SessionStatus { Connecting, Active, Closed };
 
-    internal class RudpSession
+    internal class RudpSession : DhtClient
     {
         internal OpCore Core;
         internal DhtNetwork Network;
@@ -25,10 +25,6 @@ namespace RiseOp.Implementation.Transport
         internal RudpSocket Comm;
 
         internal SessionStatus Status = SessionStatus.Connecting;
-
-        internal ulong UserID;
-        internal ushort ClientID;
-        int HashCode;
 
 		// extra info
         internal string Name;
@@ -72,6 +68,8 @@ namespace RiseOp.Implementation.Transport
 		// active
         internal DateTime  Startup;
 
+        internal int Lingering;
+
 
         internal RudpSession(RudpHandler control, ulong dhtID, ushort clientID, bool inbound)
         {
@@ -81,7 +79,6 @@ namespace RiseOp.Implementation.Transport
 
             UserID = dhtID;
             ClientID = clientID;
-            HashCode = Core.RndGen.Next();
 
             Comm = new RudpSocket(this, inbound);
 
@@ -109,12 +106,6 @@ namespace RiseOp.Implementation.Transport
 			Status = status;
 
 			Log("Status changed to " + status.ToString());
-
-            if (status == SessionStatus.Closed)
-            {
-                lock (RudpControl.SocketMap)
-                    RudpControl.SocketMap.Remove(Comm.PeerID);
-            }
 
             if (RudpControl.SessionUpdate != null)
                 RudpControl.SessionUpdate.Invoke(this);
@@ -515,12 +506,18 @@ namespace RiseOp.Implementation.Transport
 
 		internal void Send_Close(string reason)
 		{
+            if (Status == SessionStatus.Closed)
+            {
+                Debug.Assert(false);
+                return;
+            }
+
             CloseMsg = reason;
 
 			Log("Sending Close (" + reason + ")");
 
 			CommClose close = new CommClose();
-			close.Reason     = reason;
+			close.Reason    = reason;
 
             SendPacket(close, true);
             Comm.Close(); 
@@ -575,6 +572,7 @@ namespace RiseOp.Implementation.Transport
         {
             int activeCount = RudpControl.SessionMap.Values.Where( s =>
                                     s != this &&
+                                    s.UserID == UserID &&
                                     s.ClientID == ClientID &&
                                     s.Status == SessionStatus.Active).Count();
 
@@ -736,12 +734,6 @@ namespace RiseOp.Implementation.Transport
 
             UpdateStatus(SessionStatus.Closed);
 		}
-
-
-        public override int GetHashCode()
-        {
-            return HashCode;
-        }
 
         internal bool SendBuffLow()
         {

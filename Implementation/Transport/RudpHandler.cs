@@ -42,10 +42,18 @@ namespace RiseOp.Implementation.Transport
             List<ulong> closed = new List<ulong>();
 
             foreach (RudpSession session in SessionMap.Values)
-                if (session.Status != SessionStatus.Closed)
-                    session.SecondTimer();
-                else
-                    closed.Add(session.UserID ^ session.ClientID);
+            {
+                session.SecondTimer();
+
+                if (session.Comm.State == RudpState.Closed)
+                {
+                    lock (SocketMap)
+                        if (SocketMap.ContainsKey(session.Comm.PeerID))
+                            SocketMap.Remove(session.Comm.PeerID);
+
+                    closed.Add(session.RoutingID);
+                }
+            }
 
             foreach (ulong id in closed)
                 SessionMap.Remove(id);
@@ -62,17 +70,26 @@ namespace RiseOp.Implementation.Transport
                     handler.Invoke(active);
 
             foreach (RudpSession session in SessionMap.Values)
-                if(session.Status == SessionStatus.Active && !active.ContainsKey(session.UserID))
-                    session.Send_Close("Not Active");
+                if (session.Status == SessionStatus.Active)
+                    if (active.ContainsKey(session.UserID))
+                        session.Lingering = 0;
+                    else if (session.Lingering > 1) // ~10 secs to linger
+                        session.Send_Close("Not Active");
+                    else
+                        session.Lingering++;
         }
 
-        internal void Connect(DhtClient client)
+        internal bool Connect(DhtClient client)
         {
             if (client.UserID == Network.Local.UserID && client.ClientID == Network.Local.ClientID)
-                return;
+                return false;
 
-            if (IsConnectingOrActive(client.UserID, client.ClientID))
-                return;
+            //if (IsConnectingOrActive(client.UserID, client.ClientID))
+            //    return;
+
+            //crit
+            if(SessionMap.ContainsKey(client.RoutingID))
+                return false;
 
             RudpSession session = new RudpSession(this, client.UserID, client.ClientID, false);
             SessionMap[client.RoutingID] = session;
@@ -83,6 +100,8 @@ namespace RiseOp.Implementation.Transport
                     session.Comm.AddAddress(address);
 
             session.Connect();
+
+            return true; // indicates that we will eventually notify caller with close, so caller can clean up
         }
 
         internal void Connect(LocationData location)
@@ -90,10 +109,14 @@ namespace RiseOp.Implementation.Transport
             if (location.UserID == Network.Local.UserID && location.Source.ClientID == Network.Local.ClientID)
                 return;
 
-            if (IsConnectingOrActive(location.UserID, location.Source.ClientID))
-                return;
+            //crit
+            //if (IsConnectingOrActive(location.UserID, location.Source.ClientID))
+            //    return;
 
             ulong id = location.UserID ^ location.Source.ClientID;
+
+            if (SessionMap.ContainsKey(id))
+                return;
 
             RudpSession session = new RudpSession(this, location.UserID, location.Source.ClientID, false);
             SessionMap[id] = session;

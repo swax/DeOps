@@ -14,7 +14,7 @@ using RiseOp.Implementation.Protocol.Net;
 
 namespace RiseOp.Implementation.Transport
 {
-    internal enum RudpState {Connecting, Connected, Closed};
+    internal enum RudpState {Connecting, Connected, Finishing, Closed};
 	
 	internal enum CloseReason
 	{
@@ -56,12 +56,12 @@ namespace RiseOp.Implementation.Transport
 
 		// sending
         Queue<TrackPacket> SendPacketMap = new Queue<TrackPacket>();
-        int		  SendWindowSize = 5;
-        internal int SendBuffLength;
-		internal bool RudpSendBlock;
-		object    SendSection = new object();
+        int		        SendWindowSize = 5;
+        internal int    SendBuffLength;
+		internal bool   RudpSendBlock;
+		object          SendSection = new object();
         internal byte[] SendBuff = new byte[SEND_BUFFER_SIZE];
-		DateTime  LastSend;
+		DateTime        LastSend;
 			
 		// receiving
         SortedDictionary<byte, RudpPacket> RecvPacketMap = new SortedDictionary<byte, RudpPacket>(); // needs to be locked because used by timer and network threads
@@ -75,6 +75,11 @@ namespace RiseOp.Implementation.Transport
 		Queue	  AckOrder = Queue.Synchronized(new Queue());
 		int InOrderAcks;
 		int ReTransmits;
+
+        // finishing
+        bool FinSent, FinReceived;
+        int FinTimeout;
+        RudpPacket FinPacket;
 
         // bandwidth
         internal BandwidthLog Bandwidth;
@@ -249,13 +254,14 @@ namespace RiseOp.Implementation.Transport
 
 		internal void Close()
 		{
-			if(State != RudpState.Connected)
-				return;
+            if (State == RudpState.Connecting)
+            {
+                State = RudpState.Closed;
+                return;
+            }
 
-			SendFin(CloseReason.NORMAL_CLOSE);
-			State = RudpState.Closed;
-
-			return;
+            else if(State == RudpState.Connected)
+                StartFin(CloseReason.NORMAL_CLOSE);
 		}
 
 		void SetConnected()
@@ -409,7 +415,7 @@ namespace RiseOp.Implementation.Transport
             ack.TargetID = Session.UserID;
             ack.TargetClient = Session.ClientID;
 			ack.PeerID   = RemotePeerID;
-			ack.PacketType     = RudpPacketType.Ack;
+			ack.PacketType = RudpPacketType.Ack;
 			ack.Sequence = packet.Sequence;
 			ack.Payload  = RudpAck.Encode(HighestSeqRecvd, (byte) (MAX_WINDOW_SIZE - RecvPacketMap.Count));
             ack.Ident = packet.Ident;
@@ -489,7 +495,7 @@ namespace RiseOp.Implementation.Transport
 
             RudpAck ack = new RudpAck(packet.Payload);
             //Session.Log("Ack Recv, Seq " + packet.Sequence.ToString() + ", ID " + packet.PeerID.ToString() + ", highest " + ack.Start.ToString() + ", retries " + retries.ToString() + ", latency " + latency.ToString());
-
+            
             lock (SendSection)
             {
                 // ack possibly un-acked packets
@@ -592,38 +598,53 @@ namespace RiseOp.Implementation.Transport
             
         }
 
-		void SendFin(CloseReason reason)
+		void StartFin(CloseReason reason)
 		{
-            RudpPacket fin = new RudpPacket();
+            FinPacket = new RudpPacket();
 
             lock (SendSection) // ensure queued in right order with right current seq
             {
-                fin.TargetID = Session.UserID;
-                fin.TargetClient = Session.ClientID;
-                fin.PeerID = RemotePeerID;
-                fin.PacketType = RudpPacketType.Fin;
-                fin.Sequence = CurrentSeq++;
-                fin.Payload = new byte[1] { (byte)reason };
-
-                SendPacketMap.Enqueue(new TrackPacket(fin));
+                FinPacket.TargetID = Session.UserID;
+                FinPacket.TargetClient = Session.ClientID;
+                FinPacket.PeerID = RemotePeerID;
+                FinPacket.PacketType = RudpPacketType.Fin;
+                FinPacket.Payload = new byte[1] { (byte)reason };
             }
 
+            State = RudpState.Finishing;
+            FinTimeout = 15;
+
+            TrySendFin();
+            
 			//Session.Log("Fin Sent, Seq " + fin.Sequence.ToString() + ", ID " + fin.PeerID.ToString() + ", Reason " + reason.ToString());
 
-			ManageSendWindow();
+			ManageSendWindow(); // immediately try to send the fin
 		}
+
+        void TrySendFin()
+        {
+            ManageSendWindow(); // try to clear any pending data from buffer
+            
+            if (SendBuffLength > 0)
+                return;
+
+            FinSent = true;
+            FinTimeout = 15; // reset timeout - wait for ack
+
+            FinPacket.Sequence = CurrentSeq++;
+            SendPacketMap.Enqueue(new TrackPacket(FinPacket));
+        }
 
 		void ReceiveFin(RudpPacket packet)
 		{
-			if(packet.Payload.Length < 1)
-				return;
-
 			//Session.Log("Fin Recv, Seq " + packet.Sequence.ToString() + ", ID " + packet.PeerID.ToString() + ", Reason " + packet.Payload[0].ToString());
-	
-			if(State == RudpState.Closed)
-				return;
 
-			RudpClose(CloseReason.YOU_CLOSED);
+            FinReceived = true;
+
+            SendAck(packet);
+
+            if(!FinSent)
+			    RudpClose(CloseReason.YOU_CLOSED);
 		}
 
 		void ManageSendWindow()
@@ -846,8 +867,8 @@ namespace RiseOp.Implementation.Transport
 
 		void RudpClose(CloseReason code)
 		{
-			SendFin(code);
-			State = RudpState.Closed;
+            StartFin(code);
+
             Session.OnClose();
 		}
 
@@ -921,8 +942,25 @@ namespace RiseOp.Implementation.Transport
                 AddressMap.Remove(lastSeen.GetHashCode());
             }
 
+            // finishing
+            if (State == RudpState.Finishing)
+            {
+                if (!FinSent)
+                    TrySendFin();
+
+                if (FinTimeout > 0)
+                    FinTimeout--;
+
+                if (FinTimeout == 0)
+                    State = RudpState.Closed;
+
+                // buffer clear, all packets acked in sequence including fins
+                if (FinSent && FinReceived && SendPacketMap.Count == 0) 
+                    State = RudpState.Closed;
+            }
+
 			// re-send packets in out buffer
-			if(State == RudpState.Connecting || State == RudpState.Connected)
+			if(State != RudpState.Closed)
 			{	
 				ManageSendWindow();
 			}

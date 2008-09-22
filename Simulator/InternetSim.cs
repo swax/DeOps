@@ -267,7 +267,7 @@ namespace RiseOp.Simulator
             // 2 threads, background (core) and foreground (interface)
 
             int i = 0;
-            int pumps = 4;
+            int pumps = 8;
 
 
             while (true)

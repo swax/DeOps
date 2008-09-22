@@ -607,8 +607,9 @@ namespace RiseOp.Services.Transfer
 
             if (session != null)
                 Send_Request(session, upload.Active);
-            else
-                Network.RudpControl.Connect(upload.Active.Client);
+
+            else if (!Network.RudpControl.Connect(upload.Active.Client))
+                upload.Active = null;
         }
 
         void StopUpload(RemotePeer peer, bool deletePeer, string reason)
