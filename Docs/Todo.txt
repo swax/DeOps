@@ -1,7 +1,28 @@
 
-fin timeout still happening
+local sync
+buddy list packets
+buddy list structure
+hook up focused, live
+on connect search
+hookup tags
+add buddy
+remove buddy
+interface
 
 
+
+login - instead of op, put profile
+if globalIM profile not detected, show link in red on login: Create Global IM Profile
+in link selection change project to 'group' and include buddies, main to primary
+project coming before primary in nar bar drop down
+instead of 'trust unconfirmed' after link, make color red, and then in extended info put reason in red
+
+// remove online mode from link tree
+// add buddies to link tree, ensure available from link selection
+// test pure buddies/location client without trust
+// update IM/Chat/Gui in notify area, if state changed!!
+
+	
 Buddy list Component
 
 	hows the interface going to work, plug into tree command?
@@ -33,6 +54,12 @@ Buddy list Component
 		get local link
 		add remote buddy link
 		
+		
+local invisible option - publishes offline, and doesnt reply to pings
+	put button above lock - when in lock down auto go into invisible, dotted person icon, or white outline
+	maybe no invisible mode because important to be able to reach user especially to get
+	updated service information.  maybe just flag, lockdown should signal away at least
+	
 
 Global IM
 	Services: Location, IM, buddies
@@ -54,15 +81,30 @@ Global IM
 	
 	how to carry the most over
 	
+new invite
+	for invite to work you need person's global public key or can select someone from global buddy list
+	invite created, can either be IM'd directly to them, or link saved and emailed or IMd over another network
 	
+quick look at live comm
+	login search for highest that is online
+	create a persistant connection with them
+	keep tabs on higher's higher as well
+	**heart beats flow down periodically from top to bottom of live comm
+	people always know the current live comm structure
+	dont need to worry about highers getting flooded in loc component
+	signed location notify is the 'heart beat'
 
-problem with too many rudp (already active) connection failures is that whena  FIN is sent the packet
-	is not getting through, we need FIN acks?
-	put socket in finished state, have finished time out, wait for fin ack
 
 having trouble with getting location offline message to user during logout in the sim
 
 in status panel - show LED indicator if online / searching / offline
+
+
+
+
+
+
+
 
 
 maybe put into input text toolbar a formatting off button that is on by default - msgs are encoded txt/rtf/html(for future)
@@ -242,7 +284,7 @@ fall release
 		right click invite to current op (works for secret)
 		invite encrypted with remote's public key
 		need to make invite over global network only so no risk of public/secret links compramised
-	realignment
+	realignment - detailed in future file
 	live locations/chat
 
 	web caching files?

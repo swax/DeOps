@@ -183,6 +183,7 @@
     </Compile>
     <Compile Include="Services\Assist\VersionedCache.cs" />
     <Compile Include="Services\Board\BoardService.cs" />
+    <Compile Include="Services\Buddy\BuddyService.cs" />
     <Compile Include="Services\Chat\ChatService.cs" />
     <Compile Include="Services\IM\IMService.cs" />
     <Compile Include="Services\Assist\LocalSync.cs" />

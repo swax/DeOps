@@ -1,26 +1,4 @@
 
-   
-        // remove online mode from link tree
-
-        // add buddies to link tree, ensure available from link selection
-
-        // test pure buddies/location client without trust
-
-        // update IM/Chat/Gui in notify area, if state changed!!
-
-local invisible option - publishes offline, and doesnt reply to pings
-
-		quick look at live comm
-			login search for highest that is online
-			create a persistant connection with them
-			keep tabs on higher's higher as well
-			**heart beats flow down periodically from top to bottom of live comm
-			people always know the current live comm structure
-			dont need to worry about highers getting flooded in loc component
-			signed location notify is the 'heart beat'
-		
-		
-	
 old location scheme
 	every 3 mins node publishes loc info on network
 	peers keep their buddy lists alive by searching the network before location data expires

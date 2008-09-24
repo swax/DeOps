@@ -84,12 +84,10 @@ namespace RiseOp.Implementation.Transport
             if (client.UserID == Network.Local.UserID && client.ClientID == Network.Local.ClientID)
                 return false;
 
-            //if (IsConnectingOrActive(client.UserID, client.ClientID))
-            //    return;
-
-            //crit
+            // sessionmap and socketmap both need to have the same # of entries
+            // if a session is fin or closed, we need to wait before re-assigning entry
             if(SessionMap.ContainsKey(client.RoutingID))
-                return false;
+                return SessionMap[client.RoutingID].Status == SessionStatus.Connecting;
 
             RudpSession session = new RudpSession(this, client.UserID, client.ClientID, false);
             SessionMap[client.RoutingID] = session;
@@ -104,19 +102,15 @@ namespace RiseOp.Implementation.Transport
             return true; // indicates that we will eventually notify caller with close, so caller can clean up
         }
 
-        internal void Connect(LocationData location)
+        internal bool Connect(LocationData location)
         {
             if (location.UserID == Network.Local.UserID && location.Source.ClientID == Network.Local.ClientID)
-                return;
-
-            //crit
-            //if (IsConnectingOrActive(location.UserID, location.Source.ClientID))
-            //    return;
+                return false;
 
             ulong id = location.UserID ^ location.Source.ClientID;
 
             if (SessionMap.ContainsKey(id))
-                return;
+                return SessionMap[id].Status == SessionStatus.Connecting;
 
             RudpSession session = new RudpSession(this, location.UserID, location.Source.ClientID, false);
             SessionMap[id] = session;
@@ -129,7 +123,9 @@ namespace RiseOp.Implementation.Transport
             foreach (DhtAddress server in location.TunnelServers)
                 session.Comm.AddAddress(new RudpAddress(new DhtContact(location.Source, location.IP, location.TunnelClient, server)));
 
-            session.Connect(); 
+            session.Connect();
+
+            return true;
         }
 
         internal List<RudpSession> GetActiveSessions(ulong key)

@@ -767,8 +767,12 @@ namespace RiseOp.Implementation.Transport
 
                     else if (packet.PacketType == RudpPacketType.Data)
                     {
-                        dataReceived = true;
-                        break;
+                        // if local is closing connection, dump pending data so we can get to the fin packet and process it
+                        if (State != RudpState.Finishing)
+                        {
+                            dataReceived = true;
+                            break;
+                        }
                     }
 
                     else if (packet.PacketType == RudpPacketType.Fin)
