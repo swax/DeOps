@@ -465,8 +465,8 @@ namespace RiseOp.Services.Plan
             if (item == null)
                 return;
 
-            if (View.External != null)
-                foreach (ExternalView ext in View.Core.GuiMain.ExternalViews)
+            if (View.External != null && View.Core.GuiMain.GetType() == typeof(MainForm))
+                foreach (ExternalView ext in ((MainForm)View.Core.GuiMain).ExternalViews)
                     if (ext.Shell.GetType() == typeof(ScheduleView))
                         if (((ScheduleView)ext.Shell).UserID == View.UserID && ((ScheduleView)ext.Shell).ProjectID == View.ProjectID)
                         {
@@ -479,9 +479,9 @@ namespace RiseOp.Services.Plan
             view.LoadGoalBranch = item.Goal.BranchUp;
 
             if (View.External != null)
-                Core.RunInGuiThread(Core.GuiMain.ShowExternal, view);
+                Core.RunInGuiThread(Core.ShowExternal, view);
             else
-                Core.RunInGuiThread(Core.GuiMain.ShowInternal, view);
+                Core.RunInGuiThread(Core.ShowInternal, view);
         }
 
 
@@ -599,7 +599,7 @@ namespace RiseOp.Services.Plan
         {
             foreach (GoalNode node in children)
             {
-                Core.Focused.SafeAdd(node.Goal.Person, true);
+                Core.KeepData.SafeAdd(node.Goal.Person, true);
 
                 RecurseFocus(node.Nodes);
             }

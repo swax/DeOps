@@ -51,10 +51,10 @@ namespace RiseOp.Services.Chat
             Network.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
-            Core.GetFocusedCore += new GetFocusedHandler(Core_GetFocusedCore);
+            Core.KeepDataCore += new KeepDataHandler(Core_KeepData);
 
             Trust.LinkUpdate += new LinkUpdateHandler(Link_Update);
-            Core.Locations.PingUsers += new PingUsersHandler(Location_PingUsers);
+            Core.Locations.KnowOnline += new KnowOnlineHandler(Location_KnowOnline);
             Core.Locations.LocationUpdate += new LocationUpdateHandler(Location_Update);
 
             Link_Update(Trust.LocalTrust);
@@ -70,10 +70,10 @@ namespace RiseOp.Services.Chat
             Network.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
 
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
-            Core.GetFocusedCore -= new GetFocusedHandler(Core_GetFocusedCore);
+            Core.KeepDataCore -= new KeepDataHandler(Core_KeepData);
 
             Trust.LinkUpdate -= new LinkUpdateHandler(Link_Update);
-            Core.Locations.PingUsers -= new PingUsersHandler(Location_PingUsers);
+            Core.Locations.KnowOnline -= new KnowOnlineHandler(Location_KnowOnline);
             Core.Locations.LocationUpdate -= new LocationUpdateHandler(Location_Update);
         }
 
@@ -110,12 +110,12 @@ namespace RiseOp.Services.Chat
             Core.InvokeView(node.IsExternal(), view);
         }
 
-        void Core_GetFocusedCore()
+        void Core_KeepData()
         {
-            ForAllUsers(id => Core.Focused.SafeAdd(id, true));
+            ForAllUsers(id => Core.KeepData.SafeAdd(id, true));
         }
 
-        void Location_PingUsers(List<ulong> users)
+        void Location_KnowOnline(List<ulong> users)
         {
             ForAllUsers(delegate(ulong id)
             { 

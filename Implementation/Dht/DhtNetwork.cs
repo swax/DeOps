@@ -59,10 +59,16 @@ namespace RiseOp.Implementation.Dht
         internal int FireStatusChange; // timeout until established is called
         internal StatusChange StatusChange; // operation only
 
-        byte[] GlobalKey = new byte[]  {0x33,0xf6,0x89,0xf3,0xd2,0xf5,0xae,0xc2,
+        byte[] LookupKey = new byte[]  {0x33,0xf6,0x89,0xf3,0xd2,0xf5,0xae,0xc2,
                                         0x49,0x59,0xe6,0xbb,0xe2,0xc6,0x3c,0xc8,
                                         0x5e,0x63,0x0c,0x7a,0xb9,0x08,0x18,0xd4,
                                         0xf9,0x73,0x9f,0x52,0xd6,0xf4,0x34,0x0e};
+
+        // global IM is a secret network, not public because it is not published on the lookup network
+        internal static byte[] GlobalIMKey = new byte[]  {  0x23,0x1d,0x25,0xe5,0xca,0x0b,0x65,0xb3,
+                                            0x65,0x04,0x2b,0x1c,0x61,0x1d,0x20,0x94 ,
+                                            0x18,0xf3,0x08,0x3d,0x01,0xf6,0x97,0x8a ,
+                                            0x6c,0x76,0xda,0x4b,0x70,0x88,0x00,0xaa};
 
         internal RijndaelManaged OriginalCrypt;
         internal RijndaelManaged AugmentedCrypt;
@@ -93,13 +99,13 @@ namespace RiseOp.Implementation.Dht
             Local.UserID = IsGlobal ? GlobalConfig.UserID : Utilities.KeytoID(Core.User.Settings.KeyPublic);
             Local.ClientID = (ushort)Core.RndGen.Next(1, ushort.MaxValue);
 
-            OpID = Utilities.KeytoID(IsGlobal ? GlobalKey : Core.User.Settings.OpKey);
+            OpID = Utilities.KeytoID(IsGlobal ? LookupKey : Core.User.Settings.OpKey);
 
             OriginalCrypt = new RijndaelManaged();
 
             // load encryption
             if (IsGlobal)
-                OriginalCrypt.Key = GlobalKey;
+                OriginalCrypt.Key = LookupKey;
             else
                 OriginalCrypt.Key = Core.User.Settings.OpKey;
 

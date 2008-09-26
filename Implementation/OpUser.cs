@@ -51,7 +51,7 @@ namespace RiseOp
         internal Bitmap OpSplash;
 
         internal IconUpdateHandler GuiIconUpdate;
- 
+   
 
         internal OpUser(string filepath, string password, OpCore core)
         {
@@ -271,7 +271,7 @@ namespace RiseOp
             File.Delete(backupPath);
         }
 
-        internal static void CreateNew(string path, string opName, string userName, string password, AccessType access, byte[] opKey)
+        internal static void CreateNew(string path, string opName, string userName, string password, AccessType access, byte[] opKey, bool globalIM)
         {
             OpUser user = new OpUser(path, password, new G2Protocol());
             user.Settings.Operation = opName;
@@ -280,12 +280,13 @@ namespace RiseOp
             user.Settings.FileKey = Utilities.GenerateKey(new RNGCryptoServiceProvider(), 256);
             user.Settings.OpAccess = access;
             user.Settings.Security = SecurityLevel.Medium;
+            user.Settings.GlobalIM = globalIM;
 
             // joining/creating public
             if (access == AccessType.Public)
             {
                 // 256 bit rijn
-                
+
                 SHA256Managed sha256 = new SHA256Managed();
                 user.Settings.OpKey = sha256.ComputeHash(UTF8Encoding.UTF8.GetBytes(opName));
                 user.Settings.Security = SecurityLevel.Low;
@@ -296,9 +297,11 @@ namespace RiseOp
                 user.Settings.OpKey = opKey;
 
             // creating private/secret
+            else if (globalIM)
+                user.Settings.OpKey = DhtNetwork.GlobalIMKey;
+
             else
                 user.Settings.OpKey = Utilities.GenerateKey(new RNGCryptoServiceProvider(), 256);
-
 
             user.Save();
 
@@ -471,6 +474,7 @@ namespace RiseOp
         const byte Packet_Location      = 0x90;
         const byte Packet_FileKey       = 0xA0;
         const byte Packet_AwayMsg       = 0xB0;
+        const byte Packet_GlobalIM      = 0xC0;
 
         const byte Key_D        = 0x10;
         const byte Key_DP       = 0x20;
@@ -496,6 +500,7 @@ namespace RiseOp
         internal byte[] OpKey;
         internal AccessType OpAccess;
         internal SecurityLevel Security;
+        internal bool GlobalIM;
 
         internal RSACryptoServiceProvider KeyPair = new RSACryptoServiceProvider();
         internal byte[] KeyPublic;
@@ -524,6 +529,10 @@ namespace RiseOp
                 protocol.WritePacket(settings, Packet_OpKey, OpKey);
                 protocol.WritePacket(settings, Packet_OpAccess, BitConverter.GetBytes((byte)OpAccess));
                 protocol.WritePacket(settings, Packet_SecurityLevel, BitConverter.GetBytes((int)Security));
+
+                if(GlobalIM)
+                    protocol.WritePacket(settings, Packet_GlobalIM, null);
+                    
 
                 RSAParameters rsa = KeyPair.ExportParameters(true);
                 G2Frame key = protocol.WritePacket(settings, Packet_KeyPair, null);
@@ -554,8 +563,15 @@ namespace RiseOp
                     continue;
                 }
 
+                if (child.Name == Packet_GlobalIM)
+                {
+                    settings.GlobalIM = true;
+                    continue;
+                }
+
                 if (!G2Protocol.ReadPayload(child))
                     continue;
+
 
                 switch (child.Name)
                 {

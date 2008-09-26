@@ -794,6 +794,7 @@ namespace RiseOp.Services.Mail
             {
                 header.Target = Core.KeyMap[id];
                 header.TargetID = id;
+                // encode file's encryption key with target's public key
                 header.FileKey = EncodeFileKey(Utilities.KeytoRsa(Core.KeyMap[id]), header.LocalKey, header.FileStart);
                 header.MailID  = GetMailID(hashID, id);
 
@@ -822,9 +823,9 @@ namespace RiseOp.Services.Mail
             return rsa.Encrypt(buffer, false);
         }
 
-        void DecodeFileKey(byte[] enocoded, ref byte[] fileKey, ref ulong fileStart)
+        void DecodeFileKey(byte[] encoded, ref byte[] fileKey, ref ulong fileStart)
         {
-            byte[] decoded = Core.User.Settings.KeyPair.Decrypt(enocoded, false);
+            byte[] decoded = Core.User.Settings.KeyPair.Decrypt(encoded, false);
 
             if (decoded.Length < (256 / 8) + 8) // 256 bit encryption is 32 bytes plus 8 for fileStart data
                 return;
@@ -1849,7 +1850,7 @@ namespace RiseOp.Services.Mail
             compose.SubjectTextBox.Enabled = false;
             compose.SubjectTextBox.BackColor = System.Drawing.Color.WhiteSmoke;
 
-            Core.RunInGuiThread(Core.GuiMain.ShowExternal, compose);
+            Core.RunInGuiThread(Core.ShowExternal, compose);
         }
 
         internal void Forward(LocalMail message, string body)
@@ -1864,7 +1865,7 @@ namespace RiseOp.Services.Mail
 
             //crit attach files
             
-            Core.RunInGuiThread(Core.GuiMain.ShowExternal, compose);
+            Core.RunInGuiThread(Core.ShowExternal, compose);
         }
 
         internal void DeleteLocal(LocalMail message)

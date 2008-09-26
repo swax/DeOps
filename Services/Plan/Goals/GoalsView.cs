@@ -171,7 +171,7 @@ namespace RiseOp.Services.Plan
             Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
             Plans.PlanUpdate += new PlanUpdateHandler(Plans_Update);
 
-            Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
+            Core.KeepDataGui += new KeepDataHandler(Core_KeepData);
 
 
             splitContainer1.Height = Height - toolStrip1.Height;
@@ -223,7 +223,7 @@ namespace RiseOp.Services.Plan
             Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
             Plans.PlanUpdate -= new PlanUpdateHandler(Plans_Update);
 
-            Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
+            Core.KeepDataGui -= new KeepDataHandler(Core_KeepData);
             
             if(save)
                 Plans.SaveLocal(); // save down here so events arent triggered
@@ -231,7 +231,7 @@ namespace RiseOp.Services.Plan
             return true;
         }
 
-        void Core_GetFocused()
+        void Core_KeepData()
         {
             MainPanel.GetFocused();
         }

@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using RiseOp.Services;
 using RiseOp.Services.Assist;
 using RiseOp.Services.Board;
+using RiseOp.Services.Buddy;
 using RiseOp.Services.Chat;
 using RiseOp.Services.IM;
 using RiseOp.Services.Location;
@@ -49,8 +50,10 @@ namespace RiseOp.Implementation
     internal delegate void ExitHandler();
     internal delegate void TimerHandler();
     internal delegate void NewsUpdateHandler(NewsItemInfo info);
-    internal delegate void GetFocusedHandler();
+    internal delegate void KeepDataHandler();
 
+    internal delegate void ShowExternalHandler(ViewShell view);
+    internal delegate void ShowInternalHandler(ViewShell view);
     internal delegate List<MenuItemInfo> MenuRequestHandler(InterfaceMenuType menuType, ulong key, uint proj);
 
 
@@ -68,6 +71,7 @@ namespace RiseOp.Implementation
         // services
         internal TrustService    Trust;
         internal LocationService Locations;
+        internal BuddyService    Buddies;
         internal TransferService Transfers;
         internal LocalSync       Sync;
 
@@ -95,17 +99,20 @@ namespace RiseOp.Implementation
         internal event TimerHandler MinuteTimerEvent;
         internal event NewsUpdateHandler NewsUpdate;
 
-        internal event GetFocusedHandler GetFocusedGui;
-        internal event GetFocusedHandler GetFocusedCore;
+        internal event KeepDataHandler KeepDataGui; // event for gui thread
+        internal event KeepDataHandler KeepDataCore; // event for core thread
         // only safe to use this from core_minuteTimer because updated 2 secs before it
-        internal ThreadedDictionary<ulong, bool> Focused = new ThreadedDictionary<ulong, bool>();
+        internal ThreadedDictionary<ulong, bool> KeepData = new ThreadedDictionary<ulong, bool>();
 
         // interfaces
-        internal MainForm      GuiMain;
+        internal Form     GuiMain;
         internal TrayLock      GuiTray;
         internal ConsoleForm   GuiConsole;
         internal InternalsForm GuiInternal;
         internal G2Protocol    GuiProtocol;
+
+        internal ShowExternalHandler ShowExternal;
+        internal ShowInternalHandler ShowInternal;
 
 
         // logs
@@ -164,18 +171,26 @@ namespace RiseOp.Implementation
             // permanent - order is important here
             AddService(new TransferService(this));
             AddService(new LocationService(this));
-            AddService(new LocalSync(this));
-            AddService(new TrustService(this));
- 
+            AddService(new BuddyService(this));
+
+            if (!User.Settings.GlobalIM)
+            {
+                AddService(new LocalSync(this));
+                AddService(new TrustService(this));
+            }
 
             // optional
             AddService(new IMService(this));
-            AddService(new ChatService(this));
-            AddService(new ProfileService(this));
-            AddService(new MailService(this));
-            AddService(new BoardService(this));
-            AddService(new PlanService(this));
-            AddService(new StorageService(this));
+            
+            if (!User.Settings.GlobalIM)
+            {
+                AddService(new ChatService(this));
+                AddService(new ProfileService(this));
+                AddService(new MailService(this));
+                AddService(new BoardService(this));
+                AddService(new PlanService(this));
+                AddService(new StorageService(this));
+            }
 
             if (Sim != null)
                 Sim.Internet.RegisterAddress(this);
@@ -342,12 +357,12 @@ namespace RiseOp.Implementation
                     buffer.NextSecond();
 
                 // before minute timer give gui 2 secs to tell us of nodes it doesnt want removed
-                if (GetFocusedCore != null && MinuteCounter == 58)
+                if (KeepDataCore != null && MinuteCounter == 58)
                 {
-                    Focused.SafeClear();
+                    KeepData.SafeClear();
 
-                    GetFocusedCore.Invoke();
-                    RunInGuiThread(GetFocusedGui);
+                    KeepDataCore.Invoke();
+                    RunInGuiThread(KeepDataGui);
                 }
 
 
@@ -586,9 +601,9 @@ namespace RiseOp.Implementation
         internal void InvokeView(bool external, ViewShell view)
         {
             if(external)
-                RunInGuiThread(GuiMain.ShowExternal, view);
+                RunInGuiThread(ShowExternal, view);
             else
-                RunInGuiThread(GuiMain.ShowInternal, view);
+                RunInGuiThread(ShowInternal, view);
         }
 
         internal string GetTempPath()
@@ -890,6 +905,21 @@ namespace RiseOp.Implementation
 
             foreach (WebCache cache in invite.Caches)
                 Network.Cache.AddCache(cache);
+        }
+
+        internal void ShowMainView()
+        {
+            ShowMainView(false);
+        }
+
+        internal void ShowMainView(bool sideMode)
+        {
+            if (User.Settings.GlobalIM)
+                GuiMain = new IMForm(this);
+            else
+                GuiMain = new MainForm(this, sideMode);
+
+            GuiMain.Show();
         }
     }
 

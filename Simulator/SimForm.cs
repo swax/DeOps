@@ -361,9 +361,8 @@ namespace RiseOp.Simulator
                 }
 
                 if (core.GuiMain == null)
-                    core.GuiMain = new MainForm(core);
+                    core.ShowMainView();
 
-                core.GuiMain.Show();
                 core.GuiMain.Activate();
             }
         }

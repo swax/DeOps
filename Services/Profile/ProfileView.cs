@@ -46,7 +46,7 @@ namespace RiseOp.Services.Profile
         {
             Profiles.ProfileUpdate += new ProfileUpdateHandler(Profile_Update);
             Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
-            Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
+            Core.KeepDataGui += new KeepDataHandler(Core_KeepData);
             
             OpProfile profile = Profiles.GetProfile(UserID);
 
@@ -68,15 +68,15 @@ namespace RiseOp.Services.Profile
         {
             Profiles.ProfileUpdate -= new ProfileUpdateHandler(Profile_Update);
             Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
-            Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
+            Core.KeepDataGui -= new KeepDataHandler(Core_KeepData);
 
             return true;
         }
 
 
-        void Core_GetFocused()
+        void Core_KeepData()
         {
-            Core.Focused.SafeAdd(UserID, true);
+            Core.KeepData.SafeAdd(UserID, true);
         }
 
         private void DisplayLoading()

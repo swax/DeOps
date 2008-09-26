@@ -569,8 +569,8 @@ namespace RiseOp.Services.Plan
             if (menu == null)
                 return;
 
-            if (View.External != null)
-                foreach(ExternalView ext in View.Core.GuiMain.ExternalViews)
+            if (View.External != null && View.Core.GuiMain.GetType() == typeof(MainForm))
+                foreach(ExternalView ext in ((MainForm)View.Core.GuiMain).ExternalViews)
                     if(ext.Shell.GetType() == typeof(GoalsView))
                         if (((GoalsView)ext.Shell).UserID == View.UserID && ((GoalsView)ext.Shell).ProjectID == View.ProjectID)
                         {
@@ -584,9 +584,9 @@ namespace RiseOp.Services.Plan
             view.LoadBranch = menu.Goal.BranchUp;
 
             if (View.External != null)
-                View.Core.RunInGuiThread(View.Core.GuiMain.ShowExternal, view);
+                View.Core.RunInGuiThread(View.Core.ShowExternal, view);
             else
-                View.Core.RunInGuiThread(View.Core.GuiMain.ShowInternal, view);
+                View.Core.RunInGuiThread(View.Core.ShowInternal, view);
         }
 
         private void BlockRow_MouseDoubleClick(object sender, MouseEventArgs e)

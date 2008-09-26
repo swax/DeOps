@@ -55,7 +55,7 @@ namespace RiseOp.Services.Trust
 
             Core.Locations.GuiUpdate += new LocationGuiUpdateHandler(Locations_Update);
             Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
-            Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
+            Core.KeepDataGui += new KeepDataHandler(Core_KeepData);
 
             SelectedLink = Core.UserID;
 
@@ -64,15 +64,20 @@ namespace RiseOp.Services.Trust
             NodeCollapsed += new EventHandler(LinkTree_NodeCollapsed);
         }
 
-        internal void Fin()
+        protected override void Dispose(bool disposing)
         {
-            SelectedItemChanged -= new EventHandler(LinkTree_SelectedItemChanged);
-            NodeExpanding -= new EventHandler(LinkTree_NodeExpanding);
-            NodeCollapsed -= new EventHandler(LinkTree_NodeCollapsed);
+            if (disposing)
+            {
+                SelectedItemChanged -= new EventHandler(LinkTree_SelectedItemChanged);
+                NodeExpanding -= new EventHandler(LinkTree_NodeExpanding);
+                NodeCollapsed -= new EventHandler(LinkTree_NodeCollapsed);
 
-            Core.Locations.GuiUpdate -= new LocationGuiUpdateHandler(Locations_Update);
-            Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
-            Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
+                Core.Locations.GuiUpdate -= new LocationGuiUpdateHandler(Locations_Update);
+                Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
+                Core.KeepDataGui -= new KeepDataHandler(Core_KeepData);
+            }
+
+            base.Dispose(disposing);
         }
 
         private void RefreshOperationTree()
@@ -320,7 +325,7 @@ namespace RiseOp.Services.Trust
 
         }
 
-        void Core_GetFocused()
+        void Core_KeepData()
         {
             foreach (TreeListNode item in Nodes)
                 RecurseFocus(item);
@@ -330,7 +335,7 @@ namespace RiseOp.Services.Trust
         {
             // add parent to focus list
             if (parent.GetType() == typeof(LinkNode))
-                Core.Focused.SafeAdd(((LinkNode)parent).Link.UserID, true);
+                Core.KeepData.SafeAdd(((LinkNode)parent).Link.UserID, true);
 
             // iterate through sub items
             foreach (TreeListNode subitem in parent.Nodes)

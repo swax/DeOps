@@ -155,7 +155,7 @@ namespace RiseOp.Services.Storage
             // hook up events
             Storages.StorageUpdate += new StorageUpdateHandler(Storages_StorageUpdate);
             Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
-            Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
+            Core.KeepDataGui += new KeepDataHandler(Core_KeepData);
 
             if (IsLocal)
             {
@@ -211,7 +211,7 @@ namespace RiseOp.Services.Storage
         {
             Storages.StorageUpdate -= new StorageUpdateHandler(Storages_StorageUpdate);
             Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
-            Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
+            Core.KeepDataGui -= new KeepDataHandler(Core_KeepData);
 
             Storages.WorkingFileUpdate -= new WorkingUpdateHandler(Storages_WorkingFileUpdate);
             Storages.WorkingFolderUpdate -= new WorkingUpdateHandler(Storages_WorkingFolderUpdate);
@@ -219,10 +219,10 @@ namespace RiseOp.Services.Storage
             return true;
         }
 
-        void Core_GetFocused()
+        void Core_KeepData()
         {
             foreach (ulong id in CurrentDiffs)
-                Core.Focused.SafeAdd(id, true);
+                Core.KeepData.SafeAdd(id, true);
         }
 
 

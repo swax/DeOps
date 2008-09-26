@@ -21,7 +21,7 @@ namespace RiseOp.Interface.Startup
         AccessType OpAccess = AccessType.Public;
 
         InvitePackage Invite;
-
+        internal bool GlobalIM;
 
         internal CreateUser(RiseOpContext context, string opName, AccessType opAccess)
         {
@@ -88,8 +88,12 @@ namespace RiseOp.Interface.Startup
                 if (File.Exists(path))
                     throw new Exception("Cannot create because " + filename + " already exists");
 
-                byte[] opKey = Invite != null ? Invite.Info.OpID : null;
-                OpUser.CreateNew(path, OpName, TextName.Text, TextPassword.Text, OpAccess, opKey);
+                byte[] opKey = null;
+
+                if (Invite != null)
+                    opKey = Invite.Info.OpID;
+
+                OpUser.CreateNew(path, OpName, TextName.Text, TextPassword.Text, OpAccess, opKey, GlobalIM);
 
                 OpCore core = new OpCore(Context, path, TextPassword.Text);
 

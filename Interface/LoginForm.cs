@@ -135,8 +135,14 @@ namespace RiseOp.Interface
 
             CreateUser user = null;
 
+            if (join.GlobalIM)
+            {
+                user = new CreateUser(Context, "GlobalIM", AccessType.Secret);
+                user.GlobalIM = true;
+            }
+
             // private or secret network
-            if(join.OpName.StartsWith(@"invite/"))
+            else if (join.OpName.StartsWith(@"invite/"))
                 user = ReadInvite(join.OpName.Substring(7));
 
             // public network

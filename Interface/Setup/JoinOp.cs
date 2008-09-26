@@ -12,7 +12,7 @@ namespace RiseOp.Interface.Startup
     {
         internal string OpName = "";
         internal AccessType OpAccess = AccessType.Public;
-
+        internal bool GlobalIM;
 
         internal JoinOp()
         {
@@ -36,6 +36,14 @@ namespace RiseOp.Interface.Startup
         {
             if (LinkBox.Text.StartsWith("riseop://"))
                 LinkBox.Text = LinkBox.Text.Substring(9);
+        }
+
+        private void JoinGlobalLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            GlobalIM = true;
+
+            DialogResult = DialogResult.OK;
+            Close();
         }
     }
 }

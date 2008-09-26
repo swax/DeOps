@@ -13,7 +13,7 @@ namespace RiseOp.Services.Location
 {
     class GlobalService : OpService 
     {
-        public string Name { get { return "Global"; } }
+        public string Name { get { return "Lookup"; } }
         public uint ServiceID { get { return 12; } }
 
         OpCore Core;

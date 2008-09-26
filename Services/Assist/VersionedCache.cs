@@ -159,7 +159,7 @@ namespace RiseOp.Services.Assist
                         foreach (OpVersionedFile vfile in FileMap.Values)
                         {
                             if (vfile.UserID != Core.UserID &&
-                                !Core.Focused.SafeContainsKey(vfile.UserID) &&
+                                !Core.KeepData.SafeContainsKey(vfile.UserID) &&
                                 !Network.Routing.InCacheArea(vfile.UserID))
                                 removeIDs.Add(vfile.UserID);
                         }

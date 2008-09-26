@@ -318,8 +318,7 @@ namespace RiseOp
         {
             AddCore(core);
 
-            core.GuiMain = new MainForm(core);
-            core.GuiMain.Show();
+            core.ShowMainView();
         }
 
         internal void ShowSimulator()

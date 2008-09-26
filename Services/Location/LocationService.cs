@@ -18,7 +18,7 @@ namespace RiseOp.Services.Location
 {
     internal delegate void LocationUpdateHandler(LocationData location);
     internal delegate void LocationGuiUpdateHandler(ulong key);
-    internal delegate void PingUsersHandler(List<ulong> users);
+    internal delegate void KnowOnlineHandler(List<ulong> users);
 
     internal delegate byte[] GetLocationTagHandler();
     internal delegate void LocationTagReceivedHandler(DhtAddress address, ulong user, byte[] tag);
@@ -52,7 +52,7 @@ namespace RiseOp.Services.Location
         internal LocationUpdateHandler LocationUpdate;
         internal LocationGuiUpdateHandler GuiUpdate;
 
-        internal PingUsersHandler PingUsers;
+        internal KnowOnlineHandler KnowOnline;
         List<ulong> LocalPings = new List<ulong>(); // local users who we are interested in pinging
 
         LinkedList<DateTime> RecentPings = new LinkedList<DateTime>();
@@ -185,7 +185,7 @@ namespace RiseOp.Services.Location
 
             // get form services users that we should keep tabs on
             LocalPings.Clear();
-            PingUsers.Invoke(LocalPings);
+            KnowOnline.Invoke(LocalPings);
 
 
             // ping clients that we are locally caching, or we have interest in
@@ -239,7 +239,7 @@ namespace RiseOp.Services.Location
                 var remove = (from c in Clients.Values
                              where c.UserID != Core.UserID &&
                                     !Network.Routing.InCacheArea(c.RoutingID) &&
-                                    !Core.Focused.SafeContainsKey(c.UserID) &&
+                                    !Core.KeepData.SafeContainsKey(c.UserID) &&
                                     !LocalPings.Contains(c.UserID)
                              orderby c.RoutingID ^ Network.Routing.LocalRoutingID descending
                              select c).Take(Clients.Count - PruneLocations).ToArray();

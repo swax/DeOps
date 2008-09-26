@@ -44,7 +44,7 @@ namespace RiseOp.Services.IM
             Locations = core.Locations;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
-            Core.GetFocusedCore += new GetFocusedHandler(Core_GetFocusedCore);
+            Core.KeepDataCore += new KeepDataHandler(Core_KeepData);
 
             Network.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
             Network.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
@@ -52,7 +52,7 @@ namespace RiseOp.Services.IM
 
             Core.Trust.LinkUpdate += new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate += new LocationUpdateHandler(Location_Update);
-            Core.Locations.PingUsers += new PingUsersHandler(Location_PingUsers);
+            Core.Locations.KnowOnline += new KnowOnlineHandler(Location_KnowOnline);
         }
 
         public void Dispose()
@@ -61,7 +61,7 @@ namespace RiseOp.Services.IM
                 throw new Exception("IM Events not fin'd");
 
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
-            Core.GetFocusedCore -= new GetFocusedHandler(Core_GetFocusedCore);
+            Core.KeepDataCore -= new KeepDataHandler(Core_KeepData);
 
             Network.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
             Network.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
@@ -69,7 +69,7 @@ namespace RiseOp.Services.IM
 
             Core.Trust.LinkUpdate -= new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate -= new LocationUpdateHandler(Location_Update);
-            Core.Locations.PingUsers -= new PingUsersHandler(Location_PingUsers);
+            Core.Locations.KnowOnline -= new KnowOnlineHandler(Location_KnowOnline);
         }
 
         void Core_SecondTimer()
@@ -118,23 +118,18 @@ namespace RiseOp.Services.IM
         {
         }
 
-        void Core_GetFocusedCore()
+        void Core_KeepData()
         {
             IMMap.LockReading(delegate()
             {
                 foreach (ulong user in IMMap.Keys )
-                    Core.Focused.SafeAdd(user, true);
+                    Core.KeepData.SafeAdd(user, true);
             });
         }
 
-        void Location_PingUsers(List<ulong> users)
+        void Location_KnowOnline(List<ulong> users)
         {
-            IMMap.LockReading(delegate()
-            {
-                foreach (ulong user in IMMap.Keys)
-                    if (!users.Contains(user))
-                        users.Add(user);
-            });
+            IMMap.LockReading(() => users.Union(IMMap.Keys));
         }
 
         //crit not thread locked/protected

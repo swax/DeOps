@@ -118,7 +118,7 @@ namespace RiseOp.Simulator
                 Directory.CreateDirectory(OutputFolderLink.Text + Path.DirectorySeparatorChar + filename);
                 string password = name.Split(' ')[0].ToLower(); // lower case first name is password
 
-                OpUser.CreateNew(path, OpNames[index], name, password, AccessType.Private, OpKeys[index]);
+                OpUser.CreateNew(path, OpNames[index], name, password, AccessType.Private, OpKeys[index], false);
 
                 GenProgress.Value++;
             }

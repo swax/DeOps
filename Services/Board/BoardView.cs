@@ -581,7 +581,7 @@ namespace RiseOp.Services.Board
         {
             PostMessage post = new PostMessage(Boards, UserID, ProjectID);
 
-            Core.RunInGuiThread(Core.GuiMain.ShowExternal, post);
+            Core.RunInGuiThread(Core.ShowExternal, post);
 
         }
 
@@ -655,7 +655,7 @@ namespace RiseOp.Services.Board
             PostMessage form = new PostMessage(Boards, parent.Header.TargetID, parent.Header.ProjectID);
             form.PostReply(parent);
 
-            Core.RunInGuiThread(Core.GuiMain.ShowExternal, form);
+            Core.RunInGuiThread(Core.ShowExternal, form);
         }
 
         void Post_Edit(object sender, EventArgs e)
@@ -670,7 +670,7 @@ namespace RiseOp.Services.Board
             PostMessage form = new PostMessage(Boards, post.Header.TargetID, post.Header.ProjectID);
             form.PostEdit(post, post.Header.ParentID, PostBody.Rtf);
 
-            Core.RunInGuiThread(Core.GuiMain.ShowExternal, form);
+            Core.RunInGuiThread(Core.ShowExternal, form);
         }
 
         void Post_Archive(object sender, EventArgs e)

@@ -61,9 +61,7 @@ namespace RiseOp.Interface.Views
         {
             if (Utilities.VerifyPassphrase(Core, ThreatLevel.High))
             {
-                Core.GuiMain = new MainForm(Core);
-                Core.GuiMain.SideMode = PreserveSideMode;
-                Core.GuiMain.Show();
+                Core.ShowMainView(PreserveSideMode);
 
                 CleanupTray();
                 

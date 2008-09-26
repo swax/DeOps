@@ -65,7 +65,7 @@ namespace RiseOp.Services.Trust
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
-            Core.GetFocusedCore += new GetFocusedHandler(Core_GetFocusedCore);
+            Core.KeepDataCore += new KeepDataHandler(Core_KeepData);
 
             Cache = new VersionedCache(Network, ServiceID, DataTypeFile, true);
 
@@ -75,7 +75,7 @@ namespace RiseOp.Services.Trust
             Store.StoreEvent[ServiceID, DataTypeFile] += new StoreHandler(Store_Local);
             Network.Searches.SearchEvent[ServiceID, DataTypeFile] += new SearchRequestHandler(Search_Local);
 
-            Core.Locations.PingUsers += new PingUsersHandler(Location_PingUsers);
+            Core.Locations.KnowOnline += new KnowOnlineHandler(Location_KnowOnline);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
@@ -114,13 +114,13 @@ namespace RiseOp.Services.Trust
             
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
-            Core.GetFocusedCore -= new GetFocusedHandler(Core_GetFocusedCore);
+            Core.KeepDataCore -= new KeepDataHandler(Core_KeepData);
 
             Network.StatusChange -= new StatusChange(Network_StatusChange);
 
             Store.StoreEvent[ServiceID, DataTypeFile] -= new StoreHandler(Store_Local);
             Network.Searches.SearchEvent[ServiceID, DataTypeFile] -= new SearchRequestHandler(Search_Local);
-            Core.Locations.PingUsers -= new PingUsersHandler(Location_PingUsers);
+            Core.Locations.KnowOnline -= new KnowOnlineHandler(Location_KnowOnline);
 
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);
@@ -478,7 +478,7 @@ namespace RiseOp.Services.Trust
         {
         }
 
-        void Core_GetFocusedCore()
+        void Core_KeepData()
         {
             RefreshLinked();
 
@@ -486,14 +486,14 @@ namespace RiseOp.Services.Trust
             {
                 foreach (OpTrust trust in TrustMap.Values)
                     if (trust.InLocalLinkTree)
-                        Core.Focused.SafeAdd(trust.UserID, true);
+                        Core.KeepData.SafeAdd(trust.UserID, true);
 
                     // if in bounds, set highers of node to focused
                     // because if highers removed, they will just be re-added when inbounds link cache is refreshed
                     else if (Network.Routing.InCacheArea(trust.UserID))
                         foreach(OpLink link in trust.Links.Values)
                             foreach(ulong id in link.GetHighers())
-                                Core.Focused.SafeAdd(id, true);
+                                Core.KeepData.SafeAdd(id, true);
             });
         }
 
@@ -601,16 +601,12 @@ namespace RiseOp.Services.Trust
                     DoToBranch(action, downlink, depth - 1);
         }
 
-        void Location_PingUsers(List<ulong> users)
+        void Location_KnowOnline(List<ulong> users)
         {
             RefreshLinked();
 
-            TrustMap.LockReading(delegate()
-            {
-                foreach (OpTrust trust in TrustMap.Values.Where(t => t.PingUser))
-                    if (!users.Contains(trust.UserID))
-                        users.Add(trust.UserID);
-            });
+            TrustMap.LockReading(() =>
+                users.Union(from t in TrustMap.Values where t.PingUser select t.UserID));
         }
 
         internal void Research(ulong key, uint project, bool searchDownlinks)
@@ -902,7 +898,7 @@ namespace RiseOp.Services.Trust
 
 
             // if target is marked as linked or focused, update link of target and sender
-            if (targetTrust.Loaded && (targetTrust.InLocalLinkTree || Core.Focused.SafeContainsKey(targetTrust.UserID)))
+            if (targetTrust.Loaded && (targetTrust.InLocalLinkTree || Core.KeepData.SafeContainsKey(targetTrust.UserID)))
             {
                 if (targetTrust.File.Header.Version < request.TargetVersion)
                     Cache.Research(targetTrust.UserID);

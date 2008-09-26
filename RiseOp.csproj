@@ -136,6 +136,12 @@
     <Compile Include="Interface\ErrorReport.Designer.cs">
       <DependentUpon>ErrorReport.cs</DependentUpon>
     </Compile>
+    <Compile Include="Interface\IMForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\IMForm.Designer.cs">
+      <DependentUpon>IMForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Interface\Settings\Connecting.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -172,6 +178,12 @@
     <Compile Include="Interface\Setup\JoinOp.Designer.cs">
       <DependentUpon>JoinOp.cs</DependentUpon>
     </Compile>
+    <Compile Include="Interface\StatusPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Interface\StatusPanel.Designer.cs">
+      <DependentUpon>StatusPanel.cs</DependentUpon>
+    </Compile>
     <Compile Include="Interface\Tools\BandwidthForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -184,6 +196,9 @@
     <Compile Include="Services\Assist\VersionedCache.cs" />
     <Compile Include="Services\Board\BoardService.cs" />
     <Compile Include="Services\Buddy\BuddyService.cs" />
+    <Compile Include="Services\Buddy\BuddyView.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Services\Chat\ChatService.cs" />
     <Compile Include="Services\IM\IMService.cs" />
     <Compile Include="Services\Assist\LocalSync.cs" />
@@ -776,6 +791,10 @@
       <DependentUpon>ErrorReport.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Include="Interface\IMForm.resx">
+      <DependentUpon>IMForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Interface\Settings\Connecting.resx">
       <DependentUpon>Connecting.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -798,6 +817,10 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\Setup\JoinOp.resx">
       <DependentUpon>JoinOp.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\StatusPanel.resx">
+      <DependentUpon>StatusPanel.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\Tools\BandwidthForm.resx">

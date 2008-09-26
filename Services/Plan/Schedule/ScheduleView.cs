@@ -113,7 +113,7 @@ namespace RiseOp.Services.Plan
             TopStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
             splitContainer1.Panel2Collapsed = true;
 
-            Core.GetFocusedGui += new GetFocusedHandler(Core_GetFocused);
+            Core.KeepDataGui += new KeepDataHandler(Core_KeepData);
 
             PlanStructure.NodeExpanding += new EventHandler(PlanStructure_NodeExpanding);
             PlanStructure.NodeCollapsed += new EventHandler(PlanStructure_NodeCollapsed);
@@ -212,7 +212,7 @@ namespace RiseOp.Services.Plan
             Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
             Plans.PlanUpdate -= new PlanUpdateHandler(Plans_Update);
 
-            Core.GetFocusedGui -= new GetFocusedHandler(Core_GetFocused);
+            Core.KeepDataGui -= new KeepDataHandler(Core_KeepData);
 
             HoverTimer.Enabled = false;
 
@@ -623,7 +623,7 @@ namespace RiseOp.Services.Plan
             node.Remove(); // remove from tree
         }
 
-        void Core_GetFocused()
+        void Core_KeepData()
         {
             foreach (PlanNode node in PlanStructure.Nodes)
                 RecurseFocus(node);
@@ -632,7 +632,7 @@ namespace RiseOp.Services.Plan
         void RecurseFocus(PlanNode node)
         {
             // add parent to focus list
-            Core.Focused.SafeAdd(node.Link.UserID, true);
+            Core.KeepData.SafeAdd(node.Link.UserID, true);
             
             // iterate through sub items
             foreach (PlanNode sub in node.Nodes)

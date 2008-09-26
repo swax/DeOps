@@ -29,6 +29,8 @@ namespace RiseOp.Interface
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.MainSplit = new System.Windows.Forms.SplitContainer();
             this.CommandSplit = new System.Windows.Forms.SplitContainer();
@@ -36,9 +38,7 @@ namespace RiseOp.Interface
             this.SideViewsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.SideSearchButton = new System.Windows.Forms.ToolStripButton();
             this.SideNewsButton = new System.Windows.Forms.ToolStripDropDownButton();
-            this.StatusBrowser = new System.Windows.Forms.WebBrowser();
-            this.RightClickMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.EditMenu = new System.Windows.Forms.ToolStripMenuItem();
+            this.SelectionInfo = new RiseOp.Interface.StatusPanel();
             this.NavStrip = new System.Windows.Forms.ToolStrip();
             this.PersonNavButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.ProjectNavButton = new System.Windows.Forms.ToolStripDropDownButton();
@@ -70,13 +70,14 @@ namespace RiseOp.Interface
             this.SideToolStrip = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
             this.OperationButton = new System.Windows.Forms.ToolStripButton();
-            this.OnlineButton = new System.Windows.Forms.ToolStripButton();
+            this.BuddiesButton = new System.Windows.Forms.ToolStripButton();
             this.ProjectsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.SideButton = new System.Windows.Forms.ToolStripButton();
             this.LockButton = new System.Windows.Forms.ToolStripButton();
-            CommandTree = new RiseOp.Services.Trust.LinkTree();
             this.TreeImageList = new System.Windows.Forms.ImageList(this.components);
             this.NewsTimer = new System.Windows.Forms.Timer(this.components);
+            CommandTree = new RiseOp.Services.Trust.LinkTree();
+            BuddyList = new RiseOp.Services.Buddy.BuddyView();
             this.MainSplit.Panel1.SuspendLayout();
             this.MainSplit.Panel2.SuspendLayout();
             this.MainSplit.SuspendLayout();
@@ -84,7 +85,6 @@ namespace RiseOp.Interface
             this.CommandSplit.Panel2.SuspendLayout();
             this.CommandSplit.SuspendLayout();
             this.SideNavStrip.SuspendLayout();
-            this.RightClickMenu.SuspendLayout();
             this.NavStrip.SuspendLayout();
             this.TopToolStrip.SuspendLayout();
             this.SideToolStrip.SuspendLayout();
@@ -125,16 +125,66 @@ namespace RiseOp.Interface
             // CommandSplit.Panel1
             // 
             this.CommandSplit.Panel1.BackColor = System.Drawing.Color.WhiteSmoke;
+            this.CommandSplit.Panel1.Controls.Add(this.BuddyList);
             this.CommandSplit.Panel1.Controls.Add(this.SideNavStrip);
             this.CommandSplit.Panel1.Controls.Add(this.CommandTree);
             // 
             // CommandSplit.Panel2
             // 
             this.CommandSplit.Panel2.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.CommandSplit.Panel2.Controls.Add(this.StatusBrowser);
+            this.CommandSplit.Panel2.Controls.Add(this.SelectionInfo);
             this.CommandSplit.Size = new System.Drawing.Size(171, 445);
             this.CommandSplit.SplitterDistance = 324;
             this.CommandSplit.TabIndex = 4;
+            // 
+            // BuddyList
+            // 
+            this.BuddyList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+                        | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.BuddyList.BackColor = System.Drawing.SystemColors.Window;
+            this.BuddyList.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            toggleColumnHeader1.Hovered = false;
+            toggleColumnHeader1.Image = null;
+            toggleColumnHeader1.Index = 0;
+            toggleColumnHeader1.Pressed = false;
+            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.Selected = false;
+            toggleColumnHeader1.Text = "";
+            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader1.Visible = true;
+            toggleColumnHeader1.Width = 85;
+            toggleColumnHeader2.Hovered = false;
+            toggleColumnHeader2.Image = null;
+            toggleColumnHeader2.Index = 0;
+            toggleColumnHeader2.Pressed = false;
+            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader2.Selected = false;
+            toggleColumnHeader2.Text = "";
+            toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader2.Visible = true;
+            toggleColumnHeader2.Width = 85;
+            this.BuddyList.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
+            toggleColumnHeader1,
+            toggleColumnHeader2});
+            this.BuddyList.ColumnSortColor = System.Drawing.Color.Gainsboro;
+            this.BuddyList.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
+            this.BuddyList.DisableHorizontalScroll = true;
+            this.BuddyList.GridLineColor = System.Drawing.Color.WhiteSmoke;
+            this.BuddyList.HeaderMenu = null;
+            this.BuddyList.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
+            this.BuddyList.ItemMenu = null;
+            this.BuddyList.LabelEdit = false;
+            this.BuddyList.Location = new System.Drawing.Point(0, 25);
+            this.BuddyList.Name = "BuddyList";
+            this.BuddyList.RowSelectColor = System.Drawing.SystemColors.Highlight;
+            this.BuddyList.RowTrackColor = System.Drawing.Color.WhiteSmoke;
+            this.BuddyList.Size = new System.Drawing.Size(171, 296);
+            this.BuddyList.SmallImageList = null;
+            this.BuddyList.StateImageList = null;
+            this.BuddyList.TabIndex = 0;
+            this.BuddyList.Text = "containerListViewEx1";
+            this.BuddyList.Visible = false;
             // 
             // SideNavStrip
             // 
@@ -171,7 +221,6 @@ namespace RiseOp.Interface
             this.SideSearchButton.Name = "SideSearchButton";
             this.SideSearchButton.Size = new System.Drawing.Size(23, 22);
             this.SideSearchButton.Text = "toolStripButton1";
-            this.SideSearchButton.Click += new System.EventHandler(this.SideSearchButton_Click);
             // 
             // SideNewsButton
             // 
@@ -214,37 +263,13 @@ namespace RiseOp.Interface
             this.CommandTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseDoubleClick);
             this.CommandTree.SelectedItemChanged += new System.EventHandler(this.CommandTree_SelectedItemChanged);
             // 
-            // StatusBrowser
+            // SelectionInfo
             // 
-            this.StatusBrowser.AllowWebBrowserDrop = false;
-            this.StatusBrowser.ContextMenuStrip = this.RightClickMenu;
-            this.StatusBrowser.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.StatusBrowser.IsWebBrowserContextMenuEnabled = false;
-            this.StatusBrowser.Location = new System.Drawing.Point(0, 0);
-            this.StatusBrowser.MinimumSize = new System.Drawing.Size(20, 20);
-            this.StatusBrowser.Name = "StatusBrowser";
-            this.StatusBrowser.ScriptErrorsSuppressed = true;
-            this.StatusBrowser.ScrollBarsEnabled = false;
-            this.StatusBrowser.Size = new System.Drawing.Size(171, 117);
-            this.StatusBrowser.TabIndex = 0;
-            this.StatusBrowser.WebBrowserShortcutsEnabled = false;
-            this.StatusBrowser.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.StatusBrowser_Navigating);
-            // 
-            // RightClickMenu
-            // 
-            this.RightClickMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.EditMenu});
-            this.RightClickMenu.Name = "RightClickMenu";
-            this.RightClickMenu.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.RightClickMenu.Size = new System.Drawing.Size(116, 26);
-            this.RightClickMenu.Opening += new System.ComponentModel.CancelEventHandler(this.RightClickMenu_Opening);
-            // 
-            // EditMenu
-            // 
-            this.EditMenu.Name = "EditMenu";
-            this.EditMenu.Size = new System.Drawing.Size(115, 22);
-            this.EditMenu.Text = "Edit...";
-            this.EditMenu.Click += new System.EventHandler(this.EditMenu_Click);
+            this.SelectionInfo.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.SelectionInfo.Location = new System.Drawing.Point(0, 0);
+            this.SelectionInfo.Name = "SelectionInfo";
+            this.SelectionInfo.Size = new System.Drawing.Size(171, 117);
+            this.SelectionInfo.TabIndex = 0;
             // 
             // NavStrip
             // 
@@ -518,7 +543,7 @@ namespace RiseOp.Interface
             this.SideToolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripLabel2,
             this.OperationButton,
-            this.OnlineButton,
+            this.BuddiesButton,
             this.ProjectsButton,
             this.SideButton,
             this.LockButton});
@@ -553,18 +578,18 @@ namespace RiseOp.Interface
             this.OperationButton.TextDirection = System.Windows.Forms.ToolStripTextDirection.Vertical90;
             this.OperationButton.CheckedChanged += new System.EventHandler(this.OperationButton_CheckedChanged);
             // 
-            // OnlineButton
+            // BuddiesButton
             // 
-            this.OnlineButton.CheckOnClick = true;
-            this.OnlineButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.OnlineButton.ForeColor = System.Drawing.Color.Black;
-            this.OnlineButton.Image = ((System.Drawing.Image)(resources.GetObject("OnlineButton.Image")));
-            this.OnlineButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.OnlineButton.Name = "OnlineButton";
-            this.OnlineButton.Size = new System.Drawing.Size(18, 46);
-            this.OnlineButton.Text = "Online";
-            this.OnlineButton.TextDirection = System.Windows.Forms.ToolStripTextDirection.Vertical90;
-            this.OnlineButton.CheckedChanged += new System.EventHandler(this.OnlineButton_CheckedChanged);
+            this.BuddiesButton.CheckOnClick = true;
+            this.BuddiesButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.BuddiesButton.ForeColor = System.Drawing.Color.Black;
+            this.BuddiesButton.Image = ((System.Drawing.Image)(resources.GetObject("BuddiesButton.Image")));
+            this.BuddiesButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.BuddiesButton.Name = "BuddiesButton";
+            this.BuddiesButton.Size = new System.Drawing.Size(18, 55);
+            this.BuddiesButton.Text = "Buddies";
+            this.BuddiesButton.TextDirection = System.Windows.Forms.ToolStripTextDirection.Vertical90;
+            this.BuddiesButton.CheckedChanged += new System.EventHandler(this.OnlineButton_CheckedChanged);
             // 
             // ProjectsButton
             // 
@@ -637,7 +662,6 @@ namespace RiseOp.Interface
             this.CommandSplit.ResumeLayout(false);
             this.SideNavStrip.ResumeLayout(false);
             this.SideNavStrip.PerformLayout();
-            this.RightClickMenu.ResumeLayout(false);
             this.NavStrip.ResumeLayout(false);
             this.NavStrip.PerformLayout();
             this.TopToolStrip.ResumeLayout(false);
@@ -660,14 +684,11 @@ namespace RiseOp.Interface
         private System.Windows.Forms.SplitContainer CommandSplit;
         private System.Windows.Forms.ToolStrip SideToolStrip;
         private System.Windows.Forms.ToolStripButton OperationButton;
-        private System.Windows.Forms.ToolStripButton OnlineButton;
+        private System.Windows.Forms.ToolStripButton BuddiesButton;
         private System.Windows.Forms.ToolStripLabel toolStripLabel2;
         private System.Windows.Forms.Panel InternalPanel;
         private System.Windows.Forms.ToolStripDropDownButton ProjectsButton;
         private System.Windows.Forms.ToolStripButton SideButton;
-        private System.Windows.Forms.WebBrowser StatusBrowser;
-        private System.Windows.Forms.ContextMenuStrip RightClickMenu;
-        private System.Windows.Forms.ToolStripMenuItem EditMenu;
         private System.Windows.Forms.ToolStripDropDownButton CommButton;
         private System.Windows.Forms.ToolStripMenuItem mailToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem chatToolStripMenuItem;
@@ -698,5 +719,7 @@ namespace RiseOp.Interface
         private System.Windows.Forms.ToolStripMenuItem signOnToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem signOffToolStripMenuItem;
         private System.Windows.Forms.ToolStripButton SideSearchButton;
+        private RiseOp.Services.Buddy.BuddyView BuddyList;
+        private StatusPanel SelectionInfo;
     }
 }

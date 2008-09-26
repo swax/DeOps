@@ -164,7 +164,7 @@ namespace RiseOp.Services.Board
                     foreach (OpBoard board in BoardMap.Values)
                         if (board.UserID != Core.UserID &&
                             !Network.Routing.InCacheArea(board.UserID) &&
-                            !Core.Focused.SafeContainsKey(board.UserID) &&
+                            !Core.KeepData.SafeContainsKey(board.UserID) &&
                             !WindowMap.SafeContainsKey(board.UserID) &&
                             !localRegion.Contains(board.UserID))
                         {

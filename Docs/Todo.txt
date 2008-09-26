@@ -1,15 +1,28 @@
 
-local sync
-buddy list packets
-buddy list structure
-hook up focused, live
-on connect search
-hookup tags
-add buddy
-remove buddy
-interface
+save names/public keys in main file
+ensure that backup file is made before writing new main file
+when new link comes in, reg name
+when new buddy comes in reg name
+also status if killed
+if more than 100, prune to focused
+
+core getname function tries trust then buddies
+	reset name, sets trust / buddy profile simultaneously
+	
+add buddy buttion
+right click remove buddy
+
+give buddy menu items
+click on buddy displays info
 
 
+test global
+add groups to buddies
+
+core needs to save name/keymap first thing on load, which trust/buddies reference first
+
+
+	associations? put in diff sturcture buddyinfo data type/file?
 
 login - instead of op, put profile
 if globalIM profile not detected, show link in red on login: Create Global IM Profile
@@ -17,11 +30,12 @@ in link selection change project to 'group' and include buddies, main to primary
 project coming before primary in nar bar drop down
 instead of 'trust unconfirmed' after link, make color red, and then in extended info put reason in red
 
-// remove online mode from link tree
-// add buddies to link tree, ensure available from link selection
+setting - save IM mode, buddies or structure view on close
+
 // test pure buddies/location client without trust
 // update IM/Chat/Gui in notify area, if state changed!!
 
+make sure diff networks use diff webcaches in sim
 	
 Buddy list Component
 
@@ -286,6 +300,7 @@ fall release
 		need to make invite over global network only so no risk of public/secret links compramised
 	realignment - detailed in future file
 	live locations/chat
+	kill switch
 
 	web caching files?
 	implement upnp?
