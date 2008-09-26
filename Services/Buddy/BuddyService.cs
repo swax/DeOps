@@ -45,6 +45,12 @@ namespace RiseOp.Services.Buddy
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.Load();
+
+            if(!BuddyList.SafeContainsKey(Network.Local.UserID))
+            {
+                OpBuddy self = new OpBuddy() { ID = Network.Local.UserID, Name = Core.User.Settings.UserName, Group = "", Key = Core.User.Settings.KeyPublic };
+                BuddyList.SafeAdd(Network.Local.UserID, self);
+            }
         }
 
         public void Dispose()
@@ -137,6 +143,39 @@ namespace RiseOp.Services.Buddy
             });
         }
 
+        internal string GetLink(ulong user)
+        {
+            OpBuddy buddy;
+            if(!BuddyList.TryGetValue(user, out buddy))
+                return null;
+
+            string link = "riseop://" + Core.GetName(user) + "/";
+
+            link += Utilities.ToBase64String(BitConverter.GetBytes(Network.OpID)) + "/";
+
+            link += Utilities.ToBase64String(buddy.Key);
+
+            return link;
+        }
+
+        internal void AddBuddy(string link)
+        {
+            link = link.Replace("riseop://", "");
+
+            string[] parts = link.Split('/');
+
+            if (parts.Length < 3)
+                return;
+
+            ulong opID = BitConverter.ToUInt64(Utilities.FromBase64String(parts[1]), 0);
+
+            if (opID != Network.OpID)
+                throw new Exception("This buddy link is not for " + Core.User.Settings.Operation);
+
+            byte[] key = Utilities.FromBase64String(parts[2]);
+
+            AddBuddy(parts[0], "", key);
+        }
 
         internal void AddBuddy(string name, string group, byte[] key)
         {

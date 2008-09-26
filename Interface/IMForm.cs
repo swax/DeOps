@@ -57,7 +57,10 @@ namespace RiseOp.Interface
 
         private void AddButton_Click(object sender, EventArgs e)
         {
+            GetTextDialog add = new GetTextDialog("Add Buddy", "Enter someone's buddy link below", "riseop://");
 
+            if (add.ShowDialog() == DialogResult.OK)
+                Core.Buddies.AddBuddy(add.ResultBox.Text);
         }
     }
 }

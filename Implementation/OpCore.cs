@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -90,6 +91,7 @@ namespace RiseOp.Implementation
         internal ushort       TunnelID;
         internal DateTime     StartTime;
 
+        int KeyMax = 128;
         internal ThreadedDictionary<ulong, string> NameMap = new ThreadedDictionary<ulong, string>();
         internal Dictionary<ulong, byte[]> KeyMap = new Dictionary<ulong, byte[]>();
 
@@ -165,6 +167,8 @@ namespace RiseOp.Implementation
                     if (Directory.Exists(dirpath))
                         Directory.Delete(dirpath, true);
                 }
+
+            if (Sim != null) KeyMax = 32;
 
             Context.KnownServices[DhtServiceID] = "Dht";
             ServiceBandwidth[DhtServiceID] = new BandwidthLog(RecordBandwidthSeconds);
@@ -371,6 +375,18 @@ namespace RiseOp.Implementation
                 {
                     MinuteCounter = 0;
                     MinuteTimerEvent.Invoke();
+
+                    // prune keys from keymap - dont remove focused, remove furthest first
+                    if(KeyMap.Count > KeyMax)
+                        foreach (ulong user in (from id in KeyMap.Keys
+                                                where !KeepData.SafeContainsKey(id)
+                                                orderby Network.Local.UserID ^ id descending
+                                                select id).Take(KeyMap.Count - KeyMax).ToArray())
+                        {
+                            KeyMap.Remove(user);
+                            if (NameMap.SafeContainsKey(user))
+                                NameMap.Remove(user);
+                        }
                 }
 			}
 			catch(Exception ex)
@@ -589,6 +605,25 @@ namespace RiseOp.Implementation
                 return;
 
             NameMap.SafeAdd(user, name);
+        }
+
+        // ensure that key/name associations persist between runs, done so remote people dont change their name and try to play with
+        // us, once we make an association with a key, we change that name on our terms, also prevents key spoofing with dupe
+        // user ids
+        internal void SaveKeyIndex(PacketStream stream)
+        {
+            NameMap.LockReading(delegate()
+            {
+                foreach (ulong user in KeyMap.Keys)
+                    if (NameMap.ContainsKey(user))
+                        stream.WritePacket(new UserInfo() { Name = NameMap[user], Key = KeyMap[user] });
+            });
+        }
+
+        internal void IndexInfo(UserInfo info)
+        {
+            KeyMap[info.ID] = info.Key;
+            NameMap.SafeAdd(info.ID, info.Name);
         }
 
         internal string GetName(ulong user)
@@ -939,6 +974,7 @@ namespace RiseOp.Implementation
 
             GuiMain.Show();
         }
+
     }
 
     internal class InvitePackage

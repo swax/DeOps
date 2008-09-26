@@ -129,6 +129,9 @@ namespace RiseOp
                                 if (root.Name == IdentityPacket.OperationSettings)
                                     Settings = SettingsPacket.Decode(root);
 
+                                if (root.Name == IdentityPacket.UserInfo)
+                                    Core.IndexInfo(UserInfo.Decode(root));
+
                                 // save icon to identity file because only root node saves icon/splash to link file
                                 // to minimize link file size, but allow user to set custom icon/splash if there are not overrides
                                 if (root.Name == IdentityPacket.Icon)
@@ -219,6 +222,8 @@ namespace RiseOp
 
                             Core.Network.Cache.SaveIPs(stream);
                             Core.Network.Cache.SaveWeb(stream);
+
+                            Core.SaveKeyIndex(stream);
                         }
 
                         if (OpIcon != null)

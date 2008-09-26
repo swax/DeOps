@@ -1,15 +1,7 @@
 
-save names/public keys in main file
-ensure that backup file is made before writing new main file
-when new link comes in, reg name
-when new buddy comes in reg name
 also status if killed
-if more than 100, prune to focused
 
-core getname function tries trust then buddies
-	reset name, sets trust / buddy profile simultaneously
-	
-add buddy buttion
+add buddy button
 right click remove buddy
 
 give buddy menu items
@@ -19,9 +11,6 @@ report name discrepencies in status info
 
 test global
 add groups to buddies
-
-core needs to save name/keymap first thing on load, which trust/buddies reference first
-
 
 	associations? put in diff sturcture buddyinfo data type/file?
 
@@ -59,8 +48,6 @@ Buddy list Component
 			group
 		
 		global list saved with op list - if linked
-		
-		
 		
 	interface
 		online / offline area
