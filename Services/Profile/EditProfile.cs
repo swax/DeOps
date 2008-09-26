@@ -133,7 +133,7 @@ namespace RiseOp.Services.Profile
 
             ProfileTemplate template = new ProfileTemplate(false, true);
 
-            template.User = Links.GetName(id); ;
+            template.User = Core.GetName(id); ;
             template.FilePath = Profiles.GetFilePath(profile);
             template.FileKey  = profile.File.Header.FileKey;
 

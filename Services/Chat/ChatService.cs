@@ -576,7 +576,7 @@ namespace RiseOp.Services.Chat
             if (!ChatNewsUpdate)
             {
                 ChatNewsUpdate = true;
-                Core.MakeNews(Trust.GetName(session.UserID) + " is chatting", session.UserID, 0, false, ChatRes.Icon, Menu_View);
+                Core.MakeNews(Core.GetName(session.UserID) + " is chatting", session.UserID, 0, false, ChatRes.Icon, Menu_View);
             }
 
             ProcessMessage(room, new ChatMessage(Core, session, message.Text));
@@ -812,7 +812,7 @@ namespace RiseOp.Services.Chat
         {
             // Invite sent to Bob @Home
 
-            ProcessMessage(room, new ChatMessage(Core, "Invite sent to " + Trust.GetName(session.UserID) + LocationSuffix(session.UserID, session.ClientID), true));
+            ProcessMessage(room, new ChatMessage(Core, "Invite sent to " + Core.GetName(session.UserID) + LocationSuffix(session.UserID, session.ClientID), true));
         }
 
         void SendInviteProof(ChatRoom room)

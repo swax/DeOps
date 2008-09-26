@@ -11,6 +11,7 @@ using RiseOp.Implementation.Protocol;
 using RiseOp.Services.Assist;
 using RiseOp.Services.Location;
 
+
 namespace RiseOp.Services.Buddy
 {
     internal delegate void BuddyGuiUpdateHandler();
@@ -30,14 +31,14 @@ namespace RiseOp.Services.Buddy
         internal BuddyGuiUpdateHandler GuiUpdate;
 
 
-        internal BuddyService(OpCore core )
+        internal BuddyService(OpCore core)
         {
-            Core    = core;
+            Core = core;
             Network = Core.Network;
             Core.Buddies = this;
 
-            Network.StatusChange     += new StatusChange(Network_StatusChange);
-            Core.KeepDataCore      += new KeepDataHandler(Core_KeepData);
+            Network.StatusChange += new StatusChange(Network_StatusChange);
+            Core.KeepDataCore += new KeepDataHandler(Core_KeepData);
             Core.Locations.KnowOnline += new KnowOnlineHandler(Location_KnowOnline);
 
             Cache = new VersionedCache(Network, ServiceID, 0, true);
@@ -51,7 +52,8 @@ namespace RiseOp.Services.Buddy
             Network.StatusChange     -= new StatusChange(Network_StatusChange);
             Core.KeepDataCore      -= new KeepDataHandler(Core_KeepData);
             Core.Locations.KnowOnline -= new KnowOnlineHandler(Location_KnowOnline);
-            Cache.FileAquired        -= new FileAquiredHandler(Cache_FileAquired);
+
+            Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
         }
 
         public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
@@ -78,7 +80,7 @@ namespace RiseOp.Services.Buddy
             uint project = ((IViewParams)sender).GetProject();
 
 
-            string name = Core.Trust.GetName(user);
+            string name = Core.GetName(user);
 
             AddBuddy(name, "", Core.KeyMap[user]);
         }
@@ -143,6 +145,8 @@ namespace RiseOp.Services.Buddy
             OpBuddy buddy = new OpBuddy() { ID = id, Name = name, Group = group, Key = key };
 
             BuddyList.SafeAdd(id, buddy);
+
+            Core.IndexName(id, name); // always associate this buddy with name
 
             SaveLocal();
         }

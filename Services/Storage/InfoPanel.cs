@@ -754,7 +754,7 @@ namespace RiseOp.Services.Storage
 
             foreach (KeyValuePair<ulong, StorageItem> item in changes)
             {
-                string name = ParentView.Core.Trust.GetName(item.Key);
+                string name = ParentView.Core.GetName(item.Key);
 
                 if (ParentView.HigherIDs.Contains(item.Key))
                     highers.Add(new ChangeRow(item.Key, name, item.Value, true));
@@ -785,7 +785,7 @@ namespace RiseOp.Services.Storage
                 color = ParentView.HigherIDs.Contains(id) ? "ff0000" : "0000ff";
                 html.Replace("<?=namecolor?>", color);
 
-                html.Replace("<?=name?>", ParentView.Core.Trust.GetName(id));
+                html.Replace("<?=name?>", ParentView.Core.GetName(id));
                 html.Replace("<?=statusID?>", "status" + id.ToString());
                 html.Replace("<?=status?>", GetDiffStatus(id));
 

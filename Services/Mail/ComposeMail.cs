@@ -17,7 +17,7 @@ namespace RiseOp.Services.Mail
     internal partial class ComposeMail : ViewShell
     {
         MailService Mail;
-        TrustService Links;
+        OpCore Core;
 
         ulong DefaultID;
         bool MessageSent;
@@ -33,12 +33,12 @@ namespace RiseOp.Services.Mail
             InitializeComponent();
 
             Mail = mail;
-            Links = mail.Core.Trust;
+            Core = mail.Core;
             DefaultID = id;
 
             if (id != 0)
             {
-                ToTextBox.Text = Links.GetName(id);
+                ToTextBox.Text = Core.GetName(id);
                 ToIDs.Add(id);
             }
         }
@@ -54,10 +54,10 @@ namespace RiseOp.Services.Mail
                 return "Compose";
 
             if(CustomTitle != null)
-                return CustomTitle + Links.GetName(DefaultID);
+                return CustomTitle + Core.GetName(DefaultID);
 
             if (DefaultID != 0)
-                return "Mail " + Links.GetName(DefaultID);
+                return "Mail " + Core.GetName(DefaultID);
 
             return "Compose Mail";
         }
@@ -166,7 +166,7 @@ namespace RiseOp.Services.Mail
 
         private void BrowseTo_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            AddLinks add = new AddLinks(Links, 0);
+            AddLinks add = new AddLinks(Core.Trust, 0);
 
             string prefix = ToTextBox.Text.Length > 0 ? ", " : "";
 
@@ -182,7 +182,7 @@ namespace RiseOp.Services.Mail
 
         private void RemovePersonLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            RemoveLinks form = new RemoveLinks(Links, ToIDs);
+            RemoveLinks form = new RemoveLinks(Core, ToIDs);
 
             if (form.ShowDialog(this) == DialogResult.OK)
             {
@@ -199,7 +199,7 @@ namespace RiseOp.Services.Mail
             string text = "";
 
             foreach (ulong id in ToIDs)
-                text += Links.GetName(id) + ", ";
+                text += Core.GetName(id) + ", ";
 
             ToTextBox.Text = text.TrimEnd(',', ' ');
         }

@@ -160,7 +160,7 @@ namespace RiseOp.Services.Storage
                 foreach (uint project in Trust.ProjectRoots.Keys)
                 {
                     string path = Core.User.RootPath + Path.DirectorySeparatorChar + Trust.GetProjectName(project) + " Storage";
-                    string local = Trust.GetName(Core.UserID);
+                    string local = Core.GetName(Core.UserID);
 
                     if (Directory.Exists(path))
                         foreach (string dir in Directory.GetDirectories(path))
@@ -441,7 +441,7 @@ namespace RiseOp.Services.Storage
                 Core.RunInGuiThread(StorageUpdate, newStorage);
 
             if (Core.NewsWorthy(newStorage.UserID, 0, false))
-                Core.MakeNews("Storage updated by " + Trust.GetName(newStorage.UserID), newStorage.UserID, 0, false, StorageRes.Icon, Menu_View);
+                Core.MakeNews("Storage updated by " + Core.GetName(newStorage.UserID), newStorage.UserID, 0, false, StorageRes.Icon, Menu_View);
 
         }
 
@@ -903,7 +903,7 @@ namespace RiseOp.Services.Storage
 
         internal string GetRootPath(ulong user, uint project)
         {
-            return Core.User.RootPath + Path.DirectorySeparatorChar + Trust.GetProjectName(project) + " Storage" + Path.DirectorySeparatorChar + Trust.GetName(user);
+            return Core.User.RootPath + Path.DirectorySeparatorChar + Trust.GetProjectName(project) + " Storage" + Path.DirectorySeparatorChar + Core.GetName(user);
         }
 
         internal WorkingStorage Discard(uint project)

@@ -60,7 +60,7 @@ namespace RiseOp.Services.IM
 
         private void UpdateName()
         {
-            RemoteName = Links.GetName(UserID);
+            RemoteName = Core.GetName(UserID);
 
             if(External != null)
                 External.Text = "IM " + RemoteName;
@@ -110,7 +110,7 @@ namespace RiseOp.Services.IM
             if (small)
                 return "IM";
 
-            return "IM " + Links.GetName(UserID);
+            return "IM " + Core.GetName(UserID);
         }
 
         internal override Size GetDefaultSize()
@@ -183,7 +183,7 @@ namespace RiseOp.Services.IM
             else
                 StatusImage.Image = IMRes.redled;
 
-            if(RemoteName != Links.GetName(id))
+            if(RemoteName != Core.GetName(id))
             {
                 UpdateName();
                 DisplayLog();
@@ -213,7 +213,7 @@ namespace RiseOp.Services.IM
 
             string prefix = " ";
             if (!message.System)
-                prefix += Links.GetName(message.Source);
+                prefix += Core.GetName(message.Source);
 
             if (MessageTextBox.Text.Length != 0)
                 prefix = "\n" + prefix;

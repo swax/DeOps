@@ -153,7 +153,7 @@ namespace RiseOp.Interface
 
             Close();
 
-            Core.GuiTray = new TrayLock(Core, SideMode);
+            Core.GuiTray = new TrayLock(Core, SideMode, true);
         }
 
         private bool CleanInternal()
@@ -582,7 +582,7 @@ namespace RiseOp.Interface
                 if (link.UserID == Core.UserID)
                     PersonNavButton.Text = "My";
                 else
-                    PersonNavButton.Text = Trust.GetName(link.UserID) + "'s";
+                    PersonNavButton.Text = Core.GetName(link.UserID) + "'s";
 
                 PersonNavItem self = null;
                 
@@ -590,12 +590,12 @@ namespace RiseOp.Interface
                 OpLink higher = link.GetHigher(false);
                 if (higher != null)
                 {
-                    PersonNavButton.DropDownItems.Add(new PersonNavItem(Trust.GetName(higher.UserID), higher.UserID, this, PersonNav_Clicked));
+                    PersonNavButton.DropDownItems.Add(new PersonNavItem(Core.GetName(higher.UserID), higher.UserID, this, PersonNav_Clicked));
 
                     List<ulong> adjacentIDs = Trust.GetDownlinkIDs(higher.UserID, SelectedProject, 1);
                     foreach (ulong id in adjacentIDs)
                     {
-                        PersonNavItem item = new PersonNavItem("   " + Trust.GetName(id), id, this, PersonNav_Clicked);
+                        PersonNavItem item = new PersonNavItem("   " + Core.GetName(id), id, this, PersonNav_Clicked);
                         if (id == CommandTree.SelectedLink)
                         {
                             item.Font = BoldFont;
@@ -611,7 +611,7 @@ namespace RiseOp.Interface
                 // if self not added yet, add
                 if (self == null)
                 {
-                    PersonNavItem item = new PersonNavItem(Trust.GetName(link.UserID), link.UserID, this, PersonNav_Clicked);
+                    PersonNavItem item = new PersonNavItem(Core.GetName(link.UserID), link.UserID, this, PersonNav_Clicked);
                     item.Font = BoldFont;
                     self = item;
                     PersonNavButton.DropDownItems.Add(item);
@@ -621,7 +621,7 @@ namespace RiseOp.Interface
                 List<ulong> downlinkIDs = Trust.GetDownlinkIDs(CommandTree.SelectedLink, SelectedProject, 1);
                 foreach (ulong id in downlinkIDs)
                 {
-                    PersonNavItem item = new PersonNavItem(childspacing + Trust.GetName(id), id, this, PersonNav_Clicked);
+                    PersonNavItem item = new PersonNavItem(childspacing + Core.GetName(id), id, this, PersonNav_Clicked);
 
                     int index = PersonNavButton.DropDownItems.IndexOf(self);
                     PersonNavButton.DropDownItems.Insert(index+1, item);

@@ -53,7 +53,7 @@ namespace RiseOp.Services.Transfer
         {
             RefreshView();
 
-            Text = Core.Trust.GetName(Core.UserID) + "'s Transfers";
+            Text = Core.GetName(Core.UserID) + "'s Transfers";
         }
 
         private void FastTimer_Tick(object sender, EventArgs e)
@@ -289,7 +289,7 @@ namespace RiseOp.Services.Transfer
             if (transfer.RoutingTable[peer.DhtIndex] == peer)
                 text += "(B" + peer.DhtIndex + ") ";
 
-            text += Service.Core.Trust.GetName(peer.Client.UserID) + ", ";
+            text += Service.Core.GetName(peer.Client.UserID) + ", ";
             text += "Last Seen: " + peer.LastSeen.ToShortTimeString() + ", ";
             //text += "Timeout: " + peer.PingTimeout + ", ";
 

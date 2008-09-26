@@ -85,7 +85,7 @@ namespace RiseOp.Implementation.Transport
             NegotiateTimeout = Core.TimeNow.AddSeconds(10);
             Startup = Core.TimeNow;
 
-            Name = Core.Trust.GetName(UserID);
+            Name = Core.GetName(UserID);
 
             //DebugWriter = new FileStream("Log " + Network.Profile.ScreenName + "-" + Buddy.ScreenName + "-" + Comm.PeerID.ToString() + ".txt", FileMode.CreateNew, FileAccess.Write);
 		}
@@ -348,6 +348,7 @@ namespace RiseOp.Implementation.Transport
             Log("Key Ack Received");
 
             Core.IndexKey(UserID, ref keyAck.PublicKey);
+            Core.IndexName(UserID, Name);
 
             // send session request with encrypted current key
             Send_SessionRequest();

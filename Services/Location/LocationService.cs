@@ -380,7 +380,7 @@ namespace RiseOp.Services.Location
         private void Process_LocationData(DataReq data, SignedData signed, LocationData location)
         {
             Core.IndexKey(location.UserID, ref location.Key);
-
+ 
             Debug.Assert(location.UserID == location.Source.UserID);
             if (location.UserID != location.Source.UserID)
                 return;

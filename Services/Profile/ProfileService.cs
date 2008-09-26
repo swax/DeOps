@@ -33,7 +33,7 @@ namespace RiseOp.Services.Profile
         internal G2Protocol Protocol;
         internal DhtNetwork Network;
         internal DhtStore   Store;
-        TrustService Links;
+        TrustService Trust;
 
         internal string ExtractPath;
    
@@ -106,7 +106,7 @@ namespace RiseOp.Services.Profile
             Network = core.Network;
             Protocol = Network.Protocol;
             Store = Network.Store;
-            Links = Core.Trust;
+            Trust = Core.Trust;
 
             ExtractPath = Core.User.RootPath + Path.DirectorySeparatorChar +
                         "Data" + Path.DirectorySeparatorChar +
@@ -268,7 +268,7 @@ namespace RiseOp.Services.Profile
 
                 OpVersionedFile vfile = Cache.UpdateLocal(tempPath, key, BitConverter.GetBytes(embeddedStart));
 
-                Store.PublishDirect(Links.GetLocsAbove(), Core.UserID, ServiceID, DataTypeFile, vfile.SignedHeader);
+                Store.PublishDirect(Trust.GetLocsAbove(), Core.UserID, ServiceID, DataTypeFile, vfile.SignedHeader);
             }
             catch (Exception ex)
             {
@@ -307,11 +307,11 @@ namespace RiseOp.Services.Profile
             {
                 List<LocationData> locations = new List<LocationData>();
 
-                Links.ProjectRoots.LockReading(delegate()
+                Trust.ProjectRoots.LockReading(delegate()
                 {
-                    foreach (uint project in Links.ProjectRoots.Keys)
-                        if (newProfile.UserID == Core.UserID || Links.IsHigher(newProfile.UserID, project))
-                            Links.GetLocsBelow(Core.UserID, project, locations);
+                    foreach (uint project in Trust.ProjectRoots.Keys)
+                        if (newProfile.UserID == Core.UserID || Trust.IsHigher(newProfile.UserID, project))
+                            Trust.GetLocsBelow(Core.UserID, project, locations);
                 });
 
                 Store.PublishDirect(locations, newProfile.UserID, ServiceID, 0, file.SignedHeader);
@@ -321,7 +321,7 @@ namespace RiseOp.Services.Profile
                 Core.RunInGuiThread(ProfileUpdate, newProfile);
 
             if (Core.NewsWorthy(newProfile.UserID, 0, false))
-                Core.MakeNews("Profile updated by " + Links.GetName(newProfile.UserID), newProfile.UserID, 0, true, ProfileRes.IconX, Menu_View);
+                Core.MakeNews("Profile updated by " + Core.GetName(newProfile.UserID), newProfile.UserID, 0, true, ProfileRes.IconX, Menu_View);
         }
 
         internal void LoadProfile(ulong id)

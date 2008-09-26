@@ -16,7 +16,7 @@ namespace RiseOp.Services.Trust
     internal partial class EditLink : RiseOp.Interface.CustomIconForm
     {
         OpCore Core;
-        TrustService Links;
+        TrustService Trust;
 
         uint ProjectID;
 
@@ -27,7 +27,7 @@ namespace RiseOp.Services.Trust
             InitializeComponent();
 
             Core = core;
-            Links = core.Trust;
+            Trust = core.Trust;
 
             ProjectID = id;
 
@@ -38,9 +38,9 @@ namespace RiseOp.Services.Trust
 
         private void EditLink_Load(object sender, EventArgs e)
         {
-            LocationBox.Text = Links.Core.User.Settings.Location;
+            LocationBox.Text = Trust.Core.User.Settings.Location;
 
-            OpLink link = Links.GetLink(Core.UserID, ProjectID);
+            OpLink link = Trust.GetLink(Core.UserID, ProjectID);
 
             if (link != null)
                 TitleBox.Text = link.Title;
@@ -48,12 +48,12 @@ namespace RiseOp.Services.Trust
         
         private void ButtonOK_Click(object sender, EventArgs e)
         {
-            OpLink link = Links.GetLink(Core.UserID, ProjectID);
+            OpLink link = Trust.GetLink(Core.UserID, ProjectID);
 
             if (link != null)
                 link.Title = TitleBox.Text;
 
-            Links.SaveLocal();
+            Trust.SaveLocal();
 
             Core.Locations.LocalAway = AwayCheckBox.Checked;
 
@@ -67,7 +67,7 @@ namespace RiseOp.Services.Trust
 
                 Core.RunInCoreAsync(delegate()
                 {
-                    Links.Core.User.Save();
+                    Trust.Core.User.Save();
                 });
             }
 

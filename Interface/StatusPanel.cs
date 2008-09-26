@@ -88,7 +88,6 @@ namespace RiseOp.Interface
         // add edit link
 
         OpCore Core;
-        TrustService Trust;
 
         enum StatusModeType { None, Network, User };
         
@@ -106,24 +105,26 @@ namespace RiseOp.Interface
         internal void Init(OpCore core)
         {
             Core = core;
-            Trust = core.Trust;
 
             Core.Locations.GuiUpdate += new LocationGuiUpdateHandler(Location_Update);
-            Core.Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
             Core.Buddies.GuiUpdate += new BuddyGuiUpdateHandler(Buddy_Update);
+
+            if (Core.Trust != null)
+                Core.Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
         }
 
         internal override void CustomDispose()
         {
             Core.Locations.GuiUpdate -= new LocationGuiUpdateHandler(Location_Update);
-            Core.Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
             Core.Buddies.GuiUpdate -= new BuddyGuiUpdateHandler(Buddy_Update);
+
+            if(Core.Trust != null)
+                Core.Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
         }
 
         void Trust_Update(ulong user)
         {
-            if (CurrentMode == StatusModeType.User &&
-                user == UserID)
+            if (CurrentMode == StatusModeType.User && user == UserID)
                 ShowUser(user, ProjectID);
         }
 
@@ -214,17 +215,13 @@ namespace RiseOp.Interface
 
         internal void ShowUser(ulong user, uint project)
         {
-            OpLink link = Trust.GetLink(user, project);
-
-            if (link == null)
-            {
-                ShowNetwork();
-                return;
-            }
+            OpLink link = null;
+            if(Core.Trust != null)
+                link = Core.Trust.GetLink(user, project);
 
             StatusModeType mode = StatusModeType.User;
 
-            UserID = link.UserID;
+            UserID = user;
             ProjectID = project;
 
             List<Tuple<string, string>> tuples = new List<Tuple<string, string>>();
@@ -233,7 +230,7 @@ namespace RiseOp.Interface
             string content = "";
 
             // if loop root
-            if (link.IsLoopRoot)
+            if (link != null && link.IsLoopRoot)
             {
                 name = "<b>Trust Loop</b>";
 
@@ -253,14 +250,14 @@ namespace RiseOp.Interface
                         confirmed = downlink.GetHigher(true) == null ? "(unconfirmed)" : "";
 
                         if (downlink.UserID == Core.UserID)
-                            order += " &nbsp&nbsp&nbsp <b>" + Trust.GetName(downlink.UserID) + "</b> <i>trusts ";
+                            order += " &nbsp&nbsp&nbsp <b>" + Core.GetName(downlink.UserID) + "</b> <i>trusts ";
                         else
-                            order += " &nbsp&nbsp&nbsp " + Trust.GetName(downlink.UserID) + " <i>trusts ";
+                            order += " &nbsp&nbsp&nbsp " + Core.GetName(downlink.UserID) + " <i>trusts ";
 
                         order += confirmed + "</i><br>";
                     }
 
-                    order += " &nbsp&nbsp&nbsp " + Trust.GetName(link.Downlinks[0].UserID) + "<br>";
+                    order += " &nbsp&nbsp&nbsp " + Core.GetName(link.Downlinks[0].UserID) + "<br>";
                 }
 
                 content += order +
@@ -271,26 +268,29 @@ namespace RiseOp.Interface
             else
             {
                 // name
-                name = "<b>" + Trust.GetName(link.UserID) + "</b>";
+                name = "<b>" + Core.GetName(user) + "</b>";
 
-                if (link.UserID == Core.UserID)
+                if (user == Core.UserID)
                     name += "  &nbsp&nbsp  (<a href='edit:local'><font color=white>edit</font></a>)";
 
-                // title
-                string title = link.Title;
+                if (link != null)
+                {
+                    // title
+                    string title = link.Title;
 
-                if (title != "")
-                    tuples.Add(new Tuple<string, string>("Title: ", title));
+                    if (title != "")
+                        tuples.Add(new Tuple<string, string>("Title: ", title));
 
-                // projects
-                string projects = "";
-                foreach (uint id in link.Trust.Links.Keys)
-                    if (id != 0)
-                        projects += "<a href='project:" + id.ToString() + "'>" + Trust.GetProjectName(id) + "</a>, ";
-                projects = projects.TrimEnd(new char[] { ' ', ',' });
+                    // projects
+                    string projects = "";
+                    foreach (uint id in link.Trust.Links.Keys)
+                        if (id != 0)
+                            projects += "<a href='project:" + id.ToString() + "'>" + Core.Trust.GetProjectName(id) + "</a>, ";
+                    projects = projects.TrimEnd(new char[] { ' ', ',' });
 
-                if (projects != "")
-                    tuples.Add(new Tuple<string, string>("Projects: ", projects));
+                    if (projects != "")
+                        tuples.Add(new Tuple<string, string>("Projects: ", projects));
+                }
 
                 //Locations:
                 List<Tuple<string, string>> locations = new List<Tuple<string, string>>();
@@ -302,7 +302,7 @@ namespace RiseOp.Interface
 
                 bool online = false;
 
-                List<ClientInfo> clients = Core.Locations.GetClients(link.UserID);
+                List<ClientInfo> clients = Core.Locations.GetClients(user);
 
                 foreach (ClientInfo info in clients)
                 {
@@ -319,7 +319,7 @@ namespace RiseOp.Interface
                     // last seen stuff here
 
                     online = true;
-                    locations.Add(new Tuple<string, string>(Core.Locations.GetLocationName(link.UserID, info.ClientID), status));
+                    locations.Add(new Tuple<string, string>(Core.Locations.GetLocationName(user, info.ClientID), status));
                 }
 
 

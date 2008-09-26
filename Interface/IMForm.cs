@@ -8,6 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 
 using RiseOp.Implementation;
+using RiseOp.Interface.Views;
 
 
 namespace RiseOp.Interface
@@ -23,8 +24,40 @@ namespace RiseOp.Interface
 
             Core = core;
 
+            TopStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+
             BuddyList.Init(Core.Buddies);
             SelectionInfo.Init(Core);
+        }
+
+        private void IMForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Core.GuiMain = null;
+
+            if (LockForm)
+            {
+                LockForm = false;
+                return;
+            }
+
+            if (Core.Sim == null)
+                Core.Exit();
+        }
+
+        bool LockForm;
+
+        private void MinButton_Click(object sender, EventArgs e)
+        {
+            LockForm = true;
+
+            Close();
+
+            Core.GuiTray = new TrayLock(Core, false, false);
+        }
+
+        private void AddButton_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

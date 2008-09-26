@@ -46,12 +46,12 @@ namespace RiseOp.Services.Trust
             HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
         }
 
-        internal void Init(TrustService links)
+        internal void Init(TrustService trust)
         {
             FullRowSelect = false;
 
-            Trust = links;
-            Core = links.Core;
+            Trust = trust;
+            Core = trust.Core;
 
             Core.Locations.GuiUpdate += new LocationGuiUpdateHandler(Locations_Update);
             Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
@@ -851,7 +851,7 @@ namespace RiseOp.Services.Trust
 
             if (mode == CommandTreeMode.Operation)
             {
-                txt += Trust.GetName(Link.UserID);
+                txt += Trust.Core.GetName(Link.UserID);
 
                 //if (title != "")
                 //    txt += " - " + title;
@@ -892,7 +892,7 @@ namespace RiseOp.Services.Trust
             }
             else
             {
-                txt += Trust.GetName(Link.UserID);
+                txt += Trust.Core.GetName(Link.UserID);
 
                 // if (title != "")
                 //     txt += " - " + title;

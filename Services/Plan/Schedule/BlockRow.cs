@@ -616,7 +616,7 @@ namespace RiseOp.Services.Plan
             bool good = false;
             StringBuilder text = new StringBuilder(100);
 
-            text.Append(View.Core.Trust.GetName(Node.Link.UserID));
+            text.Append(View.Core.GetName(Node.Link.UserID));
             //text.Append(" - ");
 
             //DateTime start = View.StartTime;

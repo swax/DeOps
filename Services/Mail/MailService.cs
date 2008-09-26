@@ -1291,7 +1291,7 @@ namespace RiseOp.Services.Mail
             Store_LocalAck(new DataReq(null, header.SourceID, ServiceID, DataTypeAck, signedAck)); // cant direct process_header, because header var is being modified
             RunSaveHeaders = true;
             
-            Core.MakeNews("Mail Received from " + Core.Trust.GetName(message.From), message.From, 0, false, MailRes.Icon, Menu_View);
+            Core.MakeNews("Mail Received from " + Core.GetName(message.From), message.From, 0, false, MailRes.Icon, Menu_View);
          
         }
 
@@ -1888,7 +1888,7 @@ namespace RiseOp.Services.Mail
             string names = "";
 
             foreach (ulong id in list)
-                names += Core.Trust.GetName(id) + ", ";
+                names += Core.GetName(id) + ", ";
 
             names = names.TrimEnd(new char[] { ' ', ',' });
 

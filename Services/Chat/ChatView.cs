@@ -362,7 +362,7 @@ namespace RiseOp.Services.Chat
 
         void Chat_Invited(ulong inviter, ChatRoom room)
         {
-            if (MessageBox.Show("You have been invited by " + Chat.Core.Trust.GetName(inviter) + " to the room\r\n" + room.Title + "\r\nJoin now?", "Invite", MessageBoxButtons.YesNo) != DialogResult.Yes)
+            if (MessageBox.Show("You have been invited by " + Chat.Core.GetName(inviter) + " to the room\r\n" + room.Title + "\r\nJoin now?", "Invite", MessageBoxButtons.YesNo) != DialogResult.Yes)
                 return;
 
             Chat.Core.RunInCoreBlocked(delegate()

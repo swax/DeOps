@@ -260,7 +260,7 @@ namespace RiseOp.Services.Plan
 
             // name's Plan for <goal>
 
-            PlanList.Columns[0].Text = Trust.GetName(node.Goal.Person) + "'s Plan for " + node.Goal.Title;
+            PlanList.Columns[0].Text = Core.GetName(node.Goal.Person) + "'s Plan for " + node.Goal.Title;
 
             // set plan items
             OpPlan plan = Plans.GetPlan(Selected.Person, true);
@@ -978,7 +978,7 @@ namespace RiseOp.Services.Plan
 
             Text = Goal.Title;
 
-            string name = Panel.Trust.GetName(goal.Person);
+            string name = Panel.Core.GetName(goal.Person);
 
             SubItems[0].Text = name;
             SubItems[2].Text = Panel.GetTimeText(goal.End.ToLocalTime() - Panel.Core.TimeNow, goal.End.ToLocalTime(), false);

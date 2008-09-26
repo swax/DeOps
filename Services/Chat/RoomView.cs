@@ -27,7 +27,7 @@ namespace RiseOp.Services.Chat
 
         internal OpCore Core;
         LocationService Locations;
-        TrustService Links;
+        TrustService Trust;
 
         MenuItem TimestampMenu;
 
@@ -49,7 +49,7 @@ namespace RiseOp.Services.Chat
 
             Core = chat.Core;
             Locations = Core.Locations;
-            Links = Core.Trust;
+            Trust = Core.Trust;
 
             if (room.Kind == RoomKind.Command_High || room.Kind == RoomKind.Live_High)
                 MessageTextBox.BackColor = Color.FromArgb(255, 250, 250);
@@ -181,7 +181,7 @@ namespace RiseOp.Services.Chat
                     away = true;
       
 
-            node.Text = Links.GetName(node.UserID);
+            node.Text = Core.GetName(node.UserID);
 
             if (away)
                 node.Text += " (away)";
@@ -206,9 +206,9 @@ namespace RiseOp.Services.Chat
                 string message = "";
 
                 if (connected)
-                    message = Links.GetName(node.UserID) + " has joined the room";
+                    message = Core.GetName(node.UserID) + " has joined the room";
                 else
-                    message = Links.GetName(node.UserID) + " has left the room";
+                    message = Core.GetName(node.UserID) + " has left the room";
 
 
                 // dont log
@@ -241,7 +241,7 @@ namespace RiseOp.Services.Chat
 
             string prefix = " ";
             if (!message.System)
-                prefix += Links.GetName(message.Source);
+                prefix += Core.GetName(message.Source);
 
             if (MessageTextBox.Text.Length != 0)
                 prefix = "\n" + prefix;
@@ -411,7 +411,7 @@ namespace RiseOp.Services.Chat
                 return;
             }
             else
-                Text = Core.Links.GetName(DhtID);
+                Text = Core.Core.GetName(DhtID);
 
 
             if (DhtID == Core.LocalDhtID)

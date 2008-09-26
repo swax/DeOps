@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
+using RiseOp.Implementation;
 using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
 using RiseOp.Services.Trust;
@@ -15,8 +16,9 @@ namespace RiseOp.Services.Storage
 {
     internal partial class DetailsForm : RiseOp.Interface.CustomIconForm
     {
+        OpCore Core;
         StorageView View;
-        TrustService Links;
+        TrustService Trust;
 
         FolderNode TargetFolder;
         FileItem TargetFile;
@@ -27,7 +29,8 @@ namespace RiseOp.Services.Storage
             InitializeComponent();
 
             View = view;
-            Links = View.Trust;
+            Core = View.Core;
+            Trust = View.Trust;
 
             TargetFolder = folder;
             TargetFile = file;
@@ -46,7 +49,7 @@ namespace RiseOp.Services.Storage
             InitializeComponent();
 
             View = view;
-            Links = View.Trust;
+            Trust = View.Trust;
             TargetFolder = folder;
 
             EnableControls(View.Working != null);
@@ -61,7 +64,7 @@ namespace RiseOp.Services.Storage
         private void LoadVis(Dictionary<ulong, short> scope)
         {
             foreach (ulong id in scope.Keys)
-                VisList.Items.Add(new VisItem(Links.GetName(id), id, scope[id]));
+                VisList.Items.Add(new VisItem(Core.GetName(id), id, scope[id]));
         }
 
         private void EnableControls(bool enabled)
@@ -88,7 +91,7 @@ namespace RiseOp.Services.Storage
 
         private void AddLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            AddLinks form = new AddLinks(Links, View.ProjectID);
+            AddLinks form = new AddLinks(Trust, View.ProjectID);
 
 
             if (form.ShowDialog(this) == DialogResult.OK)
@@ -102,7 +105,7 @@ namespace RiseOp.Services.Storage
                             add = false;
 
                     if (add)
-                        VisList.Items.Add(new VisItem(Links.GetName(id), id, -1));
+                        VisList.Items.Add(new VisItem(Core.GetName(id), id, -1));
                 }
             }
         }

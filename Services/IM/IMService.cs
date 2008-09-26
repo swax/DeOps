@@ -27,7 +27,6 @@ namespace RiseOp.Services.IM
 
         internal OpCore Core;
         internal DhtNetwork Network;
-        internal TrustService Trust;
         internal LocationService Locations;
 
         internal ThreadedDictionary<ulong, IMStatus> IMMap = new ThreadedDictionary<ulong, IMStatus>();
@@ -40,7 +39,6 @@ namespace RiseOp.Services.IM
         {
             Core = core;
             Network = Core.Network;
-            Trust = core.Trust;
             Locations = core.Locations;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
@@ -50,9 +48,12 @@ namespace RiseOp.Services.IM
             Network.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
             Network.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
 
-            Core.Trust.LinkUpdate += new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate += new LocationUpdateHandler(Location_Update);
             Core.Locations.KnowOnline += new KnowOnlineHandler(Location_KnowOnline);
+
+            if (Core.Trust != null)
+                Core.Trust.LinkUpdate += new LinkUpdateHandler(Trust_Update);
+
         }
 
         public void Dispose()
@@ -67,9 +68,11 @@ namespace RiseOp.Services.IM
             Network.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
             Network.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
 
-            Core.Trust.LinkUpdate -= new LinkUpdateHandler(Link_Update);
             Core.Locations.LocationUpdate -= new LocationUpdateHandler(Location_Update);
             Core.Locations.KnowOnline -= new KnowOnlineHandler(Location_KnowOnline);
+
+            if (Core.Trust != null)
+                Core.Trust.LinkUpdate -= new LinkUpdateHandler(Trust_Update);
         }
 
         void Core_SecondTimer()
@@ -247,7 +250,7 @@ namespace RiseOp.Services.IM
 
             if (status.Away)
             {
-                status.Text = Core.Trust.GetName(key) + " is Away ";
+                status.Text = Core.GetName(key) + " is Away ";
 
                 if (activeCount > 1)
                     status.Text += places.TrimEnd(',');
@@ -257,17 +260,17 @@ namespace RiseOp.Services.IM
 
             else if (status.Connected)
             {
-                status.Text = "Connected to " + Core.Trust.GetName(key);
+                status.Text = "Connected to " + Core.GetName(key);
                 
                 if (activeCount > 1)
                     status.Text += places.TrimEnd(',');
             }
 
             else if(status.Connecting)
-                status.Text = "Connecting to " + Core.Trust.GetName(key);
+                status.Text = "Connecting to " + Core.GetName(key);
 
             else
-                status.Text = "Disconnected from " + Core.Trust.GetName(key);
+                status.Text = "Disconnected from " + Core.GetName(key);
 
 
             Core.RunInGuiThread(StatusUpdate, status.UserID);
@@ -289,8 +292,8 @@ namespace RiseOp.Services.IM
             if (Core.GuiMain == null)
                 return null;
 
-            if (Trust.GetTrust(key) == null)
-                Trust.Research(key, 0, false);
+            if (Core.Trust != null && Core.Trust.GetTrust(key) == null)
+                Core.Trust.Research(key, 0, false);
 
             if (Locations.GetClients(key).Count == 0)
                 Locations.Research(key);
@@ -302,7 +305,7 @@ namespace RiseOp.Services.IM
             return view;
         }
 
-        internal void Link_Update(OpTrust trust)
+        internal void Trust_Update(OpTrust trust)
         {
             if (FindView(trust.UserID) == null)
                 return;

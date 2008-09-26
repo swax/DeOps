@@ -146,7 +146,7 @@ namespace RiseOp.Services.Plan
             if (UserID == Core.UserID)
                 title += "My ";
             else
-                title += Trust.GetName(UserID) + "'s ";
+                title += Core.GetName(UserID) + "'s ";
 
             if (ProjectID != 0)
                 title += Trust.GetProjectName(ProjectID) + " ";
@@ -508,7 +508,7 @@ namespace RiseOp.Services.Plan
             {
                 tuples.Add(new string[] { "title", goal.Title });
                 tuples.Add(new string[] { "due", goal.End.ToLocalTime().ToString("D") });
-                tuples.Add(new string[] { "person", Trust.GetName(goal.Person) });
+                tuples.Add(new string[] { "person", Core.GetName(goal.Person) });
                 tuples.Add(new string[] { "notes", goal.Description.Replace("\r\n", "<br>") });
 
                 notes = goal.Description;

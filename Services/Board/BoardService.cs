@@ -32,7 +32,7 @@ namespace RiseOp.Services.Board
         internal G2Protocol Protocol;
         internal DhtNetwork Network;
         internal DhtStore Store;
-        TrustService Links;
+        TrustService Trust;
 
         bool Loading = true;
         internal string BoardPath;
@@ -57,7 +57,7 @@ namespace RiseOp.Services.Board
             Network = Core.Network;
             Protocol = Network.Protocol;
             Store    = Network.Store;
-            Links = Core.Trust;
+            Trust = Core.Trust;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
@@ -569,8 +569,8 @@ namespace RiseOp.Services.Board
                 
 
             List<LocationData> locations = new List<LocationData>();
-            Links.GetLocs(header.TargetID, header.ProjectID, 1, 1, locations);
-            Links.GetLocs(header.TargetID, header.ProjectID, 0, 1, locations);
+            Trust.GetLocs(header.TargetID, header.ProjectID, 1, 1, locations);
+            Trust.GetLocs(header.TargetID, header.ProjectID, 0, 1, locations);
 
             Store.PublishDirect(locations, header.TargetID, ServiceID, 0, GetPost(header).SignedHeader);
 
@@ -737,7 +737,7 @@ namespace RiseOp.Services.Board
             UpdateGui(post);
 
             if (Core.NewsWorthy(header.TargetID, header.ProjectID, true))
-                Core.MakeNews("Board updated by " + Links.GetName(header.SourceID), header.SourceID, 0, false, BoardRes.Icon, Menu_View);
+                Core.MakeNews("Board updated by " + Core.GetName(header.SourceID), header.SourceID, 0, false, BoardRes.Icon, Menu_View);
          
         }
 
@@ -1198,7 +1198,7 @@ namespace RiseOp.Services.Board
 
             targets.Add(id); // need to include self in high and low scopes, for re-searching, onlinkupdate purposes
 
-            OpLink link = Links.GetLink(id, project);
+            OpLink link = Trust.GetLink(id, project);
 
             if (link == null)
                 return targets;
@@ -1210,7 +1210,7 @@ namespace RiseOp.Services.Board
                 // if we're in loop, get our 'adjacents' who are really uplinks
                 if (link.LoopRoot != null)
                 {
-                    targets.AddRange( Links.GetUplinkIDs(id, project) );
+                    targets.AddRange( Trust.GetUplinkIDs(id, project) );
                 }
 
                 // get parent and children of parent
@@ -1222,7 +1222,7 @@ namespace RiseOp.Services.Board
                     {
                         targets.Add(parent.UserID);
 
-                        targets.AddRange(Links.GetDownlinkIDs(parent.UserID, project, 1));
+                        targets.AddRange(Trust.GetDownlinkIDs(parent.UserID, project, 1));
 
                         targets.Remove(id); // remove self
                     }
@@ -1231,7 +1231,7 @@ namespace RiseOp.Services.Board
 
             // lower - get children of self
             if (scope != ScopeType.High)
-                targets.AddRange(Links.GetDownlinkIDs(id, project, 1));
+                targets.AddRange(Trust.GetDownlinkIDs(id, project, 1));
 
 
             return targets;

@@ -826,7 +826,7 @@ namespace RiseOp.Interface.Tools
             listValues.Columns.Add("Property", 100, HorizontalAlignment.Left);
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
-            listValues.Items.Add(new ListViewItem(new string[] { "LocalLink",       xStr(Core.Trust.GetName(Core.UserID)) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "LocalLink",       xStr(Core.GetName(Core.UserID)) }));
             listValues.Items.Add(new ListViewItem(new string[] { "ProjectRoots", xStr(Core.Trust.ProjectRoots.SafeCount) }));
             listValues.Items.Add(new ListViewItem(new string[] { "LinkMap",         xStr(Core.Trust.TrustMap.SafeCount) }));
             listValues.Items.Add(new ListViewItem(new string[] { "ProjectNames",    xStr(Core.Trust.ProjectNames.SafeCount) }));
@@ -906,7 +906,7 @@ namespace RiseOp.Interface.Tools
 
                     ListViewItem item = new ListViewItem(new string[]
 					{
-						xStr(Core.Trust.GetName(trust.UserID)),		
+						xStr(Core.GetName(trust.UserID)),		
 						IDtoStr(trust.UserID),
                         xStr(trust.Loaded),	
 						xStr(trust.InLocalLinkTree),
@@ -1151,7 +1151,7 @@ namespace RiseOp.Interface.Tools
 
         private string GetLinkName(ulong key)
         {
-            return Core.Trust.GetName(key);;
+            return Core.GetName(key);;
         }
 
         private string GetProjectName(uint id)
@@ -1181,7 +1181,7 @@ namespace RiseOp.Interface.Tools
                     roots.LockReading(delegate()
                     {
                         foreach (OpLink link in roots)
-                            names += xStr(Core.Trust.GetName(link.UserID)) + ", ";
+                            names += xStr(Core.GetName(link.UserID)) + ", ";
                     });
 
                     listValues.Items.Add(new ListViewItem(new string[] { project, names }));

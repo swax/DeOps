@@ -341,7 +341,7 @@ namespace RiseOp.Services.Plan
                 Core.RunInGuiThread(PlanUpdate, newPlan);
 
             if (Core.NewsWorthy(newPlan.UserID, 0, false))
-                Core.MakeNews("Plan updated by " + Trust.GetName(newPlan.UserID), newPlan.UserID, 0, false, PlanRes.Schedule, Menu_ScheduleView);
+                Core.MakeNews("Plan updated by " + Core.GetName(newPlan.UserID), newPlan.UserID, 0, false, PlanRes.Schedule, Menu_ScheduleView);
                 
         }
 

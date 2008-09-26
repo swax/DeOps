@@ -144,7 +144,7 @@ namespace RiseOp.Services.Board
             if (UserID == Core.UserID)
                 title += "My ";
             else
-                title += Core.Trust.GetName(UserID) + "'s ";
+                title += Core.GetName(UserID) + "'s ";
 
             if(ProjectID != 0)
                 title += Core.Trust.GetProjectName(ProjectID) + " ";
@@ -456,7 +456,7 @@ namespace RiseOp.Services.Board
 
             // header
             string content = responseTo + "<b><font size=2>" + parent.Info.Subject + @"</font></b> posted by " +
-                              Trust.GetName(post.Header.SourceID) + @" at " +
+                              Core.GetName(post.Header.SourceID) + @" at " +
                               Utilities.FormatTime(post.Header.Time) + @"<br>";
 
             // edit time
@@ -747,7 +747,7 @@ namespace RiseOp.Services.Board
             if (post.Header.ParentID == 0 && post.Replies > 0)
                 Text += " (" + post.Replies.ToString() + ")";
 
-            SubItems[0].Text = boards.Core.Trust.GetName(post.Header.SourceID);
+            SubItems[0].Text = boards.Core.GetName(post.Header.SourceID);
             SubItems[1].Text = Utilities.FormatTime(post.Header.Time);
 
 

@@ -75,7 +75,7 @@ namespace RiseOp.Services.Plan
 
             if (Mode == BlockViewMode.Show)
             {
-                Text = Core.Trust.GetName(View.UserID) + "'s Block";
+                Text = Core.GetName(View.UserID) + "'s Block";
                 OkButton.Hide();
             }
         }

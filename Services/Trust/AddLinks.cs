@@ -6,16 +6,17 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
+using RiseOp.Implementation;
 using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
 using RiseOp.Services.Trust;
-
 
 namespace RiseOp.Services.Trust
 {
     internal partial class AddLinks : CustomIconForm
     {
-        TrustService Links;
+        OpCore Core;
+        TrustService Trust;
 
         internal ulong Person;
         internal List<ulong> People = new List<ulong>();
@@ -24,35 +25,36 @@ namespace RiseOp.Services.Trust
         internal bool MultiSelect;
 
 
-        internal AddLinks(TrustService links, uint project)
-            : base(links.Core)
+        internal AddLinks(TrustService trust, uint project)
+            : base(trust.Core)
         {
             InitializeComponent();
 
-            Links = links;
+            Core = trust.Core;
+            Trust = trust;
             ProjectID = project;
         }
 
         private void LinkChooser_Load(object sender, EventArgs e)
         {
             // add projects to combo
-            Links.ProjectRoots.LockReading(delegate()
+            Trust.ProjectRoots.LockReading(delegate()
             {
-                foreach (uint id in Links.ProjectRoots.Keys)
+                foreach (uint id in Trust.ProjectRoots.Keys)
                 {
                     string name = "";
 
                     if (id == 0)
                         name = "Main";
                     else
-                        name = Links.GetProjectName(id);
+                        name = Trust.GetProjectName(id);
 
                     ProjectCombo.Items.Add(new AddProjectItem(id, name));
                 }
             });
 
             PersonTree.FirstLineBlank = false;
-            PersonTree.Init(Links);
+            PersonTree.Init(Trust);
 
             foreach (AddProjectItem item in ProjectCombo.Items)
                 if( item.ID == ProjectID)

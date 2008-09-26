@@ -22,7 +22,7 @@ namespace RiseOp.Services.Mail
     {
         internal OpCore Core;
         internal MailService Mail;
-        internal TrustService Links;
+        internal TrustService Trust;
 
         private ListViewColumnSorter lvwColumnSorter = new ListViewColumnSorter();
 
@@ -71,7 +71,7 @@ namespace RiseOp.Services.Mail
 
             Mail  = mail;
             Core  = mail.Core;
-            Links = Core.Trust;
+            Trust = Core.Trust;
 
             MessageView.SmallImageList = new List<Image>();
             MessageView.SmallImageList.Add(MailRes.recvmail);
@@ -265,7 +265,7 @@ namespace RiseOp.Services.Mail
 
       
             string content = "<b><font size=2>" + message.Info.Subject + "</font></b> from " + 
-                              Links.GetName(message.Header.SourceID) + ", sent " +
+                              Core.GetName(message.Header.SourceID) + ", sent " +
                               Utilities.FormatTime(message.Info.Date) + @"<br> 
                               <b>To:</b> " + Mail.GetNames(message.To) + "<br>";
 
@@ -532,7 +532,7 @@ namespace RiseOp.Services.Mail
 
             string subject = (TreeList.virtualParent == Parent) ? Message.Info.Subject : Message.Info.Quip;
 
-            string who = local ? "From: " + View.Links.GetName(Message.From) :
+            string who = local ? "From: " + View.Core.GetName(Message.From) :
                                  "To: " + View.Mail.GetNames(Message.To);
 
             DateTime utc = local ? Message.Header.Received : Message.Info.Date;

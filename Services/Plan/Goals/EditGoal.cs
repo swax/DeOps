@@ -69,7 +69,7 @@ namespace RiseOp.Services.Plan
             PersonID = id;
 
             if (id != 0)
-                PickLink.Text = Core.Trust.GetName(PersonID);
+                PickLink.Text = Core.GetName(PersonID);
         }
 
         private void PickLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)

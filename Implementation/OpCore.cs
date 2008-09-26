@@ -90,6 +90,7 @@ namespace RiseOp.Implementation
         internal ushort       TunnelID;
         internal DateTime     StartTime;
 
+        internal ThreadedDictionary<ulong, string> NameMap = new ThreadedDictionary<ulong, string>();
         internal Dictionary<ulong, byte[]> KeyMap = new Dictionary<ulong, byte[]>();
 
         // events
@@ -171,13 +172,11 @@ namespace RiseOp.Implementation
             // permanent - order is important here
             AddService(new TransferService(this));
             AddService(new LocationService(this));
+            AddService(new LocalSync(this));
             AddService(new BuddyService(this));
 
             if (!User.Settings.GlobalIM)
-            {
-                AddService(new LocalSync(this));
                 AddService(new TrustService(this));
-            }
 
             // optional
             AddService(new IMService(this));
@@ -582,6 +581,25 @@ namespace RiseOp.Implementation
 
                 KeyMap[id] = key;
             }
+        }
+
+        internal void IndexName(ulong user, string name)
+        {
+            if (NameMap.SafeContainsKey(user))
+                return;
+
+            NameMap.SafeAdd(user, name);
+        }
+
+        internal string GetName(ulong user)
+        {
+            string name;
+            if (NameMap.TryGetValue(user, out name))
+                return name;
+
+            name = user.ToString();
+
+            return (name.Length > 5) ? name.Substring(0, 5) : name;
         }
 
         // used for debugging - Queue<Delegate> LastEvents = new Queue<Delegate>();

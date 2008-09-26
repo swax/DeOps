@@ -7,6 +7,7 @@ using System.Text;
 using System.Windows.Forms;
 
 using RiseOp.Interface;
+using RiseOp.Implementation;
 
 namespace RiseOp.Services.Trust
 {
@@ -16,15 +17,15 @@ namespace RiseOp.Services.Trust
 
         internal List<ulong> RemoveIDs = new List<ulong>();
 
-        internal RemoveLinks(TrustService links, List<ulong> ids)
-            : base(links.Core)
+        internal RemoveLinks(OpCore core, List<ulong> ids)
+            : base(core)
         {
             InitializeComponent();
 
             PersonIDs = ids;
 
             foreach (ulong id in PersonIDs)
-                PeopleList.Items.Add(new RemoveItem(id, links.GetName(id)));
+                PeopleList.Items.Add(new RemoveItem(id, core.GetName(id)));
         }
 
         private void TheCancelButton_Click(object sender, EventArgs e)

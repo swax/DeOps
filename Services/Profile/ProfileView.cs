@@ -110,7 +110,7 @@ namespace RiseOp.Services.Profile
             if (UserID == Profiles.Core.UserID)
                 return "My Profile";
 
-            return Profiles.Core.Trust.GetName(UserID) + "'s Profile";
+            return Profiles.Core.GetName(UserID) + "'s Profile";
         }
 
         internal override Size GetDefaultSize()
@@ -401,7 +401,7 @@ namespace RiseOp.Services.Profile
                         tagfilled = true;
 
                         if (parts[1] == "name")
-                            final = final.Replace(fulltag, service.Core.Trust.GetName(id));
+                            final = final.Replace(fulltag, service.Core.GetName(id));
 
                         else if (parts[1] == "title")
                             final = final.Replace(fulltag, link.Title);

@@ -15,6 +15,7 @@ right click remove buddy
 give buddy menu items
 click on buddy displays info
 
+report name discrepencies in status info
 
 test global
 add groups to buddies

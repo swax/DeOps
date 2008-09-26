@@ -38,7 +38,7 @@ namespace RiseOp.Services.Storage
                 // my/ben's Integrated Changes
                 // my/ben's History from <date>
             
-            string who = (whoID == Core.UserID) ? "My" : (Core.Trust.GetName(whoID) + "'s");
+            string who = (whoID == Core.UserID) ? "My" : (Core.GetName(whoID) + "'s");
 
             WhatLabel.Text = who + " " + what;
 
@@ -170,7 +170,7 @@ namespace RiseOp.Services.Storage
                 selectedText = "History from " + item.File.Date.ToLocalTime().ToString();
             }
 
-            string who = (selectedID == Core.UserID) ? "My " : (Core.Trust.GetName(selectedID) + "'s ");
+            string who = (selectedID == Core.UserID) ? "My " : (Core.GetName(selectedID) + "'s ");
             selectedText = who + selectedText;
 
             if (selected == null)
@@ -271,7 +271,7 @@ namespace RiseOp.Services.Storage
             if (id == 0)
                 Text = file.Date.ToLocalTime().ToString();
             else
-                Text = diff.Core.Trust.GetName(id);
+                Text = diff.Core.GetName(id);
 
             if (Utilities.MemCompare(file.InternalHash, diff.Target.InternalHash))
                 Text += " (Identical)";

@@ -103,7 +103,7 @@ namespace RiseOp.Services.Storage
             if (IsLocal)
                 title += "My ";
             else
-                title += Trust.GetName(UserID) + "'s ";
+                title += Core.GetName(UserID) + "'s ";
 
             if (ProjectID != 0)
                 title += Trust.GetProjectName(ProjectID) + " ";

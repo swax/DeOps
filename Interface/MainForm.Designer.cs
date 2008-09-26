@@ -144,29 +144,6 @@ namespace RiseOp.Interface
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.BuddyList.BackColor = System.Drawing.SystemColors.Window;
             this.BuddyList.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            toggleColumnHeader1.Hovered = false;
-            toggleColumnHeader1.Image = null;
-            toggleColumnHeader1.Index = 0;
-            toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader1.Selected = false;
-            toggleColumnHeader1.Text = "";
-            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 85;
-            toggleColumnHeader2.Hovered = false;
-            toggleColumnHeader2.Image = null;
-            toggleColumnHeader2.Index = 0;
-            toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader2.Selected = false;
-            toggleColumnHeader2.Text = "";
-            toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader2.Visible = true;
-            toggleColumnHeader2.Width = 85;
-            this.BuddyList.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
-            toggleColumnHeader1,
-            toggleColumnHeader2});
             this.BuddyList.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.BuddyList.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.BuddyList.DisableHorizontalScroll = true;

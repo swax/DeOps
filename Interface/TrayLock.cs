@@ -16,12 +16,14 @@ namespace RiseOp.Interface.Views
         OpCore Core;
         NotifyIcon Tray = new NotifyIcon();
         bool PreserveSideMode;
+        bool PasswordRequired;
 
-        internal TrayLock(OpCore core, bool sideMode)
+        internal TrayLock(OpCore core, bool sideMode, bool reqPass)
         {
             Core = core;
 
             PreserveSideMode = sideMode;
+            PasswordRequired = reqPass;
 
             Profile_IconUpdate();
             Tray.Text = Core.User.GetTitle(); 
@@ -59,7 +61,7 @@ namespace RiseOp.Interface.Views
         
         void Menu_Restore(object sender, EventArgs e)
         {
-            if (Utilities.VerifyPassphrase(Core, ThreatLevel.High))
+            if (!PasswordRequired || Utilities.VerifyPassphrase(Core, ThreatLevel.High))
             {
                 Core.ShowMainView(PreserveSideMode);
 

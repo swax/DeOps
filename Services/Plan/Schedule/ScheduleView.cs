@@ -133,7 +133,7 @@ namespace RiseOp.Services.Plan
             if (UserID == Core.UserID)
                 title += "My ";
             else
-                title += Trust.GetName(UserID) + "'s ";
+                title += Core.GetName(UserID) + "'s ";
 
             if (ProjectID != 0)
                 title += Trust.GetProjectName(ProjectID) + " ";
@@ -1063,9 +1063,9 @@ namespace RiseOp.Services.Plan
         internal void UpdateName()
         {
             if (Link.Title != "")
-                Text = View.Core.Trust.GetName(Link.UserID) + "\n" + Link.Title;
+                Text = View.Core.GetName(Link.UserID) + "\n" + Link.Title;
             else
-                Text = View.Core.Trust.GetName(Link.UserID);
+                Text = View.Core.GetName(Link.UserID);
         }
 
         internal void UpdateBlock()

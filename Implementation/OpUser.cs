@@ -459,6 +459,60 @@ namespace RiseOp
 
         internal const byte Icon    = 0x70;
         internal const byte Splash  = 0x80;
+
+        internal const byte UserInfo = 0x90;
+    }
+
+    internal class UserInfo : G2Packet
+    {
+        const byte Packet_Name = 0x10;
+
+        internal string Name;
+
+        internal byte[] Key;
+        internal ulong ID;
+
+
+        internal override byte[] Encode(G2Protocol protocol)
+        {
+            lock (protocol.WriteSection)
+            {
+                G2Frame user = protocol.WritePacket(null, IdentityPacket.UserInfo, Key);
+
+                protocol.WritePacket(user, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
+
+                return protocol.WriteFinish();
+            }
+        }
+
+        internal static UserInfo Decode(G2Header root)
+        {
+            UserInfo user = new UserInfo();
+
+            if (G2Protocol.ReadPayload(root))
+            {
+                user.Key = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
+                user.ID = Utilities.KeytoID(user.Key);
+                G2Protocol.ResetPacket(root);
+            }
+
+            G2Header child = new G2Header(root.Data);
+
+            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
+            {
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
+                switch (child.Name)
+                {
+                    case Packet_Name:
+                        user.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+                }
+            }
+
+            return user;
+        }
     }
 
     internal class SettingsPacket : G2Packet

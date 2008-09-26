@@ -188,8 +188,8 @@ namespace RiseOp.Services.Trust
             // get user confirmation if nullifying previous uplink
             if (localLink.Uplink != null)
             {
-                string who = GetName(localLink.Uplink.UserID);
-                string message = "Transfer trust from " + who + " to " + GetName(remoteKey) + "?";
+                string who = Core.GetName(localLink.Uplink.UserID);
+                string message = "Transfer trust from " + who + " to " + Core.GetName(remoteKey) + "?";
 
                 if (MessageBox.Show(Core.GuiMain, message, "Confirm Trust", MessageBoxButtons.YesNo) == DialogResult.No)
                     return;
@@ -208,12 +208,12 @@ namespace RiseOp.Services.Trust
 
                 // check if already linked
                 if (localLink.Uplink != null && localLink.Uplink == remoteLink)
-                    throw new Exception("Already Trusting " + GetName(remoteKey));
+                    throw new Exception("Already Trusting " + Core.GetName(remoteKey));
 
                 //check for loop
                 if (IsHigher(remoteLink.UserID, Core.UserID, project, false))
                 {
-                    string who = GetName(remoteLink.UserID);
+                    string who = Core.GetName(remoteLink.UserID);
                     string message = "Trusting " + who + " will create a loop. Is this your intention?";
 
                     if (MessageBox.Show(Core.GuiMain, message, "Loop Warning", MessageBoxButtons.YesNo) == DialogResult.No)
@@ -297,7 +297,7 @@ namespace RiseOp.Services.Trust
                     throw new Exception("Could not find Person");
 
                 if (!localLink.Downlinks.Contains(remoteLink))
-                    throw new Exception(GetName(key) + " does not trust you");
+                    throw new Exception(Core.GetName(key) + " does not trust you");
 
                 if (!Utilities.VerifyPassphrase(Core, ThreatLevel.Medium))
                     return;
@@ -1074,7 +1074,7 @@ namespace RiseOp.Services.Trust
                     LinkUpdate.Invoke(trust);
 
                 if (Core.NewsWorthy(trust.UserID, 0, false))
-                    Core.MakeNews("Trust updated by " + GetName(trust.UserID), trust.UserID, 0, true, LinkRes.link, null);
+                    Core.MakeNews("Trust updated by " + Core.GetName(trust.UserID), trust.UserID, 0, true, LinkRes.link, null);
 
 
                 // update subs
@@ -1172,7 +1172,10 @@ namespace RiseOp.Services.Trust
             trust.AddProject(project.ID, true);
 
             if (project.ID == 0)
+            {
                 trust.Name = project.UserName;
+                Core.IndexName(trust.UserID, trust.Name);
+            }
 
             OpLink link = trust.GetLink(project.ID);
 
@@ -1270,17 +1273,6 @@ namespace RiseOp.Services.Trust
                 OpVersionedFile file = Cache.GetFile(Core.UserID);
                 Store.PublishDirect(locations, Core.UserID, ServiceID, 0, file.SignedHeader);
             });
-        }
-
-        internal string GetName(ulong id)
-        {
-            OpTrust trust = GetTrust(id);
-
-            if (trust != null && trust.Name.Trim() != "")
-                return trust.Name;
-
-            string name = id.ToString();
-            return (name.Length > 5) ? name.Substring(0, 5) : name;
         }
 
         internal string GetProjectName(uint id)
