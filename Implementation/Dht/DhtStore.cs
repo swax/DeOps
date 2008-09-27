@@ -147,7 +147,7 @@ namespace RiseOp.Implementation.Dht
 
 
             // forward to proxied nodes - only replicate data to blocked nodes on operation network
-            if (!Network.IsGlobal)
+            if (!Network.IsLookup)
                 // when we go offline it will be these nodes that update their next proxy with stored info
                 foreach (TcpConnect socket in Network.TcpControl.ProxyClients)
                     if (packet.Tcp != socket)

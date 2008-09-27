@@ -31,7 +31,7 @@ namespace RiseOp.Interface.Tools
         {
             List<OpCore> cores = new List<OpCore>();
 
-            cores.Add(context.Global);
+            cores.Add(context.Lookup);
             context.Cores.LockReading(delegate() { cores.AddRange(context.Cores); });
 
             new BandwidthForm(cores).Show();
@@ -83,7 +83,7 @@ namespace RiseOp.Interface.Tools
 
             foreach (OpCore core in Cores)
             {
-                if (core.Network.IsGlobal && FilterGlobal.Checked)
+                if (core.Network.IsLookup && FilterGlobal.Checked)
                     continue;
 
                 if (!ContextIndex.ContainsKey(core.Context))
@@ -372,8 +372,8 @@ namespace RiseOp.Interface.Tools
 
             string text = index + ". ";
 
-            if (Core.Network.IsGlobal)
-                text += "Global";
+            if (Core.Network.IsLookup)
+                text += "Lookup";
             else
                 text += Core.User.Settings.Operation + " - " + Core.User.Settings.UserName;
 

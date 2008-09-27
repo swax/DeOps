@@ -43,7 +43,7 @@ namespace RiseOp.Interface
 	                    <tr><td bgcolor=green><p><b><font color=#ffffff>Network Status</font></b></p></td></tr>
 	                </table>
                     <table callpadding=3>    
-                        <tr><td><p><b>Global:</b></p></td><td><p><span id='global'><?=global?></span></p></td></tr>
+                        <tr><td><p><b>Global:</b></p></td><td><p><span id='lookup'><?=lookup?></span></p></td></tr>
 	                    <tr><td><p><b>Network:</b></p></td><td><p><span id='operation'><?=operation?></span></p></td></tr>
 	                    <tr><td><p><b>Firewall:</b></p></td><td><p><span id='firewall'><?=firewall?></span></p></td></tr>
                     </table>
@@ -172,15 +172,15 @@ namespace RiseOp.Interface
             StatusModeType mode = StatusModeType.Network;
             UserID = 0;
 
-            string global = "";
+            string lookup = "";
             string operation = "";
 
-            if (Core.Context.Global == null)
-                global = "Disconnected";
-            else if (Core.Context.Global.Network.Responsive)
-                global = "Connected";
+            if (Core.Context.Lookup == null)
+                lookup = "Disconnected";
+            else if (Core.Context.Lookup.Network.Responsive)
+                lookup = "Connected";
             else
-                global = "Connecting";
+                lookup = "Connecting";
 
             if (Core.Network.Responsive)
                 operation = "Connected";
@@ -189,7 +189,7 @@ namespace RiseOp.Interface
 
 
             List<string[]> tuples = new List<string[]>();
-            tuples.Add(new string[] { "global", global });
+            tuples.Add(new string[] { "lookup", lookup });
             tuples.Add(new string[] { "operation", operation });
             tuples.Add(new string[] { "firewall", Core.GetFirewallString() });
 

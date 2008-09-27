@@ -120,6 +120,14 @@ namespace RiseOp.Simulator
 
                 OpUser.CreateNew(path, OpNames[index], name, password, AccessType.Private, OpKeys[index], false);
 
+                if (CreateGlobal.Checked)
+                {
+                    filename = "Global IM - " + name;
+                    path = OutputFolderLink.Text + Path.DirectorySeparatorChar + filename + Path.DirectorySeparatorChar + filename + ".rop";
+                    Directory.CreateDirectory(OutputFolderLink.Text + Path.DirectorySeparatorChar + filename);
+                    OpUser.CreateNew(path, "Global IM", name, password, AccessType.Secret, null, true);
+                }
+
                 GenProgress.Value++;
             }
 
@@ -152,5 +160,7 @@ namespace RiseOp.Simulator
         {
             Close();
         }
+
+
     }
 }

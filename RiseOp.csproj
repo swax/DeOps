@@ -202,7 +202,7 @@
     <Compile Include="Services\Chat\ChatService.cs" />
     <Compile Include="Services\IM\IMService.cs" />
     <Compile Include="Services\Assist\LocalSync.cs" />
-    <Compile Include="Services\Location\GlobalService.cs" />
+    <Compile Include="Services\Location\LookupService.cs" />
     <Compile Include="Services\Location\LocationService.cs" />
     <Compile Include="Services\Mail\MailService.cs" />
     <Compile Include="Services\OpService.cs" />

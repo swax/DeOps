@@ -57,7 +57,7 @@ namespace RiseOp.Interface.Tools
                             foreach (OpCore core in instance.Context.Cores)
                                 if (core.User.Settings.UserName == TextSearch.Text)
                                 {
-                                    TargetID = Network.IsGlobal ? core.Context.Global.UserID : core.UserID;
+                                    TargetID = Network.IsLookup ? core.Context.Lookup.UserID : core.UserID;
                                     break;
                                 }
                         });

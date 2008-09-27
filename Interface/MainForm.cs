@@ -113,7 +113,8 @@ namespace RiseOp.Interface
             Trace.WriteLine("Main Closing " + Thread.CurrentThread.ManagedThreadId.ToString());
 
             while (ExternalViews.Count > 0)
-                if( !ExternalViews[0].SafeClose())
+                // safe close removes entry from external views
+                if (!ExternalViews[0].SafeClose())
                 {
                     e.Cancel = true;
                     return;
@@ -174,7 +175,7 @@ namespace RiseOp.Interface
 
         void OnShowExternal(ViewShell view)
         {
-            ExternalView external = new ExternalView(this, view);
+            ExternalView external = new ExternalView(this, ExternalViews, view);
 
             ExternalViews.Add(external);
 
@@ -385,11 +386,11 @@ namespace RiseOp.Interface
             tools.DropDownItems.Add(new ManageItem("Crawler", null, delegate() { CrawlerForm.Show(Core.Network); }));
 
             // global - crawler/graph/packets/search
-            if (Core.Context.Global != null)
+            if (Core.Context.Lookup != null)
             {
-                ToolStripMenuItem global = new ToolStripMenuItem("Global", null);
+                ToolStripMenuItem global = new ToolStripMenuItem("Lookup", null);
 
-                DhtNetwork globalNetwork = Core.Context.Global.Network;
+                DhtNetwork globalNetwork = Core.Context.Lookup.Network;
 
                 global.DropDownItems.Add(new ManageItem("Crawler", null, delegate() { CrawlerForm.Show(globalNetwork); }));
                 global.DropDownItems.Add(new ManageItem("Graph", null, delegate() { GraphForm.Show(globalNetwork); }));

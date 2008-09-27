@@ -171,7 +171,7 @@ namespace RiseOp.Implementation.Transport
 
         internal void AnnounceProxy(TcpConnect tcp)
         {
-            Debug.Assert(!Network.IsGlobal);
+            Debug.Assert(!Network.IsLookup);
 
             // function run bewteen cores
             if (Network.Core.InvokeRequired)

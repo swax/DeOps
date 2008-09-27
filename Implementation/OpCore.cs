@@ -66,7 +66,7 @@ namespace RiseOp.Implementation
         internal SimInstance Sim;
 
         // sub-classes
-		internal OpUser    User;
+		internal OpUser    User; // null on lookup network
         internal DhtNetwork  Network;
 
         // services
@@ -204,7 +204,7 @@ namespace RiseOp.Implementation
                 CoreThread.Start();
         }
 
-        // initializing global network (from the settings of a loaded operation)
+        // initializing lookup network (from the settings of a loaded operation)
         internal OpCore(RiseOpContext context)
         {
             Context = context;
@@ -215,17 +215,17 @@ namespace RiseOp.Implementation
 
             Network = new DhtNetwork(this, true);
 
-            // for each core, re-load the global cache items
+            // for each core, re-load the lookup cache items
             Context.Cores.LockReading(delegate()
             {
                 foreach (OpCore core in Context.Cores)
-                    core.User.Load(LoadModeType.GlobalCache);
+                    core.User.Load(LoadModeType.LookupCache);
             });
 
             ServiceBandwidth[DhtServiceID] = new BandwidthLog(RecordBandwidthSeconds);
 
             // get cache from all loaded cores
-            AddService(new GlobalService(this));
+            AddService(new LookupService(this));
 
             if (Sim != null)
                 Sim.Internet.RegisterAddress(this);
@@ -733,8 +733,8 @@ namespace RiseOp.Implementation
             CoreThread = null;
 
 
-            if (Network.IsGlobal)
-                Network.GlobalConfig.Save(this);
+            if (Network.IsLookup)
+                Network.LookupConfig.Save(this);
             else
                 User.Save();
 
@@ -785,6 +785,7 @@ namespace RiseOp.Implementation
             }
         }
 
+        // be careful if calling this with loop objects, reference will be changed by the time async executes
         internal void RunInCoreAsync(MethodInvoker code)
         {
             RunInCoreThread(code, null);

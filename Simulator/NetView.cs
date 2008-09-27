@@ -95,7 +95,7 @@ namespace RiseOp.Simulator
             if (Sim.OpNames.ContainsKey(OpID))
                 name = Sim.OpNames[OpID];
             else if (OpID == 0)
-                name = "Global";
+                name = "Lookup";
 
             Text = name + " Network";
         }
@@ -154,8 +154,8 @@ namespace RiseOp.Simulator
             {
                 if (OpID == 0)
                 {
-                    if (instance.Context.Global != null)
-                        networks[instance.Context.Global.UserID] = instance.Context.Global.Network;
+                    if (instance.Context.Lookup != null)
+                        networks[instance.Context.Lookup.UserID] = instance.Context.Lookup.Network;
                 }
                 else
                     instance.Context.Cores.LockReading(delegate()
@@ -488,7 +488,7 @@ namespace RiseOp.Simulator
             {
                 foreach (SimPacket packet in Sim.OutPackets)
                     if (SelectedID == 0 || (!ShowInbound && SelectedID == packet.SenderID) || (ShowInbound && SelectedID == packet.Dest.Local.UserID))
-                        if ((packet.Dest.IsGlobal && OpID == 0) || (!packet.Dest.IsGlobal && packet.Dest.OpID == OpID))
+                        if ((packet.Dest.IsLookup && OpID == 0) || (!packet.Dest.IsLookup && packet.Dest.OpID == OpID))
                         {
                             Dictionary<ulong, Dictionary<ulong, PacketGroup>> TrafficGroup = packet.Tcp != null ? TcpTraffic : UdpTraffic;
 
@@ -702,8 +702,8 @@ namespace RiseOp.Simulator
 
                         foreach (SimInstance instance in Sim.Instances)
                         {
-                            if (instance.Context.Global != null && instance.Context.Global.UserID == id)
-                                name = instance.Context.Global.LocalIP.ToString();
+                            if (instance.Context.Lookup != null && instance.Context.Lookup.UserID == id)
+                                name = instance.Context.Lookup.LocalIP.ToString();
 
                             else
                                 instance.Context.Cores.LockReading(delegate()

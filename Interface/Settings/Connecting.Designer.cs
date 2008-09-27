@@ -122,7 +122,7 @@
             this.GlobalLabel.Name = "GlobalLabel";
             this.GlobalLabel.Size = new System.Drawing.Size(37, 13);
             this.GlobalLabel.TabIndex = 15;
-            this.GlobalLabel.Text = "Global";
+            this.GlobalLabel.Text = "Lookup";
             // 
             // OpUdpBox
             // 

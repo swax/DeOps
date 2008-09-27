@@ -143,7 +143,7 @@ namespace RiseOp.Interface
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(245, 27);
             this.label4.TabIndex = 14;
-            this.label4.Text = "Only those invited can join. Utilizes the global network to aid in finding peers." +
+            this.label4.Text = "Only those invited can join. Utilizes the lookup network to aid in finding peers." +
                 "";
             // 
             // label5
@@ -155,7 +155,7 @@ namespace RiseOp.Interface
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(245, 48);
             this.label5.TabIndex = 15;
-            this.label5.Text = "Same as private except the global network is not utilized.  Better for larger net" +
+            this.label5.Text = "Same as private except the lookup network is not utilized.  Better for larger net" +
                 "works and LANs.";
             // 
             // CreateOp

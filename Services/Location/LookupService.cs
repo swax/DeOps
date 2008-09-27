@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 using RiseOp.Implementation;
@@ -11,7 +12,7 @@ using RiseOp.Implementation.Transport;
 
 namespace RiseOp.Services.Location
 {
-    class GlobalService : OpService 
+    class LookupService : OpService 
     {
         public string Name { get { return "Lookup"; } }
         public uint ServiceID { get { return 12; } }
@@ -19,21 +20,21 @@ namespace RiseOp.Services.Location
         OpCore Core;
         DhtNetwork Network;
 
-        internal ThreadedDictionary<ulong, LinkedList<CryptLoc>> GlobalIndex = new ThreadedDictionary<ulong, LinkedList<CryptLoc>>();
+        internal ThreadedDictionary<ulong, LinkedList<CryptLoc>> LookupIndex = new ThreadedDictionary<ulong, LinkedList<CryptLoc>>();
         
-        int PruneGlobalKeys = 64;
-        int PruneGlobalEntries = 16;
+        int PruneLookupKeys = 64;
+        int PruneLookupEntries = 16;
 
 
-        internal GlobalService(OpCore core)
+        internal LookupService(OpCore core)
         {
             Core = core;
             Network = core.Network;
 
-            Network.Store.StoreEvent[ServiceID, 0] += new StoreHandler(GlobalStore_Local);
-            Network.Store.ReplicateEvent[ServiceID, 0] += new ReplicateHandler(GlobalStore_Replicate);
-            Network.Store.PatchEvent[ServiceID, 0] += new PatchHandler(GlobalStore_Patch);
-            Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(GlobalSearch_Local);
+            Network.Store.StoreEvent[ServiceID, 0] += new StoreHandler(Store_Local);
+            Network.Store.ReplicateEvent[ServiceID, 0] += new ReplicateHandler(Store_Replicate);
+            Network.Store.PatchEvent[ServiceID, 0] += new PatchHandler(Store_Patch);
+            Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(Search_Local);
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
@@ -41,8 +42,8 @@ namespace RiseOp.Services.Location
 
             if (Core.Sim != null)
             {
-                PruneGlobalKeys = 16;
-                PruneGlobalEntries = 4;
+                PruneLookupKeys = 16;
+                PruneLookupEntries = 4;
             }
         }
 
@@ -51,10 +52,10 @@ namespace RiseOp.Services.Location
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.SecondTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
-            Network.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(GlobalStore_Local);
-            Network.Store.ReplicateEvent[ServiceID, 0] -= new ReplicateHandler(GlobalStore_Replicate);
-            Network.Store.PatchEvent[ServiceID, 0] -= new PatchHandler(GlobalStore_Patch);
-            Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(GlobalSearch_Local);
+            Network.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(Store_Local);
+            Network.Store.ReplicateEvent[ServiceID, 0] -= new ReplicateHandler(Store_Replicate);
+            Network.Store.PatchEvent[ServiceID, 0] -= new PatchHandler(Store_Patch);
+            Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(Search_Local);
         }
 
 
@@ -70,46 +71,46 @@ namespace RiseOp.Services.Location
             if (second % 15 != 0)
                 return;
 
-            // prune global keys
-            if (GlobalIndex.SafeCount > PruneGlobalKeys)
-                GlobalIndex.LockWriting(delegate()
+            // prune lookup keys
+            if (LookupIndex.SafeCount > PruneLookupKeys)
+                LookupIndex.LockWriting(delegate()
                 {
-                    while (GlobalIndex.Count > PruneGlobalKeys / 2)
+                    while (LookupIndex.Count > PruneLookupKeys / 2)
                     {
                         ulong furthest = Network.Local.UserID;
 
-                        foreach (ulong id in GlobalIndex.Keys)
+                        foreach (ulong id in LookupIndex.Keys)
                             if ((id ^ Network.Local.UserID) > (furthest ^ Network.Local.UserID))
                                 furthest = id;
 
-                        GlobalIndex.Remove(furthest);
+                        LookupIndex.Remove(furthest);
                     }
                 });
 
-            // prune global entries
-            GlobalIndex.LockReading(delegate()
+            // prune lookup entries
+            LookupIndex.LockReading(delegate()
             {
-                foreach (LinkedList<CryptLoc> list in GlobalIndex.Values)
-                    if (list.Count > PruneGlobalEntries)
-                        while (list.Count > PruneGlobalEntries / 2)
+                foreach (LinkedList<CryptLoc> list in LookupIndex.Values)
+                    if (list.Count > PruneLookupEntries)
+                        while (list.Count > PruneLookupEntries / 2)
                             list.RemoveLast();
             });
         }
 
         void Core_MinuteTimer()
         {
-            // global ttl, once per minute
+            // lookup ttl, once per minute
             List<ulong> removeIDs = new List<ulong>();
 
-            GlobalIndex.LockReading(delegate()
+            LookupIndex.LockReading(delegate()
             {
                 List<CryptLoc> removeList = new List<CryptLoc>();
 
-                foreach (ulong key in GlobalIndex.Keys)
+                foreach (ulong key in LookupIndex.Keys)
                 {
                     removeList.Clear();
 
-                    foreach (CryptLoc loc in GlobalIndex[key])
+                    foreach (CryptLoc loc in LookupIndex[key])
                     {
                         if (loc.TTL > 0)
                             loc.TTL--;
@@ -119,19 +120,19 @@ namespace RiseOp.Services.Location
                     }
 
                     foreach (CryptLoc loc in removeList)
-                        GlobalIndex[key].Remove(loc);
+                        LookupIndex[key].Remove(loc);
 
-                    if (GlobalIndex[key].Count == 0)
+                    if (LookupIndex[key].Count == 0)
                         removeIDs.Add(key);
                 }
 
 
             });
 
-            GlobalIndex.LockWriting(delegate()
+            LookupIndex.LockWriting(delegate()
             {
                 foreach (ulong key in removeIDs)
-                    GlobalIndex.Remove(key);
+                    LookupIndex.Remove(key);
             });
         }
 
@@ -151,22 +152,22 @@ namespace RiseOp.Services.Location
             {
                 Network.Store.PublishNetwork(opID, ServiceID, 0, data);
 
-                GlobalStore_Local(new DataReq(null, opID, ServiceID, 0, data));
+                Store_Local(new DataReq(null, opID, ServiceID, 0, data));
             });
 
         }
 
-        void GlobalSearch_Local(ulong key, byte[] parameters, List<byte[]> results)
+        void Search_Local(ulong key, byte[] parameters, List<byte[]> results)
         {
-            GlobalIndex.LockReading(delegate()
+            LookupIndex.LockReading(delegate()
             {
-                if (GlobalIndex.ContainsKey(key))
-                    foreach (CryptLoc loc in GlobalIndex[key])
+                if (LookupIndex.ContainsKey(key))
+                    foreach (CryptLoc loc in LookupIndex[key])
                         results.Add(loc.Encode(Network.Protocol));
             });
         }
 
-        internal void GlobalStore_Local(DataReq crypt)
+        internal void Store_Local(DataReq crypt)
         {
             CryptLoc newLoc = CryptLoc.Decode(crypt.Data);
 
@@ -177,26 +178,25 @@ namespace RiseOp.Services.Location
             Core.Context.Cores.LockReading(delegate()
             {
                 foreach (OpCore opCore in Core.Context.Cores)
-                    if (crypt.Target == opCore.Network.OpID)
+                    if (crypt.Target == opCore.Network.OpID && opCore.User.Settings.OpAccess != AccessType.Secret)
                     {
                         DataReq store = new DataReq(null, opCore.Network.OpID, ServiceID, 0, newLoc.Data);
 
                         if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
                             store.Data = Utilities.DecryptBytes(store.Data, store.Data.Length, opCore.Network.OriginalCrypt.Key);
 
-                        store.Sources = null; // dont pass global sources to operation store 
+                        store.Sources = null; // dont pass lookup sources to operation store 
 
-                        opCore.RunInCoreAsync(delegate()
-                        {
-                            opCore.Locations.OperationStore_Local(store);
-                        });
+                        OpCore staticCore = opCore; // if use opCore, foreach will change ref
+                        staticCore.RunInCoreAsync( ()=>
+                            staticCore.Locations.OperationStore_Local(store));
                     }
             });
 
             // index location 
             LinkedList<CryptLoc> locations = null;
 
-            if (GlobalIndex.SafeTryGetValue(crypt.Target, out locations))
+            if (LookupIndex.SafeTryGetValue(crypt.Target, out locations))
             {
                 foreach (CryptLoc location in locations)
                     if (Utilities.MemCompare(crypt.Data, location.Data))
@@ -210,13 +210,13 @@ namespace RiseOp.Services.Location
             else
             {
                 locations = new LinkedList<CryptLoc>();
-                GlobalIndex.SafeAdd(crypt.Target, locations);
+                LookupIndex.SafeAdd(crypt.Target, locations);
             }
 
             locations.AddFirst(newLoc);
         }
 
-        List<byte[]> GlobalStore_Replicate(DhtContact contact)
+        List<byte[]> Store_Replicate(DhtContact contact)
         {
             //crit
             // just send little piece of first 8 bytes, if remote doesnt have it, it is requested through params with those 8 bytes
@@ -224,7 +224,7 @@ namespace RiseOp.Services.Location
             return null;
         }
 
-        void GlobalStore_Patch(DhtAddress source, byte[] data)
+        void Store_Patch(DhtAddress source, byte[] data)
         {
 
         }
@@ -245,7 +245,7 @@ namespace RiseOp.Services.Location
             {
                 DataReq store = new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value);
 
-                GlobalStore_Local(store);
+                Store_Local(store);
             }
         }
     }

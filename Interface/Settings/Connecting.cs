@@ -25,7 +25,7 @@ namespace RiseOp.Interface.Settings
             InitializeComponent();
 
             Core = parent.Core;
-            Global = Core.Context.Global;
+            Global = Core.Context.Lookup;
             Profile = Core.User;
 
             if (Profile.Settings.OpAccess == AccessType.Secret)

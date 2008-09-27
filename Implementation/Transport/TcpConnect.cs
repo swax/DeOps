@@ -141,7 +141,7 @@ namespace RiseOp.Implementation.Transport
 			}
 
             // replicate
-            if (Age == 15 && !Network.IsGlobal)
+            if (Age == 15 && !Network.IsLookup)
             {
                 Network.Store.Replicate(new DhtContact(this, RemoteIP));
             }
@@ -152,12 +152,12 @@ namespace RiseOp.Implementation.Transport
                 if (Age == 5)
                 {
                     // announce to rudp connections new proxy if blocked/nat, or using a global proxy
-                    if (Network.IsGlobal)
+                    if (Network.IsLookup)
                     {
                         Core.Context.Cores.LockReading(delegate()
                         {
                             foreach (OpCore core in Core.Context.Cores)
-                                if (core.Network.UseGlobalProxies)
+                                if (core.Network.UseLookupProxies)
                                     core.Network.RudpControl.AnnounceProxy(this);
                         });
                     }
@@ -167,10 +167,10 @@ namespace RiseOp.Implementation.Transport
                 }
                 else if (Age == 15)
                 {
-                    if (!Network.IsGlobal)
+                    if (!Network.IsLookup)
                         Core.Locations.UpdateLocation();
 
-                    if (Network.UseGlobalProxies)
+                    if (Network.UseLookupProxies)
                         Core.Locations.PublishGlobal();
                 }
             }

@@ -46,8 +46,8 @@ namespace RiseOp.Implementation.Dht
         internal DhtSearchControl Searches;
 
 
-        internal bool IsGlobal;
-        internal GlobalSettings GlobalConfig;
+        internal bool IsLookup;
+        internal LookupSettings LookupConfig;
         internal bool LanMode = true;
 
         internal DhtClient Local;
@@ -64,7 +64,7 @@ namespace RiseOp.Implementation.Dht
                                         0x5e,0x63,0x0c,0x7a,0xb9,0x08,0x18,0xd4,
                                         0xf9,0x73,0x9f,0x52,0xd6,0xf4,0x34,0x0e};
 
-        // global IM is a secret network, not public because it is not published on the lookup network
+        // lookup IM is a secret network, not public because it is not published on the lookup network
         internal static byte[] GlobalIMKey = new byte[]  {  0x23,0x1d,0x25,0xe5,0xca,0x0b,0x65,0xb3,
                                             0x65,0x04,0x2b,0x1c,0x61,0x1d,0x20,0x94 ,
                                             0x18,0xf3,0x08,0x3d,0x01,0xf6,0x97,0x8a ,
@@ -85,26 +85,26 @@ namespace RiseOp.Implementation.Dht
         internal TransferView GuiTransfers;
 
 
-        internal DhtNetwork(OpCore core, bool global)
+        internal DhtNetwork(OpCore core, bool lookup)
         {
             Core = core;
-            IsGlobal = global;
+            IsLookup = lookup;
 
-            Cache = new OpCache(this); // global config loads cache entries
+            Cache = new OpCache(this); // lookup config loads cache entries
 
-            if (IsGlobal)
-                GlobalConfig = GlobalSettings.Load(this);
+            if (IsLookup)
+                LookupConfig = LookupSettings.Load(this);
 
             Local = new DhtClient();
-            Local.UserID = IsGlobal ? GlobalConfig.UserID : Utilities.KeytoID(Core.User.Settings.KeyPublic);
+            Local.UserID = IsLookup ? LookupConfig.UserID : Utilities.KeytoID(Core.User.Settings.KeyPublic);
             Local.ClientID = (ushort)Core.RndGen.Next(1, ushort.MaxValue);
 
-            OpID = Utilities.KeytoID(IsGlobal ? LookupKey : Core.User.Settings.OpKey);
+            OpID = Utilities.KeytoID(IsLookup ? LookupKey : Core.User.Settings.OpKey);
 
             OriginalCrypt = new RijndaelManaged();
 
             // load encryption
-            if (IsGlobal)
+            if (IsLookup)
                 OriginalCrypt.Key = LookupKey;
             else
                 OriginalCrypt.Key = Core.User.Settings.OpKey;
@@ -137,8 +137,8 @@ namespace RiseOp.Implementation.Dht
             Searches.SecondTimer();
 
 
-            if (!IsGlobal)
-                CheckGlobalProxyMode();
+            if (!IsLookup)
+                CheckLookupProxyMode();
 
 
             CheckConnectionStatus();
@@ -339,8 +339,8 @@ namespace RiseOp.Implementation.Dht
             // Tunnel Packet
             else if (packet.Root.Name == RootPacket.Tunnel)
             {
-                // can only tunnel over global network
-                if (!IsGlobal)
+                // can only tunnel over lookup network
+                if (!IsLookup)
                     return;
 
                 PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Tunnel, DirectionType.In, packet.Source, packet.Root.Data);
@@ -435,7 +435,7 @@ namespace RiseOp.Implementation.Dht
                 lock (RudpControl.SocketMap)
                     if (RudpControl.SocketMap.ContainsKey(packet.PeerID))
                     {
-                        RudpControl.SocketMap[packet.PeerID].RudpReceive(raw, packet, IsGlobal);
+                        RudpControl.SocketMap[packet.PeerID].RudpReceive(raw, packet, IsLookup);
                         return;
                     }
 
@@ -461,7 +461,7 @@ namespace RiseOp.Implementation.Dht
                     if ((session.Comm.State == RudpState.Connecting && session.Comm.RemotePeerID == 0) ||
                         (session.Comm.State != RudpState.Closed && session.Comm.RemotePeerID == syn.ConnID)) // duplicate syn
                     {
-                        session.Comm.RudpReceive(raw, packet, IsGlobal);
+                        session.Comm.RudpReceive(raw, packet, IsLookup);
                     }
                     else
                         session.Log("Session request denied (already active)");
@@ -484,7 +484,7 @@ namespace RiseOp.Implementation.Dht
 
                 // send ack before sending our own syn (connect)
                 // ack tells remote which address is good so that our syn's ack comes back quickly
-                newSession.Comm.RudpReceive(raw, packet, IsGlobal);
+                newSession.Comm.RudpReceive(raw, packet, IsLookup);
 
                 newSession.Connect();
 
@@ -546,24 +546,24 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
-        // nodes in global proxy mode are psuedo-open, instead of udp they send tunneled packets
-        // tunnel packets include routing information to the global target as well as
+        // nodes in lookup proxy mode are psuedo-open, instead of udp they send tunneled packets
+        // tunnel packets include routing information to the lookup target as well as
         // the encrytped operation packet embedded in the payload
         internal int SendTunnelPacket(DhtAddress contact, G2Packet embed)
         {
             Debug.Assert(contact.TunnelClient != null && contact.TunnelServer != null);
-            Debug.Assert(Core.Context.Global != null);
-            Debug.Assert(!IsGlobal);
+            Debug.Assert(Core.Context.Lookup != null);
+            Debug.Assert(!IsLookup);
             Debug.Assert(Core.User.Settings.OpAccess != AccessType.Secret);
 
-            if (IsGlobal ||
-                Core.Context.Global == null ||
+            if (IsLookup ||
+                Core.Context.Lookup == null ||
                 Core.User.Settings.OpAccess == AccessType.Secret)
                 return 0;
 
-            OpCore global = Core.Context.Global;
+            OpCore lookup = Core.Context.Lookup;
 
-            // tunnel packet through global network
+            // tunnel packet through lookup network
             byte[] encoded = embed.Encode(Protocol);
 
             PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Tunnel, DirectionType.Out, contact, encoded);
@@ -583,21 +583,21 @@ namespace RiseOp.Implementation.Dht
             else
                 packet.Payload = encoded;
 
-            packet.Source = new TunnelAddress(global.Network.Local, Core.TunnelID);
+            packet.Source = new TunnelAddress(lookup.Network.Local, Core.TunnelID);
             packet.Target = contact.TunnelClient;
 
             int bytesSent = 0;
 
-            // if we are the tunnel server (our global net is open, but op is blocked)
-            if (global.Network.Local.Equals(contact.TunnelServer)) // use dhtclient compare
+            // if we are the tunnel server (our lookup net is open, but op is blocked)
+            if (lookup.Network.Local.Equals(contact.TunnelServer)) // use dhtclient compare
             {
-                global.RunInCoreAsync(delegate()
+                lookup.RunInCoreAsync(delegate()
                 {
-                    TcpConnect direct = global.Network.TcpControl.GetProxy(packet.Target);
+                    TcpConnect direct = lookup.Network.TcpControl.GetProxy(packet.Target);
 
                     if (direct != null)
                     {
-                        packet.SourceServer = new DhtAddress(Core.LocalIP, global.Network.GetLocalSource());
+                        packet.SourceServer = new DhtAddress(Core.LocalIP, lookup.Network.GetLocalSource());
                         bytesSent = direct.SendPacket(packet);
                     }
                 });
@@ -605,18 +605,18 @@ namespace RiseOp.Implementation.Dht
                 return bytesSent;
             }
 
-            // if not open send proxied through local global proxy
-            // NAT as well because receiver would need to send all responses through same local global proxy
+            // if not open send proxied through local lookup proxy
+            // NAT as well because receiver would need to send all responses through same local lookup proxy
             // for NATd host to get replies
             if (Core.Firewall != FirewallType.Open)
             {
                 packet.TargetServer = contact.TunnelServer;
 
-                global.RunInCoreAsync(delegate()
+                lookup.RunInCoreAsync(delegate()
                 {
-                    TcpConnect server = global.Network.TcpControl.GetProxy(packet.TargetServer) ?? // direct path
-                                        global.Network.TcpControl.GetProxyServer(contact.IP) ?? // reRoute through same server
-                                        global.Network.TcpControl.GetRandomProxy(); // random proxy
+                    TcpConnect server = lookup.Network.TcpControl.GetProxy(packet.TargetServer) ?? // direct path
+                                        lookup.Network.TcpControl.GetProxyServer(contact.IP) ?? // reRoute through same server
+                                        lookup.Network.TcpControl.GetRandomProxy(); // random proxy
 
                     if (server != null)
                     {
@@ -628,11 +628,11 @@ namespace RiseOp.Implementation.Dht
             // else we are open, send op ip address in the souce server
             else
             {
-                packet.SourceServer = new DhtAddress(Core.LocalIP, global.Network.GetLocalSource());
+                packet.SourceServer = new DhtAddress(Core.LocalIP, lookup.Network.GetLocalSource());
 
-                global.RunInCoreAsync(delegate()
+                lookup.RunInCoreAsync(delegate()
                 {
-                    bytesSent = global.Network.UdpControl.SendTo(contact.TunnelServer, packet);
+                    bytesSent = lookup.Network.UdpControl.SendTo(contact.TunnelServer, packet);
                 });
             }
 
@@ -641,15 +641,15 @@ namespace RiseOp.Implementation.Dht
 
         internal void ReceiveTunnelPacket(G2ReceivedPacket raw, TunnelPacket tunnel)
         {
-            if (Core.InvokeRequired) // called from  global core's thread
+            if (Core.InvokeRequired) // called from  lookup core's thread
             {
                 Core.RunInCoreAsync(delegate() { ReceiveTunnelPacket(raw, tunnel); });
                 return;
             }
 
-            Debug.Assert(!IsGlobal);
+            Debug.Assert(!IsLookup);
 
-            if (IsGlobal)
+            if (IsLookup)
                 return;
 
             // decrypt internal packet
@@ -674,7 +674,7 @@ namespace RiseOp.Implementation.Dht
                 opPacket.Source = new DhtAddress();
 
                 // used to add direct op contact if source firewall is open
-                // or re-routing through same global proxy
+                // or re-routing through same lookup proxy
                 opPacket.Source.IP = raw.Source.IP;
 
                 // op user/client set by net/comm processing
@@ -732,10 +732,10 @@ namespace RiseOp.Implementation.Dht
                 return;
             }
 
-            // dont send back pong if received tunneled and no longer need to use global proxies
+            // dont send back pong if received tunneled and no longer need to use lookup proxies
             // remote would only send tunneled ping if UseGlobalProxies published info on network
-            // let our global address expire from remote's routing table
-            if (packet.Tunneled && !UseGlobalProxies)
+            // let our lookup address expire from remote's routing table
+            if (packet.Tunneled && !UseLookupProxies)
                 return;
 
             // setup pong reply
@@ -896,7 +896,7 @@ namespace RiseOp.Implementation.Dht
                 {
                     Searches.SendRequest(packet.Source, Local.UserID, 0, Core.DhtServiceID, 0, null);
 
-                    if (!packet.Tunneled) // ip isnt set correctly on tunneled, and if tunneled then global active and host tested anyways
+                    if (!packet.Tunneled) // ip isnt set correctly on tunneled, and if tunneled then lookup active and host tested anyways
                         TcpControl.MakeOutbound(packet.Source, pong.Source.TcpPort, "pong bootstrap");
                 }
 
@@ -1143,42 +1143,44 @@ namespace RiseOp.Implementation.Dht
                 GuiPackets.BeginInvoke(GuiPackets.UpdateLog, logEntry);
         }
 
-        internal bool UseGlobalProxies;
+        internal bool UseLookupProxies;
 
-        internal void CheckGlobalProxyMode()
+        internal void CheckLookupProxyMode()
         {
-            Debug.Assert(!IsGlobal);
+            Debug.Assert(!IsLookup);
 
-            // if blocked/NATed connected to global but not the op, then we are in global proxy mode
-            // global proxy mode removed once connection to op is established
-            // global proxies are published with location data so that communication can be tunneled
-            // hosts in global proxy mode are psuedo-open meaning they act similarly to open hosts in that 
+            // if blocked/NATed connected to lookup but not the op, then we are in lookup proxy mode
+            // lookup proxy mode removed once connection to op is established
+            // lookup proxies are published with location data so that communication can be tunneled
+            // hosts in lookup proxy mode are psuedo-open meaning they act similarly to open hosts in that 
             // they are added to the routing table and they conduct search/store like an open node
 
-            OpCore global = Core.Context.Global;
+            OpCore lookup = Core.Context.Lookup;
 
             bool useProxies = (Core.TimeNow > Core.StartTime.AddSeconds(15) &&
+                                // op not secret
+                                Core.User.Settings.OpAccess != AccessType.Secret &&
                                 // op core blocked
-                                global != null && Core.Firewall != FirewallType.Open &&
-                                // either we're connected to an open global, or we are open global (global port open, op port closed)
-                                (global.Network.TcpControl.ProxyServers.Count > 0 || global.Firewall == FirewallType.Open) &&
+                                lookup != null && Core.Firewall != FirewallType.Open &&
+                                // either we're connected to an open lookup, or we are open lookup (lookup port open, op port closed)
+                                (lookup.Network.TcpControl.ProxyServers.Count > 0 || lookup.Firewall == FirewallType.Open) &&
                                 // not connected to any op proxy servers
                                 TcpControl.ProxyServers.Count == 0);
 
 
             // if no state change return
-            if (useProxies == UseGlobalProxies)
+            if (useProxies == UseLookupProxies)
                 return;
 
-            UseGlobalProxies = useProxies;
+            UseLookupProxies = useProxies;
 
-            if (UseGlobalProxies)
+            if (UseLookupProxies)
             {
                 // socket will handle publishing after 15 secs, location timer handles re-publishing
             }
             else
             {
-                // global proxies should remove themselves from routing by timing out
+                // lookup proxies should remove themselves from routing by timing out
             }
         }
 
@@ -1186,9 +1188,9 @@ namespace RiseOp.Implementation.Dht
         {
             string label = "";
 
-            if (IsGlobal)
+            if (IsLookup)
             {
-                label += "Global ";
+                label += "Lookup ";
 
                 Core.Context.Cores.LockReading(delegate()
                 {
@@ -1212,10 +1214,10 @@ namespace RiseOp.Implementation.Dht
                 return;
             }
 
-            if (IsGlobal)
+            if (IsLookup)
             {
-                GlobalConfig.TcpPort = tcp;
-                GlobalConfig.UdpPort = udp;
+                LookupConfig.TcpPort = tcp;
+                LookupConfig.UdpPort = udp;
             }
             else
             {
@@ -1233,9 +1235,9 @@ namespace RiseOp.Implementation.Dht
             // save profile
             Core.User.Save();
 
-            // save global config
-            if (IsGlobal)
-                GlobalConfig.Save(Core);
+            // save lookup config
+            if (IsLookup)
+                LookupConfig.Save(Core);
         }
     }
 }

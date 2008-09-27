@@ -42,7 +42,7 @@ namespace RiseOp.Interface.Tools
 			UpdateConsole = new UpdateConsoleHandler(AsyncUpdateConsole);
 
             if (Core.User == null)
-                Text = "Global Console (" + Core.LocalIP.ToString() + ")";
+                Text = "Lookup Console (" + Core.LocalIP.ToString() + ")";
             else
 			    Text = "Console (" + Core.User.Settings.UserName + ")";
 

@@ -48,7 +48,7 @@ namespace RiseOp
     {
         internal RiseOpMutex SingleInstance;
 
-        internal OpCore Global;
+        internal OpCore Lookup;
         internal ThreadedList<OpCore> Cores = new ThreadedList<OpCore>();
         List<LoginForm> Logins = new List<LoginForm>();
         SimForm Simulator;
@@ -194,8 +194,8 @@ namespace RiseOp
         {
             // flag set, actual timer code run in thread per core
 
-            if (Global != null)
-                Global.SecondTimer();
+            if (Lookup != null)
+                Lookup.SecondTimer();
 
             Cores.LockReading(delegate()
             {
@@ -369,23 +369,23 @@ namespace RiseOp
                         runGlobal = true;
 
                 // if public cores exist, sign into global
-                if (runGlobal && Global == null)
+                if (runGlobal && Lookup == null)
                 {
-                    Global = new OpCore(this);
+                    Lookup = new OpCore(this);
                 }
 
                 // else destroy global context
-                if (!runGlobal && Global != null)
+                if (!runGlobal && Lookup != null)
                 {
-                    Global.Exit();
-                    Global = null;
+                    Lookup.Exit();
+                    Lookup = null;
                 }
             });
         }
 
         internal void RemoveCore(OpCore removed)
         {
-            if (removed == Global)
+            if (removed == Lookup)
                 return;
 
             Cores.LockWriting(delegate()
@@ -410,8 +410,8 @@ namespace RiseOp
 
             if (Logins.Count == 0 && Cores.SafeCount == 0)
             {
-                if (Global != null)
-                    Global.Exit();
+                if (Lookup != null)
+                    Lookup.Exit();
 
                 if (Sim == null) // context not running inside a simulation
                 {

@@ -366,7 +366,7 @@ namespace RiseOp.Implementation.Dht
             get
             {
                 // dht enable if node is open, or psuedo-open as signaled by using global proxies
-                return Core.Firewall == FirewallType.Open || Network.UseGlobalProxies;
+                return Core.Firewall == FirewallType.Open || Network.UseLookupProxies;
             }
         }
 
@@ -397,6 +397,9 @@ namespace RiseOp.Implementation.Dht
 
 		internal void Add(DhtContact newContact, bool pong)
 		{
+            if (Core.User != null && Core.User.Settings.OpAccess == AccessType.Secret)
+                Debug.Assert(newContact.TunnelClient == null); 
+
 			if(newContact.UserID == 0)
 			{
                 Network.UpdateLog("Routing", "Zero add attempt");
@@ -448,7 +451,7 @@ namespace RiseOp.Implementation.Dht
             
             if (ContactMap.ContainsKey(newContact.RoutingID))
             {
-                if (!Network.IsGlobal)
+                if (!Network.IsLookup)
                 {
                     DhtContact dupe = ContactMap[newContact.RoutingID];
 

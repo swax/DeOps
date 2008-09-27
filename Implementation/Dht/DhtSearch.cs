@@ -91,7 +91,7 @@ namespace RiseOp.Implementation.Dht
                 }					
 
 			// if blocked send proxy search request to 1 proxy, record and wait
-            if (Core.Firewall == FirewallType.Blocked && !Network.UseGlobalProxies)
+            if (Core.Firewall == FirewallType.Blocked && !Network.UseLookupProxies)
 			{
 				// pick random proxy server
                 if (Network.TcpControl.ProxyServers.Count == 0)

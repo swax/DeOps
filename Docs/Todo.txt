@@ -1,4 +1,6 @@
 
+3 person net open/nat/blocked, not finding local untrusted
+
 also status if killed
 
 add buddy button
@@ -13,6 +15,8 @@ test global
 add groups to buddies
 
 	associations? put in diff sturcture buddyinfo data type/file?
+
+set global im web cache
 
 login - instead of op, put profile
 if globalIM profile not detected, show link in red on login: Create Global IM Profile

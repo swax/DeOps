@@ -148,12 +148,13 @@ namespace RiseOp.Services.Location
 
         void Core_SecondTimer()
         {
-            OpCore global = Core.Context.Global;
+            OpCore global = Core.Context.Lookup;
 
-            // global publish
-            if ( global != null &&
+            // global publish - so others can find entry to the op
+            if (Core.User.Settings.OpAccess != AccessType.Secret && 
+                global != null &&
                 global.Network.Responsive &&
-                (global.Firewall == FirewallType.Open || Network.UseGlobalProxies) && 
+                (global.Firewall == FirewallType.Open || Network.UseLookupProxies) && 
                 Core.TimeNow > NextGlobalPublish)
                 PublishGlobal();
 
@@ -272,9 +273,12 @@ namespace RiseOp.Services.Location
 
         internal void PublishGlobal()
         {
+            Debug.Assert(Core.User.Settings.OpAccess != AccessType.Secret);
+
+
             // should be auto-set like a second after tcp connect
             // this isnt called until 15s after tcp connect
-            if (Core.Context.Global.LocalIP == null)
+            if (Core.Context.Lookup.LocalIP == null)
                 return;
 
             // set next publish time 55 mins
@@ -283,8 +287,8 @@ namespace RiseOp.Services.Location
             LocationData location = GetLocalLocation();
 
             // network iniitialized with ip/firewall set to default, use global values
-            location.IP = Core.Context.Global.LocalIP;
-            location.Source.Firewall = Core.Context.Global.Firewall;
+            location.IP = Core.Context.Lookup.LocalIP;
+            location.Source.Firewall = Core.Context.Lookup.Firewall;
 
 
             // location packet is encrypted inside global loc packet
@@ -297,7 +301,7 @@ namespace RiseOp.Services.Location
 
             data = new CryptLoc(LocationData.GLOBAL_TTL, data).Encode(Network.Protocol);
 
-            GlobalService service = (GlobalService) Core.Context.Global.ServiceMap[12];
+            LookupService service = (LookupService) Core.Context.Lookup.ServiceMap[12];
             service.Publish(Network.OpID, data);
         }
 
@@ -464,11 +468,11 @@ namespace RiseOp.Services.Location
             location.IP = Core.LocalIP;
             location.Source = Network.GetLocalSource();
 
-            if (Network.UseGlobalProxies)
+            if (Network.UseLookupProxies)
             {
-                location.TunnelClient = new TunnelAddress(Core.Context.Global.Network.Local, Core.TunnelID);
+                location.TunnelClient = new TunnelAddress(Core.Context.Lookup.Network.Local, Core.TunnelID);
 
-                foreach (TcpConnect socket in Core.Context.Global.Network.TcpControl.ProxyServers)
+                foreach (TcpConnect socket in Core.Context.Lookup.Network.TcpControl.ProxyServers)
                     location.TunnelServers.Add(new DhtAddress(socket.RemoteIP, socket));
             }
 

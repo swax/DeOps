@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -93,7 +94,7 @@ namespace RiseOp.Simulator
 
         internal void StartInstance(string path)
         {
-            SimInstance instance = new SimInstance(this, InstanceCount++, path);
+            SimInstance instance = new SimInstance(this, InstanceCount++);
 
             instance.Context = new RiseOpContext(instance);
 
@@ -121,7 +122,7 @@ namespace RiseOp.Simulator
             SimMap[instance.RealIP] = instance;
 
             if (LoadOnline)
-                Login(instance);
+                Login(instance, path);
 
             lock (Instances) 
                 Instances.Add(instance);
@@ -144,17 +145,22 @@ namespace RiseOp.Simulator
                 BringOffline(Online[RndGen.Next(Online.Count)]);*/
         }
 
-        internal void Login(SimInstance instance)
+        internal void Login(SimInstance instance, string path)
         {
-            string name = Path.GetFileNameWithoutExtension(instance.Path);
-            string[] user = name.Split(new char[] { '-' });
+            string filename = Path.GetFileNameWithoutExtension(path);
+            string[] parts = filename.Split('-');
+            string op = parts[0].Trim();
+            string name = parts[1].Trim();
+
+            instance.Name = name;
+            instance.Ops.Add(op);
 
             OpCore core = null;
 
             try
             {
-                string pass = user[1].Trim().Split(' ')[0].ToLower(); // lowercase firstname
-                core = new OpCore(instance.Context, instance.Path, pass);
+                string pass = name.Split(' ')[0].ToLower(); // lowercase firstname
+                core = new OpCore(instance.Context, path, pass);
             }
             catch (Exception ex)
             {
@@ -162,6 +168,7 @@ namespace RiseOp.Simulator
                 return;
             }
 
+            instance.LastPath = path;
             instance.Context.AddCore(core);
 
             Interface.BeginInvoke(InstanceChange, instance, InstanceChangeType.Update);
@@ -175,10 +182,10 @@ namespace RiseOp.Simulator
                 core.Network.Cache.IPTable.Clear();
             }
 
-            if (core.Network.IsGlobal)
+            if (core.Network.IsLookup)
             {
-                AddAddress(new IPEndPoint(core.Sim.RealIP, core.Network.GlobalConfig.TcpPort), core.Network, true);
-                AddAddress(new IPEndPoint(core.Sim.RealIP, core.Network.GlobalConfig.UdpPort), core.Network, false);
+                AddAddress(new IPEndPoint(core.Sim.RealIP, core.Network.LookupConfig.TcpPort), core.Network, true);
+                AddAddress(new IPEndPoint(core.Sim.RealIP, core.Network.LookupConfig.UdpPort), core.Network, false);
             }
             else
             {
@@ -202,10 +209,10 @@ namespace RiseOp.Simulator
 
         internal void UnregisterAddress(OpCore core)
         {
-            if (core.Network.IsGlobal)
+            if (core.Network.IsLookup)
             {
-                TcpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.Network.GlobalConfig.TcpPort));
-                UdpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.Network.GlobalConfig.UdpPort));
+                TcpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.Network.LookupConfig.TcpPort));
+                UdpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.Network.LookupConfig.UdpPort));
             }
             else
             {
@@ -584,30 +591,26 @@ namespace RiseOp.Simulator
         {
             WebCacheHits++;
 
-            List<SimInstance> open = new List<SimInstance>();
+            List<DhtNetwork> open = new List<DhtNetwork>();
 
-            foreach (SimInstance instance in Instances)
-                // use realfirewall, because if flux not used and a lot loaded they all start out as blocked
-                if (instance.RealFirewall == FirewallType.Open && 
-                    instance.Context.Global != null && 
-                    instance != network.Core.Sim)
-                    open.Add(instance);
-
-            // add 3 random instances to network
-            List<SimInstance> cached = new List<SimInstance>();
-
-            if(open.Count > 0)
-                for (int i = 0; i < open.Count || cached.Count < 3; i++)
-                    if (RandomCache)
-                        cached.Add(open[RndGen.Next(open.Count)]);
-                    else
-                        cached.Add(open[i]);
-
-
-            foreach (SimInstance entry in cached)
+            // find matching networks that are potential cache entries
+            foreach (RiseOpContext context in from i in Instances
+                                              where i.RealFirewall == FirewallType.Open && i != network.Core.Sim
+                                              select i.Context)
             {
-                DhtContact contact = entry.Context.Global.Network.GetLocalContact();
-                contact.IP = entry.RealIP;
+                if (context.Lookup != null && context.Lookup.Network.OpID == network.OpID)
+                    open.Add(context.Lookup.Network);
+
+                context.Cores.LockReading(() =>
+                    open.AddRange(from c in context.Cores where c.Network.OpID == network.OpID select c.Network));
+            }
+
+
+            // give back 3 random cache entries
+            foreach (DhtNetwork net in open.OrderBy(n => RndGen.Next()).Take(3))
+            {
+                DhtContact contact = net.GetLocalContact();
+                contact.IP = net.Core.Sim.RealIP;
                 network.Cache.AddContact(contact);
             }
         }
@@ -627,7 +630,7 @@ namespace RiseOp.Simulator
                 return 0;
 
             DhtNetwork targetNet = (type == SimPacketType.Tcp) ? TcpEndPoints[target] : UdpEndPoints[target];
-            if (network.IsGlobal != targetNet.IsGlobal)
+            if (network.IsLookup != targetNet.IsLookup)
                 Debug.Assert(false);
 
             IPEndPoint source = new IPEndPoint(network.Core.Sim.RealIP, 0);
@@ -734,7 +737,11 @@ namespace RiseOp.Simulator
 
         internal RiseOpContext Context;
 
-        internal string Path;
+        internal string LastPath;
+
+        internal string Name;
+        internal List<string> Ops = new List<string>();
+
         internal int Index;
 
         internal FirewallType RealFirewall;
@@ -745,10 +752,9 @@ namespace RiseOp.Simulator
 
         internal Dictionary<IPEndPoint, bool> NatTable = new Dictionary<IPEndPoint, bool>();
 
-        internal SimInstance(InternetSim internet, int index, string path)
+        internal SimInstance(InternetSim internet, int index)
         {
             Internet = internet;
-            Path = path;
             Index = index;
         }
     }

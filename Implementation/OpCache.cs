@@ -37,8 +37,8 @@ namespace RiseOp.Implementation
         // lan
         internal int BroadcastTimeout = 0;
         
-        RetryIntervals GlobalSearchInterval;
-        DateTime NextGlobalSearch;     
+        RetryIntervals LookupearchInterval;
+        DateTime NextLookupSearch;     
 
 
         internal OpCache(DhtNetwork network)
@@ -49,12 +49,12 @@ namespace RiseOp.Implementation
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimerEvent);
 
             Retry = new RetryIntervals(Core);
-            GlobalSearchInterval = new RetryIntervals(Core);
+            LookupearchInterval = new RetryIntervals(Core);
             NextSave = Core.TimeNow.AddMinutes(1);
             NextPublishAny = Core.TimeNow.AddMinutes(30);
 
 
-            if (Network.IsGlobal)
+            if (Network.IsLookup)
             {
                 WebCache cache = new WebCache();
                 cache.Address = "http://www.riseop.com/cache/update.php";
@@ -77,8 +77,8 @@ namespace RiseOp.Implementation
             // save cache
             if (Core.TimeNow > NextSave)
             {
-                if (Network.IsGlobal)
-                    Network.GlobalConfig.Save(Core);
+                if (Network.IsLookup)
+                    Network.LookupConfig.Save(Core);
                 else
                     Core.User.Save();
 
@@ -91,8 +91,8 @@ namespace RiseOp.Implementation
             {
                 Retry.Timer();
 
-                if (Network.IsGlobal)
-                    GlobalBootstrap();
+                if (Network.IsLookup)
+                    LoookupBootstrap();
                 else
                     OpBootstrap();
             }
@@ -204,7 +204,7 @@ namespace RiseOp.Implementation
         DateTime NextOnlineCheck;
         bool ThinkOnline { get { return OnlineSuccess == OnlineConfirmed; } }
 
-        void GlobalBootstrap()
+        void LoookupBootstrap()
         {
             // only called if network not responsive
 
@@ -222,7 +222,7 @@ namespace RiseOp.Implementation
                     if (OnlineSuccess > 0)
                     {
                         // check online status by pinging google/yahoo/microsoft every 60 secs
-                        GlobalPingCheck();
+                        LookupPingCheck();
                         NextOnlineCheck = Core.TimeNow.AddSeconds(60);
                     }
 
@@ -230,7 +230,7 @@ namespace RiseOp.Implementation
                     else if (OnlineSuccess == 0)
                     {
                         // try google/yahoo/microsoft every 5 secs
-                        GlobalPingCheck();
+                        LookupPingCheck();
                         NextOnlineCheck = Core.TimeNow.AddSeconds(10);
                     }
             }
@@ -242,21 +242,23 @@ namespace RiseOp.Implementation
 
         void OpBootstrap()
         {
-            OpCore global = Core.Context.Global;
+            OpCore lookup = Core.Context.Lookup;
 
             // find operation nodes through global net at expanding intervals
             // called from operation network's bootstrap
-            if (global != null && global.Network.Responsive)
+            if (lookup != null && 
+                Core.User.Settings.OpAccess != AccessType.Secret && 
+                lookup.Network.Responsive)
             {
-                GlobalSearchInterval.Timer();
+                LookupearchInterval.Timer();
 
-                if (Core.TimeNow > NextGlobalSearch)
+                if (Core.TimeNow > NextLookupSearch)
                 {
-                    NextGlobalSearch = GlobalSearchInterval.NextTry;
+                    NextLookupSearch = LookupearchInterval.NextTry;
 
-                    global.RunInCoreAsync(delegate()
+                    lookup.RunInCoreAsync(delegate()
                     {
-                        GlobalService service = (GlobalService)global.ServiceMap[12];
+                        LookupService service = (LookupService)lookup.ServiceMap[12];
                         service.StartSearch(Network.OpID, 0);
                     });
                 }
@@ -283,8 +285,8 @@ namespace RiseOp.Implementation
                             new Thread(WebQuery).Start(cache);
                 }
 
-                // only can d/l from global cache in sim
-                else if (Network.IsGlobal)
+                // only can d/l from global cache in sim, or a secret network with private web cache
+                else if (Network.IsLookup || Core.User.Settings.OpAccess == AccessType.Secret)
                 {
                     NextQueryAny = Retry.NextTry;
                     Core.Sim.Internet.DownloadCache(Network);
@@ -514,7 +516,7 @@ namespace RiseOp.Implementation
                                             "www.youtube.com", 
                                             "www.myspace.com"};
 
-        private void GlobalPingCheck()
+        private void LookupPingCheck()
         {
             System.Net.NetworkInformation.Ping pingSender = new System.Net.NetworkInformation.Ping();
 
@@ -551,7 +553,7 @@ namespace RiseOp.Implementation
             {
                 OnlineSuccess--;
 
-                GlobalPingCheck();
+                LookupPingCheck();
             }
 
         }
@@ -559,7 +561,7 @@ namespace RiseOp.Implementation
         internal void Reset()
         {
             Retry.Reset();
-            GlobalSearchInterval.Reset();
+            LookupearchInterval.Reset();
             NextQueryAny = new DateTime(0);
             BroadcastTimeout = 0;
 
@@ -573,7 +575,7 @@ namespace RiseOp.Implementation
 
         internal void SaveIPs(PacketStream stream)
         {
-            byte type = Network.IsGlobal ? IdentityPacket.GlobalCachedIP : IdentityPacket.OpCachedIP;
+            byte type = Network.IsLookup ? IdentityPacket.LookupCachedIP : IdentityPacket.OpCachedIP;
 
             lock (IPs)
                 foreach (DhtContact entry in IPs)
@@ -607,7 +609,7 @@ namespace RiseOp.Implementation
 
             // cache is pinged in minute timer
             add.NextPublish = Core.TimeNow.AddMinutes(60); // default timeout to publish is 1 hour
-            add.PacketType = Network.IsGlobal ? IdentityPacket.GlobalCachedWeb : IdentityPacket.OpCachedWeb;
+            add.PacketType = Network.IsLookup ? IdentityPacket.LookupCachedWeb : IdentityPacket.OpCachedWeb;
 
             WebCaches.Add(add);
         }

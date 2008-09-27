@@ -22,7 +22,7 @@ using RiseOp.Implementation.Protocol.Special;
 namespace RiseOp
 {
 
-    internal enum LoadModeType { Settings, AllCaches, GlobalCache };
+    internal enum LoadModeType { Settings, AllCaches, LookupCache };
 
     internal enum AccessType { Public, Private, Secret };
 
@@ -106,7 +106,7 @@ namespace RiseOp
             byte[] iv = new byte[16];
             byte[] salt = new byte[4];
 
-            OpCore global = Core.Context.Global;
+            OpCore lookup = Core.Context.Lookup;
 
 			try
 			{
@@ -138,13 +138,13 @@ namespace RiseOp
                                     OpIcon = IconPacket.Decode(root).OpIcon;
                             }
 
-                            if (global != null && (loadMode == LoadModeType.AllCaches || loadMode == LoadModeType.GlobalCache))
+                            if (lookup != null && (loadMode == LoadModeType.AllCaches || loadMode == LoadModeType.LookupCache))
                             {
-                                if (root.Name == IdentityPacket.GlobalCachedIP)
-                                    global.Network.Cache.AddContact(CachedIP.Decode(root).Contact);
+                                if (root.Name == IdentityPacket.LookupCachedIP)
+                                    lookup.Network.Cache.AddContact(CachedIP.Decode(root).Contact);
 
-                                if (root.Name == IdentityPacket.GlobalCachedWeb)
-                                    global.Network.Cache.AddCache(WebCache.Decode(root));
+                                if (root.Name == IdentityPacket.LookupCachedWeb)
+                                    lookup.Network.Cache.AddCache(WebCache.Decode(root));
                             }
 
                             if (loadMode == LoadModeType.AllCaches)
@@ -214,10 +214,10 @@ namespace RiseOp
 
                         if (Core != null)
                         {
-                            if (Core.Context.Global != null)
+                            if (Core.Context.Lookup != null)
                             {
-                                Core.Context.Global.Network.Cache.SaveIPs(stream);
-                                Core.Context.Global.Network.Cache.SaveWeb(stream);
+                                Core.Context.Lookup.Network.Cache.SaveIPs(stream);
+                                Core.Context.Lookup.Network.Cache.SaveWeb(stream);
                             }
 
                             Core.Network.Cache.SaveIPs(stream);
@@ -454,12 +454,12 @@ namespace RiseOp
     internal class IdentityPacket
     {
         internal const byte OperationSettings  = 0x10;
-        internal const byte GlobalSettings     = 0x20;
+        internal const byte LookupSettings     = 0x20;
 
-        internal const byte GlobalCachedIP   = 0x30;
+        internal const byte LookupCachedIP   = 0x30;
         internal const byte OpCachedIP = 0x40;
 
-        internal const byte GlobalCachedWeb = 0x50;
+        internal const byte LookupCachedWeb = 0x50;
         internal const byte OpCachedWeb = 0x60;
 
         internal const byte Icon    = 0x70;
@@ -731,8 +731,8 @@ namespace RiseOp
         }
     }
 
-    // save independently so all operations use same global settings for quick startup and global network stability
-    internal class GlobalSettings : G2Packet
+    // save independently so all operations use same lookup settings for quick startup and lookup network stability
+    internal class LookupSettings : G2Packet
     {
         const byte Packet_UserID = 0x10;
         const byte Packet_TcpPort = 0x20;
@@ -742,7 +742,7 @@ namespace RiseOp
         internal ushort TcpPort;
         internal ushort UdpPort;
 
-        internal GlobalSettings()
+        internal LookupSettings()
         {
         }
 
@@ -750,7 +750,7 @@ namespace RiseOp
         {
             lock (protocol.WriteSection)
             {
-                G2Frame settings = protocol.WritePacket(null, IdentityPacket.GlobalSettings, null);
+                G2Frame settings = protocol.WritePacket(null, IdentityPacket.LookupSettings, null);
 
                 protocol.WritePacket(settings, Packet_UserID, BitConverter.GetBytes(UserID));
                 protocol.WritePacket(settings, Packet_TcpPort, BitConverter.GetBytes(TcpPort));
@@ -760,9 +760,9 @@ namespace RiseOp
             }
         }
 
-        internal static GlobalSettings Decode(G2Header root)
+        internal static LookupSettings Decode(G2Header root)
         {
-            GlobalSettings settings = new GlobalSettings();
+            LookupSettings settings = new LookupSettings();
 
             G2Header child = new G2Header(root.Data);
 
@@ -794,15 +794,15 @@ namespace RiseOp
             return settings;
         }
 
-        internal static GlobalSettings Load(DhtNetwork network)
+        internal static LookupSettings Load(DhtNetwork network)
         {
-            // so that accross multiple ops, global access points are maintained more or less
+            // so that accross multiple ops, lookup access points are maintained more or less
             // also bootstrap file can be sent to others to help them out
-            GlobalSettings settings = null;
+            LookupSettings settings = null;
 
             string path = Application.StartupPath + Path.DirectorySeparatorChar + "bootstrap";
 
-            // dont want instances saving and loading same global file
+            // dont want instances saving and loading same lookup file
             if (network.Core.Sim == null && File.Exists(path))
             {
                 
@@ -818,13 +818,13 @@ namespace RiseOp
 
                         while (stream.ReadPacket(ref root))
                         {
-                            if (root.Name == IdentityPacket.GlobalSettings)
-                                settings = GlobalSettings.Decode(root);
+                            if (root.Name == IdentityPacket.LookupSettings)
+                                settings = LookupSettings.Decode(root);
 
-                            if (root.Name == IdentityPacket.GlobalCachedIP)
+                            if (root.Name == IdentityPacket.LookupCachedIP)
                                 network.Cache.AddContact(CachedIP.Decode(root).Contact);
 
-                            if (root.Name == IdentityPacket.GlobalCachedWeb)
+                            if (root.Name == IdentityPacket.LookupCachedWeb)
                                 network.Cache.AddCache(WebCache.Decode(root));
 
                         }
@@ -832,14 +832,14 @@ namespace RiseOp
                 }
                 catch (Exception ex)
                 {
-                    network.UpdateLog("Exception", "GlobalSettings::Load " + ex.Message);
+                    network.UpdateLog("Exception", "LookupSettings::Load " + ex.Message);
                 }
             }
 
             // file not found / loaded
             if (settings == null)
             {
-                settings = new GlobalSettings();
+                settings = new LookupSettings();
 
                 settings.UserID = Utilities.StrongRandUInt64(network.Core.StrongRndGen);
                 settings.TcpPort = (ushort)network.Core.RndGen.Next(5000, 9000);
@@ -851,7 +851,7 @@ namespace RiseOp
 
         internal void Save(OpCore core)
         {
-            Debug.Assert(core.Network.IsGlobal);
+            Debug.Assert(core.Network.IsLookup);
 
             if (core.Sim != null)
                 return;
@@ -876,7 +876,7 @@ namespace RiseOp
 
             catch (Exception ex)
             {
-                core.Network.UpdateLog("Exception", "GlobalSettings::Save " + ex.Message);
+                core.Network.UpdateLog("Exception", "LookupSettings::Save " + ex.Message);
             }
 
         }

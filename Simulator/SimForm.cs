@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Windows.Forms;
@@ -129,8 +130,20 @@ namespace RiseOp.Simulator
                 string[] paths = Directory.GetFiles(dir, "*.rop");
 
                 foreach (string path in paths)
-                    Sim.StartInstance(path);
+                {
+                    string filename = Path.GetFileNameWithoutExtension(path);
+                    string[] parts = filename.Split('-');
+                    string op = parts[0].Trim();
+                    string name = parts[1].Trim();
 
+                    // if instance with same user name, who has not joined this operation - add to same instance
+                    SimInstance instance = Sim.Instances.Where(i => i.Name == name && !i.Ops.Contains(op)).ElementAtOrDefault(0);
+
+                    if (instance != null)
+                        Sim.Login(instance, path);
+                    else
+                        Sim.StartInstance(path);
+                }
                 LoadProgress.Value = LoadProgress.Value + 1;
                 Application.DoEvents();
             }
@@ -307,9 +320,9 @@ namespace RiseOp.Simulator
             {
                 MenuItem global = null;
 
-                if (item.Instance.Context.Global != null)
+                if (item.Instance.Context.Lookup != null)
                 {
-                    global = new MenuItem("Global");
+                    global = new MenuItem("Lookup");
                     global.MenuItems.Add(new MenuItem("Crawler", new EventHandler(Click_GlobalCrawler)));
                     global.MenuItems.Add(new MenuItem("Graph", new EventHandler(Click_GlobalGraph)));
                     global.MenuItems.Add(new MenuItem("Packets", new EventHandler(Click_GlobalPackets)));
@@ -420,8 +433,8 @@ namespace RiseOp.Simulator
 
             foreach (ListInstanceItem item in ListInstances.SelectedItems)
             {
-                if (!cores.Contains(item.Core.Context.Global))
-                    cores.Add(item.Core.Context.Global);
+                if (!cores.Contains(item.Core.Context.Lookup))
+                    cores.Add(item.Core.Context.Lookup);
                 
                 cores.Add(item.Core);
             }
@@ -438,29 +451,29 @@ namespace RiseOp.Simulator
         private void Click_GlobalCrawler(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in ListInstances.SelectedItems)
-                if (item.Core.Context.Global != null)
-                    CrawlerForm.Show(item.Core.Context.Global.Network);
+                if (item.Core.Context.Lookup != null)
+                    CrawlerForm.Show(item.Core.Context.Lookup.Network);
         }
 
         private void Click_GlobalGraph(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in ListInstances.SelectedItems)
-                if (item.Core.Context.Global != null)
-                    PacketsForm.Show(item.Core.Context.Global.Network);
+                if (item.Core.Context.Lookup != null)
+                    PacketsForm.Show(item.Core.Context.Lookup.Network);
         }
 
         private void Click_GlobalPackets(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in ListInstances.SelectedItems)
-                if (item.Core.Context.Global != null)
-                    PacketsForm.Show(item.Core.Context.Global.Network);
+                if (item.Core.Context.Lookup != null)
+                    PacketsForm.Show(item.Core.Context.Lookup.Network);
         }
 
         private void Click_GlobalSearch(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in ListInstances.SelectedItems)
-                if (item.Core.Context.Global != null)
-                    SearchForm.Show(item.Core.Context.Global.Network);
+                if (item.Core.Context.Lookup != null)
+                    SearchForm.Show(item.Core.Context.Lookup.Network);
         }
 
         private void Click_OpCrawler(object sender, EventArgs e)
@@ -491,7 +504,7 @@ namespace RiseOp.Simulator
         {
             foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 if(item.Core == null)
-                    Sim.Login(item.Instance);
+                    Sim.Login(item.Instance, item.Instance.LastPath);
 
             OnInstanceChange(null, InstanceChangeType.Refresh);
         }
@@ -548,7 +561,7 @@ namespace RiseOp.Simulator
                 return;
 
             item.DropDownItems.Clear();
-            item.DropDownItems.Add(new ViewMenuItem("Global", 0, new EventHandler(ViewMenu_OnClick)));
+            item.DropDownItems.Add(new ViewMenuItem("Lookup", 0, new EventHandler(ViewMenu_OnClick)));
 
             foreach(ulong id in Sim.OpNames.Keys)
                 item.DropDownItems.Add(new ViewMenuItem(Sim.OpNames[id], id, new EventHandler(ViewMenu_OnClick)));
@@ -718,7 +731,7 @@ namespace RiseOp.Simulator
 
             if (Core == null)
             {
-                SubItems[1].Text = "Login: " + Path.GetFileNameWithoutExtension(Instance.Path);
+                SubItems[1].Text = "Login: " + Path.GetFileNameWithoutExtension(Instance.LastPath);
                 ForeColor = Color.Gray;
 
                 for(int i = 2; i < SUBITEM_COUNT; i++)
@@ -753,9 +766,9 @@ namespace RiseOp.Simulator
             //    alerts += "IP Mismatch, ";
 
             // routing unresponsive global/op
-            if(Instance.Context.Global != null)
-                if (!Instance.Context.Global.Network.Responsive)
-                    alerts += "Global Routing, ";
+            if(Instance.Context.Lookup != null)
+                if (!Instance.Context.Lookup.Network.Responsive)
+                    alerts += "Lookup Routing, ";
 
             if (!Core.Network.Responsive)
                 alerts += "Op Routing, ";
@@ -763,9 +776,9 @@ namespace RiseOp.Simulator
             // not proxied global/op
             if (Instance.RealFirewall != FirewallType.Open)
             {
-                if (Instance.Context.Global != null)
-                    if (Instance.Context.Global.Network.TcpControl.ProxyMap.Count == 0)
-                        alerts += "Global Proxy, ";
+                if (Instance.Context.Lookup != null)
+                    if (Instance.Context.Lookup.Network.TcpControl.ProxyMap.Count == 0)
+                        alerts += "Lookup Proxy, ";
 
                 if (Core.Network.TcpControl.ProxyMap.Count == 0)
                     alerts += "Op Proxy, ";
@@ -782,9 +795,9 @@ namespace RiseOp.Simulator
             SubItems[5].Text = Instance.RealFirewall.ToString();
             SubItems[6].Text = alerts;
 
-            if (Instance.Context.Global != null)
+            if (Instance.Context.Lookup != null)
             {
-                SubItems[7].Text = ProxySummary(Instance.Context.Global.Network.TcpControl);
+                SubItems[7].Text = ProxySummary(Instance.Context.Lookup.Network.TcpControl);
                 SubItems[8].Text = NotesSummary();
             }
 
@@ -813,7 +826,8 @@ namespace RiseOp.Simulator
 
             StringBuilder summary = new StringBuilder();
 
-            summary.Append(Core.Trust.TrustMap.SafeCount.ToString() + " trust, ");
+            if(Core.Trust != null)
+                summary.Append(Core.Trust.TrustMap.SafeCount.ToString() + " trust, ");
 
             summary.Append(Core.Locations.Clients.SafeCount.ToString() + " locs, ");
 

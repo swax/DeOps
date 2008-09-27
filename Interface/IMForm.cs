@@ -17,6 +17,10 @@ namespace RiseOp.Interface
     {
         OpCore Core;
 
+        internal List<ExternalView> ExternalViews = new List<ExternalView>();
+
+
+
         internal IMForm(OpCore core)
             : base(core)
         {
@@ -26,12 +30,34 @@ namespace RiseOp.Interface
 
             TopStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
 
+            Core.ShowExternal += new ShowExternalHandler(OnShowExternal);
+
             BuddyList.Init(Core.Buddies);
             SelectionInfo.Init(Core);
         }
 
+
+        void OnShowExternal(ViewShell view)
+        {
+            ExternalView external = new ExternalView(this, ExternalViews, view);
+
+            ExternalViews.Add(external);
+
+            external.Show();
+        }
+
         private void IMForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            while (ExternalViews.Count > 0)
+                // safe close removes entry from external views
+                if (!ExternalViews[0].SafeClose())
+                {
+                    e.Cancel = true;
+                    return;
+                }
+
+            Core.ShowExternal -= new ShowExternalHandler(OnShowExternal);
+
             Core.GuiMain = null;
 
             if (LockForm)
@@ -57,7 +83,7 @@ namespace RiseOp.Interface
 
         private void AddButton_Click(object sender, EventArgs e)
         {
-            GetTextDialog add = new GetTextDialog("Add Buddy", "Enter someone's buddy link below", "riseop://");
+            GetTextDialog add = new GetTextDialog("Add Buddy", "Enter someone's buddy link below", Core.Buddies.GetLink(Core.UserID));
 
             if (add.ShowDialog() == DialogResult.OK)
                 Core.Buddies.AddBuddy(add.ResultBox.Text);

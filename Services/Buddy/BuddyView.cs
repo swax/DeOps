@@ -11,6 +11,7 @@ using RiseOp.Interface;
 using RiseOp.Interface.Views;
 using RiseOp.Interface.TLVex;
 
+using RiseOp.Services.IM;
 using RiseOp.Services.Location;
 using RiseOp.Services.Trust;
 
@@ -46,6 +47,7 @@ namespace RiseOp.Services.Buddy
             Locations.GuiUpdate += new LocationGuiUpdateHandler(Location_Update);
 
             MouseClick += new MouseEventHandler(BuddyList_MouseClick);
+            MouseDoubleClick += new MouseEventHandler(BuddyList_MouseDoubleClick);
 
             SmallImageList = new List<Image>(); // itit here, cause main can re-init
             SmallImageList.Add(new Bitmap(16, 16));
@@ -125,6 +127,24 @@ namespace RiseOp.Services.Buddy
         }
 
 
+        void BuddyList_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            // this gets right click to select item
+            BuddyItem clicked = GetItemAt(e.Location) as BuddyItem;
+
+            if (clicked == null || clicked.User == 0)
+                return;
+
+
+            if (Core.Locations.ActiveClientCount(clicked.User) > 0)
+            {
+                IMService IM = Core.GetService("IM") as IMService;
+
+                if (IM != null)
+                    IM.QuickMenu_View(clicked, null);
+            }
+        }
+
         private void BuddyList_MouseClick(object sender, MouseEventArgs e)
         {
             // this gets right click to select item
@@ -190,7 +210,7 @@ namespace RiseOp.Services.Buddy
     }
 
 
-    internal class BuddyItem : ContainerListViewItem
+    internal class BuddyItem : ContainerListViewItem, IViewParams
     {
         internal ulong User;
 
@@ -214,5 +234,24 @@ namespace RiseOp.Services.Buddy
             ImageIndex = 0;
         }
 
+
+        #region IViewParams Members
+
+        public ulong GetKey()
+        {
+            return User;
+        }
+
+        public uint GetProject()
+        {
+            return 0;
+        }
+
+        public bool IsExternal()
+        {
+            return true;
+        }
+
+        #endregion
     }
 }

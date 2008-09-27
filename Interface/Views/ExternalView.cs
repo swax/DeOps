@@ -12,15 +12,17 @@ namespace RiseOp.Interface
 {
     internal partial class ExternalView : CustomIconForm
     {
-        MainForm  Main;
+        Form  Main;
+        List<ExternalView> MainViews;
         internal ViewShell Shell;
 
 
-        internal ExternalView(MainForm main, ViewShell shell)
+        internal ExternalView(Form main, List<ExternalView> views, ViewShell shell)
         {
             InitializeComponent();
 
             Main = main;
+            MainViews = views;
 
             Shell = shell;
             Shell.Dock = DockStyle.Fill;
@@ -45,7 +47,7 @@ namespace RiseOp.Interface
 
   
             Close();
-            Main.ExternalViews.Remove(this);
+            MainViews.Remove(this);
             Shell.Dispose();
 
             return true;
@@ -55,7 +57,7 @@ namespace RiseOp.Interface
         {
             if (Shell.Fin())
             {
-                Main.ExternalViews.Remove(this);
+                MainViews.Remove(this);
                 Shell.Dispose();
             }
             else

@@ -47,10 +47,7 @@ namespace RiseOp.Services.Buddy
             Cache.Load();
 
             if(!BuddyList.SafeContainsKey(Network.Local.UserID))
-            {
-                OpBuddy self = new OpBuddy() { ID = Network.Local.UserID, Name = Core.User.Settings.UserName, Group = "", Key = Core.User.Settings.KeyPublic };
-                BuddyList.SafeAdd(Network.Local.UserID, self);
-            }
+                AddBuddy(Core.User.Settings.UserName, "", Core.User.Settings.KeyPublic);
         }
 
         public void Dispose()
@@ -188,6 +185,8 @@ namespace RiseOp.Services.Buddy
             Core.IndexName(id, name); // always associate this buddy with name
 
             SaveLocal();
+
+            Core.Locations.Research(id);
         }
 
         internal void RemoveBuddy(ulong user)

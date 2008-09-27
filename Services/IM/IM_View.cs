@@ -9,7 +9,6 @@ using System.Windows.Forms;
 using RiseOp.Implementation;
 using RiseOp.Implementation.Transport;
 using RiseOp.Interface;
-using RiseOp.Services.Trust;
 using RiseOp.Services.Location;
 
 
@@ -19,7 +18,6 @@ namespace RiseOp.Services.IM
     internal partial class IM_View : ViewShell
     {        
         IMService       IM;
-        TrustService     Links;
         OpCore          Core;
         LocationService Locations;
         internal ulong  UserID;
@@ -40,7 +38,6 @@ namespace RiseOp.Services.IM
             InitializeComponent();
 
             IM    = im;
-            Links = IM.Core.Trust;
             Core  = IM.Core;
             Locations = IM.Core.Locations;
             UserID = key;
@@ -140,12 +137,18 @@ namespace RiseOp.Services.IM
 
         private void CheckBackColor()
         {
+            if (Core.Trust == null)
+            {
+                MessageTextBox.BackColor = Color.White; ;
+                return;
+            }
+
             // higher
-            if(Links.IsHigher(UserID, 0))
+            if (Core.Trust.IsHigher(UserID, 0))
                 MessageTextBox.BackColor = Color.FromArgb(255, 250, 250);
             
             // lower
-            else if(Links.IsHigher(UserID, Core.UserID, 0))
+            else if (Core.Trust.IsHigher(UserID, Core.UserID, 0))
                 MessageTextBox.BackColor = Color.FromArgb(250, 250, 255);
             
             else

@@ -96,8 +96,8 @@ namespace RiseOp.Interface.Tools
             coreNode.Nodes.Add( new StructureNode(".Identity", new ShowDelegate(ShowIdentity), null));
 
             // networks
-            if(Core.Context.Global != null)
-                LoadNetwork(coreNode.Nodes, "Global", Core.Context.Global.Network);
+            if(Core.Context.Lookup != null)
+                LoadNetwork(coreNode.Nodes, "Lookup", Core.Context.Lookup.Network);
             
             LoadNetwork(coreNode.Nodes, "Operation", Core.Network);
 
@@ -126,7 +126,7 @@ namespace RiseOp.Interface.Tools
 
                     case 2://ServiceID.Location:  
                         StructureNode locNode = new StructureNode("Locations", new ShowDelegate(ShowLocations), null);
-                        locNode.Nodes.Add(new StructureNode("Global", new ShowDelegate(ShowLocGlobal), null)); 
+                        locNode.Nodes.Add(new StructureNode("Lookup", new ShowDelegate(ShowLocGlobal), null)); 
                         locNode.Nodes.Add(new StructureNode("Operation", new ShowDelegate(ShowLocOperation), null));
                         componentsNode.Nodes.Add(locNode);
                         break;
@@ -363,9 +363,9 @@ namespace RiseOp.Interface.Tools
             listValues.Items.Add(new ListViewItem(new string[] { "Responsive", xStr(network.Responsive) }));
             listValues.Items.Add(new ListViewItem(new string[] { "Established", xStr(network.Established) }));
 
-            if (!network.IsGlobal)
+            if (!network.IsLookup)
             {
-                listValues.Items.Add(new ListViewItem(new string[] { "UseGlobalProxies", xStr(network.UseGlobalProxies) }));
+                listValues.Items.Add(new ListViewItem(new string[] { "UseGlobalProxies", xStr(network.UseLookupProxies) }));
                 listValues.Items.Add(new ListViewItem(new string[] { "TunnelID", xStr(network.Core.TunnelID) }));
             }
             
@@ -503,15 +503,15 @@ namespace RiseOp.Interface.Tools
         {
             SetupLocationList();
 
-            if (Core.Context.Global == null)
+            if (Core.Context.Lookup == null)
                 return;
 
-            GlobalService globalLocs = (GlobalService)Core.Context.Global.ServiceMap[12];
+            LookupService globalLocs = (LookupService)Core.Context.Lookup.ServiceMap[12];
 
-            globalLocs.GlobalIndex.LockReading(delegate()
+            globalLocs.LookupIndex.LockReading(delegate()
             {
-                foreach (ulong opid in globalLocs.GlobalIndex.Keys)
-                    foreach (CryptLoc loc in globalLocs.GlobalIndex[opid])
+                foreach (ulong opid in globalLocs.LookupIndex.Keys)
+                    foreach (CryptLoc loc in globalLocs.LookupIndex[opid])
                     {
                         SignedData signed = SignedData.Decode(loc.Data);
 

@@ -137,7 +137,7 @@ namespace RiseOp.Interface
 
             if (join.GlobalIM)
             {
-                user = new CreateUser(Context, "GlobalIM", AccessType.Secret);
+                user = new CreateUser(Context, "Global IM", AccessType.Secret);
                 user.GlobalIM = true;
             }
 
