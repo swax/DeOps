@@ -2331,15 +2331,14 @@ namespace RiseOp.Services.Storage
 
         private void FolderTreeView_DragOver(object sender, DragEventArgs e)
         {
+            e.Effect = DragDropEffects.None;
+
             if (!e.Data.GetDataPresent(DataFormats.FileDrop))
                 return;
 
             // cant drag into someone else's folder
             if (Working == null)
-            {
-                e.Effect = DragDropEffects.None;
                 return;
-            }
 
             // not dragging means, dragging in file from outside de-ops, allow
             if (!Dragging)
@@ -2352,28 +2351,22 @@ namespace RiseOp.Services.Storage
             FolderNode node = FolderTreeView.GetNodeAt(FolderTreeView.PointToClient(new Point(e.X, e.Y))) as FolderNode;
 
             if (node == null)
-            {
-                e.Effect = DragDropEffects.None;
                 return;
-            }
-
+          
             if (node != SelectedFolder)
                 e.Effect = DragDropEffects.All;
-            else
-                e.Effect = DragDropEffects.None;
         }
 
         private void FileListView_DragOver(object sender, DragEventArgs e)
         {
+            e.Effect = DragDropEffects.None;
+
             if (!e.Data.GetDataPresent(DataFormats.FileDrop))
                 return;
 
             // cant drag into someone else's folder
             if (Working == null)
-            {
-                e.Effect = DragDropEffects.None;
                 return;
-            }
 
             // not dragging means, dragging in file from outside de-ops, allow
             if (!Dragging)
@@ -2387,15 +2380,10 @@ namespace RiseOp.Services.Storage
             FileItem item = FileListView.GetItemAt(FileListView.PointToClient(new Point(e.X, e.Y))) as FileItem;
 
             if (item == null)
-            {
-                e.Effect = DragDropEffects.None;
                 return;
-            }
 
             if (item.IsFolder && !item.Temp)
                 e.Effect = DragDropEffects.All;
-            else
-                e.Effect = DragDropEffects.None;
         }
 
         private void FolderTreeView_DragDrop(object sender, DragEventArgs e)
@@ -2577,7 +2565,7 @@ namespace RiseOp.Services.Storage
         
         private void FileListView_MouseMove(object sender, MouseEventArgs e)
         {
-            if (DragStart != Point.Empty && !Dragging && GetDistance(DragStart, e.Location) > 4)
+            if (DragStart != Point.Empty && !Dragging && Utilities.GetDistance(DragStart, e.Location) > 4)
             {
                 Dragging = true;
 
@@ -2630,7 +2618,7 @@ namespace RiseOp.Services.Storage
 
         private void FolderTreeView_MouseMove(object sender, MouseEventArgs e)
         {
-            if (DragStart != Point.Empty && !Dragging && GetDistance(DragStart, e.Location) > 4)
+            if (DragStart != Point.Empty && !Dragging && Utilities.GetDistance(DragStart, e.Location) > 4)
             {
                
                 Dragging = true;
@@ -2638,14 +2626,6 @@ namespace RiseOp.Services.Storage
                 DataObject data = new DataObject(DataFormats.FileDrop, GetSelectedPaths(true));
                 FolderTreeView.DoDragDrop(data, DragDropEffects.Copy);
             }
-        }
-
-        private int GetDistance(Point start, Point end)
-        {
-            int x = end.X - start.X;
-            int y = end.Y - start.Y;
-
-            return (int)Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2));
         }
 
         private void FileListView_MouseUp(object sender, MouseEventArgs e)

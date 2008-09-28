@@ -28,11 +28,16 @@ namespace RiseOp.Services.Buddy
         internal Font LabelFont = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
         internal Font OfflineFont = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 
+        bool Dragging;
+        Point DragStart = Point.Empty;
+        string[] DragBuddies = null;
 
         internal BuddyView()
         {
             DisableHScroll = true;
             HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
+            AllowDrop = true;
+            MultiSelect = true;
 
             Columns.Add("", 100, System.Windows.Forms.HorizontalAlignment.Left, ColumnScaleStyle.Spring);
         }
@@ -49,11 +54,105 @@ namespace RiseOp.Services.Buddy
             MouseClick += new MouseEventHandler(BuddyList_MouseClick);
             MouseDoubleClick += new MouseEventHandler(BuddyList_MouseDoubleClick);
 
+            MouseDown += new MouseEventHandler(BuddyView_MouseDown);
+            MouseMove += new MouseEventHandler(BuddyView_MouseMove);
+            MouseUp += new MouseEventHandler(BuddyView_MouseUp);
+            DragOver += new DragEventHandler(BuddyView_DragOver);
+            DragDrop += new DragEventHandler(BuddyView_DragDrop);
+
             SmallImageList = new List<Image>(); // itit here, cause main can re-init
             SmallImageList.Add(new Bitmap(16, 16));
 
             RefreshView();
         }
+
+        void BuddyView_MouseDown(object sender, MouseEventArgs e)
+        {
+            Dragging = false;
+            DragStart = Point.Empty;
+
+            BuddyItem clicked = GetItemAt(e.Location) as BuddyItem;
+
+            if (DragStart == Point.Empty && clicked != null && clicked.User != 0)
+            {
+                DragBuddies = (from b in SelectedItems.Cast<BuddyItem>()
+                               where b.User != 0
+                               select Buddies.GetLink(b.User)).ToArray();
+
+                DragStart = e.Location;
+            }
+        }
+
+        void BuddyView_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (DragStart != Point.Empty && !Dragging && Utilities.GetDistance(DragStart, e.Location) > 4)
+            {
+                Dragging = true;
+
+                DataObject data = new DataObject(DataFormats.Text, DragBuddies);
+                DoDragDrop(data, DragDropEffects.Copy);
+            }
+        }
+
+        void BuddyView_MouseUp(object sender, MouseEventArgs e)
+        {
+            Dragging = false;
+            DragStart = Point.Empty; 
+        }
+
+        void BuddyView_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effect = DragDropEffects.None;
+
+            if (!e.Data.GetDataPresent(DataFormats.Text))
+                return;
+
+            BuddyItem overItem = GetItemAt(PointToClient(new Point(e.X, e.Y))) as BuddyItem;
+
+            // must be dragging over a group label
+            if (overItem == null || overItem.User != 0 || overItem.Text == "")
+                return;
+            
+            e.Effect = DragDropEffects.All;
+        }
+
+        void BuddyView_DragDrop(object sender, DragEventArgs e)
+        {
+            Dragging = false;
+
+            // Handle only FileDrop data.
+            if (!e.Data.GetDataPresent(DataFormats.Text))
+                return;
+
+            // get destination of drop
+            BuddyItem overItem = GetItemAt(PointToClient(new Point(e.X, e.Y))) as BuddyItem;
+
+            // must be dragging over a group label
+            if (overItem == null || overItem.User != 0 || overItem.Text == "")
+                return;
+
+            string groupname = overItem.GroupLabel ? overItem.Text : null;
+
+            try
+            {
+                string[] links = (string[])e.Data.GetData(DataFormats.Text);
+
+                foreach (string link in links)
+                {
+                    OpBuddy buddy = Buddies.AddBuddy(link);
+
+                    if (buddy != null)
+                        Buddies.AddtoGroup(buddy.ID, groupname);
+                }
+
+                RefreshView();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+        
 
         protected override void Dispose(bool disposing)
         {
@@ -81,49 +180,80 @@ namespace RiseOp.Services.Buddy
         }
 
         private void RefreshView()
-        {
+        {  
             SortedList<string, BuddyItem> Online = new SortedList<string,BuddyItem>();
             SortedList<string, BuddyItem> Offline = new SortedList<string,BuddyItem>();
-            
+            Dictionary<string, SortedList<string, BuddyItem>> Groups = new Dictionary<string, SortedList<string, BuddyItem>>();
+
+
             Buddies.BuddyList.LockReading(delegate()
             {
                 foreach (OpBuddy buddy in Buddies.BuddyList.Values)
-                {
+               {
                     BuddyItem item = new BuddyItem(buddy.Name, buddy.ID);
 
-                    if (Locations.ActiveClientCount(buddy.ID) > 0)
-                    {
+                    bool online = (Locations.ActiveClientCount(buddy.ID) > 0);
+
+                    if (online)                    
                         item.Font = OnlineFont;
-                        Online.Add(buddy.Name, item);
-                    }
                     else
                     {
                         item.Font = OfflineFont;
                         item.ForeColor = Color.Gray;
-                        Offline.Add(buddy.Name, item);
                     }
+
+                    if (buddy.Group != null)
+                    {
+                        if (!Groups.ContainsKey(buddy.Group))
+                            Groups[buddy.Group] = new SortedList<string, BuddyItem>();
+
+                        Groups[buddy.Group].Add(buddy.Name, item);
+                    }
+                    else if (online)
+                        Online.Add(buddy.Name, item);
+                    else
+                        Offline.Add(buddy.Name, item);
                 }
             });
+
+            BeginUpdate();
+
+            // save selected
+            List<ulong> selected = (from i in SelectedItems.Cast<BuddyItem>()
+                                    where i.User != 0
+                                    select i.User).ToList();
 
             Items.Clear();
 
             Items.Add(new BuddyItem());
-            
-            // show online buddies
-            Items.Add(new BuddyItem("Buddies", LabelFont));
+                
+            AddSection("Buddies", Online, false);
 
-            foreach (BuddyItem item in Online.Values)
+            foreach (string title in Groups.Keys)
+                AddSection(title, Groups[title], true);
+
+            AddSection("Offline", Offline, false);
+
+            // re-select
+            foreach (BuddyItem item in SelectedItems.Cast<BuddyItem>().Where(i => selected.Contains(i.User)))
+                item.Selected = true;
+
+            EndUpdate();
+
+            Update(); // invalidate takes too long?
+        }
+
+        private void AddSection(string title, SortedList<string, BuddyItem> people, bool group)
+        {
+            if (people.Count == 0)
+                return;
+
+            Items.Add(new BuddyItem(title, LabelFont, group));
+
+            foreach (BuddyItem item in people.Values)
                 Items.Add(item);
 
             Items.Add(new BuddyItem());
-
-
-            // show offline
-            Items.Add(new BuddyItem("Offline", LabelFont));
-
-            foreach (BuddyItem item in Offline.Values)
-                Items.Add(item);
-
         }
 
 
@@ -147,22 +277,32 @@ namespace RiseOp.Services.Buddy
 
         private void BuddyList_MouseClick(object sender, MouseEventArgs e)
         {
-            // this gets right click to select item
-            BuddyItem clicked = GetItemAt(e.Location) as BuddyItem;
-
-            if (clicked == null || clicked.User == 0)
-                return;
-
-
             // right click menu
             if (e.Button != MouseButtons.Right)
                 return;
-
-            uint project = 0;
+            
+            
+            // this gets right click to select item
+            BuddyItem clicked = GetItemAt(e.Location) as BuddyItem;
 
             // menu
             ContextMenuStripEx treeMenu = new ContextMenuStripEx();
+            
+            
+            if (clicked == null)
+                return;
 
+            if (clicked.User == 0)
+            {
+                if (!clicked.GroupLabel)
+                    return;
+
+                treeMenu.Items.Add(new ToolStripMenuItem("Remove Group", null, Menu_RemoveGroup));
+                treeMenu.Show(this, e.Location);
+                return;
+            }
+
+            uint project = 0;
 
             // views
             List<ToolStripMenuItem> quickMenus = new List<ToolStripMenuItem>();
@@ -191,6 +331,8 @@ namespace RiseOp.Services.Buddy
             foreach (ToolStripMenuItem menu in quickMenus)
                 treeMenu.Items.Add(menu);
 
+            treeMenu.Items.Add(new ToolStripMenuItem("Add to Group", null, Menu_AddGroup));
+
             if (extMenus.Count > 0)
             {
                 ToolStripMenuItem viewItem = new ToolStripMenuItem("Views", InterfaceRes.views);
@@ -207,12 +349,36 @@ namespace RiseOp.Services.Buddy
             if (treeMenu.Items.Count > 0)
                 treeMenu.Show(this, e.Location);
         }
+
+
+        void Menu_AddGroup(object sender, EventArgs e)
+        {
+            GetTextDialog add = new GetTextDialog("Add to Group", "Enter the name of the group to add to", "");
+            
+            if (add.ShowDialog() == DialogResult.OK && add.ResultBox.Text != "" )
+            { 
+                foreach (BuddyItem item in SelectedItems)
+                    if (item.User != 0)
+                        Buddies.AddtoGroup(item.User, add.ResultBox.Text);
+
+                RefreshView();
+            }
+        }
+
+        void Menu_RemoveGroup(object sender, EventArgs e)
+        {
+            foreach (BuddyItem item in SelectedItems)
+                Buddies.RemoveGroup(item.Text);
+
+            RefreshView();
+        }
     }
 
 
     internal class BuddyItem : ContainerListViewItem, IViewParams
     {
         internal ulong User;
+        internal bool GroupLabel;
 
         internal BuddyItem()
         {
@@ -220,11 +386,12 @@ namespace RiseOp.Services.Buddy
             ImageIndex = 0;
         }
 
-        internal BuddyItem(string text, Font font)
+        internal BuddyItem(string text, Font font, bool group)
         {
             Text = text;
             Font = font;
             ImageIndex = 0;
+            GroupLabel = group;
         }
 
         internal BuddyItem(string text, ulong id)
@@ -233,9 +400,6 @@ namespace RiseOp.Services.Buddy
             User = id;
             ImageIndex = 0;
         }
-
-
-        #region IViewParams Members
 
         public ulong GetKey()
         {
@@ -251,7 +415,5 @@ namespace RiseOp.Services.Buddy
         {
             return true;
         }
-
-        #endregion
     }
 }

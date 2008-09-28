@@ -378,53 +378,9 @@ namespace RiseOp.Interface.TLVex
 		#endregion
 	}
 
-	public class SelectedContainerListViewItemCollection: CollectionBase
+	public class SelectedContainerListViewItemCollection: List<ContainerListViewItem>
 	{
-		#region Interface Implementations
-		public ContainerListViewItem this[int index]
-		{
-			get { return List[index] as ContainerListViewItem; }
-			set
-			{
-				List[index] = value;
-			}
-		}
-		
-		public int this[ContainerListViewItem item]
-		{
-			get { return List.IndexOf(item); }
-		}
-		public int Add(ContainerListViewItem item)
-		{
-			return item.Index = List.Add(item);
-		}
 
-		public void AddRange(ContainerListViewItem[] items)
-		{
-			lock(List.SyncRoot)
-			{
-				for (int i=0; i<items.Length; i++)
-				{
-					items[i].Index = List.Add(items[i]);
-				}
-			}
-		}
-
-		public void Remove(ContainerListViewItem item)
-		{
-			List.Remove(item);
-		}
-
-		public new void Clear()
-		{
-			List.Clear();
-		}
-
-		public int IndexOf(ContainerListViewItem item)
-		{
-			return List.IndexOf(item);
-		}
-		#endregion
 	}
 
 	#endregion
@@ -2436,7 +2392,7 @@ namespace RiseOp.Interface.TLVex
 				items[iIndex].Focused = false;
 				items[iIndex].Selected = false;
 
-				int i = selectedItems[item];
+				int i = selectedItems.IndexOf(item);
 				selectedIndices.Remove(i);
 				selectedItems.Remove(item);
 

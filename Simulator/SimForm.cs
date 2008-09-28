@@ -11,6 +11,8 @@ using System.Windows.Forms;
 using System.IO;
 using System.Security.Cryptography;
 
+using Microsoft.Win32;
+
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Transport;
@@ -43,8 +45,6 @@ namespace RiseOp.Simulator
 
         internal SimForm()
         {
-            object x = new object();
-
             Construct();
         }
 
@@ -91,10 +91,19 @@ namespace RiseOp.Simulator
             {
                 FolderBrowserDialog browse = new FolderBrowserDialog();
 
-                browse.SelectedPath = Application.StartupPath;
+                string path = Application.UserAppDataRegistry.GetValue("LastSimPath") as string;
 
-                if (browse.ShowDialog(this) == DialogResult.OK)
-                    LoadDirectory(browse.SelectedPath);
+                if (path == null)
+                    path = Application.StartupPath;
+
+                browse.SelectedPath = path;
+
+                if (browse.ShowDialog(this) != DialogResult.OK)
+                    return;
+                   
+                LoadDirectory(browse.SelectedPath);
+
+                Application.UserAppDataRegistry.SetValue("LastSimPath", browse.SelectedPath);
             }
             catch (Exception ex)
             {

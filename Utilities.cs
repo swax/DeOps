@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -781,6 +782,14 @@ namespace RiseOp
                 }
 
             return array;
+        }
+
+        public static int GetDistance(Point start, Point end)
+        {
+            int x = end.X - start.X;
+            int y = end.Y - start.Y;
+
+            return (int)Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2));
         }
     }
 

@@ -30,6 +30,8 @@ namespace RiseOp.Services.Buddy
 
         internal BuddyGuiUpdateHandler GuiUpdate;
 
+        bool SaveList;
+
 
         internal BuddyService(OpCore core)
         {
@@ -40,14 +42,14 @@ namespace RiseOp.Services.Buddy
             Network.StatusChange += new StatusChange(Network_StatusChange);
             Core.KeepDataCore += new KeepDataHandler(Core_KeepData);
             Core.Locations.KnowOnline += new KnowOnlineHandler(Location_KnowOnline);
-
+            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
             Cache = new VersionedCache(Network, ServiceID, 0, true);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.Load();
 
             if(!BuddyList.SafeContainsKey(Network.Local.UserID))
-                AddBuddy(Core.User.Settings.UserName, "", Core.User.Settings.KeyPublic);
+                AddBuddy(Core.User.Settings.UserName, Core.User.Settings.KeyPublic);
         }
 
         public void Dispose()
@@ -55,7 +57,7 @@ namespace RiseOp.Services.Buddy
             Network.StatusChange     -= new StatusChange(Network_StatusChange);
             Core.KeepDataCore      -= new KeepDataHandler(Core_KeepData);
             Core.Locations.KnowOnline -= new KnowOnlineHandler(Location_KnowOnline);
-
+            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
         }
 
@@ -85,7 +87,7 @@ namespace RiseOp.Services.Buddy
 
             string name = Core.GetName(user);
 
-            AddBuddy(name, "", Core.KeyMap[user]);
+            AddBuddy(name, Core.KeyMap[user]);
         }
 
         private void Menu_Remove(object sender, EventArgs e)
@@ -116,6 +118,12 @@ namespace RiseOp.Services.Buddy
 
             // look for all buddies on network
             ForAllUsers(id => Core.Locations.Research(id));
+        }
+
+        void Core_MinuteTimer()
+        {
+            if (SaveList)
+                SaveLocal();
         }
 
         void Core_KeepData()
@@ -155,14 +163,14 @@ namespace RiseOp.Services.Buddy
             return link;
         }
 
-        internal void AddBuddy(string link)
+        internal OpBuddy AddBuddy(string link)
         {
             link = link.Replace("riseop://", "");
 
             string[] parts = link.Split('/');
 
             if (parts.Length < 3)
-                return;
+                return null;
 
             ulong opID = BitConverter.ToUInt64(Utilities.FromBase64String(parts[1]), 0);
 
@@ -171,22 +179,29 @@ namespace RiseOp.Services.Buddy
 
             byte[] key = Utilities.FromBase64String(parts[2]);
 
-            AddBuddy(parts[0], "", key);
+            return AddBuddy(parts[0], key);
         }
 
-        internal void AddBuddy(string name, string group, byte[] key)
+        internal OpBuddy AddBuddy(string name, byte[] key)
         {
             ulong id = Utilities.KeytoID(key);
-           
-            OpBuddy buddy = new OpBuddy() { ID = id, Name = name, Group = group, Key = key };
+
+            OpBuddy buddy;
+            if (BuddyList.TryGetValue(id, out buddy))
+                return buddy;
+
+            buddy = new OpBuddy() { ID = id, Name = name, Key = key };
 
             BuddyList.SafeAdd(id, buddy);
 
             Core.IndexName(id, name); // always associate this buddy with name
 
-            SaveLocal();
+            SaveList = true;
+            Core.RunInGuiThread(GuiUpdate);
 
             Core.Locations.Research(id);
+
+            return buddy;
         }
 
         internal void RemoveBuddy(ulong user)
@@ -196,7 +211,8 @@ namespace RiseOp.Services.Buddy
 
             BuddyList.SafeRemove(user);
 
-            SaveLocal();
+            SaveList = true;
+            Core.RunInGuiThread(GuiUpdate);
         }
 
         private void SaveLocal()
@@ -250,6 +266,26 @@ namespace RiseOp.Services.Buddy
             Core.RunInGuiThread(GuiUpdate);
         }
 
+
+        internal void AddtoGroup(ulong user, string group)
+        {
+            OpBuddy buddy;
+            if (!BuddyList.SafeTryGetValue(user, out buddy))
+                return;
+
+            buddy.Group = group;
+
+            SaveList = true;
+        }
+
+        internal void RemoveGroup(string group)
+        {
+            BuddyList.LockReading(delegate()
+            {
+                foreach (OpBuddy buddy in BuddyList.Values.Where(b => b.Group == group))
+                    buddy.Group = null;
+            });
+        }
     }
 
     internal class BuddyPacket

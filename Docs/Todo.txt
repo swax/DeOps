@@ -1,7 +1,48 @@
 
-3 person net open/nat/blocked, not finding local untrusted
+status
+	trust loop
+		who trusts who
 
+	buddy group
+		remove group
+
+	buddy other
+		add buddy
+		add group
+
+	link tree other
+		network status
+			stat
+		should make icon so main/im form can share it
+
+	user
+		selected user name (edit name)
+			alternate names from trust/buddy
+		Title
+		Projects
+		
+		IM / Mail
+		
+		trust
+			link/unlink
+			
+		buddy
+			link location
+			add as buddy
+			remove from buddies
+			
+		locations
+			names (edit)
+			local time if diff
+			
+		projects
+
+ person net open/nat/blocked, not finding local untrusted
+chat default in text mode, put formatting options in right click menu.. enable formatting, remove tools from toolbar
+remove buddy only active in buddy view, use separator
 also status if killed
+
+user 2 user transfer
 
 add buddy button
 right click remove buddy
@@ -12,7 +53,6 @@ click on buddy displays info
 report name discrepencies in status info
 
 test global
-add groups to buddies
 
 	associations? put in diff sturcture buddyinfo data type/file?
 
@@ -26,7 +66,6 @@ instead of 'trust unconfirmed' after link, make color red, and then in extended 
 
 setting - save IM mode, buddies or structure view on close
 
-// test pure buddies/location client without trust
 // update IM/Chat/Gui in notify area, if state changed!!
 
 make sure diff networks use diff webcaches in sim
@@ -42,23 +81,9 @@ Buddy list Component
 		create network with just loc, transfer, IM (chat)
 
 	service
-		on established - search for buddies
-		
 		local synced only when trust is enabled
-		
-		buddy structure
-			public key
-			name
-			group
-		
+
 		global list saved with op list - if linked
-		
-	interface
-		online / offline area
-		group tabs
-		pretty much same as AIM lite
-		get local link
-		add remote buddy link
 		
 		
 local invisible option - publishes offline, and doesnt reply to pings

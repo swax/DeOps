@@ -63,7 +63,6 @@ namespace RiseOp.Simulator
         // settings
         internal int SleepTime = 250; // 1000 is realtime, 1000 / x = target secs to simulate per real sec
 
-        bool RandomCache = true;
         internal bool LoadOnline = true;
         internal bool TestEncryption = false;
         internal bool FreshStart = false; // all service files deleted
