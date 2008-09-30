@@ -9,6 +9,7 @@ using System.Windows.Forms;
 
 using RiseOp.Implementation;
 using RiseOp.Interface.Views;
+using RiseOp.Services.Buddy;
 
 
 namespace RiseOp.Interface
@@ -32,8 +33,12 @@ namespace RiseOp.Interface
 
             Core.ShowExternal += new ShowExternalHandler(OnShowExternal);
 
+            Text = "IM - " + Core.GetName(Core.UserID);
+
             BuddyList.Init(Core.Buddies);
             SelectionInfo.Init(Core);
+
+            SelectionInfo.ShowNetwork();
         }
 
 
@@ -43,7 +48,29 @@ namespace RiseOp.Interface
 
             ExternalViews.Add(external);
 
+            view.Init();
+
             external.Show();
+        }
+
+        private void BuddyList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (BuddyList.SelectedItems.Count == 0)
+            {
+                SelectionInfo.ShowNetwork();
+                return;
+            }
+
+            BuddyItem item = BuddyList.SelectedItems[0] as BuddyItem;
+
+            if (item == null || item.Blank)
+                SelectionInfo.ShowNetwork();
+
+            else if (item.User != 0)
+                SelectionInfo.ShowUser(item.User, 0);
+
+            else
+                SelectionInfo.ShowGroup(item.GroupLabel ? item.Text : null);
         }
 
         private void IMForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -83,7 +110,7 @@ namespace RiseOp.Interface
 
         private void AddButton_Click(object sender, EventArgs e)
         {
-            GetTextDialog add = new GetTextDialog("Add Buddy", "Enter someone's buddy link below", Core.Buddies.GetLink(Core.UserID));
+            GetTextDialog add = new GetTextDialog("Add Buddy", "Enter a buddy link", Core.Buddies.GetLink(Core.UserID));
 
             if (add.ShowDialog() == DialogResult.OK)
                 Core.Buddies.AddBuddy(add.ResultBox.Text);

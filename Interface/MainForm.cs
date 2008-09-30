@@ -94,7 +94,7 @@ namespace RiseOp.Interface
             SelectionInfo.Init(Core);
 
             OnSelectChange(Core.UserID, CommandTree.Project);
-            UpdateCommandPanel();
+            UpdateStatusPanel();
 
             if (SideMode)
             {
@@ -238,17 +238,31 @@ namespace RiseOp.Interface
         }
 
 
-        void UpdateCommandPanel()
+        void UpdateStatusPanel()
         {
-            LinkNode node = GetSelected();
+            if (CommandTree.SelectedNodes.Count == 0)
+            {
+                SelectionInfo.ShowNetwork();
+                return;
+            }
 
-            if (node == null)
-                SelectionInfo.ShowNetwork(); //ShowNetworkStatus();
+            TreeListNode node = CommandTree.SelectedNodes[0];
+
+            if (node.GetType() == typeof(LinkNode))
+            {
+                OpLink link = ((LinkNode)node).Link;
+                SelectionInfo.ShowUser(link.UserID, link.Project);
+            }
+
+            else if (node.GetType() == typeof(ProjectNode))
+            {
+                ProjectNode project = node as ProjectNode;
+                SelectionInfo.ShowProject(project.ID);
+            }
 
             else
-                SelectionInfo.ShowUser(node.Link.UserID, node.Link.Project); // ShowNodeStatus();
+                SelectionInfo.ShowNetwork();
         }
-
 
         private void CommandTree_MouseClick(object sender, MouseEventArgs e)
         {
@@ -292,6 +306,7 @@ namespace RiseOp.Interface
             // views
             List<ToolStripMenuItem> quickMenus = new List<ToolStripMenuItem>();
             List<ToolStripMenuItem> extMenus = new List<ToolStripMenuItem>();
+            List<MenuItemInfo> tempList = null;
 
             foreach (OpService service in Core.ServiceMap.Values)
             {
@@ -299,17 +314,17 @@ namespace RiseOp.Interface
                     continue;
 
                 // quick
-                List<MenuItemInfo> menuList = service.GetMenuInfo(InterfaceMenuType.Quick, item.Link.UserID, CommandTree.Project);
+                tempList = service.GetMenuInfo(InterfaceMenuType.Quick, item.Link.UserID, CommandTree.Project);
 
-                if (menuList != null && menuList.Count > 0)
-                    foreach (MenuItemInfo info in menuList)
+                if (tempList != null && tempList.Count > 0)
+                    foreach (MenuItemInfo info in tempList)
                         quickMenus.Add(new OpMenuItem(item.Link.UserID, CommandTree.Project, info.Path, info));
 
                 // external
-                menuList = service.GetMenuInfo(InterfaceMenuType.External, item.Link.UserID, CommandTree.Project);
+                tempList = service.GetMenuInfo(InterfaceMenuType.External, item.Link.UserID, CommandTree.Project);
 
-                if (menuList != null && menuList.Count > 0)
-                    foreach (MenuItemInfo info in menuList)
+                if (tempList != null && tempList.Count > 0)
+                    foreach (MenuItemInfo info in tempList)
                         extMenus.Add(new OpMenuItem(item.Link.UserID, CommandTree.Project, info.Path, info));
             }
 
@@ -330,25 +345,21 @@ namespace RiseOp.Interface
                 treeMenu.Items.Add(viewItem);
             }
 
-            // link
-            if (CommandTree.TreeMode == CommandTreeMode.Operation)
+            List<ToolStripMenuItem> linkMenus = new List<ToolStripMenuItem>();
+
+            tempList = Trust.GetMenuInfo(InterfaceMenuType.Quick, item.Link.UserID, CommandTree.Project);
+
+            if (tempList != null && tempList.Count > 0)
+                foreach (MenuItemInfo info in tempList)
+                    linkMenus.Add(new OpMenuItem(item.Link.UserID, CommandTree.Project, info.Path, info));
+
+            if (linkMenus.Count > 0)
             {
-                List<ToolStripMenuItem> linkMenus = new List<ToolStripMenuItem>();
+                if (treeMenu.Items.Count > 0)
+                    treeMenu.Items.Add("-");
 
-                List<MenuItemInfo> menuList = Trust.GetMenuInfo(InterfaceMenuType.Quick, item.Link.UserID, CommandTree.Project);
-
-                if (menuList != null && menuList.Count > 0)
-                    foreach (MenuItemInfo info in menuList)
-                        linkMenus.Add(new OpMenuItem(item.Link.UserID, CommandTree.Project, info.Path, info));
-
-                if (linkMenus.Count > 0)
-                {
-                    if (treeMenu.Items.Count > 0)
-                        treeMenu.Items.Add("-");
-
-                    foreach (ToolStripMenuItem menu in linkMenus)
-                        treeMenu.Items.Add(menu);
-                }
+                foreach (ToolStripMenuItem menu in linkMenus)
+                    treeMenu.Items.Add(menu);
             }
 
             // show
@@ -440,6 +451,7 @@ namespace RiseOp.Interface
 
         void TreeMenu_Select(object sender, EventArgs e)
         {
+            // puts internaal view in remote user's point of view
 
             LinkNode item = GetSelected();
 
@@ -702,7 +714,6 @@ namespace RiseOp.Interface
         private void OperationButton_CheckedChanged(object sender, EventArgs e)
         {
             CommandTree.Visible = OperationButton.Checked;
-            CommandTree.BringToFront();
 
             // if checked, uncheck other and display
             if (OperationButton.Checked)
@@ -734,7 +745,6 @@ namespace RiseOp.Interface
         private void OnlineButton_CheckedChanged(object sender, EventArgs e)
         {
             BuddyList.Visible = BuddiesButton.Checked;
-            BuddyList.BringToFront();
 
             // if checked, uncheck other and display
             if (BuddiesButton.Checked)
@@ -745,8 +755,6 @@ namespace RiseOp.Interface
                     ProjectButton.Checked = false;
 
                 MainSplit.Panel1Collapsed = false;
-
-                CommandTree.ShowOnline();
             }
 
             // if not check, check if online checked, if not hide
@@ -940,7 +948,7 @@ namespace RiseOp.Interface
 
         private void CommandTree_SelectedItemChanged(object sender, EventArgs e)
         {
-            UpdateCommandPanel();
+            UpdateStatusPanel();
         }
 
         private void PopoutButton_Click(object sender, EventArgs e)

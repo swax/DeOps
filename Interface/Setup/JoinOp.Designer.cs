@@ -93,6 +93,7 @@
             // JoinGlobalLink
             // 
             this.JoinGlobalLink.AutoSize = true;
+            this.JoinGlobalLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
             this.JoinGlobalLink.Location = new System.Drawing.Point(12, 18);
             this.JoinGlobalLink.Name = "JoinGlobalLink";
             this.JoinGlobalLink.Size = new System.Drawing.Size(226, 13);

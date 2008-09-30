@@ -13,16 +13,13 @@ using RiseOp.Interface.TLVex;
 
 namespace RiseOp.Services.Trust
 {
-    internal enum CommandTreeMode { Operation, Online };
-
     class LinkTree : TreeListViewEx 
     {
         internal OpCore Core;
         internal TrustService Trust;
 
-        internal LabelNode ProjectNode;
-        internal LabelNode UnlinkedNode;
-        internal LabelNode OnlineNode;
+        internal ProjectNode ProjectNode;
+        internal ProjectNode UnlinkedNode;
 
 
         Dictionary<ulong, LinkNode> NodeMap = new Dictionary<ulong, LinkNode>();
@@ -33,12 +30,13 @@ namespace RiseOp.Services.Trust
         internal ulong ForceRootID;
         internal bool HideUnlinked;
 
-        internal CommandTreeMode TreeMode;
         internal uint Project;
 
         internal bool FirstLineBlank = true;
 
         internal bool SearchOnline;
+
+        Font LabelFont = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold);
 
 
         internal LinkTree()
@@ -48,8 +46,6 @@ namespace RiseOp.Services.Trust
 
         internal void Init(TrustService trust)
         {
-            FullRowSelect = false;
-
             Trust = trust;
             Core = trust.Core;
 
@@ -111,16 +107,16 @@ namespace RiseOp.Services.Trust
                 rootname = Trust.GetProjectName(Project);
 
             // operation
-            ProjectNode = new LabelNode(rootname);
-            ProjectNode.Font = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold | FontStyle.Underline, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            ProjectNode = new ProjectNode(rootname, Project);
+            ProjectNode.Font = LabelFont;
             Nodes.Add(ProjectNode);
 
             // white space
             Nodes.Add(new LabelNode(""));
 
             // unlinked
-            UnlinkedNode = new LabelNode("Untrusted");
-            UnlinkedNode.Font = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold | FontStyle.Underline, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            UnlinkedNode = new ProjectNode("Untrusted", 0);
+            UnlinkedNode.Font = LabelFont;
             
             Nodes.Add(UnlinkedNode);
 
@@ -230,7 +226,7 @@ namespace RiseOp.Services.Trust
                 }
         }
 
-        internal void InsertRootNode(LabelNode start, LinkNode node)
+        internal void InsertRootNode(ProjectNode start, LinkNode node)
         {
             // inserts item directly under start, not as a child node
 
@@ -291,38 +287,11 @@ namespace RiseOp.Services.Trust
 
         private LinkNode CreateNode(OpLink link)
         {
-            LinkNode node = new LinkNode(link, this, CommandTreeMode.Operation);
+            LinkNode node = new LinkNode(link, this);
 
             NodeMap[link.UserID] = node;
 
             return node;
-        }
-
-        private void SetupOnlineTree()
-        {
-            BeginUpdate();
-
-            NodeMap.Clear();
-            Nodes.Clear();
-
-            // white space
-            if(FirstLineBlank)
-                Nodes.Add(new LabelNode(""));
-
-            // operation
-            OnlineNode = new LabelNode("People");
-            OnlineNode.Font = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold | FontStyle.Underline, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            Nodes.Add(OnlineNode);
-
-            // add nodes
-            Trust.TrustMap.LockReading(delegate()
-            {
-                foreach (ulong key in Trust.TrustMap.Keys)
-                    OnUpdateTrust(key);
-            });
-
-            EndUpdate();
-
         }
 
         void Core_KeepData()
@@ -384,53 +353,36 @@ namespace RiseOp.Services.Trust
 
             LinkNode node = null;
 
-            if (TreeMode == CommandTreeMode.Operation)
+            if (NodeMap.ContainsKey(key))
             {
-                if (NodeMap.ContainsKey(key))
-                {
-                    node = NodeMap[key];
-                    node.Link = link; // links reset and re-loaded from file
-                }
-
-                TreeListNode parent = null;
-                OpLink uplink = GetTreeHigher(link);
-
-                if (uplink == null)
-                    parent = virtualParent;
-
-                else if (NodeMap.ContainsKey(uplink.UserID))
-                    parent = NodeMap[uplink.UserID];
-
-                else if (uplink.IsLoopRoot)
-                    parent = new TreeListNode(); // ensures that tree is refreshed
-
-                // if nodes status unchanged
-                if (node != null && parent != null && node.Parent == parent)
-                {
-                    
-                    node.UpdateName(CommandTreeMode.Operation);
-                    Invalidate();
-                    return;
-                }
-
-                // only if parent is visible
-                if(parent != null)
-                    RefreshOperationTree();
+                node = NodeMap[key];
+                node.Link = link; // links reset and re-loaded from file
             }
 
-            else if (TreeMode == CommandTreeMode.Online)
+            TreeListNode parent = null;
+            OpLink uplink = GetTreeHigher(link);
+
+            if (uplink == null)
+                parent = virtualParent;
+
+            else if (NodeMap.ContainsKey(uplink.UserID))
+                parent = NodeMap[uplink.UserID];
+
+            else if (uplink.IsLoopRoot)
+                parent = new TreeListNode(); // ensures that tree is refreshed
+
+            // if nodes status unchanged
+            if (node != null && parent != null && node.Parent == parent)
             {
-                if (NodeMap.ContainsKey(key))
-                {
-                    node = NodeMap[key];
-                    node.Link = link;
-                }
-                else
-                    node = new LinkNode(link, this, TreeMode);
-
-
-                UpdateOnline(node);
+                
+                node.UpdateName();
+                Invalidate();
+                return;
             }
+
+            // only if parent is visible
+            if(parent != null)
+                RefreshOperationTree();
         }
 
         private void UpdateOperation(LinkNode node)
@@ -563,7 +515,7 @@ namespace RiseOp.Services.Trust
             }
 
             node.UpdateColor();
-            node.UpdateName(CommandTreeMode.Operation);
+            node.UpdateName();
 
             if (selected)
                 node.Selected = true;
@@ -643,33 +595,6 @@ namespace RiseOp.Services.Trust
             node.Remove(); // remove from tree
         }
 
-        private void UpdateOnline(LinkNode node)
-        {
-            // if node offline, remove
-            if (Core.Locations.ActiveClientCount(node.Link.UserID) == 0)
-            {
-                if (NodeMap.ContainsKey(node.Link.UserID))
-                {
-                    node.Remove();
-                    NodeMap.Remove(node.Link.UserID);
-                }
-            }
-
-            // if node online, add if not already there
-            else
-            {
-                if (node.Parent == null)
-                {
-                    NodeMap[node.Link.UserID] = node;
-
-                    Utilities.InsertSubNode(OnlineNode, node);
-                    OnlineNode.Expand();
-                }
-
-                node.UpdateName(CommandTreeMode.Online);
-            }
-        }
-
         void LinkTree_NodeExpanding(object sender, EventArgs e)
         {
             LinkNode node = sender as LinkNode;
@@ -746,25 +671,12 @@ namespace RiseOp.Services.Trust
         {
             LinkNode item = GetSelected();
                
-            TreeMode = CommandTreeMode.Operation;
             Project = project;
             RefreshOperationTree();
 
             if (item != null && NodeMap.ContainsKey(item.Link.UserID))
                 NodeMap[item.Link.UserID].Selected = true;
         }
-
-        internal void ShowOnline()
-        {
-            LinkNode item = GetSelected();
-            
-            TreeMode = CommandTreeMode.Online;
-            SetupOnlineTree();
-
-            if (item != null && NodeMap.ContainsKey(item.Link.UserID))
-                NodeMap[item.Link.UserID].Selected = true;
-        }
-
 
         LinkNode GetSelected()
         {
@@ -819,6 +731,17 @@ namespace RiseOp.Services.Trust
         }
     }
 
+    internal class ProjectNode : TreeListNode
+    {
+        internal uint ID;
+
+        internal ProjectNode(string text, uint id)
+        {
+            Text = text;
+            ID = id;
+        }
+    }
+
     internal class LinkNode : TreeListNode
     {
         internal OpLink Link;
@@ -826,76 +749,66 @@ namespace RiseOp.Services.Trust
         internal LocationService Locations;
 
         internal bool AddSubs;
-        internal LabelNode Section;
+        internal ProjectNode Section;
 
         static Color DarkDarkGray = Color.FromArgb(96, 96, 96);
 
 
-        internal LinkNode(OpLink link, LinkTree main, CommandTreeMode mode)
+        internal LinkNode(OpLink link, LinkTree main)
         {
             Link = link;
             Trust = main.Trust;
             Locations = main.Core.Locations;
 
-            UpdateName(mode);
+            UpdateName();
 
             if (main.SelectedLink == Link.UserID && main.Project == main.SelectedProject)
                 Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
         }
 
-        internal void UpdateName(CommandTreeMode mode)
+        internal void UpdateName()
         {
             string txt = "";
 
             string title = Link.Title;
 
-            if (mode == CommandTreeMode.Operation)
+            txt += Trust.Core.GetName(Link.UserID);
+
+            //if (title != "")
+            //    txt += " - " + title;
+
+            if (Link.IsLoopRoot)
+                txt = "Trust Loop";
+
+            OpLink parent = Link.GetHigher(false);
+
+            if (parent != null)
             {
-                txt += Trust.Core.GetName(Link.UserID);
+                bool confirmed = false;
+                bool requested = false;
 
-                //if (title != "")
-                //    txt += " - " + title;
+                if (parent.Confirmed.Contains(Link.UserID))
+                    confirmed = true;
 
-                if (Link.IsLoopRoot)
-                    txt = "Trust Loop";
+                foreach (UplinkRequest request in parent.Requests)
+                    if (request.KeyID == Link.UserID)
+                        requested = true;
 
-                OpLink parent = Link.GetHigher(false);
-
-                if (parent != null)
-                {
-                    bool confirmed = false;
-                    bool requested = false;
-
-                    if (parent.Confirmed.Contains(Link.UserID))
-                        confirmed = true;
-
-                    foreach (UplinkRequest request in parent.Requests)
-                        if (request.KeyID == Link.UserID)
-                            requested = true;
-
-                    if (confirmed)
-                    { }
-                    else if (requested && parent.UserID == Trust.Core.UserID)
-                        txt += " (Accept Trust?)";
-                    else if (requested)
-                        txt += " (Trust Requested)";
-                    else if(parent.UserID == Trust.Core.UserID)
-                        txt += " (Trust Denied)";
-                    else
-                        txt += " (Trust Unconfirmed)";
-                }
-
-                else if (!Link.Active)
-                {
-                    txt += " (Left Project)";
-                }
+                if (confirmed)
+                { }
+                else if (requested && parent.UserID == Trust.Core.UserID)
+                    txt += " (Accept Trust?)";
+                else if (requested)
+                    txt += " (Trust Requested)";
+                else if (parent.UserID == Trust.Core.UserID)
+                    txt += " (Trust Denied)";
+                else
+                    txt += " (Trust Unconfirmed)";
             }
-            else
-            {
-                txt += Trust.Core.GetName(Link.UserID);
 
-                // if (title != "")
-                //     txt += " - " + title;
+            else if (!Link.Active)
+            {
+                txt += " (Left Project)";
             }
 
             txt += "     ";

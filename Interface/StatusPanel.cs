@@ -24,11 +24,9 @@ namespace RiseOp.Interface
         const string NetworkPage =
              @"<html>
                 <head>
-	                <style type=""text/css"">
-	                <!--
+	                <style type='text/css'>
 	                    body { margin: 0; }
 	                    p    { font-size: 8.25pt; font-family: Tahoma }
-	                -->
 	                </style>
 
                     <script>
@@ -50,10 +48,42 @@ namespace RiseOp.Interface
                 </body>
                 </html>";
 
+        const string ProjectPage =
+               @"<html>
+                <head>
+	                <style type='text/css'>
+		                body { margin: 0 }
+		                p    { font-size: 8.25pt; font-family: Tahoma }
+		                A:link {text-decoration: none; color: blue}
+		                A:visited {text-decoration: none; color: blue}
+		                A:active {text-decoration: none; color: blue}
+		                A:hover {text-decoration: underline; color: blue}
+	                </style>
+
+	                <script>
+		                function SetElement(id, text)
+		                {
+			                document.getElementById(id).innerHTML = text;
+		                }
+	                </script>
+                </head>
+                <body bgcolor=WhiteSmoke>
+	                <table width=100% cellpadding=4>
+		                <tr><td bgcolor=darkred><p><b><font color=white><?=name?></font></b></p></td></tr>
+	                </table>
+                	
+	                <table callpadding=3>    
+		                <tr><td><p><b><a href=''>Rename</a></b></p></td></tr>
+		                <tr><td><p><b><a href=''><?=leave?></a></b></p></td></tr>
+	                </table>
+
+                </body>
+                </html>";
+
         const string NodePage =
                 @"<html>
                 <head>
-	                <style type=""text/css"">
+	                <style type='text/css'>
 	                <!--
 	                    body { margin: 0 }
 	                    p    { font-size: 8.25pt; font-family: Tahoma }
@@ -89,17 +119,19 @@ namespace RiseOp.Interface
 
         OpCore Core;
 
-        enum StatusModeType { None, Network, User };
+        enum StatusModeType { None, Network, User, Project, Group };
         
         StatusModeType CurrentMode = StatusModeType.None;
 
         ulong UserID;
         uint  ProjectID;
+        string BuddyGroup;
 
         internal StatusPanel()
         {
             InitializeComponent();
 
+            StatusBrowser.ObjectForScripting = this;
         }
 
         internal void Init(OpCore core)
@@ -138,27 +170,17 @@ namespace RiseOp.Interface
 
         void Location_Update(ulong user)
         {
-            if (user == UserID)
+            if (CurrentMode == StatusModeType.User && user == UserID)
                 ShowUser(user, ProjectID);
         }
 
-        /*private void RightClickMenu_Opening(object sender, CancelEventArgs e)
+        private void SecondTimer_Tick(object sender, EventArgs e)
         {
-            LinkNode item = GetSelected();
-
-            if (item == null)
-            {
-                e.Cancel = true;
-                return;
-            }
-
-            if (item.Link.UserID != Core.UserID)
-            {
-                e.Cancel = true;
-                return;
-            }
+            if (CurrentMode == StatusModeType.Network)
+                ShowNetwork();
         }
 
+        /*
         private void EditMenu_Click(object sender, EventArgs e)
         {
             EditLink edit = new EditLink(Core, CommandTree.Project);
@@ -169,6 +191,8 @@ namespace RiseOp.Interface
 
         internal void ShowNetwork()
         {
+            //crit need timer for updates?
+
             StatusModeType mode = StatusModeType.Network;
             UserID = 0;
 
@@ -211,6 +235,24 @@ namespace RiseOp.Interface
                 foreach (string[] tuple in tuples)
                     StatusBrowser.Document.InvokeScript("SetElement", new String[] { tuple[0], tuple[1] });
             }
+        }
+
+        internal void ShowProject(uint project)
+        {
+            CurrentMode = StatusModeType.Project;
+            ProjectID = project;
+
+            StatusHtml.Replace("<?=name?>", Core.Trust.GetProjectName(project));
+
+            string leave = (project == 0) ? "" : "Leave";// leave option only for non-primary
+            StatusHtml.Replace("<?=leave?>", leave);
+        }
+
+        internal void ShowGroup(string name)
+        {
+            CurrentMode = StatusModeType.Group;
+
+            BuddyGroup = name;
         }
 
         internal void ShowUser(ulong user, uint project)

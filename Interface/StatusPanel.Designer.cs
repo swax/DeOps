@@ -28,7 +28,9 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.StatusBrowser = new System.Windows.Forms.WebBrowser();
+            this.SecondTimer = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // StatusBrowser
@@ -45,6 +47,12 @@
             this.StatusBrowser.TabIndex = 0;
             this.StatusBrowser.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.StatusBrowser_Navigating);
             // 
+            // SecondTimer
+            // 
+            this.SecondTimer.Enabled = true;
+            this.SecondTimer.Interval = 1000;
+            this.SecondTimer.Tick += new System.EventHandler(this.SecondTimer_Tick);
+            // 
             // StatusPanel
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -58,5 +66,6 @@
         #endregion
 
         private System.Windows.Forms.WebBrowser StatusBrowser;
+        private System.Windows.Forms.Timer SecondTimer;
     }
 }

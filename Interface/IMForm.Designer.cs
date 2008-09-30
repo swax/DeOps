@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
@@ -66,7 +67,42 @@
             // 
             // BuddyList
             // 
+            this.BuddyList.AllowDrop = true;
             this.BuddyList.BackColor = System.Drawing.SystemColors.Window;
+            toggleColumnHeader1.Hovered = false;
+            toggleColumnHeader1.Image = null;
+            toggleColumnHeader1.Index = 0;
+            toggleColumnHeader1.Pressed = false;
+            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.Selected = false;
+            toggleColumnHeader1.Text = "";
+            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader1.Visible = true;
+            toggleColumnHeader1.Width = 62;
+            toggleColumnHeader2.Hovered = false;
+            toggleColumnHeader2.Image = null;
+            toggleColumnHeader2.Index = 0;
+            toggleColumnHeader2.Pressed = false;
+            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader2.Selected = false;
+            toggleColumnHeader2.Text = "";
+            toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader2.Visible = true;
+            toggleColumnHeader2.Width = 62;
+            toggleColumnHeader3.Hovered = false;
+            toggleColumnHeader3.Image = null;
+            toggleColumnHeader3.Index = 0;
+            toggleColumnHeader3.Pressed = false;
+            toggleColumnHeader3.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader3.Selected = false;
+            toggleColumnHeader3.Text = "";
+            toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader3.Visible = true;
+            toggleColumnHeader3.Width = 62;
+            this.BuddyList.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
+            toggleColumnHeader1,
+            toggleColumnHeader2,
+            toggleColumnHeader3});
             this.BuddyList.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.BuddyList.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.BuddyList.DisableHorizontalScroll = true;
@@ -77,6 +113,7 @@
             this.BuddyList.ItemMenu = null;
             this.BuddyList.LabelEdit = false;
             this.BuddyList.Location = new System.Drawing.Point(0, 25);
+            this.BuddyList.MultiSelect = true;
             this.BuddyList.Name = "BuddyList";
             this.BuddyList.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.BuddyList.RowTrackColor = System.Drawing.Color.WhiteSmoke;
@@ -85,6 +122,7 @@
             this.BuddyList.StateImageList = null;
             this.BuddyList.TabIndex = 1;
             this.BuddyList.Text = "buddyView1";
+            this.BuddyList.SelectedIndexChanged += new System.EventHandler(this.BuddyList_SelectedIndexChanged);
             // 
             // TopStrip
             // 
@@ -97,14 +135,6 @@
             this.TopStrip.Size = new System.Drawing.Size(190, 25);
             this.TopStrip.TabIndex = 0;
             this.TopStrip.Text = "toolStrip1";
-            // 
-            // SelectionInfo
-            // 
-            this.SelectionInfo.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.SelectionInfo.Location = new System.Drawing.Point(0, 0);
-            this.SelectionInfo.Name = "SelectionInfo";
-            this.SelectionInfo.Size = new System.Drawing.Size(190, 123);
-            this.SelectionInfo.TabIndex = 0;
             // 
             // AddButton
             // 
@@ -127,6 +157,14 @@
             this.MinButton.Text = "Min to Tray";
             this.MinButton.Click += new System.EventHandler(this.MinButton_Click);
             // 
+            // SelectionInfo
+            // 
+            this.SelectionInfo.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.SelectionInfo.Location = new System.Drawing.Point(0, 0);
+            this.SelectionInfo.Name = "SelectionInfo";
+            this.SelectionInfo.Size = new System.Drawing.Size(190, 123);
+            this.SelectionInfo.TabIndex = 0;
+            // 
             // IMForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -134,7 +172,7 @@
             this.ClientSize = new System.Drawing.Size(190, 426);
             this.Controls.Add(this.splitContainer1);
             this.Name = "IMForm";
-            this.Text = "IMForm";
+            this.Text = "RiseOp IM";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.IMForm_FormClosing);
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel1.PerformLayout();

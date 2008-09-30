@@ -1,54 +1,114 @@
 
+search for interop services uses
+
 status
-	trust loop
-		who trusts who
+	buddy label
+		if group != null
+			remove group
+			rename group
+			add buddy
+		else
+			add buddy
+			add group
 
-	buddy group
-		remove group
+	project (including main)
+		rename project
+		leave project
 
-	buddy other
-		add buddy
-		add group
-
-	link tree other
+	other
 		network status
-			stat
-		should make icon so main/im form can share it
 
 	user
-		selected user name (edit name)
-			alternate names from trust/buddy
-		Title
-		Projects
-		
-		IM / Mail
-		
-		trust
-			link/unlink
+		trust loop
+			who trusts who
 			
-		buddy
-			link location
-			add as buddy
-			remove from buddies
-			
+		selected user name - click to change
+			alternate names from trust/buddy - click to replace
+		Title - click to change
+		Projects - click to goto
+		
+		next to name - IM / Mail
+		
 		locations
-			names (edit)
+			names (edit), or offline
 			local time if diff
 			
-		projects
-
- person net open/nat/blocked, not finding local untrusted
-chat default in text mode, put formatting options in right click menu.. enable formatting, remove tools from toolbar
+		trust options - with trust icon
+			link/unlink
+			
+		buddy options - with smiliy buddy icon
+			Get Buddy Link
+			Add as Buddy
+			Remove from Buddies
+			
+on click re-search buddy
 remove buddy only active in buddy view, use separator
-also status if killed
-
-user 2 user transfer
-
 add buddy button
 right click remove buddy
+rename group option
+rename project/operation in label node
 
 give buddy menu items
 click on buddy displays info
+
+
+icons
+	add buddy - smiliy face
+	remove group
+	add group - bunch of yellow circles
+	remove group
+
+redo invite
+
+bugs
+	losing  buddy loc through nat/open/blocked net
+	person net open/nat/blocked, not finding local untrusted
+	
+chat default in text mode, put formatting options in right click menu.. enable formatting, remove tools from toolbar
+
+also status if killed
+
+user 2 user transfer
+	select file
+		encrypted, subhashed, put in shared directory
+			persists between runs
+		transfer interface shows - active transfer / shared files
+	link created, auto-pasted to IM window
+		riseop://file/opID/userID/fileHash/size
+	user clicks link
+		transfer service searches for hash at target
+		when found, location added, transfer started
+
+release
+	october is alpha alpha month - make some user friends
+	nullsoft installer - try it
+	hide sim and other tools?
+	xenocode (hopefully supports linq, inspect)
+	ensure auto-update is working
+	ensure logging is working, not full logging, but stats from webcache
+	udpate about page - saying if interested and very skilled, possible work options
+		goals 3-4 expert programmers at 7% equity
+	have a way to turn off the website to new users
+	put version info on splash
+	put non-commercial use in license
+	freeloader version
+	small friend test dad, moe, bernard, andrey, justin ~7 o'clock - 10/3
+	need a way to officially sign user's key with registered
+		embed personal public key and allow possibility for signing user and being 'registered'
+		$5 register user (sign users key through riseop.com), added to user's profile
+			when other people see profile they see the peace logo next to their name - meaning they support riseOp!
+		need a seperate user area from joomla, copy book system user implementation  
+	next post somethingawful beta test
+		they d/l the client
+		get feedback
+		tell friends
+		more people d/l
+		
+		eventually posted on bigger news site
+		lots of downloads
+			how to offload bandwidth usage?
+		
+
 
 report name discrepencies in status info
 

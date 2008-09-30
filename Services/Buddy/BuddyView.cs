@@ -32,6 +32,7 @@ namespace RiseOp.Services.Buddy
         Point DragStart = Point.Empty;
         string[] DragBuddies = null;
 
+
         internal BuddyView()
         {
             DisableHScroll = true;
@@ -379,11 +380,13 @@ namespace RiseOp.Services.Buddy
     {
         internal ulong User;
         internal bool GroupLabel;
+        internal bool Blank;
 
         internal BuddyItem()
         {
             Text = "";
             ImageIndex = 0;
+            Blank = true;
         }
 
         internal BuddyItem(string text, Font font, bool group)
