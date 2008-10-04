@@ -352,7 +352,7 @@ namespace RiseOp.Simulator
 
         
             // storage
-            StorageService storage = core.GetService("Storage") as StorageService;
+            StorageService storage = core.GetService(ServiceID.Storage) as StorageService;
             
             if (!found && storage != null)
                 if (storage.FileMap.SafeContainsKey(TrackHashID))
@@ -371,7 +371,7 @@ namespace RiseOp.Simulator
                 });
 
             // profile
-            ProfileService profiles = core.GetService("Profile") as ProfileService;
+            ProfileService profiles = core.GetService(ServiceID.Profile) as ProfileService;
 
             if (!found && profiles != null)
                 profiles.ProfileMap.LockReading(delegate()
@@ -385,7 +385,7 @@ namespace RiseOp.Simulator
                 });
 
             // mail
-            MailService mail = core.GetService("Mail") as MailService;
+            MailService mail = core.GetService(ServiceID.Mail) as MailService;
 
             if (!found && mail != null)
             {
@@ -403,7 +403,7 @@ namespace RiseOp.Simulator
             }
 
             // board
-            BoardService boards = core.GetService("Board") as BoardService;
+            BoardService boards = core.GetService(ServiceID.Board) as BoardService;
 
             if (!found && boards != null)
                 boards.BoardMap.LockReading(delegate()

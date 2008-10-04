@@ -28,15 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
             RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(IMForm));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.TopStrip = new System.Windows.Forms.ToolStrip();
+            this.OptionsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.AddButton = new System.Windows.Forms.ToolStripButton();
-            this.MinButton = new System.Windows.Forms.ToolStripButton();
             BuddyList = new RiseOp.Services.Buddy.BuddyView();
             SelectionInfo = new StatusPanel();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -47,6 +44,7 @@
             // 
             // splitContainer1
             // 
+            this.splitContainer1.BackColor = System.Drawing.Color.White;
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
             this.splitContainer1.Location = new System.Drawing.Point(0, 0);
@@ -69,6 +67,7 @@
             // 
             this.BuddyList.AllowDrop = true;
             this.BuddyList.BackColor = System.Drawing.SystemColors.Window;
+            this.BuddyList.BorderStyle = System.Windows.Forms.BorderStyle.None;
             toggleColumnHeader1.Hovered = false;
             toggleColumnHeader1.Image = null;
             toggleColumnHeader1.Index = 0;
@@ -78,31 +77,9 @@
             toggleColumnHeader1.Text = "";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 62;
-            toggleColumnHeader2.Hovered = false;
-            toggleColumnHeader2.Image = null;
-            toggleColumnHeader2.Index = 0;
-            toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader2.Selected = false;
-            toggleColumnHeader2.Text = "";
-            toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader2.Visible = true;
-            toggleColumnHeader2.Width = 62;
-            toggleColumnHeader3.Hovered = false;
-            toggleColumnHeader3.Image = null;
-            toggleColumnHeader3.Index = 0;
-            toggleColumnHeader3.Pressed = false;
-            toggleColumnHeader3.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader3.Selected = false;
-            toggleColumnHeader3.Text = "";
-            toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader3.Visible = true;
-            toggleColumnHeader3.Width = 62;
+            toggleColumnHeader1.Width = 186;
             this.BuddyList.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
-            toggleColumnHeader1,
-            toggleColumnHeader2,
-            toggleColumnHeader3});
+            toggleColumnHeader1});
             this.BuddyList.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.BuddyList.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.BuddyList.DisableHorizontalScroll = true;
@@ -122,22 +99,31 @@
             this.BuddyList.StateImageList = null;
             this.BuddyList.TabIndex = 1;
             this.BuddyList.Text = "buddyView1";
-            this.BuddyList.SelectedIndexChanged += new System.EventHandler(this.BuddyList_SelectedIndexChanged);
             // 
             // TopStrip
             // 
             this.TopStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.TopStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.AddButton,
-            this.MinButton});
+            this.OptionsButton,
+            this.AddButton});
             this.TopStrip.Location = new System.Drawing.Point(0, 0);
             this.TopStrip.Name = "TopStrip";
             this.TopStrip.Size = new System.Drawing.Size(190, 25);
             this.TopStrip.TabIndex = 0;
             this.TopStrip.Text = "toolStrip1";
             // 
+            // OptionsButton
+            // 
+            this.OptionsButton.Image = ((System.Drawing.Image)(resources.GetObject("OptionsButton.Image")));
+            this.OptionsButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.OptionsButton.Name = "OptionsButton";
+            this.OptionsButton.Size = new System.Drawing.Size(73, 22);
+            this.OptionsButton.Text = "Options";
+            this.OptionsButton.ToolTipText = "Options";
+            // 
             // AddButton
             // 
+            this.AddButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
             this.AddButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.AddButton.Image = ((System.Drawing.Image)(resources.GetObject("AddButton.Image")));
             this.AddButton.ImageTransparentColor = System.Drawing.Color.Magenta;
@@ -146,16 +132,6 @@
             this.AddButton.Text = "Add Buddy";
             this.AddButton.ToolTipText = "Add Buddy";
             this.AddButton.Click += new System.EventHandler(this.AddButton_Click);
-            // 
-            // MinButton
-            // 
-            this.MinButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.MinButton.Image = ((System.Drawing.Image)(resources.GetObject("MinButton.Image")));
-            this.MinButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.MinButton.Name = "MinButton";
-            this.MinButton.Size = new System.Drawing.Size(23, 22);
-            this.MinButton.Text = "Min to Tray";
-            this.MinButton.Click += new System.EventHandler(this.MinButton_Click);
             // 
             // SelectionInfo
             // 
@@ -169,10 +145,12 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(190, 426);
             this.Controls.Add(this.splitContainer1);
             this.Name = "IMForm";
             this.Text = "RiseOp IM";
+            this.SizeChanged += new System.EventHandler(this.IMForm_SizeChanged);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.IMForm_FormClosing);
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel1.PerformLayout();
@@ -191,6 +169,6 @@
         private System.Windows.Forms.ToolStrip TopStrip;
         private StatusPanel SelectionInfo;
         private System.Windows.Forms.ToolStripButton AddButton;
-        private System.Windows.Forms.ToolStripButton MinButton;
+        private System.Windows.Forms.ToolStripDropDownButton OptionsButton;
     }
 }

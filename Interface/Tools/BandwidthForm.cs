@@ -31,7 +31,9 @@ namespace RiseOp.Interface.Tools
         {
             List<OpCore> cores = new List<OpCore>();
 
-            cores.Add(context.Lookup);
+            if(context.Lookup != null)
+                cores.Add(context.Lookup);
+            
             context.Cores.LockReading(delegate() { cores.AddRange(context.Cores); });
 
             new BandwidthForm(cores).Show();

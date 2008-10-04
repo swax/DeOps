@@ -23,13 +23,11 @@ namespace RiseOp.Services.Trust
         const byte Packet_ID = 0x10;
         const byte Packet_Name = 0x20;
         const byte Packet_UserName = 0x30;
-        const byte Packet_UserTitle = 0x40;
 
 
         internal uint ID;
         internal string Name = "Unknown";
         internal string UserName = "Unknown";
-        internal string UserTitle = "";
 
 
         internal override byte[] Encode(G2Protocol protocol)
@@ -41,7 +39,6 @@ namespace RiseOp.Services.Trust
                 protocol.WritePacket(project, Packet_ID, BitConverter.GetBytes(ID));
                 protocol.WritePacket(project, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
                 protocol.WritePacket(project, Packet_UserName, UTF8Encoding.UTF8.GetBytes(UserName));
-                protocol.WritePacket(project, Packet_UserTitle, UTF8Encoding.UTF8.GetBytes(UserTitle));
 
                 return protocol.WriteFinish();
             }
@@ -70,10 +67,6 @@ namespace RiseOp.Services.Trust
                     case Packet_UserName:
                         project.UserName = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
-
-                    case Packet_UserTitle:
-                        project.UserTitle = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
                 }
             }
 
@@ -86,10 +79,13 @@ namespace RiseOp.Services.Trust
         const byte Packet_Project = 0x10;
         const byte Packet_Target = 0x20;
         const byte Packet_Uplink = 0x30;
+        const byte Packet_Title = 0x40;
+
 
         internal uint Project;
         internal byte[] Target;
         internal bool Uplink;
+        internal string Title;
 
         internal ulong TargetID;
 
@@ -97,11 +93,21 @@ namespace RiseOp.Services.Trust
         {
         }
 
-        internal LinkData(uint project, byte[] target, bool uplink)
+        // uplink
+        internal LinkData(uint project, byte[] target)
         {
             Project = project;
             Target = target;
-            Uplink = uplink;
+            Uplink = true;
+        }
+
+        // downlink
+        internal LinkData(uint project, byte[] target, string title)
+        {
+            Project = project;
+            Target = target;
+            Uplink = false;
+            Title = title;
         }
 
         internal override byte[] Encode(G2Protocol protocol)
@@ -113,6 +119,9 @@ namespace RiseOp.Services.Trust
                 protocol.WritePacket(link, Packet_Project, BitConverter.GetBytes(Project));
                 protocol.WritePacket(link, Packet_Target, Target);
                 protocol.WritePacket(link, Packet_Uplink, BitConverter.GetBytes(Uplink));
+
+                if(Title != null)
+                    protocol.WritePacket(link, Packet_Title, UTF8Encoding.UTF8.GetBytes(Title));
 
                 return protocol.WriteFinish();
             }
@@ -141,6 +150,10 @@ namespace RiseOp.Services.Trust
 
                     case Packet_Uplink:
                         link.Uplink = BitConverter.ToBoolean(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_Title:
+                        link.Title = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }

@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
+using RiseOp.Interface.Setup;
+
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
@@ -26,11 +28,12 @@ namespace RiseOp.Services.Buddy
 
         internal VersionedCache Cache;
 
+        internal OpBuddy LocalBuddy;
         internal ThreadedDictionary<ulong, OpBuddy> BuddyList = new ThreadedDictionary<ulong, OpBuddy>();
 
         internal BuddyGuiUpdateHandler GuiUpdate;
 
-        bool SaveList;
+        internal bool SaveList;
 
 
         internal BuddyService(OpCore core)
@@ -48,8 +51,10 @@ namespace RiseOp.Services.Buddy
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.Load();
 
-            if(!BuddyList.SafeContainsKey(Network.Local.UserID))
+            if(!BuddyList.SafeContainsKey(Core.UserID))
                 AddBuddy(Core.User.Settings.UserName, Core.User.Settings.KeyPublic);
+
+            BuddyList.SafeTryGetValue(Core.UserID, out LocalBuddy);
         }
 
         public void Dispose()
@@ -61,19 +66,15 @@ namespace RiseOp.Services.Buddy
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
         }
 
-        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
+        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
         {
             if (menuType != InterfaceMenuType.Quick)
-                return null;
+                return;
 
-            List<MenuItemInfo> menus = new List<MenuItemInfo>();
+            if (user != Core.UserID && !BuddyList.SafeContainsKey(user))
+                menus.Add(new MenuItemInfo("Add Buddy", BuddyRes.buddy_add, new EventHandler(Menu_Add)));
 
-            if (BuddyList.SafeContainsKey(user))
-                menus.Add(new MenuItemInfo("Remove Buddy", null, new EventHandler(Menu_Remove)));
-            else
-                menus.Add(new MenuItemInfo("Add Buddy", null, new EventHandler(Menu_Add)));
-
-            return menus;
+           menus.Add(new MenuItemInfo("Identity", BuddyRes.buddy_who, new EventHandler(Menu_Identity)));
         }
 
         private void Menu_Add(object sender, EventArgs e)
@@ -81,7 +82,7 @@ namespace RiseOp.Services.Buddy
             if (!(sender is IViewParams) || Core.GuiMain == null)
                 return;
 
-            ulong user = ((IViewParams)sender).GetKey();
+            ulong user = ((IViewParams)sender).GetUser();
             uint project = ((IViewParams)sender).GetProject();
 
 
@@ -90,15 +91,19 @@ namespace RiseOp.Services.Buddy
             AddBuddy(name, Core.KeyMap[user]);
         }
 
-        private void Menu_Remove(object sender, EventArgs e)
+        private void Menu_Identity(object sender, EventArgs e)
         {
             if (!(sender is IViewParams) || Core.GuiMain == null)
                 return;
 
-            ulong user = ((IViewParams)sender).GetKey();
-            uint project = ((IViewParams)sender).GetProject();
+            ulong user = ((IViewParams)sender).GetUser();
 
-            RemoveBuddy(user);
+            ShowIdentity(user);
+        }
+
+        internal void ShowIdentity(ulong user)
+        {
+            new IdentityForm(Core, user).ShowDialog();
         }
 
         public void SimTest()
@@ -215,7 +220,7 @@ namespace RiseOp.Services.Buddy
             Core.RunInGuiThread(GuiUpdate);
         }
 
-        private void SaveLocal()
+        internal void SaveLocal()
         {
             // create temp, write buddy list
             string tempPath = Core.GetTempPath();
@@ -276,6 +281,8 @@ namespace RiseOp.Services.Buddy
             buddy.Group = group;
 
             SaveList = true;
+
+            Core.RunInGuiThread(GuiUpdate);
         }
 
         internal void RemoveGroup(string group)
@@ -285,6 +292,19 @@ namespace RiseOp.Services.Buddy
                 foreach (OpBuddy buddy in BuddyList.Values.Where(b => b.Group == group))
                     buddy.Group = null;
             });
+
+            Core.RunInGuiThread(GuiUpdate);
+        }
+
+        internal void RenameGroup(string oldName, string newName)
+        {
+            BuddyList.LockReading(delegate()
+            {
+                foreach (OpBuddy buddy in BuddyList.Values.Where(b => b.Group == oldName))
+                    buddy.Group = newName;
+            });
+
+            Core.RunInGuiThread(GuiUpdate);
         }
     }
 

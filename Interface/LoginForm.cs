@@ -99,7 +99,7 @@ namespace RiseOp.Interface
             CreateUser user = null;
 
             // private or secret network
-            if (arg.StartsWith(@"riseop://invite/"))
+            if (arg.StartsWith("riseop://invite:"))
                 user = ReadInvite(arg.Substring(16));
 
             // public network
@@ -107,7 +107,8 @@ namespace RiseOp.Interface
                 user = new CreateUser(Context, arg.Substring(9), AccessType.Public);
 
             // show create user dialog
-            user.ShowDialog(this);
+            if(user != null)
+                user.ShowDialog(this);
 
             Close(); // if user doesnt choose to create link, just close app
         }
@@ -142,7 +143,7 @@ namespace RiseOp.Interface
             }
 
             // private or secret network
-            else if (join.OpName.StartsWith(@"invite/"))
+            else if (join.OpName.StartsWith("invite:"))
                 user = ReadInvite(join.OpName.Substring(7));
 
             // public network
@@ -158,32 +159,17 @@ namespace RiseOp.Interface
         private CreateUser ReadInvite(string link)
         {
             CreateUser user = null;
-            bool passed = false;
 
-            // loop get password dialog until it works
-            while (!passed)
+            try
             {
-                GetTextDialog getPassword = new GetTextDialog("Invite Link", "Enter the password for this invite link", "");
-                getPassword.ResultBox.PasswordChar = '•';
+                InvitePackage invite = OpCore.OpenInvite(Context, Protocol, link);
 
-                if (getPassword.ShowDialog() != DialogResult.OK)
-                    return null;
-
-                InvitePackage invite = null;
-
-                try
-                {
-                    invite = OpCore.OpenInvite(Protocol, link, getPassword.ResultBox.Text);
-                }
-                catch { }
-
-                if (invite == null)
-                    MessageBox.Show("Wrong password");
-                else
-                {
+                if(invite != null)
                     user = new CreateUser(Context, invite);
-                    passed = true;
-                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);        
             }
 
             return user;

@@ -9,7 +9,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using System.Runtime.InteropServices;
 
 using RiseOp.Services;
 using RiseOp.Services.Assist;
@@ -271,11 +270,10 @@ namespace RiseOp.Implementation
             return id.ToString();
         }
 
-        internal OpService GetService(string name)
+        internal OpService GetService(ServiceID id)
         {
-            foreach (OpService service in ServiceMap.Values)
-                if (service.Name == name)
-                    return service;
+            if (ServiceMap.ContainsKey((uint)id))
+                return ServiceMap[(uint)id];
 
             return null;
         }
@@ -849,28 +847,114 @@ namespace RiseOp.Implementation
             RecordBandwidthSeconds = seconds; // do this last to ensure all buffers set
         }
 
-        internal string CreateInvite(string password)
+        internal void ShowMainView()
         {
+            ShowMainView(false);
+        }
+
+        internal void ShowMainView(bool sideMode)
+        {
+            if (User.Settings.GlobalIM)
+                GuiMain = new IMForm(this);
+            else
+                GuiMain = new MainForm(this, sideMode);
+
+            GuiMain.Show();
+        }
+
+
+        internal void RenameUser(ulong user, string name)
+        {
+            if (InvokeRequired)
+            {
+                RunInCoreAsync(() => RenameUser(user, name));
+                return;
+            }
+
+            NameMap.SafeAdd(user, name);
+
+            // update services with new name
+            if (Trust != null)
+            {
+                if (user == UserID)
+                {
+                    Trust.LocalTrust.Name = name;
+                    Trust.SaveLocal();
+                }
+
+                RunInGuiThread(Trust.GuiUpdate, user);
+            }
+
+            if (Buddies != null)
+            {
+                if (user == UserID)
+                {
+                    Buddies.LocalBuddy.Name = name;
+                    Buddies.SaveLocal();
+                }
+
+                RunInGuiThread(Buddies.GuiUpdate);
+            }
+        }
+
+
+        internal string GetIdentity(ulong user)
+        {
+	        // riseop://name@opname/opid~publickey
+
+            IdentityLink link = new IdentityLink()
+            {
+                Name = GetName(user),
+                OpName = User.Settings.Operation,
+                OpID = GetInviteID(User.Settings.OpKey),
+                PublicKey = User.Settings.KeyPublic
+            };
+
+            return link.Encode();
+        }
+
+        private static byte[] GetInviteID(byte[] opKey)
+        {
+            // the invite id is how we match the invite to the op of the invitee's public key
+            // different than regular opID so that invite link / public link does not compramise
+            // dht position of op on lookup network
+
+            byte[] id = new MD5CryptoServiceProvider().ComputeHash(opKey);
+
+            return Utilities.ExtractBytes(id, 0, 8);
+        }
+
+        internal string GenerateInvite(string pubLink, out string name)
+        {
+            IdentityLink ident = IdentityLink.Decode(pubLink);
+
+            name = ident.Name;
+
+            // riseop://invite:firesoft/person@GlobalIM/originalopID~invitedata {op key web caches ips}
+
+            string link = "riseop://invite:" + User.Settings.Operation + "/";
+            link += ident.Name + "@" + ident.OpName + "/";
+
+            // encode invite info in user's public key
             byte[] data = new byte[4096];
             MemoryStream mem = new MemoryStream(data);
             PacketStream stream = new PacketStream(mem, GuiProtocol, FileAccess.Write);
 
             // write invite
             OneWayInvite invite = new OneWayInvite();
+            invite.UserName = ident.Name;
             invite.OpName = User.Settings.Operation;
             invite.OpAccess = User.Settings.OpAccess;
             invite.OpID = User.Settings.OpKey;
 
             stream.WritePacket(invite);
 
-
             // write some contacts
-            foreach(DhtContact contact in Network.Routing.GetCacheArea())
+            foreach (DhtContact contact in Network.Routing.GetCacheArea())
             {
                 byte[] bytes = contact.Encode(GuiProtocol, InvitePacket.Contact);
                 mem.Write(bytes, 0, bytes.Length);
             }
-
 
             // write web caches
             foreach (WebCache cache in Network.Cache.GetLastSeen(3))
@@ -878,65 +962,101 @@ namespace RiseOp.Implementation
 
             mem.WriteByte(0); // end packets
 
+            byte[] packets = Utilities.ExtractBytes(data, 0, (int)mem.Position);
+            byte[] encrypted = Utilities.KeytoRsa(ident.PublicKey).Encrypt(packets,false);
 
-            // encrypt packet with hashed password
-            byte[] salt = new byte[4];
-            RNGCryptoServiceProvider rnd = new RNGCryptoServiceProvider();
-            rnd.GetBytes(salt);
+            // ensure that this link is opened from the original operation remote's public key came from
+            byte[] final = Utilities.CombineArrays(ident.OpID, encrypted);
 
-            byte[] key = Utilities.GetPasswordKey(password, salt);
-
-            byte[] encrypted = Utilities.EncryptBytes(Utilities.ExtractBytes(data, 0, (int)mem.Position), key);
-
-            encrypted = Utilities.CombineArrays(salt, encrypted);
-
-            // return base 64 link
-            return "riseop://invite/" + Utilities.ToBase64String(encrypted);
-           
-
-            // generate invite packet
-            /*OneWayInvite invite = new OneWayInvite();
-
-            invite.OpName = Profile.Settings.Operation;
-            invite.OpAccess = Profile.Settings.OpAccess;
-            invite.OpID = Profile.Settings.OpKey;
-            invite.Contacts = new List<DhtContact>(Network.Routing.GetCacheArea());
-
-            // encrypt packet with hashed password
-            byte[] salt = new byte[4];
-            RNGCryptoServiceProvider rnd = new RNGCryptoServiceProvider();
-            rnd.GetBytes(salt);
-
-            byte[] key = Utilities.GetPasswordKey(password, salt);
-
-            byte[] encrypted = Utilities.EncryptBytes(invite.Encode(GuiProtocol), key);
-
-            encrypted = Utilities.CombineArrays(salt, encrypted);
-
-            // return base 64 link
-            return "riseop://invite/" + Utilities.ToBase64String(encrypted);*/
+            return link + Utilities.ToBase64String(final);
         }
 
-        internal static InvitePackage OpenInvite(G2Protocol protocol, string link, string password)
+        internal static InvitePackage OpenInvite(RiseOpContext context, G2Protocol protocol, string link)
         {
-            byte[] encrypted = Utilities.FromBase64String(link);
+            string[] mainParts = link.Split('/');
 
-            // decrypt packet with hashed password
-            byte[] salt = Utilities.ExtractBytes(encrypted, 0, 4);
-            encrypted = Utilities.ExtractBytes(encrypted, 4, encrypted.Length - 4);
+            if (mainParts.Length < 3)
+                throw new Exception("Invalid Link");
 
-            byte[] key = Utilities.GetPasswordKey(password, salt);
+            // Select John Marshall's Global IM Profile
+            string[] nameParts = mainParts[1].Split('@');
+            string name = nameParts[0];
+            string op = nameParts[1];
 
-            byte[] decrypted = Utilities.DecryptBytes(encrypted, encrypted.Length, key);
+            byte[] data = Utilities.FromBase64String(mainParts[2]);
+            byte[] opID = Utilities.ExtractBytes(data, 0, 8);
+            byte[] encrypted = Utilities.ExtractBytes(data, 8, data.Length - 8);
+            byte[] decrypted = null;
 
-            // get packets
+            // try opening invite with a currently loaded core
+            context.Cores.LockReading(delegate()
+            {
+                foreach (OpCore core in context.Cores)
+                    try
+                    {
+                        if (Utilities.MemCompare(opID, GetInviteID(core.User.Settings.OpKey)))
+                            decrypted = core.User.Settings.KeyPair.Decrypt(encrypted, false);
+                    }
+                    catch { }
+            });
+
+            // have user select profile associated with the invite
+            while (decrypted == null)
+            {
+                OpenFileDialog open = new OpenFileDialog();
+
+                open.Title = "Open " + name + "'s " + op + " Profile to Verify Invitation";
+                open.InitialDirectory = Application.StartupPath;
+                open.Filter = "RiseOp Identity (*.rop)|*.rop";
+
+                if (open.ShowDialog() != DialogResult.OK)
+                    return null; // user doesnt want to try any more
+
+                GetTextDialog pass = new GetTextDialog("Passphrase", "Enter the passphrase for thise profile", "");
+                pass.ResultBox.UseSystemPasswordChar = true;
+
+                if (pass.ShowDialog() != DialogResult.OK)
+                    continue; // let user choose another profile
+
+                try
+                {
+                    // open profile
+                    OpUser user = new OpUser(open.FileName, pass.ResultBox.Text, null);
+                    user.Load(LoadModeType.Settings);
+
+                    // ensure the invitation is for this op specifically
+                    if (!Utilities.MemCompare(opID, GetInviteID(user.Settings.OpKey)))
+                    {
+                        MessageBox.Show("This is not a " + op + " profile");
+                        continue;
+                    }
+
+                    // try to decrypt the invitation
+                    try
+                    {
+                        decrypted = user.Settings.KeyPair.Decrypt(encrypted, false);
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Could not open the invitation with this profile");
+                        continue;
+                    }
+                }
+                catch
+                {
+                    MessageBox.Show("Wrong password");
+                }
+            }
+
+            // if we get down here, opening invite was success
+
             MemoryStream mem = new MemoryStream(decrypted);
             PacketStream stream = new PacketStream(mem, protocol, FileAccess.Read);
 
             InvitePackage package = new InvitePackage();
 
             G2Header root = null;
-            while(stream.ReadPacket(ref root))
+            while (stream.ReadPacket(ref root))
             {
                 if (root.Name == InvitePacket.Info)
                     package.Info = OneWayInvite.Decode(root);
@@ -960,22 +1080,48 @@ namespace RiseOp.Implementation
             foreach (WebCache cache in invite.Caches)
                 Network.Cache.AddCache(cache);
         }
+    }
 
-        internal void ShowMainView()
+    internal class IdentityLink
+    {
+        internal string Name;
+        internal string OpName;
+        internal byte[] OpID;
+        internal byte[] PublicKey;
+
+        internal string Encode()
         {
-            ShowMainView(false);
+            string link = "riseop://" + Name + "@" + OpName + "/";
+
+            byte[] totalKey = Utilities.CombineArrays(OpID, PublicKey);
+
+            return link + Utilities.ToBase64String(totalKey);
         }
 
-        internal void ShowMainView(bool sideMode)
+        internal static IdentityLink Decode(string link)
         {
-            if (User.Settings.GlobalIM)
-                GuiMain = new IMForm(this);
-            else
-                GuiMain = new MainForm(this, sideMode);
+            if (link.StartsWith("riseop://"))
+                link = link.Substring(9);
 
-            GuiMain.Show();
+            string[] mainParts = link.Split('/');
+            if (mainParts.Length < 2)
+                throw new Exception("Invalid Link");
+
+            string[] nameParts = mainParts[0].Split('@');
+            if (nameParts.Length < 2)
+                throw new Exception("Invalid Link");
+
+            IdentityLink ident = new IdentityLink();
+
+            ident.Name = nameParts[0];
+            ident.OpName = nameParts[1];
+
+            byte[] totalKey = Utilities.FromBase64String(mainParts[1]);
+            ident.OpID = Utilities.ExtractBytes(totalKey, 0, 8);
+            ident.PublicKey = Utilities.ExtractBytes(totalKey, 8, totalKey.Length - 8);
+
+            return ident;
         }
-
     }
 
     internal class InvitePackage

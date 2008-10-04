@@ -59,9 +59,8 @@ namespace RiseOp.Services.Location
         }
 
 
-        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
+        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
         {
-            return null;
         }
 
         void Core_SecondTimer()

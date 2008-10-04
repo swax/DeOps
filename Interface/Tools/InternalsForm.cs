@@ -64,9 +64,9 @@ namespace RiseOp.Interface.Tools
 
 			Core    = core;
 
-            Boards = core.GetService("Board") as BoardService;
-            Mail = core.GetService("Mail") as MailService;
-            Profiles = core.GetService("Profile") as ProfileService;
+            Boards = core.GetService(ServiceID.Board) as BoardService;
+            Mail = core.GetService(ServiceID.Mail) as MailService;
+            Profiles = core.GetService(ServiceID.Profile ) as ProfileService;
 
             Text = "Internals (" + Core.Network.GetLabel() + ")";
 
@@ -874,7 +874,7 @@ namespace RiseOp.Interface.Tools
 
                         projects += projectName + ", ";
 
-                        titles += projectName + ": " + link.Title + ", ";
+                        titles += projectName + ", ";
 
                         if (link.Uplink != null)
                             uplinks += projectName + ": " + GetLinkName(link.Uplink.UserID) + ", ";

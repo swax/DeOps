@@ -139,18 +139,13 @@ namespace RiseOp.Services.Profile
             return profile;
         }
 
-        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
+        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
         {
-            List<MenuItemInfo> menus = new List<MenuItemInfo>();
-
             if (menuType == InterfaceMenuType.Internal)
                 menus.Add(new MenuItemInfo("Data/Profile", ProfileRes.IconX, new EventHandler(Menu_View)));
 
             if (menuType == InterfaceMenuType.External)
                 menus.Add(new MenuItemInfo("Profile", ProfileRes.IconX, new EventHandler(Menu_View)));
-
-
-            return menus;
         }
 
         internal void Menu_View(object sender, EventArgs args)
@@ -160,7 +155,7 @@ namespace RiseOp.Services.Profile
             if (node == null)
                 return;
 
-            ulong key = node.GetKey();
+            ulong key = node.GetUser();
 
             if (Network.Responsive)
                 Research(key);

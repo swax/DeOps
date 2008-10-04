@@ -15,12 +15,12 @@ namespace RiseOp.Interface.Settings
     {
         OpUser Profile;
 
-        internal User(MainForm parent)
-            : base(parent.Core)
+        internal User(OpCore core)
+            : base(core)
         {
             InitializeComponent();
 
-            Profile = parent.Core.User;
+            Profile = core.User;
 
             NameBox.Text = Profile.Settings.UserName;
         }

@@ -628,43 +628,43 @@ namespace RiseOp.Services.Mail
             return null;
         }
 
-        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
+        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
         {
-            List<MenuItemInfo> menus = new List<MenuItemInfo>();
-
             if (menuType == InterfaceMenuType.Quick)
             {
                 if (user == Core.UserID)
-                    return null;
+                    return;
 
                 menus.Add(new MenuItemInfo("Send Mail", MailRes.SendMail, new EventHandler(QuickMenu_View)));
-                return menus;
+                return;
             }
 
             if (user != Core.UserID)
-                return null;
+                return;
 
             if (menuType == InterfaceMenuType.Internal)
                 menus.Add(new MenuItemInfo("Comm/Mail", MailRes.Icon, new EventHandler(Menu_View)));
 
             if (menuType == InterfaceMenuType.External)
                 menus.Add(new MenuItemInfo("Mail", MailRes.Icon, new EventHandler(Menu_View)));
-
-
-            return menus;
         }
 
         internal void QuickMenu_View(object sender, EventArgs args)
         {
             IViewParams node = sender as IViewParams;
 
-            ulong key = 0;
+            ulong user = 0;
 
             if (node != null)
-                key = node.GetKey();
+                user = node.GetUser();
 
+            OpenComposeWindow(user);
+        }
+
+        internal void OpenComposeWindow(ulong user)
+        {
             // if window already exists to node, show it
-            ComposeMail compose = new ComposeMail(this, key);
+            ComposeMail compose = new ComposeMail(this, user);
 
             Core.InvokeView(true, compose);
         }
@@ -676,7 +676,7 @@ namespace RiseOp.Services.Mail
             if (node == null)
                 return;
 
-            if (node.GetKey() != Core.UserID)
+            if (node.GetUser() != Core.UserID)
                 return;
 
             MailView view = new MailView(this);

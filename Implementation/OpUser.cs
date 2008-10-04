@@ -35,7 +35,7 @@ namespace RiseOp
 	internal class OpUser
 	{
         internal OpCore Core;
-        internal G2Protocol Protocol;
+        internal G2Protocol Protocol = new G2Protocol();
 
 		internal string ProfilePath;
         internal string RootPath;
@@ -53,10 +53,10 @@ namespace RiseOp
         internal IconUpdateHandler GuiIconUpdate;
    
 
+        // loading identity, or temp load for processing invite
         internal OpUser(string filepath, string password, OpCore core)
         {
             Core = core;
-            Protocol = Core.GuiProtocol;
 
             // get password salt, first 16 bytes IV, next 4 is salt
             using (FileStream stream = File.OpenRead(filepath))
@@ -70,11 +70,9 @@ namespace RiseOp
             Init(filepath, password);
         }
 
-		internal OpUser(string filepath, string password, G2Protocol protocol)
+        // used when creating new identity
+		internal OpUser(string filepath, string password)
 		{
-            // used when creating new ident
-            Protocol    = protocol;
-
             SetNewPassword(password);
         
             Init(filepath, password);
@@ -84,11 +82,21 @@ namespace RiseOp
         {
 			ProfilePath = filepath;
 
+
             if(PasswordKey == null)
                 PasswordKey = Utilities.GetPasswordKey(password, PasswordSalt);
             
             RootPath = Path.GetDirectoryName(filepath);
             TempPath = RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + "0";
+
+            // clear temp directory
+            try
+            {
+                if (Directory.Exists(TempPath))
+                    Directory.Delete(TempPath, true);
+            }
+            catch { }
+
             Directory.CreateDirectory(TempPath);
 
             Random rndGen = new Random(unchecked((int)DateTime.Now.Ticks));
@@ -106,7 +114,9 @@ namespace RiseOp
             byte[] iv = new byte[16];
             byte[] salt = new byte[4];
 
-            OpCore lookup = Core.Context.Lookup;
+            OpCore lookup = null;
+            if (Core != null)
+                lookup = Core.Context.Lookup;
 
 			try
 			{
@@ -129,7 +139,7 @@ namespace RiseOp
                                 if (root.Name == IdentityPacket.OperationSettings)
                                     Settings = SettingsPacket.Decode(root);
 
-                                if (root.Name == IdentityPacket.UserInfo)
+                                if (root.Name == IdentityPacket.UserInfo && Core != null)
                                     Core.IndexInfo(UserInfo.Decode(root));
 
                                 // save icon to identity file because only root node saves icon/splash to link file
@@ -278,7 +288,7 @@ namespace RiseOp
 
         internal static void CreateNew(string path, string opName, string userName, string password, AccessType access, byte[] opKey, bool globalIM)
         {
-            OpUser user = new OpUser(path, password, new G2Protocol());
+            OpUser user = new OpUser(path, password);
             user.Settings.Operation = opName;
             user.Settings.UserName = userName;
             user.Settings.KeyPair = new RSACryptoServiceProvider(1024);

@@ -47,6 +47,8 @@ namespace RiseOp.Interface.Startup
 
             Text = OpName + ": Create User";
 
+            TextName.Text = invite.Info.UserName;
+
             BrowseLink.Text = (context.Sim == null) ? Application.StartupPath : context.Sim.Internet.LoadedPath;
         }
 

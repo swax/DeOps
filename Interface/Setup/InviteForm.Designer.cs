@@ -28,143 +28,82 @@ namespace RiseOp.Interface
         /// </summary>
         private void InitializeComponent()
         {
-            this.ButtonCancel = new System.Windows.Forms.Button();
-            this.PasswordBox = new System.Windows.Forms.TextBox();
-            this.label6 = new System.Windows.Forms.Label();
-            this.label7 = new System.Windows.Forms.Label();
-            this.ConfirmBox = new System.Windows.Forms.TextBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.LinkBox = new System.Windows.Forms.TextBox();
-            this.CreateButton = new System.Windows.Forms.Button();
-            this.label2 = new System.Windows.Forms.Label();
+            this.NextButton = new System.Windows.Forms.Button();
             this.CopyLink = new System.Windows.Forms.LinkLabel();
+            this.HelpLabel = new System.Windows.Forms.Label();
+            this.IdentityBox = new System.Windows.Forms.TextBox();
+            this.DirectionLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
-            // ButtonCancel
+            // NextButton
             // 
-            this.ButtonCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.ButtonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.ButtonCancel.Location = new System.Drawing.Point(280, 296);
-            this.ButtonCancel.Name = "ButtonCancel";
-            this.ButtonCancel.Size = new System.Drawing.Size(75, 23);
-            this.ButtonCancel.TabIndex = 7;
-            this.ButtonCancel.Text = "Close";
-            this.ButtonCancel.UseVisualStyleBackColor = true;
-            this.ButtonCancel.Click += new System.EventHandler(this.ButtonCancel_Click);
-            // 
-            // PasswordBox
-            // 
-            this.PasswordBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.PasswordBox.Location = new System.Drawing.Point(129, 64);
-            this.PasswordBox.Name = "PasswordBox";
-            this.PasswordBox.PasswordChar = '•';
-            this.PasswordBox.Size = new System.Drawing.Size(225, 20);
-            this.PasswordBox.TabIndex = 1;
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(12, 67);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(99, 13);
-            this.label6.TabIndex = 10;
-            this.label6.Text = "Unique Passphrase";
-            // 
-            // label7
-            // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(11, 93);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(100, 13);
-            this.label7.TabIndex = 12;
-            this.label7.Text = "Confirm Passphrase";
-            // 
-            // ConfirmBox
-            // 
-            this.ConfirmBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.ConfirmBox.Location = new System.Drawing.Point(129, 90);
-            this.ConfirmBox.Name = "ConfirmBox";
-            this.ConfirmBox.PasswordChar = '•';
-            this.ConfirmBox.Size = new System.Drawing.Size(225, 20);
-            this.ConfirmBox.TabIndex = 2;
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(12, 151);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(88, 13);
-            this.label3.TabIndex = 16;
-            this.label3.Text = "Invitation Link";
-            // 
-            // LinkBox
-            // 
-            this.LinkBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.LinkBox.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.LinkBox.Location = new System.Drawing.Point(15, 170);
-            this.LinkBox.Multiline = true;
-            this.LinkBox.Name = "LinkBox";
-            this.LinkBox.ReadOnly = true;
-            this.LinkBox.Size = new System.Drawing.Size(340, 120);
-            this.LinkBox.TabIndex = 5;
-            // 
-            // CreateButton
-            // 
-            this.CreateButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.CreateButton.Location = new System.Drawing.Point(270, 116);
-            this.CreateButton.Name = "CreateButton";
-            this.CreateButton.Size = new System.Drawing.Size(85, 23);
-            this.CreateButton.TabIndex = 3;
-            this.CreateButton.Text = "Create Invite";
-            this.CreateButton.UseVisualStyleBackColor = true;
-            this.CreateButton.Click += new System.EventHandler(this.CreateButton_Click);
-            // 
-            // label2
-            // 
-            this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.label2.Location = new System.Drawing.Point(12, 9);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(343, 52);
-            this.label2.TabIndex = 21;
-            this.label2.Text = "Send the invitation link and passphrase to the person you are inviting. For examp" +
-                "le send the link by IM and the passphrase by phone.";
+            this.NextButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.NextButton.Location = new System.Drawing.Point(245, 204);
+            this.NextButton.Name = "NextButton";
+            this.NextButton.Size = new System.Drawing.Size(107, 23);
+            this.NextButton.TabIndex = 3;
+            this.NextButton.Text = "Create Invite >>";
+            this.NextButton.UseVisualStyleBackColor = true;
+            this.NextButton.Click += new System.EventHandler(this.CreateButton_Click);
             // 
             // CopyLink
             // 
             this.CopyLink.ActiveLinkColor = System.Drawing.Color.Blue;
             this.CopyLink.AutoSize = true;
             this.CopyLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.CopyLink.Location = new System.Drawing.Point(106, 151);
+            this.CopyLink.Location = new System.Drawing.Point(265, 80);
             this.CopyLink.Name = "CopyLink";
-            this.CopyLink.Size = new System.Drawing.Size(94, 13);
+            this.CopyLink.Size = new System.Drawing.Size(90, 13);
             this.CopyLink.TabIndex = 4;
             this.CopyLink.TabStop = true;
-            this.CopyLink.Text = "(copy to clipboard)";
+            this.CopyLink.Text = "Copy to Clipboard";
+            this.CopyLink.Visible = false;
             this.CopyLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.CopyLink_LinkClicked);
+            // 
+            // HelpLabel
+            // 
+            this.HelpLabel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.HelpLabel.Location = new System.Drawing.Point(12, 9);
+            this.HelpLabel.Name = "HelpLabel";
+            this.HelpLabel.Size = new System.Drawing.Size(343, 49);
+            this.HelpLabel.TabIndex = 17;
+            this.HelpLabel.Text = "To invite someone to <op>, you need to have their user identity from any op they " +
+                "are already apart of. For example their global IM identity. ";
+            this.HelpLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // IdentityBox
+            // 
+            this.IdentityBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+                        | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.IdentityBox.Location = new System.Drawing.Point(15, 98);
+            this.IdentityBox.Multiline = true;
+            this.IdentityBox.Name = "IdentityBox";
+            this.IdentityBox.Size = new System.Drawing.Size(340, 100);
+            this.IdentityBox.TabIndex = 18;
+            // 
+            // DirectionLabel
+            // 
+            this.DirectionLabel.AutoSize = true;
+            this.DirectionLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.DirectionLabel.Location = new System.Drawing.Point(12, 80);
+            this.DirectionLabel.Name = "DirectionLabel";
+            this.DirectionLabel.Size = new System.Drawing.Size(151, 13);
+            this.DirectionLabel.TabIndex = 21;
+            this.DirectionLabel.Text = "Place Identity Link Below";
             // 
             // InviteForm
             // 
-            this.AcceptButton = this.CreateButton;
+            this.AcceptButton = this.NextButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.CancelButton = this.ButtonCancel;
-            this.ClientSize = new System.Drawing.Size(367, 331);
+            this.ClientSize = new System.Drawing.Size(367, 239);
+            this.Controls.Add(this.DirectionLabel);
+            this.Controls.Add(this.IdentityBox);
+            this.Controls.Add(this.HelpLabel);
             this.Controls.Add(this.CopyLink);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.CreateButton);
-            this.Controls.Add(this.label3);
-            this.Controls.Add(this.LinkBox);
-            this.Controls.Add(this.label7);
-            this.Controls.Add(this.ConfirmBox);
-            this.Controls.Add(this.label6);
-            this.Controls.Add(this.PasswordBox);
-            this.Controls.Add(this.ButtonCancel);
+            this.Controls.Add(this.NextButton);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -172,7 +111,6 @@ namespace RiseOp.Interface
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Invite";
-            this.Load += new System.EventHandler(this.InviteForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -180,15 +118,10 @@ namespace RiseOp.Interface
 
         #endregion
 
-        private System.Windows.Forms.Button ButtonCancel;
-        private System.Windows.Forms.TextBox PasswordBox;
-        private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.Label label7;
-        private System.Windows.Forms.TextBox ConfirmBox;
-        private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.TextBox LinkBox;
-        private System.Windows.Forms.Button CreateButton;
-        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Button NextButton;
         private System.Windows.Forms.LinkLabel CopyLink;
+        private System.Windows.Forms.Label HelpLabel;
+        private System.Windows.Forms.TextBox IdentityBox;
+        private System.Windows.Forms.Label DirectionLabel;
     }
 }

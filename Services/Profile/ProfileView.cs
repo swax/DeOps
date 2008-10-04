@@ -404,8 +404,12 @@ namespace RiseOp.Services.Profile
                             final = final.Replace(fulltag, service.Core.GetName(id));
 
                         else if (parts[1] == "title")
-                            final = final.Replace(fulltag, link.Title);
-
+                        {
+                            if (link.Uplink != null && link.Uplink.Titles.ContainsKey(id))
+                                final = final.Replace(fulltag, link.Uplink.Titles[id]);
+                            else
+                                final = final.Replace(fulltag, "");
+                        }
                         else
                             tagfilled = false;
                     }

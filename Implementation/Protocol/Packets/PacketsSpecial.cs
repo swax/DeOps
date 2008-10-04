@@ -95,11 +95,13 @@ namespace RiseOp.Implementation.Protocol.Special
 
     internal class OneWayInvite : G2Packet
     {
-        const byte Packet_OpName    = 0x10;
-        const byte Packet_OpAccess  = 0x20;
-        const byte Packet_OpID      = 0x30;
+        const byte Packet_UserName  = 0x10;
+        const byte Packet_OpName    = 0x20;
+        const byte Packet_OpAccess  = 0x30;
+        const byte Packet_OpID      = 0x40;
 
 
+        internal string UserName;
         internal string OpName;
         internal AccessType OpAccess;
         internal byte[] OpID;
@@ -112,6 +114,7 @@ namespace RiseOp.Implementation.Protocol.Special
             {
                 G2Frame invite = protocol.WritePacket(null, InvitePacket.Info, null);
 
+                protocol.WritePacket(invite, Packet_UserName, UTF8Encoding.UTF8.GetBytes(UserName));
                 protocol.WritePacket(invite, Packet_OpName, UTF8Encoding.UTF8.GetBytes(OpName));
                 protocol.WritePacket(invite, Packet_OpAccess, BitConverter.GetBytes((byte)OpAccess));
                 protocol.WritePacket(invite, Packet_OpID, OpID);
@@ -133,10 +136,13 @@ namespace RiseOp.Implementation.Protocol.Special
 
                 switch (child.Name)
                 {
+                    case Packet_UserName:
+                        invite.UserName = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
                     case Packet_OpName:
                         invite.OpName = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
-
 
                     case Packet_OpAccess:
                         invite.OpAccess = (AccessType)child.Data[child.PayloadPos];
@@ -151,81 +157,6 @@ namespace RiseOp.Implementation.Protocol.Special
             return invite;
         }
     }
-
-    /*internal class TwoWayInvite : G2Packet
-    {
-        const byte Packet_OpName  = 0x10;
-        const byte Packet_OpAccess = 0x20;
-        const byte Packet_Location = 0x30;
-        const byte Packet_InviteKey = 0x40;
-
-
-        internal string OpName;
-        internal AccessType OpAccess;
-        internal LocationData Location;
-        internal byte[] InviteKey;
-
-        
-        internal override byte[] Encode(G2Protocol protocol)
-        {
-            lock (protocol.WriteSection)
-            {
-                G2Frame invite = protocol.WritePacket(null, RootPacket.Invite, null);
-
-                protocol.WritePacket(invite, Packet_OpName, UTF8Encoding.UTF8.GetBytes(OpName));
-                protocol.WritePacket(invite, Packet_OpAccess, BitConverter.GetBytes((byte)OpAccess));
-                protocol.WritePacket(invite, Packet_Location, Location.Encode(new G2Protocol()));
-                protocol.WritePacket(invite, Packet_InviteKey, InviteKey);
-
-                return protocol.WriteFinish();
-            }
-        }
-
-        internal static TwoWayInvite Decode(byte[] data)
-        {
-            G2Header root = new G2Header(data);
-
-            if (!G2Protocol.ReadPacket(root))
-                return null;
-
-            if (root.Name != RootPacket.Invite)
-                return null;
-
-            TwoWayInvite invite = new TwoWayInvite();
-
-            G2Header child = new G2Header(root.Data);
-
-            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                switch (child.Name)
-                {
-                    case Packet_OpName:
-                        invite.OpName = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-
-                    case Packet_OpAccess:
-                        invite.OpAccess = (AccessType)child.Data[child.PayloadPos];
-                        break;
-
-                    case Packet_Location:
-                        invite.Location = LocationData.Decode(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
-                        break;
-
-                    case Packet_InviteKey:
-                        invite.InviteKey = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-                }
-
-            }
-
-            return invite;
-        }
-    }*/
-
-
 
     internal class FilePacket
     {

@@ -424,20 +424,16 @@ namespace RiseOp.Services.Board
             }
         }
 
-        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
+        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
         {
-            List<MenuItemInfo> menus = new List<MenuItemInfo>();
-
             if (menuType == InterfaceMenuType.Quick)
-                return null;
+                return;
 
             if (menuType == InterfaceMenuType.Internal)
                 menus.Add(new MenuItemInfo("Comm/Board", BoardRes.Icon, new EventHandler(Menu_View)));
 
             if (menuType == InterfaceMenuType.External)
                 menus.Add(new MenuItemInfo("Board", BoardRes.Icon, new EventHandler(Menu_View)));
-
-            return menus;
         }
 
         void Menu_View(object sender, EventArgs args)
@@ -447,7 +443,7 @@ namespace RiseOp.Services.Board
             if (node == null)
                 return;
 
-            BoardView view = new BoardView(this, node.GetKey(), node.GetProject());
+            BoardView view = new BoardView(this, node.GetUser(), node.GetProject());
 
             Core.InvokeView(node.IsExternal(), view);
         }

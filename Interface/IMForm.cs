@@ -35,12 +35,13 @@ namespace RiseOp.Interface
 
             Text = "IM - " + Core.GetName(Core.UserID);
 
-            BuddyList.Init(Core.Buddies);
+            BuddyList.Init(Core.Buddies, SelectionInfo);
             SelectionInfo.Init(Core);
 
             SelectionInfo.ShowNetwork();
-        }
 
+            MainForm.FillManageMenu(Core, OptionsButton.DropDownItems);
+        }
 
         void OnShowExternal(ViewShell view)
         {
@@ -51,26 +52,6 @@ namespace RiseOp.Interface
             view.Init();
 
             external.Show();
-        }
-
-        private void BuddyList_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (BuddyList.SelectedItems.Count == 0)
-            {
-                SelectionInfo.ShowNetwork();
-                return;
-            }
-
-            BuddyItem item = BuddyList.SelectedItems[0] as BuddyItem;
-
-            if (item == null || item.Blank)
-                SelectionInfo.ShowNetwork();
-
-            else if (item.User != 0)
-                SelectionInfo.ShowUser(item.User, 0);
-
-            else
-                SelectionInfo.ShowGroup(item.GroupLabel ? item.Text : null);
         }
 
         private void IMForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -87,33 +68,36 @@ namespace RiseOp.Interface
 
             Core.GuiMain = null;
 
-            if (LockForm)
-            {
-                LockForm = false;
-                return;
-            }
-
             if (Core.Sim == null)
                 Core.Exit();
         }
 
-        bool LockForm;
-
-        private void MinButton_Click(object sender, EventArgs e)
-        {
-            LockForm = true;
-
-            Close();
-
-            Core.GuiTray = new TrayLock(Core, false, false);
-        }
-
         private void AddButton_Click(object sender, EventArgs e)
         {
-            GetTextDialog add = new GetTextDialog("Add Buddy", "Enter a buddy link", Core.Buddies.GetLink(Core.UserID));
+            BuddyView.AddBuddyDialog(Core);
+   
+        }
 
-            if (add.ShowDialog() == DialogResult.OK)
-                Core.Buddies.AddBuddy(add.ResultBox.Text);
+        bool InTray;
+
+        private void IMForm_SizeChanged(object sender, EventArgs e)
+        {
+            if (!InTray && WindowState == FormWindowState.Minimized)
+            {
+                InTray = true;
+                ShowInTaskbar = false;
+
+                Core.GuiTray = new TrayLock(Core, false);
+            }
+
+            else
+            {
+                InTray = false;
+                ShowInTaskbar = true;
+
+                if(Core.GuiTray != null)
+                    Core.GuiTray.CleanupTray();
+            }
         }
     }
 }

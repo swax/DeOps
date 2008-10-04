@@ -109,6 +109,27 @@ namespace RiseOp.Interface {
             }
         }
         
+        internal static System.Drawing.Bitmap project {
+            get {
+                object obj = ResourceManager.GetObject("project", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap project_add {
+            get {
+                object obj = ResourceManager.GetObject("project_add", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap project_remove {
+            get {
+                object obj = ResourceManager.GetObject("project_remove", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Icon riseop {
             get {
                 object obj = ResourceManager.GetObject("riseop", resourceCulture);

@@ -8,34 +8,44 @@ using System.Net;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Transport;
 
-/* Built-in Service IDs
- * Dht          0
- * Trust        1
- * Location     2
- * Transfer     3
- * Profile      4
- * IM           5
- * Chat         6
- * Mail         7
- * Board        8
- * Plan         9
- * Storage     10
- * LocalSync   11
- * Global      12
- * Buddy       13
- */
 
 namespace RiseOp.Services
 {
+    // Built-in Service IDs
+    public enum ServiceID
+    {
+        Dht = 0,
+        Trust = 1,
+        Location = 2,
+        Transfer = 3,
+        Profile = 4,
+        IM = 5,
+        Chat = 6,
+        Mail = 7,
+        Board = 8,
+        Plan = 9,
+        Storage = 10,
+        LocalSync = 11,
+        Global = 12,
+        Buddy = 13
+    }
+    
     public enum InterfaceMenuType { Internal, External, Settings, Quick };
 
     public class MenuItemInfo
     {
         internal string Path;
-        internal Icon Symbol;
+        internal Image Symbol;
         internal EventHandler ClickEvent;
 
         internal MenuItemInfo(string path, Icon symbol, EventHandler onClick)
+        {
+            Path = path;
+            Symbol = symbol.ToBitmap();
+            ClickEvent = onClick;
+        }
+
+        internal MenuItemInfo(string path, Image symbol, EventHandler onClick)
         {
             Path = path;
             Symbol = symbol;
@@ -65,20 +75,20 @@ namespace RiseOp.Services
 
     internal interface IViewParams
     {
-        ulong GetKey();
+        ulong GetUser();
         uint  GetProject();
         bool  IsExternal();
     }
 
-     public interface OpService : IDisposable 
+    public interface OpService : IDisposable
     {
-         List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project);
+        void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project);
 
-         string Name { get; }
-         uint ServiceID { get; }
+        string Name { get; }
+        uint ServiceID { get; }
 
-         void SimTest();
-         void SimCleanup();
+        void SimTest();
+        void SimCleanup();
     }
 
     internal class DataPacket

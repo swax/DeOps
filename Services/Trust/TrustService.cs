@@ -127,12 +127,10 @@ namespace RiseOp.Services.Trust
             Cache.Dispose();
         }
 
-        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
+        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
         {
             if (menuType != InterfaceMenuType.Quick)
-                return null;
-
-            List<MenuItemInfo> menus = new List<MenuItemInfo>();
+                return;
 
             bool unlink = false;
 
@@ -140,17 +138,17 @@ namespace RiseOp.Services.Trust
             OpLink localLink = LocalTrust.GetLink(project);
 
             if (remoteLink == null)
-                return menus;
+                return;
 
             // linkup
             if (Core.UserID != user &&
                 (localLink == null || 
                  localLink.Uplink == null || 
                  localLink.Uplink.UserID != user)) // not already linked to
-                menus.Add(new MenuItemInfo("Trust", LinkRes.link, new EventHandler(Menu_Linkup)));
+                menus.Add(new MenuItemInfo("Trust", LinkRes.linkup, new EventHandler(Menu_Linkup)));
 
             if (localLink == null)
-                return menus;
+                return;
 
             // confirm
             if (localLink.Downlinks.Contains(remoteLink))
@@ -158,16 +156,13 @@ namespace RiseOp.Services.Trust
                 unlink = true;
 
                 if (!localLink.Confirmed.Contains(user)) // not already confirmed
-                    menus.Add(new MenuItemInfo("Accept Trust", LinkRes.confirmlink, new EventHandler(Menu_ConfirmLink)));
+                    menus.Add(new MenuItemInfo("Accept Trust", LinkRes.linkup, new EventHandler(Menu_ConfirmLink)));
             }
 
             // unlink
             if ((unlink && localLink.Confirmed.Contains(user)) ||
                 (localLink.Uplink != null && localLink.Uplink.UserID == user))
                 menus.Add(new MenuItemInfo("Revoke Trust", LinkRes.unlink, new EventHandler(Menu_Unlink)));
-
-
-            return menus;
         }
 
         private void Menu_Linkup(object sender, EventArgs e)
@@ -175,9 +170,14 @@ namespace RiseOp.Services.Trust
             if (!(sender is IViewParams) || Core.GuiMain == null)
                 return;
 
-            ulong remoteKey = ((IViewParams)sender).GetKey();
+            ulong user = ((IViewParams)sender).GetUser();
             uint project = ((IViewParams)sender).GetProject();
 
+            LinkupTo(user, project);
+        }
+
+        internal void LinkupTo(ulong user, uint project)
+        {
             LocalTrust.AddProject(project, true);
 
             OpLink localLink = LocalTrust.GetLink(project);
@@ -189,15 +189,17 @@ namespace RiseOp.Services.Trust
             if (localLink.Uplink != null)
             {
                 string who = Core.GetName(localLink.Uplink.UserID);
-                string message = "Transfer trust from " + who + " to " + Core.GetName(remoteKey) + "?";
+                string message = "Transfer trust from " + who + " to " + Core.GetName(user) + "?";
 
                 if (MessageBox.Show(Core.GuiMain, message, "Confirm Trust", MessageBoxButtons.YesNo) == DialogResult.No)
                     return;
             }
-
+            else if (MessageBox.Show("Are you sure you want to trust " + Core.GetName(user) + "?", "Trust", MessageBoxButtons.YesNo) == DialogResult.No)
+                return;
+ 
             try
             {
-                OpLink remoteLink = GetLink(remoteKey, project);
+                OpLink remoteLink = GetLink(user, project);
 
                 if (remoteLink == null)
                     throw new Exception("Could not find Person");
@@ -208,7 +210,7 @@ namespace RiseOp.Services.Trust
 
                 // check if already linked
                 if (localLink.Uplink != null && localLink.Uplink == remoteLink)
-                    throw new Exception("Already Trusting " + Core.GetName(remoteKey));
+                    throw new Exception("Already Trusting " + Core.GetName(user));
 
                 //check for loop
                 if (IsHigher(remoteLink.UserID, Core.UserID, project, false))
@@ -229,11 +231,7 @@ namespace RiseOp.Services.Trust
 
                 SaveLocal();
 
-                Core.RunInCoreAsync(delegate()
-                {
-                    LinkupRequest(remoteLink);
-                });
-
+                Core.RunInCoreAsync(() => LinkupRequest(remoteLink));
             }
             catch (Exception ex)
             {
@@ -285,19 +283,24 @@ namespace RiseOp.Services.Trust
             if (!(sender is IViewParams) || Core.GuiMain == null)
                 return;
 
-            ulong key = ((IViewParams)sender).GetKey();
+            ulong user = ((IViewParams)sender).GetUser();
             uint project = ((IViewParams)sender).GetProject();
 
+            AcceptTrust(user, project);
+        }
+        
+        internal void AcceptTrust(ulong user, uint project)
+        {
             try
             {
-                OpLink remoteLink = GetLink(key, project);
+                OpLink remoteLink = GetLink(user, project);
                 OpLink localLink = LocalTrust.GetLink(project);
 
                 if (remoteLink == null || localLink == null)
                     throw new Exception("Could not find Person");
 
                 if (!localLink.Downlinks.Contains(remoteLink))
-                    throw new Exception(Core.GetName(key) + " does not trust you");
+                    throw new Exception(Core.GetName(user) + " does not trust you");
 
                 if (!Utilities.VerifyPassphrase(Core, ThreatLevel.Medium))
                     return;
@@ -312,7 +315,6 @@ namespace RiseOp.Services.Trust
             {
                 MessageBox.Show(Core.GuiMain, ex.Message);
             }
-
         }
 
         private void Menu_Unlink(object sender, EventArgs e)
@@ -320,15 +322,20 @@ namespace RiseOp.Services.Trust
             if (!(sender is IViewParams) || Core.GuiMain == null)
                 return;
 
-            ulong key = ((IViewParams)sender).GetKey();
+            ulong user = ((IViewParams)sender).GetUser();
             uint project = ((IViewParams)sender).GetProject();
 
+            UnlinkFrom(user, project);
+        }
+
+        internal void UnlinkFrom(ulong user, uint project)
+        {
             try
             {
                 bool unlinkUp = false;
                 bool unlinkDown = false;
 
-                OpLink remoteLink = GetLink(key, project);
+                OpLink remoteLink = GetLink(user, project);
                 OpLink localLink = LocalTrust.GetLink(project);
 
                 if (remoteLink == null || localLink == null)
@@ -341,11 +348,13 @@ namespace RiseOp.Services.Trust
                     unlinkDown = true;
 
                 if (!unlinkUp && !unlinkDown)
-                    throw new Exception("Cannot unlink from node");
+                    throw new Exception("Cannot untrust person");
 
                 if (!Utilities.VerifyPassphrase(Core, ThreatLevel.Medium))
                     return;
 
+                if (MessageBox.Show("Are you sure you want to untrust " + Core.GetName(user) + "?", "Untrust", MessageBoxButtons.YesNo) != DialogResult.Yes)
+                    return;
 
                 // make sure old links are notified of change
                 List<LocationData> locations = new List<LocationData>();
@@ -495,11 +504,6 @@ namespace RiseOp.Services.Trust
                             foreach(ulong id in link.GetHighers())
                                 Core.KeepData.SafeAdd(id, true);
             });
-        }
-
-        void Location_PingUsers()
-        {
-            // 2 up, 1 down, 1 down from each
         }
 
         void Cache_FileRemoved(OpVersionedFile file)
@@ -707,6 +711,12 @@ namespace RiseOp.Services.Trust
 
         internal void SaveLocal()
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(() => SaveLocal());
+                return;
+            }
+
             try
             {
                 // create new link file in temp dir
@@ -725,8 +735,6 @@ namespace RiseOp.Services.Trust
                             if (link.Project == 0)
                                 project.UserName = Core.User.Settings.UserName;
 
-                            project.UserTitle = link.Title;
-
                             byte[] packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, project);
                             stream.Write(packet, 0, packet.Length);
 
@@ -734,7 +742,7 @@ namespace RiseOp.Services.Trust
                             // uplinks
                             if (link.Uplink != null)
                             {
-                                LinkData data = new LinkData(link.Project, link.Uplink.Trust.File.Key, true);
+                                LinkData data = new LinkData(link.Project, link.Uplink.Trust.File.Key);
                                 packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, data);
                                 stream.Write(packet, 0, packet.Length);
                             }
@@ -743,7 +751,10 @@ namespace RiseOp.Services.Trust
                             foreach (OpLink downlink in link.Downlinks)
                                 if (link.Confirmed.Contains(downlink.UserID))
                                 {
-                                    LinkData data = new LinkData(link.Project, downlink.Trust.File.Key, false);
+                                    string title;
+                                    link.Titles.TryGetValue(downlink.UserID, out title);
+
+                                    LinkData data = new LinkData(link.Project, downlink.Trust.File.Key, title);
                                     packet = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, data);
                                     stream.Write(packet, 0, packet.Length);
                                 }
@@ -1178,8 +1189,6 @@ namespace RiseOp.Services.Trust
             }
 
             OpLink link = trust.GetLink(project.ID);
-
-            link.Title = project.UserTitle;
         }
 
         private void Process_LinkData(OpTrust trust, SignedData signed, LinkData linkData)
@@ -1223,6 +1232,9 @@ namespace RiseOp.Services.Trust
 
             else
             {
+                if (linkData.Title != null)
+                    localLink.Titles[targetLink.UserID] = linkData.Title;
+
                 localLink.Confirmed.Add(targetLink.UserID);
             }
         }
@@ -1245,6 +1257,12 @@ namespace RiseOp.Services.Trust
 
         internal void JoinProject(uint project)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(() => JoinProject(project));
+                return;
+            }
+
             if (project == 0)
                 return;
 
@@ -1258,6 +1276,12 @@ namespace RiseOp.Services.Trust
             if (project == 0)
                 return;
 
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(() => LeaveProject(project));
+                return;
+            }
+
             // update local peers we are leaving
             List<LocationData> locations = new List<LocationData>();
             GetLocs(Core.UserID, project, 1, 1, locations);
@@ -1268,11 +1292,26 @@ namespace RiseOp.Services.Trust
             SaveLocal();
 
             // update links in old project of update
-            Core.RunInCoreAsync(delegate()
+            OpVersionedFile file = Cache.GetFile(Core.UserID);
+            Store.PublishDirect(locations, Core.UserID, ServiceID, 0, file.SignedHeader);
+        }
+
+        internal void RenameProject(uint project, string name)
+        {
+            if (Core.InvokeRequired)
             {
-                OpVersionedFile file = Cache.GetFile(Core.UserID);
-                Store.PublishDirect(locations, Core.UserID, ServiceID, 0, file.SignedHeader);
-            });
+                Core.RunInCoreAsync(() => RenameProject(project, name));
+                return;
+            }
+
+            if (project == 0)
+                Core.User.Settings.Operation = name;
+            else
+                ProjectNames.SafeAdd(project, name);
+
+
+            Core.User.Save();
+            SaveLocal();
         }
 
         internal string GetProjectName(uint id)
@@ -1707,6 +1746,21 @@ namespace RiseOp.Services.Trust
 
             return result;
         }
+
+        internal void SetTitle(ulong user, uint project, string title)
+        {
+            OpLink link = GetLink(user, project);
+
+            if(link == null)
+                return;
+
+            link.Titles[user] = title;
+
+            if(title == "")
+                link.Titles.Remove(user);
+
+            SaveLocal();
+        }
     }
 
     [DebuggerDisplay("{Name}")]
@@ -1779,7 +1833,7 @@ namespace RiseOp.Services.Trust
 
             link.Active = false;
             link.Uplink = null;
-            link.Title = "";
+            link.Titles.Clear();
             link.Confirmed.Clear();
 
             // downlinks remain so structure can still be seen
@@ -1837,7 +1891,6 @@ namespace RiseOp.Services.Trust
         internal OpTrust Trust;
         internal uint Project;
         internal bool Active;
-        internal string Title = "";
 
         // loop root is an empty node that has IsLoopRoot set to true, LoopRoot set to null
         // link in loop has LoopRoot set to adress of root node, IsLoopRoot false, InLoop resolves to true
@@ -1849,6 +1902,8 @@ namespace RiseOp.Services.Trust
         internal List<OpLink> Downlinks = new List<OpLink>();
         internal List<ulong> Confirmed = new List<ulong>();
         internal List<UplinkRequest> Requests = new List<UplinkRequest>();
+
+        internal Dictionary<ulong, string> Titles = new Dictionary<ulong, string>();
 
         internal ulong UserID
         {
@@ -1880,9 +1935,9 @@ namespace RiseOp.Services.Trust
                 Downlinks.Remove(downlink);
 
             Active = false;
-            Title = "";
 
             Uplink = null;
+            Titles.Clear();
             Confirmed.Clear();
         }
 

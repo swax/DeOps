@@ -8,7 +8,6 @@ using System.IO;
 using System.Resources;
 using System.Text;
 using System.Windows.Forms;
-using System.Runtime.InteropServices;
 
 using RiseOp.Implementation;
 using RiseOp.Interface;
@@ -16,8 +15,7 @@ using RiseOp.Interface;
 
 namespace RiseOp.Services.Storage
 {
-    [ComVisible(true)]
-    public partial class InfoPanel : UserControl
+    internal partial class InfoPanel : UserControl
     {
         internal StorageView ParentView;
         internal StorageService Storages;
@@ -338,10 +336,6 @@ namespace RiseOp.Services.Storage
         internal InfoPanel()
         {
             InitializeComponent();
-
-            InfoDisplay.ObjectForScripting = this;
-
-       
         }
 
         internal void Init(StorageView parent)

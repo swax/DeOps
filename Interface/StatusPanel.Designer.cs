@@ -45,6 +45,7 @@
             this.StatusBrowser.ScrollBarsEnabled = false;
             this.StatusBrowser.Size = new System.Drawing.Size(150, 150);
             this.StatusBrowser.TabIndex = 0;
+            this.StatusBrowser.WebBrowserShortcutsEnabled = false;
             this.StatusBrowser.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.StatusBrowser_Navigating);
             // 
             // SecondTimer

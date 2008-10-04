@@ -19,12 +19,12 @@ namespace RiseOp.Interface.Settings
         bool SaveCache;
 
 
-        internal Connecting(MainForm parent)
-            : base(parent.Core)
+        internal Connecting(OpCore core)
+            : base(core)
         {
             InitializeComponent();
 
-            Core = parent.Core;
+            Core = core;
             Global = Core.Context.Lookup;
             Profile = Core.User;
 

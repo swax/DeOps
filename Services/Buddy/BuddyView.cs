@@ -32,6 +32,8 @@ namespace RiseOp.Services.Buddy
         Point DragStart = Point.Empty;
         string[] DragBuddies = null;
 
+        StatusPanel SelectionInfo;
+
 
         internal BuddyView()
         {
@@ -43,11 +45,13 @@ namespace RiseOp.Services.Buddy
             Columns.Add("", 100, System.Windows.Forms.HorizontalAlignment.Left, ColumnScaleStyle.Spring);
         }
 
-        internal void Init(BuddyService buddies)
+        internal void Init(BuddyService buddies, StatusPanel status)
         {
             Buddies = buddies;
             Core = buddies.Core;
             Locations = Core.Locations;
+
+            SelectionInfo = status;
 
             Buddies.GuiUpdate += new BuddyGuiUpdateHandler(Buddy_Update);
             Locations.GuiUpdate += new LocationGuiUpdateHandler(Location_Update);
@@ -63,6 +67,8 @@ namespace RiseOp.Services.Buddy
 
             SmallImageList = new List<Image>(); // itit here, cause main can re-init
             SmallImageList.Add(new Bitmap(16, 16));
+
+            SelectedIndexChanged += new EventHandler(BuddyView_SelectedIndexChanged);
 
             RefreshView();
         }
@@ -269,7 +275,7 @@ namespace RiseOp.Services.Buddy
 
             if (Core.Locations.ActiveClientCount(clicked.User) > 0)
             {
-                IMService IM = Core.GetService("IM") as IMService;
+                IMService IM = Core.GetService(ServiceID.IM) as IMService;
 
                 if (IM != null)
                     IM.QuickMenu_View(clicked, null);
@@ -278,27 +284,28 @@ namespace RiseOp.Services.Buddy
 
         private void BuddyList_MouseClick(object sender, MouseEventArgs e)
         {
-            // right click menu
-            if (e.Button != MouseButtons.Right)
-                return;
-            
-            
             // this gets right click to select item
             BuddyItem clicked = GetItemAt(e.Location) as BuddyItem;
 
-            // menu
-            ContextMenuStripEx treeMenu = new ContextMenuStripEx();
-            
-            
-            if (clicked == null)
+
+            if (clicked != null && clicked.User != 0)
+                Core.Locations.Research(clicked.User);
+
+
+            // right click menu
+            if (e.Button != MouseButtons.Right)
                 return;
 
-            if (clicked.User == 0)
-            {
-                if (!clicked.GroupLabel)
-                    return;
+            // menu
+            ContextMenuStripEx treeMenu = new ContextMenuStripEx();
 
-                treeMenu.Items.Add(new ToolStripMenuItem("Remove Group", null, Menu_RemoveGroup));
+            if (clicked == null || clicked.User == 0)
+            {
+                if (clicked == null || !clicked.GroupLabel) // blank space clicked, or a buddy/offline label
+                    treeMenu.Items.Add(new ToolStripMenuItem("Add Buddy", BuddyRes.buddy_add, Menu_AddBuddy));
+                else
+                    treeMenu.Items.Add(new ToolStripMenuItem("Remove Group", BuddyRes.group_remove, Menu_RemoveGroup));
+
                 treeMenu.Show(this, e.Location);
                 return;
             }
@@ -306,45 +313,52 @@ namespace RiseOp.Services.Buddy
             uint project = 0;
 
             // views
-            List<ToolStripMenuItem> quickMenus = new List<ToolStripMenuItem>();
-            List<ToolStripMenuItem> extMenus = new List<ToolStripMenuItem>();
+            List<MenuItemInfo> quickMenus = new List<MenuItemInfo>();
+            List<MenuItemInfo> extMenus = new List<MenuItemInfo>();
 
             foreach (OpService service in Core.ServiceMap.Values)
             {
-                if (service is TrustService)
+                if (service is TrustService || service is BuddyService)
                     continue;
 
-                // quick
-                List<MenuItemInfo> menuList = service.GetMenuInfo(InterfaceMenuType.Quick, clicked.User, project);
+                service.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, clicked.User, project);
 
-                if (menuList != null && menuList.Count > 0)
-                    foreach (MenuItemInfo info in menuList)
-                        quickMenus.Add(new OpMenuItem(clicked.User, project, info.Path, info));
-
-                // external
-                menuList = service.GetMenuInfo(InterfaceMenuType.External, clicked.User, project);
-
-                if (menuList != null && menuList.Count > 0)
-                    foreach (MenuItemInfo info in menuList)
-                        extMenus.Add(new OpMenuItem(clicked.User, project, info.Path, info));
+                service.GetMenuInfo(InterfaceMenuType.External, extMenus, clicked.User, project);
             }
 
-            foreach (ToolStripMenuItem menu in quickMenus)
-                treeMenu.Items.Add(menu);
+            foreach (MenuItemInfo info in quickMenus)
+                treeMenu.Items.Add(new OpMenuItem(clicked.User, project, info.Path, info));
 
-            treeMenu.Items.Add(new ToolStripMenuItem("Add to Group", null, Menu_AddGroup));
 
             if (extMenus.Count > 0)
             {
                 ToolStripMenuItem viewItem = new ToolStripMenuItem("Views", InterfaceRes.views);
 
-                foreach (ToolStripMenuItem menu in extMenus)
-                    viewItem.DropDownItems.Add(menu);
+                foreach (MenuItemInfo info in extMenus)
+                    viewItem.DropDownItems.Add(new OpMenuItem(clicked.User, project, info.Path, info));
+
+                //crit add project specific views
 
                 treeMenu.Items.Add(viewItem);
             }
 
-            //crit - add projcet sub-menus
+            if (treeMenu.Items.Count > 0)
+                treeMenu.Items.Add("-");
+
+            treeMenu.Items.Add(new ToolStripMenuItem("Add to Group", BuddyRes.group_add, Menu_AddGroup));
+
+            if (clicked.User != Core.UserID) // if not self
+                treeMenu.Items.Add(new ToolStripMenuItem("Remove Buddy", BuddyRes.buddy_remove, Menu_RemoveBuddy));
+
+            // add trust options at bottom
+            quickMenus.Clear();
+
+            Core.Buddies.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, clicked.User, project);
+            if (Core.Trust != null)
+                Core.Trust.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, clicked.User, project);
+
+            foreach (MenuItemInfo info in quickMenus)
+                treeMenu.Items.Add(new OpMenuItem(clicked.User, project, info.Path, info));
 
             // show
             if (treeMenu.Items.Count > 0)
@@ -361,8 +375,6 @@ namespace RiseOp.Services.Buddy
                 foreach (BuddyItem item in SelectedItems)
                     if (item.User != 0)
                         Buddies.AddtoGroup(item.User, add.ResultBox.Text);
-
-                RefreshView();
             }
         }
 
@@ -370,8 +382,50 @@ namespace RiseOp.Services.Buddy
         {
             foreach (BuddyItem item in SelectedItems)
                 Buddies.RemoveGroup(item.Text);
+        }
 
-            RefreshView();
+
+        void Menu_RemoveBuddy(object sender, EventArgs e)
+        {
+            foreach (BuddyItem item in SelectedItems)
+                if (item.User != 0)
+                    Core.Buddies.RemoveBuddy(item.User);
+        }
+
+        void Menu_AddBuddy(object sender, EventArgs e)
+        {
+            AddBuddyDialog(Core);
+        }
+
+        private void BuddyView_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (SelectionInfo == null)
+                return;
+
+            if (SelectedItems.Count == 0)
+            {
+                SelectionInfo.ShowNetwork();
+                return;
+            }
+
+            BuddyItem item = SelectedItems[0] as BuddyItem;
+
+            if (item == null || item.Blank)
+                SelectionInfo.ShowNetwork();
+
+            else if (item.User != 0)
+                SelectionInfo.ShowUser(item.User, 0);
+
+            else
+                SelectionInfo.ShowGroup(item.GroupLabel ? item.Text : null);
+        }
+
+        internal static void AddBuddyDialog(OpCore core)
+        {
+            GetTextDialog add = new GetTextDialog("Add Buddy", "Enter a buddy link", "");
+
+            if (add.ShowDialog() == DialogResult.OK)
+                core.Buddies.AddBuddy(add.ResultBox.Text);
         }
     }
 
@@ -404,7 +458,7 @@ namespace RiseOp.Services.Buddy
             ImageIndex = 0;
         }
 
-        public ulong GetKey()
+        public ulong GetUser()
         {
             return User;
         }

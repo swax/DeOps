@@ -1062,10 +1062,12 @@ namespace RiseOp.Services.Plan
 
         internal void UpdateName()
         {
-            if (Link.Title != "")
-                Text = View.Core.GetName(Link.UserID) + "\n" + Link.Title;
+            ulong id = Link.UserID;
+
+            if (Link.Uplink != null && Link.Uplink.Titles.ContainsKey(id))
+                Text = View.Core.GetName(id) + "\n" + Link.Uplink.Titles[id];
             else
-                Text = View.Core.GetName(Link.UserID);
+                Text = View.Core.GetName(id);
         }
 
         internal void UpdateBlock()

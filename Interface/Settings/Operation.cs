@@ -6,6 +6,9 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
+using RiseOp.Implementation;
+
+
 namespace RiseOp.Interface.Settings
 {
     internal partial class Operation : CustomIconForm
@@ -16,11 +19,11 @@ namespace RiseOp.Interface.Settings
         Bitmap SelectedSplash;
 
 
-        internal Operation(MainForm parent) : base(parent.Core)
+        internal Operation(OpCore core) : base(core)
         {
             InitializeComponent();
 
-            Profile = parent.Core.User;
+            Profile = core.User;
 
             OperationBox.Text = Profile.Settings.Operation;
 

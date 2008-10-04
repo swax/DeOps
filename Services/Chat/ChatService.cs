@@ -77,21 +77,16 @@ namespace RiseOp.Services.Chat
             Core.Locations.LocationUpdate -= new LocationUpdateHandler(Location_Update);
         }
 
-        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong key, uint proj)
+        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong key, uint proj)
         {
             if (key != Core.UserID)
-                return null;
-
-            List<MenuItemInfo> menus = new List<MenuItemInfo>();
+                return;
 
             if(menuType == InterfaceMenuType.Internal)
                 menus.Add(new MenuItemInfo("Comm/Chat", ChatRes.Icon, new EventHandler(Menu_View)));
 
             if(menuType == InterfaceMenuType.External)
                 menus.Add(new MenuItemInfo("Chat", ChatRes.Icon, new EventHandler(Menu_View)));
-
-
-            return menus;
         }
 
         void Menu_View(object sender, EventArgs args)
@@ -101,7 +96,7 @@ namespace RiseOp.Services.Chat
             if (node == null)
                 return;
 
-            if (node.GetKey() != Core.UserID)
+            if (node.GetUser() != Core.UserID)
                 return;
 
             // gui creates viewshell, component just passes view object

@@ -9,12 +9,15 @@ using System.Windows.Forms;
 using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
 using RiseOp.Interface.Views;
+
 using RiseOp.Implementation;
 using RiseOp.Implementation.Transport;
-using RiseOp.Services.Trust;
+
+using RiseOp.Services.Buddy;
 using RiseOp.Services.IM;
-using RiseOp.Services.Mail;
 using RiseOp.Services.Location;
+using RiseOp.Services.Mail;
+using RiseOp.Services.Trust;
 
 
 namespace RiseOp.Services.Chat
@@ -308,44 +311,48 @@ namespace RiseOp.Services.Chat
             ContextMenuStripEx treeMenu = new ContextMenuStripEx();
 
             // views
-            List<ToolStripMenuItem> quickMenus = new List<ToolStripMenuItem>();
-            List<ToolStripMenuItem> extMenus = new List<ToolStripMenuItem>();
+            List<MenuItemInfo> quickMenus = new List<MenuItemInfo>();
+            List<MenuItemInfo> extMenus = new List<MenuItemInfo>();
 
             foreach (OpService component in Core.ServiceMap.Values)
             {
-                if (component is TrustService)
+                if (component is TrustService || component is BuddyService)
                     continue;
 
-                // quick
-                List<MenuItemInfo> menuList = component.GetMenuInfo(InterfaceMenuType.Quick, node.UserID, Room.ProjectID);
+                component.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, node.UserID, Room.ProjectID);
 
-                if (menuList != null && menuList.Count > 0)
-                    foreach (MenuItemInfo info in menuList)
-                        quickMenus.Add(new OpMenuItem(node.UserID, Room.ProjectID, info.Path, info));
-
-                // external
-                menuList = component.GetMenuInfo(InterfaceMenuType.External, node.UserID, Room.ProjectID);
-
-                if (menuList != null && menuList.Count > 0)
-                    foreach (MenuItemInfo info in menuList)
-                        extMenus.Add(new OpMenuItem(node.UserID, Room.ProjectID, info.Path, info));
+                component.GetMenuInfo(InterfaceMenuType.External, extMenus, node.UserID, Room.ProjectID);
             }
 
             if (quickMenus.Count > 0 || extMenus.Count > 0)
                 if (treeMenu.Items.Count > 0)
                     treeMenu.Items.Add("-");
 
-            foreach (ToolStripMenuItem menu in quickMenus)
-                treeMenu.Items.Add(menu);
+            foreach (MenuItemInfo info in quickMenus)
+                treeMenu.Items.Add(new OpMenuItem(node.UserID, Room.ProjectID, info.Path, info));
 
             if (extMenus.Count > 0)
             {
                 ToolStripMenuItem viewItem = new ToolStripMenuItem("Views", InterfaceRes.views);
 
-                foreach (ToolStripMenuItem menu in extMenus)
-                    viewItem.DropDownItems.Add(menu);
+                foreach (MenuItemInfo info in extMenus)
+                    viewItem.DropDownItems.Add(new OpMenuItem(node.UserID, Room.ProjectID, info.Path, info));
 
                 treeMenu.Items.Add(viewItem);
+            }
+
+            // add trust/buddy options at bottom
+            quickMenus.Clear();
+
+            Core.Buddies.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, node.UserID, Room.ProjectID);
+            if (Core.Trust != null)
+                Core.Trust.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, node.UserID, Room.ProjectID);
+
+            if (quickMenus.Count > 0)
+            {
+                treeMenu.Items.Add("-");
+                foreach (MenuItemInfo info in quickMenus)
+                    treeMenu.Items.Add(new OpMenuItem(node.UserID, Room.ProjectID, info.Path, info));
             }
 
             // show
@@ -364,14 +371,14 @@ namespace RiseOp.Services.Chat
 
             if (Locations.ActiveClientCount(node.UserID) > 0)
             {
-                IMService IM = Core.GetService("IM") as IMService;
+                IMService IM = Core.GetService(ServiceID.IM) as IMService;
 
                 if (IM != null)
                     IM.QuickMenu_View(info, null);
             }
             else
             {
-                MailService Mail = Core.GetService("Mail") as MailService;
+                MailService Mail = Core.GetService(ServiceID.Mail) as MailService;
 
                 if (Mail != null)
                     Mail.QuickMenu_View(info, null);

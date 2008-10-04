@@ -84,10 +84,8 @@ namespace RiseOp.Services.Plan
             Cache.Dispose();
         }
 
-        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
+        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
         {
-            List<MenuItemInfo> menus = new List<MenuItemInfo>();
-
             if (menuType == InterfaceMenuType.Internal)
             {
                 menus.Add(new MenuItemInfo("Plans/Schedule", PlanRes.Schedule, new EventHandler(Menu_ScheduleView)));
@@ -99,8 +97,6 @@ namespace RiseOp.Services.Plan
                 menus.Add(new MenuItemInfo("Schedule", PlanRes.Schedule, new EventHandler(Menu_ScheduleView)));
                 menus.Add(new MenuItemInfo("Goals", PlanRes.Goals, new EventHandler(Menu_GoalsView)));
             }
-
-            return menus;
         }
 
         void Menu_ScheduleView(object sender, EventArgs args)
@@ -110,7 +106,7 @@ namespace RiseOp.Services.Plan
             if (node == null)
                 return;
 
-            ScheduleView view = new ScheduleView(this, node.GetKey(), node.GetProject());
+            ScheduleView view = new ScheduleView(this, node.GetUser(), node.GetProject());
 
             Core.InvokeView(node.IsExternal(), view);
         }
@@ -122,7 +118,7 @@ namespace RiseOp.Services.Plan
             if (node == null)
                 return;
 
-            GoalsView view = new GoalsView(this, node.GetKey(), node.GetProject());
+            GoalsView view = new GoalsView(this, node.GetUser(), node.GetProject());
 
             Core.InvokeView(node.IsExternal(), view);
         }

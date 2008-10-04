@@ -42,16 +42,16 @@ namespace RiseOp.Services.Trust
 
             OpLink link = Trust.GetLink(Core.UserID, ProjectID);
 
-            if (link != null)
-                TitleBox.Text = link.Title;
+            //if (link != null)
+            //    TitleBox.Text = link.Title;
         }  
         
         private void ButtonOK_Click(object sender, EventArgs e)
         {
             OpLink link = Trust.GetLink(Core.UserID, ProjectID);
 
-            if (link != null)
-                link.Title = TitleBox.Text;
+            //if (link != null)
+            //    link.Title = TitleBox.Text;
 
             Trust.SaveLocal();
 

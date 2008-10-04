@@ -4,15 +4,20 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
 using RiseOp.Implementation;
 
+using RiseOp.Services;
 using RiseOp.Services.Trust;
 using RiseOp.Services.Buddy;
+using RiseOp.Services.IM;
 using RiseOp.Services.Location;
+using RiseOp.Services.Mail;
+
 
 namespace RiseOp.Interface
 {
@@ -21,43 +26,21 @@ namespace RiseOp.Interface
         // bottom status panel
         StringBuilder StatusHtml = new StringBuilder(4096);
 
-        const string NetworkPage =
-             @"<html>
+        const string ContentPage =
+                @"<html>
                 <head>
 	                <style type='text/css'>
-	                    body { margin: 0; }
-	                    p    { font-size: 8.25pt; font-family: Tahoma }
-	                </style>
+		                body { margin: 0; font-size: 8.25pt; font-family: Tahoma; }
 
-                    <script>
-                        function SetElement(id, text)
-                        {
-                            document.getElementById(id).innerHTML = text;
-                        }
-                    </script>
-                </head>
-                <body bgcolor=WhiteSmoke>
-	                <table width=100% cellpadding=4>
-	                    <tr><td bgcolor=green><p><b><font color=#ffffff>Network Status</font></b></p></td></tr>
-	                </table>
-                    <table callpadding=3>    
-                        <tr><td><p><b>Global:</b></p></td><td><p><span id='lookup'><?=lookup?></span></p></td></tr>
-	                    <tr><td><p><b>Network:</b></p></td><td><p><span id='operation'><?=operation?></span></p></td></tr>
-	                    <tr><td><p><b>Firewall:</b></p></td><td><p><span id='firewall'><?=firewall?></span></p></td></tr>
-                    </table>
-                </body>
-                </html>";
+		                A:link, A:visited, A:active {text-decoration: none; color: blue;}
+		                A:hover {text-decoration: underline; color: blue;}
 
-        const string ProjectPage =
-               @"<html>
-                <head>
-	                <style type='text/css'>
-		                body { margin: 0 }
-		                p    { font-size: 8.25pt; font-family: Tahoma }
-		                A:link {text-decoration: none; color: blue}
-		                A:visited {text-decoration: none; color: blue}
-		                A:active {text-decoration: none; color: blue}
-		                A:hover {text-decoration: underline; color: blue}
+		                .header{color: white;}
+		                A.header:link, A.header:visited, A.header:active {text-decoration: none; color: white;}
+		                A.header:hover {text-decoration: underline; color: white;}
+                		
+		                .content{padding: 3px; line-height: 12pt;}
+                		
 	                </style>
 
 	                <script>
@@ -68,70 +51,34 @@ namespace RiseOp.Interface
 	                </script>
                 </head>
                 <body bgcolor=WhiteSmoke>
-	                <table width=100% cellpadding=4>
-		                <tr><td bgcolor=darkred><p><b><font color=white><?=name?></font></b></p></td></tr>
-	                </table>
-                	
-	                <table callpadding=3>    
-		                <tr><td><p><b><a href=''>Rename</a></b></p></td></tr>
-		                <tr><td><p><b><a href=''><?=leave?></a></b></p></td></tr>
-	                </table>
+
+                    <div class='header' id='header'></div>
+                    <div class='content' id='content'></div>
 
                 </body>
                 </html>";
 
-        const string NodePage =
-                @"<html>
-                <head>
-	                <style type='text/css'>
-	                <!--
-	                    body { margin: 0 }
-	                    p    { font-size: 8.25pt; font-family: Tahoma }
-                        A:link {text-decoration: none; color: black}
-                        A:visited {text-decoration: none; color: black}
-                        A:active {text-decoration: none; color: black}
-                        A:hover {text-decoration: underline; color: black}
-	                -->
-	                </style>
-
-                    <script>
-                        function SetElement(id, text)
-                        {
-                            document.getElementById(id).innerHTML = text;
-                        }
-                    </script>
-                </head>
-                <body bgcolor=WhiteSmoke>
-	                <table width=100% cellpadding=4>
-	                    <tr><td bgcolor=MediumSlateBlue><p><font color=#ffffff><span id='name'><?=name?></span></font></p></td></tr>
-	                </table>
-
-                    <span id='content'><?=content?></span>
-
-                    
-                </body>
-                </html>";
-
-        // add gmt
-        // add away status
-        // add online status
-        // add edit link
 
         OpCore Core;
 
         enum StatusModeType { None, Network, User, Project, Group };
         
-        StatusModeType CurrentMode = StatusModeType.None;
+        StatusModeType CurrentMode = StatusModeType.Network;
 
         ulong UserID;
         uint  ProjectID;
         string BuddyGroup;
 
+        string IMImg, MailImg, BuddyWhoImg, TrustImg, UntrustImg;
+
+
         internal StatusPanel()
         {
             InitializeComponent();
 
-            StatusBrowser.ObjectForScripting = this;
+            StatusBrowser.DocumentText = ContentPage;
+
+            
         }
 
         internal void Init(OpCore core)
@@ -143,6 +90,29 @@ namespace RiseOp.Interface
 
             if (Core.Trust != null)
                 Core.Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
+
+            IMImg       = ExtractImage("IM",        RiseOp.Services.IM.IMRes.Icon.ToBitmap());
+            MailImg     = ExtractImage("Mail",      RiseOp.Services.Mail.MailRes.Mail);
+            BuddyWhoImg = ExtractImage("BuddyWho",  RiseOp.Services.Buddy.BuddyRes.buddy_who);
+            TrustImg    = ExtractImage("Trust",     RiseOp.Services.Trust.LinkRes.linkup);
+            UntrustImg  = ExtractImage("Untrust",   RiseOp.Services.Trust.LinkRes.unlink);
+
+            ShowNetwork();
+        }
+
+        private string ExtractImage(string filename, Bitmap image)
+        {
+            if (!File.Exists(Core.User.TempPath + Path.DirectorySeparatorChar + filename + ".png"))
+            {
+                using (FileStream stream = new FileStream(Core.User.TempPath + Path.DirectorySeparatorChar + filename + ".png", FileMode.CreateNew, FileAccess.Write))
+                    image.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+            }
+
+            string path = "file:///" + Core.User.TempPath + "/" + filename + ".png";
+
+            path = path.Replace(Path.DirectorySeparatorChar, '/');
+
+            return path;
         }
 
         internal override void CustomDispose()
@@ -156,6 +126,9 @@ namespace RiseOp.Interface
 
         void Trust_Update(ulong user)
         {
+            if (CurrentMode == StatusModeType.Project)
+                ShowProject(ProjectID);
+
             if (CurrentMode == StatusModeType.User && user == UserID)
                 ShowUser(user, ProjectID);
         }
@@ -176,76 +149,83 @@ namespace RiseOp.Interface
 
         private void SecondTimer_Tick(object sender, EventArgs e)
         {
+            if (DesignMode)
+                return;
+
             if (CurrentMode == StatusModeType.Network)
                 ShowNetwork();
         }
 
-        /*
-        private void EditMenu_Click(object sender, EventArgs e)
-        {
-            EditLink edit = new EditLink(Core, CommandTree.Project);
-            edit.ShowDialog(this);
-
-            UpdateCommandPanel();
-        }*/
-
         internal void ShowNetwork()
         {
-            //crit need timer for updates?
-
-            StatusModeType mode = StatusModeType.Network;
+            CurrentMode = StatusModeType.Network;
             UserID = 0;
 
-            string lookup = "";
-            string operation = "";
+            UpdateHeader("Green", "Network Status");
 
-            if (Core.Context.Lookup == null)
-                lookup = "Disconnected";
-            else if (Core.Context.Lookup.Network.Responsive)
-                lookup = "Connected";
-            else
-                lookup = "Connecting";
+            string content = "";
 
-            if (Core.Network.Responsive)
-                operation = "Connected";
-            else
-                operation = "Connecting";
+            content += "<div style='padding-left: 10; line-height: 14pt;'>";
 
-
-            List<string[]> tuples = new List<string[]>();
-            tuples.Add(new string[] { "lookup", lookup });
-            tuples.Add(new string[] { "operation", operation });
-            tuples.Add(new string[] { "firewall", Core.GetFirewallString() });
-
-
-            if (CurrentMode != mode)
+            if (Core.Context.Lookup != null)
             {
-                CurrentMode = mode;
-
-                StatusHtml.Length = 0;
-                StatusHtml.Append(NetworkPage);
-
-                foreach (string[] tuple in tuples)
-                    StatusHtml.Replace("<?=" + tuple[0] + "?>", tuple[1]);
-
-                SetStatus(StatusHtml.ToString());
+                string lookup = Core.Context.Lookup.Network.Responsive ? "Connected" : "Connecting";
+                content += "<b>Lookup: </b>" + lookup + "<br>";
             }
-            else
-            {
-                foreach (string[] tuple in tuples)
-                    StatusBrowser.Document.InvokeScript("SetElement", new String[] { tuple[0], tuple[1] });
-            }
+
+            string operation = Core.Network.Responsive ? "Connected" : "Connecting";
+            content += "<b>Network: </b>" + operation + "<br>";
+
+            content += "<b>Firewall: </b>" + Core.GetFirewallString() + "<br>";
+
+            content += "<b><a href='http://settings'>Settings</a></b><br>";
+
+            content += "</div>";
+
+            UpdateContent(content);
         }
+
+        void UpdateHeader(string color, string title)
+        {
+            string header = "";
+            header += "<div style='padding: 3px; background: " + color + "; '>";
+            header += "<b>" + title + "</b>";
+            header += "</div>";
+
+            StatusBrowser.Document.InvokeScript("SetElement", new String[] { "header", header });
+        }
+
+        private void UpdateContent(string content)
+        {
+            StatusBrowser.Document.InvokeScript("SetElement", new String[] { "content", content });
+        }
+
 
         internal void ShowProject(uint project)
         {
             CurrentMode = StatusModeType.Project;
             ProjectID = project;
 
-            StatusHtml.Replace("<?=name?>", Core.Trust.GetProjectName(project));
+            UpdateHeader("FireBrick",  Core.Trust.GetProjectName(project));
 
-            string leave = (project == 0) ? "" : "Leave";// leave option only for non-primary
-            StatusHtml.Replace("<?=leave?>", leave);
+            string content = "<div style='padding-left: 10; line-height: 14pt;'>";
+
+            content += AddContentLink("rename", "Rename"); 
+
+            if (project != 0)
+                content += AddContentLink("leave", "Leave");
+
+            if (project == 0 && Core.Trust.LocalTrust.Links[0].Uplink == null)
+                content += AddContentLink("settings", "Settings");
+
+            content += "</div>";
+
+            UpdateContent(content);
+        }
+
+        string AddContentLink(string link, string name)
+        {
+            return "<b><a href='http://" + link + "'>" + name + "</a></b><br>";
         }
 
         internal void ShowGroup(string name)
@@ -253,151 +233,207 @@ namespace RiseOp.Interface
             CurrentMode = StatusModeType.Group;
 
             BuddyGroup = name;
+
+            UpdateHeader("FireBrick", BuddyGroup == null ? "Buddies" : BuddyGroup);
+
+            string content = "<div style='padding-left: 10;'>";
+
+            content += AddContentLink("add_buddy", "Add Buddy");
+
+            if (BuddyGroup != null)
+            {
+                content += AddContentLink("remove_group/" + name, "Remove Group");
+                content += AddContentLink("rename_group/" + name, "Rename Group");
+            }
+            //else
+            //    content += AddContentLink("add_group", "Add Group");
+
+            content += "</div>";
+
+            UpdateContent(content);
         }
 
         internal void ShowUser(ulong user, uint project)
         {
-            OpLink link = null;
-            if(Core.Trust != null)
-                link = Core.Trust.GetLink(user, project);
-
-            StatusModeType mode = StatusModeType.User;
+            CurrentMode = StatusModeType.User;
 
             UserID = user;
             ProjectID = project;
 
-            List<Tuple<string, string>> tuples = new List<Tuple<string, string>>();
-
-            string name = "";
+            string header = "";
             string content = "";
+
+
+            // get trust info
+            OpLink link = null, parent = null;
+            if (Core.Trust != null)
+            {
+                link = Core.Trust.GetLink(user, project);
+
+                if(link != null)
+                    parent = link.GetHigher(false);
+            }
 
             // if loop root
             if (link != null && link.IsLoopRoot)
             {
-                name = "<b>Trust Loop</b>";
+                content = "<b>Order</b><br>";
 
-                content = @"<table callpadding=3>
-                            <tr><td>
-                            <p><b>Order:</b><br>";
-
-                string order = "";
-
-
-                string confirmed = "";
+                content += "<div style='padding-left: 10;'>";
 
                 if (link.Downlinks.Count > 0)
                 {
                     foreach (OpLink downlink in link.Downlinks)
                     {
-                        confirmed = downlink.GetHigher(true) == null ? "(unconfirmed)" : "";
+                        string entry = "";
 
                         if (downlink.UserID == Core.UserID)
-                            order += " &nbsp&nbsp&nbsp <b>" + Core.GetName(downlink.UserID) + "</b> <i>trusts ";
+                            entry += "<b>" + Core.GetName(downlink.UserID) + "</b> <i>trusts</i>";
                         else
-                            order += " &nbsp&nbsp&nbsp " + Core.GetName(downlink.UserID) + " <i>trusts ";
+                            entry += Core.GetName(downlink.UserID) + " <i>trusts</i>";
 
-                        order += confirmed + "</i><br>";
+                        if (downlink.GetHigher(true) == null)
+                            entry = "<font style='color: red;'>" + entry + "</font>";
+
+                        content += entry + "<br>";
                     }
 
-                    order += " &nbsp&nbsp&nbsp " + Core.GetName(link.Downlinks[0].UserID) + "<br>";
+                    content += Core.GetName(link.Downlinks[0].UserID) + "<br>";
                 }
 
-                content += order +
-                            @"</p>
-                            </tr></td>
-                            </table>";
-            }
-            else
-            {
-                // name
-                name = "<b>" + Core.GetName(user) + "</b>";
+                content += "</div>";
 
-                if (user == Core.UserID)
-                    name += "  &nbsp&nbsp  (<a href='edit:local'><font color=white>edit</font></a>)";
-
-                if (link != null)
-                {
-                    // title
-                    string title = link.Title;
-
-                    if (title != "")
-                        tuples.Add(new Tuple<string, string>("Title: ", title));
-
-                    // projects
-                    string projects = "";
-                    foreach (uint id in link.Trust.Links.Keys)
-                        if (id != 0)
-                            projects += "<a href='project:" + id.ToString() + "'>" + Core.Trust.GetProjectName(id) + "</a>, ";
-                    projects = projects.TrimEnd(new char[] { ' ', ',' });
-
-                    if (projects != "")
-                        tuples.Add(new Tuple<string, string>("Projects: ", projects));
-                }
-
-                //Locations:
-                List<Tuple<string, string>> locations = new List<Tuple<string, string>>();
-
-                //    Home: Online
-                //    Office: Away - At Home
-                //    Mobile: Online, Local Time 2:30pm
-                //    Server: Last Seen 10/2/2007
-
-                bool online = false;
-
-                List<ClientInfo> clients = Core.Locations.GetClients(user);
-
-                foreach (ClientInfo info in clients)
-                {
-                    string status = "";
-
-                    if (info.Data.Away)
-                        status += "Away " + info.Data.AwayMessage;
-                    else
-                        status += "Online";
-
-                    if (info.Data.GmtOffset != System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes)
-                        status += ", Local Time " + Core.TimeNow.ToUniversalTime().AddMinutes(info.Data.GmtOffset).ToString("t");
-
-                    // last seen stuff here
-
-                    online = true;
-                    locations.Add(new Tuple<string, string>(Core.Locations.GetLocationName(user, info.ClientID), status));
-                }
-
-
-                //crit - get last update from localSync
-                /*if (locations.Count == 0)
-                {
-                    ClientInfo latest = clients[0];
-
-                    foreach (ClientInfo info in clients)
-                        if (info.Data.Date > latest.Data.Date)
-                            latest = info;
-
-                    locations.Add(new Tuple<string, string>("Last Seen", latest.Data.Date.ToLocalTime().ToString()));
-                }*/
-
-                content = GenerateContent(tuples, locations, online);
-            }
-
-            // display
-            if (CurrentMode != mode)
-            {
-                CurrentMode = mode;
-
-                StatusHtml.Length = 0;
-                StatusHtml.Append(NodePage);
-
-                StatusHtml.Replace("<?=name?>", name);
-                StatusHtml.Replace("<?=content?>", content);
-
-                SetStatus(StatusHtml.ToString());
-            }
-            else
-            {
-                StatusBrowser.Document.InvokeScript("SetElement", new String[] { "name", name });
+                UpdateHeader("MediumSlateBlue", "Trust Loop");
                 StatusBrowser.Document.InvokeScript("SetElement", new String[] { "content", content });
+                return;
             }
+
+            // add icons on right
+            content += "<div style='float: right;'>";
+
+            Func<string, string, string> getImgLine = (url, path) => "<a href='http://" + url + "'><img style='margin:2px;' src='" + path + "' border=0></a><br>";
+
+            if (UserID != Core.UserID && Core.GetService(ServiceID.IM) != null && Core.Locations.ActiveClientCount(UserID) > 0)
+                content += getImgLine("im", IMImg);
+
+            if (UserID != Core.UserID && Core.GetService(ServiceID.Mail) != null)
+                content += getImgLine("mail", MailImg);
+
+            content += getImgLine("buddy_who", BuddyWhoImg);
+
+            if (UserID != Core.UserID && link != null)
+            {
+                OpLink local = Core.Trust.GetLink(Core.UserID, ProjectID);
+
+                if (local.Uplink == link)
+                    content += getImgLine("untrust", UntrustImg); 
+                else
+                    content += getImgLine("trust", TrustImg); 
+            }
+
+            content += "</div>";
+
+
+            // name
+            string username = Core.GetName(user);
+            header = "<a class='header' href='http://rename_user'>" + username + "</a>";
+
+ 
+            if (link != null)
+            {
+                // trust unconfirmed?
+                if (parent != null && !parent.Confirmed.Contains(link.UserID))
+                {
+                    bool requested = parent.Requests.Any(r => r.KeyID == link.UserID);
+
+                    string msg = requested ? "Trust Requested" : "Trust Denied";
+                    msg = "<font style='text-decoration: blink; line-height: 18pt; color: red;'>" + msg + "</font>";
+
+                    if (parent.UserID == Core.UserID)
+                        msg = "<a href='http://trust_accept'>" + msg + "</a>";
+
+                    content += "<b>" + msg + "</b><br>";
+                }
+
+                // title
+                if(parent != null)
+                {
+                    string title = parent.Titles.ContainsKey(UserID) ? parent.Titles[UserID] : "None";
+                
+                    if(parent.UserID == Core.UserID)
+                        title = "<a href='http://change_title/" + title + "'>" + title + "</a>";
+                   
+                    content += "<b>Title: </b>" + title + "<br>"; 
+                }
+                // projects
+                string projects = "";
+                foreach (uint id in link.Trust.Links.Keys)
+                    if (id != 0)
+                        projects += "<a href='http://project/" + id.ToString() + "'>" + Core.Trust.GetProjectName(id) + "</a>, ";
+                projects = projects.TrimEnd(new char[] { ' ', ',' });
+
+                if (projects != "")
+                    content += "<b>Projects: </b>" + projects + "<br>";
+            }
+
+            //Locations:
+            //    Home: Online
+            //    Office: Away - At Home
+            //    Mobile: Online, Local Time 2:30pm
+            //    Server: Last Seen 10/2/2007
+
+            string locations = "";
+
+            foreach (ClientInfo info in Core.Locations.GetClients(user))
+            {
+                string name = Core.Locations.GetLocationName(user, info.ClientID);
+
+                if (info.UserID == Core.UserID && info.ClientID == Core.Network.Local.ClientID)
+                    name = "<a href='http://edit_location'>" + name + "</a>";
+
+                locations += "<b>" + name + ": </b>";
+
+                if (info.Data.Away)
+                    locations += "Away " + info.Data.AwayMessage;
+                else
+                    locations += "Online";
+
+                if (info.Data.GmtOffset != System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes)
+                    locations += ", Local Time " + Core.TimeNow.ToUniversalTime().AddMinutes(info.Data.GmtOffset).ToString("t");
+
+                locations += "<br>";
+            }
+
+            if (locations == "")
+                content += "<b>Offline</b><br>";
+            else
+            {
+                content += "<b>Locations</b><br>";
+                content += "<div style='padding-left: 10; line-height: normal'>";
+                content += locations;
+                content += "</div>";
+            }
+
+            string aliases = "";
+            if (Core.Trust != null)
+            {
+                OpTrust trust = Core.Trust.GetTrust(user);
+
+                if (trust.Name != username)
+                    aliases += "<a href='http://use_name/" + trust.Name + "'>" + trust.Name + "</a>, ";
+            }
+
+            OpBuddy buddy;
+            if(Core.Buddies.BuddyList.SafeTryGetValue(user, out buddy))
+                if(buddy.Name != username)
+                    aliases += "<a href='http://use_name/" + buddy.Name + "'>" + buddy.Name + "</a>, ";
+
+            if(aliases != "")
+                content += "<b>Aliases: </b>" + aliases.Trim(',', ' ') + "<br>";
+
+
+            UpdateHeader("MediumSlateBlue", header);
+            StatusBrowser.Document.InvokeScript("SetElement", new String[] { "content", content });
         }
 
         string GenerateContent(List<Tuple<string, string>> tuples, List<Tuple<string, string>> locations, bool online)
@@ -421,39 +457,168 @@ namespace RiseOp.Interface
             return content + "</table>";
         }
 
-        private void SetStatus(string html)
-        {
-            Debug.Assert(!html.Contains("<?"));
-
-            // prevents clicking sound when browser navigates
-            StatusBrowser.Hide();
-            StatusBrowser.DocumentText = html;
-            StatusBrowser.Show();
-        }
-
         private void StatusBrowser_Navigating(object sender, WebBrowserNavigatingEventArgs e)
         {
             string url = e.Url.OriginalString;
 
-            string[] parts = url.Split(new char[] { ':' });
-
-            if (parts.Length < 2)
+            if (url.StartsWith("about:blank"))
                 return;
 
-            if (parts[0] == "edit")
+            url = url.Replace("http://", "");
+            url = url.TrimEnd('/');
+
+            string[] command = url.Split('/');
+
+
+            if (CurrentMode == StatusModeType.Project)
             {
-                //EditMenu_Click(null, null);
-                e.Cancel = true;
-                return;
+                if (url == "rename")
+                {
+                    GetTextDialog rename = new GetTextDialog("Rename Project", "Enter new name for project " + Core.Trust.GetProjectName(ProjectID), Core.Trust.GetProjectName(ProjectID));
+
+                    if (rename.ShowDialog() == DialogResult.OK)
+                        Core.Trust.RenameProject(ProjectID, rename.ResultBox.Text);
+                }
+
+                else if (url == "leave")
+                {
+                    if (MessageBox.Show("Are you sure you want to leave " + Core.Trust.GetProjectName(ProjectID) + "?", "Leave Project", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                        Core.Trust.LeaveProject(ProjectID);
+                }
+
+                else if (url == "settings")
+                {
+                    new RiseOp.Interface.Settings.Operation(Core).ShowDialog(this);
+                }
             }
 
-            if (parts[0] == "project")
+            else if (CurrentMode == StatusModeType.Group)
             {
-                if (Core.GuiMain != null && Core.GuiMain.GetType() == typeof(MainForm))
-                    ((MainForm)Core.GuiMain).ShowProject(uint.Parse(parts[1]));
-                
-                e.Cancel = true;
+                if (url == "add_buddy")
+                {
+                    BuddyView.AddBuddyDialog(Core);
+                }
+
+                else if (url == "add_group")
+                {
+                    // not enabled yet
+                }
+
+                else if (command[0] == "rename_group")
+                {
+                    string name = command[1];
+
+                    GetTextDialog rename = new GetTextDialog("Rename Group", "Enter a new name for group " + name, name);
+
+                    if (rename.ShowDialog() == DialogResult.OK)
+                        Core.Buddies.RenameGroup(name, rename.ResultBox.Text);
+                }
+
+                else if (command[0] == "remove_group")
+                {
+                    string name = command[1];
+
+                    if(MessageBox.Show("Are you sure you want to remove " + name + "?", "Remove Group", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                        Core.Buddies.RemoveGroup(name);
+                }
             }
+
+            else if (CurrentMode == StatusModeType.User)
+            {
+                if (url == "rename_user")
+                {
+                    GetTextDialog rename = new GetTextDialog("Rename User", "New name for " + Core.GetName(UserID), Core.GetName(UserID));
+
+                    if (rename.ShowDialog() == DialogResult.OK)
+                        Core.RenameUser(UserID, rename.ResultBox.Text);
+                }
+
+                else if (url == "trust_accept")
+                {
+                    if (MessageBox.Show("Are you sure you want to accept trust from " + Core.GetName(UserID) + "?", "Accept Trust", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                        Core.Trust.AcceptTrust(UserID, ProjectID);
+                }
+
+                else if (command[0] == "change_title")
+                {
+                    string def = command[1];
+
+                    GetTextDialog title = new GetTextDialog("Change Title", "Enter title for " + Core.GetName(UserID), def);
+
+                    if (title.ShowDialog() == DialogResult.OK)
+                        Core.Trust.SetTitle(UserID, ProjectID, title.ResultBox.Text);
+
+                }
+
+                else if (url == "edit_location")
+                {
+                    GetTextDialog place = new GetTextDialog("Change Location", "Where is this instance located? (Home, Work, Mobile?)", "");
+
+                    if (place.ShowDialog() == DialogResult.OK)
+                    {
+                        Core.Locations.LocalClient.Data.Place = place.ResultBox.Text;
+                        Core.Locations.UpdateLocation();
+                    }
+                }
+
+                else if (command[0] == "project")
+                {
+                    uint id = uint.Parse(command[1]);
+
+                    if (Core.GuiMain != null && Core.GuiMain.GetType() == typeof(MainForm))
+                        ((MainForm)Core.GuiMain).ShowProject(id);
+                }
+
+                else if (command[0] == "use_name")
+                {
+                    string name = System.Web.HttpUtility.UrlDecode(command[1]);
+
+                    if (MessageBox.Show("Change " + Core.GetName(UserID) + "'s name to " + name + "?", "Change Name", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                        Core.RenameUser(UserID, name);
+                }
+
+                else if (url == "im")
+                {
+                    IMService im = Core.GetService(ServiceID.IM) as IMService;
+
+                    if (im != null)
+                        im.OpenIMWindow(UserID);
+                }
+
+                else if (url == "mail")
+                {
+                    MailService mail = Core.GetService(ServiceID.Mail) as MailService;
+
+                    if (mail != null)
+                        mail.OpenComposeWindow(UserID);
+                }
+
+                else if (url == "buddy_who")
+                {
+                    Core.Buddies.ShowIdentity(UserID);
+                }
+
+                else if (url == "trust")
+                {
+                    Core.Trust.LinkupTo(UserID, ProjectID);
+                }
+
+                else if (url == "untrust")
+                {
+                    Core.Trust.UnlinkFrom(UserID, ProjectID);
+                }
+            }
+
+            else if (CurrentMode == StatusModeType.Network)
+            {
+                if (url == "settings")
+                {
+                    new RiseOp.Interface.Settings.Connecting(Core).ShowDialog();
+                }
+            }
+
+            e.Cancel = true;
+
         }
     }
 

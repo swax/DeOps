@@ -15,54 +15,51 @@ namespace RiseOp.Interface
     {
         OpCore Core;
 
+        int page = 1;
+
         internal InviteForm(OpCore core)
             : base(core)
         {
             InitializeComponent();
 
             Core = core;
+
+            HelpLabel.Text = HelpLabel.Text.Replace("<op>", Core.User.Settings.Operation);
         }
 
         private void CreateButton_Click(object sender, EventArgs e)
         {
-            try
+            if (page == 1)
             {
-                ValidateInput();
+                try
+                {
+                    string name;
+                    IdentityBox.Text = Core.GenerateInvite(IdentityBox.Text, out name);
 
-                if (!Utilities.VerifyPassphrase(Core, ThreatLevel.Medium))
-                    return;
 
-                LinkBox.Text = Core.CreateInvite(PasswordBox.Text);
+                    HelpLabel.Text = "This invitation can be safely given back to <name> through any medium such as IM or Email.";
+                    HelpLabel.Text = HelpLabel.Text.Replace("<name>", name);
+
+                    CopyLink.Visible = true;
+                    DirectionLabel.Text = "Invitation Created";
+
+                    NextButton.Text = "OK";
+                    page++;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(this, ex.Message);
+                }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(this, ex.Message);
-            }
-        }
 
-        void ValidateInput()
-        {
-            if (PasswordBox.Text == "")
-                throw new Exception("Password cannot be blank");
-
-
-            if (PasswordBox.Text != ConfirmBox.Text)
-                throw new Exception("Passwords do not match");
-        }
-
-        private void ButtonCancel_Click(object sender, EventArgs e)
-        {
-            Close();
+            else if (page == 2)
+                Close();
         }
 
         private void CopyLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            Clipboard.SetText(LinkBox.Text);
-        }
-
-        private void InviteForm_Load(object sender, EventArgs e)
-        {
-
+            Clipboard.SetText(IdentityBox.Text);
+            MessageBox.Show("Copied");
         }
     }
 }

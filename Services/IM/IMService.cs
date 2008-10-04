@@ -148,22 +148,18 @@ namespace RiseOp.Services.IM
             return views;
         }
 
-        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
+        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
         {
-            List<MenuItemInfo> menus = new List<MenuItemInfo>();
-
             if (menuType == InterfaceMenuType.Quick)
             {
                 if (user == Core.UserID)
-                    return null;
+                    return;
 
                 if (Core.Locations.ActiveClientCount(user) == 0)
-                    return null;
+                    return;
 
                 menus.Add(new MenuItemInfo("Send IM", IMRes.Icon, new EventHandler(QuickMenu_View)));
             }
-
-            return menus;
         }
 
         internal void QuickMenu_View(object sender, EventArgs args)
@@ -173,18 +169,26 @@ namespace RiseOp.Services.IM
             if (node == null)
                 return;
 
-            // if window already exists to node, show it
-            IM_View view = FindView(node.GetKey());
+            ulong user = node.GetUser();
 
-            if(view != null && view.External != null)
+            OpenIMWindow(user);
+           
+        }
+
+        internal void OpenIMWindow(ulong user)
+        {
+            // if window already exists to node, show it
+            IM_View view = FindView(user);
+
+            if (view != null && view.External != null)
                 view.External.BringToFront();
 
             // else create new window
             else
             {
-                view = CreateView(node.GetKey());
+                view = CreateView(user);
 
-                Core.RunInCoreAsync(delegate() { Connect(node.GetKey()); });
+                Core.RunInCoreAsync(() => Connect(user));
             }
         }
 

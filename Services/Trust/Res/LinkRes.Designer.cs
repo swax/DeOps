@@ -60,13 +60,6 @@ namespace RiseOp.Services.Trust {
             }
         }
         
-        internal static System.Drawing.Icon confirmlink {
-            get {
-                object obj = ResourceManager.GetObject("confirmlink", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
-            }
-        }
-        
         internal static System.Drawing.Icon link {
             get {
                 object obj = ResourceManager.GetObject("link", resourceCulture);
@@ -74,10 +67,17 @@ namespace RiseOp.Services.Trust {
             }
         }
         
-        internal static System.Drawing.Icon unlink {
+        internal static System.Drawing.Bitmap linkup {
+            get {
+                object obj = ResourceManager.GetObject("linkup", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap unlink {
             get {
                 object obj = ResourceManager.GetObject("unlink", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
+                return ((System.Drawing.Bitmap)(obj));
             }
         }
     }

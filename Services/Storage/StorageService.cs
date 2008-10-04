@@ -270,18 +270,13 @@ namespace RiseOp.Services.Storage
             StorageMap.SafeRemove(file.UserID);
         }
 
-        public List<MenuItemInfo> GetMenuInfo(InterfaceMenuType menuType, ulong user, uint project)
+        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
         {
-            List<MenuItemInfo> menus = new List<MenuItemInfo>();
-
             if (menuType == InterfaceMenuType.Internal)
                 menus.Add(new MenuItemInfo("Data/Files", StorageRes.Icon, new EventHandler(Menu_View)));
 
             if (menuType == InterfaceMenuType.External)
                 menus.Add(new MenuItemInfo("Files", StorageRes.Icon, new EventHandler(Menu_View)));
-
-
-            return menus;
         }
 
         internal void Menu_View(object sender, EventArgs args)
@@ -291,7 +286,7 @@ namespace RiseOp.Services.Storage
             if (node == null)
                 return;
 
-            StorageView view = new StorageView(this, node.GetKey(), node.GetProject());
+            StorageView view = new StorageView(this, node.GetUser(), node.GetProject());
 
             Core.InvokeView(node.IsExternal(), view);
         }

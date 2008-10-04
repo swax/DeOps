@@ -36,7 +36,8 @@ namespace RiseOp.Services.Trust
 
         internal bool SearchOnline;
 
-        Font LabelFont = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold);
+        Font TrustedFont = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold | FontStyle.Underline);
+        Font UntrustedFont = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold);
 
 
         internal LinkTree()
@@ -108,7 +109,7 @@ namespace RiseOp.Services.Trust
 
             // operation
             ProjectNode = new ProjectNode(rootname, Project);
-            ProjectNode.Font = LabelFont;
+            ProjectNode.Font = TrustedFont;
             Nodes.Add(ProjectNode);
 
             // white space
@@ -116,7 +117,7 @@ namespace RiseOp.Services.Trust
 
             // unlinked
             UnlinkedNode = new ProjectNode("Untrusted", 0);
-            UnlinkedNode.Font = LabelFont;
+            UnlinkedNode.Font = UntrustedFont;
             
             Nodes.Add(UnlinkedNode);
 
@@ -334,6 +335,8 @@ namespace RiseOp.Services.Trust
 
                 return;
             }
+
+            ProjectNode.Text = Trust.GetProjectName(Project);  
 
             /* taken care of above
              * if (!link.Projects.Contains(Project) && !link.Downlinks.ContainsKey(Project))
@@ -770,12 +773,7 @@ namespace RiseOp.Services.Trust
         {
             string txt = "";
 
-            string title = Link.Title;
-
             txt += Trust.Core.GetName(Link.UserID);
-
-            //if (title != "")
-            //    txt += " - " + title;
 
             if (Link.IsLoopRoot)
                 txt = "Trust Loop";

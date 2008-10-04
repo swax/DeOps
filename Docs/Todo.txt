@@ -1,64 +1,11 @@
 
-search for interop services uses
+new invite icon
+play with op top header color/icons
+click user link - if riseop loaded, find core with match op id, ask to add user, else just open riseop
+commit to cvs
+good looking connect / home screen
 
-status
-	buddy label
-		if group != null
-			remove group
-			rename group
-			add buddy
-		else
-			add buddy
-			add group
-
-	project (including main)
-		rename project
-		leave project
-
-	other
-		network status
-
-	user
-		trust loop
-			who trusts who
-			
-		selected user name - click to change
-			alternate names from trust/buddy - click to replace
-		Title - click to change
-		Projects - click to goto
-		
-		next to name - IM / Mail
-		
-		locations
-			names (edit), or offline
-			local time if diff
-			
-		trust options - with trust icon
-			link/unlink
-			
-		buddy options - with smiliy buddy icon
-			Get Buddy Link
-			Add as Buddy
-			Remove from Buddies
-			
-on click re-search buddy
-remove buddy only active in buddy view, use separator
-add buddy button
-right click remove buddy
-rename group option
-rename project/operation in label node
-
-give buddy menu items
-click on buddy displays info
-
-
-icons
-	add buddy - smiliy face
-	remove group
-	add group - bunch of yellow circles
-	remove group
-
-redo invite
+prebuild - delete buddylist headers from mainform and IMform designer file
 
 bugs
 	losing  buddy loc through nat/open/blocked net
@@ -68,16 +15,23 @@ chat default in text mode, put formatting options in right click menu.. enable f
 
 also status if killed
 
+does transfer successfully transmit name in session connection and if so, 
+	can right click buddy link support in transfers window be supported to build community from those transferring
+
 user 2 user transfer
 	select file
 		encrypted, subhashed, put in shared directory
 			persists between runs
 		transfer interface shows - active transfer / shared files
+		on startup, and periodically, shared files published to hash id location on network
 	link created, auto-pasted to IM window
-		riseop://file/opID/userID/fileHash/size
+		riseop://file/opID/fileHash/size
 	user clicks link
-		transfer service searches for hash at target
+		getting link through IM auto adds source's location to mesh
+		transfer service searches for hash at hashID
 		when found, location added, transfer started
+		only completed sources, and those uploading parts, should publish at hash id
+		publishes are replicated, but time out
 
 release
 	october is alpha alpha month - make some user friends
@@ -107,10 +61,6 @@ release
 		eventually posted on bigger news site
 		lots of downloads
 			how to offload bandwidth usage?
-		
-
-
-report name discrepencies in status info
 
 test global
 
@@ -199,9 +149,6 @@ in status panel - show LED indicator if online / searching / offline
 
 
 maybe put into input text toolbar a formatting off button that is on by default - msgs are encoded txt/rtf/html(for future)
-
-
-make title something assigned
 
 design re-alignment
 
@@ -520,9 +467,6 @@ Components
 		only load secret key on demand somehow, once used replace with zero's so not sitting static in memory
 		
 	Trust
-		Higher determines lower's title/Name upon trust?
-		Show that name/title so that can't be forged by someone changing their name and re-linking
-		
 		components
 			links   - getlocs .. check cache functions
 			chat    - high level chat is others in loop,
@@ -557,7 +501,7 @@ Components
 		double click member - IM, right click  - views, single click - send status, who
 		room option - show locations, also for IM, make location font smaller
 		check size of signed invite field
-		link name change should change name in chat logs as well for chat/IM/window title
+		name change should change name in chat logs as well for chat/IM/window title
 		implement live rooms / network
 		set default cursor in input box
 		test that our own link changes are reflected in link changes
