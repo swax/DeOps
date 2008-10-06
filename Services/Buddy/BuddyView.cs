@@ -18,7 +18,7 @@ using RiseOp.Services.Trust;
 
 namespace RiseOp.Services.Buddy
 {
-    class BuddyView : ContainerListViewEx
+    public class BuddyView : ContainerListViewEx
     {
         OpCore Core;
         BuddyService Buddies;
@@ -35,7 +35,7 @@ namespace RiseOp.Services.Buddy
         StatusPanel SelectionInfo;
 
 
-        internal BuddyView()
+        public BuddyView()
         {
             DisableHScroll = true;
             HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
@@ -84,7 +84,7 @@ namespace RiseOp.Services.Buddy
             {
                 DragBuddies = (from b in SelectedItems.Cast<BuddyItem>()
                                where b.User != 0
-                               select Buddies.GetLink(b.User)).ToArray();
+                               select Core.GetIdentity(b.User)).ToArray();
 
                 DragStart = e.Location;
             }
@@ -197,7 +197,9 @@ namespace RiseOp.Services.Buddy
             {
                 foreach (OpBuddy buddy in Buddies.BuddyList.Values)
                {
-                    BuddyItem item = new BuddyItem(buddy.Name, buddy.ID);
+                    string name = Core.GetName(buddy.ID);
+
+                    BuddyItem item = new BuddyItem(name, buddy.ID);
 
                     bool online = (Locations.ActiveClientCount(buddy.ID) > 0);
 
@@ -214,12 +216,12 @@ namespace RiseOp.Services.Buddy
                         if (!Groups.ContainsKey(buddy.Group))
                             Groups[buddy.Group] = new SortedList<string, BuddyItem>();
 
-                        Groups[buddy.Group].Add(buddy.Name, item);
+                        Groups[buddy.Group].Add(name, item);
                     }
                     else if (online)
-                        Online.Add(buddy.Name, item);
+                        Online.Add(name, item);
                     else
-                        Offline.Add(buddy.Name, item);
+                        Offline.Add(name, item);
                 }
             });
 
@@ -423,9 +425,17 @@ namespace RiseOp.Services.Buddy
         internal static void AddBuddyDialog(OpCore core)
         {
             GetTextDialog add = new GetTextDialog("Add Buddy", "Enter a buddy link", "");
+            add.BigResultBox();
 
             if (add.ShowDialog() == DialogResult.OK)
-                core.Buddies.AddBuddy(add.ResultBox.Text);
+                try
+                {
+                    core.Buddies.AddBuddy(add.ResultBox.Text);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
         }
     }
 

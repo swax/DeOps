@@ -353,29 +353,30 @@ namespace RiseOp
         {
             Cores.SafeAdd(core);
 
-            CheckGlobal();
+            CheckLookup();
         }
 
-        void CheckGlobal()
+        void CheckLookup()
         {
             // called from gui thread
 
-            bool runGlobal = false;
+            bool runLookup = false;
 
             Cores.LockReading(delegate()
             {
                 foreach (OpCore core in Cores)
-                    if (core.User.Settings.OpAccess != AccessType.Secret)
-                        runGlobal = true;
+                    if (core.User.Settings.OpAccess != AccessType.Secret ||
+                        core.User.Settings.GlobalIM)
+                        runLookup = true;
 
                 // if public cores exist, sign into global
-                if (runGlobal && Lookup == null)
+                if (runLookup && Lookup == null)
                 {
                     Lookup = new OpCore(this);
                 }
 
                 // else destroy global context
-                if (!runGlobal && Lookup != null)
+                if (!runLookup && Lookup != null)
                 {
                     Lookup.Exit();
                     Lookup = null;
@@ -398,7 +399,7 @@ namespace RiseOp
                     }
             });
 
-            CheckGlobal();
+            CheckLookup();
             CheckExit();
         }
 

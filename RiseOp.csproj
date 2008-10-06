@@ -143,6 +143,12 @@
     <Compile Include="Interface\IMForm.Designer.cs">
       <DependentUpon>IMForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Interface\Info\InfoView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Interface\Info\InfoView.Designer.cs">
+      <DependentUpon>InfoView.cs</DependentUpon>
+    </Compile>
     <Compile Include="Interface\Settings\Connecting.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -196,6 +202,12 @@
     </Compile>
     <Compile Include="Interface\Tools\BandwidthForm.Designer.cs">
       <DependentUpon>BandwidthForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Info\NetworkPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Interface\Info\NetworkPanel.Designer.cs">
+      <DependentUpon>NetworkPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Interface\Views\ImageButton.cs">
       <SubType>Component</SubType>
@@ -820,6 +832,10 @@
       <DependentUpon>IMForm.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Info\InfoView.resx">
+      <DependentUpon>InfoView.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Interface\Settings\Connecting.resx">
       <DependentUpon>Connecting.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -854,6 +870,10 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\Tools\BandwidthForm.resx">
       <DependentUpon>BandwidthForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Info\NetworkPanel.resx">
+      <DependentUpon>NetworkPanel.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Board\Res\BoardRes.resx">

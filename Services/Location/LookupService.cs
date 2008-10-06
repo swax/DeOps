@@ -182,13 +182,19 @@ namespace RiseOp.Services.Location
                         DataReq store = new DataReq(null, opCore.Network.OpID, ServiceID, 0, newLoc.Data);
 
                         if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
-                            store.Data = Utilities.DecryptBytes(store.Data, store.Data.Length, opCore.Network.OriginalCrypt.Key);
+                            store.Data = Utilities.DecryptBytes(store.Data, store.Data.Length, opCore.Network.OpCrypt.Key);
 
                         store.Sources = null; // dont pass lookup sources to operation store 
 
                         OpCore staticCore = opCore; // if use opCore, foreach will change ref
-                        staticCore.RunInCoreAsync( ()=>
-                            staticCore.Locations.OperationStore_Local(store));
+
+
+                        staticCore.RunInCoreAsync(() =>
+                            {
+                                staticCore.Network.UpdateLog("general", "Found " + staticCore.User.Settings.Operation);
+
+                                staticCore.Locations.OperationStore_Local(store);
+                            });
                     }
             });
 

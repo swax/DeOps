@@ -8,7 +8,10 @@ using System.Text;
 using System.Windows.Forms;
 
 using RiseOp.Implementation;
+
+using RiseOp.Interface.Info;
 using RiseOp.Interface.Views;
+
 using RiseOp.Services.Buddy;
 
 
@@ -41,6 +44,13 @@ namespace RiseOp.Interface
             SelectionInfo.ShowNetwork();
 
             MainForm.FillManageMenu(Core, OptionsButton.DropDownItems);
+
+            Rectangle screen = Screen.GetWorkingArea(this);
+            Location = new Point(screen.Width - Width, screen.Height / 2 - Height / 2); 
+
+            
+
+            OnShowExternal(new Info.InfoView(core, false));
         }
 
         void OnShowExternal(ViewShell view)
@@ -98,6 +108,11 @@ namespace RiseOp.Interface
                 if(Core.GuiTray != null)
                     Core.GuiTray.CleanupTray();
             }
+        }
+
+        private void HelpInfoButton_Click(object sender, EventArgs e)
+        {
+            OnShowExternal(new InfoView(Core, true));
         }
     }
 }

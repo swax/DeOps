@@ -28,6 +28,8 @@ namespace RiseOp.Interface.Settings
             Global = Core.Context.Lookup;
             Profile = Core.User;
 
+            OperationLabel.Text = Core.User.Settings.Operation;
+
             if (Profile.Settings.OpAccess == AccessType.Secret)
             {
                 GlobalLabel.Visible = false;

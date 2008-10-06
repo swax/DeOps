@@ -153,38 +153,14 @@ namespace RiseOp.Services.Buddy
             });
         }
 
-        internal string GetLink(ulong user)
-        {
-            OpBuddy buddy;
-            if(!BuddyList.TryGetValue(user, out buddy))
-                return null;
-
-            string link = "riseop://" + Core.GetName(user) + "/";
-
-            link += Utilities.ToBase64String(BitConverter.GetBytes(Network.OpID)) + "/";
-
-            link += Utilities.ToBase64String(buddy.Key);
-
-            return link;
-        }
-
         internal OpBuddy AddBuddy(string link)
         {
-            link = link.Replace("riseop://", "");
+            IdentityLink ident = IdentityLink.Decode(link);
 
-            string[] parts = link.Split('/');
-
-            if (parts.Length < 3)
-                return null;
-
-            ulong opID = BitConverter.ToUInt64(Utilities.FromBase64String(parts[1]), 0);
-
-            if (opID != Network.OpID)
+            if (!Utilities.MemCompare(ident.OpID, Core.User.Settings.InviteKey))
                 throw new Exception("This buddy link is not for " + Core.User.Settings.Operation);
 
-            byte[] key = Utilities.FromBase64String(parts[2]);
-
-            return AddBuddy(parts[0], key);
+            return AddBuddy(ident.Name, ident.PublicKey);
         }
 
         internal OpBuddy AddBuddy(string name, byte[] key)

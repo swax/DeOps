@@ -383,7 +383,7 @@ namespace RiseOp.Implementation
                         {
                             KeyMap.Remove(user);
                             if (NameMap.SafeContainsKey(user))
-                                NameMap.Remove(user);
+                                NameMap.SafeRemove(user);
                         }
                 }
 			}
@@ -411,25 +411,19 @@ namespace RiseOp.Implementation
 
 				if(commands[0] == "testDht" && commands.Length == 2)
 				{
-					SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
-					byte[] hash = new byte[8];
-
 					int count = Convert.ToInt32(commands[1]);
 
 					for(int i = 0; i < count; i++)
 					{
-						/*RSACryptoServiceProvider keys = new RSACryptoServiceProvider(1024);
-						//RSAParameters rsaParams = keys.ExportParameters(false);
-						//byte[] hash = sha.ComputeHash( rsaParams.Modulus );
-						
-						StrongRndGen.GetBytes(hash);
-						UInt64 kid = BitConverter.ToUInt64(hash, 0);
+                        RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+
+                        UInt64 kid = Utilities.StrongRandUInt64(rng);
 
 						// create random contact
-						DhtContact contact = new DhtContact(kid, 0, new IPAddress(0), 0, 0);
+						DhtContact contact = new DhtContact(kid, 7, new IPAddress(7), 7, 7);
 						
 						// add to routing
-						GlobalNet.Routing.Add(contact);*/
+						Network.Routing.Add(contact);
 					}
 				}
 
@@ -900,28 +894,17 @@ namespace RiseOp.Implementation
 
         internal string GetIdentity(ulong user)
         {
-	        // riseop://name@opname/opid~publickey
+	        // riseop://user/name@opname/opid~publickey
 
             IdentityLink link = new IdentityLink()
             {
                 Name = GetName(user),
                 OpName = User.Settings.Operation,
-                OpID = GetInviteID(User.Settings.OpKey),
+                OpID = User.Settings.InviteKey,
                 PublicKey = User.Settings.KeyPublic
             };
 
             return link.Encode();
-        }
-
-        private static byte[] GetInviteID(byte[] opKey)
-        {
-            // the invite id is how we match the invite to the op of the invitee's public key
-            // different than regular opID so that invite link / public link does not compramise
-            // dht position of op on lookup network
-
-            byte[] id = new MD5CryptoServiceProvider().ComputeHash(opKey);
-
-            return Utilities.ExtractBytes(id, 0, 8);
         }
 
         internal string GenerateInvite(string pubLink, out string name)
@@ -994,7 +977,7 @@ namespace RiseOp.Implementation
                 foreach (OpCore core in context.Cores)
                     try
                     {
-                        if (Utilities.MemCompare(opID, GetInviteID(core.User.Settings.OpKey)))
+                        if (Utilities.MemCompare(opID, core.User.Settings.InviteKey))
                             decrypted = core.User.Settings.KeyPair.Decrypt(encrypted, false);
                     }
                     catch { }
@@ -1025,7 +1008,7 @@ namespace RiseOp.Implementation
                     user.Load(LoadModeType.Settings);
 
                     // ensure the invitation is for this op specifically
-                    if (!Utilities.MemCompare(opID, GetInviteID(user.Settings.OpKey)))
+                    if (!Utilities.MemCompare(opID, user.Settings.InviteKey))
                     {
                         MessageBox.Show("This is not a " + op + " profile");
                         continue;
@@ -1091,7 +1074,7 @@ namespace RiseOp.Implementation
 
         internal string Encode()
         {
-            string link = "riseop://" + Name + "@" + OpName + "/";
+            string link = "riseop://user/" + Name + "@" + OpName + "/";
 
             byte[] totalKey = Utilities.CombineArrays(OpID, PublicKey);
 
@@ -1100,8 +1083,10 @@ namespace RiseOp.Implementation
 
         internal static IdentityLink Decode(string link)
         {
-            if (link.StartsWith("riseop://"))
-                link = link.Substring(9);
+            if (link.StartsWith("riseop://user/"))
+                link = link.Substring(14);
+            else
+                throw new Exception("Invalid Link");
 
             string[] mainParts = link.Split('/');
             if (mainParts.Length < 2)

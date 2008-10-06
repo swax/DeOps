@@ -42,7 +42,10 @@ namespace RiseOp.Implementation.Dht
             if (Core.InvokeRequired)
                 Debug.Assert(false);
 
-            string type = "Publish " + service.ToString();
+            string type = "Publish " + Core.GetServiceName(service);
+
+            if(target == Core.UserID)
+                Network.UpdateLog("general", "Publishing " + Core.GetServiceName(service));
 
             DataReq store = new DataReq(null, target, service, datatype, data);
 

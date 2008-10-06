@@ -30,13 +30,23 @@ namespace RiseOp.Interface
         {
             this.components = new System.ComponentModel.Container();
             RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader4 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader5 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader6 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader7 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.MainSplit = new System.Windows.Forms.SplitContainer();
             this.CommandSplit = new System.Windows.Forms.SplitContainer();
+            this.BuddyList = new RiseOp.Services.Buddy.BuddyView();
             this.SideNavStrip = new System.Windows.Forms.ToolStrip();
             this.SideViewsButton = new System.Windows.Forms.ToolStripDropDownButton();
+            this.SideHelpButton = new System.Windows.Forms.ToolStripButton();
             this.SideSearchButton = new System.Windows.Forms.ToolStripButton();
             this.SideNewsButton = new System.Windows.Forms.ToolStripDropDownButton();
+            this.CommandTree = new RiseOp.Services.Trust.LinkTree();
+            this.SelectionInfo = new RiseOp.Interface.StatusPanel();
             this.NavStrip = new System.Windows.Forms.ToolStrip();
             this.PersonNavButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.ProjectNavButton = new System.Windows.Forms.ToolStripDropDownButton();
@@ -60,6 +70,7 @@ namespace RiseOp.Interface
             this.CommButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.mailToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.chatToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.HelpInfoButton = new System.Windows.Forms.ToolStripButton();
             this.SearchButton = new System.Windows.Forms.ToolStripButton();
             this.SearchBox = new System.Windows.Forms.ToolStripTextBox();
             this.DataButton = new System.Windows.Forms.ToolStripDropDownButton();
@@ -72,11 +83,9 @@ namespace RiseOp.Interface
             this.ProjectsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.SideButton = new System.Windows.Forms.ToolStripButton();
             this.LockButton = new System.Windows.Forms.ToolStripButton();
+            this.NetworkButton = new System.Windows.Forms.ToolStripButton();
             this.TreeImageList = new System.Windows.Forms.ImageList(this.components);
             this.NewsTimer = new System.Windows.Forms.Timer(this.components);
-            CommandTree = new RiseOp.Services.Trust.LinkTree();
-            BuddyList = new RiseOp.Services.Buddy.BuddyView();
-            SelectionInfo = new StatusPanel();
             this.MainSplit.Panel1.SuspendLayout();
             this.MainSplit.Panel2.SuspendLayout();
             this.MainSplit.SuspendLayout();
@@ -94,8 +103,7 @@ namespace RiseOp.Interface
             this.MainSplit.BackColor = System.Drawing.Color.WhiteSmoke;
             this.MainSplit.Dock = System.Windows.Forms.DockStyle.Fill;
             this.MainSplit.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
-            this.MainSplit.Location = new System.Drawing.Point(35, 0);
-            this.MainSplit.SplitterWidth = 2;
+            this.MainSplit.Location = new System.Drawing.Point(27, 0);
             this.MainSplit.Name = "MainSplit";
             // 
             // MainSplit.Panel1
@@ -108,8 +116,9 @@ namespace RiseOp.Interface
             this.MainSplit.Panel2.Controls.Add(this.NavStrip);
             this.MainSplit.Panel2.Controls.Add(this.InternalPanel);
             this.MainSplit.Panel2.Controls.Add(this.TopToolStrip);
-            this.MainSplit.Size = new System.Drawing.Size(698, 445);
+            this.MainSplit.Size = new System.Drawing.Size(741, 447);
             this.MainSplit.SplitterDistance = 171;
+            this.MainSplit.SplitterWidth = 2;
             this.MainSplit.TabIndex = 1;
             // 
             // CommandSplit
@@ -120,7 +129,6 @@ namespace RiseOp.Interface
             this.CommandSplit.ForeColor = System.Drawing.Color.White;
             this.CommandSplit.Location = new System.Drawing.Point(0, 0);
             this.CommandSplit.Name = "CommandSplit";
-            this.CommandSplit.SplitterWidth = 2;
             this.CommandSplit.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
             // CommandSplit.Panel1
@@ -134,8 +142,9 @@ namespace RiseOp.Interface
             // 
             this.CommandSplit.Panel2.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandSplit.Panel2.Controls.Add(this.SelectionInfo);
-            this.CommandSplit.Size = new System.Drawing.Size(171, 445);
-            this.CommandSplit.SplitterDistance = 324;
+            this.CommandSplit.Size = new System.Drawing.Size(171, 447);
+            this.CommandSplit.SplitterDistance = 340;
+            this.CommandSplit.SplitterWidth = 2;
             this.CommandSplit.TabIndex = 4;
             // 
             // BuddyList
@@ -146,6 +155,84 @@ namespace RiseOp.Interface
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.BuddyList.BackColor = System.Drawing.SystemColors.Window;
             this.BuddyList.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            toggleColumnHeader1.Hovered = false;
+            toggleColumnHeader1.Image = null;
+            toggleColumnHeader1.Index = 0;
+            toggleColumnHeader1.Pressed = false;
+            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.Selected = false;
+            toggleColumnHeader1.Text = "";
+            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader1.Visible = true;
+            toggleColumnHeader1.Width = 24;
+            toggleColumnHeader2.Hovered = false;
+            toggleColumnHeader2.Image = null;
+            toggleColumnHeader2.Index = 0;
+            toggleColumnHeader2.Pressed = false;
+            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader2.Selected = false;
+            toggleColumnHeader2.Text = "";
+            toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader2.Visible = true;
+            toggleColumnHeader2.Width = 24;
+            toggleColumnHeader3.Hovered = false;
+            toggleColumnHeader3.Image = null;
+            toggleColumnHeader3.Index = 0;
+            toggleColumnHeader3.Pressed = false;
+            toggleColumnHeader3.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader3.Selected = false;
+            toggleColumnHeader3.Text = "";
+            toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader3.Visible = true;
+            toggleColumnHeader3.Width = 24;
+            toggleColumnHeader4.Hovered = false;
+            toggleColumnHeader4.Image = null;
+            toggleColumnHeader4.Index = 0;
+            toggleColumnHeader4.Pressed = false;
+            toggleColumnHeader4.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader4.Selected = false;
+            toggleColumnHeader4.Text = "";
+            toggleColumnHeader4.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader4.Visible = true;
+            toggleColumnHeader4.Width = 24;
+            toggleColumnHeader5.Hovered = false;
+            toggleColumnHeader5.Image = null;
+            toggleColumnHeader5.Index = 0;
+            toggleColumnHeader5.Pressed = false;
+            toggleColumnHeader5.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader5.Selected = false;
+            toggleColumnHeader5.Text = "";
+            toggleColumnHeader5.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader5.Visible = true;
+            toggleColumnHeader5.Width = 24;
+            toggleColumnHeader6.Hovered = false;
+            toggleColumnHeader6.Image = null;
+            toggleColumnHeader6.Index = 0;
+            toggleColumnHeader6.Pressed = false;
+            toggleColumnHeader6.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader6.Selected = false;
+            toggleColumnHeader6.Text = "";
+            toggleColumnHeader6.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader6.Visible = true;
+            toggleColumnHeader6.Width = 24;
+            toggleColumnHeader7.Hovered = false;
+            toggleColumnHeader7.Image = null;
+            toggleColumnHeader7.Index = 0;
+            toggleColumnHeader7.Pressed = false;
+            toggleColumnHeader7.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader7.Selected = false;
+            toggleColumnHeader7.Text = "";
+            toggleColumnHeader7.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
+            toggleColumnHeader7.Visible = true;
+            toggleColumnHeader7.Width = 24;
+            this.BuddyList.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
+            toggleColumnHeader1,
+            toggleColumnHeader2,
+            toggleColumnHeader3,
+            toggleColumnHeader4,
+            toggleColumnHeader5,
+            toggleColumnHeader6,
+            toggleColumnHeader7});
             this.BuddyList.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.BuddyList.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.BuddyList.DisableHorizontalScroll = true;
@@ -159,7 +246,7 @@ namespace RiseOp.Interface
             this.BuddyList.Name = "BuddyList";
             this.BuddyList.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.BuddyList.RowTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.BuddyList.Size = new System.Drawing.Size(171, 296);
+            this.BuddyList.Size = new System.Drawing.Size(171, 312);
             this.BuddyList.SmallImageList = null;
             this.BuddyList.StateImageList = null;
             this.BuddyList.TabIndex = 0;
@@ -172,6 +259,7 @@ namespace RiseOp.Interface
             this.SideNavStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.SideNavStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.SideViewsButton,
+            this.SideHelpButton,
             this.SideSearchButton,
             this.SideNewsButton});
             this.SideNavStrip.Location = new System.Drawing.Point(0, 0);
@@ -184,13 +272,23 @@ namespace RiseOp.Interface
             // 
             // SideViewsButton
             // 
-            this.SideViewsButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.SideViewsButton.Image = ((System.Drawing.Image)(resources.GetObject("SideViewsButton.Image")));
             this.SideViewsButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.SideViewsButton.Name = "SideViewsButton";
-            this.SideViewsButton.Size = new System.Drawing.Size(29, 22);
+            this.SideViewsButton.Size = new System.Drawing.Size(63, 22);
             this.SideViewsButton.Text = "Views";
             this.SideViewsButton.DropDownOpening += new System.EventHandler(this.SideViewsButton_DropDownOpening);
+            // 
+            // SideHelpButton
+            // 
+            this.SideHelpButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.SideHelpButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.SideHelpButton.Image = ((System.Drawing.Image)(resources.GetObject("SideHelpButton.Image")));
+            this.SideHelpButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.SideHelpButton.Name = "SideHelpButton";
+            this.SideHelpButton.Size = new System.Drawing.Size(23, 22);
+            this.SideHelpButton.Text = "Help";
+            this.SideHelpButton.Click += new System.EventHandler(this.SideHelpButton_Click);
             // 
             // SideSearchButton
             // 
@@ -201,6 +299,7 @@ namespace RiseOp.Interface
             this.SideSearchButton.Name = "SideSearchButton";
             this.SideSearchButton.Size = new System.Drawing.Size(23, 22);
             this.SideSearchButton.Text = "toolStripButton1";
+            this.SideSearchButton.Visible = false;
             // 
             // SideNewsButton
             // 
@@ -234,7 +333,7 @@ namespace RiseOp.Interface
             this.CommandTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.CommandTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandTree.ShowLines = true;
-            this.CommandTree.Size = new System.Drawing.Size(171, 296);
+            this.CommandTree.Size = new System.Drawing.Size(171, 312);
             this.CommandTree.SmallImageList = null;
             this.CommandTree.StateImageList = null;
             this.CommandTree.TabIndex = 0;
@@ -248,7 +347,7 @@ namespace RiseOp.Interface
             this.SelectionInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.SelectionInfo.Location = new System.Drawing.Point(0, 0);
             this.SelectionInfo.Name = "SelectionInfo";
-            this.SelectionInfo.Size = new System.Drawing.Size(171, 117);
+            this.SelectionInfo.Size = new System.Drawing.Size(171, 105);
             this.SelectionInfo.TabIndex = 0;
             // 
             // NavStrip
@@ -265,7 +364,7 @@ namespace RiseOp.Interface
             this.NavStrip.Name = "NavStrip";
             this.NavStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
             this.NavStrip.ShowItemToolTips = false;
-            this.NavStrip.Size = new System.Drawing.Size(523, 25);
+            this.NavStrip.Size = new System.Drawing.Size(568, 25);
             this.NavStrip.TabIndex = 3;
             this.NavStrip.Paint += new System.Windows.Forms.PaintEventHandler(this.NavStrip_Paint);
             this.NavStrip.MouseClick += new System.Windows.Forms.MouseEventHandler(this.NavStrip_MouseClick);
@@ -335,7 +434,7 @@ namespace RiseOp.Interface
             this.InternalPanel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.InternalPanel.Location = new System.Drawing.Point(0, 56);
             this.InternalPanel.Name = "InternalPanel";
-            this.InternalPanel.Size = new System.Drawing.Size(523, 389);
+            this.InternalPanel.Size = new System.Drawing.Size(566, 391);
             this.InternalPanel.TabIndex = 2;
             // 
             // TopToolStrip
@@ -347,13 +446,14 @@ namespace RiseOp.Interface
             this.ToolSeparator,
             this.PlanButton,
             this.CommButton,
+            this.HelpInfoButton,
             this.SearchButton,
             this.SearchBox,
             this.DataButton});
             this.TopToolStrip.Location = new System.Drawing.Point(0, 0);
             this.TopToolStrip.Name = "TopToolStrip";
             this.TopToolStrip.ShowItemToolTips = false;
-            this.TopToolStrip.Size = new System.Drawing.Size(523, 31);
+            this.TopToolStrip.Size = new System.Drawing.Size(568, 31);
             this.TopToolStrip.TabIndex = 0;
             this.TopToolStrip.Text = "MainToolstrip";
             // 
@@ -474,6 +574,17 @@ namespace RiseOp.Interface
             this.chatToolStripMenuItem.Size = new System.Drawing.Size(108, 22);
             this.chatToolStripMenuItem.Text = "Chat";
             // 
+            // HelpInfoButton
+            // 
+            this.HelpInfoButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.HelpInfoButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.HelpInfoButton.Image = ((System.Drawing.Image)(resources.GetObject("HelpInfoButton.Image")));
+            this.HelpInfoButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.HelpInfoButton.Name = "HelpInfoButton";
+            this.HelpInfoButton.Size = new System.Drawing.Size(23, 28);
+            this.HelpInfoButton.Text = "Help";
+            this.HelpInfoButton.Click += new System.EventHandler(this.HelpButton_Click);
+            // 
             // SearchButton
             // 
             this.SearchButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
@@ -483,6 +594,7 @@ namespace RiseOp.Interface
             this.SearchButton.Name = "SearchButton";
             this.SearchButton.Size = new System.Drawing.Size(23, 28);
             this.SearchButton.Text = "toolStripButton1";
+            this.SearchButton.Click += new System.EventHandler(this.SearchButton_Click);
             // 
             // SearchBox
             // 
@@ -526,12 +638,13 @@ namespace RiseOp.Interface
             this.BuddiesButton,
             this.ProjectsButton,
             this.SideButton,
-            this.LockButton});
+            this.LockButton,
+            this.NetworkButton});
             this.SideToolStrip.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.VerticalStackWithOverflow;
             this.SideToolStrip.Location = new System.Drawing.Point(0, 0);
             this.SideToolStrip.Name = "SideToolStrip";
             this.SideToolStrip.Padding = new System.Windows.Forms.Padding(3, 0, 1, 0);
-            this.SideToolStrip.Size = new System.Drawing.Size(35, 445);
+            this.SideToolStrip.Size = new System.Drawing.Size(27, 447);
             this.SideToolStrip.TabIndex = 3;
             this.SideToolStrip.TextDirection = System.Windows.Forms.ToolStripTextDirection.Vertical270;
             // 
@@ -540,7 +653,7 @@ namespace RiseOp.Interface
             this.toolStripLabel2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.None;
             this.toolStripLabel2.Margin = new System.Windows.Forms.Padding(0, 25, 0, 2);
             this.toolStripLabel2.Name = "toolStripLabel2";
-            this.toolStripLabel2.Size = new System.Drawing.Size(26, 0);
+            this.toolStripLabel2.Size = new System.Drawing.Size(18, 0);
             this.toolStripLabel2.Text = "toolStripLabel2";
             // 
             // OperationButton
@@ -552,7 +665,7 @@ namespace RiseOp.Interface
             this.OperationButton.Image = ((System.Drawing.Image)(resources.GetObject("OperationButton.Image")));
             this.OperationButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.OperationButton.Name = "OperationButton";
-            this.OperationButton.Size = new System.Drawing.Size(26, 83);
+            this.OperationButton.Size = new System.Drawing.Size(18, 83);
             this.OperationButton.Text = "Operation";
             this.OperationButton.TextDirection = System.Windows.Forms.ToolStripTextDirection.Vertical90;
             this.OperationButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
@@ -565,7 +678,7 @@ namespace RiseOp.Interface
             this.BuddiesButton.Image = ((System.Drawing.Image)(resources.GetObject("BuddiesButton.Image")));
             this.BuddiesButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.BuddiesButton.Name = "BuddiesButton";
-            this.BuddiesButton.Size = new System.Drawing.Size(26, 71);
+            this.BuddiesButton.Size = new System.Drawing.Size(18, 71);
             this.BuddiesButton.Text = "Buddies";
             this.BuddiesButton.TextDirection = System.Windows.Forms.ToolStripTextDirection.Vertical90;
             this.BuddiesButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
@@ -577,7 +690,7 @@ namespace RiseOp.Interface
             this.ProjectsButton.Image = ((System.Drawing.Image)(resources.GetObject("ProjectsButton.Image")));
             this.ProjectsButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.ProjectsButton.Name = "ProjectsButton";
-            this.ProjectsButton.Size = new System.Drawing.Size(26, 81);
+            this.ProjectsButton.Size = new System.Drawing.Size(18, 81);
             this.ProjectsButton.Text = "Projects";
             this.ProjectsButton.TextDirection = System.Windows.Forms.ToolStripTextDirection.Vertical90;
             this.ProjectsButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
@@ -591,7 +704,7 @@ namespace RiseOp.Interface
             this.SideButton.Image = ((System.Drawing.Image)(resources.GetObject("SideButton.Image")));
             this.SideButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.SideButton.Name = "SideButton";
-            this.SideButton.Size = new System.Drawing.Size(26, 20);
+            this.SideButton.Size = new System.Drawing.Size(18, 20);
             this.SideButton.Text = "Toggle Sidebar";
             this.SideButton.CheckedChanged += new System.EventHandler(this.SideButton_CheckedChanged);
             // 
@@ -602,9 +715,20 @@ namespace RiseOp.Interface
             this.LockButton.Image = ((System.Drawing.Image)(resources.GetObject("LockButton.Image")));
             this.LockButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.LockButton.Name = "LockButton";
-            this.LockButton.Size = new System.Drawing.Size(26, 20);
+            this.LockButton.Size = new System.Drawing.Size(18, 20);
             this.LockButton.Text = "Lockdown to Tray";
             this.LockButton.Click += new System.EventHandler(this.LockButton_Click);
+            // 
+            // NetworkButton
+            // 
+            this.NetworkButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.NetworkButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.NetworkButton.Image = ((System.Drawing.Image)(resources.GetObject("NetworkButton.Image")));
+            this.NetworkButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.NetworkButton.Name = "NetworkButton";
+            this.NetworkButton.Size = new System.Drawing.Size(18, 20);
+            this.NetworkButton.Text = "Network Info";
+            this.NetworkButton.Click += new System.EventHandler(this.NetworkButton_Click);
             // 
             // TreeImageList
             // 
@@ -624,7 +748,7 @@ namespace RiseOp.Interface
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.ClientSize = new System.Drawing.Size(733, 445);
+            this.ClientSize = new System.Drawing.Size(768, 447);
             this.Controls.Add(this.MainSplit);
             this.Controls.Add(this.SideToolStrip);
             this.DoubleBuffered = true;
@@ -701,5 +825,8 @@ namespace RiseOp.Interface
         private System.Windows.Forms.ToolStripButton SideSearchButton;
         private RiseOp.Services.Buddy.BuddyView BuddyList;
         private StatusPanel SelectionInfo;
+        private System.Windows.Forms.ToolStripButton HelpInfoButton;
+        private System.Windows.Forms.ToolStripButton NetworkButton;
+        private System.Windows.Forms.ToolStripButton SideHelpButton;
     }
 }

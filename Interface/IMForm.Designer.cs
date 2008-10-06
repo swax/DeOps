@@ -31,11 +31,12 @@
             RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(IMForm));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.BuddyList = new RiseOp.Services.Buddy.BuddyView();
             this.TopStrip = new System.Windows.Forms.ToolStrip();
             this.OptionsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.AddButton = new System.Windows.Forms.ToolStripButton();
-            BuddyList = new RiseOp.Services.Buddy.BuddyView();
-            SelectionInfo = new StatusPanel();
+            this.SelectionInfo = new RiseOp.Interface.StatusPanel();
+            this.HelpInfoButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
@@ -77,7 +78,7 @@
             toggleColumnHeader1.Text = "";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 186;
+            toggleColumnHeader1.Width = 190;
             this.BuddyList.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader1});
             this.BuddyList.ColumnSortColor = System.Drawing.Color.Gainsboro;
@@ -105,6 +106,7 @@
             this.TopStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.TopStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.OptionsButton,
+            this.HelpInfoButton,
             this.AddButton});
             this.TopStrip.Location = new System.Drawing.Point(0, 0);
             this.TopStrip.Name = "TopStrip";
@@ -141,6 +143,17 @@
             this.SelectionInfo.Size = new System.Drawing.Size(190, 123);
             this.SelectionInfo.TabIndex = 0;
             // 
+            // HelpInfoButton
+            // 
+            this.HelpInfoButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.HelpInfoButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.HelpInfoButton.Image = ((System.Drawing.Image)(resources.GetObject("HelpInfoButton.Image")));
+            this.HelpInfoButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.HelpInfoButton.Name = "HelpInfoButton";
+            this.HelpInfoButton.Size = new System.Drawing.Size(23, 22);
+            this.HelpInfoButton.Text = "Help";
+            this.HelpInfoButton.Click += new System.EventHandler(this.HelpInfoButton_Click);
+            // 
             // IMForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -170,5 +183,6 @@
         private StatusPanel SelectionInfo;
         private System.Windows.Forms.ToolStripButton AddButton;
         private System.Windows.Forms.ToolStripDropDownButton OptionsButton;
+        private System.Windows.Forms.ToolStripButton HelpInfoButton;
     }
 }

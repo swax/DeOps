@@ -59,7 +59,7 @@ namespace RiseOp.Interface
         private void CopyLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             Clipboard.SetText(IdentityBox.Text);
-            MessageBox.Show("Copied");
+            CopyLink.Text = "Copied";
         }
     }
 }

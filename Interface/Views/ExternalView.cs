@@ -32,7 +32,11 @@ namespace RiseOp.Interface
 
             Text = shell.GetTitle(false);
             Size = shell.GetDefaultSize();
-            Icon = shell.GetIcon();
+
+            Icon icon = shell.GetIcon();
+
+            if (icon != null)
+                Icon = icon;
         }
 
         private void ExternalWin_Load(object sender, EventArgs e)

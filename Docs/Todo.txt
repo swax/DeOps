@@ -1,17 +1,40 @@
 
-new invite icon
-play with op top header color/icons
-click user link - if riseop loaded, find core with match op id, ask to add user, else just open riseop
-commit to cvs
-good looking connect / home screen
 
-prebuild - delete buddylist headers from mainform and IMform designer file
+// help - getting started
+/*
+ * welcome to <op>
+ * connection status
+ * your identity can be found in the manage menu
+ * to chat with people double click their name in the tree on the left
+ * the operation tree shows who trusts who
+ * the buddy area are you friends
+ * idenpendent project can be created on the left
+ * 
+ * i have a project what do i do now
+ * post messages, send mail, chat, im
+ * share a single file system
+ * update your profile
+ * start a time line with your plans
+ * 
+ * invite more people to your op!!
+ */
+
+play with op top header color/icons
+click user link - if riseop loaded, find core with match op id, ask to add user to buddies, else just open riseop
+	check click invite link works
+buddys dropdown in add link dialog, multi-select?
+form colums still huge
+buddy block list - prevents IMs from coming in
+IM tool bar - formatting drop down, send file, add buddy, block
+
+try upnp?
 
 bugs
 	losing  buddy loc through nat/open/blocked net
 	person net open/nat/blocked, not finding local untrusted
 	
 chat default in text mode, put formatting options in right click menu.. enable formatting, remove tools from toolbar
+	file links can be put in chat window and work fine ;)
 
 also status if killed
 
@@ -32,6 +55,14 @@ user 2 user transfer
 		when found, location added, transfer started
 		only completed sources, and those uploading parts, should publish at hash id
 		publishes are replicated, but time out
+
+auto update
+	ensure crawler works and gets version
+	ability to send store command directly to client
+	update service notified, starts transfer
+		alerts user when transfer is complete
+	uses built in jmg public key to verify update file is valid
+	user should only have to download once - rest d/led through network
 
 release
 	october is alpha alpha month - make some user friends
@@ -82,18 +113,12 @@ make sure diff networks use diff webcaches in sim
 	
 Buddy list Component
 
-	hows the interface going to work, plug into tree command?
+	Chat in global buddy system
+	Individual file transfer in buddy system
 	
-	how are global buddies going to be save in op's buddy list?
-	
+	buddy - local synced only when trust is enabled
 
-	test 
-		create network with just loc, transfer, IM (chat)
-
-	service
-		local synced only when trust is enabled
-
-		global list saved with op list - if linked
+	global list saved with op list - if association made
 		
 		
 local invisible option - publishes offline, and doesnt reply to pings
@@ -103,9 +128,6 @@ local invisible option - publishes offline, and doesnt reply to pings
 	
 
 Global IM
-	Services: Location, IM, buddies
-	Later: Transfer, Chat
-	
 	remove direct trust references from location?
 	
 	Buddies component
@@ -117,15 +139,7 @@ Global IM
 	Buddies in buddy list are local interested
 		Confirmed if remote interested
 		Tag - puts it somwhere in the buddy list
-		
-	Budddies live on global IM list so if Op falls, they are still reachable
-	
-	how to carry the most over
-	
-new invite
-	for invite to work you need person's global public key or can select someone from global buddy list
-	invite created, can either be IM'd directly to them, or link saved and emailed or IMd over another network
-	
+
 quick look at live comm
 	login search for highest that is online
 	create a persistant connection with them
@@ -138,7 +152,7 @@ quick look at live comm
 
 having trouble with getting location offline message to user during logout in the sim
 
-in status panel - show LED indicator if online / searching / offline
+in status panel - show LED indicator if online / **searching** / offline
 
 
 

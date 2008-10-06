@@ -13,7 +13,7 @@ using RiseOp.Interface.TLVex;
 
 namespace RiseOp.Services.Trust
 {
-    class LinkTree : TreeListViewEx 
+    public class LinkTree : TreeListViewEx 
     {
         internal OpCore Core;
         internal TrustService Trust;
@@ -40,7 +40,7 @@ namespace RiseOp.Services.Trust
         Font UntrustedFont = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold);
 
 
-        internal LinkTree()
+        public LinkTree()
         {
             HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
         }

@@ -8,7 +8,10 @@ using System.Threading;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
+
+using RiseOp.Services;
 using RiseOp.Services.Location;
+
 
 namespace RiseOp.Implementation
 {
@@ -256,9 +259,11 @@ namespace RiseOp.Implementation
                 {
                     NextLookupSearch = LookupearchInterval.NextTry;
 
+                    Network.UpdateLog("general", "Looking for " + Core.User.Settings.Operation);
+
                     lookup.RunInCoreAsync(delegate()
                     {
-                        LookupService service = (LookupService)lookup.ServiceMap[12];
+                        LookupService service = lookup.GetService(ServiceID.Global) as LookupService;
                         service.StartSearch(Network.OpID, 0);
                     });
                 }
@@ -303,6 +308,8 @@ namespace RiseOp.Implementation
 
             cache.NextQuery = Retry.NextTry;
 
+            Network.UpdateLog("general", "Trying webcache");
+
             string response = MakeWebCacheRequest(cache, "query:" + Network.OpID.ToString());
             
             // check for empty or error
@@ -311,6 +318,8 @@ namespace RiseOp.Implementation
                 Network.UpdateLog("WebCache", "Query: " + cache.Address + ": " + response);
                 return;
             }
+            else
+                Network.UpdateLog("general", "Webcache success");
 
             // else success
             cache.LastSeen = Core.TimeNow;
@@ -485,6 +494,8 @@ namespace RiseOp.Implementation
                     if (Core.TimeNow < entry.NextTryIP)
                         continue;
 
+                    Network.UpdateLog("general", "Trying peer " + entry.IP);
+
                     Network.Send_Ping(entry);
 
                     entry.NextTryIP = Retry.NextTry;
@@ -504,6 +515,8 @@ namespace RiseOp.Implementation
                         if (Core.TimeNow < entry.NextTryProxy)
                             continue;
 
+                        Network.UpdateLog("general", "Trying direct " + entry.IP);
+
                         Network.TcpControl.MakeOutbound(entry, entry.TcpPort, "ip cache");
 
                         entry.NextTryProxy = Retry.NextTry;
@@ -522,6 +535,8 @@ namespace RiseOp.Implementation
 
             // Create an event handler for ping complete
             pingSender.PingCompleted += new System.Net.NetworkInformation.PingCompletedEventHandler(Ping_Complete);
+
+            Network.UpdateLog("general", "Checking if online...");
 
             // Send the ping asynchronously
             string site = TestSites[Core.RndGen.Next(TestSites.Length)];
@@ -546,6 +561,9 @@ namespace RiseOp.Implementation
 
                 if (OnlineSuccess < OnlineConfirmed)
                     OnlineSuccess++;
+
+                if(OnlineSuccess == OnlineConfirmed)
+                    Network.UpdateLog("general", "Online check success");
             }
 
             // not success, try another random site, quickly (3 times) then retry will be 1 min

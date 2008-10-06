@@ -194,6 +194,13 @@ namespace RiseOp
 
         internal void Save()
         {
+            if (Core != null && Core.InvokeRequired)
+            {
+                Debug.Assert(false);
+                Core.RunInCoreAsync(() => Save());
+                return;
+            }
+
             string backupPath = ProfilePath.Replace(".rop", ".bak");
 
 			if( !File.Exists(backupPath) && File.Exists(ProfilePath))
@@ -576,6 +583,13 @@ namespace RiseOp
 
         internal byte[] FileKey;
 
+        // derived from OpKey
+        // the invite key is how we match the invite to the op of the invitee's public key
+        // different than regular opID so that invite link / public link does not compramise
+        // dht position of op on lookup network
+        internal byte[] InviteKey;
+ 
+         
 
         internal SettingsPacket()
         {
@@ -662,6 +676,9 @@ namespace RiseOp
 
                     case Packet_OpKey:
                         settings.OpKey = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+
+                        byte[] invite = new MD5CryptoServiceProvider().ComputeHash(settings.OpKey);
+                        settings.InviteKey = Utilities.ExtractBytes(invite, 0, 8);                        
                         break;
 
                     case Packet_FileKey:

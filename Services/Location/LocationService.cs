@@ -296,11 +296,11 @@ namespace RiseOp.Services.Location
             byte[] data = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, location);
 
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
-                data = Utilities.EncryptBytes(data, Network.OriginalCrypt.Key);
+                data = Utilities.EncryptBytes(data, Network.OpCrypt.Key);
 
             data = new CryptLoc(LocationData.GLOBAL_TTL, data).Encode(Network.Protocol);
 
-            LookupService service = (LookupService) Core.Context.Lookup.ServiceMap[12];
+            LookupService service = Core.Context.Lookup.GetService(Services.ServiceID.Global) as LookupService;
             service.Publish(Network.OpID, data);
         }
 

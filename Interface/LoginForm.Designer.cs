@@ -38,6 +38,7 @@ namespace RiseOp.Interface
             this.EnterSimLink = new System.Windows.Forms.LinkLabel();
             this.OpCombo = new System.Windows.Forms.ComboBox();
             this.SplashBox = new System.Windows.Forms.PictureBox();
+            this.VersionLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.SplashBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -159,6 +160,7 @@ namespace RiseOp.Interface
             // 
             // SplashBox
             // 
+            this.SplashBox.BackColor = System.Drawing.Color.Transparent;
             this.SplashBox.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.SplashBox.Location = new System.Drawing.Point(15, 12);
             this.SplashBox.Name = "SplashBox";
@@ -167,6 +169,19 @@ namespace RiseOp.Interface
             this.SplashBox.TabStop = false;
             this.SplashBox.DoubleClick += new System.EventHandler(this.pictureBox1_DoubleClick);
             // 
+            // VersionLabel
+            // 
+            this.VersionLabel.AutoEllipsis = true;
+            this.VersionLabel.BackColor = System.Drawing.Color.Transparent;
+            this.VersionLabel.Font = new System.Drawing.Font("Arial", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.VersionLabel.ForeColor = System.Drawing.Color.White;
+            this.VersionLabel.Location = new System.Drawing.Point(197, 171);
+            this.VersionLabel.Name = "VersionLabel";
+            this.VersionLabel.Size = new System.Drawing.Size(51, 15);
+            this.VersionLabel.TabIndex = 11;
+            this.VersionLabel.Text = "v0.1.0";
+            this.VersionLabel.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            // 
             // LoginForm
             // 
             this.AcceptButton = this.ButtonLoad;
@@ -174,6 +189,7 @@ namespace RiseOp.Interface
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.ButtonExit;
             this.ClientSize = new System.Drawing.Size(268, 330);
+            this.Controls.Add(this.VersionLabel);
             this.Controls.Add(this.SplashBox);
             this.Controls.Add(this.OpCombo);
             this.Controls.Add(this.EnterSimLink);
@@ -208,6 +224,7 @@ namespace RiseOp.Interface
         private System.Windows.Forms.LinkLabel EnterSimLink;
         private System.Windows.Forms.ComboBox OpCombo;
         internal System.Windows.Forms.PictureBox SplashBox;
+        private System.Windows.Forms.Label VersionLabel;
 
     }
 }

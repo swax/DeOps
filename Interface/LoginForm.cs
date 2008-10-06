@@ -39,6 +39,12 @@ namespace RiseOp.Interface
 
             InitializeComponent();
 
+            SplashBox.Controls.Add(VersionLabel);
+            VersionLabel.Left = SplashBox.Width - VersionLabel.Width;
+            VersionLabel.Top = SplashBox.Height - VersionLabel.Height;
+            VersionLabel.BackColor = Color.FromArgb(0, VersionLabel.BackColor);
+            VersionLabel.Text = "v" + Application.ProductVersion.Substring(0, Application.ProductVersion.Length - 2);
+
             SplashBox.Image = InterfaceRes.splash;
 
             if (Context.Sim != null) // prevent sim recursion

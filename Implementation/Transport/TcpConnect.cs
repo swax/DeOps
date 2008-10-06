@@ -241,8 +241,9 @@ namespace RiseOp.Implementation.Transport
             {
                 Network.AugmentedCrypt.GenerateIV();
                 Network.AugmentedCrypt.Padding = PaddingMode.None;
-                BitConverter.GetBytes(UserID).CopyTo(Network.AugmentedCrypt.Key, 0);
 
+                Network.SetAugmentedKey(UserID);
+      
                 Encryptor = Network.AugmentedCrypt.CreateEncryptor();
 
                 Network.AugmentedCrypt.IV.CopyTo(FinalSendBuffer, 0);
@@ -514,7 +515,8 @@ namespace RiseOp.Implementation.Transport
                     {
                         Network.AugmentedCrypt.IV = Utilities.ExtractBytes(RecvBuffer, 0, ivlen);
                         Network.AugmentedCrypt.Padding = PaddingMode.None;
-                        BitConverter.GetBytes(Network.Local.UserID).CopyTo(Network.AugmentedCrypt.Key, 0);
+
+                        Network.SetAugmentedKey(Network.Local.UserID);
 
                         Decryptor = Network.AugmentedCrypt.CreateDecryptor();
                     }

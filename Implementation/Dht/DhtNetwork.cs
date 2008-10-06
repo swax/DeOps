@@ -70,8 +70,9 @@ namespace RiseOp.Implementation.Dht
                                             0x18,0xf3,0x08,0x3d,0x01,0xf6,0x97,0x8a ,
                                             0x6c,0x76,0xda,0x4b,0x70,0x88,0x00,0xaa};
 
-        internal RijndaelManaged OriginalCrypt;
+        internal RijndaelManaged OpCrypt;
         internal RijndaelManaged AugmentedCrypt;
+        internal byte[] AugmentBytes = new byte[8];
 
         // log
         internal Queue<G2ReceivedPacket> IncomingPackets = new Queue<G2ReceivedPacket>();
@@ -101,17 +102,16 @@ namespace RiseOp.Implementation.Dht
 
             OpID = Utilities.KeytoID(IsLookup ? LookupKey : Core.User.Settings.OpKey);
 
-            OriginalCrypt = new RijndaelManaged();
+            OpCrypt = new RijndaelManaged();
 
             // load encryption
             if (IsLookup)
-                OriginalCrypt.Key = LookupKey;
+                OpCrypt.Key = LookupKey;
             else
-                OriginalCrypt.Key = Core.User.Settings.OpKey;
-
+                OpCrypt.Key = Core.User.Settings.OpKey;
 
             AugmentedCrypt = new RijndaelManaged();
-            AugmentedCrypt.Key = (byte[])OriginalCrypt.Key.Clone();
+            AugmentedCrypt.Key = (byte[])OpCrypt.Key.Clone();
 
             Protocol = new G2Protocol();
             TcpControl = new TcpHandler(this);
@@ -170,6 +170,8 @@ namespace RiseOp.Implementation.Dht
             if (connected == Responsive)
                 return;
 
+            string name = IsLookup ? "Lookup" : Core.User.Settings.Operation;
+
             // else set new value
             Responsive = connected;
 
@@ -181,6 +183,8 @@ namespace RiseOp.Implementation.Dht
                 Routing.NextSelfSearch = Core.TimeNow.AddHours(1);
 
                 // at end of self search, status change count down triggered
+
+                UpdateLog("general", name + " network connected");
             }
 
             // network dead
@@ -194,6 +198,8 @@ namespace RiseOp.Implementation.Dht
 
                 if (StatusChange != null)
                     StatusChange.Invoke();
+
+                UpdateLog("general", name + " network disconnected");
             }
         }
 
@@ -576,7 +582,7 @@ namespace RiseOp.Implementation.Dht
             {
                 lock (AugmentedCrypt)
                 {
-                    BitConverter.GetBytes(contact.UserID).CopyTo(AugmentedCrypt.Key, 0);
+                    SetAugmentedKey(contact.UserID);
                     packet.Payload = Utilities.EncryptBytes(encoded, AugmentedCrypt.Key);
                 }
             }
@@ -660,7 +666,7 @@ namespace RiseOp.Implementation.Dht
 
                 lock (AugmentedCrypt)
                 {
-                    BitConverter.GetBytes(Local.UserID).CopyTo(AugmentedCrypt.Key, 0);
+                    SetAugmentedKey(Local.UserID);
                     tunnel.Payload = Utilities.DecryptBytes(tunnel.Payload, tunnel.Payload.Length, AugmentedCrypt.Key);
                 }
             }
@@ -1100,10 +1106,21 @@ namespace RiseOp.Implementation.Dht
 
         }
 
+        internal Queue<Tuple<DateTime, string>> GeneralLog = new Queue<Tuple<DateTime, string>>();
+
         internal void UpdateLog(string type, string message)
         {
             if (Core.Sim != null && !Core.Sim.Internet.Logging)
                 return;
+
+            if (type == "general")
+                lock (GeneralLog)
+                {
+                    GeneralLog.Enqueue(new Tuple<DateTime, string>(Core.TimeNow, Core.TimeNow.ToString("mm:ss:") + message));
+
+                    while (GeneralLog.Count > 50)
+                        GeneralLog.Dequeue();
+                }
 
             lock (LogTable)
             {
@@ -1238,6 +1255,18 @@ namespace RiseOp.Implementation.Dht
             // save lookup config
             if (IsLookup)
                 LookupConfig.Save(Core);
+        }
+
+
+
+        internal void SetAugmentedKey(ulong user)
+        {
+            // augmented key is original key with first 8 bytes xored with user id
+
+            BitConverter.GetBytes(user).CopyTo(AugmentedCrypt.Key, 0);
+
+            for(int i = 0; i < 8; i++)
+                AugmentedCrypt.Key[i] ^= OpCrypt.Key[i];
         }
     }
 }

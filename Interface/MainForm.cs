@@ -20,6 +20,7 @@ using RiseOp.Services.Mail;
 using RiseOp.Services.Transfer;
 using RiseOp.Services.Trust;
 
+using RiseOp.Interface.Info;
 using RiseOp.Interface.Setup;
 using RiseOp.Interface.Tools;
 using RiseOp.Interface.TLVex;
@@ -372,16 +373,17 @@ namespace RiseOp.Interface
             items.Add(new ManageItem("My Identity", BuddyRes.buddy_who, () => new IdentityForm(Core, Core.UserID).ShowDialog()));
 
             // invite
-            items.Add(new ManageItem("Invite", ChatRes.invite, delegate()
-            {
-                if (Core.User.Settings.OpAccess == AccessType.Public)
-                    MessageBox.Show("Give out this link to invite others \r\n \r\n riseop://" + Core.User.Settings.Operation, "RiseOp");
-                else
+            if(!Core.User.Settings.GlobalIM)
+                items.Add(new ManageItem("Invite", ChatRes.invite, delegate()
                 {
-                    InviteForm form = new InviteForm(Core);
-                    form.ShowDialog();
-                }
-            }));
+                    if (Core.User.Settings.OpAccess == AccessType.Public)
+                        MessageBox.Show("Give out this link to invite others \r\n \r\n riseop://" + Core.User.Settings.Operation, "RiseOp");
+                    else
+                    {
+                        InviteForm form = new InviteForm(Core);
+                        form.ShowDialog();
+                    }
+                }));
 
             // settings
             ToolStripMenuItem settings = new ToolStripMenuItem("Settings", InterfaceRes.settings);
@@ -536,10 +538,13 @@ namespace RiseOp.Interface
 
 
             // find previous component in drop down, activate click on it
-            string previous = InternalView != null ? InternalView.GetTitle(true) : "Profile";
+            if(InternalView == null)
+                OnShowInternal(new Info.InfoView(Core, false));
+
+            /*string previous = InternalView != null ? InternalView.GetTitle(true) : "Profile";
 
             if (!SelectService(previous))
-                SelectService("Profile");
+                SelectService("Profile");*/
 
             ResumeLayout();
         }
@@ -887,6 +892,10 @@ namespace RiseOp.Interface
                 BuddyList.Height = CommandSplit.Panel1.Height - 23;
 
                 SideMode = true;
+
+                Rectangle screen = Screen.GetWorkingArea(this);
+                Location = new Point(screen.Width - Width, Location.Y); 
+
 
                 OnSelectChange(Core.UserID, 0);
             }
@@ -1239,6 +1248,31 @@ namespace RiseOp.Interface
         internal void ShowProject(uint project)
         {
             UpdateProjectButton(project);
+        }
+
+        private void SearchButton_Click(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void HelpButton_Click(object sender, EventArgs e)
+        {
+            OnShowInternal(new Info.InfoView(Core, true));
+        }
+
+        private void NetworkButton_Click(object sender, EventArgs e)
+        {
+            InfoView view = new InfoView(Core, false);
+
+            if (SideMode)
+                OnShowExternal(view);
+            else
+                OnShowInternal(view);
+        }
+
+        private void SideHelpButton_Click(object sender, EventArgs e)
+        {
+            OnShowExternal(new InfoView(Core, true));
         }
     }
 

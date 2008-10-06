@@ -532,12 +532,6 @@ namespace RiseOp.Implementation.Transport
 
             CloseMsg = close.Reason;
 
-            //crit delete
-            if(close.Reason == "Session Packet Error")
-            {
-                Debug.Assert(false);
-            }
-
 			Log("Received Close (" + close.Reason + ")");
 
 			UpdateStatus(SessionStatus.Closed);
@@ -702,6 +696,7 @@ namespace RiseOp.Implementation.Transport
 
                     if (streamStatus == G2ReadResult.PACKET_ERROR)
                     {
+                        //crit - debug this
                         Send_Close("Session Packet Error");
                         break ;
                     }

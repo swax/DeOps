@@ -21,7 +21,7 @@ using RiseOp.Services.Mail;
 
 namespace RiseOp.Interface
 {
-    internal partial class StatusPanel : CustomDisposeControl
+    public partial class StatusPanel : CustomDisposeControl
     {
         // bottom status panel
         StringBuilder StatusHtml = new StringBuilder(4096);
@@ -72,7 +72,7 @@ namespace RiseOp.Interface
         string IMImg, MailImg, BuddyWhoImg, TrustImg, UntrustImg;
 
 
-        internal StatusPanel()
+        public StatusPanel()
         {
             InitializeComponent();
 
@@ -556,8 +556,10 @@ namespace RiseOp.Interface
 
                     if (place.ShowDialog() == DialogResult.OK)
                     {
-                        Core.Locations.LocalClient.Data.Place = place.ResultBox.Text;
+                        Core.User.Settings.Location = place.ResultBox.Text;
                         Core.Locations.UpdateLocation();
+
+                        Core.RunInCoreAsync(() => Core.User.Save());
                     }
                 }
 
@@ -623,7 +625,7 @@ namespace RiseOp.Interface
     }
 
     // control's dispose code, activates our custom dispose code which we can run in our class
-    internal class CustomDisposeControl : UserControl
+    public class CustomDisposeControl : UserControl
     {
         virtual internal void CustomDispose() { }
 

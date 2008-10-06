@@ -506,7 +506,7 @@ namespace RiseOp.Interface.Tools
             if (Core.Context.Lookup == null)
                 return;
 
-            LookupService globalLocs = (LookupService)Core.Context.Lookup.ServiceMap[12];
+            LookupService globalLocs = Core.Context.Lookup.GetService(ServiceID.Global) as LookupService;
 
             globalLocs.LookupIndex.LockReading(delegate()
             {

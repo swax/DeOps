@@ -38,7 +38,7 @@ namespace RiseOp.Implementation.Transport
             Network = network;
             Core = network.Core;
 
-            byte[] hash = new SHA1Managed().ComputeHash(Network.OriginalCrypt.Key);
+            byte[] hash = new SHA1Managed().ComputeHash(Network.OpCrypt.Key);
 
             ListenPort = BitConverter.ToUInt16(hash, 0);
 
@@ -106,12 +106,7 @@ namespace RiseOp.Implementation.Transport
             // encrypt, turn off encryption during simulation
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
             {
-                lock (Network.AugmentedCrypt)
-                {
-                    BitConverter.GetBytes((ulong)0).CopyTo(Network.AugmentedCrypt.Key, 0);
-
-                    final = Utilities.EncryptBytes(encoded, Network.AugmentedCrypt.Key);
-                }
+                final = Utilities.EncryptBytes(encoded, Network.OpCrypt.Key);
             }
             else
                 final = encoded;
@@ -201,17 +196,12 @@ namespace RiseOp.Implementation.Transport
 
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption) // turn off encryption during simulation
             {
-                if (length < Network.AugmentedCrypt.IV.Length)
+                if (length < Network.OpCrypt.IV.Length)
                     throw new Exception("Not enough data received for IV");
 
-                lock (Network.AugmentedCrypt)
-                {
-                    BitConverter.GetBytes((ulong)0).CopyTo(Network.AugmentedCrypt.Key, 0);
-
-                    finalBuff = Utilities.DecryptBytes(buff, length, Network.AugmentedCrypt.Key);
-                    length = finalBuff.Length;
-                    copied = true;
-                }
+                finalBuff = Utilities.DecryptBytes(buff, length, Network.OpCrypt.Key);
+                length = finalBuff.Length;
+                copied = true;           
             }
 
             ParsePacket(finalBuff, length, sender, copied);

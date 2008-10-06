@@ -80,10 +80,12 @@ namespace RiseOp.Simulator
 
             Redraw = true;
 
+            SetStyle(ControlStyles.UserPaint, true);
+            SetStyle(ControlStyles.AllPaintingInWmPaint, true);
+
             Sim.UpdateView += new UpdateViewHandler(OnUpdateView);
 
             InitializeComponent();
-
 
             NodeTip.ShowAlways = true;
         }
@@ -116,14 +118,18 @@ namespace RiseOp.Simulator
         
         private void NetView_Paint(object sender, PaintEventArgs e)
         {
-            int width = e.ClipRectangle.Width;
-            int height = e.ClipRectangle.Height;
+
+            int width = ClientRectangle.Width;
+            int height = ClientRectangle.Height;
 
             if (width == 0 || height == 0)
                 return;
             
             if (DisplayBuffer == null || ReInitBuffer)
+            {
                 DisplayBuffer = new Bitmap(width, height);
+                ReInitBuffer = false;
+            }
 
             if (!Redraw)
             {
@@ -296,7 +302,7 @@ namespace RiseOp.Simulator
                 buffer.DrawString("Tracking: " + TrackString, TahomaFont, BlackBrush, 3, height - 20);
             
             // Copy buffer to display
-            e.Graphics.DrawImage(DisplayBuffer, e.ClipRectangle.X, e.ClipRectangle.Y);
+            e.Graphics.DrawImage(DisplayBuffer, ClientRectangle.X, ClientRectangle.Y);
 
         }
 

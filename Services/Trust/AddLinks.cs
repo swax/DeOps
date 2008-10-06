@@ -56,6 +56,8 @@ namespace RiseOp.Services.Trust
             PersonTree.FirstLineBlank = false;
             PersonTree.Init(Trust);
 
+            PersonTree.MultiSelect = true;
+
             foreach (AddProjectItem item in ProjectCombo.Items)
                 if( item.ID == ProjectID)
                     ProjectCombo.SelectedItem = item;

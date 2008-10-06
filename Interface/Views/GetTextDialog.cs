@@ -40,6 +40,13 @@ namespace RiseOp.Interface
             Icon = image;
         }
 
+        internal void BigResultBox()
+        {
+            ResultBox.Multiline = true;
+            ResultBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            Width = 350;
+            Height = 200;
+        }
 
         void SetupBox(string title, string direction, string defaultText)
         {
