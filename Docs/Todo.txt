@@ -1,5 +1,6 @@
 
-
+on web exception, show help page
+put links in help page that open services
 // help - getting started
 /*
  * welcome to <op>
@@ -19,7 +20,6 @@
  * invite more people to your op!!
  */
 
-play with op top header color/icons
 click user link - if riseop loaded, find core with match op id, ask to add user to buddies, else just open riseop
 	check click invite link works
 buddys dropdown in add link dialog, multi-select?
@@ -41,16 +41,21 @@ also status if killed
 does transfer successfully transmit name in session connection and if so, 
 	can right click buddy link support in transfers window be supported to build community from those transferring
 
-user 2 user transfer
+change links?
+	riseop://firesoft/user/john/sddfsd34dssd
+	riseop://firesoft/invite/john/sfaseedad99d9d
+	riseop://firesoft/file/<name>/dfjasfsdfd
+
+user 2 user - share service
 	select file
 		encrypted, subhashed, put in shared directory
 			persists between runs
 		transfer interface shows - active transfer / shared files
 		on startup, and periodically, shared files published to hash id location on network
-	link created, auto-pasted to IM window
+	link created, auto-pasted to IM window - after published
 		riseop://file/opID/fileHash/size
 	user clicks link
-		getting link through IM auto adds source's location to mesh
+		getting link through IM/chat auto adds source's location to mesh
 		transfer service searches for hash at hashID
 		when found, location added, transfer started
 		only completed sources, and those uploading parts, should publish at hash id
