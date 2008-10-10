@@ -21,7 +21,7 @@ namespace RiseOp.Services.Buddy
     class BuddyService : OpService
     {
         public string Name { get { return "Buddy"; } }
-        public uint ServiceID { get { return 13; } }
+        public uint ServiceID { get { return (uint)ServiceIDs.Buddy; } }
 
         internal OpCore Core;
         internal DhtNetwork Network;
@@ -128,7 +128,10 @@ namespace RiseOp.Services.Buddy
         void Core_MinuteTimer()
         {
             if (SaveList)
+            {
                 SaveLocal();
+                SaveList = false;
+            }
         }
 
         void Core_KeepData()

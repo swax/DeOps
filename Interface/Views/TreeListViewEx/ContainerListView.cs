@@ -199,12 +199,6 @@ namespace RiseOp.Interface.TLVex
 			set { imageindex = value; }
 		}
 
-		public int Index
-		{
-			get { return index; }
-			set { index = value; }
-		}
-
 		public ContainerListViewEx ListView
 		{
 			get { return listview; }
@@ -279,7 +273,7 @@ namespace RiseOp.Interface.TLVex
 		#endregion
 	}
 
-	public class ContainerListViewItemCollection: CollectionBase
+    public class ContainerListViewItemCollection : List<ContainerListViewItem>
 	{
 		public event MouseEventHandler MouseDown;
 
@@ -298,83 +292,75 @@ namespace RiseOp.Interface.TLVex
 		}
 
 		#region Interface Implementations
-		public ContainerListViewItem this[int index]
+		public new ContainerListViewItem this[int index]
 		{
-			get { return List[index] as ContainerListViewItem; }
+            get { return base[index]; }
 			set
 			{
-				List[index] = value;
-				((ContainerListViewItem)List[index]).MouseDown += new MouseEventHandler(OnMouseDown);
+				base[index] = value;
+                base[index].MouseDown += new MouseEventHandler(OnMouseDown);
 			}
 		}
 		
 		public int this[ContainerListViewItem item]
 		{
-			get { return List.IndexOf(item); }
+            get { return IndexOf(item); }
 		}
-		public int Add(ContainerListViewItem item)
+
+		public new void Add(ContainerListViewItem item)
 		{
 			item.MouseDown += new MouseEventHandler(OnMouseDown);
-			 
-            int iIndex = List.Add(item);
+
+            base.Add(item);
 
             if (item.Selected)
                 Container.Select(item);
-
-            return iIndex;
 		}
 
-        public void Insert(int index, ContainerListViewItem item)
+        public new void Insert(int index, ContainerListViewItem item)
         {
             item.MouseDown += new MouseEventHandler(OnMouseDown);
-           
-            List.Insert(index, item);
+
+            base.Insert(index, item);
         }
 
 		public void AddRange(ContainerListViewItem[] items)
 		{
-			lock(List.SyncRoot)
-			{
-				for (int i=0; i<items.Length; i++)
-				{
-					items[i].MouseDown += new MouseEventHandler(OnMouseDown);
-					items[i].Index = List.Add(items[i]);
-				}
-			}
+            for (int i = 0; i < items.Length; i++)
+            {
+                items[i].MouseDown += new MouseEventHandler(OnMouseDown);
+            }
 		}
 
-		public void Remove(ContainerListViewItem item)
+		public new void Remove(ContainerListViewItem item)
         {
             foreach (ContainerSubListViewItem sub in item.SubItems)
                 sub.Dispose();
 
             item.MouseDown -= new MouseEventHandler(OnMouseDown);
-			List.Remove(item);
+            base.Remove(item);
 		}
 
 		public new void Clear()
 		{
-			for (int i=0; i<List.Count; i++)
-			{
-				ContainerSubListViewItemCollection col = ((ContainerListViewItem)List[i]).SubItems;
-				for (int j=0; j<col.Count; j++)
-				{
-					if (col[j].ItemControl != null)
-					{
-						col[j].ItemControl.Parent = null;
-						col[j].ItemControl.Visible = false;
-						col[j].ItemControl = null;
-					}
-				}
-				
-			}
-			List.Clear();
+            for (int i = 0; i < Count; i++)
+            {
+                ContainerSubListViewItemCollection col = ((ContainerListViewItem)this[i]).SubItems;
+
+                for (int j = 0; j < col.Count; j++)
+                {
+                    if (col[j].ItemControl != null)
+                    {
+                        col[j].ItemControl.Parent = null;
+                        col[j].ItemControl.Visible = false;
+                        col[j].ItemControl = null;
+                    }
+                }
+            }
+            base.Clear();
             Container.SelectedItems.Clear();
 		}
-		public int IndexOf(ContainerListViewItem item)
-		{
-			return List.IndexOf(item);
-		}
+
 		#endregion
 	}
 

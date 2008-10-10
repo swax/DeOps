@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
@@ -178,7 +179,7 @@ namespace RiseOp.Services.Storage
             
             try
             {
-                if (NameBox.Text.Trim().CompareTo("") == 0)
+                if (NameBox.Text.Trim() == "" || NameBox.Text.IndexOfAny(Path.GetInvalidFileNameChars()) != -1)
                     throw new Exception("Enter in a name for the file");
 
                 Dictionary<ulong, short> scope = new Dictionary<ulong, short>();

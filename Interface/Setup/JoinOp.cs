@@ -10,7 +10,7 @@ namespace RiseOp.Interface.Startup
 {
     internal partial class JoinOp : CustomIconForm
     {
-        internal string OpName = "";
+        internal string OpLink = "";
         internal AccessType OpAccess = AccessType.Public;
         internal bool GlobalIM;
 
@@ -21,7 +21,7 @@ namespace RiseOp.Interface.Startup
 
         private void ButtonOK_Click(object sender, EventArgs e)
         {
-            OpName = LinkBox.Text;
+            OpLink = LinkBox.Text;
 
             DialogResult = DialogResult.OK;
             Close();
@@ -30,12 +30,6 @@ namespace RiseOp.Interface.Startup
         private void ButtonCancel_Click(object sender, EventArgs e)
         {
             Close();
-        }
-
-        private void LinkBox_TextChanged(object sender, EventArgs e)
-        {
-            if (LinkBox.Text.StartsWith("riseop://"))
-                LinkBox.Text = LinkBox.Text.Substring(9);
         }
 
         private void JoinGlobalLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)

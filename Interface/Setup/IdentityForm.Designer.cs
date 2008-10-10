@@ -40,9 +40,9 @@
             this.CopyLink.ActiveLinkColor = System.Drawing.Color.Blue;
             this.CopyLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.CopyLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.CopyLink.Location = new System.Drawing.Point(248, 19);
+            this.CopyLink.Location = new System.Drawing.Point(230, 19);
             this.CopyLink.Name = "CopyLink";
-            this.CopyLink.Size = new System.Drawing.Size(90, 13);
+            this.CopyLink.Size = new System.Drawing.Size(108, 13);
             this.CopyLink.TabIndex = 17;
             this.CopyLink.TabStop = true;
             this.CopyLink.Text = "Copy to Clipboard";

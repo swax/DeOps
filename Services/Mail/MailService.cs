@@ -61,7 +61,7 @@ namespace RiseOp.Services.Mail
     class MailService : OpService
     {
         public string Name { get { return "Mail"; } }
-        public uint ServiceID { get { return 7; } }
+        public uint ServiceID { get { return (uint)ServiceIDs.Mail; } }
 
         const uint DataTypeLocal = 0x01;
         const uint DataTypePending = 0x02;

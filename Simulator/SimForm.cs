@@ -146,7 +146,7 @@ namespace RiseOp.Simulator
                     string name = parts[1].Trim();
 
                     // if instance with same user name, who has not joined this operation - add to same instance
-                    SimInstance instance = Sim.Instances.Where(i => i.Name == name && !i.Ops.Contains(op)).ElementAtOrDefault(0);
+                    SimInstance instance = Sim.Instances.Where(i => i.Name == name && !i.Ops.Contains(op)).FirstOrDefault();
 
                     if (instance != null)
                         Sim.Login(instance, path);

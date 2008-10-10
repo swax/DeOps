@@ -12,7 +12,7 @@ using RiseOp.Implementation.Transport;
 namespace RiseOp.Services
 {
     // Built-in Service IDs
-    public enum ServiceID
+    public enum ServiceIDs : uint
     {
         Dht = 0,
         Trust = 1,
@@ -27,7 +27,8 @@ namespace RiseOp.Services
         Storage = 10,
         LocalSync = 11,
         Global = 12,
-        Buddy = 13
+        Buddy = 13,
+        Sharing = 14
     }
     
     public enum InterfaceMenuType { Internal, External, Settings, Quick };

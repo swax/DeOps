@@ -24,7 +24,7 @@ namespace RiseOp.Services.Assist
     class LocalSync : OpService
     {
         public string Name { get { return "LocalSync"; } }
-        public uint ServiceID { get { return 11; } }
+        public uint ServiceID { get { return (uint)ServiceIDs.LocalSync; } }
 
         const uint DataTypeSync = 0x01;
 

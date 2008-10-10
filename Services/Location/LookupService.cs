@@ -15,7 +15,7 @@ namespace RiseOp.Services.Location
     class LookupService : OpService 
     {
         public string Name { get { return "Lookup"; } }
-        public uint ServiceID { get { return 12; } }
+        public uint ServiceID { get { return (uint)ServiceIDs.Global; } }
 
         OpCore Core;
         DhtNetwork Network;

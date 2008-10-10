@@ -24,7 +24,7 @@ namespace RiseOp.Services.Chat
     internal class ChatService : OpService
     {
         public string Name { get { return "Chat"; } }
-        public uint ServiceID { get { return 6; } }
+        public uint ServiceID { get { return (uint)ServiceIDs.Chat; } }
 
         internal OpCore Core;
         internal DhtNetwork Network;

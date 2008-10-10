@@ -371,14 +371,14 @@ namespace RiseOp.Services.Chat
 
             if (Locations.ActiveClientCount(node.UserID) > 0)
             {
-                IMService IM = Core.GetService(ServiceID.IM) as IMService;
+                IMService IM = Core.GetService(ServiceIDs.IM) as IMService;
 
                 if (IM != null)
                     IM.QuickMenu_View(info, null);
             }
             else
             {
-                MailService Mail = Core.GetService(ServiceID.Mail) as MailService;
+                MailService Mail = Core.GetService(ServiceIDs.Mail) as MailService;
 
                 if (Mail != null)
                     Mail.QuickMenu_View(info, null);

@@ -24,7 +24,7 @@ namespace RiseOp.Services.Profile
     class ProfileService : OpService
     {
         public string Name { get { return "Profile"; } }
-        public uint ServiceID { get { return 4; } }
+        public uint ServiceID { get { return (uint)ServiceIDs.Profile; } }
 
         const uint DataTypeFile = 0x01;
         const uint DataTypeExtracted = 0x02;

@@ -5,6 +5,7 @@ uses
 
 features
 	next-gen multi-source downloading
+	dont need an internet connection, works ad-hoc over any LAN
 	
 security
 	full link specific encryption

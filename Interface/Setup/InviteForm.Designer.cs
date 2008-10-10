@@ -51,9 +51,9 @@ namespace RiseOp.Interface
             this.CopyLink.ActiveLinkColor = System.Drawing.Color.Blue;
             this.CopyLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.CopyLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.CopyLink.Location = new System.Drawing.Point(265, 80);
+            this.CopyLink.Location = new System.Drawing.Point(245, 80);
             this.CopyLink.Name = "CopyLink";
-            this.CopyLink.Size = new System.Drawing.Size(90, 13);
+            this.CopyLink.Size = new System.Drawing.Size(110, 13);
             this.CopyLink.TabIndex = 4;
             this.CopyLink.TabStop = true;
             this.CopyLink.Text = "Copy to Clipboard";

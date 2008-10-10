@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.label1 = new System.Windows.Forms.Label();
             this.LinkBox = new System.Windows.Forms.TextBox();
             this.ButtonOK = new System.Windows.Forms.Button();
             this.ButtonCancel = new System.Windows.Forms.Button();
@@ -36,33 +35,21 @@
             this.JoinGlobalLink = new System.Windows.Forms.LinkLabel();
             this.SuspendLayout();
             // 
-            // label1
-            // 
-            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 75);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(48, 13);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "riseop://";
-            // 
             // LinkBox
             // 
             this.LinkBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.LinkBox.Location = new System.Drawing.Point(61, 72);
+            this.LinkBox.Location = new System.Drawing.Point(15, 72);
             this.LinkBox.Multiline = true;
             this.LinkBox.Name = "LinkBox";
-            this.LinkBox.Size = new System.Drawing.Size(318, 76);
+            this.LinkBox.Size = new System.Drawing.Size(322, 88);
             this.LinkBox.TabIndex = 0;
-            this.LinkBox.TextChanged += new System.EventHandler(this.LinkBox_TextChanged);
             // 
             // ButtonOK
             // 
             this.ButtonOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.ButtonOK.Location = new System.Drawing.Point(223, 160);
+            this.ButtonOK.Location = new System.Drawing.Point(181, 172);
             this.ButtonOK.Name = "ButtonOK";
             this.ButtonOK.Size = new System.Drawing.Size(75, 23);
             this.ButtonOK.TabIndex = 1;
@@ -74,7 +61,7 @@
             // 
             this.ButtonCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ButtonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.ButtonCancel.Location = new System.Drawing.Point(304, 160);
+            this.ButtonCancel.Location = new System.Drawing.Point(262, 172);
             this.ButtonCancel.Name = "ButtonCancel";
             this.ButtonCancel.Size = new System.Drawing.Size(75, 23);
             this.ButtonCancel.TabIndex = 2;
@@ -86,7 +73,7 @@
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(58, 46);
+            this.label2.Location = new System.Drawing.Point(12, 46);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(168, 13);
             this.label2.TabIndex = 20;
@@ -110,13 +97,12 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.ButtonCancel;
-            this.ClientSize = new System.Drawing.Size(391, 195);
+            this.ClientSize = new System.Drawing.Size(349, 207);
             this.Controls.Add(this.JoinGlobalLink);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.ButtonOK);
             this.Controls.Add(this.ButtonCancel);
             this.Controls.Add(this.LinkBox);
-            this.Controls.Add(this.label1);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "JoinOp";
@@ -130,7 +116,6 @@
 
         #endregion
 
-        private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button ButtonOK;
         private System.Windows.Forms.Button ButtonCancel;
         private System.Windows.Forms.Label label2;

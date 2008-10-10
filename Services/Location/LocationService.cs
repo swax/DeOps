@@ -36,7 +36,7 @@ namespace RiseOp.Services.Location
     internal class LocationService : OpService
     {
         public string Name { get { return "Location"; } }
-        public uint ServiceID { get { return 2; } }
+        public uint ServiceID { get { return (uint)ServiceIDs.Location; } }
 
         OpCore Core;
         DhtNetwork Network;
@@ -300,7 +300,7 @@ namespace RiseOp.Services.Location
 
             data = new CryptLoc(LocationData.GLOBAL_TTL, data).Encode(Network.Protocol);
 
-            LookupService service = Core.Context.Lookup.GetService(Services.ServiceID.Global) as LookupService;
+            LookupService service = Core.Context.Lookup.GetService(Services.ServiceIDs.Global) as LookupService;
             service.Publish(Network.OpID, data);
         }
 

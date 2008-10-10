@@ -1,31 +1,41 @@
 
+user 2 user - share service
+	public shared
+		save seperate public shared file
+		
+		handle direct request for public shared
+			return public shared file hash/key/etc..
+			
+		download public shared
+		
+		load up, alert interface, have refresh button
+		
+	finish share interface
+		show lock/unlock icons for shared files, only delete if path is downloadpath
+
+	
+per transfer bandwidth tabs over last 7 secs
+
+get chat working in global IM mode
+
+buddie lists / localsync still being published on global IM
+		
+if riseop:// link detected in IM/chat, prefix http:// , on click process riseop:// link
+	if normal http:// link open external window
+		
 on web exception, show help page
 put links in help page that open services
-// help - getting started
-/*
- * welcome to <op>
- * connection status
- * your identity can be found in the manage menu
- * to chat with people double click their name in the tree on the left
- * the operation tree shows who trusts who
- * the buddy area are you friends
- * idenpendent project can be created on the left
- * 
- * i have a project what do i do now
- * post messages, send mail, chat, im
- * share a single file system
- * update your profile
- * start a time line with your plans
- * 
- * invite more people to your op!!
- */
 
-click user link - if riseop loaded, find core with match op id, ask to add user to buddies, else just open riseop
-	check click invite link works
+IM tool bar - formatting drop down, send file, add buddy, block
+auto append http to riseop:// in send message, when clicked over ride rtf link clicked
+	investigate cascading spans<> for html based chat
+chat default in text mode, put formatting options in right click menu.. enable formatting, remove tools from toolbar
+	file links can be put in chat window and work fine ;)
+	
 buddys dropdown in add link dialog, multi-select?
+click user link - if riseop loaded, find core with match op id, ask to add user to buddies
 form colums still huge
 buddy block list - prevents IMs from coming in
-IM tool bar - formatting drop down, send file, add buddy, block
 
 try upnp?
 
@@ -33,33 +43,12 @@ bugs
 	losing  buddy loc through nat/open/blocked net
 	person net open/nat/blocked, not finding local untrusted
 	
-chat default in text mode, put formatting options in right click menu.. enable formatting, remove tools from toolbar
-	file links can be put in chat window and work fine ;)
+storage unlock should be threaded like sharing
 
 also status if killed
 
 does transfer successfully transmit name in session connection and if so, 
 	can right click buddy link support in transfers window be supported to build community from those transferring
-
-change links?
-	riseop://firesoft/user/john/sddfsd34dssd
-	riseop://firesoft/invite/john/sfaseedad99d9d
-	riseop://firesoft/file/<name>/dfjasfsdfd
-
-user 2 user - share service
-	select file
-		encrypted, subhashed, put in shared directory
-			persists between runs
-		transfer interface shows - active transfer / shared files
-		on startup, and periodically, shared files published to hash id location on network
-	link created, auto-pasted to IM window - after published
-		riseop://file/opID/fileHash/size
-	user clicks link
-		getting link through IM/chat auto adds source's location to mesh
-		transfer service searches for hash at hashID
-		when found, location added, transfer started
-		only completed sources, and those uploading parts, should publish at hash id
-		publishes are replicated, but time out
 
 auto update
 	ensure crawler works and gets version
@@ -336,11 +325,6 @@ fall release
 	network bandwidth limits/audit - tracking in sim triggers node to start logging bw data
 	do larger sim (128) - test create/find public ops
 	
-	global buddy list
-		invites over global
-		right click invite to current op (works for secret)
-		invite encrypted with remote's public key
-		need to make invite over global network only so no risk of public/secret links compramised
 	realignment - detailed in future file
 	live locations/chat
 	kill switch
@@ -437,13 +421,6 @@ Interface
 		goals	- edit
 		tray	- restore, exit
 	
-	connecting entertainment
-		visual aid so people can watch the connection process, entertaining, embed in main panel?
-		show ring with global in middle and ring with op name in middle
-		show routing table nodes, and packets being sent
-		route nodes dark green, search nodes blue, show self red/orage/green, rudp sockets purple
-		visual, cool looking, shows user direct lack of centralization, most of functionality already implemented
-		
 	Internal 
 		expand a little more (names associated with sessions/transfers/searches/publish)
 		browsing using nav bar needs to trigger searches 
@@ -479,7 +456,6 @@ Components
 		component plug-ins / view plugins for private components
 		Remove references to LinkMap, use GetLink
 		when component handles exit, assert that all events are emptied of references to debug gui's not releasing event handles
-		Use LAN find code from gnuc to find peers on LAN, add to global then query for op
 		
 		Setting up and editing operation can also change the type/strength of the encryption used
 		People can choose the strength/type of the encryption on their profile
@@ -492,18 +468,6 @@ Components
 		New function to 'find in link map' so that mail,board,chat can provide the user with an option to 'find' a user
 		Key termination command if private key compromised - auto-deletes all data associated with id
 
-	Location 
-		global replication
-		make persistant so status panel can display last seen, also loaded can go straight to the cache
-		permanent locations, no ttl except for global
-		might be problem with different client ids
-		can probably get rid of thread locks on location map
-		send direct connects location updates immediately so they get things like away messages
-		
-		
-		location info should probably contain latest versions for all components so 
-			for example two of the same account would sync their storage without having to specifically having to open storage
-			dynamic works for all components in list
 	
 	IM 
 		Saved/Loaded my main IM interface
@@ -512,6 +476,7 @@ Components
 		Crash on close IM, fin being called? unhooking from IMcontrol events? 
 		sending file / picture - other side sees link click to accept, starts d/l with progress real time update to window
 			result showed inline pic, or link to open file, file put in personal storage?
+			
 	Chat 
 		show unfocused label as red on new messages
 		only send full status on connect, otherwise send mini status updates for join/leaves
@@ -574,7 +539,6 @@ Components
 
 Core
     old projects not cleared from components during savelocal, save / ditch / option?
-    multisource downloading
     each component's minute action should have unique interrupt given by core class
      
 	Rudp
@@ -652,7 +616,6 @@ Simulator
 quick
 	test with null global, even have option for secret at this point?
 	ensure callers know what to do when tcpcontrol.sendpacket is overloaded
-	bandwidth chart
 	use localfilekey for all file names so name diff per computer
 	finish self search and then start bucket replication so startup doesnt spit out massive patches
 	component dir also encoded with local key / trimmed to 8 chars

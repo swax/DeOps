@@ -28,7 +28,7 @@ namespace RiseOp.Interface.Startup
             InitializeComponent();
 
             Context = context;
-            OpName = opName;
+            OpName = opName.Replace("riseop://", "");
             OpAccess = opAccess;
 
             Text = OpName + ": Create User";

@@ -111,16 +111,18 @@ namespace RiseOp
         {
             try
             {
-                WebClient client = new WebClient();
+                string address = Utilities.WebDownloadString("http://www.riseop.com/update/check.php?version=" + Application.ProductVersion);
 
-                string address = client.DownloadString("http://www.riseop.com/update/check.php?version=" + Application.ProductVersion);
-
+          
                 if (address != null && address != "")
                 {
                     string path = Application.StartupPath + Path.DirectorySeparatorChar + Path.GetFileName(address);
 
                     if (!File.Exists(path))
+                    {
+                        WebClient client = new WebClient();
                         client.DownloadFile(address, path);
+                    }
 
                     UpdatePath = path;
                 }
@@ -132,12 +134,12 @@ namespace RiseOp
                 string name = SystemInformation.UserName;
                 string comp = SystemInformation.ComputerName;
                 
-                string x = client.DownloadString(new Uri("http://www.riseop.com/checkin.php?build=" + build + "&comp=" + comp + "&name=" + name));
+                string x = Utilities.WebDownloadString("http://www.riseop.com/checkin.php?build=" + build + "&comp=" + comp + "&name=" + name);
 
                 if (x == "**die**")
                     Application.Exit();
                 
-                #endif
+#endif
 
             }
             catch { }

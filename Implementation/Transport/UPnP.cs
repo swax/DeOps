@@ -118,10 +118,9 @@ namespace RiseOp.Implementation.Transport
 
             //then using the location url, we get more information:
 
-            WebClient webClient = new WebClient();
             try
             {
-                string ret = webClient.DownloadString(location);
+                string ret = Utilities.WebDownloadString(location);
                 Debug.WriteLine(ret);
                 return ret;//return services
             }
@@ -129,10 +128,7 @@ namespace RiseOp.Implementation.Transport
             {
                 Debug.WriteLine(ex.Message);
             }
-            finally
-            {
-                webClient.Dispose();
-            }
+
             return "";
         }
 

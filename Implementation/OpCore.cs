@@ -8,6 +8,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using System.Web;
 using System.Windows.Forms;
 
 using RiseOp.Services;
@@ -20,6 +21,7 @@ using RiseOp.Services.Location;
 using RiseOp.Services.Mail;
 using RiseOp.Services.Plan;
 using RiseOp.Services.Profile;
+using RiseOp.Services.Sharing;
 using RiseOp.Services.Storage;
 using RiseOp.Services.Transfer;
 using RiseOp.Services.Trust;
@@ -183,6 +185,7 @@ namespace RiseOp.Implementation
 
             // optional
             AddService(new IMService(this));
+            AddService(new SharingService(this));
             
             if (!User.Settings.GlobalIM)
             {
@@ -270,7 +273,7 @@ namespace RiseOp.Implementation
             return id.ToString();
         }
 
-        internal OpService GetService(ServiceID id)
+        internal OpService GetService(ServiceIDs id)
         {
             if (ServiceMap.ContainsKey((uint)id))
                 return ServiceMap[(uint)id];
@@ -521,7 +524,9 @@ namespace RiseOp.Implementation
 
             }
 
-            Network.UpdateLog("Network", "Firewall changed to " + GetFirewallString());
+            string message = "Firewall changed to " + GetFirewallString();
+            Network.UpdateLog("Network", message);
+            Network.UpdateLog("general", message);
         }
 
         /*internal struct LastInputInfo
@@ -894,8 +899,6 @@ namespace RiseOp.Implementation
 
         internal string GetIdentity(ulong user)
         {
-	        // riseop://user/name@opname/opid~publickey
-
             IdentityLink link = new IdentityLink()
             {
                 Name = GetName(user),
@@ -903,6 +906,12 @@ namespace RiseOp.Implementation
                 OpID = User.Settings.InviteKey,
                 PublicKey = User.Settings.KeyPublic
             };
+
+            string test = link.Encode();
+            IdentityLink check = IdentityLink.Decode(test);
+
+            Debug.Assert(Utilities.MemCompare(link.OpID, check.OpID) &&
+                         Utilities.MemCompare(link.PublicKey, check.PublicKey));
 
             return link.Encode();
         }
@@ -912,11 +921,11 @@ namespace RiseOp.Implementation
             IdentityLink ident = IdentityLink.Decode(pubLink);
 
             name = ident.Name;
+            
+            // riseop://firesoft/invite/person@GlobalIM/originalopID~invitedata {op key web caches ips}
 
-            // riseop://invite:firesoft/person@GlobalIM/originalopID~invitedata {op key web caches ips}
-
-            string link = "riseop://invite:" + User.Settings.Operation + "/";
-            link += ident.Name + "@" + ident.OpName + "/";
+            string link = "riseop://" + HttpUtility.UrlEncode(User.Settings.Operation) + "/invite/";
+            link += HttpUtility.UrlEncode(ident.Name) + "@" + HttpUtility.UrlEncode(ident.OpName) + "/";
 
             // encode invite info in user's public key
             byte[] data = new byte[4096];
@@ -956,17 +965,17 @@ namespace RiseOp.Implementation
 
         internal static InvitePackage OpenInvite(RiseOpContext context, G2Protocol protocol, string link)
         {
-            string[] mainParts = link.Split('/');
+            string[] mainParts = link.Replace("riseop://", "").Split('/');
 
-            if (mainParts.Length < 3)
+            if (mainParts.Length < 4)
                 throw new Exception("Invalid Link");
 
             // Select John Marshall's Global IM Profile
-            string[] nameParts = mainParts[1].Split('@');
-            string name = nameParts[0];
-            string op = nameParts[1];
+            string[] nameParts = mainParts[2].Split('@');
+            string name = HttpUtility.UrlDecode(nameParts[0]);
+            string op = HttpUtility.UrlDecode(nameParts[1]);
 
-            byte[] data = Utilities.FromBase64String(mainParts[2]);
+            byte[] data = Utilities.FromBase64String(mainParts[3]);
             byte[] opID = Utilities.ExtractBytes(data, 0, 8);
             byte[] encrypted = Utilities.ExtractBytes(data, 8, data.Length - 8);
             byte[] decrypted = null;
@@ -1072,9 +1081,12 @@ namespace RiseOp.Implementation
         internal byte[] OpID;
         internal byte[] PublicKey;
 
+        // riseop://opname/ident/name/opid~publickey
+
+
         internal string Encode()
         {
-            string link = "riseop://user/" + Name + "@" + OpName + "/";
+            string link = "riseop://" + HttpUtility.UrlEncode(OpName) + "/ident/" + HttpUtility.UrlEncode(Name) + "/";
 
             byte[] totalKey = Utilities.CombineArrays(OpID, PublicKey);
 
@@ -1083,31 +1095,83 @@ namespace RiseOp.Implementation
 
         internal static IdentityLink Decode(string link)
         {
-            if (link.StartsWith("riseop://user/"))
-                link = link.Substring(14);
+            if (link.StartsWith("riseop://"))
+                link = link.Substring(9);
             else
                 throw new Exception("Invalid Link");
 
             string[] mainParts = link.Split('/');
-            if (mainParts.Length < 2)
-                throw new Exception("Invalid Link");
-
-            string[] nameParts = mainParts[0].Split('@');
-            if (nameParts.Length < 2)
+            if (mainParts.Length < 4 || mainParts[1] != "ident")
                 throw new Exception("Invalid Link");
 
             IdentityLink ident = new IdentityLink();
 
-            ident.Name = nameParts[0];
-            ident.OpName = nameParts[1];
+            ident.Name = HttpUtility.UrlDecode(mainParts[2]);
+            ident.OpName = HttpUtility.UrlDecode(mainParts[0]);
 
-            byte[] totalKey = Utilities.FromBase64String(mainParts[1]);
+            byte[] totalKey = Utilities.FromBase64String(mainParts[3]);
             ident.OpID = Utilities.ExtractBytes(totalKey, 0, 8);
             ident.PublicKey = Utilities.ExtractBytes(totalKey, 8, totalKey.Length - 8);
 
             return ident;
         }
     }
+
+
+    /* signe identity link - doesnt work because we need to get *other* people's links all the time, even drag/drop needs to gen ident links
+    internal class IdentityLink
+    {
+        internal string Name;
+        internal string OpName;
+        internal byte[] OpID;
+        internal byte[] PublicKey;
+
+        // riseop://opname/ident/name/opid~publickey/sig
+
+
+        internal string Encode(OpCore core)
+        {
+            string link = "riseop://" + OpName + "/ident/" + Name + "/";
+
+            byte[] totalKey = Utilities.CombineArrays(OpID, PublicKey);
+            link += Utilities.ToBase64String(totalKey);
+
+            byte[] sig = core.User.Settings.KeyPair.SignData(UTF8Encoding.UTF8.GetBytes(link), new SHA1CryptoServiceProvider());
+            link += "/" + Utilities.ToBase64String(sig);
+
+            return link;
+        }
+
+        internal static IdentityLink Decode(string link)
+        {
+            if (!link.StartsWith("riseop://"))
+               throw new Exception("Invalid Link");
+
+            string[] mainParts = link.Substring(9).Split('/');
+
+            if (mainParts.Length < 5 || mainParts[1] != "ident")
+                throw new Exception("Invalid Link");
+
+            IdentityLink ident = new IdentityLink();
+
+            ident.Name = mainParts[2];
+            ident.OpName = mainParts[0];
+
+            byte[] totalKey = Utilities.FromBase64String(mainParts[3]);
+            ident.OpID = Utilities.ExtractBytes(totalKey, 0, 8);
+            ident.PublicKey = Utilities.ExtractBytes(totalKey, 8, totalKey.Length - 8);
+
+            // check signature
+            byte[] sig = Utilities.FromBase64String(mainParts[4]);
+
+            string check = link.Substring(0, link.LastIndexOf('/'));
+
+            if (!Utilities.CheckSignedData(ident.PublicKey, UTF8Encoding.UTF8.GetBytes(check), sig))
+                throw new Exception("Link Integrity Check Failed");
+
+            return ident;
+        }
+    }*/
 
     internal class InvitePackage
     {

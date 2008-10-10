@@ -31,8 +31,6 @@ namespace RiseOp
         {
             Random rnd = new Random();
 
-
-
             /* // testing selecting next chunk to send
             ChunkBit[] chunks = new ChunkBit[10];
 
@@ -145,76 +143,75 @@ namespace RiseOp
             // test encode web request and get reply
 
 
-                /*string cacheKey = "O+6IRs7GY1r/JIk+DFY/VK+i8pFTWhsDfNH9R3j3f9Q=";
+            /*string cacheKey = "O+6IRs7GY1r/JIk+DFY/VK+i8pFTWhsDfNH9R3j3f9Q=";
 
-                RijndaelManaged crypt = new RijndaelManaged();
-                crypt.BlockSize = 256;
-                crypt.Padding = PaddingMode.Zeros;
-                crypt.GenerateIV();
-                crypt.Key = Convert.FromBase64String(cacheKey);
+            RijndaelManaged crypt = new RijndaelManaged();
+            crypt.BlockSize = 256;
+            crypt.Padding = PaddingMode.Zeros;
+            crypt.GenerateIV();
+            crypt.Key = Convert.FromBase64String(cacheKey);
 
-                Random rnd = new Random();
+            Random rnd = new Random();
 
-                string combined = "";
+            string combined = "";
 
-                if (true)
-                {
-                    string type = "publish";
-                    ulong op = 1476981679885938220;
-                    //IPAddress adddress = IPAddress.Parse("24.218.20.180");
-                    IPAddress adddress = new IPAddress(rnd.Next());
-                    ulong user = Utilities.RandUInt64(rnd);
-                    ushort tcp = (ushort)rnd.Next();
-                    ushort udp = (ushort)rnd.Next();
+            if (true)
+            {
+                string type = "publish";
+                ulong op = 1476981679885938220;
+                //IPAddress adddress = IPAddress.Parse("24.218.20.180");
+                IPAddress adddress = new IPAddress(rnd.Next());
+                ulong user = Utilities.RandUInt64(rnd);
+                ushort tcp = (ushort)rnd.Next();
+                ushort udp = (ushort)rnd.Next();
 
-                    combined = type + ":" + op + "/" +
-                                       user + "/" +
-                                       adddress + "/" +
-                                       tcp + "/" +
-                                       udp;
-                }
+                combined = type + ":" + op + "/" +
+                                   user + "/" +
+                                   adddress + "/" +
+                                   tcp + "/" +
+                                   udp;
+            }
 
-                if (false)
-                {
-                    string type = "query";
-                    ulong op = 1476981679885938220;
-                    combined = type + ":" + op;
-                }
+            if (false)
+            {
+                string type = "query";
+                ulong op = 1476981679885938220;
+                combined = type + ":" + op;
+            }
 
-                if (false)
-                {
-                    ulong op = 1476981679885938220;
-                    combined = "ping" + ":" + op;
-                }
+            if (false)
+            {
+                ulong op = 1476981679885938220;
+                combined = "ping" + ":" + op;
+            }
             
-                byte[] data = ASCIIEncoding.ASCII.GetBytes(combined);
-                byte[] encrypted = crypt.CreateEncryptor().TransformFinalBlock(data, 0, data.Length);
+            byte[] data = ASCIIEncoding.ASCII.GetBytes(combined);
+            byte[] encrypted = crypt.CreateEncryptor().TransformFinalBlock(data, 0, data.Length);
 
 
-                // php decode requests
-                byte[] ivEnc = Utilities.CombineArrays(crypt.IV, encrypted);
-                string request = Convert.ToBase64String(ivEnc);
+            // php decode requests
+            byte[] ivEnc = Utilities.CombineArrays(crypt.IV, encrypted);
+            string request = Convert.ToBase64String(ivEnc);
 
-                WebClient web = new WebClient();
-                string response = web.DownloadString("http://www.riseop.com/cache/update.php?get=" + Uri.EscapeDataString(request));
+            string response = Utilities.WebDownloadString("http://www.riseop.com/cache/update.php?get=" + Uri.EscapeDataString(request));
 
-                // php encode response
-                byte[] decoded = Convert.FromBase64String(response);
+            // php encode response
+            byte[] decoded = Convert.FromBase64String(response);
 
-                // decode response
-                crypt.IV = Utilities.ExtractBytes(decoded, 0, 32);
+            // decode response
+            crypt.IV = Utilities.ExtractBytes(decoded, 0, 32);
 
-                data = Utilities.ExtractBytes(decoded, 32, decoded.Length - 32);
-                byte[] decrypted = crypt.CreateDecryptor().TransformFinalBlock(data, 0, data.Length);
+            data = Utilities.ExtractBytes(decoded, 32, decoded.Length - 32);
+            byte[] decrypted = crypt.CreateDecryptor().TransformFinalBlock(data, 0, data.Length);
 
-                response = ASCIIEncoding.ASCII.GetString(decrypted);
-                response = response.Trim('\0');
+            response = ASCIIEncoding.ASCII.GetString(decrypted);
+            response = response.Trim('\0');
 
-                string[] lines = response.Split('\n');
+            string[] lines = response.Split('\n');
 
 
-                int x = 0;*/
-            
+            int x = 0;*/
+
             /*IPAddress address = IPAddress.Parse("1.2.3.4");
 
             byte[] transmit = address.GetAddressBytes();

@@ -277,7 +277,7 @@ namespace RiseOp.Services.Buddy
 
             if (Core.Locations.ActiveClientCount(clicked.User) > 0)
             {
-                IMService IM = Core.GetService(ServiceID.IM) as IMService;
+                IMService IM = Core.GetService(ServiceIDs.IM) as IMService;
 
                 if (IM != null)
                     IM.QuickMenu_View(clicked, null);

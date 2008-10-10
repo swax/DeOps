@@ -12,7 +12,9 @@ using RiseOp.Implementation;
 using RiseOp.Interface.Info;
 using RiseOp.Interface.Views;
 
+using RiseOp.Services;
 using RiseOp.Services.Buddy;
+using RiseOp.Services.Sharing;
 
 
 namespace RiseOp.Interface
@@ -50,7 +52,7 @@ namespace RiseOp.Interface
 
             
 
-            OnShowExternal(new Info.InfoView(core, false));
+            OnShowExternal(new Info.InfoView(core, false, true));
         }
 
         void OnShowExternal(ViewShell view)
@@ -112,7 +114,28 @@ namespace RiseOp.Interface
 
         private void HelpInfoButton_Click(object sender, EventArgs e)
         {
-            OnShowExternal(new InfoView(Core, true));
+            foreach (ExternalView ext in ExternalViews)
+                if (ext.Shell is InfoView)
+                {
+                    ext.Activate();
+                    return;
+                }
+
+            OnShowExternal(new InfoView(Core, true, false));
+        }
+
+        private void SharedButton_Click(object sender, EventArgs e)
+        {
+            foreach(ExternalView ext in ExternalViews)
+                if (ext.Shell is SharingView)
+                {
+                    ext.Activate();
+                    return;
+                }
+
+            SharingService sharing = Core.GetService(ServiceIDs.Sharing) as SharingService;
+
+            OnShowExternal(new SharingView(Core));
         }
     }
 }

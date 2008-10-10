@@ -26,7 +26,7 @@ namespace RiseOp.Services.Board
     internal class BoardService : OpService
     {
         public string Name { get { return "Board"; } }
-        public uint ServiceID { get { return 8; } }
+        public uint ServiceID { get { return (uint)ServiceIDs.Board; } }
 
         internal OpCore Core;
         internal G2Protocol Protocol;

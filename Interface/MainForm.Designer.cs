@@ -29,13 +29,6 @@ namespace RiseOp.Interface
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader4 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader5 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader6 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader7 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.MainSplit = new System.Windows.Forms.SplitContainer();
             this.CommandSplit = new System.Windows.Forms.SplitContainer();
@@ -155,84 +148,6 @@ namespace RiseOp.Interface
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.BuddyList.BackColor = System.Drawing.SystemColors.Window;
             this.BuddyList.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            toggleColumnHeader1.Hovered = false;
-            toggleColumnHeader1.Image = null;
-            toggleColumnHeader1.Index = 0;
-            toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader1.Selected = false;
-            toggleColumnHeader1.Text = "";
-            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 24;
-            toggleColumnHeader2.Hovered = false;
-            toggleColumnHeader2.Image = null;
-            toggleColumnHeader2.Index = 0;
-            toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader2.Selected = false;
-            toggleColumnHeader2.Text = "";
-            toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader2.Visible = true;
-            toggleColumnHeader2.Width = 24;
-            toggleColumnHeader3.Hovered = false;
-            toggleColumnHeader3.Image = null;
-            toggleColumnHeader3.Index = 0;
-            toggleColumnHeader3.Pressed = false;
-            toggleColumnHeader3.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader3.Selected = false;
-            toggleColumnHeader3.Text = "";
-            toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader3.Visible = true;
-            toggleColumnHeader3.Width = 24;
-            toggleColumnHeader4.Hovered = false;
-            toggleColumnHeader4.Image = null;
-            toggleColumnHeader4.Index = 0;
-            toggleColumnHeader4.Pressed = false;
-            toggleColumnHeader4.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader4.Selected = false;
-            toggleColumnHeader4.Text = "";
-            toggleColumnHeader4.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader4.Visible = true;
-            toggleColumnHeader4.Width = 24;
-            toggleColumnHeader5.Hovered = false;
-            toggleColumnHeader5.Image = null;
-            toggleColumnHeader5.Index = 0;
-            toggleColumnHeader5.Pressed = false;
-            toggleColumnHeader5.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader5.Selected = false;
-            toggleColumnHeader5.Text = "";
-            toggleColumnHeader5.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader5.Visible = true;
-            toggleColumnHeader5.Width = 24;
-            toggleColumnHeader6.Hovered = false;
-            toggleColumnHeader6.Image = null;
-            toggleColumnHeader6.Index = 0;
-            toggleColumnHeader6.Pressed = false;
-            toggleColumnHeader6.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader6.Selected = false;
-            toggleColumnHeader6.Text = "";
-            toggleColumnHeader6.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader6.Visible = true;
-            toggleColumnHeader6.Width = 24;
-            toggleColumnHeader7.Hovered = false;
-            toggleColumnHeader7.Image = null;
-            toggleColumnHeader7.Index = 0;
-            toggleColumnHeader7.Pressed = false;
-            toggleColumnHeader7.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader7.Selected = false;
-            toggleColumnHeader7.Text = "";
-            toggleColumnHeader7.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader7.Visible = true;
-            toggleColumnHeader7.Width = 24;
-            this.BuddyList.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
-            toggleColumnHeader1,
-            toggleColumnHeader2,
-            toggleColumnHeader3,
-            toggleColumnHeader4,
-            toggleColumnHeader5,
-            toggleColumnHeader6,
-            toggleColumnHeader7});
             this.BuddyList.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.BuddyList.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.BuddyList.DisableHorizontalScroll = true;

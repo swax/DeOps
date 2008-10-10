@@ -29,7 +29,7 @@ namespace RiseOp.Services.Trust
     class TrustService : OpService
     {
         public string Name { get { return "Trust"; } }
-        public uint ServiceID { get { return 1; } }
+        public uint ServiceID { get { return (uint)ServiceIDs.Trust; } }
 
         const uint DataTypeFile = 0x01;
 
@@ -453,7 +453,7 @@ namespace RiseOp.Services.Trust
                     randTrust = (from t in TrustMap.Values
                                  where LocalTrust.Name.CompareTo(t.Name) > 0
                                  orderby Core.RndGen.Next()
-                                 select t).ElementAtOrDefault(0);
+                                 select t).FirstOrDefault();
                 });
 
                 if (randTrust != null)
@@ -1741,7 +1741,7 @@ namespace RiseOp.Services.Trust
                 result = (from trust in TrustMap.Values
                           where trust != LocalTrust && trust.Loaded
                           orderby Core.RndGen.Next()
-                          select trust).ElementAtOrDefault(0);
+                          select trust).FirstOrDefault();
             });
 
             return result;

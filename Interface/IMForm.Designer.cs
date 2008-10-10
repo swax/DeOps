@@ -34,9 +34,10 @@
             this.BuddyList = new RiseOp.Services.Buddy.BuddyView();
             this.TopStrip = new System.Windows.Forms.ToolStrip();
             this.OptionsButton = new System.Windows.Forms.ToolStripDropDownButton();
+            this.HelpInfoButton = new System.Windows.Forms.ToolStripButton();
             this.AddButton = new System.Windows.Forms.ToolStripButton();
             this.SelectionInfo = new RiseOp.Interface.StatusPanel();
-            this.HelpInfoButton = new System.Windows.Forms.ToolStripButton();
+            this.SharedButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
@@ -107,6 +108,7 @@
             this.TopStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.OptionsButton,
             this.HelpInfoButton,
+            this.SharedButton,
             this.AddButton});
             this.TopStrip.Location = new System.Drawing.Point(0, 0);
             this.TopStrip.Name = "TopStrip";
@@ -122,6 +124,17 @@
             this.OptionsButton.Size = new System.Drawing.Size(73, 22);
             this.OptionsButton.Text = "Options";
             this.OptionsButton.ToolTipText = "Options";
+            // 
+            // HelpInfoButton
+            // 
+            this.HelpInfoButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.HelpInfoButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.HelpInfoButton.Image = ((System.Drawing.Image)(resources.GetObject("HelpInfoButton.Image")));
+            this.HelpInfoButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.HelpInfoButton.Name = "HelpInfoButton";
+            this.HelpInfoButton.Size = new System.Drawing.Size(23, 22);
+            this.HelpInfoButton.Text = "Help";
+            this.HelpInfoButton.Click += new System.EventHandler(this.HelpInfoButton_Click);
             // 
             // AddButton
             // 
@@ -143,16 +156,16 @@
             this.SelectionInfo.Size = new System.Drawing.Size(190, 123);
             this.SelectionInfo.TabIndex = 0;
             // 
-            // HelpInfoButton
+            // SharedButton
             // 
-            this.HelpInfoButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.HelpInfoButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.HelpInfoButton.Image = ((System.Drawing.Image)(resources.GetObject("HelpInfoButton.Image")));
-            this.HelpInfoButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.HelpInfoButton.Name = "HelpInfoButton";
-            this.HelpInfoButton.Size = new System.Drawing.Size(23, 22);
-            this.HelpInfoButton.Text = "Help";
-            this.HelpInfoButton.Click += new System.EventHandler(this.HelpInfoButton_Click);
+            this.SharedButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.SharedButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.SharedButton.Image = ((System.Drawing.Image)(resources.GetObject("SharedButton.Image")));
+            this.SharedButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.SharedButton.Name = "SharedButton";
+            this.SharedButton.Size = new System.Drawing.Size(23, 22);
+            this.SharedButton.Text = "Shared Files";
+            this.SharedButton.Click += new System.EventHandler(this.SharedButton_Click);
             // 
             // IMForm
             // 
@@ -184,5 +197,6 @@
         private System.Windows.Forms.ToolStripButton AddButton;
         private System.Windows.Forms.ToolStripDropDownButton OptionsButton;
         private System.Windows.Forms.ToolStripButton HelpInfoButton;
+        private System.Windows.Forms.ToolStripButton SharedButton;
     }
 }

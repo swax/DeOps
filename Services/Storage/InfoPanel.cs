@@ -188,15 +188,30 @@ namespace RiseOp.Services.Storage
 
                                         <?=table?>
                                         <br>
-                                        <a href='http://cancel' onclick='togglehelp()'>Help</a>
-                                        <div id='helpDiv' style='display:none;'>
-                                            
-                                            Drag files in to add them to your secure storage. Once changes are saved they are inherited by those below you.
-                                            Changes are manually reviewed and integrated before moving to those above you.
-                                        </div>
-                                        
+                                        <ul style='margin-top:3'>
+                                            <li>The File System is shared across all members of the op.</li>
+                                            <li>History of a file's changes is kept, and persist when you go offline.</li>
+                                            <li>Drag files in to add them to your op's File System.</li>
+                                            <li>Once changes are saved they are inherited by those below you.</li>
+                                            <li>Changes are manually reviewed and integrated before moving to those above you.</li>
+                                        </ul> 
                                     </body>
                                     </html>";
+        /*
+                                        <br>
+                                        <a href='http://cancel' onclick='togglehelp()'>Help</a>
+                                        <div id='helpDiv' style='display:none;'>
+                                            <ul style='margin-top:3'>
+                                                <li>The File System is shared across all members of the op.</li>
+                                                <li>History of a file's changes is kept, and persist when you go offline.</li>
+                                                <li>Drag files in to add them to your op's File System.</li>
+                                                <li>Once changes are saved they are inherited by those below you.</li>
+                                                <li>Changes are manually reviewed and integrated before moving to those above you.</li>
+                                            </ul> 
+                                    </div>
+                                        
+                                    </body>
+                                    </html>";*/
 
         const string DifferenceTable = @"<br>
                                         <table cellspacing=0 cellpadding=2>

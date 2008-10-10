@@ -26,8 +26,8 @@ namespace RiseOp.Services.Storage
 
     class StorageService : OpService
     {
-        public string Name { get { return "Storage"; } }
-        public uint ServiceID { get { return 10; } }
+        public string Name { get { return "File System"; } }
+        public uint ServiceID { get { return (uint)ServiceIDs.Storage; } }
 
         const uint FileTypeCache = 0x01;
         const uint FileTypeData = 0x02;
@@ -273,10 +273,10 @@ namespace RiseOp.Services.Storage
         public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
         {
             if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Data/Files", StorageRes.Icon, new EventHandler(Menu_View)));
+                menus.Add(new MenuItemInfo("Data/File System", StorageRes.Icon, new EventHandler(Menu_View)));
 
             if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Files", StorageRes.Icon, new EventHandler(Menu_View)));
+                menus.Add(new MenuItemInfo("File System", StorageRes.Icon, new EventHandler(Menu_View)));
         }
 
         internal void Menu_View(object sender, EventArgs args)
@@ -436,7 +436,7 @@ namespace RiseOp.Services.Storage
                 Core.RunInGuiThread(StorageUpdate, newStorage);
 
             if (Core.NewsWorthy(newStorage.UserID, 0, false))
-                Core.MakeNews("Storage updated by " + Core.GetName(newStorage.UserID), newStorage.UserID, 0, false, StorageRes.Icon, Menu_View);
+                Core.MakeNews("File System updated by " + Core.GetName(newStorage.UserID), newStorage.UserID, 0, false, StorageRes.Icon, Menu_View);
 
         }
 
@@ -806,27 +806,38 @@ namespace RiseOp.Services.Storage
                         file = internalFile;
                         file.References++;
 
-                        info.Size = file.Size;
-                        info.FileKey = file.Key;
+                        // if file already encrypted in our system, continue
+                        if (File.Exists(GetFilePath(info.HashID)))
+                        {
+                            info.Size = file.Size;
+                            info.FileKey = file.Key;
 
-                        info.Hash = file.Hash;
-                        info.HashID = file.HashID;
+                            info.Hash = file.Hash;
+                            info.HashID = file.HashID;
 
-                        if (!Utilities.MemCompare(file.Hash, pack.File.Info.Hash))
-                            ReviseFile(pack, info);
+                            if (!Utilities.MemCompare(file.Hash, pack.File.Info.Hash))
+                                ReviseFile(pack, info);
 
-                        lock (HashQueue) HashQueue.Dequeue();
-                        HashRetry = false;
+                            lock (HashQueue) HashQueue.Dequeue();
+                            HashRetry = false;
 
-                        continue;
+                            continue;
+                        }
                     }
 
-                    if (info.FileKey == null)
-                        info.FileKey = Utilities.GenerateKey(Core.StrongRndGen, 256);
+                    // file key is opID and internal hash xor'd so that files won't be duplicated on the network
+                    // apply special compartment key here as well, xor again
+                    info.FileKey = new byte[32];
+                    Core.User.Settings.OpKey.CopyTo(info.FileKey, 0);
+                    for (int i = 0; i < info.InternalHash.Length; i++ )
+                        info.FileKey[i] ^= info.InternalHash[i];
+
+                    // iv needs to be the same for ident files to gen same file hash
+                    byte[] iv = new MD5CryptoServiceProvider().ComputeHash(info.FileKey);
 
                     // encrypt file to temp dir
                     string tempPath = Core.GetTempPath();
-                    using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, info.FileKey))
+                    using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, info.FileKey, iv))
                     {
                         using (FileStream localfile = File.OpenRead(pack.Path))
                         {
@@ -850,11 +861,19 @@ namespace RiseOp.Services.Storage
                     if (!File.Exists(path))
                         File.Move(tempPath, path);
 
-                    // insert into file map - create new because internal for hash above was not in map already
-                    file = new OpFile(info);
-                    file.References++;
-                    FileMap.SafeAdd(info.HashID, file);
-                    InternalFileMap.SafeAdd(info.InternalHashID,  file);
+                    // if we dont have record of file make one
+                    if (file == null)
+                    {
+                        file = new OpFile(info);
+                        file.References++;
+                        FileMap.SafeAdd(info.HashID, file);
+                        InternalFileMap.SafeAdd(info.InternalHashID, file);
+                    }
+                    // else, record already made, just needed to put the actual file in the system
+                    else
+                    {
+                        Debug.Assert(info.HashID == file.HashID);
+                    }
 
                     // if hash is different than previous mark as modified
                     if (!Utilities.MemCompare(file.Hash, pack.File.Info.Hash))

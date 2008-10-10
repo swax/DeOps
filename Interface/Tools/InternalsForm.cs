@@ -64,9 +64,9 @@ namespace RiseOp.Interface.Tools
 
 			Core    = core;
 
-            Boards = core.GetService(ServiceID.Board) as BoardService;
-            Mail = core.GetService(ServiceID.Mail) as MailService;
-            Profiles = core.GetService(ServiceID.Profile ) as ProfileService;
+            Boards = core.GetService(ServiceIDs.Board) as BoardService;
+            Mail = core.GetService(ServiceIDs.Mail) as MailService;
+            Profiles = core.GetService(ServiceIDs.Profile ) as ProfileService;
 
             Text = "Internals (" + Core.Network.GetLabel() + ")";
 
@@ -506,7 +506,7 @@ namespace RiseOp.Interface.Tools
             if (Core.Context.Lookup == null)
                 return;
 
-            LookupService globalLocs = Core.Context.Lookup.GetService(ServiceID.Global) as LookupService;
+            LookupService globalLocs = Core.Context.Lookup.GetService(ServiceIDs.Global) as LookupService;
 
             globalLocs.LookupIndex.LockReading(delegate()
             {

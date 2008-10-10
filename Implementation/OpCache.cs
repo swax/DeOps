@@ -263,7 +263,7 @@ namespace RiseOp.Implementation
 
                     lookup.RunInCoreAsync(delegate()
                     {
-                        LookupService service = lookup.GetService(ServiceID.Global) as LookupService;
+                        LookupService service = lookup.GetService(ServiceIDs.Global) as LookupService;
                         service.StartSearch(Network.OpID, 0);
                     });
                 }
@@ -456,8 +456,7 @@ namespace RiseOp.Implementation
                 byte[] ivEnc = Utilities.CombineArrays(crypt.IV, encrypted);
                 string get = Convert.ToBase64String(ivEnc);
 
-                WebClient web = new WebClient();
-                string response = web.DownloadString(cache.Address + "?get=" + Uri.EscapeDataString(get));
+                string response = Utilities.WebDownloadString(cache.Address + "?get=" + Uri.EscapeDataString(get));
 
                 if (response == null || response == "")
                     throw new Exception("Access key not accepted");

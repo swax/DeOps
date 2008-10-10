@@ -252,6 +252,17 @@ namespace RiseOp
             }
         }
 
+
+        internal static void Md5HashFile(string path, ref byte[] hash, ref long size)
+        {
+            using (FileStream file = File.OpenRead(path))
+            {
+                MD5CryptoServiceProvider md5 = new MD5CryptoServiceProvider();
+                hash = md5.ComputeHash(file);
+                size = file.Length;
+            }
+        }
+
         internal static void HashTagFile(string path, G2Protocol protocol, ref byte[] hash, ref long size)
         {
             using (FileStream file = new FileStream(path, FileMode.Open, FileAccess.ReadWrite))
@@ -791,6 +802,24 @@ namespace RiseOp
 
             return (int)Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2));
         }
+
+        internal static string WebDownloadString(string url)
+        {
+            // WebClient DownloadString does the same thing but has a bug that causes it to hang indefinitely
+            // in some situations when host is not responding, this we know times out, doesnt cause app close to hang
+
+            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
+            request.Timeout = 7000;
+
+            WebResponse response = request.GetResponse();
+
+            Stream responseStream = response.GetResponseStream();
+            StreamReader streamReader = new StreamReader(responseStream, Encoding.UTF8);
+            string responseText = streamReader.ReadToEnd();
+            response.Close();
+            
+            return responseText;
+        }
     }
 
 
@@ -961,11 +990,23 @@ namespace RiseOp.Implementation
 
         internal static IVCryptoStream Save(string path, byte[] key)
         {
+            return Save(path, key, null);
+        }
+
+        internal static IVCryptoStream Save(string path, byte[] key, byte[] iv)
+        {
             FileStream file = new FileStream(path, FileMode.Create);
 
             RijndaelManaged crypt = new RijndaelManaged();
             crypt.Key = key;
-            crypt.GenerateIV();
+
+            if (iv == null)
+                crypt.GenerateIV();
+            else
+            {
+                Debug.Assert(iv.Length == crypt.IV.Length);
+                crypt.IV = iv;
+            }
 
             try
             {

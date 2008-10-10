@@ -4,6 +4,11 @@ schedule - random levels
 goals - assign/delegate
 
 
+links
+	riseop://firesoft/ident/john/sddfsd34dssd
+	riseop://firesoft/invite/john/sfaseedad99d9d
+	riseop://firesoft/file/<name>/dfjasfsdfd
+	
 debugging
 	finding an error
 		start removing code

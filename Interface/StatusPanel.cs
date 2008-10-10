@@ -313,10 +313,10 @@ namespace RiseOp.Interface
 
             Func<string, string, string> getImgLine = (url, path) => "<a href='http://" + url + "'><img style='margin:2px;' src='" + path + "' border=0></a><br>";
 
-            if (UserID != Core.UserID && Core.GetService(ServiceID.IM) != null && Core.Locations.ActiveClientCount(UserID) > 0)
+            if (UserID != Core.UserID && Core.GetService(ServiceIDs.IM) != null && Core.Locations.ActiveClientCount(UserID) > 0)
                 content += getImgLine("im", IMImg);
 
-            if (UserID != Core.UserID && Core.GetService(ServiceID.Mail) != null)
+            if (UserID != Core.UserID && Core.GetService(ServiceIDs.Mail) != null)
                 content += getImgLine("mail", MailImg);
 
             content += getImgLine("buddy_who", BuddyWhoImg);
@@ -419,7 +419,7 @@ namespace RiseOp.Interface
             {
                 OpTrust trust = Core.Trust.GetTrust(user);
 
-                if (trust.Name != username)
+                if (trust != null && trust.Name != username)
                     aliases += "<a href='http://use_name/" + trust.Name + "'>" + trust.Name + "</a>, ";
             }
 
@@ -581,7 +581,7 @@ namespace RiseOp.Interface
 
                 else if (url == "im")
                 {
-                    IMService im = Core.GetService(ServiceID.IM) as IMService;
+                    IMService im = Core.GetService(ServiceIDs.IM) as IMService;
 
                     if (im != null)
                         im.OpenIMWindow(UserID);
@@ -589,7 +589,7 @@ namespace RiseOp.Interface
 
                 else if (url == "mail")
                 {
-                    MailService mail = Core.GetService(ServiceID.Mail) as MailService;
+                    MailService mail = Core.GetService(ServiceIDs.Mail) as MailService;
 
                     if (mail != null)
                         mail.OpenComposeWindow(UserID);

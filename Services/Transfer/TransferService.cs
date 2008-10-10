@@ -26,7 +26,7 @@ namespace RiseOp.Services.Transfer
     internal class TransferService : OpService
     {
         public string Name { get { return "Transfer"; } }
-        public uint ServiceID { get { return 3; } }
+        public uint ServiceID { get { return (uint)ServiceIDs.Transfer; } }
 
         internal OpCore Core;
         DhtNetwork Network;
@@ -139,7 +139,7 @@ namespace RiseOp.Services.Transfer
         {
         }
 
-        internal void StartDownload( ulong target, FileDetails details, object[] args, EndDownloadHandler endEvent)
+        internal OpTransfer StartDownload( ulong target, FileDetails details, object[] args, EndDownloadHandler endEvent)
         {
             if (Core.InvokeRequired)
                 Debug.Assert(false);
@@ -165,18 +165,16 @@ namespace RiseOp.Services.Transfer
                 Partials.Remove(transfer);
                 Pending.AddLast(transfer);
 
-                return;
+                return transfer;
             }
 
 
             // if file already added to pending or transfers list, return
-            if ((from p in Pending
-                 where p.FileID == id
-                 select p.FileID).Concat(
-                    from t in Transfers.Values
-                    where t.FileID == id
-                    select t.FileID).Count() > 0)
-                return;
+            OpTransfer existing = Pending.Where(p => p.FileID == id).Concat(
+                                  Transfers.Values.Where(t => t.FileID == id)).FirstOrDefault();
+
+            if (existing != null)
+                return existing;
 
 
             string path = TransferPath + Path.DirectorySeparatorChar + 
@@ -186,7 +184,7 @@ namespace RiseOp.Services.Transfer
 
             Pending.AddLast(pending);
 
-            return ;
+            return pending;
         }
 
         internal void CancelDownload(uint service, byte[] hash, long size)
@@ -348,7 +346,7 @@ namespace RiseOp.Services.Transfer
                     RemotePeer peer = (from p in transfer.Peers.Values
                                        where Core.TimeNow > p.NextPing
                                        orderby Core.TimeNow.Subtract(p.NextPing) descending
-                                       select p).ElementAtOrDefault(0);
+                                       select p).FirstOrDefault();
 
                     if (peer != null)
                         Send_Ping(transfer, peer);
@@ -430,7 +428,9 @@ namespace RiseOp.Services.Transfer
                     // write each incomplete transfer, from pending and transfers
                     Func<OpTransfer, bool> shouldSave = (t => t.SavePartial && t.Status == TransferStatus.Incomplete);
 
-                    var save = Pending.Where(shouldSave).Concat(Transfers.Values.Where(shouldSave));
+                    var save = Pending.Where(shouldSave).
+                        Concat(Transfers.Values.Where(shouldSave)).
+                        Concat(Partials.Where(shouldSave)); // sharing service will perserve certain partials
 
                     foreach (OpTransfer transfer in save)
                         stream.WritePacket(new TransferPartial(transfer));
@@ -585,7 +585,7 @@ namespace RiseOp.Services.Transfer
                                    orderby p.BlocksUntilFinished // pref file closest to completion
                                    orderby UploadPeers[p.RoutingID].LastAttempt // pref peer thats been waiting the longest
                                    //orderby (int)p.Transfer.Status // pref sending local incomplete over complete
-                                   select p).ElementAtOrDefault(0);
+                                   select p).FirstOrDefault();
 
 
             if (selected == null)
@@ -921,7 +921,7 @@ namespace RiseOp.Services.Transfer
                            where p != peer &&
                                  IsDepthMatched(match, p.RoutingID, ping.MissingDepth)
                            orderby Core.RndGen.Next()
-                           select p).ElementAtOrDefault(0);
+                           select p).FirstOrDefault();
 
                 //if (altPeer != null)
                 //    TestMatchDepth(client.RoutingID, altPeer.RoutingID, ping.MissingDepth); //crit - comment out
@@ -1607,6 +1607,10 @@ namespace RiseOp.Services.Transfer
 
         internal RemotePeer AddPeer(DhtClient client)
         {
+            Debug.Assert(!client.Equals(Control.Core.Network.Local));
+            if (client.Equals(Control.Core.Network.Local))
+                return null;
+
             // if local complete, dont keep remote completes in mesh because a remotes own search will find completed sources
             // incomplete hosts will also return completed sources
 

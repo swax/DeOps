@@ -232,6 +232,36 @@
     <Compile Include="Services\OpService.cs" />
     <Compile Include="Services\Plan\PlanService.cs" />
     <Compile Include="Services\Profile\ProfileService.cs" />
+    <Compile Include="Services\Sharing\AcceptFileForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Services\Sharing\AcceptFileForm.Designer.cs">
+      <DependentUpon>AcceptFileForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Services\Sharing\Res\ShareRes.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ShareRes.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Services\Sharing\SendFileForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Services\Sharing\SendFileForm.Designer.cs">
+      <DependentUpon>SendFileForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Services\Sharing\ShareInfoPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Services\Sharing\ShareInfoPanel.Designer.cs">
+      <DependentUpon>ShareInfoPanel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Services\Sharing\SharingService.cs" />
+    <Compile Include="Services\Sharing\SharingView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Services\Sharing\SharingView.Designer.cs">
+      <DependentUpon>SharingView.cs</DependentUpon>
+    </Compile>
     <Compile Include="Services\Storage\StorageService.cs" />
     <Compile Include="Services\Transfer\BitfieldControl.cs">
       <SubType>UserControl</SubType>
@@ -706,6 +736,10 @@
     <None Include="Interface\Res\project add.png" />
     <None Include="Interface\Res\project remove.png" />
     <None Include="Services\Buddy\res\buddy_who.png" />
+    <None Include="Services\Sharing\Res\share.png" />
+    <None Include="Services\Storage\Res\storage.png" />
+    <None Include="Services\Sharing\Res\share.ico" />
+    <None Include="Services\Sharing\Res\sendfile.png" />
     <Content Include="Services\Transfer\transfers.txt" />
     <None Include="Interface\Res\settings.png" />
     <None Include="Interface\Res\tools.png" />
@@ -924,6 +958,27 @@
       <SubType>Designer</SubType>
       <DependentUpon>IM_View.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Services\Sharing\AcceptFileForm.resx">
+      <DependentUpon>AcceptFileForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Services\Sharing\Res\ShareRes.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ShareRes.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Services\Sharing\SendFileForm.resx">
+      <DependentUpon>SendFileForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Services\Sharing\ShareInfoPanel.resx">
+      <DependentUpon>ShareInfoPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Services\Sharing\SharingView.resx">
+      <DependentUpon>SharingView.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Services\Transfer\BitfieldControl.resx">
       <DependentUpon>BitfieldControl.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -1052,7 +1107,6 @@
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>StorageRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>DeOps.Services.Storage</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Storage\Forms\UnlockForm.resx">
       <SubType>Designer</SubType>

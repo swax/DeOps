@@ -24,7 +24,7 @@ namespace RiseOp.Services.Plan
     internal class PlanService : OpService
     {
         public string Name { get { return "Plan"; } }
-        public uint ServiceID { get { return 9; } }
+        public uint ServiceID { get { return (uint)ServiceIDs.Plan; } }
 
         const uint DataTypeFile = 0x01;
 
@@ -333,8 +333,7 @@ namespace RiseOp.Services.Plan
                 });
 
 
-            if (PlanUpdate != null)
-                Core.RunInGuiThread(PlanUpdate, newPlan);
+            Core.RunInGuiThread(PlanUpdate, newPlan);
 
             if (Core.NewsWorthy(newPlan.UserID, 0, false))
                 Core.MakeNews("Plan updated by " + Core.GetName(newPlan.UserID), newPlan.UserID, 0, false, PlanRes.Schedule, Menu_ScheduleView);

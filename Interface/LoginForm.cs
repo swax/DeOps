@@ -105,12 +105,21 @@ namespace RiseOp.Interface
             CreateUser user = null;
 
             // private or secret network
-            if (arg.StartsWith("riseop://invite:"))
-                user = ReadInvite(arg.Substring(16));
+            if (!arg.StartsWith("riseop://"))
+                return;
+
+            if (arg.Contains("/invite/"))
+                user = ReadInvite(arg);
+
+            else if (arg.Contains("/file/"))
+            { }
+
+            else if (arg.Contains("/ident/"))
+            { }
 
             // public network
             else
-                user = new CreateUser(Context, arg.Substring(9), AccessType.Public);
+                user = new CreateUser(Context, arg, AccessType.Public);
 
             // show create user dialog
             if(user != null)
@@ -149,12 +158,12 @@ namespace RiseOp.Interface
             }
 
             // private or secret network
-            else if (join.OpName.StartsWith("invite:"))
-                user = ReadInvite(join.OpName.Substring(7));
+            else if (join.OpLink.Contains("/invite/"))
+                user = ReadInvite(join.OpLink);
 
             // public network
             else
-                user = new CreateUser(Context, join.OpName, join.OpAccess);
+                user = new CreateUser(Context, join.OpLink, join.OpAccess);
 
 
             // show create user dialog

@@ -464,14 +464,14 @@ namespace RiseOp.Interface
 
             if (Core.Locations.ActiveClientCount(info.UserID) > 0)
             {
-                IMService IM = Core.GetService(ServiceID.IM) as IMService;
+                IMService IM = Core.GetService(ServiceIDs.IM) as IMService;
 
                 if (IM != null)
                     IM.QuickMenu_View(info, null);
             }
             else
             {
-                MailService Mail = Core.GetService(ServiceID.Mail) as MailService;
+                MailService Mail = Core.GetService(ServiceIDs.Mail) as MailService;
 
                 if (Mail != null)
                     Mail.QuickMenu_View(info, null);
@@ -539,7 +539,7 @@ namespace RiseOp.Interface
 
             // find previous component in drop down, activate click on it
             if(InternalView == null)
-                OnShowInternal(new Info.InfoView(Core, false));
+                OnShowInternal(new Info.InfoView(Core, false, true));
 
             /*string previous = InternalView != null ? InternalView.GetTitle(true) : "Profile";
 
@@ -1257,12 +1257,12 @@ namespace RiseOp.Interface
 
         private void HelpButton_Click(object sender, EventArgs e)
         {
-            OnShowInternal(new Info.InfoView(Core, true));
+            OnShowInternal(new Info.InfoView(Core, true, false));
         }
 
         private void NetworkButton_Click(object sender, EventArgs e)
         {
-            InfoView view = new InfoView(Core, false);
+            InfoView view = new InfoView(Core, false, false);
 
             if (SideMode)
                 OnShowExternal(view);
@@ -1272,7 +1272,7 @@ namespace RiseOp.Interface
 
         private void SideHelpButton_Click(object sender, EventArgs e)
         {
-            OnShowExternal(new InfoView(Core, true));
+            OnShowExternal(new InfoView(Core, true, false));
         }
     }
 

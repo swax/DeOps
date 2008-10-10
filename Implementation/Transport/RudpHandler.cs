@@ -85,9 +85,9 @@ namespace RiseOp.Implementation.Transport
                 return false;
 
             // sessionmap and socketmap both need to have the same # of entries
-            // if a session is fin or closed, we need to wait before re-assigning entry
+            // if a session is fin or closed, we need to wait for fins to complete before re-assigning entry
             if(SessionMap.ContainsKey(client.RoutingID))
-                return SessionMap[client.RoutingID].Status == SessionStatus.Connecting;
+                return SessionMap[client.RoutingID].Status != SessionStatus.Closed;
 
             RudpSession session = new RudpSession(this, client.UserID, client.ClientID, false);
             SessionMap[client.RoutingID] = session;
@@ -110,7 +110,7 @@ namespace RiseOp.Implementation.Transport
             ulong id = location.UserID ^ location.Source.ClientID;
 
             if (SessionMap.ContainsKey(id))
-                return SessionMap[id].Status == SessionStatus.Connecting;
+                return SessionMap[id].Status != SessionStatus.Closed;
 
             RudpSession session = new RudpSession(this, location.UserID, location.Source.ClientID, false);
             SessionMap[id] = session;
@@ -146,7 +146,7 @@ namespace RiseOp.Implementation.Transport
             return (from session in SessionMap.Values
                     where session.Status == SessionStatus.Active &&
                           session.UserID == key && session.ClientID == client
-                    select session).ElementAtOrDefault(0);
+                    select session).FirstOrDefault();
         }
 
         internal bool IsConnectingOrActive(ulong key, ushort client)
