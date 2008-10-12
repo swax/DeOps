@@ -33,9 +33,9 @@ namespace RiseOp.Services.Sharing
 
             Sharing = Core.GetService(ServiceIDs.Sharing) as SharingService;
 
-            Sharing.ShareList.LockReading(() =>
+            Sharing.Local.Files.LockReading(() =>
             {
-                foreach (OpShare share in Sharing.ShareList)
+                foreach (SharedFile share in Sharing.Local.Files)
                     if(share.Hash != null) // processed
                         RecentCombo.Items.Add(share);
             });
@@ -72,15 +72,15 @@ namespace RiseOp.Services.Sharing
 
             else if (RecentRadio.Checked)
             {
-                OpShare share = RecentCombo.SelectedItem as OpShare;
+                SharedFile share = RecentCombo.SelectedItem as SharedFile;
 
                 if (share != null)
                 {
                     Core.RunInCoreAsync(() =>
                     {
-                        Sharing.AddTargets(share, User, Client);
+                        Sharing.AddTargets(share.ToRequest, User, Client);
 
-                        foreach (DhtClient target in share.ToRequest.Where(t => t.UserID == User))
+                        foreach (DhtClient target in share.ToRequest.Where(t => t.UserID == User).ToArray())
                             Sharing.TrySendRequest(share, target);
                     });
                 }
@@ -92,7 +92,7 @@ namespace RiseOp.Services.Sharing
             }
 
             // show the user the transfer starting
-            SharingView view = new SharingView(Core);
+            SharingView view = new SharingView(Core, Core.UserID);
 
             if (Core.GuiMain is MainForm)
             {

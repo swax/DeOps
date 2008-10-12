@@ -53,7 +53,7 @@ namespace RiseOp.Services.Chat
         {
             Chat_Refresh();
 
-            //crit command room default, next public rooms, else message showing info
+           
             if (RoomsActive(RoomKind.Command_High, RoomKind.Command_Low))
                 LocalButton_Click(null, null);
 
@@ -89,7 +89,8 @@ namespace RiseOp.Services.Chat
 
             if (!CustomButton.Checked)
             {
-                title += Chat.Core.Trust.GetProjectName(ProjectID) + " ";
+                if(Chat.Core.Trust != null)
+                    title += Chat.Core.Trust.GetProjectName(ProjectID) + " ";
 
                 if (LocalButton.Checked)
                     title += "Local ";
@@ -350,7 +351,7 @@ namespace RiseOp.Services.Chat
             if(Custom == null)
                 return;
 
-            AddLinks add = new AddLinks(Chat.Core.Trust, ProjectID);
+            AddUsersDialog add = new AddUsersDialog(Chat.Core, ProjectID);
             add.Text = "Invite People";
             add.AddButton.Text = "Invite";
 

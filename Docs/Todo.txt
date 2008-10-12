@@ -1,43 +1,52 @@
 
-user 2 user - share service
-	public shared
-		save seperate public shared file
-		
-		handle direct request for public shared
-			return public shared file hash/key/etc..
-			
-		download public shared
-		
-		load up, alert interface, have refresh button
-		
-	finish share interface
-		show lock/unlock icons for shared files, only delete if path is downloadpath
-
+IM tool bar - formatting drop down, send file, add buddy, block
+	maybe put into input text toolbar a formatting off button that is on by default - msgs are encoded txt/rtf/html(for future)
+	block - blocks im, chat requests, send file requests
+	more complete debugging info of chat system
+	if no rooms, show create room, else just show current rooms
+	dont cache number stings as name, allow override
+		when chat invite sent to someone who doesnt know who we are, make sure we get ident before showing
+		invite should also use custom icon, with some info, member count in invite?
+	put space block between room name and invite button
+	remove local/live room vis when trust not active
 	
-per transfer bandwidth tabs over last 7 secs
-
 get chat working in global IM mode
 
+	dont let user send blank lines
+	when switching rooms, put focus on chat input
+	show room invite on main form when view not active, center parent, same with transfer request/send
+	
+user 2 user - share service
+	show lock/unlock icons for shared files, only delete if path is downloadpath
+	put same options in web interface
+		show right click for more options in red
+	
+on profile at bottom in red show right click to edit, only if user is local (local msg)
+
+research upnp / windows firewall
+
+
 buddie lists / localsync still being published on global IM
+	buddy still needs to publish self loc around local ID
 		
 if riseop:// link detected in IM/chat, prefix http:// , on click process riseop:// link
 	if normal http:// link open external window
 		
+different help page for global IM
 on web exception, show help page
 put links in help page that open services
 
-IM tool bar - formatting drop down, send file, add buddy, block
+sortable columns that are either auto, or take a delegate comparer as a parameter
+
 auto append http to riseop:// in send message, when clicked over ride rtf link clicked
 	investigate cascading spans<> for html based chat
 chat default in text mode, put formatting options in right click menu.. enable formatting, remove tools from toolbar
 	file links can be put in chat window and work fine ;)
 	
-buddys dropdown in add link dialog, multi-select?
+
 click user link - if riseop loaded, find core with match op id, ask to add user to buddies
 form colums still huge
 buddy block list - prevents IMs from coming in
-
-try upnp?
 
 bugs
 	losing  buddy loc through nat/open/blocked net
@@ -88,7 +97,6 @@ release
 			how to offload bandwidth usage?
 
 test global
-
 	associations? put in diff sturcture buddyinfo data type/file?
 
 set global im web cache
@@ -108,8 +116,7 @@ make sure diff networks use diff webcaches in sim
 Buddy list Component
 
 	Chat in global buddy system
-	Individual file transfer in buddy system
-	
+
 	buddy - local synced only when trust is enabled
 
 	global list saved with op list - if association made
@@ -156,7 +163,6 @@ in status panel - show LED indicator if online / **searching** / offline
 
 
 
-maybe put into input text toolbar a formatting off button that is on by default - msgs are encoded txt/rtf/html(for future)
 
 design re-alignment
 
@@ -409,7 +415,6 @@ Interface
 		status panel needs to update as network connects network_statusupdate, trigger news as well
 		test gmt visible in status panel
 		unload tray icon on exit?
-		alphabetizize component menus, project button, nav bar, project nav drop down
 		dont allow nav bar person switch on mail/chat components
 		trust info box - options like trust, IM, mail, leave/join project
 		exception catching/reporting - move to POST, get last 50 log entries as well by time

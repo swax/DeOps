@@ -28,16 +28,16 @@
         /// </summary>
         private void InitializeComponent()
         {
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(IMForm));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.BuddyList = new RiseOp.Services.Buddy.BuddyView();
             this.TopStrip = new System.Windows.Forms.ToolStrip();
             this.OptionsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.HelpInfoButton = new System.Windows.Forms.ToolStripButton();
+            this.SharedButton = new System.Windows.Forms.ToolStripButton();
             this.AddButton = new System.Windows.Forms.ToolStripButton();
             this.SelectionInfo = new RiseOp.Interface.StatusPanel();
-            this.SharedButton = new System.Windows.Forms.ToolStripButton();
+            this.ChatButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
@@ -61,7 +61,7 @@
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.SelectionInfo);
-            this.splitContainer1.Size = new System.Drawing.Size(190, 426);
+            this.splitContainer1.Size = new System.Drawing.Size(200, 426);
             this.splitContainer1.SplitterDistance = 299;
             this.splitContainer1.TabIndex = 0;
             // 
@@ -70,18 +70,6 @@
             this.BuddyList.AllowDrop = true;
             this.BuddyList.BackColor = System.Drawing.SystemColors.Window;
             this.BuddyList.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            toggleColumnHeader1.Hovered = false;
-            toggleColumnHeader1.Image = null;
-            toggleColumnHeader1.Index = 0;
-            toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader1.Selected = false;
-            toggleColumnHeader1.Text = "";
-            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 190;
-            this.BuddyList.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
-            toggleColumnHeader1});
             this.BuddyList.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.BuddyList.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.BuddyList.DisableHorizontalScroll = true;
@@ -96,11 +84,10 @@
             this.BuddyList.Name = "BuddyList";
             this.BuddyList.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.BuddyList.RowTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.BuddyList.Size = new System.Drawing.Size(190, 274);
+            this.BuddyList.Size = new System.Drawing.Size(200, 274);
             this.BuddyList.SmallImageList = null;
             this.BuddyList.StateImageList = null;
             this.BuddyList.TabIndex = 1;
-            this.BuddyList.Text = "buddyView1";
             // 
             // TopStrip
             // 
@@ -109,10 +96,11 @@
             this.OptionsButton,
             this.HelpInfoButton,
             this.SharedButton,
+            this.ChatButton,
             this.AddButton});
             this.TopStrip.Location = new System.Drawing.Point(0, 0);
             this.TopStrip.Name = "TopStrip";
-            this.TopStrip.Size = new System.Drawing.Size(190, 25);
+            this.TopStrip.Size = new System.Drawing.Size(200, 25);
             this.TopStrip.TabIndex = 0;
             this.TopStrip.Text = "toolStrip1";
             // 
@@ -136,6 +124,17 @@
             this.HelpInfoButton.Text = "Help";
             this.HelpInfoButton.Click += new System.EventHandler(this.HelpInfoButton_Click);
             // 
+            // SharedButton
+            // 
+            this.SharedButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.SharedButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.SharedButton.Image = ((System.Drawing.Image)(resources.GetObject("SharedButton.Image")));
+            this.SharedButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.SharedButton.Name = "SharedButton";
+            this.SharedButton.Size = new System.Drawing.Size(23, 22);
+            this.SharedButton.Text = "Shared Files";
+            this.SharedButton.Click += new System.EventHandler(this.SharedButton_Click);
+            // 
             // AddButton
             // 
             this.AddButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
@@ -153,26 +152,26 @@
             this.SelectionInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.SelectionInfo.Location = new System.Drawing.Point(0, 0);
             this.SelectionInfo.Name = "SelectionInfo";
-            this.SelectionInfo.Size = new System.Drawing.Size(190, 123);
+            this.SelectionInfo.Size = new System.Drawing.Size(200, 123);
             this.SelectionInfo.TabIndex = 0;
             // 
-            // SharedButton
+            // ChatButton
             // 
-            this.SharedButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.SharedButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.SharedButton.Image = ((System.Drawing.Image)(resources.GetObject("SharedButton.Image")));
-            this.SharedButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.SharedButton.Name = "SharedButton";
-            this.SharedButton.Size = new System.Drawing.Size(23, 22);
-            this.SharedButton.Text = "Shared Files";
-            this.SharedButton.Click += new System.EventHandler(this.SharedButton_Click);
+            this.ChatButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.ChatButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.ChatButton.Image = ((System.Drawing.Image)(resources.GetObject("ChatButton.Image")));
+            this.ChatButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.ChatButton.Name = "ChatButton";
+            this.ChatButton.Size = new System.Drawing.Size(23, 22);
+            this.ChatButton.Text = "Chat";
+            this.ChatButton.Click += new System.EventHandler(this.ChatButton_Click);
             // 
             // IMForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(190, 426);
+            this.ClientSize = new System.Drawing.Size(200, 426);
             this.Controls.Add(this.splitContainer1);
             this.Name = "IMForm";
             this.Text = "RiseOp IM";
@@ -198,5 +197,6 @@
         private System.Windows.Forms.ToolStripDropDownButton OptionsButton;
         private System.Windows.Forms.ToolStripButton HelpInfoButton;
         private System.Windows.Forms.ToolStripButton SharedButton;
+        private System.Windows.Forms.ToolStripButton ChatButton;
     }
 }

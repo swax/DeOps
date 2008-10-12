@@ -30,7 +30,6 @@ namespace RiseOp.Services.Chat
 
         internal OpCore Core;
         LocationService Locations;
-        TrustService Trust;
 
         MenuItem TimestampMenu;
 
@@ -52,7 +51,6 @@ namespace RiseOp.Services.Chat
 
             Core = chat.Core;
             Locations = Core.Locations;
-            Trust = Core.Trust;
 
             if (room.Kind == RoomKind.Command_High || room.Kind == RoomKind.Live_High)
                 MessageTextBox.BackColor = Color.FromArgb(255, 250, 250);
@@ -305,7 +303,9 @@ namespace RiseOp.Services.Chat
             if (node == null)
                 return;
 
-            Core.Trust.Research(node.UserID, 0, false);
+            if(Core.Trust != null)
+                Core.Trust.Research(node.UserID, 0, false);
+            
             Core.Locations.Research(node.UserID);
 
             ContextMenuStripEx treeMenu = new ContextMenuStripEx();
@@ -336,7 +336,7 @@ namespace RiseOp.Services.Chat
                 ToolStripMenuItem viewItem = new ToolStripMenuItem("Views", InterfaceRes.views);
 
                 foreach (MenuItemInfo info in extMenus)
-                    viewItem.DropDownItems.Add(new OpMenuItem(node.UserID, Room.ProjectID, info.Path, info));
+                    viewItem.DropDownItems.SortedAdd(new OpMenuItem(node.UserID, Room.ProjectID, info.Path, info));
 
                 treeMenu.Items.Add(viewItem);
             }

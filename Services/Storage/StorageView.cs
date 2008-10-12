@@ -250,7 +250,7 @@ namespace RiseOp.Services.Storage
 
             else if (DiffCombo.Text == "Custom...")
             {
-                AddLinks form = new AddLinks(Trust, ProjectID);
+                AddUsersDialog form = new AddUsersDialog(Core, ProjectID);
 
                 if (form.ShowDialog(this) == DialogResult.OK)
                     CurrentDiffs.AddRange(form.People);
@@ -2331,6 +2331,9 @@ namespace RiseOp.Services.Storage
 
         private void FolderTreeView_DragOver(object sender, DragEventArgs e)
         {
+            if (UserID != Core.UserID)
+                return;
+
             e.Effect = DragDropEffects.None;
 
             if (!e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -2347,7 +2350,7 @@ namespace RiseOp.Services.Storage
                 return;
             }
 
-            // else inside de-ops only allow file to be dropped on folder
+            // else dragging from inside, only allow file to be dropped on folder
             FolderNode node = FolderTreeView.GetNodeAt(FolderTreeView.PointToClient(new Point(e.X, e.Y))) as FolderNode;
 
             if (node == null)
@@ -2359,6 +2362,9 @@ namespace RiseOp.Services.Storage
 
         private void FileListView_DragOver(object sender, DragEventArgs e)
         {
+            if (UserID != Core.UserID)
+                return;
+
             e.Effect = DragDropEffects.None;
 
             if (!e.Data.GetDataPresent(DataFormats.FileDrop))

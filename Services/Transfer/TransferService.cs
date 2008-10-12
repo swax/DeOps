@@ -279,17 +279,19 @@ namespace RiseOp.Services.Transfer
                 }
 
                 Transfers[transfer.FileID] = transfer;
-             
 
 
-                byte[] parameters = transfer.Details.Encode(Network.Protocol);
-
-                DhtSearch search = Core.Network.Searches.Start(transfer.Target, "Transfer", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
-
-                if (search != null)
+                if (transfer.DoSearch)
                 {
-                    transfer.Searching = true;
-                    search.Carry = transfer;
+                    byte[] parameters = transfer.Details.Encode(Network.Protocol);
+
+                    DhtSearch search = Core.Network.Searches.Start(transfer.Target, "Transfer", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
+
+                    if (search != null)
+                    {
+                        transfer.Searching = true;
+                        search.Carry = transfer;
+                    }
                 }
             }
 
@@ -301,6 +303,8 @@ namespace RiseOp.Services.Transfer
             // send pings, expire old peers/transfers
             foreach (OpTransfer transfer in Transfers.Values)
             {
+                transfer.Bandwidth.NextSecond();
+
                 // remove dead peers
                 foreach (ulong id in (from peer in transfer.Peers.Values
                                       where Core.TimeNow > peer.Timeout &&
@@ -1332,6 +1336,7 @@ namespace RiseOp.Services.Transfer
                 else // no room in comm buffer for more sends
                     return;
 
+                peer.Transfer.Bandwidth.OutPerSec += data.Block.Length;
 
                 // check upload completion
                 if (peer.CurrentPos >= peer.LastRequest.EndByte)
@@ -1381,6 +1386,8 @@ namespace RiseOp.Services.Transfer
 
             
             OpTransfer transfer = Transfers[data.FileID];
+
+            transfer.Bandwidth.InPerSec += data.Block.Length;
             
             if(transfer.LocalBitfield == null)
             {
@@ -1533,12 +1540,15 @@ namespace RiseOp.Services.Transfer
         internal object[] Args;
         internal EndDownloadHandler EndEvent;
 
+        internal bool DoSearch = true;
         internal bool Searching;
         internal bool SavePartial = true;
 
         internal const int MaxPeers = 16;
         internal Dictionary<ulong, RemotePeer> Peers = new Dictionary<ulong, RemotePeer>(); // routing id, peer
         internal RemotePeer[] RoutingTable = new RemotePeer[MaxPeers - 4];
+
+        internal BandwidthLog Bandwidth = new BandwidthLog(10);
 
 
         internal BitArray LocalBitfield;
@@ -1645,7 +1655,7 @@ namespace RiseOp.Services.Transfer
 
             Peers.Remove(id);
 
-            if (RoutingTable[peer.DhtIndex] == peer)
+            if (peer.DhtIndex < RoutingTable.Length && RoutingTable[peer.DhtIndex] == peer)
             {
                 RoutingTable[peer.DhtIndex] = null;
 

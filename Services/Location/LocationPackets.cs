@@ -277,10 +277,9 @@ namespace RiseOp.Services.Location
             LocationNotify notify = new LocationNotify();
 
             if (G2Protocol.ReadPayload(root))
-            {
                 notify.SignedLocation = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
-                G2Protocol.ResetPacket(root);
-            }
+
+            G2Protocol.ResetPacket(root);
 
             G2Header child = new G2Header(root.Data);
 

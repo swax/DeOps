@@ -514,9 +514,10 @@ namespace RiseOp
             if (G2Protocol.ReadPayload(root))
             {
                 user.Key = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
-                user.ID = Utilities.KeytoID(user.Key);
-                G2Protocol.ResetPacket(root);
+                user.ID = Utilities.KeytoID(user.Key);    
             }
+
+            G2Protocol.ResetPacket(root);
 
             G2Header child = new G2Header(root.Data);
 

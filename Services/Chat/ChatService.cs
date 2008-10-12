@@ -53,11 +53,14 @@ namespace RiseOp.Services.Chat
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.KeepDataCore += new KeepDataHandler(Core_KeepData);
 
-            Trust.LinkUpdate += new LinkUpdateHandler(Link_Update);
             Core.Locations.KnowOnline += new KnowOnlineHandler(Location_KnowOnline);
             Core.Locations.LocationUpdate += new LocationUpdateHandler(Location_Update);
 
-            Link_Update(Trust.LocalTrust);
+            if (Trust != null)
+            {
+                Trust.LinkUpdate += new LinkUpdateHandler(Link_Update);
+                Link_Update(Trust.LocalTrust);
+            }
         }
 
         public void Dispose()
@@ -72,9 +75,11 @@ namespace RiseOp.Services.Chat
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.KeepDataCore -= new KeepDataHandler(Core_KeepData);
 
-            Trust.LinkUpdate -= new LinkUpdateHandler(Link_Update);
             Core.Locations.KnowOnline -= new KnowOnlineHandler(Location_KnowOnline);
             Core.Locations.LocationUpdate -= new LocationUpdateHandler(Location_Update);
+
+            if(Trust != null)
+                Trust.LinkUpdate -= new LinkUpdateHandler(Link_Update);
         }
 
         public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong key, uint proj)
@@ -328,7 +333,7 @@ namespace RiseOp.Services.Chat
                         foreach (ClientInfo info in clients)
                             Network.RudpControl.Connect(info.Data);
 
-                    if (Trust.GetTrust(key) == null)
+                    if (Trust != null && Trust.GetTrust(key) == null)
                         Trust.Research(key, 0, false);    
                 }
             });
@@ -536,7 +541,7 @@ namespace RiseOp.Services.Chat
             // remote's command low, is my command high
             // do here otherwise have to send custom roomID packets to selfs/lowers/highers
 
-            if (session.UserID != Core.UserID)
+            if (Trust != null && session.UserID != Core.UserID)
             {
                 // if check fails then it is loop node sending data, keep it unchanged
                 if (message.Kind == RoomKind.Command_High && Trust.IsLowerDirect(session.UserID, message.ProjectID))
@@ -630,33 +635,24 @@ namespace RiseOp.Services.Chat
 
             if (G2Protocol.ReadPacket(root))
             {
-                if (root.Name == ChatPacket.Data)
+                switch (root.Name)
                 {
-                    ChatText text = ChatText.Decode(root);
+                    case ChatPacket.Data:
+                        ReceiveMessage(ChatText.Decode(root), session);
+                        break;
 
-                    ReceiveMessage(text, session);
-                }
+                    case ChatPacket.Status:
+                        ReceiveStatus(ChatStatus.Decode(root), session);
+                        break;
 
-                else if (root.Name == ChatPacket.Status)
-                {
-                    ChatStatus status = ChatStatus.Decode(root);
-
-                    ReceiveStatus(status, session);
-                }
-
-                else if (root.Name == ChatPacket.Invite)
-                {
-                    ChatInvite invite = ChatInvite.Decode(root);
-
-                    ReceiveInvite(invite, session);
-                }
+                    case ChatPacket.Invite:
+                        ReceiveInvite(ChatInvite.Decode(root), session);
+                        break;
 
 
-                else if (root.Name == ChatPacket.Who)
-                {
-                    ChatWho who = ChatWho.Decode(root);
-
-                    ReceiveWho(who, session);
+                    case ChatPacket.Who:
+                        ReceiveWho(ChatWho.Decode(root), session);
+                        break;
                 }
             }
         }
@@ -849,7 +845,6 @@ namespace RiseOp.Services.Chat
 
         void ReceiveInvite(ChatInvite invite, RudpSession session)
         {
-             
              bool showInvite = false;
 
              ChatRoom room;
@@ -917,7 +912,7 @@ namespace RiseOp.Services.Chat
                 }
             }
 
-            if (!Core.Trust.TrustMap.SafeContainsKey(session.UserID))
+            if (Trust != null && !Trust.TrustMap.SafeContainsKey(session.UserID))
                 Trust.Research(session.UserID, 0, false);
 
             if(showInvite)
@@ -938,7 +933,6 @@ namespace RiseOp.Services.Chat
 
         void SendWhoRequest(ChatRoom room, RudpSession session)
         {
-
             ChatWho whoReq = new ChatWho();
             whoReq.Request = true;
             whoReq.RoomID = room.RoomID;
@@ -1007,7 +1001,7 @@ namespace RiseOp.Services.Chat
                     {
                         room.AddMember(id);
 
-                        if (Trust.GetTrust(id) == null)
+                        if (Trust != null && Trust.GetTrust(id) == null)
                             Trust.Research(id, 0, false);
 
                         Core.Locations.Research(id);

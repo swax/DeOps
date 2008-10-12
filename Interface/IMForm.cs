@@ -15,6 +15,7 @@ using RiseOp.Interface.Views;
 using RiseOp.Services;
 using RiseOp.Services.Buddy;
 using RiseOp.Services.Sharing;
+using RiseOp.Services.Chat;
 
 
 namespace RiseOp.Interface
@@ -40,7 +41,7 @@ namespace RiseOp.Interface
 
             Text = "IM - " + Core.GetName(Core.UserID);
 
-            BuddyList.Init(Core.Buddies, SelectionInfo);
+            BuddyList.Init(Core.Buddies, SelectionInfo, true);
             SelectionInfo.Init(Core);
 
             SelectionInfo.ShowNetwork();
@@ -133,9 +134,23 @@ namespace RiseOp.Interface
                     return;
                 }
 
-            SharingService sharing = Core.GetService(ServiceIDs.Sharing) as SharingService;
+            if(Core.GetService(ServiceIDs.Sharing) != null)
+                OnShowExternal(new SharingView(Core, Core.UserID));
+        }
 
-            OnShowExternal(new SharingView(Core));
+        private void ChatButton_Click(object sender, EventArgs e)
+        {
+            foreach (ExternalView ext in ExternalViews)
+                if (ext.Shell is ChatView)
+                {
+                    ext.Activate();
+                    return;
+                }
+
+            ChatService chat = Core.GetService(ServiceIDs.Chat) as ChatService;
+
+            if (chat != null)
+                OnShowExternal(new ChatView(chat, 0));
         }
     }
 }

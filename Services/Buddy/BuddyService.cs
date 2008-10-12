@@ -328,8 +328,9 @@ namespace RiseOp.Services.Buddy
             {
                 buddy.Key = Utilities.ExtractBytes(root.Data, root.PayloadPos, root.PayloadSize);
                 buddy.ID = Utilities.KeytoID(buddy.Key);
-                G2Protocol.ResetPacket(root);
             }
+
+            G2Protocol.ResetPacket(root);
 
             G2Header child = new G2Header(root.Data);
 

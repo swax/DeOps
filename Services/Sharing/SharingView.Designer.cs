@@ -36,6 +36,8 @@
             this.TopStrip = new System.Windows.Forms.ToolStrip();
             this.DownloadButton = new System.Windows.Forms.ToolStripButton();
             this.ShareButton = new System.Windows.Forms.ToolStripButton();
+            this.StatusLabel = new System.Windows.Forms.ToolStripLabel();
+            this.RefreshButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.SharedFiles = new RiseOp.Interface.TLVex.ContainerListViewEx();
             this.shareInfoPanel1 = new RiseOp.Services.Sharing.ShareInfoPanel();
@@ -51,7 +53,9 @@
             this.TopStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.TopStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.DownloadButton,
-            this.ShareButton});
+            this.ShareButton,
+            this.StatusLabel,
+            this.RefreshButton});
             this.TopStrip.Location = new System.Drawing.Point(0, 0);
             this.TopStrip.Name = "TopStrip";
             this.TopStrip.Size = new System.Drawing.Size(512, 25);
@@ -75,6 +79,23 @@
             this.ShareButton.Text = "Share File";
             this.ShareButton.Click += new System.EventHandler(this.ShareButton_Click);
             // 
+            // StatusLabel
+            // 
+            this.StatusLabel.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.StatusLabel.Name = "StatusLabel";
+            this.StatusLabel.Size = new System.Drawing.Size(92, 22);
+            this.StatusLabel.Text = "Remote Status";
+            // 
+            // RefreshButton
+            // 
+            this.RefreshButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.RefreshButton.Image = ((System.Drawing.Image)(resources.GetObject("RefreshButton.Image")));
+            this.RefreshButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.RefreshButton.Name = "RefreshButton";
+            this.RefreshButton.Size = new System.Drawing.Size(65, 22);
+            this.RefreshButton.Text = "Refresh";
+            this.RefreshButton.Click += new System.EventHandler(this.RefreshButton_Click);
+            // 
             // splitContainer1
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -96,6 +117,7 @@
             // 
             // SharedFiles
             // 
+            this.SharedFiles.AllowDrop = true;
             this.SharedFiles.BackColor = System.Drawing.SystemColors.Window;
             toggleColumnHeader1.Hovered = false;
             toggleColumnHeader1.Image = null;
@@ -140,6 +162,7 @@
             this.SharedFiles.ItemMenu = null;
             this.SharedFiles.LabelEdit = false;
             this.SharedFiles.Location = new System.Drawing.Point(0, 0);
+            this.SharedFiles.MultiSelect = true;
             this.SharedFiles.Name = "SharedFiles";
             this.SharedFiles.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.SharedFiles.RowTrackColor = System.Drawing.Color.WhiteSmoke;
@@ -147,8 +170,10 @@
             this.SharedFiles.SmallImageList = null;
             this.SharedFiles.StateImageList = null;
             this.SharedFiles.TabIndex = 0;
-            this.SharedFiles.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.SharedFiles_MouseDoubleClick);
             this.SharedFiles.MouseClick += new System.Windows.Forms.MouseEventHandler(this.SharedFiles_MouseClick);
+            this.SharedFiles.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.SharedFiles_MouseDoubleClick);
+            this.SharedFiles.DragDrop += new System.Windows.Forms.DragEventHandler(this.SharedFiles_DragDrop);
+            this.SharedFiles.DragOver += new System.Windows.Forms.DragEventHandler(this.SharedFiles_DragOver);
             // 
             // shareInfoPanel1
             // 
@@ -191,5 +216,7 @@
         private RiseOp.Interface.TLVex.ContainerListViewEx SharedFiles;
         private System.Windows.Forms.Timer SecondTimer;
         private ShareInfoPanel shareInfoPanel1;
+        private System.Windows.Forms.ToolStripLabel StatusLabel;
+        private System.Windows.Forms.ToolStripButton RefreshButton;
     }
 }

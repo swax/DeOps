@@ -742,6 +742,20 @@ namespace RiseOp
             return true;
         }
 
+        public static void SortedAdd(this ToolStripItemCollection strip, ToolStripMenuItem item)
+        {
+            int i = 0;
+
+            for(i = 0; i < strip.Count; i++)
+                if (string.Compare(strip[i].Text, item.Text) > 0)
+                {
+                    strip.Insert(i, item);
+                    return;
+                }
+
+            strip.Insert(i, item);
+        }
+
         public static byte[] ToBytes(this BitArray array)
         {
             // size info not transmitted, must be send seperately
@@ -1304,6 +1318,16 @@ namespace RiseOp.Implementation
         internal float InOutAvg(int period)
         {
             return Average(In, period) + Average(Out, period);
+        }
+
+        internal float InAvg()
+        {
+            return Average(In, In.Length);
+        }
+
+        internal float OutAvg()
+        {
+            return Average(Out, Out.Length);
         }
 
         internal float Average(CircularBuffer<int> buff, int period)

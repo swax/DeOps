@@ -19,10 +19,10 @@ namespace RiseOp.Services.Sharing
         OpCore Core;
         SharingService Sharing;
 
-        OpShare TheFile;
+        SharedFile TheFile;
         DhtClient Source;
 
-        internal AcceptFileForm(OpCore core, DhtClient client, OpShare share)
+        internal AcceptFileForm(OpCore core, DhtClient client, SharedFile share)
         {
             InitializeComponent();
 
@@ -44,7 +44,7 @@ namespace RiseOp.Services.Sharing
             Sharing.AcceptRequest(Source, TheFile);
 
             // show the user the transfer starting
-            SharingView view = new SharingView(Core);
+            SharingView view = new SharingView(Core, Core.UserID);
 
             if (Core.GuiMain is MainForm)
             {

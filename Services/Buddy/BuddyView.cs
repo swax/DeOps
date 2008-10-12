@@ -32,6 +32,8 @@ namespace RiseOp.Services.Buddy
         Point DragStart = Point.Empty;
         string[] DragBuddies = null;
 
+        bool Interactive;
+        internal bool FirstLineBlank = true;
         StatusPanel SelectionInfo;
 
 
@@ -41,16 +43,15 @@ namespace RiseOp.Services.Buddy
             HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
             AllowDrop = true;
             MultiSelect = true;
-
-            Columns.Add("", 100, System.Windows.Forms.HorizontalAlignment.Left, ColumnScaleStyle.Spring);
         }
 
-        internal void Init(BuddyService buddies, StatusPanel status)
+        internal void Init(BuddyService buddies, StatusPanel status, bool interactive)
         {
             Buddies = buddies;
             Core = buddies.Core;
             Locations = Core.Locations;
 
+            Interactive = interactive;
             SelectionInfo = status;
 
             Buddies.GuiUpdate += new BuddyGuiUpdateHandler(Buddy_Update);
@@ -65,6 +66,8 @@ namespace RiseOp.Services.Buddy
             DragOver += new DragEventHandler(BuddyView_DragOver);
             DragDrop += new DragEventHandler(BuddyView_DragDrop);
 
+            Columns.Add("", 100, System.Windows.Forms.HorizontalAlignment.Left, ColumnScaleStyle.Spring);
+
             SmallImageList = new List<Image>(); // itit here, cause main can re-init
             SmallImageList.Add(new Bitmap(16, 16));
 
@@ -75,6 +78,9 @@ namespace RiseOp.Services.Buddy
 
         void BuddyView_MouseDown(object sender, MouseEventArgs e)
         {
+            if (!Interactive)
+                return;
+
             Dragging = false;
             DragStart = Point.Empty;
 
@@ -234,7 +240,8 @@ namespace RiseOp.Services.Buddy
 
             Items.Clear();
 
-            Items.Add(new BuddyItem());
+            if(FirstLineBlank)
+                Items.Add(new BuddyItem());
                 
             AddSection("Buddies", Online, false);
 
@@ -268,6 +275,9 @@ namespace RiseOp.Services.Buddy
 
         void BuddyList_MouseDoubleClick(object sender, MouseEventArgs e)
         {
+            if (!Interactive)
+                return;
+
             // this gets right click to select item
             BuddyItem clicked = GetItemAt(e.Location) as BuddyItem;
 
@@ -286,6 +296,9 @@ namespace RiseOp.Services.Buddy
 
         private void BuddyList_MouseClick(object sender, MouseEventArgs e)
         {
+            if (!Interactive)
+                return;
+
             // this gets right click to select item
             BuddyItem clicked = GetItemAt(e.Location) as BuddyItem;
 
@@ -337,7 +350,7 @@ namespace RiseOp.Services.Buddy
                 ToolStripMenuItem viewItem = new ToolStripMenuItem("Views", InterfaceRes.views);
 
                 foreach (MenuItemInfo info in extMenus)
-                    viewItem.DropDownItems.Add(new OpMenuItem(clicked.User, project, info.Path, info));
+                    viewItem.DropDownItems.SortedAdd(new OpMenuItem(clicked.User, project, info.Path, info));
 
                 //crit add project specific views
 
@@ -436,6 +449,11 @@ namespace RiseOp.Services.Buddy
                 {
                     MessageBox.Show(ex.Message);
                 }
+        }
+
+        internal List<ulong> GetSelectedIDs()
+        {
+            return SelectedItems.Cast<BuddyItem>().Select(i => i.User).ToList();
         }
     }
 

@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -92,7 +93,7 @@ namespace RiseOp.Interface
             CommandTree.Init(Trust);
             CommandTree.ShowProject(0);
 
-            BuddyList.Init(Core.Buddies, SelectionInfo);
+            BuddyList.Init(Core.Buddies, SelectionInfo, true);
             SelectionInfo.Init(Core);
 
             OnSelectChange(Core.UserID, CommandTree.Project);
@@ -343,7 +344,7 @@ namespace RiseOp.Interface
                 ToolStripMenuItem viewItem = new ToolStripMenuItem("Views", InterfaceRes.views);
 
                 foreach (MenuItemInfo info in extMenus)
-                    viewItem.DropDownItems.Add(new OpMenuItem(item.Link.UserID, CommandTree.Project, info.Path, info));
+                    viewItem.DropDownItems.SortedAdd(new OpMenuItem(item.Link.UserID, CommandTree.Project, info.Path, info));
 
                 treeMenu.Items.Add(viewItem);
             }
@@ -523,13 +524,13 @@ namespace RiseOp.Interface
                     continue;
 
                 if (parts[0] == PlanButton.Text)
-                    PlanButton.DropDownItems.Add(new OpStripItem(id, project, false, parts[1], info));
+                    PlanButton.DropDownItems.SortedAdd(new OpStripItem(id, project, false, parts[1], info));
 
                 else if (parts[0] == CommButton.Text)
-                    CommButton.DropDownItems.Add(new OpStripItem(id, project, false, parts[1], info));
+                    CommButton.DropDownItems.SortedAdd(new OpStripItem(id, project, false, parts[1], info));
 
                 else if (parts[0] == DataButton.Text)
-                    DataButton.DropDownItems.Add(new OpStripItem(id, project, false, parts[1], info));
+                    DataButton.DropDownItems.SortedAdd(new OpStripItem(id, project, false, parts[1], info));
             }
 
 
@@ -666,7 +667,7 @@ namespace RiseOp.Interface
                 service.GetMenuInfo(InterfaceMenuType.Internal, menuList, CommandTree.SelectedLink, SelectedProject);
 
             foreach (MenuItemInfo info in menuList)
-                ComponentNavButton.DropDownItems.Add(new ServiceNavItem(info, CommandTree.SelectedLink, SelectedProject, info.ClickEvent));
+                ComponentNavButton.DropDownItems.SortedAdd(new ServiceNavItem(info, CommandTree.SelectedLink, SelectedProject, info.ClickEvent));
         }
 
         private void PersonNav_Clicked(object sender, EventArgs e)
@@ -681,7 +682,7 @@ namespace RiseOp.Interface
 
         private void PersonNavBrowse_Clicked(object sender, EventArgs e)
         {
-            AddLinks add = new AddLinks(Core.Trust, SelectedProject);
+            AddUsersDialog add = new AddUsersDialog(Core, SelectedProject);
             add.Text = "Select Person";
             add.AddButton.Text = "Select";
             add.MultiSelect = false;
@@ -1231,13 +1232,13 @@ namespace RiseOp.Interface
                     continue;
 
                 if (parts[0] == PlanButton.Text)
-                    plansItem.DropDownItems.Add(new OpStripItem(Core.UserID, project, true, parts[1], info));
+                    plansItem.DropDownItems.SortedAdd(new OpStripItem(Core.UserID, project, true, parts[1], info));
 
                 else if (parts[0] == CommButton.Text)
-                    commItem.DropDownItems.Add(new OpStripItem(Core.UserID, project, true, parts[1], info));
+                    commItem.DropDownItems.SortedAdd(new OpStripItem(Core.UserID, project, true, parts[1], info));
 
                 else if (parts[0] == DataButton.Text)
-                    dataItem.DropDownItems.Add(new OpStripItem(Core.UserID, project, true, parts[1], info));
+                    dataItem.DropDownItems.SortedAdd(new OpStripItem(Core.UserID, project, true, parts[1], info));
             }
 
             collection.Add(plansItem);
@@ -1274,6 +1275,9 @@ namespace RiseOp.Interface
         {
             OnShowExternal(new InfoView(Core, true, false));
         }
+
+
+
     }
 
     class NewsItem : ToolStripMenuItem, IViewParams

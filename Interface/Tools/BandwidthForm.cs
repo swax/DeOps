@@ -21,6 +21,7 @@ namespace RiseOp.Interface.Tools
         Dictionary<RiseOpContext, int> ContextIndex = new Dictionary<RiseOpContext, int>();
         int ContextCount = 1;
 
+        bool Paused;
         int RecordSeconds = 5;
         int AverageSeconds = 5;
 
@@ -66,8 +67,8 @@ namespace RiseOp.Interface.Tools
                 }
             }
 
-            RecordLink.Text = "Record " + RecordSeconds + " seconds";
-            AverageLink.Text = "Average " + AverageSeconds + " seconds";
+            RecordLink.Text = "Recording " + RecordSeconds + " s";
+            AverageLink.Text = "Average over " + AverageSeconds + " s";
 
             RefreshCoreList();
         }
@@ -104,7 +105,8 @@ namespace RiseOp.Interface.Tools
 
         private void SecondTimer_Tick(object sender, EventArgs e)
         {
-            RefreshGraph();
+            if(!Paused)
+                RefreshGraph();
         }
 
         private void RefreshGraph()
@@ -334,7 +336,7 @@ namespace RiseOp.Interface.Tools
             foreach (OpCore core in Cores)
                 core.ResizeBandwidthRecord(seconds);
 
-            RecordLink.Text = "Record " + seconds + " seconds";
+            RecordLink.Text = "Recording " + seconds + " s";
         }
 
         private void AverageLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -352,12 +354,19 @@ namespace RiseOp.Interface.Tools
 
             AverageSeconds = seconds;
 
-            AverageLink.Text = "Average " + seconds + " seconds";
+            AverageLink.Text = "Average over " + seconds + " s";
         }
 
         private void CoresList_SelectedIndexChanged(object sender, EventArgs e)
         {
             RefreshGraph();
+        }
+
+        private void PauseButton_Click(object sender, EventArgs e)
+        {
+            Paused = !Paused;
+
+            PauseButton.Text = Paused ? "Go" : "Pause";
         }
     }
 

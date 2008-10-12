@@ -92,7 +92,7 @@ namespace RiseOp.Services.Storage
 
         private void AddLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            AddLinks form = new AddLinks(Trust, View.ProjectID);
+            AddUsersDialog form = new AddUsersDialog(Core, View.ProjectID);
 
 
             if (form.ShowDialog(this) == DialogResult.OK)

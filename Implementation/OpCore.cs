@@ -183,13 +183,14 @@ namespace RiseOp.Implementation
             if (!User.Settings.GlobalIM)
                 AddService(new TrustService(this));
 
+
             // optional
             AddService(new IMService(this));
+            AddService(new ChatService(this));
             AddService(new SharingService(this));
             
             if (!User.Settings.GlobalIM)
-            {
-                AddService(new ChatService(this));
+            { 
                 AddService(new ProfileService(this));
                 AddService(new MailService(this));
                 AddService(new BoardService(this));

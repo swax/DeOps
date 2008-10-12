@@ -7,6 +7,7 @@ using System.Text;
 using System.Windows.Forms;
 
 using RiseOp.Implementation;
+using RiseOp.Interface;
 using RiseOp.Services.Trust;
 
 namespace RiseOp.Services.Plan
@@ -74,13 +75,13 @@ namespace RiseOp.Services.Plan
 
         private void PickLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            AddLinks add = new AddLinks(Core.Trust, Editing.Project);
+            AddUsersDialog add = new AddUsersDialog(Core, Editing.Project);
 
             // force root to self, only if self is not in a loop, in which case anyone in loop can be assigned sub-goals
             //if(!Core.Links.LocalLink.LoopRoot.ContainsKey(Editing.Project)), assignment loops, not obvious behavior
-                add.PersonTree.ForceRootID = Core.UserID;
+                add.TrustTree.ForceRootID = Core.UserID;
             
-            add.PersonTree.HideUnlinked = true;
+            add.TrustTree.HideUnlinked = true;
             add.ProjectCombo.Visible = false;
 
             if (add.ShowDialog(this) == DialogResult.OK)

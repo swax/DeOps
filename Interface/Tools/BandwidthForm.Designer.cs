@@ -32,6 +32,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(BandwidthForm));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.BandwidthGraph = new ZedGraph.ZedGraphControl();
+            this.PauseButton = new System.Windows.Forms.Button();
             this.CoresList = new System.Windows.Forms.ListView();
             this.columnHeader3 = new System.Windows.Forms.ColumnHeader();
             this.columnHeader4 = new System.Windows.Forms.ColumnHeader();
@@ -67,6 +68,7 @@
             // 
             // splitContainer1.Panel2
             // 
+            this.splitContainer1.Panel2.Controls.Add(this.PauseButton);
             this.splitContainer1.Panel2.Controls.Add(this.CoresList);
             this.splitContainer1.Panel2.Controls.Add(this.ServiceList);
             this.splitContainer1.Panel2.Controls.Add(this.AverageLink);
@@ -97,6 +99,16 @@
             this.BandwidthGraph.ScrollMinY2 = 0;
             this.BandwidthGraph.Size = new System.Drawing.Size(560, 334);
             this.BandwidthGraph.TabIndex = 0;
+            // 
+            // PauseButton
+            // 
+            this.PauseButton.Location = new System.Drawing.Point(257, 174);
+            this.PauseButton.Name = "PauseButton";
+            this.PauseButton.Size = new System.Drawing.Size(75, 23);
+            this.PauseButton.TabIndex = 27;
+            this.PauseButton.Text = "Pause";
+            this.PauseButton.UseVisualStyleBackColor = true;
+            this.PauseButton.Click += new System.EventHandler(this.PauseButton_Click);
             // 
             // CoresList
             // 
@@ -159,23 +171,25 @@
             // AverageLink
             // 
             this.AverageLink.AutoSize = true;
-            this.AverageLink.Location = new System.Drawing.Point(254, 151);
+            this.AverageLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
+            this.AverageLink.Location = new System.Drawing.Point(254, 228);
             this.AverageLink.Name = "AverageLink";
-            this.AverageLink.Size = new System.Drawing.Size(101, 13);
+            this.AverageLink.Size = new System.Drawing.Size(88, 13);
             this.AverageLink.TabIndex = 24;
             this.AverageLink.TabStop = true;
-            this.AverageLink.Text = "Average 5 Seconds";
+            this.AverageLink.Text = "Average over 5 s";
             this.AverageLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.AverageLink_LinkClicked);
             // 
             // RecordLink
             // 
             this.RecordLink.AutoSize = true;
-            this.RecordLink.Location = new System.Drawing.Point(254, 133);
+            this.RecordLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
+            this.RecordLink.Location = new System.Drawing.Point(254, 210);
             this.RecordLink.Name = "RecordLink";
-            this.RecordLink.Size = new System.Drawing.Size(96, 13);
+            this.RecordLink.Size = new System.Drawing.Size(59, 13);
             this.RecordLink.TabIndex = 23;
             this.RecordLink.TabStop = true;
-            this.RecordLink.Text = "Record 5 Seconds";
+            this.RecordLink.Text = "Record 5 s";
             this.RecordLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.RecordLink_LinkClicked);
             // 
             // RudpRadio
@@ -307,5 +321,6 @@
         private System.Windows.Forms.ListView CoresList;
         private System.Windows.Forms.ColumnHeader columnHeader3;
         private System.Windows.Forms.ColumnHeader columnHeader4;
+        private System.Windows.Forms.Button PauseButton;
     }
 }

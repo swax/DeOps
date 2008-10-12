@@ -750,8 +750,7 @@ namespace RiseOp.Interface.TLVex
 
 	[DefaultProperty("Items")]
 	[ToolboxItem(true)]
-	[ToolboxBitmap(typeof(ContainerListViewEx), "Resources.listview.bmp")]
-	public class ContainerListViewEx: Control
+	public class ContainerListViewEx: UserControl
 	{
 		#region Events
 		public event LabelEditEventHandler AfterLabelEdit;
@@ -1019,9 +1018,14 @@ namespace RiseOp.Interface.TLVex
 
 			//base.BackColor = SystemColors.Window;
 
-			SetStyle(ControlStyles.AllPaintingInWmPaint|ControlStyles.ResizeRedraw|
-				ControlStyles.Opaque|ControlStyles.UserPaint|ControlStyles.DoubleBuffer|
-				ControlStyles.Selectable|ControlStyles.UserMouse, true);
+            /*SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.ResizeRedraw |
+                ControlStyles.Opaque | ControlStyles.UserPaint | ControlStyles.DoubleBuffer |
+                ControlStyles.Selectable | ControlStyles.UserMouse, true);*/
+
+            SetStyle(ControlStyles.UserPaint, true);
+            SetStyle(ControlStyles.AllPaintingInWmPaint, true);
+            SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
+     
 
 			this.BackColor = SystemColors.Window;
 
@@ -1192,7 +1196,7 @@ namespace RiseOp.Interface.TLVex
 		Description("Specifies what style border the control has."),
 		DefaultValue(BorderStyle.Fixed3D)
 		]
-        public BorderStyle BorderStyle
+        public new BorderStyle BorderStyle
         {
             get { return borderstyle; }
             set
@@ -2580,7 +2584,8 @@ namespace RiseOp.Interface.TLVex
 		protected virtual void DrawRows(Graphics g, Rectangle r)
 		{
 			// Don't paint if in transaction
-			if (this.InUpdateTransaction) return;
+			if (this.InUpdateTransaction) 
+                return;
 
 			CalcSpringWids(r);
 

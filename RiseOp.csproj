@@ -216,7 +216,7 @@
     <Compile Include="Services\Board\BoardService.cs" />
     <Compile Include="Services\Buddy\BuddyService.cs" />
     <Compile Include="Services\Buddy\BuddyView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Services\Buddy\res\BuddyRes.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -308,7 +308,7 @@
       <DependentUpon>IMRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Services\Trust\LinkTree.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Services\Trust\RemoveLinks.cs">
       <SubType>Form</SubType>
@@ -391,11 +391,11 @@
       <DependentUpon>ScheduleView.cs</DependentUpon>
     </Compile>
     <Compile Include="Services\Plan\PlanPackets.cs" />
-    <Compile Include="Services\Trust\AddLinks.cs">
+    <Compile Include="Interface\AddUsersDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Services\Trust\AddLinks.Designer.cs">
-      <DependentUpon>AddLinks.cs</DependentUpon>
+    <Compile Include="Interface\AddUsersDialog.Designer.cs">
+      <DependentUpon>AddUsersDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="Services\Profile\EditTemplate.cs">
       <SubType>Form</SubType>
@@ -587,12 +587,12 @@
     <Compile Include="Interface\TrayLock.cs" />
     <Compile Include="Interface\Views\ColorTable.cs" />
     <Compile Include="Interface\Views\TreeListViewEx\ContainerListView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Interface\Views\TreeListViewEx\IParentChildList.cs" />
     <Compile Include="Interface\Views\TreeListViewEx\StringTools.cs" />
     <Compile Include="Interface\Views\TreeListViewEx\TreeListView.cs">
-      <SubType>Component</SubType>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Interface\Views\ViewShell.cs">
       <SubType>UserControl</SubType>
@@ -1053,9 +1053,9 @@
       <SubType>Designer</SubType>
       <DependentUpon>ScheduleView.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Services\Trust\AddLinks.resx">
+    <EmbeddedResource Include="Interface\AddUsersDialog.resx">
       <SubType>Designer</SubType>
-      <DependentUpon>AddLinks.cs</DependentUpon>
+      <DependentUpon>AddUsersDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Profile\EditProfile.resx">
       <SubType>Designer</SubType>

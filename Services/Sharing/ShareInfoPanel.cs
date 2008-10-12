@@ -32,6 +32,7 @@ namespace RiseOp.Services.Sharing
                                 <ul style='margin-top:3'>
                                     <li>Files in your Share are only available when you are online.</li>
                                     <li>To share a file give someone the riseop:// link associated with the file.</li>
+                                    <li>Others can remotely browse your files marked 'public'</li>
                                     <li>When sending to multiple people, transfers are automatically multi-sourced to speed the process.</li>
                                 </ul>
 

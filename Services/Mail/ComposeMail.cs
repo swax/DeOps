@@ -166,7 +166,7 @@ namespace RiseOp.Services.Mail
 
         private void BrowseTo_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            AddLinks add = new AddLinks(Core.Trust, 0);
+            AddUsersDialog add = new AddUsersDialog(Core, 0);
 
             string prefix = ToTextBox.Text.Length > 0 ? ", " : "";
 
