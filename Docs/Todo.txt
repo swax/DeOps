@@ -14,7 +14,7 @@ IM tool bar - formatting drop down, send file, add buddy, block
 	if no rooms, show create room, else just show current rooms
 	invite should also use custom icon, with some info, member count in invite?
 	
-get chat working in global IM mode
+get chat working in global IM mode5
 	dont let user send blank lines
 	when switching rooms, put focus on chat input
 	show room invite on main form when view not active, center parent, same with transfer request/send
@@ -74,7 +74,9 @@ auto update
 	update service notified, starts transfer
 		alerts user when transfer is complete
 	uses built in jmg public key to verify update file is valid
-	user should only have to download once - rest d/led through network
+	user should only have to download once - rest d/led through networkq
+	if user using old version, send direct store request with signed new version info
+		download - if not downloaded already - show user, update ready to install, yes - start installer, close riseop
 
 release
 	october is alpha alpha month - make some user friends
@@ -86,7 +88,6 @@ release
 	udpate about page - saying if interested and very skilled, possible work options
 		goals 3-4 expert programmers at 7% equity
 	have a way to turn off the website to new users
-	put version info on splash
 	put non-commercial use in license
 	freeloader version
 	small friend test dad, moe, bernard, andrey, justin ~7 o'clock - 10/3
@@ -112,7 +113,6 @@ set global im web cache
 
 login - instead of op, put profile
 if globalIM profile not detected, show link in red on login: Create Global IM Profile
-in link selection change project to 'group' and include buddies, main to primary
 project coming before primary in nar bar drop down
 instead of 'trust unconfirmed' after link, make color red, and then in extended info put reason in red
 
@@ -123,11 +123,7 @@ setting - save IM mode, buddies or structure view on close
 make sure diff networks use diff webcaches in sim
 	
 Buddy list Component
-
-	Chat in global buddy system
-
 	buddy - local synced only when trust is enabled
-
 	global list saved with op list - if association made
 		
 		
