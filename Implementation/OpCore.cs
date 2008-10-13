@@ -599,6 +599,10 @@ namespace RiseOp.Implementation
 
         internal void IndexName(ulong user, string name)
         {
+            Debug.Assert(name != null);
+            if (name == null) 
+                return;
+
             if (NameMap.SafeContainsKey(user))
                 return;
 

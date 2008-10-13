@@ -553,7 +553,7 @@ namespace RiseOp.Interface.Tools
 					xStr(info.Data.IP),		
 					xStr(info.Data.Proxies.Count),
 					xStr(info.Data.Place),
-					xStr(info.Data.TTL),
+					xStr(0),
 					xStr(info.Data.Version)
 				}));
         }
@@ -724,7 +724,7 @@ namespace RiseOp.Interface.Tools
             foreach (RudpSession session in network.RudpControl.SessionMap.Values)
                 listValues.Items.Add(new ListViewItem(new string[]
 				{
-					xStr(session.Name),
+					xStr(Core.GetName(session.UserID)),
 					IDtoStr(session.UserID),		
 					xStr(session.ClientID),
 					xStr(session.Status),

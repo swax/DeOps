@@ -40,8 +40,10 @@ namespace RiseOp.Services.Chat
 
             RoomsButton.Visible  = true;
             RoomSeparator.Visible = true;
-            LocalButton.Visible   = true;
-            LiveButton.Visible    = true;
+
+            LocalButton.Visible = (Chat.Core.Trust != null);
+            LiveButton.Visible = (Chat.Core.Trust != null);
+
             CustomButton.Visible  = false;
             
             JoinButton.Visible   = false;
@@ -271,21 +273,18 @@ namespace RiseOp.Services.Chat
 
         private void JoinButton_Click(object sender, EventArgs e)
         {
-            Chat.Core.RunInCoreBlocked(delegate()
-            {
-                if (Custom != null)
-                    Chat.JoinRoom(Custom);
-            });
+            if (Custom == null)
+                return;
 
-            Chat.Refresh.Invoke(); // all interfaces need to reflect this
+            Chat.JoinRoom(Custom);
         }
 
         private void LeaveButton_Click(object sender, EventArgs e)
         {
-            if (Custom != null)
-                Chat.LeaveRoom(Custom);
+            if (Custom == null)
+                return;
 
-            Chat.Refresh.Invoke(); // all interfaces need to reflect this
+            Chat.LeaveRoom(Custom);
         }
 
 
@@ -363,13 +362,15 @@ namespace RiseOp.Services.Chat
 
         void Chat_Invited(ulong inviter, ChatRoom room)
         {
+            // jim has invited you to a public chat room
+            //    Room Name: adfadf
+            // Would you like to join?
+           
+
             if (MessageBox.Show("You have been invited by " + Chat.Core.GetName(inviter) + " to the room\r\n" + room.Title + "\r\nJoin now?", "Invite", MessageBoxButtons.YesNo) != DialogResult.Yes)
                 return;
 
-            Chat.Core.RunInCoreBlocked(delegate()
-            {
-                Chat.JoinRoom(room);
-            });
+            Chat.JoinRoom(room);
 
             SetCustomRoom(room);
         }

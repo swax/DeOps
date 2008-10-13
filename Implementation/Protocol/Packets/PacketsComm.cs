@@ -307,12 +307,12 @@ namespace RiseOp.Implementation.Protocol.Comm
 
 	internal class SessionAck : G2Packet
 	{
-        const byte Packet_GMT = 0x10;
-        const byte Packet_Features = 0x20;
+        const byte Packet_Name = 0x10;
 
 
-        internal short GmtOffset;
-        internal byte  Features;
+        // we can trust this because name is encoded in outbound key that could only be aquired by
+        // decrypting the outound key in the session request with the local private key
+        internal string Name;	
 
 
 		internal SessionAck()
@@ -325,8 +325,7 @@ namespace RiseOp.Implementation.Protocol.Comm
             {
                 G2Frame sa = protocol.WritePacket(null, CommPacket.SessionAck, null);
 
-                protocol.WritePacket(sa, Packet_GMT, BitConverter.GetBytes(GmtOffset));
-                protocol.WritePacket(sa, Packet_Features, BitConverter.GetBytes(Features));
+                protocol.WritePacket(sa, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
 
                 return protocol.WriteFinish();
             }
@@ -340,13 +339,8 @@ namespace RiseOp.Implementation.Protocol.Comm
 
 			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
-                if (child.Name == Packet_GMT)
-                    if (G2Protocol.ReadPayload(child) && child.PayloadSize == 2)
-                        sa.GmtOffset = (short)BitConverter.ToUInt16(child.Data, child.PayloadPos);
-
-                if (child.Name == Packet_Features)
-                    if (G2Protocol.ReadPayload(child) && child.PayloadSize == 1)
-                        sa.Features = child.Data[child.PayloadPos];
+                if (child.Name == Packet_Name)
+                    sa.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
 			}
 
 			return sa;
@@ -448,13 +442,11 @@ namespace RiseOp.Implementation.Protocol.Comm
 
 	internal class KeyAck : G2Packet
 	{
-        const byte Packet_Name = 0x10;
-        const byte Packet_Key = 0x20;
+        const byte Packet_Key = 0x10;
 
 
         internal byte[] PublicKey;
-        internal string Name;	
-	
+
 
 		internal KeyAck()
 		{
@@ -466,7 +458,6 @@ namespace RiseOp.Implementation.Protocol.Comm
             {
                 G2Frame ka = protocol.WritePacket(null, CommPacket.KeyAck, null);
 
-                protocol.WritePacket(ka, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
                 protocol.WritePacket(ka, Packet_Key, PublicKey);
 
                 return protocol.WriteFinish();
@@ -483,9 +474,6 @@ namespace RiseOp.Implementation.Protocol.Comm
             {
                 if (!G2Protocol.ReadPayload(child))
                     continue ;
-
-                if (child.Name == Packet_Name)
-                    ka.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
 
                 if (child.Name == Packet_Key)
                     ka.PublicKey = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);

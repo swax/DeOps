@@ -43,6 +43,8 @@ namespace RiseOp.Services.Sharing
         {
             Sharing.AcceptRequest(Source, TheFile);
 
+            // try to find an external existing view and use it, the make a new one
+
             // show the user the transfer starting
             SharingView view = new SharingView(Core, Core.UserID);
 

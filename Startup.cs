@@ -227,7 +227,7 @@ namespace RiseOp
                 {
                     activeTransfers += core.Transfers.ActiveUploads;
 
-                    if (next == null || next.Transfers.NeedUploadWeight > core.Transfers.NeedUploadWeight)
+                    if (next == null || core.Transfers.NeedUploadWeight > next.Transfers.NeedUploadWeight)
                         next = core;
                 }
             });

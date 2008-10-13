@@ -27,8 +27,6 @@ namespace RiseOp.Implementation.Transport
         internal SessionStatus Status = SessionStatus.Connecting;
 
 		// extra info
-        internal string Name;
-
         internal string CloseMsg;
 
 		// negotiation
@@ -84,8 +82,6 @@ namespace RiseOp.Implementation.Transport
 
             NegotiateTimeout = Core.TimeNow.AddSeconds(10);
             Startup = Core.TimeNow;
-
-            Name = Core.GetName(UserID);
 
             //DebugWriter = new FileStream("Log " + Network.Profile.ScreenName + "-" + Buddy.ScreenName + "-" + Comm.PeerID.ToString() + ".txt", FileMode.CreateNew, FileAccess.Write);
 		}
@@ -333,7 +329,6 @@ namespace RiseOp.Implementation.Transport
 		{
 			KeyAck keyAck    = new KeyAck();
             keyAck.PublicKey = Core.User.Settings.KeyPublic;
-            keyAck.Name      = Core.User.Settings.UserName;
 
 			Log("Key Ack Sent");
 
@@ -343,12 +338,10 @@ namespace RiseOp.Implementation.Transport
 		internal void Receive_KeyAck(G2ReceivedPacket embeddedPacket)
 		{
 			KeyAck keyAck = KeyAck.Decode(embeddedPacket);
-            Name = keyAck.Name;
-
+  
             Log("Key Ack Received");
 
             Core.IndexKey(UserID, ref keyAck.PublicKey);
-            Core.IndexName(UserID, Name);
 
             // send session request with encrypted current key
             Send_SessionRequest();
@@ -453,6 +446,7 @@ namespace RiseOp.Implementation.Transport
 		internal void Send_SessionAck()
 		{
 			SessionAck ack = new SessionAck();
+            ack.Name = Core.User.Settings.UserName;
 
             Log("Session Ack Sent");
 
@@ -462,6 +456,8 @@ namespace RiseOp.Implementation.Transport
 		internal void Receive_SessionAck(G2ReceivedPacket embeddedPacket)
 		{
 			SessionAck ack = SessionAck.Decode(embeddedPacket);
+
+            Core.IndexName(UserID, ack.Name);
 
             Log("Session Ack Received");
 
@@ -576,12 +572,6 @@ namespace RiseOp.Implementation.Transport
 
 		internal void Log(string entry)
 		{
-            string name = Comm.PeerID.ToString();
-
-            if (Name != null)
-                name = Name;
-
-            
             //PeerID 10:23:250 : 
             string prefix = Comm.PeerID.ToString() + " ";
             prefix += Core.TimeNow.Minute.ToString() + ":" + Core.TimeNow.Second.ToString();
@@ -591,7 +581,7 @@ namespace RiseOp.Implementation.Transport
             else
                 prefix += ":" + Core.TimeNow.Millisecond.ToString().Substring(0, 2);
 
-            Core.Network.UpdateLog("RUDP " + name, prefix + ": " + entry);
+            Core.Network.UpdateLog("RUDP " + Core.GetName(UserID), prefix + ": " + entry);
 
             //byte[] data = strEnc.GetBytes(Comm.PeerID.ToString() + ": " + entry + "\r\n");
             //DebugWriter.Write(data, 0, data.Length);

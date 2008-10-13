@@ -28,7 +28,6 @@ namespace RiseOp.Interface
         /// </summary>
         private void InitializeComponent()
         {
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             this.TheCancelButton = new System.Windows.Forms.Button();
             this.AddButton = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
@@ -114,18 +113,6 @@ namespace RiseOp.Interface
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.BuddyList.BackColor = System.Drawing.SystemColors.Window;
-            toggleColumnHeader1.Hovered = false;
-            toggleColumnHeader1.Image = null;
-            toggleColumnHeader1.Index = 0;
-            toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
-            toggleColumnHeader1.Selected = false;
-            toggleColumnHeader1.Text = "";
-            toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
-            toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 220;
-            this.BuddyList.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
-            toggleColumnHeader1});
             this.BuddyList.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.BuddyList.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.BuddyList.DisableHorizontalScroll = true;

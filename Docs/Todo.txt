@@ -1,17 +1,20 @@
 
+if on gloal im
+	only show send share list if node is on budby list
+	only show chat invite if node is on buddy list
+	
+color text not sent as grey, put special message after, not on another line in bold
+if left room and chat message, gray that out as well
+might want to make pac man graphci glass like, or just new icon for rooms
+make room button red when new text in sub room
+
 IM tool bar - formatting drop down, send file, add buddy, block
 	maybe put into input text toolbar a formatting off button that is on by default - msgs are encoded txt/rtf/html(for future)
 	block - blocks im, chat requests, send file requests
-	more complete debugging info of chat system
 	if no rooms, show create room, else just show current rooms
-	dont cache number stings as name, allow override
-		when chat invite sent to someone who doesnt know who we are, make sure we get ident before showing
-		invite should also use custom icon, with some info, member count in invite?
-	put space block between room name and invite button
-	remove local/live room vis when trust not active
+	invite should also use custom icon, with some info, member count in invite?
 	
 get chat working in global IM mode
-
 	dont let user send blank lines
 	when switching rooms, put focus on chat input
 	show room invite on main form when view not active, center parent, same with transfer request/send
@@ -24,7 +27,13 @@ user 2 user - share service
 on profile at bottom in red show right click to edit, only if user is local (local msg)
 
 research upnp / windows firewall
+Dont diplay IP in location, display unknown, or just non and enumerate #1
+	is incoming tcp still the benchmark for open? doesnt seem like many alternatives
 
+webcache
+	publish working? run sim for hour, exception?
+	have riseop.com cache work for lookup and global IM nets
+	any special code for lookup web cache that needs to be used for global?
 
 buddie lists / localsync still being published on global IM
 	buddy still needs to publish self loc around local ID

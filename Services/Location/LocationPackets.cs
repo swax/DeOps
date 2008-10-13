@@ -27,9 +27,9 @@ namespace RiseOp.Services.Location
         const byte Packet_Source    = 0x20;
         const byte Packet_IP        = 0x30;
         const byte Packet_Proxies   = 0x40;
-        const byte Packet_Place     = 0x50;
-        const byte Packet_Version   = 0x60;
-        const byte Packet_TTL       = 0x70;
+        const byte Packet_Name      = 0x50;
+        const byte Packet_Place     = 0x60;
+        const byte Packet_Version   = 0x70;
         const byte Packet_GMTOffset = 0x80;
         const byte Packet_Away      = 0x90;
         const byte Packet_AwayMsg   = 0xA0;
@@ -42,8 +42,8 @@ namespace RiseOp.Services.Location
         internal DhtSource Source;
         internal IPAddress IP;
         internal List<DhtAddress> Proxies = new List<DhtAddress>();
+        internal string Name;
         internal string Place = "";
-        internal uint TTL;
         internal uint Version;
         internal List<PatchTag> Tags = new List<PatchTag>();
 
@@ -70,8 +70,8 @@ namespace RiseOp.Services.Location
                 protocol.WritePacket(loc, Packet_Key, Key);
                 Source.WritePacket(protocol, loc, Packet_Source);
                 protocol.WritePacket(loc, Packet_IP, IP.GetAddressBytes());
+                protocol.WritePacket(loc, Packet_Name, UTF8Encoding.UTF8.GetBytes(Name));
                 protocol.WritePacket(loc, Packet_Place, UTF8Encoding.UTF8.GetBytes(Place));
-                protocol.WritePacket(loc, Packet_TTL, CompactNum.GetBytes(TTL));
                 protocol.WritePacket(loc, Packet_Version, CompactNum.GetBytes(Version));
                 protocol.WritePacket(loc, Packet_GMTOffset, BitConverter.GetBytes(GmtOffset));
                 protocol.WritePacket(loc, Packet_Away, BitConverter.GetBytes(Away));
@@ -152,12 +152,12 @@ namespace RiseOp.Services.Location
                         loc.Proxies.Add( DhtAddress.ReadPacket(child) );
                         break;
 
-                    case Packet_Place:
-                        loc.Place = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                    case Packet_Name:
+                        loc.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
-                    case Packet_TTL:
-                        loc.TTL = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
+                    case Packet_Place:
+                        loc.Place = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Version:

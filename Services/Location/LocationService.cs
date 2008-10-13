@@ -407,7 +407,8 @@ namespace RiseOp.Services.Location
                 }
             }
 
-            
+            Core.IndexName(location.UserID, location.Name);
+        
             // notify components of new versions (usually just localsync service signed up for this)
             DhtAddress address = new DhtAddress(location.IP, location.Source);
 
@@ -463,7 +464,6 @@ namespace RiseOp.Services.Location
             LocationData location = new LocationData();
 
             location.Key = Core.User.Settings.KeyPublic;
-            location.TTL = LocationData.OP_TTL;
             location.IP = Core.LocalIP;
             location.Source = Network.GetLocalSource();
 
@@ -478,6 +478,7 @@ namespace RiseOp.Services.Location
             foreach (TcpConnect socket in Network.TcpControl.ProxyServers)
                 location.Proxies.Add(new DhtAddress(socket.RemoteIP, socket));
 
+            location.Name = Core.User.Settings.UserName;
             location.Place = Core.User.Settings.Location;
             location.GmtOffset = System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes;
             location.Away = LocalAway;

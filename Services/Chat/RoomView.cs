@@ -233,7 +233,7 @@ namespace RiseOp.Services.Chat
             // name, in bold, blue for incoming, red for outgoing
             if (message.System)
                 MessageTextBox.SelectionColor = Color.Black;
-            else if (message.Source == Chat.Core.UserID && message.ClientID == Core.Network.Local.ClientID)
+            else if (message.UserID == Chat.Core.UserID && message.ClientID == Core.Network.Local.ClientID)
                 MessageTextBox.SelectionColor = Color.Red;
             else
                 MessageTextBox.SelectionColor = Color.Blue;
@@ -242,7 +242,7 @@ namespace RiseOp.Services.Chat
 
             string prefix = " ";
             if (!message.System)
-                prefix += Core.GetName(message.Source);
+                prefix += Chat.GetNameAndLocation(message);
 
             if (MessageTextBox.Text.Length != 0)
                 prefix = "\n" + prefix;
@@ -261,7 +261,7 @@ namespace RiseOp.Services.Chat
             }
 
             if (!message.System)
-                prefix += Chat.LocationSuffix(message.Source, message.ClientID) + ": ";
+                prefix += ": ";
 
             MessageTextBox.AppendText(prefix);
 

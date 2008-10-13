@@ -9,7 +9,9 @@ using System.Windows.Forms;
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
 using RiseOp.Implementation.Transport;
+
 using RiseOp.Services.Trust;
 using RiseOp.Services.Location;
 
@@ -279,6 +281,12 @@ namespace RiseOp.Services.Chat
 
         internal void JoinRoom(ChatRoom room)
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(() => JoinRoom(room));
+                return;
+            }
+
             if (room.Kind != RoomKind.Public && room.Kind != RoomKind.Private)
             {
                 JoinCommand(room.ProjectID, room.Kind);
@@ -297,10 +305,14 @@ namespace RiseOp.Services.Chat
             SendWhoRequest(room);
 
             ConnectRoom(room);
+
+            Core.RunInGuiThread(Refresh);
+            Core.RunInGuiThread(room.MembersUpdate);
         }
 
         internal void JoinCommand(uint project, RoomKind kind)
         {
+
             uint id = GetRoomID(project, kind);
 
             // create if doesnt exist
@@ -454,6 +466,7 @@ namespace RiseOp.Services.Chat
             SendStatus(room);
 
             //update interface
+            Core.RunInGuiThread(Refresh);
             Core.RunInGuiThread(room.MembersUpdate);
         }
 
@@ -532,7 +545,7 @@ namespace RiseOp.Services.Chat
             });
 
             if (!sent)
-                ProcessMessage(room, new ChatMessage(Core, "Could not send message, not connected to anyone", true));
+                ProcessMessage(room, "Could not send message, not connected to anyone");
         }
 
 
@@ -601,7 +614,7 @@ namespace RiseOp.Services.Chat
                             {
                                 session.SendData(ServiceID, 0, room.Invites[session.UserID].First, true);
                                 room.Invites[session.UserID].Second.Add(session.ClientID);
-                                AlertInviteSent(room, session);
+                                ProcessMessage(room, "Invite sent to " + GetNameAndLocation(session));
                                 SendWhoResponse(room, session);
                             }
                             // else private room and we are not the host, send proof we belong here
@@ -671,6 +684,11 @@ namespace RiseOp.Services.Chat
             });
         }
 
+        // system message
+        private void ProcessMessage(ChatRoom room, string text)
+        {
+            ProcessMessage(room, new ChatMessage(Core, text, true));
+        }
 
         private void ProcessMessage(ChatRoom room, ChatMessage message)
         {
@@ -694,9 +712,14 @@ namespace RiseOp.Services.Chat
                     // remove from room
                     if (!status.ActiveRooms.Contains(room.RoomID) && room.Members.SafeContains(session.UserID))
                     {
-                        if(!IsCommandRoom(room.Kind))
+                        if (!IsCommandRoom(room.Kind))
+                        {
+                            if (room.Members.SafeContains(session.UserID))
+                                ProcessMessage(room, GetNameAndLocation(session) + " left the room");
+                            
                             room.RemoveMember(session.UserID);
-                        
+                        }
+
                         update = true;
                     }
 
@@ -709,6 +732,9 @@ namespace RiseOp.Services.Chat
                         // if room private check that sender is verified
                         if (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.UserID))
                             continue;
+
+                        if (!room.Members.SafeContains(session.UserID))
+                            ProcessMessage(room, GetNameAndLocation(session) + " joined the room");
 
                         room.AddMember(session.UserID);
                         update = true;
@@ -793,17 +819,21 @@ namespace RiseOp.Services.Chat
             {
                 session.SendData(ServiceID, 0, invite, true);
                 room.Invites[id].Second.Add(session.ClientID);
-                AlertInviteSent(room, session);
+                ProcessMessage(room, "Invite sent to " + GetNameAndLocation(session));
                 SendStatus(room); // so we get added as active to new room invitee creates
                 SendWhoResponse(room, session);
             }
         }
 
-        private void AlertInviteSent(ChatRoom room, RudpSession session)
+        internal string GetNameAndLocation(DhtClient client)
         {
-            // Invite sent to Bob @Home
+            string text = Core.GetName(client.UserID);
 
-            ProcessMessage(room, new ChatMessage(Core, "Invite sent to " + Core.GetName(session.UserID) + LocationSuffix(session.UserID, session.ClientID), true));
+            // only show user's location if more than one are active
+            if (Core.Locations.ActiveClientCount(client.UserID) > 1)
+                text += " @" + Core.Locations.GetLocationName(client.UserID, client.ClientID);
+
+            return text;
         }
 
         void SendInviteProof(ChatRoom room)
@@ -1011,16 +1041,6 @@ namespace RiseOp.Services.Chat
                 ConnectRoom(room); 
             }
         }
-
-        internal string LocationSuffix(ulong user, ushort client)
-        {
-            // only show user's location if more than one are active
-
-            if (Core.Locations.ActiveClientCount(user) > 1)
-                return " @" + Core.Locations.GetLocationName(user, client);
-
-            return "";
-        }
     }
 
 
@@ -1113,18 +1133,16 @@ namespace RiseOp.Services.Chat
         }
     }
 
-    internal class ChatMessage
+    internal class ChatMessage : DhtClient
     {
         internal bool       System;
-        internal ulong      Source;
-        internal ushort     ClientID;
         internal DateTime   TimeStamp;
         internal string     Text;
 
 
         internal ChatMessage(OpCore core, string text, bool system)
         {
-            Source = core.UserID;
+            UserID = core.UserID;
             ClientID = core.Network.Local.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;
@@ -1133,7 +1151,7 @@ namespace RiseOp.Services.Chat
 
         internal ChatMessage(OpCore core, RudpSession session, string text)
         {
-            Source = session.UserID;
+            UserID = session.UserID;
             ClientID = session.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;

@@ -41,6 +41,7 @@ namespace RiseOp.Services.Chat
             this.LeaveButton = new System.Windows.Forms.ToolStripButton();
             this.JoinButton = new System.Windows.Forms.ToolStripButton();
             this.FlashTimer = new System.Windows.Forms.Timer(this.components);
+            this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.ViewContainer.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -66,6 +67,7 @@ namespace RiseOp.Services.Chat
             this.LocalButton,
             this.LiveButton,
             this.CustomButton,
+            this.toolStripLabel1,
             this.InviteButton,
             this.LeaveButton,
             this.JoinButton});
@@ -154,6 +156,12 @@ namespace RiseOp.Services.Chat
             this.FlashTimer.Interval = 500;
             this.FlashTimer.Tick += new System.EventHandler(this.FlashTimer_Tick);
             // 
+            // toolStripLabel1
+            // 
+            this.toolStripLabel1.Name = "toolStripLabel1";
+            this.toolStripLabel1.Size = new System.Drawing.Size(16, 22);
+            this.toolStripLabel1.Text = "   ";
+            // 
             // ChatView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -184,6 +192,7 @@ namespace RiseOp.Services.Chat
         private System.Windows.Forms.ToolStripDropDownButton RoomsButton;
         private System.Windows.Forms.Timer FlashTimer;
         private System.Windows.Forms.ToolStripButton CustomButton;
+        private System.Windows.Forms.ToolStripLabel toolStripLabel1;
 
     }
 }
