@@ -34,6 +34,39 @@ namespace RiseOp.Interface
             }
         }
 
+        // Default Plain Text
+        bool PlainText;
+
+        public bool PlainTextMode
+        {
+            get
+            {
+                return PlainText;
+            }
+            set
+            {
+                PlainText = value;
+                FontButtonsVisible(!value);
+            }
+        }
+
+        // IM Buttons
+        bool _IMButtons;
+
+        public bool IMButtons
+        {
+            get
+            {
+                return _IMButtons;
+            }
+            set
+            {
+                _IMButtons = value;
+                SendFileButton.Visible = value;
+                BlockButton.Visible = value;
+            }
+        }
+
         // read only
         public bool ReadOnly
         {
@@ -150,19 +183,6 @@ namespace RiseOp.Interface
             InputBox.SelectionColor = dialog.Color;
 
             InputBox.Select();
-
-            /* RClick font selection
-             FontDialog dialog = new FontDialog();
-
-			dialog.Font = TextBox.SelectionFont;
-
-			if(dialog.ShowDialog(this) != DialogResult.OK)
-				return;
-
-			TextBox.SelectionFont = dialog.Font;
-
-			TextBox.Focus();
-             */
         }
 
 
@@ -215,28 +235,55 @@ namespace RiseOp.Interface
             System.Diagnostics.Process.Start(e.LinkText);
         }
 
-        private void RichTextButton_Click(object sender, EventArgs e)
+        private void FontButton_Click(object sender, EventArgs e)
         {
+            FontDialog dialog = new FontDialog();
 
-        }
+            dialog.Font = InputBox.SelectionFont;
 
-        private void RichTextButton_CheckedChanged(object sender, EventArgs e)
-        {
-            // if checked enable buttons
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+                return;
 
+            InputBox.SelectionFont = dialog.Font;
 
-            // if not checked disable text buttons
+            InputBox.Select();
         }
 
         private void BlockButton_Click(object sender, EventArgs e)
         {
-
+               
         }
 
         private void SendFileButton_Click(object sender, EventArgs e)
         {
 
         }
+        
+        private void PlainTextButton_Click(object sender, EventArgs e)
+        {
+            // clear formatting
+            string text = InputBox.Text;
+            InputBox.Clear();
+            InputBox.Text = text;
 
+            FontButtonsVisible(false);
+        }
+
+        private void RichTextButton_Click_1(object sender, EventArgs e)
+        {
+            FontButtonsVisible(true);
+        }
+
+        void FontButtonsVisible(bool visible)
+        {
+            FontSeparator.Visible = visible;
+
+            BoldButton.Visible = visible;
+            ItalicsButton.Visible = visible;
+            UnderlineButton.Visible = visible;
+
+            FontButton.Visible = visible;
+            ColorsButton.Visible = visible;
+        }
     }
 }
