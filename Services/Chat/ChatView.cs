@@ -20,7 +20,9 @@ namespace RiseOp.Services.Chat
         
         RoomView ViewHigh;
         RoomView ViewLow;
-        ChatRoom Custom;
+        internal ChatRoom Custom; // can also be used to set default room on init
+
+         
 
         bool WindowActivated;
         bool FlashMe;
@@ -34,7 +36,6 @@ namespace RiseOp.Services.Chat
             ProjectID = project;
 
             Chat.Refresh += new RefreshHandler(Chat_Refresh);
-            Chat.Invited += new InvitedHandler(Chat_Invited);
 
             toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
 
@@ -55,9 +56,25 @@ namespace RiseOp.Services.Chat
         {
             Chat_Refresh();
 
-           
-            if (RoomsActive(RoomKind.Command_High, RoomKind.Command_Low))
+
+            if (Custom != null) // set by invite form to open this by default
+                SetCustomRoom(Custom);
+
+            else if (RoomsActive(RoomKind.Command_High, RoomKind.Command_Low))
                 LocalButton_Click(null, null);
+
+            else
+            {
+                Chat.RoomMap.LockReading(delegate()
+                {
+                    foreach (ChatRoom room in Chat.RoomMap.Values)
+                        if (room.Active && !ChatService.IsCommandRoom(room.Kind))
+                        {
+                            SetCustomRoom(room);
+                            break;
+                        }
+                });
+            }
 
             if (External != null)
             {
@@ -182,15 +199,10 @@ namespace RiseOp.Services.Chat
             {
                 ChatRoom room = Chat.GetRoom(ProjectID, kind);
 
-                if (room != null)
+                if (room != null && ChatService.IsCommandRoom(room.Kind))
                 {
-                    if (ChatService.IsCommandRoom(room.Kind ))
-                    {
-                        // if more people in command room, even if not online then it is active
-                        if (room.Members.SafeCount > 1)
-                            return true;
-                    }
-                    else if (room.Active)
+                    // if more people in command room, even if not online then it is active
+                    if (room.Members.SafeCount > 1)
                         return true;
                 }
             }
@@ -336,7 +348,7 @@ namespace RiseOp.Services.Chat
             }
         }
 
-        private void SetCustomRoom(ChatRoom room)
+        internal void SetCustomRoom(ChatRoom room)
         {
             CustomButton.Visible = true;
             CustomButton.Text = room.Title;
@@ -357,22 +369,6 @@ namespace RiseOp.Services.Chat
             if (add.ShowDialog(this) == DialogResult.OK)
                 foreach (ulong id in add.People)
                     Chat.SendInviteRequest(Custom, id);
-        }
-
-
-        void Chat_Invited(ulong inviter, ChatRoom room)
-        {
-            // jim has invited you to a public chat room
-            //    Room Name: adfadf
-            // Would you like to join?
-           
-
-            if (MessageBox.Show("You have been invited by " + Chat.Core.GetName(inviter) + " to the room\r\n" + room.Title + "\r\nJoin now?", "Invite", MessageBoxButtons.YesNo) != DialogResult.Yes)
-                return;
-
-            Chat.JoinRoom(room);
-
-            SetCustomRoom(room);
         }
 
         internal void MessageFlash()
@@ -406,12 +402,14 @@ namespace RiseOp.Services.Chat
 
 
         internal RoomItem(ChatService chat, ChatRoom room, EventHandler onClick)
-            : base(room.Title + " (" + room.GetActiveMembers(chat).ToString() + ")", null, onClick)
+            : base(room.Title, null, onClick)
         {
             Room = room;
 
             if (!room.Active)
                 ForeColor = Color.DimGray;
+            else
+                Text += " (" + room.GetActiveMembers(chat).ToString() + ")";
         }
     }
 }

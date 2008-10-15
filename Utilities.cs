@@ -834,6 +834,15 @@ namespace RiseOp
             
             return responseText;
         }
+
+        internal static string RtftoColor(string rtf, Color color)
+        {
+            rtf = rtf.Replace("red0", "red" + color.R);
+            rtf = rtf.Replace("blue0", "blue" + color.B);
+            rtf = rtf.Replace("green0", "green" + color.G);
+
+            return rtf;
+        }
     }
 
 

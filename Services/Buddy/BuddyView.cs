@@ -25,8 +25,8 @@ namespace RiseOp.Services.Buddy
         LocationService Locations;
 
         internal Font OnlineFont = new Font("Tahoma", 8.25F);
-        internal Font LabelFont = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-        internal Font OfflineFont = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+        internal Font LabelFont = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold);
+        internal Font OfflineFont = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Italic);
 
         bool Dragging;
         Point DragStart = Point.Empty;
@@ -70,6 +70,8 @@ namespace RiseOp.Services.Buddy
 
             SmallImageList = new List<Image>(); // itit here, cause main can re-init
             SmallImageList.Add(new Bitmap(16, 16));
+            SmallImageList.Add(BuddyRes.away);
+            SmallImageList.Add(BuddyRes.blocked);
 
             SelectedIndexChanged += new EventHandler(BuddyView_SelectedIndexChanged);
 
@@ -207,16 +209,35 @@ namespace RiseOp.Services.Buddy
 
                     BuddyItem item = new BuddyItem(name, buddy.ID);
 
-                    bool online = (Locations.ActiveClientCount(buddy.ID) > 0);
 
-                    if (online)                    
-                        item.Font = OnlineFont;
-                    else
+                    bool online = false;
+                    bool away = false;
+
+                    foreach (ClientInfo info in Core.Locations.GetClients(buddy.ID))
+                    {
+                        online = true;
+
+                        if (info.Data.Away)
+                            away = true;
+                    }
+
+                    // set color / icon
+                    if(!online || (item.User == Core.UserID && Core.User.Settings.Invisible))
                     {
                         item.Font = OfflineFont;
                         item.ForeColor = Color.Gray;
                     }
+                    else
+                        item.Font = OnlineFont;
 
+
+                    if (Buddies.IgnoreList.SafeContainsKey(item.User))
+                        item.ImageIndex = 2;
+                    else if (away)
+                        item.ImageIndex = 1;
+
+
+                    // put in group
                     if (buddy.Group != null)
                     {
                         if (!Groups.ContainsKey(buddy.Group))
@@ -453,7 +474,13 @@ namespace RiseOp.Services.Buddy
 
         internal List<ulong> GetSelectedIDs()
         {
-            return SelectedItems.Cast<BuddyItem>().Select(i => i.User).ToList();
+            List<ulong> selected = new List<ulong>();
+
+            foreach (BuddyItem item in SelectedItems)
+                if (item.User != 0)
+                    selected.Add(item.User);
+
+            return selected;
         }
     }
 

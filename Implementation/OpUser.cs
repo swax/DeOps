@@ -552,6 +552,7 @@ namespace RiseOp
         const byte Packet_FileKey       = 0xA0;
         const byte Packet_AwayMsg       = 0xB0;
         const byte Packet_GlobalIM      = 0xC0;
+        const byte Packet_Invisible     = 0xD0;
 
         const byte Key_D        = 0x10;
         const byte Key_DP       = 0x20;
@@ -568,6 +569,7 @@ namespace RiseOp
         internal string UserName;
         internal string Location = "";
         internal string AwayMessage = "";
+        internal bool Invisible;
 
         // network
         internal ushort TcpPort;
@@ -614,9 +616,8 @@ namespace RiseOp
                 protocol.WritePacket(settings, Packet_OpAccess, BitConverter.GetBytes((byte)OpAccess));
                 protocol.WritePacket(settings, Packet_SecurityLevel, BitConverter.GetBytes((int)Security));
 
-                if(GlobalIM)
-                    protocol.WritePacket(settings, Packet_GlobalIM, null);
-                    
+                if (GlobalIM) protocol.WritePacket(settings, Packet_GlobalIM, null);
+                if (Invisible) protocol.WritePacket(settings, Packet_Invisible, null);    
 
                 RSAParameters rsa = KeyPair.ExportParameters(true);
                 G2Frame key = protocol.WritePacket(settings, Packet_KeyPair, null);
@@ -650,6 +651,12 @@ namespace RiseOp
                 if (child.Name == Packet_GlobalIM)
                 {
                     settings.GlobalIM = true;
+                    continue;
+                }
+
+                if (child.Name == Packet_Invisible)
+                {
+                    settings.Invisible = true;
                     continue;
                 }
 

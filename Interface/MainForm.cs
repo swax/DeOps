@@ -30,7 +30,7 @@ using RiseOp.Interface.Views;
 
 namespace RiseOp.Interface
 {
-    internal partial class MainForm : CustomIconForm
+    internal partial class MainForm : HostsExternalViews
     {
         internal OpCore Core;
         internal TrustService Trust;
@@ -41,7 +41,6 @@ namespace RiseOp.Interface
         uint ProjectButtonID;
 
         internal ViewShell InternalView;
-        internal List<ExternalView> ExternalViews = new List<ExternalView>();
 
         Font BoldFont = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 
@@ -392,6 +391,7 @@ namespace RiseOp.Interface
             settings.DropDownItems.Add(new ManageItem("User", null, () => new RiseOp.Interface.Settings.User(Core).ShowDialog()));
             settings.DropDownItems.Add(new ManageItem("Operation", null, () => new RiseOp.Interface.Settings.Operation(Core).ShowDialog()));
             settings.DropDownItems.Add(new ManageItem("Connecting", null, () => new RiseOp.Interface.Settings.Connecting(Core).ShowDialog()));
+            settings.DropDownItems.Add(new ManageItem("Ignore", null, () => new RiseOp.Interface.Settings.IgnoreForm(Core).ShowDialog()));
 
             items.Add(settings);
 

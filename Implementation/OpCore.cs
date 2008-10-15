@@ -21,7 +21,7 @@ using RiseOp.Services.Location;
 using RiseOp.Services.Mail;
 using RiseOp.Services.Plan;
 using RiseOp.Services.Profile;
-using RiseOp.Services.Sharing;
+using RiseOp.Services.Share;
 using RiseOp.Services.Storage;
 using RiseOp.Services.Transfer;
 using RiseOp.Services.Trust;
@@ -109,7 +109,7 @@ namespace RiseOp.Implementation
         internal ThreadedDictionary<ulong, bool> KeepData = new ThreadedDictionary<ulong, bool>();
 
         // interfaces
-        internal Form     GuiMain;
+        internal HostsExternalViews GuiMain;
         internal TrayLock      GuiTray;
         internal ConsoleForm   GuiConsole;
         internal InternalsForm GuiInternal;
@@ -187,7 +187,7 @@ namespace RiseOp.Implementation
             // optional
             AddService(new IMService(this));
             AddService(new ChatService(this));
-            AddService(new SharingService(this));
+            AddService(new ShareService(this));
             
             if (!User.Settings.GlobalIM)
             { 
@@ -631,7 +631,7 @@ namespace RiseOp.Implementation
         internal string GetName(ulong user)
         {
             string name;
-            if (NameMap.TryGetValue(user, out name))
+            if (NameMap.SafeTryGetValue(user, out name))
                 return name;
 
             name = user.ToString();

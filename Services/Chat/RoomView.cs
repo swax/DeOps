@@ -77,7 +77,7 @@ namespace RiseOp.Services.Chat
 
             DisplayLog();
 
-            InputControl.InputBox.Select();
+            ActiveControl = InputControl.InputBox; 
         }
 
         internal bool Fin()
@@ -185,7 +185,7 @@ namespace RiseOp.Services.Chat
             node.Text = Core.GetName(node.UserID);
 
             if (away)
-                node.Text += " (away)";
+                node.Text += " [away]";
 
 
             // bold if local
@@ -202,7 +202,7 @@ namespace RiseOp.Services.Chat
                 return; // no change
             }
 
-            if (!node.Unset) // on first run don't show everyone as joined
+            /*if (!node.Unset) // on first run don't show everyone as joined
             {
                 string message = "";
 
@@ -214,7 +214,7 @@ namespace RiseOp.Services.Chat
 
                 // dont log
                 Chat_Update(new ChatMessage(Core, message, true));
-            }
+            }*/
 
             node.Unset = false;
 
@@ -233,8 +233,8 @@ namespace RiseOp.Services.Chat
             // name, in bold, blue for incoming, red for outgoing
             if (message.System)
                 MessageTextBox.SelectionColor = Color.Black;
-            else if (message.UserID == Chat.Core.UserID && message.ClientID == Core.Network.Local.ClientID)
-                MessageTextBox.SelectionColor = Color.Red;
+            else if (Core.Network.Local.Equals(message))
+                MessageTextBox.SelectionColor = message.Sent ? Color.Red : Color.LightCoral;
             else
                 MessageTextBox.SelectionColor = Color.Blue;
 
@@ -267,6 +267,8 @@ namespace RiseOp.Services.Chat
 
             // message, grey for not acked
             MessageTextBox.SelectionColor = Color.Black;
+            if (Core.Network.Local.Equals(message) && !message.Sent)
+                MessageTextBox.SelectionColor = Color.LightGray;
 
             if (message.System)
             {
@@ -276,7 +278,7 @@ namespace RiseOp.Services.Chat
             else
             {
                 MessageTextBox.SelectionFont = RegularFont;
-                MessageTextBox.SelectedRtf = message.Text;
+                MessageTextBox.SelectedRtf = Utilities.RtftoColor(message.Text, MessageTextBox.SelectionColor);
             }
 
 

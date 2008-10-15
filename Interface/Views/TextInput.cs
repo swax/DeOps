@@ -86,6 +86,9 @@ namespace RiseOp.Interface
             InitializeComponent();
 
             FontToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+
+            // need to init, so when we get the rtf there is color encoding info in it we can re-assign if need be
+            InputBox.SelectionColor = Color.Black; 
         }
 
 
@@ -178,19 +181,22 @@ namespace RiseOp.Interface
         {
             if (e.KeyCode == Keys.Return && _EnterClears && !e.Shift)
             {
-                string message = InputBox.Rtf;
-
-                Regex rex = new Regex("\\\\par\\s+", RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
-                Match m = rex.Match(message);
-
-                while (m.Success)
+                if (InputBox.Text.Replace("\n", "") != "")
                 {
-                    message = rex.Replace(message, "");
-                    m = m.NextMatch();
-                }
+                    string message = InputBox.Rtf;
 
-                BeginInvoke(SendMessage, message);
-                //Panel.SendMessage();
+                    Regex rex = new Regex("\\\\par\\s+", RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
+                    Match m = rex.Match(message);
+
+                    while (m.Success)
+                    {
+                        message = rex.Replace(message, "");
+                        m = m.NextMatch();
+                    }
+
+                    BeginInvoke(SendMessage, message);
+                    //Panel.SendMessage();
+                }
 
                 Font savedFont = InputBox.SelectionFont;
                 Color savedColor = InputBox.SelectionColor;
@@ -220,6 +226,16 @@ namespace RiseOp.Interface
 
 
             // if not checked disable text buttons
+        }
+
+        private void BlockButton_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void SendFileButton_Click(object sender, EventArgs e)
+        {
+
         }
 
     }

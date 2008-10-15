@@ -110,30 +110,18 @@ namespace RiseOp.Services.Location
             Network.Store.ReplicateEvent[ServiceID, 0] -= new ReplicateHandler(Store_Replicate);
 
             // shotgun udp, let everyone know we're going offline
-            foreach (DhtClient client in NotifyUsers.Keys)
-            {
-                LocationNotify notify = new LocationNotify();
-                notify.Timeout = CurrentTimeout;
-                notify.GoingOffline = true;
-                Network.LightComm.SendPacket(client, ServiceID, 0, notify, true);
-            }
+            GoingOffline();
         }
+
+
 
         void Network_StatusChange()
         {
             if (!Network.Established)
                 return;
 
-            // re-publish location on network
-            // afterwards when new nodes come in range - replicate directly
-            // local area pings us to keep their caches up to date
-            // other nodes only ping us if they are locally interetested (they dont ping on getting a search result)
-
-            UpdateLocation();
-
-            // locs are published for the main benefit of firewalled hosts
-            // they may have a proxy that is nowhere near their true dht position
-            Network.Store.PublishNetwork(Core.UserID, ServiceID, 0, LocalClient.SignedData);
+            if(!Core.User.Settings.Invisible)
+                GoingOnline();
         }
 
         List<byte[]> Store_Replicate(DhtContact contact)
@@ -344,6 +332,9 @@ namespace RiseOp.Services.Location
 
         void OperationSearch_Local(ulong key, byte[] parameters, List<byte[]> results)
         {
+            if (Core.User.Settings.Invisible)
+                return;
+
             uint minVersion = BitConverter.ToUInt32(parameters, 0);
 
             List<ClientInfo> clients = GetClients(key);
@@ -537,6 +528,9 @@ namespace RiseOp.Services.Location
 
         void Receive_Ping(DhtClient client, LocationPing ping)
         {
+            if (Core.User.Settings.Invisible)
+                return;
+
             LocationNotify notify = new LocationNotify();
 
             RecentPings.AddFirst(Core.TimeNow);
@@ -619,8 +613,13 @@ namespace RiseOp.Services.Location
 
             LocationData data = current.Data;
 
+            // if no loc use instance xx
             if (data == null || data.Place == null || data.Place == "")
-                return data.IP.ToString();
+            {
+                string site = client.ToString();
+                return "Site " + site.Substring(site.Length - 2, 2);
+                //return data.IP.ToString();
+            }
 
             return data.Place;
         }
@@ -674,6 +673,76 @@ namespace RiseOp.Services.Location
             });
 
             return results;
+        }
+
+        internal void SetInvisble(bool mode)
+        {
+            if (Core.User.Settings.Invisible == mode)
+                return;
+
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(() => SetInvisble(mode));
+                return;
+            }
+
+            Core.User.Settings.Invisible = mode;
+
+            if (mode)
+                GoingOffline();
+            else
+                GoingOnline();
+
+            SignalUpdate(LocalClient, mode);
+
+            Core.RunInCoreAsync(() => Core.User.Save());
+        }
+
+        private void GoingOnline()
+        {
+            // re-publish location on network
+            // afterwards when new nodes come in range - replicate directly
+            // local area pings us to keep their caches up to date
+            // other nodes only ping us if they are locally interetested (they dont ping on getting a search result)
+
+            UpdateLocation();
+
+            // locs are published for the main benefit of firewalled hosts
+            // they may have a proxy that is nowhere near their true dht position
+            // dont need to re-publish, these hosts will continually ping us
+            Network.Store.PublishNetwork(Core.UserID, ServiceID, 0, LocalClient.SignedData);
+        }
+
+        private void GoingOffline()
+        {
+            foreach (DhtClient client in NotifyUsers.Keys)
+            {
+                LocationNotify notify = new LocationNotify();
+                notify.Timeout = CurrentTimeout;
+                notify.GoingOffline = true;
+                Network.LightComm.SendPacket(client, ServiceID, 0, notify, true);
+            }
+
+            NotifyUsers.Clear();
+        }
+
+        internal void SetAway(bool mode, string msg)
+        {
+            if (LocalAway == mode)
+                return;
+
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(() => SetAway(mode, msg));
+                return;
+            }
+
+            LocalAway = mode;
+            Core.User.Settings.AwayMessage = msg;
+
+            Core.Locations.UpdateLocation(); // notify users of status change
+
+            Core.User.Save();
         }
     }
 

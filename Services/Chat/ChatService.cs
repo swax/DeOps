@@ -21,7 +21,7 @@ using NLipsum.Core;
 namespace RiseOp.Services.Chat
 {
     internal delegate void RefreshHandler();
-    internal delegate void InvitedHandler(ulong inviter, ChatRoom room);
+
 
     internal class ChatService : OpService
     {
@@ -37,7 +37,6 @@ namespace RiseOp.Services.Chat
         internal Dictionary<ulong, bool> StatusUpdate = new Dictionary<ulong, bool>();
 
         internal RefreshHandler Refresh;
-        internal InvitedHandler Invited;
 
         bool ChatNewsUpdate;
 
@@ -524,33 +523,41 @@ namespace RiseOp.Services.Chat
                 return;
             }
 
-            ProcessMessage(room, new ChatMessage(Core, text, false));
 
             bool sent = false;
 
-            ChatText message = new ChatText();
-            message.ProjectID = room.ProjectID;
-            message.Kind = room.Kind;
-            message.RoomID = room.RoomID;
-            message.Text = text;
-
-            room.Members.LockReading(delegate()
+            if (room.Active)
             {
-               foreach (ulong member in room.Members)
-                   foreach (RudpSession session in Network.RudpControl.GetActiveSessions(member))
-                   {
-                       sent = true;
-                       session.SendData(ServiceID, 0, message, true);
-                   }
-            });
+                ChatText message = new ChatText();
+                message.ProjectID = room.ProjectID;
+                message.Kind = room.Kind;
+                message.RoomID = room.RoomID;
+                message.Text = text;
 
-            if (!sent)
-                ProcessMessage(room, "Could not send message, not connected to anyone");
+                room.Members.LockReading(delegate()
+                {
+                    foreach (ulong member in room.Members)
+                        foreach (RudpSession session in Network.RudpControl.GetActiveSessions(member))
+                        {
+                            sent = true;
+                            session.SendData(ServiceID, 0, message, true);
+                        }
+                });
+            }
+
+            ProcessMessage(room, new ChatMessage(Core, text) { Sent = sent });
+
+
+            //if (!sent)
+            //    ProcessMessage(room, "Could not send message, not connected to anyone");
         }
 
 
         private void ReceiveMessage(ChatText message, RudpSession session)
         {
+            if (Core.Buddies.IgnoreList.SafeContainsKey(session.UserID))
+                return;
+
             // remote's command low, is my command high
             // do here otherwise have to send custom roomID packets to selfs/lowers/highers
 
@@ -662,7 +669,6 @@ namespace RiseOp.Services.Chat
                         ReceiveInvite(ChatInvite.Decode(root), session);
                         break;
 
-
                     case ChatPacket.Who:
                         ReceiveWho(ChatWho.Decode(root), session);
                         break;
@@ -687,7 +693,7 @@ namespace RiseOp.Services.Chat
         // system message
         private void ProcessMessage(ChatRoom room, string text)
         {
-            ProcessMessage(room, new ChatMessage(Core, text, true));
+            ProcessMessage(room, new ChatMessage(Core, text) { System = true });
         }
 
         private void ProcessMessage(ChatRoom room, ChatMessage message)
@@ -875,6 +881,14 @@ namespace RiseOp.Services.Chat
 
         void ReceiveInvite(ChatInvite invite, RudpSession session)
         {
+            // if in global im, only allow if on buddies list
+            if (Core.User.Settings.GlobalIM)
+                if (!Core.Buddies.BuddyList.SafeContainsKey(session.UserID))
+                    return;
+
+            if (Core.Buddies.IgnoreList.SafeContainsKey(session.UserID))
+                return;
+
              bool showInvite = false;
 
              ChatRoom room;
@@ -945,8 +959,13 @@ namespace RiseOp.Services.Chat
             if (Trust != null && !Trust.TrustMap.SafeContainsKey(session.UserID))
                 Trust.Research(session.UserID, 0, false);
 
-            if(showInvite)
-                Core.RunInGuiThread(Invited, session.UserID, room);
+            if (showInvite)
+            {
+                Core.RunInGuiThread((System.Windows.Forms.MethodInvoker)delegate
+                {
+                    new InviteForm(this, session.UserID, room).ShowDialog();
+                });
+            }
         }
 
         void SendWhoRequest(ChatRoom room)
@@ -1138,15 +1157,15 @@ namespace RiseOp.Services.Chat
         internal bool       System;
         internal DateTime   TimeStamp;
         internal string     Text;
+        internal bool       Sent;
 
 
-        internal ChatMessage(OpCore core, string text, bool system)
+        internal ChatMessage(OpCore core, string text)
         {
             UserID = core.UserID;
             ClientID = core.Network.Local.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;
-            System = system;
         }
 
         internal ChatMessage(OpCore core, RudpSession session, string text)

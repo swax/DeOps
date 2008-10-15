@@ -128,7 +128,13 @@
     <Compile Include="Implementation\Transport\LanHandler.cs" />
     <Compile Include="Implementation\Transport\LightCommHandler.cs" />
     <Compile Include="Implementation\Transport\UPnP.cs" />
-    <Compile Include="Interface\CustomIconForm.cs">
+    <Compile Include="Interface\Settings\IgnoreForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Settings\IgnoreForm.Designer.cs">
+      <DependentUpon>IgnoreForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Views\CustomIconForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Interface\ErrorReport.cs">
@@ -224,42 +230,54 @@
       <DependentUpon>BuddyRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Services\Chat\ChatService.cs" />
+    <Compile Include="Services\Chat\InviteForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Services\Chat\InviteForm.Designer.cs">
+      <DependentUpon>InviteForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Services\IM\IMService.cs" />
     <Compile Include="Services\Assist\LocalSync.cs" />
     <Compile Include="Services\Location\LookupService.cs" />
     <Compile Include="Services\Location\LocationService.cs" />
+    <Compile Include="Services\Location\StatusForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Services\Location\StatusForm.Designer.cs">
+      <DependentUpon>StatusForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Services\Mail\MailService.cs" />
     <Compile Include="Services\OpService.cs" />
     <Compile Include="Services\Plan\PlanService.cs" />
     <Compile Include="Services\Profile\ProfileService.cs" />
-    <Compile Include="Services\Sharing\AcceptFileForm.cs">
+    <Compile Include="Services\Share\AcceptFileForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Services\Sharing\AcceptFileForm.Designer.cs">
+    <Compile Include="Services\Share\AcceptFileForm.Designer.cs">
       <DependentUpon>AcceptFileForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Services\Sharing\Res\ShareRes.Designer.cs">
+    <Compile Include="Services\Share\Res\ShareRes.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>ShareRes.resx</DependentUpon>
     </Compile>
-    <Compile Include="Services\Sharing\SendFileForm.cs">
+    <Compile Include="Services\Share\SendFileForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Services\Sharing\SendFileForm.Designer.cs">
+    <Compile Include="Services\Share\SendFileForm.Designer.cs">
       <DependentUpon>SendFileForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Services\Sharing\ShareInfoPanel.cs">
+    <Compile Include="Services\Share\ShareInfoPanel.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Sharing\ShareInfoPanel.Designer.cs">
+    <Compile Include="Services\Share\ShareInfoPanel.Designer.cs">
       <DependentUpon>ShareInfoPanel.cs</DependentUpon>
     </Compile>
-    <Compile Include="Services\Sharing\SharingService.cs" />
-    <Compile Include="Services\Sharing\SharingView.cs">
+    <Compile Include="Services\Share\ShareService.cs" />
+    <Compile Include="Services\Share\SharingView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Sharing\SharingView.Designer.cs">
+    <Compile Include="Services\Share\SharingView.Designer.cs">
       <DependentUpon>SharingView.cs</DependentUpon>
     </Compile>
     <Compile Include="Services\Storage\StorageService.cs" />
@@ -736,10 +754,12 @@
     <None Include="Interface\Res\project add.png" />
     <None Include="Interface\Res\project remove.png" />
     <None Include="Services\Buddy\res\buddy_who.png" />
-    <None Include="Services\Sharing\Res\share.png" />
+    <None Include="Services\Share\Res\share.png" />
     <None Include="Services\Storage\Res\storage.png" />
-    <None Include="Services\Sharing\Res\share.ico" />
-    <None Include="Services\Sharing\Res\sendfile.png" />
+    <None Include="Services\Share\Res\share.ico" />
+    <None Include="Services\Share\Res\sendfile.png" />
+    <None Include="Services\Buddy\res\away.png" />
+    <None Include="Services\Buddy\res\blocked.png" />
     <Content Include="Services\Transfer\transfers.txt" />
     <None Include="Interface\Res\settings.png" />
     <None Include="Interface\Res\tools.png" />
@@ -878,6 +898,10 @@
       <DependentUpon>CacheSetup.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Settings\IgnoreForm.resx">
+      <DependentUpon>IgnoreForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Interface\Settings\Operation.resx">
       <DependentUpon>Operation.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -934,6 +958,10 @@
       <SubType>Designer</SubType>
       <DependentUpon>CreateRoom.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Services\Chat\InviteForm.resx">
+      <DependentUpon>InviteForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Services\Chat\Res\ChatRes.resx">
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
@@ -958,24 +986,27 @@
       <SubType>Designer</SubType>
       <DependentUpon>IM_View.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Services\Sharing\AcceptFileForm.resx">
+    <EmbeddedResource Include="Services\Location\StatusForm.resx">
+      <DependentUpon>StatusForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Services\Share\AcceptFileForm.resx">
       <DependentUpon>AcceptFileForm.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Services\Sharing\Res\ShareRes.resx">
+    <EmbeddedResource Include="Services\Share\Res\ShareRes.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ShareRes.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Services\Sharing\SendFileForm.resx">
+    <EmbeddedResource Include="Services\Share\SendFileForm.resx">
       <DependentUpon>SendFileForm.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Services\Sharing\ShareInfoPanel.resx">
+    <EmbeddedResource Include="Services\Share\ShareInfoPanel.resx">
       <DependentUpon>ShareInfoPanel.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Services\Sharing\SharingView.resx">
+    <EmbeddedResource Include="Services\Share\SharingView.resx">
       <DependentUpon>SharingView.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>

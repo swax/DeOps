@@ -14,18 +14,15 @@ using RiseOp.Interface.Views;
 
 using RiseOp.Services;
 using RiseOp.Services.Buddy;
-using RiseOp.Services.Sharing;
+using RiseOp.Services.Share;
 using RiseOp.Services.Chat;
 
 
 namespace RiseOp.Interface
 {
-    internal partial class IMForm : CustomIconForm
+    internal partial class IMForm : HostsExternalViews
     {
         OpCore Core;
-
-        internal List<ExternalView> ExternalViews = new List<ExternalView>();
-
 
 
         internal IMForm(OpCore core)
@@ -115,42 +112,23 @@ namespace RiseOp.Interface
 
         private void HelpInfoButton_Click(object sender, EventArgs e)
         {
-            foreach (ExternalView ext in ExternalViews)
-                if (ext.Shell is InfoView)
-                {
-                    ext.Activate();
-                    return;
-                }
-
-            OnShowExternal(new InfoView(Core, true, false));
+            if(!ShowExistingView(typeof(InfoView)))
+                OnShowExternal(new InfoView(Core, true, false));
         }
 
         private void SharedButton_Click(object sender, EventArgs e)
         {
-            foreach(ExternalView ext in ExternalViews)
-                if (ext.Shell is SharingView)
-                {
-                    ext.Activate();
-                    return;
-                }
-
-            if(Core.GetService(ServiceIDs.Sharing) != null)
-                OnShowExternal(new SharingView(Core, Core.UserID));
+            if (!ShowExistingView(typeof(SharingView)))
+                OnShowExternal(new SharingView(Core, Core.UserID));    
         }
 
         private void ChatButton_Click(object sender, EventArgs e)
         {
-            foreach (ExternalView ext in ExternalViews)
-                if (ext.Shell is ChatView)
-                {
-                    ext.Activate();
-                    return;
-                }
-
-            ChatService chat = Core.GetService(ServiceIDs.Chat) as ChatService;
-
-            if (chat != null)
+            if (!ShowExistingView(typeof(ChatView)))
+            {
+                ChatService chat = Core.GetService(ServiceIDs.Chat) as ChatService;
                 OnShowExternal(new ChatView(chat, 0));
+            }
         }
     }
 }

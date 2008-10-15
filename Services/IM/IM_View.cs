@@ -207,8 +207,8 @@ namespace RiseOp.Services.IM
             // name, in bold, blue for incoming, red for outgoing
             if(message.System)
                 MessageTextBox.SelectionColor = Color.Black;
-            else if (message.Source == Core.UserID && message.ClientID == Core.Network.Local.ClientID)
-                MessageTextBox.SelectionColor = Color.Red;
+            else if (Core.Network.Local.Equals(message))
+                MessageTextBox.SelectionColor = message.Sent ? Color.Red : Color.LightCoral;
             else
                 MessageTextBox.SelectionColor = Color.Blue;
 
@@ -216,7 +216,7 @@ namespace RiseOp.Services.IM
 
             string prefix = " ";
             if (!message.System)
-                prefix += Core.GetName(message.Source);
+                prefix += Core.GetName(message.UserID);
 
             if (MessageTextBox.Text.Length != 0)
                 prefix = "\n" + prefix;
@@ -234,8 +234,8 @@ namespace RiseOp.Services.IM
             }
 
             string location = "";
-            if (!message.System && Locations.ActiveClientCount(message.Source) > 1)
-                location = " @" + Locations.GetLocationName(message.Source, message.ClientID);
+            if (!message.System && Locations.ActiveClientCount(message.UserID) > 1)
+                location = " @" + Locations.GetLocationName(message.UserID, message.ClientID);
 
 
             if (!message.System)
@@ -245,6 +245,8 @@ namespace RiseOp.Services.IM
 
             // message, grey for not acked
             MessageTextBox.SelectionColor = Color.Black;
+            if (Core.Network.Local.Equals(message) && !message.Sent)
+                MessageTextBox.SelectionColor = Color.LightGray;
 
             if (message.System)
             {
@@ -254,7 +256,7 @@ namespace RiseOp.Services.IM
             else
             {
                 MessageTextBox.SelectionFont = RegularFont;
-                MessageTextBox.SelectedRtf = message.Text;
+                MessageTextBox.SelectedRtf = Utilities.RtftoColor(message.Text, MessageTextBox.SelectionColor);
             }
 
             MessageTextBox.SelectionStart = oldStart;

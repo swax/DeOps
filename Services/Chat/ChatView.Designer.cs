@@ -37,11 +37,11 @@ namespace RiseOp.Services.Chat
             this.LocalButton = new System.Windows.Forms.ToolStripButton();
             this.LiveButton = new System.Windows.Forms.ToolStripButton();
             this.CustomButton = new System.Windows.Forms.ToolStripButton();
+            this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.InviteButton = new System.Windows.Forms.ToolStripButton();
             this.LeaveButton = new System.Windows.Forms.ToolStripButton();
             this.JoinButton = new System.Windows.Forms.ToolStripButton();
             this.FlashTimer = new System.Windows.Forms.Timer(this.components);
-            this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.ViewContainer.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -121,6 +121,12 @@ namespace RiseOp.Services.Chat
             this.CustomButton.Text = "Custom";
             this.CustomButton.Click += new System.EventHandler(this.CustomButton_Click);
             // 
+            // toolStripLabel1
+            // 
+            this.toolStripLabel1.Name = "toolStripLabel1";
+            this.toolStripLabel1.Size = new System.Drawing.Size(16, 22);
+            this.toolStripLabel1.Text = "   ";
+            // 
             // InviteButton
             // 
             this.InviteButton.Image = ((System.Drawing.Image)(resources.GetObject("InviteButton.Image")));
@@ -155,12 +161,6 @@ namespace RiseOp.Services.Chat
             this.FlashTimer.Enabled = true;
             this.FlashTimer.Interval = 500;
             this.FlashTimer.Tick += new System.EventHandler(this.FlashTimer_Tick);
-            // 
-            // toolStripLabel1
-            // 
-            this.toolStripLabel1.Name = "toolStripLabel1";
-            this.toolStripLabel1.Size = new System.Drawing.Size(16, 22);
-            this.toolStripLabel1.Text = "   ";
             // 
             // ChatView
             // 

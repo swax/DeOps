@@ -1,72 +1,30 @@
 
-if on gloal im
-	only show send share list if node is on budby list
-	only show chat invite if node is on buddy list
-	
-color text not sent as grey, put special message after, not on another line in bold
-if left room and chat message, gray that out as well
-might want to make pac man graphci glass like, or just new icon for rooms
-make room button red when new text in sub room
-
-IM tool bar - formatting drop down, send file, add buddy, block
+IM tool bar - formatting drop down, send file, ignore
 	maybe put into input text toolbar a formatting off button that is on by default - msgs are encoded txt/rtf/html(for future)
-	block - blocks im, chat requests, send file requests
-	if no rooms, show create room, else just show current rooms
-	invite should also use custom icon, with some info, member count in invite?
-	
-get chat working in global IM mode5
-	dont let user send blank lines
-	when switching rooms, put focus on chat input
-	show room invite on main form when view not active, center parent, same with transfer request/send
-	
-user 2 user - share service
-	show lock/unlock icons for shared files, only delete if path is downloadpath
-	put same options in web interface
-		show right click for more options in red
+	default for IM/chat is plain text
+	mail/post default is rich, hide block/send file button
 	
 on profile at bottom in red show right click to edit, only if user is local (local msg)
 
-research upnp / windows firewall
-Dont diplay IP in location, display unknown, or just non and enumerate #1
-	is incoming tcp still the benchmark for open? doesnt seem like many alternatives
-
-webcache
-	publish working? run sim for hour, exception?
-	have riseop.com cache work for lookup and global IM nets
-	any special code for lookup web cache that needs to be used for global?
+if riseop:// link detected in IM/chat, prefix http:// , on click process riseop:// link
+	if normal http:// link open external window
+	auto append http to riseop:// in send message, when clicked over ride rtf link clicked
+	investigate cascading spans<> for html based cha
+	chat default in text mode, put formatting options in right click menu.. enable formatting, remove tools from toolbar
+		file links can be put in chat window and work fine ;)
+		
+info
+	different help page for global IM
+	on web exception, show help page
+	put links in help page that open services	
 
 buddie lists / localsync still being published on global IM
 	buddy still needs to publish self loc around local ID
-		
-if riseop:// link detected in IM/chat, prefix http:// , on click process riseop:// link
-	if normal http:// link open external window
-		
-different help page for global IM
-on web exception, show help page
-put links in help page that open services
+	'sync' on network, buddies store other buddies, buddy list
+		throw the ingnore list in there as well
+	use tags?
 
-sortable columns that are either auto, or take a delegate comparer as a parameter
-
-auto append http to riseop:// in send message, when clicked over ride rtf link clicked
-	investigate cascading spans<> for html based chat
-chat default in text mode, put formatting options in right click menu.. enable formatting, remove tools from toolbar
-	file links can be put in chat window and work fine ;)
-	
-
-click user link - if riseop loaded, find core with match op id, ask to add user to buddies
-form colums still huge
-buddy block list - prevents IMs from coming in
-
-bugs
-	losing  buddy loc through nat/open/blocked net
-	person net open/nat/blocked, not finding local untrusted
-	
-storage unlock should be threaded like sharing
-
-also status if killed
-
-does transfer successfully transmit name in session connection and if so, 
-	can right click buddy link support in transfers window be supported to build community from those transferring
+share - show right click for more options in red
 
 auto update
 	ensure crawler works and gets version
@@ -78,7 +36,35 @@ auto update
 	if user using old version, send direct store request with signed new version info
 		download - if not downloaded already - show user, update ready to install, yes - start installer, close riseop
 
+research upnp / windows firewall
+
+webcache
+	publish working? run sim for hour, exception?
+	have riseop.com cache work for lookup and global IM nets
+	any special code for lookup web cache that needs to be used for global?
+	set global im web cache
+
+bugs
+	test network not connecting fast?
+	losing  buddy loc through nat/open/blocked net
+	person net open/nat/blocked, not finding local untrusted
+	
+chat
+	when switching rooms, put focus on chat input
+	when are rooms removed?
+	
+share
+	show lock/unlock icons for shared files, only delete if path is downloadpath
+	put same options in web interface
+			
+other
+	storage unlock should be threaded like sharing
+	also status if killed
+	sortable columns that are either auto, or take a delegate comparer as a parameter
+	click user link - if riseop loaded, find core with match op id, ask to add user to buddies
+
 release
+	proof read news/help/info/share/shorage pages
 	october is alpha alpha month - make some user friends
 	nullsoft installer - try it
 	hide sim and other tools?
@@ -109,12 +95,11 @@ release
 test global
 	associations? put in diff sturcture buddyinfo data type/file?
 
-set global im web cache
 
 login - instead of op, put profile
 if globalIM profile not detected, show link in red on login: Create Global IM Profile
 project coming before primary in nar bar drop down
-instead of 'trust unconfirmed' after link, make color red, and then in extended info put reason in red
+
 
 setting - save IM mode, buddies or structure view on close
 
@@ -126,12 +111,6 @@ Buddy list Component
 	buddy - local synced only when trust is enabled
 	global list saved with op list - if association made
 		
-		
-local invisible option - publishes offline, and doesnt reply to pings
-	put button above lock - when in lock down auto go into invisible, dotted person icon, or white outline
-	maybe no invisible mode because important to be able to reach user especially to get
-	updated service information.  maybe just flag, lockdown should signal away at least
-	
 
 Global IM
 	remove direct trust references from location?

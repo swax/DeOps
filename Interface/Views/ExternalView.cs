@@ -8,6 +8,9 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using System.Threading;
 
+using RiseOp.Implementation;
+
+
 namespace RiseOp.Interface
 {
     internal partial class ExternalView : CustomIconForm
@@ -66,6 +69,37 @@ namespace RiseOp.Interface
             }
             else
                 e.Cancel = true;
+        }
+    }
+
+    class HostsExternalViews : CustomIconForm
+    {
+        internal List<ExternalView> ExternalViews = new List<ExternalView>();
+
+        internal HostsExternalViews(OpCore core)
+            : base(core)
+        { }
+
+        internal ExternalView FindViewType(Type x)
+        {
+            foreach (ExternalView view in ExternalViews)
+                if (view.Shell.GetType() == x)
+                    return view;
+
+            return null;
+        }
+
+        internal bool ShowExistingView(Type x)
+        {
+            ExternalView view = FindViewType(x);
+
+            if (view == null)
+                return false;
+
+            view.WindowState = FormWindowState.Normal;
+            view.Activate();
+
+            return true;
         }
     }
 }

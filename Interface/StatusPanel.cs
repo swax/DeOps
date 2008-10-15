@@ -39,6 +39,10 @@ namespace RiseOp.Interface
 		                A.header:link, A.header:visited, A.header:active {text-decoration: none; color: white;}
 		                A.header:hover {text-decoration: underline; color: white;}
                 		
+                        .untrusted{text-decoration: blink; line-height: 18pt;}
+                        A.untrusted:link, A.untrusted:visited, A.untrusted:active {text-decoration: none; color: red;}
+                        A.untrusted:hover {text-decoration: underline; color: red;}
+
 		                .content{padding: 3px; line-height: 12pt;}
                 		
 	                </style>
@@ -347,12 +351,13 @@ namespace RiseOp.Interface
                     bool requested = parent.Requests.Any(r => r.KeyID == link.UserID);
 
                     string msg = requested ? "Trust Requested" : "Trust Denied";
-                    msg = "<font style='text-decoration: blink; line-height: 18pt; color: red;'>" + msg + "</font>";
 
                     if (parent.UserID == Core.UserID)
-                        msg = "<a href='http://trust_accept'>" + msg + "</a>";
+                        msg = "<b><a class='untrusted' href='http://trust_accept'>" + msg + "</a></b>";
 
-                    content += "<b>" + msg + "</b><br>";
+                    msg = "<span class='untrusted'>" + msg + "</span>";
+
+                    content += msg + "<br>";
                 }
 
                 // title
@@ -376,6 +381,11 @@ namespace RiseOp.Interface
                     content += "<b>Projects: </b>" + projects + "<br>";
             }
 
+
+            if (Core.Buddies.IgnoreList.SafeContainsKey(user))
+                content += "<span class='untrusted'><b><a class='untrusted' href='http://unignore'>Ignored</a></b></span><br>";
+
+
             //Locations:
             //    Home: Online
             //    Office: Away - At Home
@@ -387,16 +397,29 @@ namespace RiseOp.Interface
             foreach (ClientInfo info in Core.Locations.GetClients(user))
             {
                 string name = Core.Locations.GetLocationName(user, info.ClientID);
+                bool local = Core.Network.Local.Equals(info);
 
-                if (info.UserID == Core.UserID && info.ClientID == Core.Network.Local.ClientID)
+
+                if (local)
                     name = "<a href='http://edit_location'>" + name + "</a>";
 
                 locations += "<b>" + name + ": </b>";
 
-                if (info.Data.Away)
-                    locations += "Away " + info.Data.AwayMessage;
+
+                string status = "Online";
+
+                if (local && Core.User.Settings.Invisible)
+                    status = "Invisible";
+
+                else if (info.Data.Away)
+                    status = "Away - " + info.Data.AwayMessage;
+
+
+                if (local)
+                    locations += "<a href='http://edit_status'>" + status + "</a>";
                 else
-                    locations += "Online";
+                    locations += status;
+
 
                 if (info.Data.GmtOffset != System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes)
                     locations += ", Local Time " + Core.TimeNow.ToUniversalTime().AddMinutes(info.Data.GmtOffset).ToString("t");
@@ -552,7 +575,7 @@ namespace RiseOp.Interface
 
                 else if (url == "edit_location")
                 {
-                    GetTextDialog place = new GetTextDialog("Change Location", "Where is this instance located? (Home, Work, Mobile?)", "");
+                    GetTextDialog place = new GetTextDialog("Change Location", "Where is this instance located? (home, work, mobile?)", "");
 
                     if (place.ShowDialog() == DialogResult.OK)
                     {
@@ -561,6 +584,18 @@ namespace RiseOp.Interface
 
                         Core.RunInCoreAsync(() => Core.User.Save());
                     }
+                }
+
+                else if (url == "edit_status")
+                {
+                    // show edit status dialog available / away / invisible
+                    new StatusForm(Core).ShowDialog();
+                }
+
+                else if (url == "unignore")
+                {
+                    if (MessageBox.Show("Stop ignoring " + Core.GetName(UserID) + "?", "Ignore", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                        Core.Buddies.Ignore(UserID, false);
                 }
 
                 else if (command[0] == "project")

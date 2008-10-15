@@ -28,7 +28,7 @@ namespace RiseOp.Services
         LocalSync = 11,
         Global = 12,
         Buddy = 13,
-        Sharing = 14
+        Share = 14
     }
     
     public enum InterfaceMenuType { Internal, External, Settings, Quick };

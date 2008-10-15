@@ -60,6 +60,20 @@ namespace RiseOp.Services.Buddy {
             }
         }
         
+        internal static System.Drawing.Bitmap away {
+            get {
+                object obj = ResourceManager.GetObject("away", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap blocked {
+            get {
+                object obj = ResourceManager.GetObject("blocked", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Bitmap buddy {
             get {
                 object obj = ResourceManager.GetObject("buddy", resourceCulture);

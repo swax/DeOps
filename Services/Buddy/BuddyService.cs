@@ -30,6 +30,7 @@ namespace RiseOp.Services.Buddy
 
         internal OpBuddy LocalBuddy;
         internal ThreadedDictionary<ulong, OpBuddy> BuddyList = new ThreadedDictionary<ulong, OpBuddy>();
+        internal ThreadedDictionary<ulong, OpBuddy> IgnoreList = new ThreadedDictionary<ulong, OpBuddy>();
 
         internal BuddyGuiUpdateHandler GuiUpdate;
 
@@ -208,10 +209,16 @@ namespace RiseOp.Services.Buddy
             {
                 PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Write);
 
-                BuddyList.LockReading(delegate()
+                BuddyList.LockReading(() =>
                 {
                     foreach (OpBuddy buddy in BuddyList.Values)
                         stream.WritePacket(buddy);
+                });
+
+                IgnoreList.LockReading(() => // we need to ensure we have name/key for each ignore
+                {
+                    foreach (OpBuddy ignore in IgnoreList.Values)
+                        stream.WritePacket(ignore);
                 });
             }
 
@@ -242,8 +249,14 @@ namespace RiseOp.Services.Buddy
                     {
                         OpBuddy buddy = OpBuddy.Decode(root);
                         ulong id = Utilities.KeytoID(buddy.Key);
+
                         Core.IndexKey(id, ref buddy.Key);
-                        BuddyList.SafeAdd(id, buddy);
+                        Core.IndexName(id, buddy.Name);
+
+                        if(buddy.Ignored)
+                            IgnoreList.SafeAdd(id, buddy);
+                        else
+                            BuddyList.SafeAdd(id, buddy);
                     }
             }
 
@@ -285,6 +298,29 @@ namespace RiseOp.Services.Buddy
 
             Core.RunInGuiThread(GuiUpdate);
         }
+
+        internal void Ignore(ulong user, bool ignore)
+        {
+            if (ignore)
+            {
+                OpBuddy buddy = new OpBuddy()
+                {
+                    ID = user,
+                    Name = Core.GetName(user),
+                    Key = Core.KeyMap[user], //crit - not thread safe, change key map?
+                    Ignored = true
+                };
+
+                IgnoreList.SafeAdd(user, buddy);
+            }
+            else
+                IgnoreList.SafeRemove(user);
+
+
+            SaveList = true;
+
+            Core.RunInGuiThread(GuiUpdate);
+        }
     }
 
     internal class BuddyPacket
@@ -296,12 +332,14 @@ namespace RiseOp.Services.Buddy
     {
         const byte Packet_Name = 0x10;
         const byte Packet_Group = 0x20;
+        const byte Packet_Ignored = 0x30;
 
 
         internal string Name;
         internal string Group;
         internal byte[] Key;
         internal ulong  ID;
+        internal bool  Ignored;
 
         internal OpBuddy() { }
 
@@ -315,6 +353,9 @@ namespace RiseOp.Services.Buddy
 
                 if(Group != null)
                     protocol.WritePacket(buddy, Packet_Group, UTF8Encoding.UTF8.GetBytes(Group));
+
+                if(Ignored)
+                    protocol.WritePacket(buddy, Packet_Ignored, null);
 
                 return protocol.WriteFinish();
             }
@@ -336,6 +377,12 @@ namespace RiseOp.Services.Buddy
 
             while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
             {
+                if (child.Name == Packet_Ignored)
+                {
+                    buddy.Ignored = true;
+                    continue;
+                }
+
                 if (!G2Protocol.ReadPayload(child))
                     continue;
 

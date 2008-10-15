@@ -9,6 +9,7 @@ using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Transport;
 using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
 using RiseOp.Services.Trust;
 using RiseOp.Services.Location;
 
@@ -366,19 +367,17 @@ namespace RiseOp.Services.IM
             if (!IMMap.SafeTryGetValue(key, out status))
                 return;
 
-            ProcessMessage(status, new InstantMessage(Core, text, false));
-
-            if (!Network.RudpControl.IsConnected(key))
-            {
-                // run direct, dont log
-                Core.RunInGuiThread(MessageUpdate, key, new InstantMessage(Core, "Could not send message, client disconnected", true));
-                return;
-            }
-
+           
+            bool sent = false;
             MessageData message = new MessageData(text);
 
             foreach (RudpSession session in Network.RudpControl.GetActiveSessions(key))
+            {
+                sent = true;
                 session.SendData(ServiceID, 0, message, true);
+            }
+
+            ProcessMessage(status, new InstantMessage(Core, text) { Sent = sent });
         }
 
         void Session_Data(RudpSession session, byte[] data)
@@ -397,11 +396,7 @@ namespace RiseOp.Services.IM
             if (G2Protocol.ReadPacket(root))
             {
                 if (root.Name == IMPacket.Message)
-                {
-                    InstantMessage im = new InstantMessage(Core, session, MessageData.Decode(root));
-
-                    ProcessMessage(status, im);
-                }
+                    ProcessMessage(status, new InstantMessage(Core, session, MessageData.Decode(root)));
 
                 if (root.Name == IMPacket.Alive)
                     status.SetTTL(session.ClientID, SessionTimeout * 2);
@@ -411,6 +406,9 @@ namespace RiseOp.Services.IM
 
         internal void ProcessMessage(IMStatus status, InstantMessage message)
         {
+            if (Core.Buddies.IgnoreList.SafeContainsKey(message.UserID))
+                return;
+
             // log message - locks both dictionary and embedded list form reading
             status.MessageLog.SafeAdd(message);
 
@@ -448,26 +446,26 @@ namespace RiseOp.Services.IM
 
 
 
-    internal class InstantMessage
+    internal class InstantMessage : DhtClient
     {
-        internal ulong    Source;
-        internal ushort   ClientID;
         internal DateTime TimeStamp;
         internal string   Text;
         internal bool System;
+        internal bool Sent;
+
         // local / system message
-        internal InstantMessage(OpCore core, string text, bool system)
+        internal InstantMessage(OpCore core, string text)
         {
-            Source = core.UserID;
+            UserID = core.UserID;
             ClientID = core.Network.Local.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;
-            System = system;
+            System = false;
         }
 
         internal InstantMessage(OpCore core, RudpSession session, MessageData message)
         {
-            Source = session.UserID;
+            UserID = session.UserID;
             ClientID = session.ClientID;
             TimeStamp = core.TimeNow;
             Text = message.Text;

@@ -36,8 +36,12 @@ namespace RiseOp.Services.Trust
 
         internal bool SearchOnline;
 
-        Font TrustedFont = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold | FontStyle.Underline);
-        Font UntrustedFont = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold);
+        Font TrustedFont = new Font("Tahoma", 8.25F, FontStyle.Bold | FontStyle.Underline);
+        Font UntrustedFont = new Font("Tahoma", 8.25F, FontStyle.Bold);
+
+        internal Font SelectedFont = new System.Drawing.Font("Tahoma", 8.25F, FontStyle.Bold);
+        internal Font OnlineFont = new Font("Tahoma", 8.25F);
+        internal Font OfflineFont = new Font("Tahoma", 8.25F, System.Drawing.FontStyle.Italic);
 
 
         public LinkTree()
@@ -313,17 +317,16 @@ namespace RiseOp.Services.Trust
                     RecurseFocus(subitem);
         }
 
-        void Trust_Update(ulong key)
-        {
-            OnUpdateTrust(key);
-        }
-
         void Locations_Update(ulong key)
         {
-            OnUpdateTrust(key);
+            if (NodeMap.ContainsKey(key))
+            {
+                NodeMap[key].UpdateStatus();
+                Invalidate();
+            }
         }
 
-        void OnUpdateTrust(ulong key)
+        void Trust_Update(ulong key)
         {
             // update
             OpLink link = Trust.GetLink(key, Project);
@@ -378,7 +381,7 @@ namespace RiseOp.Services.Trust
             if (node != null && parent != null && node.Parent == parent)
             {
                 
-                node.UpdateName();
+                node.UpdateStatus();
                 Invalidate();
                 return;
             }
@@ -517,8 +520,7 @@ namespace RiseOp.Services.Trust
                     UnlinkedNode.Text = "Untrusted";
             }
 
-            node.UpdateColor();
-            node.UpdateName();
+            node.UpdateStatus();
 
             if (selected)
                 node.Selected = true;
@@ -653,18 +655,22 @@ namespace RiseOp.Services.Trust
             if (!Trust.TrustMap.SafeContainsKey(id))
                 id = Core.UserID;
 
-            // unbold current
-            if (NodeMap.ContainsKey(SelectedLink))
-                NodeMap[SelectedLink].Font = new System.Drawing.Font("Tahoma", 8.25F);
-
-            // bold new and set
+            ulong oldLink = SelectedLink;
             SelectedLink = id;
             SelectedProject = project;
 
-            if (NodeMap.ContainsKey(id) && Project == SelectedProject)
+
+            // unbold current
+            if (NodeMap.ContainsKey(oldLink))
+                NodeMap[oldLink].UpdateStatus();
+
+            // bold new and set
+
+
+            if (NodeMap.ContainsKey(SelectedLink) && Project == SelectedProject)
             {
-                NodeMap[id].Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-                NodeMap[id].EnsureVisible();
+                NodeMap[SelectedLink].UpdateStatus();
+                NodeMap[SelectedLink].EnsureVisible();
             }
 
             Invalidate();
@@ -748,6 +754,7 @@ namespace RiseOp.Services.Trust
     internal class LinkNode : TreeListNode
     {
         internal OpLink Link;
+        LinkTree ParentView;
         internal TrustService Trust;
         internal LocationService Locations;
 
@@ -757,20 +764,23 @@ namespace RiseOp.Services.Trust
         static Color DarkDarkGray = Color.FromArgb(96, 96, 96);
 
 
-        internal LinkNode(OpLink link, LinkTree main)
+        internal LinkNode(OpLink link, LinkTree parent)
         {
             Link = link;
-            Trust = main.Trust;
-            Locations = main.Core.Locations;
+            ParentView = parent;
+            Trust = parent.Trust;
+            Locations = parent.Core.Locations;
 
-            UpdateName();
-
-            if (main.SelectedLink == Link.UserID && main.Project == main.SelectedProject)
-                Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            UpdateStatus();
         }
 
-        internal void UpdateName()
+        internal void UpdateStatus()
         {
+            // reset
+            Font = ParentView.OnlineFont;
+            ForeColor = Color.Black;
+
+
             string txt = "";
 
             txt += Trust.Core.GetName(Link.UserID);
@@ -783,15 +793,19 @@ namespace RiseOp.Services.Trust
             if (parent != null)
             {
                 bool confirmed = false;
-                bool requested = false;
+                //bool requested = false;
 
                 if (parent.Confirmed.Contains(Link.UserID))
                     confirmed = true;
 
-                foreach (UplinkRequest request in parent.Requests)
+                if (!confirmed) 
+                    ForeColor = Color.Red;
+                
+                /*foreach (UplinkRequest request in parent.Requests)
                     if (request.KeyID == Link.UserID)
                         requested = true;
 
+                
                 if (confirmed)
                 { }
                 else if (requested && parent.UserID == Trust.Core.UserID)
@@ -801,7 +815,7 @@ namespace RiseOp.Services.Trust
                 else if (parent.UserID == Trust.Core.UserID)
                     txt += " (Trust Denied)";
                 else
-                    txt += " (Trust Unconfirmed)";
+                    txt += " (Trust Unconfirmed)";*/
             }
 
             else if (!Link.Active)
@@ -809,10 +823,23 @@ namespace RiseOp.Services.Trust
                 txt += " (Left Project)";
             }
 
-            txt += "     ";
+            txt += "     "; // tree bug not showing all text
 
             if (Text != txt)
                 Text = txt;
+
+
+            // bold selected
+            if (ParentView.SelectedLink == Link.UserID && ParentView.Project == ParentView.SelectedProject)
+                Font = ParentView.SelectedFont;
+
+            // if not else, can override above
+            if (Link.UserID == Trust.Core.UserID && Trust.Core.User.Settings.Invisible)
+            {
+                Font = ParentView.OfflineFont;
+                ForeColor = Color.Gray;
+            }
+            
         }
 
         internal void UpdateColor()
