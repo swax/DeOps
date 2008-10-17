@@ -47,6 +47,7 @@ namespace RiseOp.Services.Profile
         internal const string DefaultTemplate = @"
                                                 <html>
                                                 <body style='color: #000000'>
+                                                    <div style='float:right'><font style='font-family:Tahoma; font-size: 9pt; color:red;'><?text:local_help?></font></div>
                                                     <table border='0' cellpadding='5' cellspacing='0' id='TABLE1' width='100%'>
                                                         <tr>
                                                             <td style='width: 122px;'>
@@ -72,12 +73,14 @@ namespace RiseOp.Services.Profile
                                                         <br />
                                                             <strong>&nbsp; IM:</strong> <?text:IM?></span>
                                                     </div>
+                                                    
                                                     <br />
                                                     <div style='width: 95%; background-color: #ff9900; padding: 5px; border-bottom-width: thin; border-bottom-color: black;'>
                                                         <strong><span style='font-size: 10pt; font-family: Tahoma; color: #ffffff; border-bottom-width: thin; border-bottom-color: black;'>
                                                             Messages of the Day
                                                         </span></strong>
                                                     </div>
+                                                    
                                                     <div style='width: 95%; background-color:#f8f8ff; padding: 5px;'>
                                                     
 	                                                <?motd:start?>

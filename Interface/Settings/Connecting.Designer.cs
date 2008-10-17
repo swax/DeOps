@@ -48,6 +48,7 @@
             this.RemoveLink = new System.Windows.Forms.LinkLabel();
             this.SetupLink = new System.Windows.Forms.LinkLabel();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.UPnPLink = new System.Windows.Forms.LinkLabel();
             this.OpLanBox = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.GlobalLanBox = new System.Windows.Forms.TextBox();
@@ -58,7 +59,7 @@
             // 
             this.CloseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.CloseButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.CloseButton.Location = new System.Drawing.Point(235, 253);
+            this.CloseButton.Location = new System.Drawing.Point(235, 289);
             this.CloseButton.Name = "CloseButton";
             this.CloseButton.Size = new System.Drawing.Size(75, 23);
             this.CloseButton.TabIndex = 9;
@@ -69,7 +70,7 @@
             // OKButton
             // 
             this.OKButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.OKButton.Location = new System.Drawing.Point(154, 253);
+            this.OKButton.Location = new System.Drawing.Point(154, 289);
             this.OKButton.Name = "OKButton";
             this.OKButton.Size = new System.Drawing.Size(75, 23);
             this.OKButton.TabIndex = 8;
@@ -120,9 +121,9 @@
             this.GlobalLabel.AutoSize = true;
             this.GlobalLabel.Location = new System.Drawing.Point(7, 63);
             this.GlobalLabel.Name = "GlobalLabel";
-            this.GlobalLabel.Size = new System.Drawing.Size(63, 13);
+            this.GlobalLabel.Size = new System.Drawing.Size(43, 13);
             this.GlobalLabel.TabIndex = 15;
-            this.GlobalLabel.Text = "Lookup Net";
+            this.GlobalLabel.Text = "Lookup";
             // 
             // OpUdpBox
             // 
@@ -156,9 +157,9 @@
             this.label6.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label6.Location = new System.Drawing.Point(28, 94);
+            this.label6.Location = new System.Drawing.Point(76, 94);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(257, 32);
+            this.label6.Size = new System.Drawing.Size(209, 32);
             this.label6.TabIndex = 19;
             this.label6.Text = "For optimal performance ensure the TCP / UDP ports are open on your router.";
             // 
@@ -200,7 +201,7 @@
             // 
             this.label8.AutoSize = true;
             this.label8.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label8.Location = new System.Drawing.Point(12, 154);
+            this.label8.Location = new System.Drawing.Point(12, 190);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(79, 13);
             this.label8.TabIndex = 23;
@@ -212,7 +213,7 @@
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.CacheList.FormattingEnabled = true;
-            this.CacheList.Location = new System.Drawing.Point(15, 172);
+            this.CacheList.Location = new System.Drawing.Point(15, 208);
             this.CacheList.Name = "CacheList";
             this.CacheList.Size = new System.Drawing.Size(294, 69);
             this.CacheList.TabIndex = 24;
@@ -222,7 +223,7 @@
             this.AddLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.AddLink.AutoSize = true;
             this.AddLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.AddLink.Location = new System.Drawing.Point(192, 154);
+            this.AddLink.Location = new System.Drawing.Point(192, 190);
             this.AddLink.Name = "AddLink";
             this.AddLink.Size = new System.Drawing.Size(26, 13);
             this.AddLink.TabIndex = 25;
@@ -235,7 +236,7 @@
             this.RemoveLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.RemoveLink.AutoSize = true;
             this.RemoveLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.RemoveLink.Location = new System.Drawing.Point(222, 154);
+            this.RemoveLink.Location = new System.Drawing.Point(222, 190);
             this.RemoveLink.Name = "RemoveLink";
             this.RemoveLink.Size = new System.Drawing.Size(47, 13);
             this.RemoveLink.TabIndex = 26;
@@ -248,7 +249,7 @@
             this.SetupLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.SetupLink.AutoSize = true;
             this.SetupLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.SetupLink.Location = new System.Drawing.Point(275, 154);
+            this.SetupLink.Location = new System.Drawing.Point(275, 190);
             this.SetupLink.Name = "SetupLink";
             this.SetupLink.Size = new System.Drawing.Size(35, 13);
             this.SetupLink.TabIndex = 27;
@@ -260,6 +261,7 @@
             // 
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.UPnPLink);
             this.groupBox1.Controls.Add(this.OpLanBox);
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Controls.Add(this.GlobalLanBox);
@@ -277,10 +279,22 @@
             this.groupBox1.Controls.Add(this.label6);
             this.groupBox1.Location = new System.Drawing.Point(12, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(298, 128);
+            this.groupBox1.Size = new System.Drawing.Size(298, 147);
             this.groupBox1.TabIndex = 28;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Ports";
+            // 
+            // UPnPLink
+            // 
+            this.UPnPLink.AutoSize = true;
+            this.UPnPLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
+            this.UPnPLink.Location = new System.Drawing.Point(6, 94);
+            this.UPnPLink.Name = "UPnPLink";
+            this.UPnPLink.Size = new System.Drawing.Size(68, 13);
+            this.UPnPLink.TabIndex = 29;
+            this.UPnPLink.TabStop = true;
+            this.UPnPLink.Text = "UPnP Status";
+            this.UPnPLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.UPnPLink_LinkClicked);
             // 
             // OpLanBox
             // 
@@ -318,7 +332,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.CloseButton;
-            this.ClientSize = new System.Drawing.Size(322, 288);
+            this.ClientSize = new System.Drawing.Size(322, 324);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.SetupLink);
             this.Controls.Add(this.RemoveLink);
@@ -366,5 +380,6 @@
         private System.Windows.Forms.TextBox OpLanBox;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox GlobalLanBox;
+        private System.Windows.Forms.LinkLabel UPnPLink;
     }
 }

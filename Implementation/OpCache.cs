@@ -342,7 +342,11 @@ namespace RiseOp.Implementation
                 if (line.StartsWith("node:"))
                 {
                     string[] parts = line.Substring(5).Split('/');
-                    AddContact(new DhtContact(ulong.Parse(parts[0]), 0, IPAddress.Parse(parts[1]), ushort.Parse(parts[2]), ushort.Parse(parts[3])));
+                    
+                    DhtContact contact = new DhtContact(ulong.Parse(parts[0]), 0, IPAddress.Parse(parts[1]), ushort.Parse(parts[2]), ushort.Parse(parts[3]));
+                    contact.LastSeen = Core.TimeNow; // set this so its put at front of list, and is the first to be attempted
+
+                    AddContact(contact);
                 }
 
                 // for use with publishing back to cache, dont set our local IP with it in case on

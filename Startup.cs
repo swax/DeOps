@@ -13,6 +13,7 @@ using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Interface;
 using RiseOp.Simulator;
+using RiseOp.Services.Share;
 
 
 namespace RiseOp
@@ -304,6 +305,11 @@ namespace RiseOp
                     return;
                 }
 
+            // try pre-process link
+            if (arg.StartsWith(@"riseop://"))
+                if(PreProcessLink(arg)) // internal links
+                    return;
+
             LoginForm form = new LoginForm(this, arg);
             form.FormClosed += new FormClosedEventHandler(Window_FormClosed);
             form.Show();
@@ -313,7 +319,68 @@ namespace RiseOp
 
             // do here because process link can close form and we want all the events already hooked up for it
             if (arg.StartsWith(@"riseop://"))
-                form.ProcessLink();
+                if (!form.ProcessLink()) // new op links
+                    MessageBox.Show("Could not process link:\n" + arg);
+        }
+
+        private bool PreProcessLink(string arg) 
+        {
+            try
+            {
+                arg = arg.TrimEnd('/'); // copy so modifications arent permanent
+
+                if (arg.Contains("/file/"))
+                {
+                    FileLink link = FileLink.Decode(arg, null);
+
+                    OpCore core = FindCore(link.PublicOpID);
+
+                    if (core != null)
+                    {
+                        ShareService share = core.GetService(RiseOp.Services.ServiceIDs.Share) as ShareService;
+                        share.DownloadLink(arg);
+
+                        if (core.GuiMain != null)
+                            if (!core.GuiMain.ShowExistingView(typeof(SharingView)))
+                                core.ShowExternal(new SharingView(core, core.UserID)); 
+
+                        return true;
+                    }
+                }
+
+                else if (arg.Contains("/ident/"))
+                {
+                    IdentityLink link = IdentityLink.Decode(arg);
+
+                    OpCore target = FindCore(link.PublicOpID);
+
+                    if (target != null)
+                    {
+                        RiseOp.Services.Buddy.BuddyView.AddBuddyDialog(target, arg);
+                        return true;
+                    }
+                }
+            }
+            catch { }
+
+            return false;
+        }
+
+        private OpCore FindCore(byte[] pubOpID)
+        {
+            OpCore found = null;
+
+            Cores.LockReading(() =>
+            {
+                foreach (OpCore core in Cores)
+                    if (Utilities.MemCompare(core.User.Settings.PublicOpID, pubOpID))
+                    {
+                        found = core;
+                        break;
+                    }
+            });
+
+            return found;
         }
 
         internal void ShowCore(OpCore core)

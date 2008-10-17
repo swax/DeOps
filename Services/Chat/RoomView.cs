@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
 using RiseOp.Interface.Views;
+using RiseOp.Interface.Views.Res;
 
 using RiseOp.Implementation;
 using RiseOp.Implementation.Transport;
@@ -18,6 +19,7 @@ using RiseOp.Services.IM;
 using RiseOp.Services.Location;
 using RiseOp.Services.Mail;
 using RiseOp.Services.Trust;
+using RiseOp.Services.Share;
 
 
 namespace RiseOp.Services.Chat
@@ -31,7 +33,7 @@ namespace RiseOp.Services.Chat
         internal OpCore Core;
         LocationService Locations;
 
-        MenuItem TimestampMenu;
+        ToolStripMenuItem TimestampMenu;
 
         Font BoldFont = new Font("Tahoma", 10, FontStyle.Bold);
         Font RegularFont = new Font("Tahoma", 10, FontStyle.Regular);
@@ -52,6 +54,8 @@ namespace RiseOp.Services.Chat
             Core = chat.Core;
             Locations = Core.Locations;
 
+            BottomStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+
             if (room.Kind == RoomKind.Command_High || room.Kind == RoomKind.Live_High)
                 MessageTextBox.BackColor = Color.FromArgb(255, 250, 250);
 
@@ -60,10 +64,11 @@ namespace RiseOp.Services.Chat
 
             MemberTree.PreventCollapse = true;
 
-            ContextMenu menu = new ContextMenu();
-            TimestampMenu = new MenuItem("Timestamps", new EventHandler(Menu_Timestamps));
-            menu.MenuItems.Add(TimestampMenu);
-            MessageTextBox.ContextMenu = menu;
+            MessageTextBox.Core = Core;
+            MessageTextBox.ContextMenuStrip.Items.Insert(0, new ToolStripSeparator());
+
+            TimestampMenu = new ToolStripMenuItem("Timestamps", ViewRes.timestamp, new EventHandler(Menu_Timestamps));
+            MessageTextBox.ContextMenuStrip.Items.Insert(0, TimestampMenu);
         }
 
         internal void Init()
@@ -101,9 +106,9 @@ namespace RiseOp.Services.Chat
             });
         }
 
-        internal void Input_SendMessage(string message)
+        internal void Input_SendMessage(string message, TextFormat format)
         {
-            Chat.SendMessage(Room, message);
+            Chat.SendMessage(Room, message, format);
         }
 
         void Chat_MembersUpdate()
@@ -278,13 +283,18 @@ namespace RiseOp.Services.Chat
             else
             {
                 MessageTextBox.SelectionFont = RegularFont;
-                MessageTextBox.SelectedRtf = Utilities.RtftoColor(message.Text, MessageTextBox.SelectionColor);
+
+                if(message.Format == TextFormat.RTF)
+                    MessageTextBox.SelectedRtf = Utilities.RtftoColor(message.Text, MessageTextBox.SelectionColor);
+                else
+                    MessageTextBox.AppendText(message.Text);
             }
 
 
             MessageTextBox.SelectionStart = oldStart;
             MessageTextBox.SelectionLength = oldLength;
 
+            MessageTextBox.DetectLinksDefault();
 
             if (!MessageTextBox.Focused)
             {
@@ -392,6 +402,13 @@ namespace RiseOp.Services.Chat
             TimestampMenu.Checked = !TimestampMenu.Checked;
 
             DisplayLog();
+        }
+
+        private void SendFileButton_Click(object sender, EventArgs e)
+        {
+            SendFileForm form = new SendFileForm(Core, 0);
+            form.FileProcessed = new Tuple<FileProcessedHandler, object>(new FileProcessedHandler(Chat.Share_FileProcessed), Room);
+            form.ShowDialog();
         }
     }
 

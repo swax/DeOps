@@ -11,11 +11,12 @@ using System.Text;
 using RiseOp.Services.Storage;
 using RiseOp.Services.Location;
 using RiseOp.Services.Transfer;
+
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
-
+using RiseOp.Implementation.Transport;
 
 namespace RiseOp
 {
@@ -31,6 +32,7 @@ namespace RiseOp
         {
             Random rnd = new Random();
 
+  
             /* // testing selecting next chunk to send
             ChunkBit[] chunks = new ChunkBit[10];
 

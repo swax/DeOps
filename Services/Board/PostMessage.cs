@@ -55,7 +55,7 @@ namespace RiseOp.Services.Board
             PostButton.Text = "Reply";
         }
 
-        internal void PostEdit(OpPost post, uint parentID, string rtf)
+        internal void PostEdit(OpPost post, uint parentID, string rtf, bool plain)
         {
             EditPost = post;
 
@@ -64,6 +64,7 @@ namespace RiseOp.Services.Board
             SubjectTextBox.Text = post.Info.Subject;
 
             MessageBody.InputBox.Rtf = rtf;
+            MessageBody.PlainTextMode = plain;
 
             if (post.Header.Scope == ScopeType.All)
                 ScopeAll.Checked = true;
@@ -226,8 +227,10 @@ namespace RiseOp.Services.Board
 
                 // if reply - set subject to preview of message
                 string subject = SubjectTextBox.Text;
-   
-                Board.PostMessage(UserID, ProjectID, ParentID, scope, subject, MessageBody.InputBox.Rtf, files, EditPost);
+
+                string message = (MessageBody.TextFormat == TextFormat.Plain) ? MessageBody.InputBox.Text : MessageBody.InputBox.Rtf;
+
+                Board.PostMessage(UserID, ProjectID, ParentID, scope, subject, message, MessageBody.TextFormat, files, EditPost);
             }
             catch (Exception ex)
             {

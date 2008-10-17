@@ -1,33 +1,14 @@
 
-IM tool bar - formatting drop down, send file, ignore
-	maybe put into input text toolbar a formatting off button that is on by default - msgs are encoded txt/rtf/html(for future)
-	default for IM/chat is plain text
-	mail/post default is rich, hide block/send file button
-	
-on profile at bottom in red show right click to edit, only if user is local (local msg)
-
-if riseop:// link detected in IM/chat, prefix http:// , on click process riseop:// link
-	if normal http:// link open external window
-	auto append http to riseop:// in send message, when clicked over ride rtf link clicked
-	investigate cascading spans<> for html based cha
-	chat default in text mode, put formatting options in right click menu.. enable formatting, remove tools from toolbar
-		file links can be put in chat window and work fine ;)
-		
-info
-	different help page for global IM
-	on web exception, show help page
-	put links in help page that open services	
-
-buddie lists / localsync still being published on global IM
-	buddy still needs to publish self loc around local ID
-	'sync' on network, buddies store other buddies, buddy list
-		throw the ingnore list in there as well
-	use tags?
-
-share - show right click for more options in red
+research upnp
+	open tcp/udp ports
+	cloose ports on exit
+	log success
+	get external ip? does web cache tell us? the adapter could be wrong, dont want to set wrong ip
+	riseop - opname - user - protocol
+windows firewall
+	open tcp/udp ports
 
 auto update
-	ensure crawler works and gets version
 	ability to send store command directly to client
 	update service notified, starts transfer
 		alerts user when transfer is complete
@@ -35,8 +16,17 @@ auto update
 	user should only have to download once - rest d/led through networkq
 	if user using old version, send direct store request with signed new version info
 		download - if not downloaded already - show user, update ready to install, yes - start installer, close riseop
+	check if update file exists before downloading
+	copy to root when done RiseOpInstall_1.0.0.exe
+	
+buddie lists / localsync still being published on global IM
+	buddy still needs to publish self loc around local ID
+	'sync' on network, buddies store other buddies, buddy list
+		throw the ingnore list in there as well
+	use tags - should already be in loc
+	test 64 net, guy goes offline, empty dupe comes online, is buddy list updated?
+	we dont want buddy list replicated, published, etc.. when offline, just held by buddies
 
-research upnp / windows firewall
 
 webcache
 	publish working? run sim for hour, exception?
@@ -44,11 +34,6 @@ webcache
 	any special code for lookup web cache that needs to be used for global?
 	set global im web cache
 
-bugs
-	test network not connecting fast?
-	losing  buddy loc through nat/open/blocked net
-	person net open/nat/blocked, not finding local untrusted
-	
 chat
 	when switching rooms, put focus on chat input
 	when are rooms removed?
@@ -58,15 +43,16 @@ share
 	put same options in web interface
 			
 other
+	person net open/nat/blocked, not finding local untrusted, losing buddy loc
 	storage unlock should be threaded like sharing
 	also status if killed
 	sortable columns that are either auto, or take a delegate comparer as a parameter
-	click user link - if riseop loaded, find core with match op id, ask to add user to buddies
 
 release
 	proof read news/help/info/share/shorage pages
 	october is alpha alpha month - make some user friends
 	nullsoft installer - try it
+	new splash - temple like icons instead of parthanon, column like icon/symbolism
 	hide sim and other tools?
 	xenocode (hopefully supports linq, inspect)
 	ensure auto-update is working

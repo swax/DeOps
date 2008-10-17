@@ -590,7 +590,7 @@ namespace RiseOp
         // the invite key is how we match the invite to the op of the invitee's public key
         // different than regular opID so that invite link / public link does not compramise
         // dht position of op on lookup network
-        internal byte[] InviteKey;
+        internal byte[] PublicOpID;
  
          
 
@@ -685,8 +685,8 @@ namespace RiseOp
                     case Packet_OpKey:
                         settings.OpKey = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
 
-                        byte[] invite = new MD5CryptoServiceProvider().ComputeHash(settings.OpKey);
-                        settings.InviteKey = Utilities.ExtractBytes(invite, 0, 8);                        
+                        byte[] pubID = new MD5CryptoServiceProvider().ComputeHash(settings.OpKey);
+                        settings.PublicOpID = Utilities.ExtractBytes(pubID, 0, 8);                        
                         break;
 
                     case Packet_FileKey:

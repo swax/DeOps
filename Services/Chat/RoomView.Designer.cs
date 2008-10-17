@@ -30,10 +30,13 @@ namespace RiseOp.Services.Chat
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(RoomView));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.MessageTextBox = new System.Windows.Forms.RichTextBox();
+            this.MessageTextBox = new RiseOp.Interface.Views.RichTextBoxEx();
             this.InputControl = new RiseOp.Interface.TextInput();
+            this.BottomStrip = new System.Windows.Forms.ToolStrip();
+            this.SendFileButton = new System.Windows.Forms.ToolStripButton();
             this.MemberTree = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -41,6 +44,7 @@ namespace RiseOp.Services.Chat
             this.splitContainer2.Panel1.SuspendLayout();
             this.splitContainer2.Panel2.SuspendLayout();
             this.splitContainer2.SuspendLayout();
+            this.BottomStrip.SuspendLayout();
             this.SuspendLayout();
             // 
             // splitContainer1
@@ -57,9 +61,10 @@ namespace RiseOp.Services.Chat
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.BackColor = System.Drawing.Color.White;
+            this.splitContainer1.Panel2.Controls.Add(this.BottomStrip);
             this.splitContainer1.Panel2.Controls.Add(this.MemberTree);
             this.splitContainer1.Size = new System.Drawing.Size(315, 194);
-            this.splitContainer1.SplitterDistance = 172;
+            this.splitContainer1.SplitterDistance = 178;
             this.splitContainer1.SplitterWidth = 2;
             this.splitContainer1.TabIndex = 0;
             // 
@@ -78,8 +83,8 @@ namespace RiseOp.Services.Chat
             // splitContainer2.Panel2
             // 
             this.splitContainer2.Panel2.Controls.Add(this.InputControl);
-            this.splitContainer2.Size = new System.Drawing.Size(172, 194);
-            this.splitContainer2.SplitterDistance = 165;
+            this.splitContainer2.Size = new System.Drawing.Size(178, 194);
+            this.splitContainer2.SplitterDistance = 167;
             this.splitContainer2.SplitterWidth = 2;
             this.splitContainer2.TabIndex = 0;
             // 
@@ -92,7 +97,7 @@ namespace RiseOp.Services.Chat
             this.MessageTextBox.Location = new System.Drawing.Point(0, 0);
             this.MessageTextBox.Name = "MessageTextBox";
             this.MessageTextBox.ReadOnly = true;
-            this.MessageTextBox.Size = new System.Drawing.Size(172, 165);
+            this.MessageTextBox.Size = new System.Drawing.Size(178, 167);
             this.MessageTextBox.TabIndex = 0;
             this.MessageTextBox.Text = "";
             // 
@@ -102,13 +107,36 @@ namespace RiseOp.Services.Chat
             this.InputControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.InputControl.EnterClears = true;
             this.InputControl.Font = new System.Drawing.Font("Tahoma", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.InputControl.IMButtons = false;
             this.InputControl.Location = new System.Drawing.Point(0, 0);
             this.InputControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.InputControl.Name = "InputControl";
+            this.InputControl.PlainTextMode = true;
             this.InputControl.ReadOnly = false;
             this.InputControl.ShowFontStrip = false;
-            this.InputControl.Size = new System.Drawing.Size(172, 27);
+            this.InputControl.Size = new System.Drawing.Size(178, 25);
             this.InputControl.TabIndex = 0;
+            // 
+            // BottomStrip
+            // 
+            this.BottomStrip.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.BottomStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
+            this.BottomStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.SendFileButton});
+            this.BottomStrip.Location = new System.Drawing.Point(0, 169);
+            this.BottomStrip.Name = "BottomStrip";
+            this.BottomStrip.Size = new System.Drawing.Size(135, 25);
+            this.BottomStrip.TabIndex = 1;
+            // 
+            // SendFileButton
+            // 
+            this.SendFileButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.SendFileButton.Image = ((System.Drawing.Image)(resources.GetObject("SendFileButton.Image")));
+            this.SendFileButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.SendFileButton.Name = "SendFileButton";
+            this.SendFileButton.Size = new System.Drawing.Size(23, 22);
+            this.SendFileButton.Text = "Share File with Room";
+            this.SendFileButton.Click += new System.EventHandler(this.SendFileButton_Click);
             // 
             // MemberTree
             // 
@@ -125,12 +153,12 @@ namespace RiseOp.Services.Chat
             this.MemberTree.ItemHeight = 20;
             this.MemberTree.ItemMenu = null;
             this.MemberTree.LabelEdit = false;
-            this.MemberTree.Location = new System.Drawing.Point(0, 6);
+            this.MemberTree.Location = new System.Drawing.Point(0, 3);
             this.MemberTree.Name = "MemberTree";
             this.MemberTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.MemberTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.MemberTree.ShowPlusMinus = false;
-            this.MemberTree.Size = new System.Drawing.Size(141, 188);
+            this.MemberTree.Size = new System.Drawing.Size(135, 164);
             this.MemberTree.SmallImageList = null;
             this.MemberTree.StateImageList = null;
             this.MemberTree.TabIndex = 0;
@@ -147,10 +175,13 @@ namespace RiseOp.Services.Chat
             this.Size = new System.Drawing.Size(315, 194);
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);
+            this.splitContainer1.Panel2.PerformLayout();
             this.splitContainer1.ResumeLayout(false);
             this.splitContainer2.Panel1.ResumeLayout(false);
             this.splitContainer2.Panel2.ResumeLayout(false);
             this.splitContainer2.ResumeLayout(false);
+            this.BottomStrip.ResumeLayout(false);
+            this.BottomStrip.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -159,9 +190,11 @@ namespace RiseOp.Services.Chat
 
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.SplitContainer splitContainer2;
-        private System.Windows.Forms.RichTextBox MessageTextBox;
+        private RiseOp.Interface.Views.RichTextBoxEx MessageTextBox;
         private TextInput InputControl;
         private RiseOp.Interface.TLVex.TreeListViewEx MemberTree;
+        private System.Windows.Forms.ToolStrip BottomStrip;
+        private System.Windows.Forms.ToolStripButton SendFileButton;
 
     }
 }

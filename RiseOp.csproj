@@ -134,6 +134,12 @@
     <Compile Include="Interface\Settings\IgnoreForm.Designer.cs">
       <DependentUpon>IgnoreForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Interface\Settings\UpnpSetup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Settings\UpnpSetup.Designer.cs">
+      <DependentUpon>UpnpSetup.cs</DependentUpon>
+    </Compile>
     <Compile Include="Interface\Views\CustomIconForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -216,6 +222,14 @@
       <DependentUpon>NetworkPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Interface\Views\ImageButton.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Interface\Views\Res\ViewRes.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ViewRes.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\Views\RichTextBoxEx.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Services\Assist\VersionedCache.cs" />
@@ -692,6 +706,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="Services\Trust\TrustPackets.cs" />
+    <Compile Include="Services\Update\UpdateService.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Simulator\GenerateUsers.cs">
       <SubType>Form</SubType>
@@ -760,6 +775,20 @@
     <None Include="Services\Share\Res\sendfile.png" />
     <None Include="Services\Buddy\res\away.png" />
     <None Include="Services\Buddy\res\blocked.png" />
+    <Content Include="Interface\Views\Res\bold.ico" />
+    <Content Include="Interface\Views\Res\colors.png" />
+    <Content Include="Interface\Views\Res\copy.png" />
+    <Content Include="Interface\Views\Res\cut.png" />
+    <Content Include="Interface\Views\Res\font.png" />
+    <Content Include="Interface\Views\Res\fontbig.ico" />
+    <Content Include="Interface\Views\Res\fontnormal.ico" />
+    <Content Include="Interface\Views\Res\fontsmall.ico" />
+    <Content Include="Interface\Views\Res\italic.ico" />
+    <Content Include="Interface\Views\Res\normal.png" />
+    <Content Include="Interface\Views\Res\paste.png" />
+    <Content Include="Interface\Views\Res\richtext.png" />
+    <None Include="Interface\Views\Res\timestamp.png" />
+    <Content Include="Interface\Views\Res\underlne.ico" />
     <Content Include="Services\Transfer\transfers.txt" />
     <None Include="Interface\Res\settings.png" />
     <None Include="Interface\Res\tools.png" />
@@ -906,6 +935,10 @@
       <DependentUpon>Operation.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Settings\UpnpSetup.resx">
+      <DependentUpon>UpnpSetup.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Interface\Settings\User.resx">
       <DependentUpon>User.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -932,6 +965,11 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\Info\NetworkPanel.resx">
       <DependentUpon>NetworkPanel.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Views\Res\ViewRes.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ViewRes.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Board\Res\BoardRes.resx">

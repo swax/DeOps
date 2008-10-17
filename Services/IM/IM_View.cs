@@ -9,7 +9,10 @@ using System.Windows.Forms;
 using RiseOp.Implementation;
 using RiseOp.Implementation.Transport;
 using RiseOp.Interface;
+using RiseOp.Interface.Views.Res;
+
 using RiseOp.Services.Location;
+using RiseOp.Services.Share;
 
 
 namespace RiseOp.Services.IM
@@ -22,7 +25,7 @@ namespace RiseOp.Services.IM
         LocationService Locations;
         internal ulong  UserID;
 
-        MenuItem TimestampMenu;
+        ToolStripMenuItem TimestampMenu;
         string RemoteName;
 
         bool WindowActivated;
@@ -32,6 +35,7 @@ namespace RiseOp.Services.IM
         Font RegularFont = new Font("Tahoma", 10, FontStyle.Regular);
         Font TimeFont = new Font("Tahoma", 8, FontStyle.Regular);
         Font SystemFont = new Font("Tahoma", 8, FontStyle.Bold);
+
 
         internal IM_View(IMService im, ulong key)
         {
@@ -49,10 +53,12 @@ namespace RiseOp.Services.IM
             IM.StatusUpdate += new IM_StatusHandler(IM_StatusUpdate);
             Core.KeepDataGui += new KeepDataHandler(Core_KeepData);
 
-            ContextMenu menu = new ContextMenu();
-            TimestampMenu = new MenuItem("Timestamps", new EventHandler(Menu_Timestamps));
-            menu.MenuItems.Add(TimestampMenu);
-            MessageTextBox.ContextMenu = menu;
+            MessageTextBox.Core = Core;
+            MessageTextBox.ContextMenuStrip.Items.Insert(0, new ToolStripSeparator());
+
+            TimestampMenu = new ToolStripMenuItem("Timestamps", ViewRes.timestamp, new EventHandler(Menu_Timestamps));
+            MessageTextBox.ContextMenuStrip.Items.Insert(0, TimestampMenu);
+
         }
 
         private void UpdateName()
@@ -66,6 +72,9 @@ namespace RiseOp.Services.IM
         internal override void Init()
         {
             InputControl.SendMessage += new TextInput.SendMessageHandler(InputControl_SendMessage);
+            InputControl.SendFile += new MethodInvoker(InputControl_SendFile);
+            InputControl.IgnoreUser += new MethodInvoker(InputControl_IgnoreUser);
+            InputControl.AddBuddy += new MethodInvoker(InputControl_AddBuddy);
 
             IM_StatusUpdate(UserID);
             DisplayLog();
@@ -77,6 +86,9 @@ namespace RiseOp.Services.IM
                 External.Activated += new EventHandler(External_Activated);
                 External.Deactivate += new EventHandler(External_Deactivate);
             }
+
+            if (!Core.Buddies.BuddyList.SafeContainsKey(UserID))
+                InputControl.AddBuddyButton.Visible = true;
         }
 
         internal override bool Fin()
@@ -155,9 +167,34 @@ namespace RiseOp.Services.IM
                 MessageTextBox.BackColor = Color.White;
         }
 
-        internal void InputControl_SendMessage(string message)
+        internal void InputControl_SendMessage(string message, TextFormat format)
         {
-            IM.SendMessage(UserID, message);
+            IM.SendMessage(UserID, message, format);
+        }
+
+        internal void InputControl_SendFile()
+        {
+            SendFileForm form = new SendFileForm(Core, UserID);
+
+            form.FileProcessed = new Tuple<FileProcessedHandler, object>(new FileProcessedHandler(IM.Share_FileProcessed), (object)UserID);
+            
+            form.ShowDialog();
+        }
+
+        internal void InputControl_IgnoreUser()
+        {
+            if (MessageBox.Show("Are you sure you want to ignore " + Core.GetName(UserID) + "?", "Ignore", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                Core.Buddies.Ignore(UserID, true);
+        }
+
+        internal void InputControl_AddBuddy()
+        {
+            if(MessageBox.Show("Add " + Core.GetName(UserID) + " to you buddy list?", "Add Buddy", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                Core.Buddies.AddBuddy(UserID);
+
+                InputControl.AddBuddyButton.Visible = false;
+            }
         }
 
         void IM_StatusUpdate(ulong id)
@@ -256,12 +293,19 @@ namespace RiseOp.Services.IM
             else
             {
                 MessageTextBox.SelectionFont = RegularFont;
-                MessageTextBox.SelectedRtf = Utilities.RtftoColor(message.Text, MessageTextBox.SelectionColor);
+
+                if (message.Format == TextFormat.RTF)
+                    MessageTextBox.SelectedRtf = Utilities.RtftoColor(message.Text, MessageTextBox.SelectionColor);
+                
+                else if (message.Format == TextFormat.Plain)
+                    MessageTextBox.AppendText(message.Text);
             }
+            
 
             MessageTextBox.SelectionStart = oldStart;
             MessageTextBox.SelectionLength = oldLength;
 
+            MessageTextBox.DetectLinksDefault();
 
             if (!MessageTextBox.Focused)
             {
@@ -297,6 +341,9 @@ namespace RiseOp.Services.IM
             FlashMe = false;
         }
 
-
+        private void StatusImage_MouseClick(object sender, MouseEventArgs e)
+        {
+            IM.Connect(UserID);
+        }
     }
 }

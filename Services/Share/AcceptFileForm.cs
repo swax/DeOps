@@ -41,7 +41,7 @@ namespace RiseOp.Services.Share
 
         private void AcceptButton_Click(object sender, EventArgs e)
         {
-            Sharing.AcceptRequest(Source, TheFile);
+           /* Sharing.AcceptRequest(Source, TheFile);
 
             // try to find an external existing view and use it, the make a new one
 
@@ -52,7 +52,7 @@ namespace RiseOp.Services.Share
             else if (!Core.GuiMain.ShowExistingView(typeof(SharingView)))
                 Core.ShowExternal(new SharingView(Core, Core.UserID));
 
-            Close();
+            Close();*/
         }
 
         private void DenyButton_Click(object sender, EventArgs e)

@@ -35,7 +35,7 @@ namespace RiseOp.Services.IM
             this.panel1 = new System.Windows.Forms.Panel();
             this.StatusImage = new System.Windows.Forms.PictureBox();
             this.StatusLabel = new System.Windows.Forms.Label();
-            this.MessageTextBox = new System.Windows.Forms.RichTextBox();
+            this.MessageTextBox = new RiseOp.Interface.Views.RichTextBoxEx();
             this.InputControl = new RiseOp.Interface.TextInput();
             this.FlashTimer = new System.Windows.Forms.Timer(this.components);
             this.splitContainer1.Panel1.SuspendLayout();
@@ -47,6 +47,7 @@ namespace RiseOp.Services.IM
             // 
             // splitContainer1
             // 
+            this.splitContainer1.BackColor = System.Drawing.Color.White;
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.Location = new System.Drawing.Point(0, 0);
             this.splitContainer1.Name = "splitContainer1";
@@ -82,6 +83,7 @@ namespace RiseOp.Services.IM
             this.StatusImage.Size = new System.Drawing.Size(16, 16);
             this.StatusImage.TabIndex = 1;
             this.StatusImage.TabStop = false;
+            this.StatusImage.MouseClick += new System.Windows.Forms.MouseEventHandler(this.StatusImage_MouseClick);
             // 
             // StatusLabel
             // 
@@ -112,8 +114,10 @@ namespace RiseOp.Services.IM
             this.InputControl.AcceptTabs = false;
             this.InputControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.InputControl.EnterClears = true;
+            this.InputControl.IMButtons = true;
             this.InputControl.Location = new System.Drawing.Point(0, 0);
             this.InputControl.Name = "InputControl";
+            this.InputControl.PlainTextMode = true;
             this.InputControl.ReadOnly = false;
             this.InputControl.ShowFontStrip = true;
             this.InputControl.Size = new System.Drawing.Size(301, 62);
@@ -145,7 +149,7 @@ namespace RiseOp.Services.IM
         #endregion
 
         private System.Windows.Forms.SplitContainer splitContainer1;
-        private System.Windows.Forms.RichTextBox MessageTextBox;
+        private RiseOp.Interface.Views.RichTextBoxEx MessageTextBox;
         private TextInput InputControl;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.PictureBox StatusImage;

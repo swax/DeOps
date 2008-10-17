@@ -84,7 +84,7 @@ namespace RiseOp.Interface
 
         private void AddButton_Click(object sender, EventArgs e)
         {
-            BuddyView.AddBuddyDialog(Core);
+            BuddyView.AddBuddyDialog(Core, "");
    
         }
 

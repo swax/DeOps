@@ -123,8 +123,10 @@ namespace RiseOp.Services.Board
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.MessageBody.EnterClears = false;
+            this.MessageBody.IMButtons = false;
             this.MessageBody.Location = new System.Drawing.Point(6, 68);
             this.MessageBody.Name = "MessageBody";
+            this.MessageBody.PlainTextMode = true;
             this.MessageBody.ReadOnly = false;
             this.MessageBody.ShowFontStrip = true;
             this.MessageBody.Size = new System.Drawing.Size(384, 239);

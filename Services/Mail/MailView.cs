@@ -80,6 +80,8 @@ namespace RiseOp.Services.Mail
             MessageHeader.DocumentText = HeaderPage.ToString();
 
             toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+
+            MessageBody.Core = Core;
         }
 
         internal override string GetTitle(bool small)
@@ -324,11 +326,21 @@ namespace RiseOp.Services.Mail
                     foreach (MailFile file in message.Attached)
                         if (file.Name == "body")
                         {
-                            byte[] htmlBytes = new byte[file.Size];
-                            crypto.Read(htmlBytes, 0, (int)file.Size);
+                            byte[] msgBytes = new byte[file.Size];
+                            crypto.Read(msgBytes, 0, (int)file.Size);
 
                             UTF8Encoding utf = new UTF8Encoding();
-                            MessageBody.Rtf = utf.GetString(htmlBytes);
+
+                            MessageBody.Clear();
+                            MessageBody.SelectionFont = new Font("Tahoma", 9.75f);
+                            MessageBody.SelectionColor = Color.Black;
+
+                            if (message.Info.Format == TextFormat.RTF)
+                                MessageBody.Rtf = utf.GetString(msgBytes);
+                            else
+                                MessageBody.Text = utf.GetString(msgBytes);
+
+                            MessageBody.DetectLinksDefault();
                         }
                 }
             }

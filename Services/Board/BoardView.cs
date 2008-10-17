@@ -98,6 +98,8 @@ namespace RiseOp.Services.Board
 
             PostView.OverlayImages.Add(BoardRes.high_scope);
             PostView.OverlayImages.Add(BoardRes.low_scope);
+
+            PostBody.Core = Core;
         }
 
         internal override void Init()
@@ -509,11 +511,21 @@ namespace RiseOp.Services.Board
                     foreach (PostFile file in post.Attached)
                         if (file.Name == "body")
                         {
-                            byte[] htmlBytes = new byte[file.Size];
-                            crypto.Read(htmlBytes, 0, (int)file.Size);
+                            byte[] msgBytes = new byte[file.Size];
+                            crypto.Read(msgBytes, 0, (int)file.Size);
 
                             UTF8Encoding utf = new UTF8Encoding();
-                            PostBody.Rtf = utf.GetString(htmlBytes);
+
+                            PostBody.Clear();
+                            PostBody.SelectionFont = new Font("Tahoma", 9.75f);
+                            PostBody.SelectionColor = Color.Black;
+
+                            if(post.Info.Format == TextFormat.RTF)
+                                PostBody.Rtf = utf.GetString(msgBytes);
+                            else
+                                PostBody.Text = utf.GetString(msgBytes);
+
+                            PostBody.DetectLinksDefault();
                         }
                 }
             }
@@ -668,7 +680,7 @@ namespace RiseOp.Services.Board
             OpPost post = item.Post;
 
             PostMessage form = new PostMessage(Boards, post.Header.TargetID, post.Header.ProjectID);
-            form.PostEdit(post, post.Header.ParentID, PostBody.Rtf);
+            form.PostEdit(post, post.Header.ParentID, PostBody.Rtf, post.Info.Format == TextFormat.Plain);
 
             Core.RunInGuiThread(Core.ShowExternal, form);
         }

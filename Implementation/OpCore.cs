@@ -25,6 +25,7 @@ using RiseOp.Services.Share;
 using RiseOp.Services.Storage;
 using RiseOp.Services.Transfer;
 using RiseOp.Services.Trust;
+using RiseOp.Services.Update;
 
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
@@ -179,6 +180,7 @@ namespace RiseOp.Implementation
             AddService(new LocationService(this));
             AddService(new LocalSync(this));
             AddService(new BuddyService(this));
+            AddService(new UpdateService(this));
 
             if (!User.Settings.GlobalIM)
                 AddService(new TrustService(this));
@@ -908,14 +910,14 @@ namespace RiseOp.Implementation
             {
                 Name = GetName(user),
                 OpName = User.Settings.Operation,
-                OpID = User.Settings.InviteKey,
+                PublicOpID = User.Settings.PublicOpID,
                 PublicKey = User.Settings.KeyPublic
             };
 
             string test = link.Encode();
             IdentityLink check = IdentityLink.Decode(test);
 
-            Debug.Assert(Utilities.MemCompare(link.OpID, check.OpID) &&
+            Debug.Assert(Utilities.MemCompare(link.PublicOpID, check.PublicOpID) &&
                          Utilities.MemCompare(link.PublicKey, check.PublicKey));
 
             return link.Encode();
@@ -924,6 +926,8 @@ namespace RiseOp.Implementation
         internal string GenerateInvite(string pubLink, out string name)
         {
             IdentityLink ident = IdentityLink.Decode(pubLink);
+
+            // dont check opID, because invites come from different ops
 
             name = ident.Name;
             
@@ -963,7 +967,7 @@ namespace RiseOp.Implementation
             byte[] encrypted = Utilities.KeytoRsa(ident.PublicKey).Encrypt(packets,false);
 
             // ensure that this link is opened from the original operation remote's public key came from
-            byte[] final = Utilities.CombineArrays(ident.OpID, encrypted);
+            byte[] final = Utilities.CombineArrays(ident.PublicOpID, encrypted);
 
             return link + Utilities.ToBase64String(final);
         }
@@ -981,7 +985,7 @@ namespace RiseOp.Implementation
             string op = HttpUtility.UrlDecode(nameParts[1]);
 
             byte[] data = Utilities.FromBase64String(mainParts[3]);
-            byte[] opID = Utilities.ExtractBytes(data, 0, 8);
+            byte[] pubOpID = Utilities.ExtractBytes(data, 0, 8);
             byte[] encrypted = Utilities.ExtractBytes(data, 8, data.Length - 8);
             byte[] decrypted = null;
 
@@ -991,7 +995,7 @@ namespace RiseOp.Implementation
                 foreach (OpCore core in context.Cores)
                     try
                     {
-                        if (Utilities.MemCompare(opID, core.User.Settings.InviteKey))
+                        if (Utilities.MemCompare(pubOpID, core.User.Settings.PublicOpID))
                             decrypted = core.User.Settings.KeyPair.Decrypt(encrypted, false);
                     }
                     catch { }
@@ -1022,7 +1026,7 @@ namespace RiseOp.Implementation
                     user.Load(LoadModeType.Settings);
 
                     // ensure the invitation is for this op specifically
-                    if (!Utilities.MemCompare(opID, user.Settings.InviteKey))
+                    if (!Utilities.MemCompare(pubOpID, user.Settings.PublicOpID))
                     {
                         MessageBox.Show("This is not a " + op + " profile");
                         continue;
@@ -1083,7 +1087,7 @@ namespace RiseOp.Implementation
     {
         internal string Name;
         internal string OpName;
-        internal byte[] OpID;
+        internal byte[] PublicOpID;
         internal byte[] PublicKey;
 
         // riseop://opname/ident/name/opid~publickey
@@ -1093,7 +1097,7 @@ namespace RiseOp.Implementation
         {
             string link = "riseop://" + HttpUtility.UrlEncode(OpName) + "/ident/" + HttpUtility.UrlEncode(Name) + "/";
 
-            byte[] totalKey = Utilities.CombineArrays(OpID, PublicKey);
+            byte[] totalKey = Utilities.CombineArrays(PublicOpID, PublicKey);
 
             return link + Utilities.ToBase64String(totalKey);
         }
@@ -1115,7 +1119,7 @@ namespace RiseOp.Implementation
             ident.OpName = HttpUtility.UrlDecode(mainParts[0]);
 
             byte[] totalKey = Utilities.FromBase64String(mainParts[3]);
-            ident.OpID = Utilities.ExtractBytes(totalKey, 0, 8);
+            ident.PublicOpID = Utilities.ExtractBytes(totalKey, 0, 8);
             ident.PublicKey = Utilities.ExtractBytes(totalKey, 8, totalKey.Length - 8);
 
             return ident;

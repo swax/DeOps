@@ -18,20 +18,26 @@ namespace RiseOp.Services.Share
     {
         OpCore Core;
         ulong User;
-        ushort Client;
+
 
         ShareService Sharing;
 
+        internal Tuple<FileProcessedHandler, object> FileProcessed;
 
-        internal SendFileForm(OpCore core, ulong user, ushort client)
+
+        internal SendFileForm(OpCore core, ulong user)
         {
             InitializeComponent();
 
             Core = core;
             User = user;
-            Client = client;
 
             Sharing = Core.GetService(ServiceIDs.Share) as ShareService;
+
+            if(user == 0)
+                Text = "Send File to Room";
+            else
+                Text = "Send File to " + Core.GetName(user);
 
             Sharing.Local.Files.LockReading(() =>
             {
@@ -61,7 +67,7 @@ namespace RiseOp.Services.Share
             if (BrowseLink.Enabled)
             {
                 if (File.Exists(BrowseLink.Text))
-                    Sharing.SendFile(BrowseLink.Text, User, Client);
+                    Sharing.SendFile(BrowseLink.Text, FileProcessed);
 
                 else
                 {
@@ -72,17 +78,12 @@ namespace RiseOp.Services.Share
 
             else if (RecentRadio.Checked)
             {
-                SharedFile share = RecentCombo.SelectedItem as SharedFile;
+                SharedFile file = RecentCombo.SelectedItem as SharedFile;
 
-                if (share != null)
+                if (file != null)
                 {
-                    Core.RunInCoreAsync(() =>
-                    {
-                        Sharing.AddTargets(share.ToRequest, User, Client);
-
-                        foreach (DhtClient target in share.ToRequest.Where(t => t.UserID == User).ToArray())
-                            Sharing.TrySendRequest(share, target);
-                    });
+                    if (FileProcessed != null)
+                        Core.RunInCoreAsync(() => FileProcessed.First.Invoke(file, FileProcessed.Second));
                 }
                 else
                 {
@@ -91,12 +92,10 @@ namespace RiseOp.Services.Share
                 }
             }
 
-            // show the user the transfer starting
-            if (Core.GuiMain is MainForm && !((MainForm)Core.GuiMain).SideMode)
-                Core.ShowInternal(new SharingView(Core, Core.UserID));
-           
-            else if (!Core.GuiMain.ShowExistingView(typeof(SharingView)))
-                Core.ShowExternal(new SharingView(Core, Core.UserID));
+            // show if processing otherwise, request immediately sent
+            if(BrowseLink.Enabled)
+                if (!Core.GuiMain.ShowExistingView(typeof(SharingView)))
+                    Core.ShowExternal(new SharingView(Core, Core.UserID));
             
 
             DialogResult = DialogResult.OK;

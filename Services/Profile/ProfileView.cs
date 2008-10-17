@@ -214,6 +214,7 @@ namespace RiseOp.Services.Profile
             string template = null;
 
             textFields.Clear();
+            textFields["local_help"] = (profile.UserID == service.Core.UserID) ? "Right-click to Edit" : "";
 
             if(fileFields != null)
                 fileFields.Clear();

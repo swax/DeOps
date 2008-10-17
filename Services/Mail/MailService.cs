@@ -333,7 +333,7 @@ namespace RiseOp.Services.Mail
             //foreach (string paragraph in Core.TextGen.GenerateParagraphs(Core.RndGen.Next(1,3)))
             //   body += paragraph + "\r\n\r\n";
 
-            SendMail(new List<ulong>() { target.UserID }, new List<AttachedFile>(), subject, Utilities.ToRtf(body), thread);
+            SendMail(new List<ulong>() { target.UserID }, new List<AttachedFile>(), subject, body, TextFormat.Plain, thread);
         }
 
         public void SimCleanup()
@@ -684,11 +684,11 @@ namespace RiseOp.Services.Mail
             Core.InvokeView(node.IsExternal(), view);
         }
 
-        internal void SendMail(List<ulong> to, List<AttachedFile> files, string subject, string body, int threadID)
+        internal void SendMail(List<ulong> to, List<AttachedFile> files, string subject, string body, TextFormat format, int threadID)
         {
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreBlocked(delegate() { SendMail(to, files, subject, body, threadID); });
+                Core.RunInCoreBlocked(delegate() { SendMail(to, files, subject, body, format, threadID); });
                 return;
             }
 
@@ -706,7 +706,7 @@ namespace RiseOp.Services.Mail
                 int written = 0;
 
                 // build mail file
-                written += Protocol.WriteToFile(new MailInfo(subject, Utilities.GetQuip(body), Core.TimeNow.ToUniversalTime(), files.Count > 0), stream);
+                written += Protocol.WriteToFile(new MailInfo(subject, format, Utilities.GetQuip(body, format), Core.TimeNow.ToUniversalTime(), files.Count > 0), stream);
 
                 foreach (ulong id in to)
                     written += Protocol.WriteToFile(new MailDestination(Core.KeyMap[id], false), stream);

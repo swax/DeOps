@@ -46,7 +46,17 @@ namespace RiseOp.Interface
             set
             {
                 PlainText = value;
-                FontButtonsVisible(!value);
+
+                FontSeparator.Visible = !value;
+
+                BoldButton.Visible = !value;
+                ItalicsButton.Visible = !value;
+                UnderlineButton.Visible = !value;
+
+                FontButton.Visible = !value;
+                ColorsButton.Visible = !value;
+
+                TextFormat = value ? TextFormat.Plain : TextFormat.RTF;
             }
         }
 
@@ -111,8 +121,14 @@ namespace RiseOp.Interface
             }
         }
 
-        internal delegate void SendMessageHandler(string message);
+        internal TextFormat TextFormat = TextFormat.RTF;
+
+        internal delegate void SendMessageHandler(string message, TextFormat format);
         internal SendMessageHandler SendMessage;
+
+        internal MethodInvoker SendFile;
+        internal MethodInvoker IgnoreUser;
+        internal MethodInvoker AddBuddy;
 
         public TextInput()
         {
@@ -203,18 +219,23 @@ namespace RiseOp.Interface
             {
                 if (InputBox.Text.Replace("\n", "") != "")
                 {
-                    string message = InputBox.Rtf;
+                    string message = InputBox.Text;
 
-                    Regex rex = new Regex("\\\\par\\s+", RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
-                    Match m = rex.Match(message);
-
-                    while (m.Success)
+                    if (TextFormat == TextFormat.RTF)
                     {
-                        message = rex.Replace(message, "");
-                        m = m.NextMatch();
+                        message = InputBox.Rtf;
+
+                        Regex rex = new Regex("\\\\par\\s+", RegexOptions.Multiline | RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
+                        Match m = rex.Match(message);
+
+                        while (m.Success)
+                        {
+                            message = rex.Replace(message, "");
+                            m = m.NextMatch();
+                        }
                     }
 
-                    BeginInvoke(SendMessage, message);
+                    BeginInvoke(SendMessage, message, TextFormat);
                     //Panel.SendMessage();
                 }
 
@@ -228,11 +249,6 @@ namespace RiseOp.Interface
 
                 e.Handled = true;
             }
-        }
-
-        private void InputBox_LinkClicked(object sender, LinkClickedEventArgs e)
-        {
-            System.Diagnostics.Process.Start(e.LinkText);
         }
 
         private void FontButton_Click(object sender, EventArgs e)
@@ -251,12 +267,12 @@ namespace RiseOp.Interface
 
         private void BlockButton_Click(object sender, EventArgs e)
         {
-               
+            BeginInvoke(IgnoreUser);
         }
 
         private void SendFileButton_Click(object sender, EventArgs e)
         {
-
+            BeginInvoke(SendFile);
         }
         
         private void PlainTextButton_Click(object sender, EventArgs e)
@@ -266,24 +282,18 @@ namespace RiseOp.Interface
             InputBox.Clear();
             InputBox.Text = text;
 
-            FontButtonsVisible(false);
+            PlainTextMode = true;
         }
 
         private void RichTextButton_Click_1(object sender, EventArgs e)
         {
-            FontButtonsVisible(true);
+            PlainTextMode = false;
+
         }
 
-        void FontButtonsVisible(bool visible)
+        private void AddBuddyButton_Click(object sender, EventArgs e)
         {
-            FontSeparator.Visible = visible;
-
-            BoldButton.Visible = visible;
-            ItalicsButton.Visible = visible;
-            UnderlineButton.Visible = visible;
-
-            FontButton.Visible = visible;
-            ColorsButton.Visible = visible;
+            BeginInvoke(AddBuddy);
         }
     }
 }

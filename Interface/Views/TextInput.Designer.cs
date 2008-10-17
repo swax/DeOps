@@ -42,7 +42,8 @@ namespace RiseOp.Interface
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.SendFileButton = new System.Windows.Forms.ToolStripButton();
             this.BlockButton = new System.Windows.Forms.ToolStripButton();
-            this.InputBox = new System.Windows.Forms.RichTextBox();
+            this.InputBox = new RiseOp.Interface.Views.RichTextBoxEx();
+            this.AddBuddyButton = new System.Windows.Forms.ToolStripButton();
             this.FontToolStrip.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -59,7 +60,8 @@ namespace RiseOp.Interface
             this.ColorsButton,
             this.toolStripSeparator2,
             this.SendFileButton,
-            this.BlockButton});
+            this.BlockButton,
+            this.AddBuddyButton});
             this.FontToolStrip.Location = new System.Drawing.Point(0, 0);
             this.FontToolStrip.Name = "FontToolStrip";
             this.FontToolStrip.Size = new System.Drawing.Size(299, 25);
@@ -177,7 +179,7 @@ namespace RiseOp.Interface
             this.BlockButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.BlockButton.Name = "BlockButton";
             this.BlockButton.Size = new System.Drawing.Size(23, 22);
-            this.BlockButton.Text = "Block User";
+            this.BlockButton.Text = "Ignore User";
             this.BlockButton.Visible = false;
             this.BlockButton.Click += new System.EventHandler(this.BlockButton_Click);
             // 
@@ -193,7 +195,18 @@ namespace RiseOp.Interface
             this.InputBox.Text = "";
             this.InputBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.InputBox_KeyDown);
             this.InputBox.SelectionChanged += new System.EventHandler(this.InputBox_SelectionChanged);
-            this.InputBox.LinkClicked += new System.Windows.Forms.LinkClickedEventHandler(this.InputBox_LinkClicked);
+            // 
+            // AddBuddyButton
+            // 
+            this.AddBuddyButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.AddBuddyButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.AddBuddyButton.Image = ((System.Drawing.Image)(resources.GetObject("AddBuddyButton.Image")));
+            this.AddBuddyButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.AddBuddyButton.Name = "AddBuddyButton";
+            this.AddBuddyButton.Size = new System.Drawing.Size(23, 22);
+            this.AddBuddyButton.ToolTipText = "Add Buddy";
+            this.AddBuddyButton.Visible = false;
+            this.AddBuddyButton.Click += new System.EventHandler(this.AddBuddyButton_Click);
             // 
             // TextInput
             // 
@@ -219,12 +232,13 @@ namespace RiseOp.Interface
         private System.Windows.Forms.ToolStripButton UnderlineButton;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripButton ColorsButton;
-        internal System.Windows.Forms.RichTextBox InputBox;
+        internal RiseOp.Interface.Views.RichTextBoxEx InputBox;
         private System.Windows.Forms.ToolStripButton FontButton;
         private System.Windows.Forms.ToolStripDropDownButton toolStripDropDownButton1;
         private System.Windows.Forms.ToolStripMenuItem PlainTextButton;
         private System.Windows.Forms.ToolStripMenuItem RichTextButton;
         private System.Windows.Forms.ToolStripButton SendFileButton;
         private System.Windows.Forms.ToolStripButton BlockButton;
+        internal System.Windows.Forms.ToolStripButton AddBuddyButton;
     }
 }

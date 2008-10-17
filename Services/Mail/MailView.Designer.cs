@@ -35,16 +35,16 @@ namespace RiseOp.Services.Mail
             RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
-            this.SentButton = new System.Windows.Forms.ToolStripButton();
-            this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
             this.ReceivedButton = new System.Windows.Forms.ToolStripButton();
+            this.toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
+            this.SentButton = new System.Windows.Forms.ToolStripButton();
             this.ComposeButton = new System.Windows.Forms.ToolStripButton();
             this.toolStripLabel3 = new System.Windows.Forms.ToolStripLabel();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.MessageView = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.MessageHeader = new System.Windows.Forms.WebBrowser();
-            this.MessageBody = new System.Windows.Forms.RichTextBox();
+            this.MessageBody = new RiseOp.Interface.Views.RichTextBoxEx();
             this.ListImages = new System.Windows.Forms.ImageList(this.components);
             this.toolStrip1.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -77,26 +77,6 @@ namespace RiseOp.Services.Mail
             this.toolStripLabel1.Size = new System.Drawing.Size(10, 22);
             this.toolStripLabel1.Text = " ";
             // 
-            // SentButton
-            // 
-            this.SentButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.SentButton.Checked = true;
-            this.SentButton.CheckOnClick = true;
-            this.SentButton.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.SentButton.Image = ((System.Drawing.Image)(resources.GetObject("SentButton.Image")));
-            this.SentButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.SentButton.Name = "SentButton";
-            this.SentButton.Size = new System.Drawing.Size(49, 22);
-            this.SentButton.Text = "Sent";
-            this.SentButton.Click += new System.EventHandler(this.OutboxButton_Click);
-            // 
-            // toolStripLabel2
-            // 
-            this.toolStripLabel2.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.toolStripLabel2.AutoSize = false;
-            this.toolStripLabel2.Name = "toolStripLabel2";
-            this.toolStripLabel2.Size = new System.Drawing.Size(5, 22);
-            // 
             // ReceivedButton
             // 
             this.ReceivedButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
@@ -109,6 +89,26 @@ namespace RiseOp.Services.Mail
             this.ReceivedButton.Size = new System.Drawing.Size(71, 22);
             this.ReceivedButton.Text = "Received";
             this.ReceivedButton.Click += new System.EventHandler(this.InboxButton_Click);
+            // 
+            // toolStripLabel2
+            // 
+            this.toolStripLabel2.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.toolStripLabel2.AutoSize = false;
+            this.toolStripLabel2.Name = "toolStripLabel2";
+            this.toolStripLabel2.Size = new System.Drawing.Size(5, 22);
+            // 
+            // SentButton
+            // 
+            this.SentButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.SentButton.Checked = true;
+            this.SentButton.CheckOnClick = true;
+            this.SentButton.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.SentButton.Image = ((System.Drawing.Image)(resources.GetObject("SentButton.Image")));
+            this.SentButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.SentButton.Name = "SentButton";
+            this.SentButton.Size = new System.Drawing.Size(49, 22);
+            this.SentButton.Text = "Sent";
+            this.SentButton.Click += new System.EventHandler(this.OutboxButton_Click);
             // 
             // ComposeButton
             // 
@@ -241,6 +241,7 @@ namespace RiseOp.Services.Mail
             this.MessageBody.BackColor = System.Drawing.Color.White;
             this.MessageBody.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.MessageBody.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.MessageBody.Font = new System.Drawing.Font("Tahoma", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.MessageBody.Location = new System.Drawing.Point(0, 0);
             this.MessageBody.Name = "MessageBody";
             this.MessageBody.ReadOnly = true;
@@ -285,7 +286,7 @@ namespace RiseOp.Services.Mail
         private System.Windows.Forms.ToolStripButton ComposeButton;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.SplitContainer splitContainer2;
-        private System.Windows.Forms.RichTextBox MessageBody;
+        private RiseOp.Interface.Views.RichTextBoxEx MessageBody;
         private System.Windows.Forms.WebBrowser MessageHeader;
         private System.Windows.Forms.ImageList ListImages;
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;

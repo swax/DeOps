@@ -610,6 +610,7 @@ namespace RiseOp.Simulator
             {
                 DhtContact contact = net.GetLocalContact();
                 contact.IP = net.Core.Sim.RealIP;
+                contact.LastSeen = net.Core.TimeNow;
                 network.Cache.AddContact(contact);
             }
         }

@@ -190,10 +190,13 @@ namespace RiseOp.Services.Board
     internal class PostInfo : G2Packet
     {
         const byte Packet_Subject = 0x10;
-        const byte Packet_Unique = 0x20;
-        const byte Packet_Quip = 0x30;
+        const byte Packet_Format = 0x20;
+        const byte Packet_Unique = 0x30;
+        const byte Packet_Quip = 0x40;
+
 
         internal string     Subject;
+        internal TextFormat Format;
         internal string Quip;
         int Unique; // ensures file hash is unique
 
@@ -202,11 +205,12 @@ namespace RiseOp.Services.Board
         {
         }
 
-        internal PostInfo(string subject, string quip, Random gen)
+        internal PostInfo(string subject, TextFormat format, string quip, Random gen)
         {
             Subject = subject;
             Quip = quip;
             Unique = gen.Next();
+            Format = format;
         }
 
         internal override byte[] Encode(G2Protocol protocol)
@@ -216,6 +220,7 @@ namespace RiseOp.Services.Board
                 G2Frame info = protocol.WritePacket(null, BoardPacket.PostInfo, null);
 
                 protocol.WritePacket(info, Packet_Subject, UTF8Encoding.UTF8.GetBytes(Subject));
+                protocol.WritePacket(info, Packet_Format, CompactNum.GetBytes((int)Format));
                 protocol.WritePacket(info, Packet_Quip, UTF8Encoding.UTF8.GetBytes(Quip));
                 protocol.WritePacket(info, Packet_Unique, BitConverter.GetBytes(Unique));
 
@@ -237,6 +242,10 @@ namespace RiseOp.Services.Board
                 {
                     case Packet_Subject:
                         info.Subject = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_Format:
+                        info.Format = (TextFormat)CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Quip:

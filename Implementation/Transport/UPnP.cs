@@ -48,14 +48,25 @@ namespace RiseOp.Implementation.Transport
 
         public static void OpenFirewallPort(string machineIP, string firewallIP, int openPort)
         {
-            string svc = getServicesFromDevice(firewallIP);
+            string svc = GetServicesFromDevice(firewallIP);
 
-            openPortFromService(svc, "urn:schemas-upnp-org:service:WANIPConnection:1", machineIP, firewallIP, 80, openPort);
-            
-            openPortFromService(svc, "urn:schemas-upnp-org:service:WANPPPConnection:1", machineIP, firewallIP, 80, openPort);
+            string url = ExtractTag("URLBase", svc);
+            if (url == null)
+                url = "http://" + machineIP + ":80";
+
+
+            //test(svc, "urn:schemas-upnp-org:service:WANIPConnection:1", url);
+            test(svc, "urn:schemas-upnp-org:service:WANPPPConnection:1", url);
+
+            OpenPortFromService(svc, "urn:schemas-upnp-org:service:WANIPConnection:1", machineIP, url, openPort, "TCP");
+            OpenPortFromService(svc, "urn:schemas-upnp-org:service:WANIPConnection:1", machineIP, url, openPort, "UDP");
+
+            OpenPortFromService(svc, "urn:schemas-upnp-org:service:WANPPPConnection:1", machineIP, url, openPort, "TCP");
+            OpenPortFromService(svc, "urn:schemas-upnp-org:service:WANPPPConnection:1", machineIP, url, openPort, "UDP");
         }
 
-        private static string getServicesFromDevice(string firewallIP)
+
+        private static string GetServicesFromDevice(string firewallIP)
         {
             //To send a broadcast and get responses from all, send to 239.255.255.250
             string queryResponse = "";
@@ -74,14 +85,14 @@ namespace RiseOp.Implementation.Transport
                 IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(firewallIP), 1900);
 
                 //1.5 second timeout because firewall should be on same segment (fast)
-                client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 1500);
+                client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 3000);
 
                 byte[] q = Encoding.ASCII.GetBytes(query);
                 client.SendTo(q, q.Length, SocketFlags.None, endPoint);
                 IPEndPoint sender = new IPEndPoint(IPAddress.Any, 0);
                 EndPoint senderEP = (EndPoint)sender;
 
-                byte[] data = new byte[1024];
+                byte[] data = new byte[4096];
                 int recv = client.ReceiveFrom(data, ref senderEP);
                 queryResponse = Encoding.ASCII.GetString(data);
             }
@@ -132,62 +143,111 @@ namespace RiseOp.Implementation.Transport
             return "";
         }
 
-        private static void openPortFromService(string services, string serviceType, string machineIP, string firewallIP, int gatewayPort, int portToForward)
+        private static void OpenPortFromService(string services, string serviceType, string machineIP, string url, int portToForward, string protocol)
         {
-            if (services.Length == 0)
-                return;
+            string body =   "<u:AddPortMapping xmlns:u=\"" + serviceType + "\">" +
+                            "<NewRemoteHost></NewRemoteHost>" +
+                            "<NewExternalPort>" + portToForward.ToString() + "</NewExternalPort>" +
+                            "<NewProtocol>" + protocol + "</NewProtocol>" +
+                            "<NewInternalPort>" + portToForward.ToString() + "</NewInternalPort>" +
+                            "<NewInternalClient>" + machineIP + "</NewInternalClient>" +
+                            "<NewEnabled>1</NewEnabled>" +
+                            "<NewPortMappingDescription>WoodchopClient</NewPortMappingDescription>" +
+                            "<NewLeaseDuration>0</NewLeaseDuration>" +
+                            "</u:AddPortMapping>";
 
-            int svcIndex = services.IndexOf(serviceType);
-            if (svcIndex == -1)
-                return;
-
-            string controlUrl = services.Substring(svcIndex);
-
-            string tag1 = "<controlURL>";
-            string tag2 = "</controlURL>";
-            controlUrl = controlUrl.Substring(controlUrl.IndexOf(tag1) + tag1.Length);
-            controlUrl = controlUrl.Substring(0, controlUrl.IndexOf(tag2));
-
-
-            string soapBody =   "<s:Envelope " +
-                                "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/ \" " +
-                                "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/ \">" +
-                                "<s:Body>" +
-                                "<u:AddPortMapping xmlns:u=\"" + serviceType + "\">" +
-                                "<NewRemoteHost></NewRemoteHost>" +
-                                "<NewExternalPort>" + portToForward.ToString() + "</NewExternalPort>" +
-                                "<NewProtocol>TCP</NewProtocol>" + // crit only tcp?
-                                "<NewInternalPort>" + portToForward.ToString() + "</NewInternalPort>" +
-                                "<NewInternalClient>" + machineIP + "</NewInternalClient>" +
-                                "<NewEnabled>1</NewEnabled>" +
-                                "<NewPortMappingDescription>WoodchopClient</NewPortMappingDescription>" +
-                                "<NewLeaseDuration>0</NewLeaseDuration>" +
-                                "</u:AddPortMapping>" +
-                                "</s:Body>" +
-                                "</s:Envelope>";
-
-            byte[] body = UTF8Encoding.ASCII.GetBytes(soapBody);
-
-            string url = "http://" + firewallIP + ":" + gatewayPort.ToString() + controlUrl;
-            
-            WebRequest wr = WebRequest.Create(url); //+ controlUrl);
-            
-            wr.Method = "POST";
-            wr.Headers.Add("SOAPAction", "\"" + serviceType + "#AddPortMapping\"");
-            wr.ContentType = "text/xml;charset=\"utf-8\"";
-            wr.ContentLength = body.Length;
-
-            Stream stream = wr.GetRequestStream();
-            stream.Write(body, 0, body.Length);
-            stream.Flush();
-            stream.Close();
-
-            WebResponse wres = wr.GetResponse();
-            StreamReader sr = new StreamReader(wres.GetResponseStream());
-            string ret = sr.ReadToEnd();
-            sr.Close();
+            string ret = PerformAction(services, serviceType, url, "AddPortMapping", body);
 
             Debug.WriteLine("Setting port forwarding:" + portToForward.ToString() + "\r\r" + ret);
+        }
+
+
+
+        static void  test(string services, string serviceType, string url)
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                string body = "<u:GetGenericPortMappingEntry xmlns:u=\"" + serviceType + "\">" +
+                              "<NewPortMappingIndex>" + i + "</NewPortMappingIndex>" +
+                              "</u:GetGenericPortMappingEntry>";
+
+                string ret = PerformAction(services, serviceType, url, "GetGenericPortMappingEntry", body);
+
+                string name = ExtractTag("NewPortMappingDescription", ret);
+                string ip = ExtractTag("NewInternalClient", ret);
+                string port = ExtractTag("NewInternalPort", ret);
+                string protocol = ExtractTag("NewProtocol", ret);
+                
+                Debug.WriteLine(i + ": " + name + " - " + ip + ":" + port + " " + protocol);
+            }
+        }
+
+        static string PerformAction(string services, string serviceType, string url, string action, string soap)
+        {
+            try
+            {
+                if (services.Length == 0)
+                    return null;
+
+                int svcIndex = services.IndexOf(serviceType);
+                if (svcIndex == -1)
+                    return null;
+
+                string controlUrl = ExtractTag("controlURL", services.Substring(svcIndex));
+
+
+                string soapBody = "<s:Envelope " +
+                                    "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/ \" " +
+                                    "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/ \">" +
+                                    "<s:Body>" +
+                                    soap +
+                                    "</s:Body>" +
+                                    "</s:Envelope>";
+
+                byte[] body = UTF8Encoding.ASCII.GetBytes(soapBody);
+
+                url += controlUrl;
+
+                WebRequest wr = WebRequest.Create(url);
+
+                wr.Method = "POST";
+                wr.Headers.Add("SOAPAction", "\"" + serviceType + "#" + action + "\"");
+                wr.ContentType = "text/xml;charset=\"utf-8\"";
+                wr.ContentLength = body.Length;
+
+                Stream stream = wr.GetRequestStream();
+                stream.Write(body, 0, body.Length);
+                stream.Flush();
+                stream.Close();
+
+                WebResponse wres = wr.GetResponse();
+                StreamReader sr = new StreamReader(wres.GetResponseStream());
+                string ret = sr.ReadToEnd();
+                sr.Close();
+
+                return ret;
+            }
+            catch { }
+
+            return null;
+        }
+
+        private static string ExtractTag(string tag, string body)
+        {
+            try
+            {
+                string tag1 = "<" + tag + ">";
+                string tag2 = "</" + tag + ">";
+
+                string extracted = body;
+                extracted = extracted.Substring(extracted.IndexOf(tag1) + tag1.Length);
+                extracted = extracted.Substring(0, extracted.IndexOf(tag2));
+
+                return extracted;
+            }
+            catch { }
+
+            return null;
         }
     }
 }

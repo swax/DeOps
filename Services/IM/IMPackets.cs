@@ -16,17 +16,21 @@ namespace RiseOp.Services.IM
     internal class MessageData : G2Packet
     {
         const byte Packet_Text = 0x10;
+        const byte Packet_Format = 0x20;
+
 
         internal string Text;
+        internal TextFormat Format;
 
 
         internal MessageData()
         {
         }
 
-        internal MessageData(string text)
+        internal MessageData(string text, TextFormat format)
         {
             Text = text;
+            Format = format;
         }
 
         internal override byte[] Encode(G2Protocol protocol)
@@ -36,6 +40,7 @@ namespace RiseOp.Services.IM
                 G2Frame msg = protocol.WritePacket(null, IMPacket.Message, null);
 
                 protocol.WritePacket(msg, Packet_Text, UTF8Encoding.UTF8.GetBytes(Text));
+                protocol.WritePacket(msg, Packet_Format, CompactNum.GetBytes((int)Format));
 
                 return protocol.WriteFinish();
             }
@@ -56,6 +61,10 @@ namespace RiseOp.Services.IM
                 {
                     case Packet_Text:
                         msg.Text = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_Format:
+                        msg.Format = (TextFormat)CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }

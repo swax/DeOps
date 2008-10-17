@@ -10,8 +10,10 @@ using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Transport;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Services.Trust;
+
 using RiseOp.Services.Location;
+using RiseOp.Services.Share;
+using RiseOp.Services.Trust;
 
 
 namespace RiseOp.Services.IM
@@ -189,22 +191,26 @@ namespace RiseOp.Services.IM
             {
                 view = CreateView(user);
 
-                Core.RunInCoreAsync(() => Connect(user));
+                Connect(user);
             }
         }
 
-        private void Connect(ulong key)
+        internal void Connect(ulong user)
         {
-            Debug.Assert(!Core.InvokeRequired);
-
-            IMStatus status = null;
-            if(!IMMap.SafeTryGetValue(key, out status))
+            if (Core.InvokeRequired)
             {
-                status = new IMStatus(key);
-                IMMap.SafeAdd(key, status);
+                Core.RunInCoreAsync(() => Connect(user));
+                return;
             }
 
-            foreach (ClientInfo loc in Core.Locations.GetClients(key))
+            IMStatus status = null;
+            if(!IMMap.SafeTryGetValue(user, out status))
+            {
+                status = new IMStatus(user);
+                IMMap.SafeAdd(user, status);
+            }
+
+            foreach (ClientInfo loc in Core.Locations.GetClients(user))
                 Network.RudpControl.Connect(loc.Data);
 
             Update(status);
@@ -355,11 +361,11 @@ namespace RiseOp.Services.IM
             Update(status);
         }
 
-        internal void SendMessage(ulong key, string text)
+        internal void SendMessage(ulong key, string text, TextFormat format)
         {
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreAsync(delegate() { SendMessage(key, text); });
+                Core.RunInCoreAsync(delegate() { SendMessage(key, text, format); });
                 return;
             }
 
@@ -369,7 +375,7 @@ namespace RiseOp.Services.IM
 
            
             bool sent = false;
-            MessageData message = new MessageData(text);
+            MessageData message = new MessageData(text, format);
 
             foreach (RudpSession session in Network.RudpControl.GetActiveSessions(key))
             {
@@ -377,7 +383,7 @@ namespace RiseOp.Services.IM
                 session.SendData(ServiceID, 0, message, true);
             }
 
-            ProcessMessage(status, new InstantMessage(Core, text) { Sent = sent });
+            ProcessMessage(status, new InstantMessage(Core, text, format) { Sent = sent });
         }
 
         void Session_Data(RudpSession session, byte[] data)
@@ -442,6 +448,19 @@ namespace RiseOp.Services.IM
                          }  
             });
         }
+
+        internal void Share_FileProcessed(SharedFile file, object arg)
+        {
+            ulong user = (ulong)arg;
+
+            ShareService share = Core.GetService(ServiceIDs.Share) as ShareService;
+
+            string message = "File: " + file.Name +
+                ", Size: " + Utilities.ByteSizetoDecString(file.Size) +
+                ", Download: " + share.GetFileLink(Core.UserID, file);
+
+            SendMessage(user, message, TextFormat.Plain);
+        }
     }
 
 
@@ -450,16 +469,18 @@ namespace RiseOp.Services.IM
     {
         internal DateTime TimeStamp;
         internal string   Text;
+        internal TextFormat Format;
         internal bool System;
         internal bool Sent;
 
         // local / system message
-        internal InstantMessage(OpCore core, string text)
+        internal InstantMessage(OpCore core, string text, TextFormat format)
         {
             UserID = core.UserID;
             ClientID = core.Network.Local.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;
+            Format = format;
             System = false;
         }
 
@@ -469,6 +490,7 @@ namespace RiseOp.Services.IM
             ClientID = session.ClientID;
             TimeStamp = core.TimeNow;
             Text = message.Text;
+            Format = message.Format;
         }
     }
 

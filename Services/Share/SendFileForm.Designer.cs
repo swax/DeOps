@@ -39,7 +39,7 @@
             // BrowseLink
             // 
             this.BrowseLink.AutoSize = true;
-            this.BrowseLink.Location = new System.Drawing.Point(29, 23);
+            this.BrowseLink.Location = new System.Drawing.Point(35, 23);
             this.BrowseLink.Name = "BrowseLink";
             this.BrowseLink.Size = new System.Drawing.Size(85, 13);
             this.BrowseLink.TabIndex = 0;

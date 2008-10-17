@@ -14,6 +14,7 @@ using RiseOp.Implementation.Transport;
 
 using RiseOp.Services.Trust;
 using RiseOp.Services.Location;
+using RiseOp.Services.Share;
 
 using NLipsum.Core;
 
@@ -173,7 +174,7 @@ namespace RiseOp.Services.Chat
                 });
 
                 if (rooms.Count > 0)
-                    SendMessage(rooms[Core.RndGen.Next(rooms.Count)], Utilities.ToRtf(Core.TextGen.GenerateSentences(1, Sentence.Short)[0]));
+                    SendMessage(rooms[Core.RndGen.Next(rooms.Count)], Core.TextGen.GenerateSentences(1, Sentence.Short)[0], TextFormat.Plain);
             }
         }
 
@@ -515,11 +516,11 @@ namespace RiseOp.Services.Chat
                 Network.RudpControl.Connect(location); // func checks if already connected
         }
 
-        internal void SendMessage(ChatRoom room, string text)
+        internal void SendMessage(ChatRoom room, string text, TextFormat format)
         {
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreAsync(delegate() { SendMessage(room, text); });
+                Core.RunInCoreAsync(delegate() { SendMessage(room, text, format); });
                 return;
             }
 
@@ -533,6 +534,7 @@ namespace RiseOp.Services.Chat
                 message.Kind = room.Kind;
                 message.RoomID = room.RoomID;
                 message.Text = text;
+                message.Format = format;
 
                 room.Members.LockReading(delegate()
                 {
@@ -545,7 +547,7 @@ namespace RiseOp.Services.Chat
                 });
             }
 
-            ProcessMessage(room, new ChatMessage(Core, text) { Sent = sent });
+            ProcessMessage(room, new ChatMessage(Core, text, format) { Sent = sent });
 
 
             //if (!sent)
@@ -599,7 +601,7 @@ namespace RiseOp.Services.Chat
                 Core.MakeNews(Core.GetName(session.UserID) + " is chatting", session.UserID, 0, false, ChatRes.Icon, Menu_View);
             }
 
-            ProcessMessage(room, new ChatMessage(Core, session, message.Text));
+            ProcessMessage(room, new ChatMessage(Core, session, message));
         }
 
         internal void Session_Update(RudpSession session)
@@ -693,7 +695,7 @@ namespace RiseOp.Services.Chat
         // system message
         private void ProcessMessage(ChatRoom room, string text)
         {
-            ProcessMessage(room, new ChatMessage(Core, text) { System = true });
+            ProcessMessage(room, new ChatMessage(Core, text, TextFormat.Plain) { System = true });
         }
 
         private void ProcessMessage(ChatRoom room, ChatMessage message)
@@ -1060,6 +1062,22 @@ namespace RiseOp.Services.Chat
                 ConnectRoom(room); 
             }
         }
+
+        internal void Share_FileProcessed(SharedFile file, object arg)
+        {
+            ChatRoom room = arg as ChatRoom;
+
+            if (room == null || !room.Active)
+                return;
+
+            ShareService share = Core.GetService(ServiceIDs.Share) as ShareService;
+
+            string message = "File: " + file.Name +
+                ", Size: " + Utilities.ByteSizetoDecString(file.Size) +
+                ", Download: " + share.GetFileLink(Core.UserID, file);
+
+            SendMessage(room, message, TextFormat.Plain);
+        }
     }
 
 
@@ -1097,14 +1115,14 @@ namespace RiseOp.Services.Chat
 
         internal ChatRoom(RoomKind kind, uint project)
         {
-            Debug.Assert( ChatService.IsCommandRoom(kind) );
+            Debug.Assert(ChatService.IsCommandRoom(kind));
 
             Kind = kind;
             RoomID = project + (uint)kind;
             ProjectID = project;
         }
 
-        internal ChatRoom(RoomKind kind, uint id, string title)
+        internal ChatRoom( RoomKind kind, uint id, string title)
         {
             Debug.Assert( !ChatService.IsCommandRoom(kind) );
 
@@ -1157,23 +1175,26 @@ namespace RiseOp.Services.Chat
         internal bool       System;
         internal DateTime   TimeStamp;
         internal string     Text;
+        internal TextFormat Format;
         internal bool       Sent;
 
 
-        internal ChatMessage(OpCore core, string text)
+        internal ChatMessage(OpCore core, string text, TextFormat format)
         {
             UserID = core.UserID;
             ClientID = core.Network.Local.ClientID;
             TimeStamp = core.TimeNow;
             Text = text;
+            Format = format;
         }
 
-        internal ChatMessage(OpCore core, RudpSession session, string text)
+        internal ChatMessage(OpCore core, RudpSession session, ChatText text)
         {
             UserID = session.UserID;
             ClientID = session.ClientID;
             TimeStamp = core.TimeNow;
-            Text = text;
+            Text = text.Text;
+            Format = text.Format;
         }
     }
 }

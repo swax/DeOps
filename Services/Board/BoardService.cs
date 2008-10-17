@@ -284,7 +284,7 @@ namespace RiseOp.Services.Board
 
             message = Core.TextGen.GenerateParagraphs(1)[0];
 
-            PostMessage(user, project, parent, scope, subject, Utilities.ToRtf(message), new List<AttachedFile>(), null);
+            PostMessage(user, project, parent, scope, subject, message, TextFormat.Plain, new List<AttachedFile>(), null);
         }
 
         public void SimCleanup()
@@ -459,7 +459,7 @@ namespace RiseOp.Services.Board
             FinishPost(copy);
         }
 
-        internal void PostMessage(ulong user, uint project, uint parent, ScopeType scope, string subject, string message, List<AttachedFile> files, OpPost edit)
+        internal void PostMessage(ulong user, uint project, uint parent, ScopeType scope, string subject, string message, TextFormat format, List<AttachedFile> files, OpPost edit)
         {
             // post header
             PostHeader header = new PostHeader();
@@ -500,7 +500,7 @@ namespace RiseOp.Services.Board
                 int written = 0;
 
                 // write post file
-                written += Protocol.WriteToFile(new PostInfo(subject, Utilities.GetQuip(message), Core.RndGen), stream);
+                written += Protocol.WriteToFile(new PostInfo(subject, format, Utilities.GetQuip(message, format), Core.RndGen), stream);
 
                 byte[] msgBytes = UTF8Encoding.UTF8.GetBytes(message);
                 written += Protocol.WriteToFile(new PostFile("body", msgBytes.Length), stream);

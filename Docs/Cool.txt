@@ -5,6 +5,8 @@ uses
 	install on a private lan, instant file sync and communication
 	personal file sync over the internet or just at home, unlimited capacity
 
+run on your home/mobile/work comp simultaneously, stay syncronized and connected
+
 features
 	next-gen multi-source downloading
 	dont need an internet connection, works ad-hoc over any LAN

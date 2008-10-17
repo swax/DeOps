@@ -519,7 +519,7 @@ namespace RiseOp.Interface
             {
                 if (url == "add_buddy")
                 {
-                    BuddyView.AddBuddyDialog(Core);
+                    BuddyView.AddBuddyDialog(Core, "");
                 }
 
                 else if (url == "add_group")

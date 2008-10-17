@@ -48,7 +48,7 @@ namespace RiseOp.Services.Board
             this.toolStripLabel3 = new System.Windows.Forms.ToolStripLabel();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.PostHeader = new System.Windows.Forms.WebBrowser();
-            this.PostBody = new System.Windows.Forms.RichTextBox();
+            this.PostBody = new RiseOp.Interface.Views.RichTextBoxEx();
             this.PostImageList = new System.Windows.Forms.ImageList(this.components);
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -285,6 +285,7 @@ namespace RiseOp.Services.Board
             this.PostBody.BackColor = System.Drawing.Color.White;
             this.PostBody.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.PostBody.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.PostBody.Font = new System.Drawing.Font("Tahoma", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.PostBody.Location = new System.Drawing.Point(0, 0);
             this.PostBody.Name = "PostBody";
             this.PostBody.ReadOnly = true;
@@ -334,7 +335,7 @@ namespace RiseOp.Services.Board
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.WebBrowser PostHeader;
-        private System.Windows.Forms.RichTextBox PostBody;
+        private RiseOp.Interface.Views.RichTextBoxEx PostBody;
         private RiseOp.Interface.TLVex.TreeListViewEx PostView;
         private System.Windows.Forms.ToolStripButton PostButton;
         private System.Windows.Forms.ToolStripButton ArchiveButton;

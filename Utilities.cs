@@ -26,6 +26,7 @@ namespace RiseOp
     // at high security, low threats and above must be checked
     enum ThreatLevel { Low = 3, Medium = 5, High = 7 }
     enum SecurityLevel { Low = 7, Medium = 5, High = 3 }
+    enum TextFormat { Plain = 0, RTF = 1, HTML = 2 }
 
 
 	internal static class Utilities
@@ -717,13 +718,18 @@ namespace RiseOp
             return "{\\rtf1\\ansi\\ansicpg1252\\deff0\\deflang1033{\\fonttbl{\\f0\\fnil\\fcharset0 Tahoma;}}\r\n{\\colortbl ;\\red0\\green0\\blue0;}\r\n\\viewkind4\\uc1\\pard\\cf1\\f0\\fs20 " + text + "\\cf0}\r\n";
         }
 
-        internal static string GetQuip(string body)
+        internal static string GetQuip(string body, TextFormat format)
         {
-            // rtf to short text quip
-            RichTextBox box = new RichTextBox();
-            box.Rtf = body;
+            string quip = body;
 
-            string quip = box.Text;
+            // rtf to short text quip
+            if (format == TextFormat.RTF)
+            {
+                RichTextBox box = new RichTextBox();
+                box.Rtf = body;
+                quip = box.Text;
+            }
+
             quip = quip.Replace('\r', ' ');
             quip = quip.Replace('\n', ' ');
 

@@ -27,7 +27,7 @@ namespace RiseOp.Interface
 
         internal string Arg = "";
         string LastBrowse;
-        bool SuppressProcessLink;
+        //bool SuppressProcessLink;
 
         internal G2Protocol Protocol = new G2Protocol();
 
@@ -58,10 +58,10 @@ namespace RiseOp.Interface
             if (File.Exists(arg))
                 LastBrowse = Path.GetDirectoryName(Path.GetDirectoryName(arg));
 
-            // if started wtih url argument, select an already created user by default
+            /* if started wtih url argument, select an already created user by default
             string publicNet = null;
             if (arg.StartsWith(@"riseop://") && !arg.StartsWith(@"riseop://invite/"))
-                publicNet = arg.Substring(9).TrimEnd('/');
+                publicNet = arg.Substring(9).TrimEnd('/');*/
 
             // load combo box
             OpComboItem select = null;
@@ -74,11 +74,11 @@ namespace RiseOp.Interface
                     if (file == arg)
                         select = item;
 
-                    if (publicNet != null && Path.GetFileName(file).Contains(publicNet))
+                    /*if (publicNet != null && Path.GetFileName(file).Contains(publicNet))
                     {
                         select = item;
                         SuppressProcessLink = true; // found an existing profile, dont need to bother user to create a new one
-                    }
+                    }*/
 
                     OpCombo.Items.Add(item);
                 }
@@ -95,37 +95,34 @@ namespace RiseOp.Interface
                 TextPassword.Select();
         }
 
-        internal void ProcessLink()
+        internal bool ProcessLink()
         {
-            if (SuppressProcessLink)
-                return;
+            //if (SuppressProcessLink)
+            //    return;
 
-            string arg = Arg.TrimEnd('/'); // copy so modifications arent permanent
+            try
+            {
+                string arg = Arg.TrimEnd('/'); // copy so modifications arent permanent
 
-            CreateUser user = null;
+                CreateUser user = null;
 
-            // private or secret network
-            if (!arg.StartsWith("riseop://"))
-                return;
+                if (arg.Contains("/invite/"))
+                    user = ReadInvite(arg);
 
-            if (arg.Contains("/invite/"))
-                user = ReadInvite(arg);
+                // public network
+                else if (arg.Replace("riseop://", "").IndexOf('/') == -1)
+                    user = new CreateUser(Context, arg, AccessType.Public);
 
-            else if (arg.Contains("/file/"))
-            { }
+                // show create user dialog
+                if (user != null)
+                {
+                    user.ShowDialog(this);
+                    return true;
+                }
+            }
+            catch { }
 
-            else if (arg.Contains("/ident/"))
-            { }
-
-            // public network
-            else
-                user = new CreateUser(Context, arg, AccessType.Public);
-
-            // show create user dialog
-            if(user != null)
-                user.ShowDialog(this);
-
-            Close(); // if user doesnt choose to create link, just close app
+            return false;
         }
 
 

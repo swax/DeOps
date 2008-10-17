@@ -222,6 +222,11 @@ namespace RiseOp.Interface.Settings
 
             e.Handled = !valid; 
         }
+
+        private void UPnPLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            new UpnpSetup(Core).ShowDialog();
+        }
     }
 
     internal class CacheItem

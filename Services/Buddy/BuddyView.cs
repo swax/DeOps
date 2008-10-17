@@ -430,7 +430,7 @@ namespace RiseOp.Services.Buddy
 
         void Menu_AddBuddy(object sender, EventArgs e)
         {
-            AddBuddyDialog(Core);
+            AddBuddyDialog(Core, "");
         }
 
         private void BuddyView_SelectedIndexChanged(object sender, EventArgs e)
@@ -456,9 +456,9 @@ namespace RiseOp.Services.Buddy
                 SelectionInfo.ShowGroup(item.GroupLabel ? item.Text : null);
         }
 
-        internal static void AddBuddyDialog(OpCore core)
+        internal static void AddBuddyDialog(OpCore core, string link)
         {
-            GetTextDialog add = new GetTextDialog("Add Buddy", "Enter a buddy link", "");
+            GetTextDialog add = new GetTextDialog("Add Buddy", "Enter a buddy link", link);
             add.BigResultBox();
 
             if (add.ShowDialog() == DialogResult.OK)

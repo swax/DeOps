@@ -143,7 +143,9 @@ namespace RiseOp.Services.Mail
                 if (MessageBody.InputBox.Text.Length == 0)
                     throw new Exception("Message body is blank");
 
-                Mail.SendMail(ToIDs, files, SubjectTextBox.Text, MessageBody.InputBox.Rtf, ThreadID);
+                string message = (MessageBody.TextFormat == TextFormat.Plain) ? MessageBody.InputBox.Text : MessageBody.InputBox.Rtf;
+
+                Mail.SendMail(ToIDs, files, SubjectTextBox.Text, message, MessageBody.TextFormat, ThreadID);
             }
             catch (Exception ex)
             {

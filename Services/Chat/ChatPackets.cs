@@ -20,11 +20,13 @@ namespace RiseOp.Services.Chat
         const byte Packet_ID = 0x10;
         const byte Packet_Kind = 0x20;
         const byte Packet_Text = 0x30;
-        const byte Packet_RoomID = 0x40;
+        const byte Packet_Format = 0x40;
+        const byte Packet_RoomID = 0x50;
 
         internal uint ProjectID;
         internal RoomKind Kind;
         internal string Text = "";
+        internal TextFormat Format;
         internal uint RoomID;
 
 
@@ -43,8 +45,10 @@ namespace RiseOp.Services.Chat
                 protocol.WritePacket(chat, Packet_RoomID, BitConverter.GetBytes(RoomID));
 
                 if (Text.Length > 0)
+                {
                     protocol.WritePacket(chat, Packet_Text, UTF8Encoding.UTF8.GetBytes(Text));
-                
+                    protocol.WritePacket(chat, Packet_Format, CompactNum.GetBytes((int)Format));
+                }
 
                 return protocol.WriteFinish();
             }
@@ -75,6 +79,10 @@ namespace RiseOp.Services.Chat
 
                     case Packet_Text:
                         chat.Text = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_Format:
+                        chat.Format = (TextFormat)CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_RoomID:

@@ -169,13 +169,15 @@ namespace RiseOp.Services.Mail
     internal class MailInfo : G2Packet
     {
         const byte Packet_Subject = 0x10;
-        const byte Packet_Date = 0x20;
-        const byte Packet_Attachments = 0x30;
-        const byte Packet_Unique = 0x40;
-        const byte Packet_Quip = 0x50;
+        const byte Packet_Format = 0x20;
+        const byte Packet_Date = 0x30;
+        const byte Packet_Attachments = 0x40;
+        const byte Packet_Unique = 0x50;
+        const byte Packet_Quip = 0x60;
 
 
         internal string Subject;
+        internal TextFormat Format;
         internal string Quip;
         internal DateTime Date;
         internal bool Attachments;
@@ -184,9 +186,10 @@ namespace RiseOp.Services.Mail
 
         internal MailInfo() { }
 
-        internal MailInfo(string subject, string quip, DateTime date, bool attachements)
+        internal MailInfo(string subject, TextFormat format, string quip, DateTime date, bool attachements)
         {
             Subject = subject;
+            Format = format;
             Quip = quip;
             Date = date;
             Attachments = attachements;
@@ -202,6 +205,7 @@ namespace RiseOp.Services.Mail
                 G2Frame info = protocol.WritePacket(null, MailPacket.MailInfo, null);
 
                 protocol.WritePacket(info, Packet_Subject, UTF8Encoding.UTF8.GetBytes(Subject));
+                protocol.WritePacket(info, Packet_Format, CompactNum.GetBytes((int)Format));
                 protocol.WritePacket(info, Packet_Quip, UTF8Encoding.UTF8.GetBytes(Quip));
                 protocol.WritePacket(info, Packet_Date, BitConverter.GetBytes(Date.ToBinary()));
                 protocol.WritePacket(info, Packet_Attachments, BitConverter.GetBytes(Attachments));
@@ -225,6 +229,10 @@ namespace RiseOp.Services.Mail
                 {
                     case Packet_Subject:
                         info.Subject = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_Format:
+                        info.Format = (TextFormat)CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
 
                     case Packet_Quip:

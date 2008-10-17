@@ -35,7 +35,7 @@ namespace RiseOp.Services.Share
 
     internal delegate void ShareFileUpdateHandler(SharedFile share);
     internal delegate void ShareCollectionUpdateHandler(ulong user);
-
+    internal delegate void FileProcessedHandler(SharedFile share, object arg);
 
     class ShareService : OpService
     {
@@ -155,14 +155,6 @@ namespace RiseOp.Services.Share
 
             if (menuType == InterfaceMenuType.External)
                 menus.Add(new MenuItemInfo("Share", Res.ShareRes.Icon, new EventHandler(Menu_View)));
-
-            if (menuType == InterfaceMenuType.Quick)
-            {
-                if (user == Core.UserID)
-                    return;
-
-                menus.Add(new MenuItemInfo("Send File", Res.ShareRes.sendfile, new EventHandler(QuickMenu_View)));
-            }
         }
 
         internal void Menu_View(object sender, EventArgs args)
@@ -179,16 +171,6 @@ namespace RiseOp.Services.Share
             GetPublicList(node.GetUser());
         }
 
-        internal void QuickMenu_View(object sender, EventArgs args)
-        {
-            IViewParams node = sender as IViewParams;
-
-            if (node == null)
-                return;
-
-            new SendFileForm(Core, node.GetUser(), 0).ShowDialog();
-        }
-        
         public void SimTest()
         {
             
@@ -213,8 +195,7 @@ namespace RiseOp.Services.Share
                     Local.Files.LockReading(delegate()
                     {
                         foreach (SharedFile file in Local.Files)
-                            if (!file.Ignore && 
-                                file.Hash != null && 
+                            if (file.Hash != null && 
                                 file.ClientID == Core.Network.Local.ClientID &&
                                 file.Public)
                             {
@@ -250,8 +231,7 @@ namespace RiseOp.Services.Share
                     Local.Files.LockReading(delegate()
                     {
                         foreach (SharedFile file in Local.Files)
-                            if (!file.Ignore &&
-                                file.Hash != null &&
+                            if (file.Hash != null &&
                                 file.ClientID == Core.Network.Local.ClientID)
                             {
                                 file.SaveLocal = true;
@@ -416,19 +396,16 @@ namespace RiseOp.Services.Share
             return PublicPath + Utilities.CryptFilename(Core, collection.UserID, collection.Hash);
         }
 
-
-
-
         internal void LoadFile(string path)
         {
-            SendFile(path, 0, 0);
+            SendFile(path, null);
         }
 
-        internal void SendFile(string path, ulong user, ushort client)
+        internal void SendFile(string path, Tuple<FileProcessedHandler, object> processed)
         {
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreAsync(() => SendFile(path, user, client));
+                Core.RunInCoreAsync(() => SendFile(path, processed));
                 return;
             }
 
@@ -440,8 +417,7 @@ namespace RiseOp.Services.Share
             file.Completed = true;
             file.Sources.Add(Core.Network.Local);
             file.FileStatus = "Processing...";
-
-            AddTargets(file.ToRequest, user, client);
+            file.Processed = processed;
 
             // so user can see hash progress
             Local.Files.SafeAdd(file);
@@ -555,8 +531,8 @@ namespace RiseOp.Services.Share
                     {
                         SaveHeaders();
 
-                        foreach(DhtClient target in file.ToRequest.ToArray()) // to array because collection will be modified when sending request
-                            TrySendRequest(file, target);
+                        if( file.Processed != null)
+                            file.Processed.First.Invoke(file, file.Processed.Second);
                     });
                 }
                 catch (Exception ex)
@@ -576,12 +552,6 @@ namespace RiseOp.Services.Share
 
             if (session.Status == SessionStatus.Active)
             {
-                Local.Files.LockReading(() =>
-                {
-                    foreach (SharedFile file in Local.Files.Where(s => s.ToRequest.Any(c => c.UserID == session.UserID && c.ClientID == session.ClientID)))
-                        SendFileRequest(session, file);
-                });
-
                 ShareCollection collection;
                 if (Collections.SafeTryGetValue(session.UserID, out collection))
                     if (collection.ToRequest.Any(t => t.ClientID == session.ClientID))
@@ -597,10 +567,6 @@ namespace RiseOp.Services.Share
             {
                 switch (root.Name)
                 {
-                    case SharePacket.File:
-                        ReceiveFileRequest(session, SharedFile.Decode(root, Core.Network.Local.ClientID));
-                        break;
-
                     case SharePacket.PublicRequest:
                         ReceivePublicRequest(session);
                         break;
@@ -764,81 +730,6 @@ namespace RiseOp.Services.Share
             Core.RunInGuiThread(GuiCollectionUpdate, collection.UserID);
          }
 
-
-
-
-        internal void TrySendRequest(SharedFile file, DhtClient target)
-        {
-            RudpSession session = Network.RudpControl.GetActiveSession(target);
-
-            if (session == null)
-            {
-                Network.RudpControl.Connect(target);
-                file.TransferStatus = "Connecting to " + Core.GetName(target.UserID);
-            }
-            else
-                SendFileRequest(session, file);
-        }
-
-        private void SendFileRequest(RudpSession session, SharedFile file)
-        {
-            foreach (DhtClient taraget in file.ToRequest.Where(c => c.UserID == session.UserID && c.ClientID == session.ClientID).ToArray())
-                file.ToRequest.Remove(taraget);
-
-            file.SaveLocal = false;
-            session.SendData(ServiceID, DataTypeSession, file, true);
-
-            file.TransferStatus = "Request sent to " + Core.GetName(session.UserID);
-        }
-
-        private void ReceiveFileRequest(RudpSession session, SharedFile file)
-        {
-            // if in global im, only allow if on buddies list
-            if (Core.User.Settings.GlobalIM)
-                if (!Core.Buddies.BuddyList.SafeContainsKey(session.UserID))
-                    return;
-
-            if (Core.Buddies.IgnoreList.SafeContainsKey(session.UserID))
-                return;
-
-            DhtClient client = new DhtClient(session.UserID, session.ClientID);
-
-
-            // check if file hash already on sharelist, if it is ignore
-            bool alertUser = true;
-
-            Local.Files.LockReading(() =>
-            {
-                SharedFile existing = Local.Files.Where(s => Utilities.MemCompare(s.Hash, file.Hash)).FirstOrDefault();
-
-                // transfer exists, but this is from another source, or we started up and someone is trying
-                // to resend file to us, which this auto adds the new source
-                if (existing != null)
-                {
-                    if (!existing.Ignore)
-                        StartTransfer(client, existing);
-
-                    alertUser = false;
-                }
-            });
-
-            if (!alertUser)
-                return;
-
-            file.Ignore = true; // turned off once accepted, allowing this item to be saved to header
-            file.FileID = OpTransfer.GetFileID(ServiceID, file.Hash, file.Size);
-            
-            Local.Files.SafeAdd(file);
-            Core.RunInGuiThread(GuiFileUpdate, file);
-
-            file.TransferStatus =  "Request received from " + Core.GetName(session.UserID);
-           
-            Core.RunInGuiThread((System.Windows.Forms.MethodInvoker) delegate()
-            {
-                new AcceptFileForm(Core, client, file).ShowDialog();
-            });
-        }
-
         private OpTransfer StartTransfer(DhtClient client, SharedFile file)
         {
             FileDetails details = new FileDetails(ServiceID, DataTypeShare, file.Hash, file.Size, null);
@@ -851,23 +742,6 @@ namespace RiseOp.Services.Share
             file.TransferStatus =  "Starting download from " + Core.GetName(client.UserID);
 
             return transfer;
-        }
-
-        internal void AcceptRequest(DhtClient client, SharedFile file)
-        {
-            if (Core.InvokeRequired)
-            {
-                Core.RunInCoreAsync(() => AcceptRequest(client, file));
-                return;
-            }
-
-            file.Ignore = false;
-
-            StartTransfer(client, file);
-
-            ResearchFile(file);
-
-            SaveHeaders();
         }
 
         bool Transfers_FileSearch(ulong key, FileDetails details)
@@ -922,17 +796,6 @@ namespace RiseOp.Services.Share
 
         internal string GetFileLink(ulong user, SharedFile file)
         {
-            // riseop://op/file/filename/opid~size~hash~key/targetlist
-            string link = "riseop://" + HttpUtility.UrlEncode(Core.User.Settings.Operation) + 
-                            "/file/" + HttpUtility.UrlEncode(file.Name) + "/";
-
-            byte[] endtag = Core.User.Settings.InviteKey; // 8
-            endtag = Utilities.CombineArrays(endtag, BitConverter.GetBytes(file.Size)); // 8
-            endtag = Utilities.CombineArrays(endtag, file.Hash); // 20
-            endtag = Utilities.CombineArrays(endtag, file.FileKey); // 32
-
-            link += Utilities.ToBase64String(endtag) + "/";
-
             byte[] sources = null;
 
 
@@ -942,58 +805,44 @@ namespace RiseOp.Services.Share
                 foreach (DhtClient client in file.Sources)
                     sources = (sources == null) ? client.ToBytes() : Utilities.CombineArrays(sources, client.ToBytes());
             }
-            
+
             // else getting link from remote share, so add it's address as a location
             else
                 sources = new DhtClient(user, file.ClientID).ToBytes();
 
 
-            if(sources != null)
-                link += Utilities.ToBase64String(sources);
+            FileLink link = new FileLink()
+            {
+                OpName = Core.User.Settings.Operation,
+                FileName = file.Name,
+                PublicOpID = Core.User.Settings.PublicOpID,
+                Size = file.Size,
+                Hash = file.Hash,
+                Key = file.FileKey,
+                Sources = sources
+            };
 
-            return link;
-            
+            return link.Encode(Core);
         }
 
-        internal void DownloadLink(string link)
+        internal void DownloadLink(string text)
         {
-            if(!link.StartsWith("riseop://"))
-                throw new Exception("Invalid Link");
-
-            string[] parts = link.Substring(9).Split('/');
-
-            if (parts.Length < 4)
-                return;
-
-            if (parts[1] != "file")
-                throw new Exception("Invalid Link");
+            FileLink link = FileLink.Decode(text, Core);
 
             SharedFile file = new SharedFile(Core.Network.Local.ClientID);
 
-            file.Name = HttpUtility.UrlDecode(parts[2]);
+            file.Name = link.FileName;
 
-            byte[] endtag = Utilities.FromBase64String(parts[3]);
-
-            if(endtag.Length < (8 + 8 + 20 + 32))
-                throw new Exception("Invalid Link");
-
-            byte[] inviteKey = Utilities.ExtractBytes(endtag, 0, 8);
-
-            if(!Utilities.MemCompare(inviteKey, Core.User.Settings.InviteKey))
+            if (!Utilities.MemCompare(link.PublicOpID, Core.User.Settings.PublicOpID))
                 throw new Exception("File Link is not for this Op");
 
-            file.Size = BitConverter.ToInt64(Utilities.ExtractBytes(endtag, 8, 8), 0);
-            file.Hash = Utilities.ExtractBytes(endtag, 8 + 8, 20);
-            file.FileKey = Utilities.ExtractBytes(endtag, 8 + 8 + 20, 32);
+            file.Size = link.Size;
+            file.Hash = link.Hash;
+            file.FileKey = link.Key;
             file.FileID = OpTransfer.GetFileID(ServiceID, file.Hash, file.Size);
 
-            if (parts.Length >= 5)
-            {
-                byte[] sources = Utilities.FromBase64String(parts[4]);
-
-                for (int i = 0; i < sources.Length; i += 10)
-                    file.Sources.Add(DhtClient.FromBytes(sources, i));
-            }
+            for (int i = 0; i < link.Sources.Length; i += 10)
+                file.Sources.Add(DhtClient.FromBytes(link.Sources, i));
 
             DownloadFile(file);
         }
@@ -1022,11 +871,15 @@ namespace RiseOp.Services.Share
             // just add new targets if we already have this file
             if (existing != null)
             {
-                existing.Sources.AddRange(file.Sources);
+                if (existing.Completed)
+                    return;
+
+                existing.Sources = existing.Sources.Union(file.Sources).ToList();
                 file = existing;
             }
             else
                 Local.Files.SafeAdd(file);
+
 
             // if downloading form another client of self
             if (file.ClientID != Core.Network.Local.ClientID)
@@ -1041,7 +894,11 @@ namespace RiseOp.Services.Share
                 SaveHeaders();
 
                 if (file.Sources.Count > 0)
-                    StartTransfer(file.Sources[0], file);
+                {
+                    OpTransfer transfer = StartTransfer(file.Sources[0], file);
+
+                    file.Sources.ForEach(s => transfer.AddPeer(s));
+                }
             });
 
             ResearchFile(file);
@@ -1238,6 +1095,86 @@ namespace RiseOp.Services.Share
         }
     }
 
+    internal class FileLink
+    {
+        internal string OpName;
+        internal string FileName;
+        internal byte[] PublicOpID;
+        internal long Size;
+        internal byte[] Hash;
+        internal byte[] Key;
+        internal byte[] Sources;
+
+        internal string Encode(OpCore core)
+        {
+            //  riseop://opName/file/name/size/opId~size~hash~key/sources
+
+            string link = "riseop://" + HttpUtility.UrlEncode(OpName) +
+                            "/file/" + HttpUtility.UrlEncode(FileName) + "/" + 
+                            HttpUtility.UrlEncode(Utilities.ByteSizetoString(Size)) + "/";
+
+            byte[] cryptTag = BitConverter.GetBytes(Size);  // 8
+            cryptTag = Utilities.CombineArrays(cryptTag, Hash); // 20
+            cryptTag = Utilities.CombineArrays(cryptTag, Key); // 32
+
+            cryptTag = Utilities.EncryptBytes(cryptTag, core.Network.OpCrypt.Key);
+            byte[] endtag = Utilities.CombineArrays(PublicOpID, cryptTag);
+
+            link += Utilities.ToBase64String(endtag) + "/";
+
+            if (Sources != null)
+                link += Utilities.ToBase64String(Utilities.EncryptBytes(Sources, core.Network.OpCrypt.Key));
+
+            return link;
+        }
+
+        internal static FileLink Decode(string text, OpCore core)
+        {
+            FileLink link = new FileLink();
+
+            if (!text.StartsWith("riseop://"))
+                throw new Exception("Invalid Link");
+
+            string[] parts = text.Substring(9).Split('/');
+
+            if (parts.Length < 5)
+                throw new Exception("Invalid Link");
+
+            if (parts[1] != "file")
+                throw new Exception("Invalid Link");
+
+            link.FileName = HttpUtility.UrlDecode(parts[2]);
+
+            byte[] endtag = Utilities.FromBase64String(parts[4]);
+
+            if (endtag.Length < (8 + 8 + 20 + 32))
+                throw new Exception("Invalid Link");
+
+            link.PublicOpID = Utilities.ExtractBytes(endtag, 0, 8);
+
+            byte[] cryptTag = Utilities.ExtractBytes(endtag, 8, endtag.Length - 8);
+
+            if (core != null)
+            {
+                cryptTag = Utilities.DecryptBytes(cryptTag, cryptTag.Length, core.Network.OpCrypt.Key);
+
+                link.Size = BitConverter.ToInt64(Utilities.ExtractBytes(cryptTag, 0, 8), 0);
+                link.Hash = Utilities.ExtractBytes(cryptTag, 8, 20);
+                link.Key = Utilities.ExtractBytes(cryptTag, 8 + 20, 32);
+
+                if (parts.Length >= 6)
+                {
+                    link.Sources = Utilities.FromBase64String(parts[5]);
+
+                    if (link.Sources != null)
+                        link.Sources = Utilities.DecryptBytes(link.Sources, link.Sources.Length, core.Network.OpCrypt.Key);
+                }
+            }
+
+            return link;
+        }
+    }
+
     internal class ShareCollection : G2Packet
     {  
         const byte Packet_Hash = 0x10;
@@ -1328,15 +1265,15 @@ namespace RiseOp.Services.Share
         internal string SystemPath;
         internal bool Public;
 
-        internal List<DhtClient> ToRequest = new List<DhtClient>();
         internal List<DhtClient> Sources = new List<DhtClient>();
         internal bool Completed;
-        internal bool Ignore;
         internal DateTime NextPublish;
         internal bool TransferActive;
 
         internal string FileStatus = "";
         internal string TransferStatus = "";
+        internal Tuple<FileProcessedHandler, object> Processed;
+
 
         internal SharedFile(ushort client)
         {

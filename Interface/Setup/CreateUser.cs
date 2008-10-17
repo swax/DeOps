@@ -31,7 +31,7 @@ namespace RiseOp.Interface.Startup
             OpName = opName.Replace("riseop://", "");
             OpAccess = opAccess;
 
-            Text = OpName + ": Create User";
+            OpNameLabel.Text = OpName;
 
             BrowseLink.Text = (context.Sim == null) ? Application.StartupPath : context.Sim.Internet.LoadedPath;
         }
@@ -45,8 +45,7 @@ namespace RiseOp.Interface.Startup
             OpName = invite.Info.OpName;
             OpAccess = invite.Info.OpAccess;
 
-            Text = OpName + ": Create User";
-
+            OpNameLabel.Text = OpName;
             TextName.Text = invite.Info.UserName;
 
             BrowseLink.Text = (context.Sim == null) ? Application.StartupPath : context.Sim.Internet.LoadedPath;

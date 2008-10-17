@@ -84,12 +84,8 @@ namespace RiseOp.Services.Buddy
                 return;
 
             ulong user = ((IViewParams)sender).GetUser();
-            uint project = ((IViewParams)sender).GetProject();
 
-
-            string name = Core.GetName(user);
-
-            AddBuddy(name, Core.KeyMap[user]);
+            AddBuddy(user);
         }
 
         private void Menu_Identity(object sender, EventArgs e)
@@ -157,11 +153,16 @@ namespace RiseOp.Services.Buddy
             });
         }
 
+        internal OpBuddy AddBuddy(ulong user)
+        {
+            return AddBuddy(Core.GetName(user), Core.KeyMap[user]);
+        }
+
         internal OpBuddy AddBuddy(string link)
         {
             IdentityLink ident = IdentityLink.Decode(link);
 
-            if (!Utilities.MemCompare(ident.OpID, Core.User.Settings.InviteKey))
+            if (!Utilities.MemCompare(ident.PublicOpID, Core.User.Settings.PublicOpID))
                 throw new Exception("This buddy link is not for " + Core.User.Settings.Operation);
 
             return AddBuddy(ident.Name, ident.PublicKey);
