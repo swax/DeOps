@@ -39,6 +39,7 @@ namespace RiseOp.Implementation.Dht
         internal LanHandler LanControl;
         internal RudpHandler RudpControl;
         internal LightCommHandler LightComm;
+        internal UPnPHandler UPnPControl;
 
         internal OpCache Cache;
         internal DhtRouting Routing;
@@ -119,7 +120,8 @@ namespace RiseOp.Implementation.Dht
             LanControl = new LanHandler(this);
             RudpControl = new RudpHandler(this);
             LightComm = new LightCommHandler(this);
-            
+            UPnPControl = new UPnPHandler(this);
+
             Routing = new DhtRouting(this);
             Store = new DhtStore(this);
             Searches = new DhtSearchControl(this);

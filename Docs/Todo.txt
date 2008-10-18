@@ -49,9 +49,7 @@ other
 	sortable columns that are either auto, or take a delegate comparer as a parameter
 
 release
-	proof read news/help/info/share/shorage pages
-	october is alpha alpha month - make some user friends
-	nullsoft installer - try it
+	nullsoft installer
 	new splash - temple like icons instead of parthanon, column like icon/symbolism
 	hide sim and other tools?
 	xenocode (hopefully supports linq, inspect)
@@ -59,10 +57,10 @@ release
 	ensure logging is working, not full logging, but stats from webcache
 	udpate about page - saying if interested and very skilled, possible work options
 		goals 3-4 expert programmers at 7% equity
-	have a way to turn off the website to new users
 	put non-commercial use in license
-	freeloader version
-	small friend test dad, moe, bernard, andrey, justin ~7 o'clock - 10/3
+	RiseOp Pro
+		Higher encryption
+		Commercial use
 	need a way to officially sign user's key with registered
 		embed personal public key and allow possibility for signing user and being 'registered'
 		$5 register user (sign users key through riseop.com), added to user's profile

@@ -79,19 +79,19 @@
             this.LogLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.LogLink.AutoSize = true;
             this.LogLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.LogLink.Location = new System.Drawing.Point(146, 222);
+            this.LogLink.Location = new System.Drawing.Point(12, 241);
             this.LogLink.Name = "LogLink";
-            this.LogLink.Size = new System.Drawing.Size(25, 13);
+            this.LogLink.Size = new System.Drawing.Size(54, 13);
             this.LogLink.TabIndex = 33;
             this.LogLink.TabStop = true;
-            this.LogLink.Text = "Log";
+            this.LogLink.Text = "Open Log";
             this.LogLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.LogLink_LinkClicked);
             // 
             // CloseButton
             // 
             this.CloseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.CloseButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.CloseButton.Location = new System.Drawing.Point(337, 222);
+            this.CloseButton.Location = new System.Drawing.Point(337, 236);
             this.CloseButton.Name = "CloseButton";
             this.CloseButton.Size = new System.Drawing.Size(75, 23);
             this.CloseButton.TabIndex = 34;
@@ -119,16 +119,17 @@
             this.AddRiseOpLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
             this.AddRiseOpLink.Location = new System.Drawing.Point(12, 222);
             this.AddRiseOpLink.Name = "AddRiseOpLink";
-            this.AddRiseOpLink.Size = new System.Drawing.Size(91, 13);
+            this.AddRiseOpLink.Size = new System.Drawing.Size(100, 13);
             this.AddRiseOpLink.TabIndex = 36;
             this.AddRiseOpLink.TabStop = true;
-            this.AddRiseOpLink.Text = "Add RiseOp Ports";
+            this.AddRiseOpLink.Text = "Reset RiseOp Ports";
             this.AddRiseOpLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.AddRiseOpLink_LinkClicked);
             // 
             // IPradio
             // 
             this.IPradio.AutoSize = true;
-            this.IPradio.Location = new System.Drawing.Point(65, 64);
+            this.IPradio.Checked = true;
+            this.IPradio.Location = new System.Drawing.Point(85, 64);
             this.IPradio.Name = "IPradio";
             this.IPradio.Size = new System.Drawing.Size(35, 17);
             this.IPradio.TabIndex = 37;
@@ -139,11 +140,10 @@
             // PPPradio
             // 
             this.PPPradio.AutoSize = true;
-            this.PPPradio.Location = new System.Drawing.Point(106, 64);
+            this.PPPradio.Location = new System.Drawing.Point(126, 64);
             this.PPPradio.Name = "PPPradio";
             this.PPPradio.Size = new System.Drawing.Size(46, 17);
             this.PPPradio.TabIndex = 38;
-            this.PPPradio.TabStop = true;
             this.PPPradio.Text = "PPP";
             this.PPPradio.UseVisualStyleBackColor = true;
             // 
@@ -152,7 +152,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.CloseButton;
-            this.ClientSize = new System.Drawing.Size(424, 257);
+            this.ClientSize = new System.Drawing.Size(424, 271);
             this.Controls.Add(this.PPPradio);
             this.Controls.Add(this.IPradio);
             this.Controls.Add(this.AddRiseOpLink);

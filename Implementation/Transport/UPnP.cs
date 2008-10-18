@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -6,21 +7,52 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 
+using RiseOp.Implementation.Dht;
 
 
 namespace RiseOp.Implementation.Transport
 {
     //crit implement / make asyncronous yet / need to periodically advertise? (rate probably in response) / clean up on close
 
-    public class UPnP
+    internal class UPnPDevice
     {
-        public UPnP()
-        {
+        internal string Name;
+        internal string URL;
 
+        internal string DeviceIP;
+        internal string LocalIP;
+    }
+
+    internal class PortEntry
+    {
+        internal string Description;
+        internal string Protocol;
+        internal int Port;
+
+        public override string ToString()
+        {
+            return Description;
+        }
+    }
+
+
+    internal class UPnPHandler
+    {
+        internal List<UPnPDevice> Devices = new List<UPnPDevice>();
+
+        DhtNetwork Network;
+
+
+        internal UPnPHandler(DhtNetwork network)
+        {
+            Network = network;
         }
 
-        public static void OpenFirewallPort(int port)
+        internal void RefreshDevices()
         {
+            Devices.Clear();
+
+
             NetworkInterface[] nics = NetworkInterface.GetAllNetworkInterfaces();
 
             //for each nic in computer...
@@ -31,42 +63,40 @@ namespace RiseOp.Implementation.Transport
                     string machineIP = nic.GetIPProperties().UnicastAddresses[0].Address.ToString();
 
                     //send msg to each gateway configured on this nic
-                    foreach(GatewayIPAddressInformation gwInfo in nic.GetIPProperties().GatewayAddresses)
+                    foreach (GatewayIPAddressInformation gwInfo in nic.GetIPProperties().GatewayAddresses)
                     {
-                        try
-                        {
-                            OpenFirewallPort(machineIP, gwInfo.Address.ToString(), port);
-                        }
-                        catch
-                        { }
+                        string firewallIP = gwInfo.Address.ToString();
+
+                        QueryDevices(machineIP, firewallIP);
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Network.UpdateLog("UPnP", "RefreshGateways1:" + ex.Message);
+                }
             }
-
         }
 
-        public static void OpenFirewallPort(string machineIP, string firewallIP, int openPort)
+        internal void GetOpenPorts()
         {
-            string svc = GetServicesFromDevice(firewallIP);
-
-            string url = ExtractTag("URLBase", svc);
-            if (url == null)
-                url = "http://" + machineIP + ":80";
-
-
-            //test(svc, "urn:schemas-upnp-org:service:WANIPConnection:1", url);
-            test(svc, "urn:schemas-upnp-org:service:WANPPPConnection:1", url);
-
-            OpenPortFromService(svc, "urn:schemas-upnp-org:service:WANIPConnection:1", machineIP, url, openPort, "TCP");
-            OpenPortFromService(svc, "urn:schemas-upnp-org:service:WANIPConnection:1", machineIP, url, openPort, "UDP");
-
-            OpenPortFromService(svc, "urn:schemas-upnp-org:service:WANPPPConnection:1", machineIP, url, openPort, "TCP");
-            OpenPortFromService(svc, "urn:schemas-upnp-org:service:WANPPPConnection:1", machineIP, url, openPort, "UDP");
+            foreach (UPnPDevice device in Devices)
+            {
+                for (int i = 0; i < 200; i++)
+                    GetPortEntry(device, i);
+            }
         }
 
+        internal void OpenFirewallPort(int port)
+        {
+           
+            foreach (UPnPDevice device in Devices)
+            {
+                OpenPort(device, "TCP", port);
+                OpenPort(device, "UDP", port);
+            }
+        }
 
-        private static string GetServicesFromDevice(string firewallIP)
+        private void QueryDevices(string machineIP, string firewallIP)
         {
             //To send a broadcast and get responses from all, send to 239.255.255.250
             string queryResponse = "";
@@ -99,7 +129,7 @@ namespace RiseOp.Implementation.Transport
             catch { }
 
             if (queryResponse.Length == 0)
-                return "";
+                return;
 
 
             /* QueryResult is somthing like this:
@@ -125,77 +155,110 @@ namespace RiseOp.Implementation.Transport
                 }
             }
             if (location.Length == 0)
-                return "";
+                return;
 
             //then using the location url, we get more information:
 
+            string xml = "";
+
             try
             {
-                string ret = Utilities.WebDownloadString(location);
-                Debug.WriteLine(ret);
-                return ret;//return services
+                xml = Utilities.WebDownloadString(location);
             }
             catch (System.Exception ex)
             {
                 Debug.WriteLine(ex.Message);
+                return;
             }
 
-            return "";
+            TryAddDevice(xml, "WANIPConnection", machineIP, firewallIP);
+            TryAddDevice(xml, "WANPPPConnection", machineIP, firewallIP);
         }
 
-        private static void OpenPortFromService(string services, string serviceType, string machineIP, string url, int portToForward, string protocol)
+        void TryAddDevice(string xml, string name, string machineIP, string firewallIP)
         {
-            string body =   "<u:AddPortMapping xmlns:u=\"" + serviceType + "\">" +
+            string url = ExtractTag("URLBase", xml);
+            if (url == null)
+                url = "http://" + firewallIP + ":80";
+
+            int pos = xml.IndexOf("urn:schemas-upnp-org:service:" + name + ":1");
+            if (pos == -1)
+                return;
+
+            string control = ExtractTag("controlURL", xml.Substring(pos));
+            if (control == null || control == "")
+                return;
+
+            url += control;
+
+            Devices.Add(new UPnPDevice()
+            {
+                Name = name,
+                DeviceIP = firewallIP,
+                LocalIP = machineIP,
+                URL = url
+            });
+        }
+
+        void OpenPort(UPnPDevice device, string protocol, int port)
+        {
+            string body = "<u:AddPortMapping xmlns:u=\"urn:schemas-upnp-org:service:" + device.Name + ":1\">" +
                             "<NewRemoteHost></NewRemoteHost>" +
-                            "<NewExternalPort>" + portToForward.ToString() + "</NewExternalPort>" +
+                            "<NewExternalPort>" + port.ToString() + "</NewExternalPort>" +
                             "<NewProtocol>" + protocol + "</NewProtocol>" +
-                            "<NewInternalPort>" + portToForward.ToString() + "</NewInternalPort>" +
-                            "<NewInternalClient>" + machineIP + "</NewInternalClient>" +
+                            "<NewInternalPort>" + port.ToString() + "</NewInternalPort>" +
+                            "<NewInternalClient>" + device.LocalIP + "</NewInternalClient>" +
                             "<NewEnabled>1</NewEnabled>" +
-                            "<NewPortMappingDescription>WoodchopClient</NewPortMappingDescription>" +
+                            "<NewPortMappingDescription>RiseOp</NewPortMappingDescription>" +
                             "<NewLeaseDuration>0</NewLeaseDuration>" +
                             "</u:AddPortMapping>";
 
-            string ret = PerformAction(services, serviceType, url, "AddPortMapping", body);
+            string ret = PerformAction(device, "AddPortMapping", body);
+        }
 
-            Debug.WriteLine("Setting port forwarding:" + portToForward.ToString() + "\r\r" + ret);
+        void ClosePort(UPnPDevice device, string protocol, int port)
+        {
+            string body = "<u:DeletePortMapping xmlns:u=\"urn:schemas-upnp-org:service:" + device.Name + ":1\">" +
+                            "<NewRemoteHost></NewRemoteHost>" +
+                            "<NewExternalPort>" + port.ToString() + "</NewExternalPort>" +
+                            "<NewProtocol>" + protocol + "</NewProtocol>" +
+                            "</u:DeletePortMapping>";
+
+            string ret = PerformAction(device, "DeletePortMapping", body);
         }
 
 
-
-        static void  test(string services, string serviceType, string url)
+        internal PortEntry GetPortEntry(UPnPDevice device, int index)
         {
-            for (int i = 0; i < 100; i++)
+            try
             {
-                string body = "<u:GetGenericPortMappingEntry xmlns:u=\"" + serviceType + "\">" +
-                              "<NewPortMappingIndex>" + i + "</NewPortMappingIndex>" +
+                string body = "<u:GetGenericPortMappingEntry xmlns:u=\"urn:schemas-upnp-org:service:" + device.Name + ":1\">" +
+                              "<NewPortMappingIndex>" + index + "</NewPortMappingIndex>" +
                               "</u:GetGenericPortMappingEntry>";
 
-                string ret = PerformAction(services, serviceType, url, "GetGenericPortMappingEntry", body);
+                string ret = PerformAction(device, "GetGenericPortMappingEntry", body);
 
                 string name = ExtractTag("NewPortMappingDescription", ret);
                 string ip = ExtractTag("NewInternalClient", ret);
                 string port = ExtractTag("NewInternalPort", ret);
                 string protocol = ExtractTag("NewProtocol", ret);
-                
-                Debug.WriteLine(i + ": " + name + " - " + ip + ":" + port + " " + protocol);
+
+                PortEntry entry = new PortEntry();
+                entry.Description = index + ": " + name + " - " + ip + ":" + port + " " + protocol;
+                entry.Port = int.Parse(port);
+                entry.Protocol = protocol;
+
+                return entry;
             }
+            catch { }
+
+            return null;
         }
 
-        static string PerformAction(string services, string serviceType, string url, string action, string soap)
+        static string PerformAction(UPnPDevice device, string action, string soap)
         {
             try
             {
-                if (services.Length == 0)
-                    return null;
-
-                int svcIndex = services.IndexOf(serviceType);
-                if (svcIndex == -1)
-                    return null;
-
-                string controlUrl = ExtractTag("controlURL", services.Substring(svcIndex));
-
-
                 string soapBody = "<s:Envelope " +
                                     "xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/ \" " +
                                     "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/ \">" +
@@ -206,12 +269,11 @@ namespace RiseOp.Implementation.Transport
 
                 byte[] body = UTF8Encoding.ASCII.GetBytes(soapBody);
 
-                url += controlUrl;
 
-                WebRequest wr = WebRequest.Create(url);
+                WebRequest wr = WebRequest.Create(device.URL);
 
                 wr.Method = "POST";
-                wr.Headers.Add("SOAPAction", "\"" + serviceType + "#" + action + "\"");
+                wr.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:" + device.Name + ":1#" + action + "\"");
                 wr.ContentType = "text/xml;charset=\"utf-8\"";
                 wr.ContentLength = body.Length;
 
