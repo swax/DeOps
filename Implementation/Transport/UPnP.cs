@@ -60,7 +60,11 @@ namespace RiseOp.Implementation.Transport
             {
                 try
                 {
-                    string machineIP = nic.GetIPProperties().UnicastAddresses[0].Address.ToString();
+                    var unicasts = nic.GetIPProperties().UnicastAddresses;
+                    if (unicasts.Count == 0)
+                        continue;
+
+                    string machineIP = unicsasts[0].Address.ToString();
 
                     //send msg to each gateway configured on this nic
                     foreach (GatewayIPAddressInformation gwInfo in nic.GetIPProperties().GatewayAddresses)
@@ -237,6 +241,9 @@ namespace RiseOp.Implementation.Transport
                               "</u:GetGenericPortMappingEntry>";
 
                 string ret = PerformAction(device, "GetGenericPortMappingEntry", body);
+
+                if (ret == null || ret == "")
+                    return null;
 
                 string name = ExtractTag("NewPortMappingDescription", ret);
                 string ip = ExtractTag("NewInternalClient", ret);
