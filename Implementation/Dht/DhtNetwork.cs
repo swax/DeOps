@@ -131,11 +131,14 @@ namespace RiseOp.Implementation.Dht
         {
             // timers
             Cache.SecondTimer();
+
             TcpControl.SecondTimer();
             UdpControl.SecondTimer();
             RudpControl.SecondTimer();
             LightComm.SecondTimer();
-            Routing.SecondTimer();
+            UPnPControl.SecondTimer();
+            
+                Routing.SecondTimer();
             Searches.SecondTimer();
 
 
@@ -1245,14 +1248,19 @@ namespace RiseOp.Implementation.Dht
             }
 
             // re-initialize sockets
+            UPnPControl.ClosePorts();
+
             TcpControl.Shutdown();
             UdpControl.Shutdown();
 
             TcpControl.Initialize();
             UdpControl.Initialize();
 
+            UPnPControl.Initialize();
+
             // save profile
-            Core.User.Save();
+            if(Core.User != null)
+                Core.User.Save();
 
             // save lookup config
             if (IsLookup)

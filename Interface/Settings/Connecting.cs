@@ -217,9 +217,6 @@ namespace RiseOp.Interface.Settings
         {
             bool valid = char.IsNumber(e.KeyChar) || e.KeyChar == '\b';
 
-            if (valid && ((TextBox)sender).Text.Length >= 5 && e.KeyChar != '\b')
-                valid = false;
-
             e.Handled = !valid; 
         }
 

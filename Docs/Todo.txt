@@ -1,13 +1,4 @@
 
-research upnp
-	open tcp/udp ports
-	cloose ports on exit
-	log success
-	get external ip? does web cache tell us? the adapter could be wrong, dont want to set wrong ip
-	riseop - opname - user - protocol
-windows firewall
-	open tcp/udp ports
-
 auto update
 	ability to send store command directly to client
 	update service notified, starts transfer
@@ -61,6 +52,7 @@ release
 	RiseOp Pro
 		Higher encryption
 		Commercial use
+		secret network
 	need a way to officially sign user's key with registered
 		embed personal public key and allow possibility for signing user and being 'registered'
 		$5 register user (sign users key through riseop.com), added to user's profile

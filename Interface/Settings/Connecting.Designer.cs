@@ -38,7 +38,6 @@
             this.OpUdpBox = new System.Windows.Forms.TextBox();
             this.GlobalTcpBox = new System.Windows.Forms.TextBox();
             this.GlobalUdpBox = new System.Windows.Forms.TextBox();
-            this.label6 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
             this.OpStatusBox = new System.Windows.Forms.TextBox();
             this.GlobalStatusBox = new System.Windows.Forms.TextBox();
@@ -52,6 +51,7 @@
             this.OpLanBox = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.GlobalLanBox = new System.Windows.Forms.TextBox();
+            this.label6 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -151,17 +151,6 @@
             this.GlobalUdpBox.TabIndex = 18;
             this.GlobalUdpBox.Text = "65536";
             this.GlobalUdpBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            // 
-            // label6
-            // 
-            this.label6.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label6.Location = new System.Drawing.Point(76, 94);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(209, 32);
-            this.label6.TabIndex = 19;
-            this.label6.Text = "For optimal performance ensure the TCP / UDP ports are open on your router.";
             // 
             // label7
             // 
@@ -288,12 +277,12 @@
             // 
             this.UPnPLink.AutoSize = true;
             this.UPnPLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.UPnPLink.Location = new System.Drawing.Point(6, 94);
+            this.UPnPLink.Location = new System.Drawing.Point(199, 127);
             this.UPnPLink.Name = "UPnPLink";
-            this.UPnPLink.Size = new System.Drawing.Size(68, 13);
+            this.UPnPLink.Size = new System.Drawing.Size(88, 13);
             this.UPnPLink.TabIndex = 29;
             this.UPnPLink.TabStop = true;
-            this.UPnPLink.Text = "UPnP Status";
+            this.UPnPLink.Text = "UPnP Diagnostic";
             this.UPnPLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.UPnPLink_LinkClicked);
             // 
             // OpLanBox
@@ -325,6 +314,17 @@
             this.GlobalLanBox.TabIndex = 25;
             this.GlobalLanBox.Text = "65536";
             this.GlobalLanBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // 
+            // label6
+            // 
+            this.label6.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label6.Location = new System.Drawing.Point(23, 94);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(259, 38);
+            this.label6.TabIndex = 19;
+            this.label6.Text = "For optimal performance ensure the these ports are open on your router.";
             // 
             // Connecting
             // 
@@ -366,7 +366,6 @@
         private System.Windows.Forms.Label GlobalLabel;
         private System.Windows.Forms.TextBox GlobalTcpBox;
         private System.Windows.Forms.TextBox GlobalUdpBox;
-        private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.TextBox OpStatusBox;
         private System.Windows.Forms.TextBox GlobalStatusBox;
@@ -381,5 +380,6 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox GlobalLanBox;
         private System.Windows.Forms.LinkLabel UPnPLink;
+        private System.Windows.Forms.Label label6;
     }
 }

@@ -422,7 +422,7 @@ namespace RiseOp.Services.IM
             if (Core.GuiMain == null)
                 return;
 
-            Core.RunInGuiThread( (MethodInvoker) delegate()
+            Core.RunInGuiThread( new Action(() =>
             {
                 IM_View view = FindView(status.UserID);
 
@@ -430,7 +430,7 @@ namespace RiseOp.Services.IM
                     CreateView(status.UserID);
                 else
                     MessageUpdate(status.UserID, message);
-            });
+            }));
 
             Update(status);
         }

@@ -790,12 +790,12 @@ namespace RiseOp.Implementation
         }
 
         // be careful if calling this with loop objects, reference will be changed by the time async executes
-        internal void RunInCoreAsync(MethodInvoker code)
+        internal void RunInCoreAsync(Action code)
         {
             RunInCoreThread(code, null);
         }
 
-        internal void RunInCoreBlocked(MethodInvoker code)
+        internal void RunInCoreBlocked(Action code)
         {
             // if called from core thread, and blocked, this would result in a deadlock
             if (!InvokeRequired)

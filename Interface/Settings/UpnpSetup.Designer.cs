@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.label1 = new System.Windows.Forms.Label();
             this.EntryList = new System.Windows.Forms.ListBox();
             this.RefreshLink = new System.Windows.Forms.LinkLabel();
@@ -37,6 +38,8 @@
             this.AddRiseOpLink = new System.Windows.Forms.LinkLabel();
             this.IPradio = new System.Windows.Forms.RadioButton();
             this.PPPradio = new System.Windows.Forms.RadioButton();
+            this.ActionLabel = new System.Windows.Forms.Label();
+            this.ActionTimer = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
             // label1
@@ -45,10 +48,10 @@
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.label1.Location = new System.Drawing.Point(12, 9);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(400, 37);
+            this.label1.Size = new System.Drawing.Size(394, 37);
             this.label1.TabIndex = 0;
             this.label1.Text = "Universal Plug n Play automatically configures your router so that the right port" +
-                "s RiseOp needs are open.  This dialog is a diagnostic.";
+                "s RiseOp needs are open. Use the refresh button to check which ports are open. ";
             // 
             // EntryList
             // 
@@ -56,17 +59,17 @@
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.EntryList.FormattingEnabled = true;
-            this.EntryList.Location = new System.Drawing.Point(12, 82);
+            this.EntryList.Location = new System.Drawing.Point(12, 75);
             this.EntryList.Name = "EntryList";
             this.EntryList.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.EntryList.Size = new System.Drawing.Size(400, 134);
+            this.EntryList.Size = new System.Drawing.Size(394, 173);
             this.EntryList.TabIndex = 1;
             // 
             // RefreshLink
             // 
             this.RefreshLink.AutoSize = true;
             this.RefreshLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.RefreshLink.Location = new System.Drawing.Point(12, 66);
+            this.RefreshLink.Location = new System.Drawing.Point(12, 56);
             this.RefreshLink.Name = "RefreshLink";
             this.RefreshLink.Size = new System.Drawing.Size(44, 13);
             this.RefreshLink.TabIndex = 32;
@@ -79,7 +82,7 @@
             this.LogLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.LogLink.AutoSize = true;
             this.LogLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.LogLink.Location = new System.Drawing.Point(12, 241);
+            this.LogLink.Location = new System.Drawing.Point(186, 259);
             this.LogLink.Name = "LogLink";
             this.LogLink.Size = new System.Drawing.Size(54, 13);
             this.LogLink.TabIndex = 33;
@@ -91,7 +94,7 @@
             // 
             this.CloseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.CloseButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.CloseButton.Location = new System.Drawing.Point(337, 236);
+            this.CloseButton.Location = new System.Drawing.Point(331, 259);
             this.CloseButton.Name = "CloseButton";
             this.CloseButton.Size = new System.Drawing.Size(75, 23);
             this.CloseButton.TabIndex = 34;
@@ -104,7 +107,7 @@
             this.RemoveLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.RemoveLink.AutoSize = true;
             this.RemoveLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.RemoveLink.Location = new System.Drawing.Point(320, 66);
+            this.RemoveLink.Location = new System.Drawing.Point(314, 56);
             this.RemoveLink.Name = "RemoveLink";
             this.RemoveLink.Size = new System.Drawing.Size(92, 13);
             this.RemoveLink.TabIndex = 35;
@@ -117,7 +120,7 @@
             this.AddRiseOpLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.AddRiseOpLink.AutoSize = true;
             this.AddRiseOpLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.AddRiseOpLink.Location = new System.Drawing.Point(12, 222);
+            this.AddRiseOpLink.Location = new System.Drawing.Point(12, 259);
             this.AddRiseOpLink.Name = "AddRiseOpLink";
             this.AddRiseOpLink.Size = new System.Drawing.Size(100, 13);
             this.AddRiseOpLink.TabIndex = 36;
@@ -129,7 +132,7 @@
             // 
             this.IPradio.AutoSize = true;
             this.IPradio.Checked = true;
-            this.IPradio.Location = new System.Drawing.Point(85, 64);
+            this.IPradio.Location = new System.Drawing.Point(85, 54);
             this.IPradio.Name = "IPradio";
             this.IPradio.Size = new System.Drawing.Size(35, 17);
             this.IPradio.TabIndex = 37;
@@ -140,19 +143,38 @@
             // PPPradio
             // 
             this.PPPradio.AutoSize = true;
-            this.PPPradio.Location = new System.Drawing.Point(126, 64);
+            this.PPPradio.Location = new System.Drawing.Point(126, 54);
             this.PPPradio.Name = "PPPradio";
             this.PPPradio.Size = new System.Drawing.Size(46, 17);
             this.PPPradio.TabIndex = 38;
             this.PPPradio.Text = "PPP";
             this.PPPradio.UseVisualStyleBackColor = true;
             // 
+            // ActionLabel
+            // 
+            this.ActionLabel.AutoSize = true;
+            this.ActionLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.ActionLabel.ForeColor = System.Drawing.Color.Red;
+            this.ActionLabel.Location = new System.Drawing.Point(204, 56);
+            this.ActionLabel.Name = "ActionLabel";
+            this.ActionLabel.Size = new System.Drawing.Size(66, 13);
+            this.ActionLabel.TabIndex = 39;
+            this.ActionLabel.Text = "Working...";
+            this.ActionLabel.Visible = false;
+            // 
+            // ActionTimer
+            // 
+            this.ActionTimer.Enabled = true;
+            this.ActionTimer.Interval = 500;
+            this.ActionTimer.Tick += new System.EventHandler(this.ActionTimer_Tick);
+            // 
             // UpnpSetup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.CloseButton;
-            this.ClientSize = new System.Drawing.Size(424, 271);
+            this.ClientSize = new System.Drawing.Size(418, 294);
+            this.Controls.Add(this.ActionLabel);
             this.Controls.Add(this.PPPradio);
             this.Controls.Add(this.IPradio);
             this.Controls.Add(this.AddRiseOpLink);
@@ -166,7 +188,7 @@
             this.MinimizeBox = false;
             this.Name = "UpnpSetup";
             this.ShowInTaskbar = false;
-            this.Text = "UPnP Status";
+            this.Text = "UPnP Diagnostic";
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -183,5 +205,7 @@
         private System.Windows.Forms.LinkLabel AddRiseOpLink;
         private System.Windows.Forms.RadioButton IPradio;
         private System.Windows.Forms.RadioButton PPPradio;
+        private System.Windows.Forms.Label ActionLabel;
+        private System.Windows.Forms.Timer ActionTimer;
     }
 }

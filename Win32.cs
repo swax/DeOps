@@ -4,6 +4,9 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
 
+using NetFwTypeLib;
+
+
 namespace RiseOp
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -64,6 +67,38 @@ namespace RiseOp
         }
 
         [DllImport("user32.dll")]
-        public static extern int FlashWindow(IntPtr Hwnd, bool Revert);   
+        public static extern int FlashWindow(IntPtr Hwnd, bool Revert);
+
+
+        public static bool AuthorizeApplication(string title, string applicationPath, NET_FW_SCOPE_ scope, NET_FW_IP_VERSION_ ipVersion)
+        {
+            try
+            {
+                Type type = Type.GetTypeFromProgID("HNetCfg.FwAuthorizedApplication");
+
+                INetFwAuthorizedApplication auth = Activator.CreateInstance(type) as INetFwAuthorizedApplication;
+                auth.Name = title;
+                auth.ProcessImageFileName = applicationPath;
+                auth.Scope = scope;
+                auth.IpVersion = ipVersion;
+                auth.Enabled = true;
+
+                GetFirewallManager().LocalPolicy.CurrentProfile.AuthorizedApplications.Add(auth);
+
+                return true;
+            }
+            catch { }
+
+            return false;
+        }
+
+        private static NetFwTypeLib.INetFwMgr GetFirewallManager()
+        {
+            Type objectType = Type.GetTypeFromCLSID(new Guid("{304CE942-6E39-40D8-943A-B913C40C9CD4}"));
+
+            return Activator.CreateInstance(objectType) as NetFwTypeLib.INetFwMgr;
+        }
+
+
     }
 }

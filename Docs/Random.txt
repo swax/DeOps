@@ -358,6 +358,7 @@ website
 	go international ASAP, domestic market is a bear, international is more receptive of new tech like this
 	
 Pro
+	how to have orgs start with free, and then members slowly upgrade to pro
 	Commercial use
 	Security improvements
 	Mobile version

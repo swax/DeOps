@@ -16,7 +16,10 @@ namespace RiseOp.Interface.Settings
     internal partial class UpnpSetup : CustomIconForm
     {
         OpCore Core;
-        UPnPHandler UPnP;
+        internal UPnPHandler UPnP;
+
+        internal UpnpLog Log;
+
 
         internal UpnpSetup(OpCore core)
         {
@@ -24,73 +27,122 @@ namespace RiseOp.Interface.Settings
 
             Core = core;
             UPnP = core.Network.UPnPControl;
+
+            UPnP.Logging = true;
+            UPnP.Log.SafeClear();
+
+            RefreshInterface();
         }
 
         private void RefreshLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            Enabled = false;
-            RefreshLink.Text = "Working...";
+            RefreshLink.Text = "Refreshing...";
 
             EntryList.Items.Clear();
 
-            new Thread(RefreshThread).Start();
+            // add ports in seperate thread
+            UPnP.ActionQueue.Enqueue(() =>
+            {
+                string type = IPradio.Checked ? "WANIP" : "WANPPP";
 
+                UPnP.RefreshDevices();
 
-            // keep log
+                foreach (UPnPDevice device in UPnP.Devices.Where(d => d.Name.Contains(type)))
+                    for (int i = 0; i < 250; i++)
+                    {
+                        PortEntry entry = UPnP.GetPortEntry(device, i);
 
-            // add exceptions to log
-            
-        }
+                        if (entry == null)
+                            break;
+                        else
+                            // add to list box
+                            BeginInvoke(new Action(() => EntryList.Items.Add(entry)));
+                    }
 
-        void RefreshThread()
-        {
-            string type = IPradio.Checked ? "WANIP" : "WANPPP";
+                // finish
+                BeginInvoke(new Action(() => RefreshLink.Text = "Refresh"));
+            });
 
-            UPnP.RefreshDevices();
-
-            foreach(UPnPDevice device in UPnP.Devices.Where(d=>d.Name.Contains(type)))
-                for (int i = 0; i < 250; i++)
-                {
-                    PortEntry entry = UPnP.GetPortEntry(device, i);
-
-                    BeginInvoke((MethodInvoker)delegate() { AddPortEntry(entry); });
-
-                    if (entry == null)
-                        break;
-                }
-
-            BeginInvoke(new MethodInvoker(RefreshFinished));
-        }
-
-        void AddPortEntry(PortEntry entry)
-        {
-            EntryList.Items.Add(entry);
-        }
-
-        void RefreshFinished()
-        {
-            Enabled = true;
-            RefreshLink.Text = "Refresh";
+            RefreshInterface();
         }
 
         private void RemoveLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
+            RemoveLink.Text = "Removing...";
 
+            List<PortEntry> remove = new List<PortEntry>();
+
+            foreach (PortEntry entry in EntryList.SelectedItems)
+                remove.Add(entry);
+
+
+            UPnP.ActionQueue.Enqueue(() =>
+            {
+                foreach (PortEntry entry in remove)
+                {
+                    UPnP.ClosePort(entry.Device, entry.Protocol, entry.Port);
+
+                    BeginInvoke(new Action(() => EntryList.Items.Remove(entry)));
+                }
+
+                // finish
+                BeginInvoke(new Action(() => RemoveLink.Text = "Remove Selected"));
+            });
+
+            RefreshInterface();
         }
 
         private void AddRiseOpLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
+            AddRiseOpLink.Text = "Resetting...";
 
+            UPnP.Initialize();
+
+            if (Core.Context.Lookup != null)
+                Core.Context.Lookup.Network.UPnPControl.Initialize();
+
+            UPnP.ActionQueue.Enqueue(() => BeginInvoke(new Action(() => AddRiseOpLink.Text = "Reset RiseOp Ports")));
+
+            RefreshInterface();
         }
 
         private void LogLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-
+            if (Log == null)
+            {
+                Log = new UpnpLog(this);
+                Log.Show();
+            }
+            else
+            {
+                Log.WindowState = FormWindowState.Normal;
+                Log.Activate();
+            }
         }
 
         private void CloseButton_Click(object sender, EventArgs e)
         {
+            UPnP.Logging = false;
+
             Close();
+        }
+
+        private void ActionTimer_Tick(object sender, EventArgs e)
+        {
+            RefreshInterface();
+        }
+
+        private void RefreshInterface()
+        {
+            bool active = (UPnP.WorkingThread != null);
+
+            ActionLabel.Visible = active;
+
+            RefreshLink.Enabled = !active;
+            RemoveLink.Enabled = !active;
+            AddRiseOpLink.Enabled = !active;
+            IPradio.Enabled = !active;
+            PPPradio.Enabled = !active;
         }
     }
 }

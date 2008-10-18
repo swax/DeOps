@@ -134,6 +134,12 @@
     <Compile Include="Interface\Settings\IgnoreForm.Designer.cs">
       <DependentUpon>IgnoreForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Interface\Settings\UpnpLog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Settings\UpnpLog.Designer.cs">
+      <DependentUpon>UpnpLog.cs</DependentUpon>
+    </Compile>
     <Compile Include="Interface\Settings\UpnpSetup.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -935,6 +941,10 @@
       <DependentUpon>Operation.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Settings\UpnpLog.resx">
+      <DependentUpon>UpnpLog.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Interface\Settings\UpnpSetup.resx">
       <DependentUpon>UpnpSetup.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -1308,6 +1318,16 @@
       <ProductName>.NET Framework 3.5</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="NetFwTypeLib">
+      <Guid>{58FBCF7C-E7A9-467C-80B3-FC65E8FCCA08}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
