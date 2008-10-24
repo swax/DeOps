@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Text;
 using System.Threading;
@@ -335,6 +336,24 @@ namespace RiseOp.Interface
         {
             if (Context.Sim == null)
                 EnterSimLink.Visible = !EnterSimLink.Visible;
+        }
+
+        private void LoginForm_Load(object sender, EventArgs e)
+        {
+            if (Context.License != null)
+            {
+                LicenseLabel.Text = "supported - licensed";
+                LicenseLabel.BackColor = Color.Blue;
+            }
+        }
+
+        private void LicenseLabel_Click(object sender, EventArgs e)
+        {
+            if (Context.License == null)
+                Process.Start("http://www.riseop.com/index.php/download");
+
+            else
+                new LicenseForm(Context.License).ShowDialog(this);
         }
     }
 

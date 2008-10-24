@@ -130,6 +130,13 @@ namespace RiseOp.Interface {
             }
         }
         
+        internal static System.Drawing.Bitmap reg {
+            get {
+                object obj = ResourceManager.GetObject("reg", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Icon riseop {
             get {
                 object obj = ResourceManager.GetObject("riseop", resourceCulture);

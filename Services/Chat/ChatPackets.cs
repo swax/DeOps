@@ -27,7 +27,7 @@ namespace RiseOp.Services.Chat
         internal RoomKind Kind;
         internal string Text = "";
         internal TextFormat Format;
-        internal uint RoomID;
+        internal ulong RoomID;
 
 
         internal ChatText()
@@ -86,7 +86,7 @@ namespace RiseOp.Services.Chat
                         break;
 
                     case Packet_RoomID:
-                        chat.RoomID = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        chat.RoomID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
                         break;
                 }
             }
@@ -170,7 +170,7 @@ namespace RiseOp.Services.Chat
         const byte Packet_Host = 0x40;
 
 
-        internal uint RoomID;
+        internal ulong RoomID;
         internal string Title;
         internal byte[] Host;
         internal byte[] SignedInvite;
@@ -216,7 +216,7 @@ namespace RiseOp.Services.Chat
                 switch (child.Name)
                 {
                     case Packet_RoomID:
-                        invite.RoomID = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        invite.RoomID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Title:
@@ -246,7 +246,7 @@ namespace RiseOp.Services.Chat
 
 
         internal bool Request;
-        internal uint RoomID;
+        internal ulong RoomID;
         internal List<ulong> Members = new List<ulong>();
 
 
@@ -296,7 +296,7 @@ namespace RiseOp.Services.Chat
                         break;
 
                     case Packet_RoomID:
-                        who.RoomID = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        who.RoomID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Members:

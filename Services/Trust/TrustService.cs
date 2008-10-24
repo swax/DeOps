@@ -67,7 +67,7 @@ namespace RiseOp.Services.Trust
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
             Core.KeepDataCore += new KeepDataHandler(Core_KeepData);
 
-            Cache = new VersionedCache(Network, ServiceID, DataTypeFile, true);
+            Cache = new VersionedCache(Network, ServiceID, DataTypeFile, false);
 
             Network.StatusChange += new StatusChange(Network_StatusChange);
 
@@ -610,7 +610,7 @@ namespace RiseOp.Services.Trust
             RefreshLinked();
 
             TrustMap.LockReading(() =>
-                users.Union(from t in TrustMap.Values where t.PingUser select t.UserID));
+                users.AddRange(from t in TrustMap.Values where t.PingUser select t.UserID));
         }
 
         internal void Research(ulong key, uint project, bool searchDownlinks)

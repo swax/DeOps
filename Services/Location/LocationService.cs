@@ -80,8 +80,8 @@ namespace RiseOp.Services.Location
 
             Network.StatusChange += new StatusChange(Network_StatusChange);
 
-            Network.Store.StoreEvent[ServiceID, 0] += new StoreHandler(OperationStore_Local);
-            Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(OperationSearch_Local);
+            Network.Store.StoreEvent[ServiceID, 0] += new StoreHandler(Store_Local);
+            Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(Search_Local);
 
             Network.LightComm.Data[ServiceID, 0] += new LightDataHandler(LightComm_ReceiveData);
 
@@ -102,8 +102,8 @@ namespace RiseOp.Services.Location
 
             Network.StatusChange -= new StatusChange(Network_StatusChange);
 
-            Network.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(OperationStore_Local);
-            Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(OperationSearch_Local);
+            Network.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(Store_Local);
+            Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(Search_Local);
 
             Network.LightComm.Data[ServiceID, 0] -= new LightDataHandler(LightComm_ReceiveData);
 
@@ -117,7 +117,7 @@ namespace RiseOp.Services.Location
 
         void Network_StatusChange()
         {
-            if (!Network.Established)
+            if (!Network.Responsive)
                 return;
 
             if(!Core.User.Settings.Invisible)
@@ -304,7 +304,7 @@ namespace RiseOp.Services.Location
             
             byte[] signed = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, location);
 
-            OperationStore_Local(new DataReq(null, Core.UserID, ServiceID, 0, signed));
+            Store_Local(new DataReq(null, Core.UserID, ServiceID, 0, signed));
 
             // update oldest to newest (update oldest with new address/info before we ping timeout)
             PendingNotifications = new LinkedList<DhtClient>(NotifyUsers.Keys.OrderBy(c => NotifyUsers[c]));
@@ -326,11 +326,11 @@ namespace RiseOp.Services.Location
             {
                 DataReq store = new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value);
 
-                OperationStore_Local(store);
+                Store_Local(store);
             }
         }
 
-        void OperationSearch_Local(ulong key, byte[] parameters, List<byte[]> results)
+        void Search_Local(ulong key, byte[] parameters, List<byte[]> results)
         {
             if (Core.User.Settings.Invisible)
                 return;
@@ -344,7 +344,7 @@ namespace RiseOp.Services.Location
                     results.Add(info.SignedData);
         }
 
-        internal void OperationStore_Local(DataReq store)
+        internal void Store_Local(DataReq store)
         {
             // getting published to - search results - patch
 
@@ -364,11 +364,6 @@ namespace RiseOp.Services.Location
                     if (Utilities.CheckSignedData(location.Key, signed.Data, signed.Signature))
                         Process_LocationData(store, signed, location);
                 }
-        }
-
-        private void Process_LocationData(byte[] data)
-        {
-
         }
 
         private void Process_LocationData(DataReq data, SignedData signed, LocationData location)
@@ -476,6 +471,7 @@ namespace RiseOp.Services.Location
             location.AwayMessage = LocalAway ? Core.User.Settings.AwayMessage : "";
 
             location.Version = LocationVersion++;
+            location.License = Core.Context.LicenseProof;
 
             foreach (uint service in GetTag.HandlerMap.Keys)
                 foreach (uint datatype in GetTag.HandlerMap[service].Keys)
@@ -567,7 +563,7 @@ namespace RiseOp.Services.Location
         void Receive_Notify(DhtClient client, LocationNotify notify)
         {
             if (notify.SignedLocation != null)
-                OperationStore_Local(new DataReq(null, client.UserID, ServiceID, 0, notify.SignedLocation));
+                Store_Local(new DataReq(null, client.UserID, ServiceID, 0, notify.SignedLocation));
             
 
             ClientInfo info;

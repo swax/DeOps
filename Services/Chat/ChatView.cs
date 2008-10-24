@@ -173,7 +173,7 @@ namespace RiseOp.Services.Chat
                 LeaveButton.Visible = Custom.Active;
 
                 InviteButton.Visible = (Custom.Active && 
-                                        (Custom.Kind == RoomKind.Public || Custom.Host == Chat.Core.UserID));
+                                        (Custom.Kind == RoomKind.Private || Custom.Host == Chat.Core.UserID));
             }
 
             LocalButton.ForeColor = RoomsActive(RoomKind.Command_High, RoomKind.Command_Low) ? Color.Black : Color.DimGray;
@@ -304,19 +304,30 @@ namespace RiseOp.Services.Chat
         {
             RoomsButton.DropDownItems.Clear();
 
+            ToolStripMenuItem recent = new ToolStripMenuItem("Recent");
+
             Chat.RoomMap.LockReading(delegate()
             {
                 foreach (ChatRoom room in Chat.RoomMap.Values)
-                    if (room.Kind == RoomKind.Public || room.Kind == RoomKind.Private)
+                    if (!ChatService.IsCommandRoom(room.Kind))
                     {
-                        RoomsButton.DropDownItems.Add(new RoomItem(Chat, room, RoomMenu_Click));
+                        ToolStripMenuItem item = new RoomItem(Chat, room, RoomMenu_Click);
+
+                        if (room.Active)
+                            RoomsButton.DropDownItems.Add(item);
+                        else
+                            recent.DropDownItems.Add(item);
                     }
             });
 
             if(RoomsButton.DropDownItems.Count > 0)
                 RoomsButton.DropDownItems.Add(new ToolStripSeparator());
-            
+
+            RoomsButton.DropDownItems.Add(new ToolStripMenuItem("Join", null, RoomMenu_Join));
             RoomsButton.DropDownItems.Add(new ToolStripMenuItem("Create", null, RoomMenu_Create));
+
+            if (recent.DropDownItems.Count > 0)
+                RoomsButton.DropDownItems.Add(recent);
         }
 
         private void RoomMenu_Click(object sender, EventArgs e)
@@ -340,12 +351,31 @@ namespace RiseOp.Services.Chat
                 if (name == "")
                     return;
 
-                RoomKind kind = form.PublicButton.Checked ? RoomKind.Public : RoomKind.Private;
+                RoomKind kind = RoomKind.Public;
+                if (form.PrivateRadio.Checked) kind = RoomKind.Private;
+                if (form.SecretRadio.Checked) kind = RoomKind.Secret;
 
                 ChatRoom room = Chat.CreateRoom(name, kind);
 
                 SetCustomRoom(room);
             }
+        }
+
+        private void RoomMenu_Join(object sender, EventArgs e)
+        {
+            GetTextDialog join = new GetTextDialog("Join Room", "Enter the name of the room", "");
+
+            if (join.ShowDialog() != DialogResult.OK)
+                return;
+
+            string name = join.ResultBox.Text;
+
+            if (name == "")
+                return;
+
+            ChatRoom room = Chat.CreateRoom(name, RoomKind.Public);
+
+            SetCustomRoom(room);
         }
 
         internal void SetCustomRoom(ChatRoom room)
@@ -409,7 +439,7 @@ namespace RiseOp.Services.Chat
             if (!room.Active)
                 ForeColor = Color.DimGray;
             else
-                Text += " (" + room.GetActiveMembers(chat).ToString() + ")";
+                Text += " - " + room.GetActiveMembers(chat).ToString();
         }
     }
 }

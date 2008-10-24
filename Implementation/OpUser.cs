@@ -17,6 +17,7 @@ using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
 using RiseOp.Implementation.Protocol.Special;
+using RiseOp.Services.Update;
 
 
 namespace RiseOp
@@ -139,7 +140,8 @@ namespace RiseOp
                                 if (root.Name == IdentityPacket.OperationSettings)
                                     Settings = SettingsPacket.Decode(root);
 
-                                if (root.Name == IdentityPacket.UserInfo && Core != null)
+                                if (root.Name == IdentityPacket.UserInfo && Core != null && 
+                                    (Core.Sim == null || !Core.Sim.Internet.FreshStart))
                                     Core.IndexInfo(UserInfo.Decode(root));
 
                                 // save icon to identity file because only root node saves icon/splash to link file
@@ -166,8 +168,6 @@ namespace RiseOp
                                     Core.Network.Cache.AddCache(WebCache.Decode(root));
                             }
                         }
-
-                        Utilities.ReadtoEnd(crypto);
                     }
                 }
             }
@@ -483,6 +483,8 @@ namespace RiseOp
         internal const byte Splash  = 0x80;
 
         internal const byte UserInfo = 0x90;
+
+        internal const byte Update = 0xA0;
     }
 
     internal class UserInfo : G2Packet
@@ -829,23 +831,42 @@ namespace RiseOp
             return settings;
         }
 
+        static byte[] BootstrapKey
+        {
+            get
+            {
+                return new SHA256Managed().ComputeHash(UTF8Encoding.UTF8.GetBytes("bootstrap"));
+            }
+        }
+
+        static string BootstrapPath
+        {
+            get
+            {
+                return Application.StartupPath + Path.DirectorySeparatorChar + "bootstrap.dat";
+            }
+        }
+
+        static internal string UpdatePath
+        {
+            get
+            {
+                return Application.StartupPath + Path.DirectorySeparatorChar + "update.dat";
+            }
+        }
+
         internal static LookupSettings Load(DhtNetwork network)
         {
             // so that accross multiple ops, lookup access points are maintained more or less
             // also bootstrap file can be sent to others to help them out
             LookupSettings settings = null;
 
-            string path = Application.StartupPath + Path.DirectorySeparatorChar + "bootstrap";
-
             // dont want instances saving and loading same lookup file
-            if (network.Core.Sim == null && File.Exists(path))
-            {
-                
-                byte[] key = new SHA256Managed().ComputeHash( UTF8Encoding.UTF8.GetBytes("bootstrap"));
-
+            if (network.Core.Sim == null && File.Exists(BootstrapPath))
+            { 
                 try
                 {
-                    using (IVCryptoStream crypto = IVCryptoStream.Load(path, key))
+                    using (IVCryptoStream crypto = IVCryptoStream.Load(BootstrapPath, BootstrapKey))
                     {
                         PacketStream stream = new PacketStream(crypto, network.Protocol, FileAccess.Read);
 
@@ -890,17 +911,16 @@ namespace RiseOp
 
             if (core.Sim != null)
                 return;
-
-            string path = Application.StartupPath + Path.DirectorySeparatorChar + "bootstrap";
-            
-            byte[] key = new SHA256Managed().ComputeHash(UTF8Encoding.UTF8.GetBytes("bootstrap"));
-
+      
             try
             {
                 // Attach to crypto stream and write file
-                using (IVCryptoStream crypto = IVCryptoStream.Save(path, key))
+                using (IVCryptoStream crypto = IVCryptoStream.Save(BootstrapPath, BootstrapKey))
                 {
                     PacketStream stream = new PacketStream(crypto, core.Network.Protocol, FileAccess.Write);
+
+                    if(core.Context.SignedUpdate != null)
+                        stream.WritePacket(core.Context.SignedUpdate);
 
                     stream.WritePacket(this);
 
@@ -913,8 +933,63 @@ namespace RiseOp
             {
                 core.Network.UpdateLog("Exception", "LookupSettings::Save " + ex.Message);
             }
+        }
 
+        internal static void WriteUpdateInfo(OpCore core)
+        {
+            // non lookup core, embedding update packet
+            Debug.Assert(!core.Network.IsLookup);
+
+            string temp = Application.StartupPath + Path.DirectorySeparatorChar + "temp.dat";
+
+            try
+            {
+                using (IVCryptoStream inCrypto = IVCryptoStream.Load(BootstrapPath, BootstrapKey))
+                using (IVCryptoStream outCrypto = IVCryptoStream.Save(temp, BootstrapKey))
+                {
+                    byte[] update = core.Context.SignedUpdate.Encode(core.Network.Protocol);
+                    outCrypto.Write(update, 0, update.Length);
+
+                    PacketStream inStream = new PacketStream(inCrypto, core.Network.Protocol, FileAccess.Read);
+
+                    G2Header root = null;
+
+                    while (inStream.ReadPacket(ref root))
+                        if (root.Name != IdentityPacket.Update)
+                            outCrypto.Write(root.Data, root.PacketPos, root.PacketSize);
+                }
+
+                File.Copy(temp, BootstrapPath, true);
+                File.Delete(temp);
+            }
+
+            catch (Exception ex)
+            {
+                core.Network.UpdateLog("Exception", "WriteUpdateInfo::" + ex.Message);
+            }
+        }
+
+        internal static UpdateInfo ReadUpdateInfo()
+        {
+            if (!File.Exists(BootstrapPath))
+                return null;
+
+            try
+            {
+                using (IVCryptoStream crypto = IVCryptoStream.Load(BootstrapPath, BootstrapKey))
+                {
+                    PacketStream stream = new PacketStream(crypto, new G2Protocol(), FileAccess.Read);
+
+                    G2Header root = null;
+
+                    while (stream.ReadPacket(ref root))
+                        if (root.Name == IdentityPacket.Update)
+                            return UpdateInfo.Decode(root);
+                }
+            }
+            catch { }
+
+            return null;
         }
     }
-
 }

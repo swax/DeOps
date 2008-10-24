@@ -644,6 +644,7 @@ namespace RiseOp.Implementation.Protocol.Net
         internal IPAddress RemoteIP;
         internal ushort  Ident;
 
+
 		internal override byte[] Encode(G2Protocol protocol)
 		{
             lock (protocol.WriteSection)
@@ -701,10 +702,16 @@ namespace RiseOp.Implementation.Protocol.Net
         const byte Packet_Source   = 0x10;
         const byte Packet_RemoteIP = 0x20;
         const byte Packet_Direct   = 0x30;
+        const byte Packet_Version  = 0x40;
+
 
 		internal DhtSource Source;
 		internal IPAddress RemoteIP;
         internal bool Direct;
+
+        // version of the cached update file (NOT the client) use crawl to find that
+        // in pong because receiveing pong proves we can send and recv from host
+        internal uint Version; 
 
 
 		internal override byte[] Encode(G2Protocol protocol)
@@ -721,6 +728,10 @@ namespace RiseOp.Implementation.Protocol.Net
 
                 if(Direct)
                     protocol.WritePacket(po, Packet_Direct, null);
+
+                if (Version != 0)
+                    protocol.WritePacket(po, Packet_Version, CompactNum.GetBytes(Version));
+
 
                 // network packet
                 InternalData = protocol.WriteFinish();
@@ -753,6 +764,10 @@ namespace RiseOp.Implementation.Protocol.Net
 
                     case Packet_RemoteIP:
                         po.RemoteIP = new IPAddress(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
+                        break;
+
+                    case Packet_Version:
+                        po.Version = CompactNum.ToUInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }			
 			}

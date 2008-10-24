@@ -35,12 +35,15 @@ namespace RiseOp.Services.Assist
 
         internal VersionedCache Cache;
 
+        bool GlobalIM;
+
         internal Dictionary<ulong, ServiceData> InRange = new Dictionary<ulong, ServiceData>();
         internal Dictionary<ulong, ServiceData> OutofRange = new Dictionary<ulong, ServiceData>();
 
         internal ServiceEvent<GetLocalSyncTagHandler> GetTag = new ServiceEvent<GetLocalSyncTagHandler>();
         internal ServiceEvent<LocalSyncTagReceivedHandler> TagReceived = new ServiceEvent<LocalSyncTagReceivedHandler>();
 
+       
       
         internal LocalSync(OpCore core)
         {
@@ -49,6 +52,8 @@ namespace RiseOp.Services.Assist
             Store = Network.Store;
             Core.Sync = this;
 
+            GlobalIM = Core.User.Settings.GlobalIM;
+
             Network.StatusChange += new StatusChange(Network_StatusChange);
 
             Core.Locations.GetTag[ServiceID, DataTypeSync] += new GetLocationTagHandler(Locations_GetTag);
@@ -56,7 +61,7 @@ namespace RiseOp.Services.Assist
 
             Store.ReplicateEvent[ServiceID, DataTypeSync] += new ReplicateHandler(Store_Replicate);
 
-            Cache = new VersionedCache(Network, ServiceID, DataTypeSync, false);
+            Cache = new VersionedCache(Network, ServiceID, DataTypeSync, true);
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
             Cache.Load();
@@ -89,6 +94,7 @@ namespace RiseOp.Services.Assist
                 foreach (ulong user in InRange.Keys)
                     InvokeTags(user, InRange[user]);
         }
+
         internal void UpdateLocal()
         {
             ServiceData data = new ServiceData();
@@ -126,6 +132,9 @@ namespace RiseOp.Services.Assist
         {
             ServiceData data = ServiceData.Decode(file.Header.Extra);
             
+            if(GlobalIM ) // cant check here if in buddy list because on localSync load, buddy list is null
+                InRange[file.UserID] = data;
+
             if (Network.Routing.InCacheArea(file.UserID))
                 InRange[file.UserID] = data;
             else
@@ -145,6 +154,9 @@ namespace RiseOp.Services.Assist
 
         List<byte[]> Store_Replicate(DhtContact contact)
         {
+            if (GlobalIM) // cache area doesnt change with network in global IM mode
+                return null;
+
             // indicates cache area has changed, move contacts between out and in range
 
             // move in to out
@@ -206,12 +218,13 @@ namespace RiseOp.Services.Assist
                     Store.Send_StoreReq(address, null, new DataReq(null, file.UserID, ServiceID, DataTypeSync, file.SignedHeader));
             }
 
-            if ((file != null && version > file.Header.Version) ||
-                (file == null && Network.Routing.InCacheArea(user)))
+            // get new version of local sync file
+            if ( (file != null && version > file.Header.Version) ||
+
+                 (file == null && ( ( !GlobalIM && Network.Routing.InCacheArea(user)) ||
+                                    (  GlobalIM && Core.Buddies.BuddyList.SafeContainsKey(user)) )))
             {
                 Cache.Research(user);
-
-                Network.Searches.SendDirectRequest(address, user, ServiceID, DataTypeSync, BitConverter.GetBytes(version));
             }
 
             // ensure we have the lastest versions of the user's services

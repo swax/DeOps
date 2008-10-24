@@ -149,7 +149,7 @@ namespace RiseOp.Services.Chat
                         if (id != Room.Host)
                         {
                             // if they left the room dont show them
-                            if (Room.Kind == RoomKind.Public || Room.Kind == RoomKind.Private)
+                            if (!ChatService.IsCommandRoom(Room.Kind))
                                 if (Room.Members.SafeCount == 0)
                                     continue; 
 

@@ -382,6 +382,44 @@ namespace RiseOp.Implementation.Protocol
 		}
 	}
 
+    internal class G2Header
+    {
+        internal byte[] Data;
+
+        internal int PacketPos;
+        internal int PacketSize;
+
+        internal byte Name;
+
+        internal bool HasChildren;
+
+        internal int InternalPos;
+        internal int InternalSize;
+
+        internal int PayloadPos;
+        internal int PayloadSize;
+
+        internal int NextBytePos;
+        internal int NextBytesLeft;
+
+        internal G2Header(byte[] data)
+        {
+            Data = data;
+        }
+    }
+
+    internal class G2Packet
+    {
+        internal G2Packet()
+        {
+        }
+
+        internal virtual byte[] Encode(G2Protocol protocol)
+        {
+            return null;
+        }
+    }
+
     internal class PacketStream
     {
         G2Protocol Protocol;

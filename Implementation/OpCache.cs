@@ -57,7 +57,8 @@ namespace RiseOp.Implementation
             NextPublishAny = Core.TimeNow.AddMinutes(30);
 
 
-            if (Network.IsLookup)
+            if (Network.IsLookup ||
+                (Core.User != null && Core.User.Settings.GlobalIM))
             {
                 WebCache cache = new WebCache();
                 cache.Address = "http://www.riseop.com/cache/update.php";
@@ -286,8 +287,8 @@ namespace RiseOp.Implementation
                 if (Core.Sim == null)
                 {
                      foreach (WebCache cache in WebCaches)
-                        if (Core.TimeNow > cache.NextQuery)
-                            new Thread(WebQuery).Start(cache);
+                         if (Core.TimeNow > cache.NextQuery)
+                             new Thread(WebQuery).Start(cache);
                 }
 
                 // only can d/l from global cache in sim, or a secret network with private web cache
@@ -378,6 +379,8 @@ namespace RiseOp.Implementation
                 cache.LastTried = Core.TimeNow;
 
             cache.NextPublish = Core.TimeNow.AddMinutes(60); // default value if failed
+
+            Network.UpdateLog("general", "Publishing to webcache");
 
             // remote ip is used for cache/network initialization, when no one has a node determined IP
 

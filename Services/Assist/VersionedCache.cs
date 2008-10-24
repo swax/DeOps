@@ -25,6 +25,8 @@ namespace RiseOp.Services.Assist
     // So it is persistant on the network.  Newer versions of files replace older versions.
     // LocalSync is used to provide simultaneous replication of all versioned files
 
+    // on Global IM local sync is cached by your buddies, not DHT area
+
     class VersionedCache : IDisposable
     {
         OpCore Core;
@@ -39,7 +41,9 @@ namespace RiseOp.Services.Assist
 
         internal ThreadedDictionary<ulong, OpVersionedFile> FileMap = new ThreadedDictionary<ulong, OpVersionedFile>();
 
-        bool UseLocalSync;
+        bool LocalSync;
+        bool GlobalIM;
+
         bool RunSaveHeaders;
         int PruneSize = 64;
         Dictionary<ulong, DateTime> NextResearch = new Dictionary<ulong, DateTime>();
@@ -50,7 +54,7 @@ namespace RiseOp.Services.Assist
         internal FileRemovedHandler FileRemoved;
 
 
-        internal VersionedCache(DhtNetwork network, uint service, uint type, bool useLocalSync)
+        internal VersionedCache(DhtNetwork network, uint service, uint type, bool localSync)
         {
             Core    = network.Core;
             Network = network;
@@ -58,7 +62,9 @@ namespace RiseOp.Services.Assist
 
             Service = service;
             DataType = type;
-            UseLocalSync = useLocalSync;
+
+            LocalSync = localSync;
+            GlobalIM = Core.User.Settings.GlobalIM;
 
             CachePath = Core.User.RootPath + Path.DirectorySeparatorChar +
                         "Data" + Path.DirectorySeparatorChar +
@@ -76,7 +82,8 @@ namespace RiseOp.Services.Assist
  
             Store.StoreEvent[Service, DataType] += new StoreHandler(Store_Local);
 
-            if ( !UseLocalSync )
+            // if local sync used then it will handle all replication
+            if (LocalSync && !GlobalIM)
             {
                 Store.ReplicateEvent[Service, DataType] += new ReplicateHandler(Store_Replicate);
                 Store.PatchEvent[Service, DataType] += new PatchHandler(Store_Patch);
@@ -87,7 +94,7 @@ namespace RiseOp.Services.Assist
             Core.Transfers.FileSearch[Service, DataType] += new FileSearchHandler(Transfers_FileSearch);
             Core.Transfers.FileRequest[Service, DataType] += new FileRequestHandler(Transfers_FileRequest);
 
-            if (UseLocalSync)
+            if (!LocalSync)
             {
                 Core.Sync.GetTag[Service, DataType] += new GetLocalSyncTagHandler(LocalSync_GetTag);
                 Core.Sync.TagReceived[Service, DataType] += new LocalSyncTagReceivedHandler(LocalSync_TagReceived);
@@ -111,7 +118,7 @@ namespace RiseOp.Services.Assist
 
             Store.StoreEvent[Service, DataType] -= new StoreHandler(Store_Local);
 
-            if ( !UseLocalSync )
+            if (LocalSync && !GlobalIM)
             {
                 Store.ReplicateEvent[Service, DataType] -= new ReplicateHandler(Store_Replicate);
                 Store.PatchEvent[Service, DataType] -= new PatchHandler(Store_Patch);
@@ -122,7 +129,7 @@ namespace RiseOp.Services.Assist
             Core.Transfers.FileSearch[Service, DataType] -= new FileSearchHandler(Transfers_FileSearch);
             Core.Transfers.FileRequest[Service, DataType] -= new FileRequestHandler(Transfers_FileRequest);
 
-            if (UseLocalSync)
+            if (!LocalSync)
             {
                 Core.Sync.GetTag[Service, DataType] -= new GetLocalSyncTagHandler(LocalSync_GetTag);
                 Core.Sync.TagReceived[Service, DataType] -= new LocalSyncTagReceivedHandler(LocalSync_TagReceived);
@@ -179,7 +186,8 @@ namespace RiseOp.Services.Assist
 
                         vfile = FileMap[furthest];
 
-                        FileRemoved.Invoke(vfile);
+                        if(FileRemoved != null)
+                            FileRemoved.Invoke(vfile);
 
                         if (vfile.Header != null && vfile.Header.FileHash != null) // local sync doesnt use files
                             try { File.Delete(GetFilePath(vfile.Header)); }
@@ -198,7 +206,7 @@ namespace RiseOp.Services.Assist
             {
                 // republish objects that were not seen on the network during startup
                 // only if local sync doesnt do this for us
-                if (!UseLocalSync)
+                if (LocalSync && !GlobalIM)
                     FileMap.LockReading(delegate()
                     {
                         foreach (OpVersionedFile vfile in FileMap.Values)
@@ -215,7 +223,7 @@ namespace RiseOp.Services.Assist
             }
 
             // disconnected, reset cache to unique
-            else
+            else if(!Network.Responsive)
             {
                 FileMap.LockReading(delegate()
                 {
@@ -341,10 +349,18 @@ namespace RiseOp.Services.Assist
 
             vfile = GetFile(Core.UserID);
 
-            if (UseLocalSync)
-                Core.Sync.UpdateLocal();
+            if (!LocalSync)
+                Core.Sync.UpdateLocal(); // calls this same function for local sync which publishes
+
+            else if (GlobalIM)
+                Core.Locations.UpdateLocation();
+
             else if (Network.Established)
+            {
                 Store.PublishNetwork(Core.UserID, Service, DataType, vfile.SignedHeader);
+                Core.Locations.UpdateLocation();
+            }
+
             else
                 vfile.Unique = true; // publish when connected
 
@@ -429,7 +445,8 @@ namespace RiseOp.Services.Assist
 
                 RunSaveHeaders = true;
 
-                FileAquired.Invoke(newFile);
+                if(FileAquired != null)
+                    FileAquired.Invoke(newFile);
 
 
                 // delete old file - do after aquired event so invoked (storage) can perform clean up operation
@@ -514,7 +531,7 @@ namespace RiseOp.Services.Assist
             // figure out data contained
             if (G2Protocol.ReadPacket(embedded))
                 if (embedded.Name == DataPacket.VersionedFile)
-                    Process_VersionedFile(null, signed, VersionedFileHeader.Decode(signed.Data));
+                    Process_VersionedFile(store, signed, VersionedFileHeader.Decode(signed.Data));
         }
 
         List<byte[]> Store_Replicate(DhtContact contact)
@@ -617,7 +634,8 @@ namespace RiseOp.Services.Assist
 
 
             // node is in our local cache area, so not flooding by directly connecting
-            if (Network.Routing.InCacheArea(user))
+            if ( (!GlobalIM && Network.Routing.InCacheArea(user)) || 
+                 ( GlobalIM && Core.Buddies.BuddyList.SafeContainsKey(user)) )
                 foreach (ClientInfo client in Core.Locations.GetClients(user))
                     if (client.Data.TunnelClient == null)
                     {
@@ -678,7 +696,9 @@ namespace RiseOp.Services.Assist
 
             // if newer file on network, or this node is in our cache area, find it
             if ((file != null && version > file.Header.Version) ||
-                (file == null && Network.Routing.InCacheArea(user)))
+                
+                (file == null && ( ( !GlobalIM && Network.Routing.InCacheArea(user)) ||
+                                   (  GlobalIM && Core.Buddies.BuddyList.SafeContainsKey(user)) )))
             {
                 StartSearch(user, version); // this could be called from a patch given to another user, direct connect not gauranteed
             }

@@ -524,6 +524,7 @@ namespace RiseOp.Implementation.Transport
                     AvgBytesSent.Input(SendPacketMap.Peek().Packet.Payload.Length);
 
                     SendPacketMap.Dequeue();
+                    PacketsCompleted++;
                 }
             }
 
@@ -878,12 +879,17 @@ namespace RiseOp.Implementation.Transport
 
         DateTime NextCheckRoutes;
 
+        int PacketsCompleted;
+
 		internal void SecondTimer()
 		{
 			int packetLoss = 0;
 
 			if(State == RudpState.Connected)
 			{
+                //Debug.WriteLine(Core.User.Settings.UserName + ":" + Core.TimeNow.Second + " - Send Window: " + SendWindowSize + ", Packets Sent: " + PacketsCompleted + ", Retransmits: " + ReTransmits); //crit delete
+                PacketsCompleted = 0;
+
 				// manage send window
 				packetLoss = 0;
 		

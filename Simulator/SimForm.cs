@@ -117,7 +117,7 @@ namespace RiseOp.Simulator
 
             if (Sim.UseTimeFile)
             {
-                TimeFile = new FileStream(dirpath + Path.DirectorySeparatorChar + "time.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite);
+                TimeFile = new FileStream(dirpath + Path.DirectorySeparatorChar + "time.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
 
                 if (TimeFile.Length >= 8)
                 {

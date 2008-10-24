@@ -10,6 +10,7 @@ using System.Text;
 using System.Windows.Forms;
 
 using RiseOp.Implementation;
+using RiseOp.Implementation.Protocol.Packets;
 
 using RiseOp.Services;
 using RiseOp.Services.Trust;
@@ -73,7 +74,9 @@ namespace RiseOp.Interface
         uint  ProjectID;
         string BuddyGroup;
 
-        string IMImg, MailImg, BuddyWhoImg, TrustImg, UntrustImg;
+        LightLicense LastLicense;
+
+        string IMImg, MailImg, BuddyWhoImg, TrustImg, UntrustImg, RegImg;
 
 
         public StatusPanel()
@@ -100,6 +103,7 @@ namespace RiseOp.Interface
             BuddyWhoImg = ExtractImage("BuddyWho",  RiseOp.Services.Buddy.BuddyRes.buddy_who);
             TrustImg    = ExtractImage("Trust",     RiseOp.Services.Trust.LinkRes.linkup);
             UntrustImg  = ExtractImage("Untrust",   RiseOp.Services.Trust.LinkRes.unlink);
+            RegImg      = ExtractImage("Reg",       InterfaceRes.reg);
 
             ShowNetwork();
         }
@@ -392,6 +396,8 @@ namespace RiseOp.Interface
             //    Mobile: Online, Local Time 2:30pm
             //    Server: Last Seen 10/2/2007
 
+            LastLicense = null;
+
             string locations = "";
 
             foreach (ClientInfo info in Core.Locations.GetClients(user))
@@ -425,7 +431,14 @@ namespace RiseOp.Interface
                     locations += ", Local Time " + Core.TimeNow.ToUniversalTime().AddMinutes(info.Data.GmtOffset).ToString("t");
 
                 locations += "<br>";
+
+                if (info.Data.License != null)
+                    LastLicense = info.Data.License;
             }
+
+            if (LastLicense != null)
+                header = "<a href='http://license'><img style='margin:0px;' src='" + RegImg + "' border=0></a> " + header;
+        
 
             if (locations == "")
                 content += "<b>Offline</b><br>";
@@ -612,6 +625,11 @@ namespace RiseOp.Interface
 
                     if (MessageBox.Show("Change " + Core.GetName(UserID) + "'s name to " + name + "?", "Change Name", MessageBoxButtons.YesNo) == DialogResult.Yes)
                         Core.RenameUser(UserID, name);
+                }
+
+                else if (url == "license")
+                {
+                    new LicenseForm(LastLicense).ShowDialog(); 
                 }
 
                 else if (url == "im")

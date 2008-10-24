@@ -146,7 +146,7 @@ namespace RiseOp.Services.Mail
             Directory.CreateDirectory(MailPath);
             Directory.CreateDirectory(CachePath);
 
-            PendingCache = new VersionedCache(Network, ServiceID, DataTypePending, true);
+            PendingCache = new VersionedCache(Network, ServiceID, DataTypePending, false);
 
             PendingCache.FileAquired += new FileAquiredHandler(PendingCache_FileAquired);
             PendingCache.FileRemoved += new FileRemovedHandler(PendingCache_FileRemoved);
@@ -404,7 +404,7 @@ namespace RiseOp.Services.Mail
             }
 
             // disconnected, reset cache to unique
-            else
+            else if (!Network.Responsive)
             {
                 foreach (ulong key in AckMap.Keys)
                     foreach (CachedAck ack in AckMap[key])

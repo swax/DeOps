@@ -1,82 +1,64 @@
 
-auto update
-	ability to send store command directly to client
-	update service notified, starts transfer
-		alerts user when transfer is complete
-	uses built in jmg public key to verify update file is valid
-	user should only have to download once - rest d/led through networkq
-	if user using old version, send direct store request with signed new version info
-		download - if not downloaded already - show user, update ready to install, yes - start installer, close riseop
-	check if update file exists before downloading
-	copy to root when done RiseOpInstall_1.0.0.exe
-	
-buddie lists / localsync still being published on global IM
-	buddy still needs to publish self loc around local ID
-	'sync' on network, buddies store other buddies, buddy list
-		throw the ingnore list in there as well
-	use tags - should already be in loc
+buddie lists
 	test 64 net, guy goes offline, empty dupe comes online, is buddy list updated?
-	we dont want buddy list replicated, published, etc.. when offline, just held by buddies
+	drag/drop file into IM, ask user if like to send
 
+Cut out debug code from release mode
+check crits
 
-webcache
-	publish working? run sim for hour, exception?
-	have riseop.com cache work for lookup and global IM nets
-	any special code for lookup web cache that needs to be used for global?
-	set global im web cache
-
-chat
-	when switching rooms, put focus on chat input
-	when are rooms removed?
-	
-share
-	show lock/unlock icons for shared files, only delete if path is downloadpath
-	put same options in web interface
-			
-other
-	person net open/nat/blocked, not finding local untrusted, losing buddy loc
-	storage unlock should be threaded like sharing
-	also status if killed
-	sortable columns that are either auto, or take a delegate comparer as a parameter
+cache license ^ index id / user id in client
 
 release
-	nullsoft installer
-	new splash - temple like icons instead of parthanon, column like icon/symbolism
-	hide sim and other tools?
-	xenocode (hopefully supports linq, inspect)
-	ensure auto-update is working
-	ensure logging is working, not full logging, but stats from webcache
+	xenocode - check disasm (hopefully supports linq, inspect)
+	test from wells - connect to home? upnp open?
+	update guide page
+
 	udpate about page - saying if interested and very skilled, possible work options
-		goals 3-4 expert programmers at 7% equity
-	put non-commercial use in license
+		
+	after payment take back to success/failure page - add quanity option
+		once email is received I sign licenses, and send back
+		http://www.riseop.com/index.php/licensed on success
+		
+	download page
+		put link to .net on website
+		ensure we get shipping address from buy button
+		
+	license
+		explain free individual use non-commercial use
+		commercial use suggest try for 30 days, afterwards license
+		licenses are per person, use it on what ever computer you want
+		buying license supports future development
+		also give user special support forums access, customer ID for priority support
+
+		
+upgrades - user enters license id into purchase notes on paypal	
+	
+test global
+	associations? put in diff sturcture buddyinfo data type/file?
+
 	RiseOp Pro
 		Higher encryption
 		Commercial use
 		secret network
-	need a way to officially sign user's key with registered
-		embed personal public key and allow possibility for signing user and being 'registered'
-		$5 register user (sign users key through riseop.com), added to user's profile
-			when other people see profile they see the peace logo next to their name - meaning they support riseOp!
-		need a seperate user area from joomla, copy book system user implementation  
-	next post somethingawful beta test
-		they d/l the client
-		get feedback
-		tell friends
-		more people d/l
-		
-		eventually posted on bigger news site
-		lots of downloads
-			how to offload bandwidth usage?
-
-test global
-	associations? put in diff sturcture buddyinfo data type/file?
-
 
 login - instead of op, put profile
 if globalIM profile not detected, show link in red on login: Create Global IM Profile
 project coming before primary in nar bar drop down
 
 
+share
+	show lock/unlock icons for shared files, only delete if path is downloadpath
+	put same options in web interface
+			
+other
+	person net open/nat/blocked, not finding local untrusted, losing buddy loc
+	lookup not connecting on LAN network?
+	storage unlock should be threaded like sharing
+	also status if killed
+	sortable columns that are either auto, or take a delegate comparer as a parameter
+	when switching rooms, put focus on chat input
+	
+	
 setting - save IM mode, buddies or structure view on close
 
 // update IM/Chat/Gui in notify area, if state changed!!
@@ -234,8 +216,6 @@ other
 	on linkup, trigger inherit from top node
 	doesnt seem like trust icon/splash changes are propagated to subs quickly should auto post
 
-	network status info panel title header should be the color of the status of the firewall
-
 	test crawlable over home lan
 		crawl requests must be signed?
 			
@@ -267,7 +247,7 @@ default views
 	board - help
 	storage - help
 	chat - help (introduction to 'trust')
-	profile - (right click to edit)
+
 	
 re-alignment
 	leave old network once all subs confirmed to be re-aligned
@@ -296,8 +276,7 @@ fall release
 	kill switch
 
 	web caching files?
-	implement upnp?
-	
+
 	
 3 trust chain
 	adding files to storage causes re-download of unrelated file
@@ -318,9 +297,7 @@ next
 	use packetstream instead of protocl.writetofile	
 	put stream closing calls in finally block
 	do check tags on node click, or local sync search...
-	
-	if firewalled/NAT - display in big letters forward TCP/UDP ports xxxx
-	
+
 	bandwidth limits / auditing
 		when bandwidth chart, figure out why bandwidth quadrupiles with 30% NATs
 		really need priority search, some of these startup searches should be done during idle time

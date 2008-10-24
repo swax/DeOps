@@ -459,7 +459,7 @@ namespace RiseOp.Implementation.Transport
 			}
 		}
 
-
+        
 		void Socket_Receive(IAsyncResult asyncResult)
 		{
 			try

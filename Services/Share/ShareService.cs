@@ -15,6 +15,7 @@ using RiseOp.Implementation.Protocol.Net;
 using RiseOp.Implementation.Transport;
 
 using RiseOp.Services;
+using RiseOp.Services.Assist;
 using RiseOp.Services.Location;
 using RiseOp.Services.Transfer;
 
@@ -37,6 +38,7 @@ namespace RiseOp.Services.Share
     internal delegate void ShareCollectionUpdateHandler(ulong user);
     internal delegate void FileProcessedHandler(SharedFile share, object arg);
 
+
     class ShareService : OpService
     {
         public string Name { get { return "Sharing"; } }
@@ -50,14 +52,9 @@ namespace RiseOp.Services.Share
 
         Thread ProcessFilesHandle;
         LinkedList<SharedFile> ProcessingQueue = new LinkedList<SharedFile>();
-        const int ProcessBufferSize = 1024 * 16;
-        byte[] ProcessBuffer = new byte[ProcessBufferSize];
-
 
         Thread OpenFilesHandle;
         LinkedList<SharedFile> OpenQueue = new LinkedList<SharedFile>();
-        int OpenBufferSize = 4096;
-        byte[] OpenBuffer = new byte[4096]; // needs to be 4k to packet stream break/resume work
 
         bool KillThreads;        
 
@@ -72,7 +69,8 @@ namespace RiseOp.Services.Share
         const uint DataTypeLocation = 0x02;
         const uint DataTypePublic = 0x03;
         const uint DataTypeSession = 0x04; // used for sending file reqs, public reqs, and lists over rudp
-        
+
+        TempCache TempLocation;
 
 
         internal ShareService(OpCore core)
@@ -94,8 +92,7 @@ namespace RiseOp.Services.Share
 
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
-            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
-
+         
             // data
             Network.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
             Network.RudpControl.SessionData[ServiceID, DataTypeSession] += new SessionDataHandler(Session_Data);
@@ -107,9 +104,8 @@ namespace RiseOp.Services.Share
             Core.Transfers.FileRequest[ServiceID, DataTypePublic] += new FileRequestHandler(Transfers_PublicRequest);
 
             // location
-            Network.Store.StoreEvent[ServiceID, DataTypeLocation] += new StoreHandler(Store_Locations);
-            Network.Searches.SearchEvent[ServiceID, DataTypeLocation] += new SearchRequestHandler(Search_Locations);
-
+            TempLocation = new TempCache(Network, ServiceID, DataTypeLocation);
+      
             Local = new ShareCollection(Core.UserID);
             Collections.SafeAdd(Core.UserID, Local);
 
@@ -129,8 +125,7 @@ namespace RiseOp.Services.Share
                 Debug.Assert(OpenFilesHandle.Join(5000));
 
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
-            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
-
+ 
             // file
             Network.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);
             Network.RudpControl.SessionData[ServiceID, DataTypeShare] -= new SessionDataHandler(Session_Data);
@@ -138,10 +133,7 @@ namespace RiseOp.Services.Share
             Core.Transfers.FileSearch[ServiceID, DataTypeShare] -= new FileSearchHandler(Transfers_FileSearch);
             Core.Transfers.FileRequest[ServiceID, DataTypeShare] -= new FileRequestHandler(Transfers_FileRequest);
 
-            // location
-            Network.Store.StoreEvent[ServiceID, DataTypeLocation] -= new StoreHandler(Store_Locations);
-            Network.Searches.SearchEvent[ServiceID, DataTypeLocation] -= new SearchRequestHandler(Search_Locations);
-
+            TempLocation.Dispose();
         }
 
 
@@ -369,18 +361,12 @@ namespace RiseOp.Services.Share
 
                     if (active && Core.TimeNow > file.NextPublish)
                     {
-                        Core.Network.Store.PublishNetwork(file.FileID, ServiceID, DataTypeLocation, Core.Locations.LocalClient.Data.EncodeLight(Network.Protocol));
+                        TempLocation.Publish(file.FileID, Core.Locations.LocalClient.Data.EncodeLight(Network.Protocol));                     
                         file.NextPublish = Core.TimeNow.AddHours(1);
                     }
 
                 }
             });
-        }
-
-        void Core_MinuteTimer()
-        {
-            foreach (CachedLocation loc in CachedLocations.Where(l => Core.TimeNow > l.Expires).ToArray())
-                CachedLocations.Remove(loc);
         }
     
         internal string GetFilePath(SharedFile file)
@@ -479,7 +465,7 @@ namespace RiseOp.Services.Share
                     // copied from storage service
 
                     // hash file fast - used to gen key/iv
-                   file.FileStatus = "Identifying...";
+                    file.FileStatus = "Identifying...";
                     byte[] internalHash = null;
                     long internalSize = 0;
                     Utilities.Md5HashFile(file.SystemPath, ref internalHash, ref internalSize);
@@ -487,36 +473,13 @@ namespace RiseOp.Services.Share
                     // dont bother find dupe, becaues dupe might be incomplete, in which case we want to add 
                     // completed file to our shared, have timer find dupes, and if both have the same file path that exists, remove one
 
-                    // file key is opID and internal hash xor'd so that files won't be duplicated on the network
-                    file.FileKey = new byte[32];
-                    Core.User.Settings.OpKey.CopyTo(file.FileKey, 0);
-                    for (int i = 0; i < internalHash.Length; i++)
-                        file.FileKey[i] ^= internalHash[i];
-
-                    // iv needs to be the same for ident files to gen same file hash
-                    byte[] iv = new MD5CryptoServiceProvider().ComputeHash(file.FileKey);
+                    RijndaelManaged crypt = Utilities.CommonFileKey(Core.User.Settings.OpKey, internalHash);
+                    file.FileKey = crypt.Key;
 
                     // encrypt file to temp dir
                     file.FileStatus = "Securing...";
                     string tempPath = Core.GetTempPath();
-                    using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, file.FileKey, iv))
-                    {
-                        using (FileStream localfile = File.OpenRead(file.SystemPath))
-                        {
-                            int read = ProcessBufferSize;
-                            while (read == ProcessBufferSize)
-                            {
-                                read = localfile.Read(ProcessBuffer, 0, ProcessBufferSize);
-                                stream.Write(ProcessBuffer, 0, read);
-                            }
-                        }
-
-                        stream.FlushFinalBlock();
-                    }
-
-                    // hash temp file
-                    file.FileStatus = "Tagging...";
-                    Utilities.HashTagFile(tempPath, Network.Protocol, ref file.Hash, ref file.Size);
+                    Utilities.EncryptTagFile(file.SystemPath, tempPath, crypt, Network.Protocol, ref file.Hash, ref file.Size);
                     file.FileID = OpTransfer.GetFileID(ServiceID, file.Hash, file.Size);
 
                     // move to official path
@@ -841,8 +804,9 @@ namespace RiseOp.Services.Share
             file.FileKey = link.Key;
             file.FileID = OpTransfer.GetFileID(ServiceID, file.Hash, file.Size);
 
-            for (int i = 0; i < link.Sources.Length; i += 10)
-                file.Sources.Add(DhtClient.FromBytes(link.Sources, i));
+            if(link.Sources != null)
+                for (int i = 0; i < link.Sources.Length; i += 10)
+                    file.Sources.Add(DhtClient.FromBytes(link.Sources, i));
 
             DownloadFile(file);
         }
@@ -899,9 +863,9 @@ namespace RiseOp.Services.Share
 
                     file.Sources.ForEach(s => transfer.AddPeer(s));
                 }
-            });
 
-            ResearchFile(file);
+                TempLocation.Search(file.FileID, file, new EndSearchHandler(EndLocationSearch));
+            });
 
             file.FileStatus = "Incomplete";
 
@@ -963,26 +927,9 @@ namespace RiseOp.Services.Share
 
                     // decrypt file to temp dir
                     file.FileStatus = "Unsecuring...";
-
-                    string tempPath = Core.GetTempPath();
-
-                    using (FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew))
-                    using (TaggedStream encFile = new TaggedStream(GetFilePath(file), Network.Protocol))
-                    using (IVCryptoStream stream = IVCryptoStream.Load(encFile, file.FileKey))
-                    {
-                        int read = OpenBufferSize;
-                        while (read == OpenBufferSize)
-                        {
-                            read = stream.Read(OpenBuffer, 0, OpenBufferSize);
-                            tempFile.Write(OpenBuffer, 0, read);
-                        }
-                    }
-
-                    // move to official path
-                    File.Move(tempPath, finalpath);
-
+                    Utilities.DecryptTagFile(GetFilePath(file), finalpath, file.FileKey, Core);
+          
                     file.SystemPath = finalpath;
-
                     file.FileStatus = "File in Downloads Folder";
 
                     Process.Start(finalpath);
@@ -1025,20 +972,6 @@ namespace RiseOp.Services.Share
             Core.RunInGuiThread(GuiFileUpdate, file);
         }
 
-        internal void ResearchFile(SharedFile file)
-        {
-            if (Core.InvokeRequired)
-            {
-                Core.RunInCoreAsync(() => ResearchFile(file));
-                return;
-            }
-
-            DhtSearch search = Core.Network.Searches.Start(file.FileID, "Share Search: " + file.Name, ServiceID, DataTypeLocation, null, new EndSearchHandler(EndLocationSearch));
-            search.Carry = file;
-        }
-
-
-
         void EndLocationSearch(DhtSearch search)
         {
             if (search.FoundValues.Count == 0)
@@ -1063,35 +996,6 @@ namespace RiseOp.Services.Share
                 Core.Network.LightComm.Update(loc);
                 transfer.AddPeer(client);
             }
-        }
-
-        List<CachedLocation> CachedLocations = new List<CachedLocation>();
-
-        void Store_Locations(DataReq store)
-        {
-            // location being published to hashid so others can get sources
-
-
-            CachedLocation loc = CachedLocations.Where(l => l.FileID == store.Target && Utilities.MemCompare(store.Data, store.Data)).FirstOrDefault();
-            
-            if(loc != null)
-            {
-                loc.Expires = Core.TimeNow.AddHours(1);
-                return;
-            }
-
-            loc = new CachedLocation() { FileID = store.Target, Data = store.Data, Expires = Core.TimeNow.AddHours(1)};
-            CachedLocations.Add(loc);
-        }
-
-        void Search_Locations(ulong key, byte[] parameters, List<byte[]> results)
-        {
-            // return 3 random locations
-
-            results.AddRange((from l in CachedLocations
-                              where l.FileID == key
-                              orderby Core.RndGen.Next()
-                              select l.Data).Take(3));
         }
     }
 
@@ -1360,12 +1264,7 @@ namespace RiseOp.Services.Share
         }
     }
 
-    internal class CachedLocation
-    {
-        internal ulong FileID;
-        internal DateTime Expires;
-        internal byte[] Data;
-    }
+
 
     internal class PublicShareRequest : G2Packet
     {

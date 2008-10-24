@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 using RiseOp.Implementation.Protocol;
@@ -235,7 +236,7 @@ namespace RiseOp.Implementation.Dht
             ack.Service = request.Service;
 
             // search for connected proxy
-            if (Network.TcpControl.ProxyMap.ContainsKey(request.TargetID))
+            if (Network.TcpControl.ProxyMap.Values.Any(p => p.UserID == request.TargetID))
                 ack.Proxied = true;
 
             // only send nodes from proxy server routing table

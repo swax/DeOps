@@ -55,9 +55,6 @@ namespace RiseOp.Services.Storage
         internal ThreadedDictionary<ulong, OpFile> FileMap = new ThreadedDictionary<ulong, OpFile>();
         internal ThreadedDictionary<ulong, OpFile> InternalFileMap = new ThreadedDictionary<ulong, OpFile>();// used to bring together files encrypted with different keys
 
-        int FileBufferSize = 4096;
-        byte[] FileBuffer = new byte[4096]; // needs to be 4k to packet stream break/resume work
-
         VersionedCache Cache;
 
         // working
@@ -105,7 +102,7 @@ namespace RiseOp.Services.Storage
             if (Directory.Exists(ResourcePath))
                 Directory.Delete(ResourcePath, true);
 
-            Cache = new VersionedCache(Network, ServiceID, FileTypeCache, true);
+            Cache = new VersionedCache(Network, ServiceID, FileTypeCache, false);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);
@@ -751,8 +748,6 @@ namespace RiseOp.Services.Storage
                 }
         }
 
-        const int HashBufferSize = 1024 * 16;
-        byte[] HashBuffer = new byte[HashBufferSize];
         bool HashRetry = false;
 
         void HashThread()
@@ -827,33 +822,12 @@ namespace RiseOp.Services.Storage
 
                     // file key is opID and internal hash xor'd so that files won't be duplicated on the network
                     // apply special compartment key here as well, xor again
-                    info.FileKey = new byte[32];
-                    Core.User.Settings.OpKey.CopyTo(info.FileKey, 0);
-                    for (int i = 0; i < info.InternalHash.Length; i++ )
-                        info.FileKey[i] ^= info.InternalHash[i];
-
-                    // iv needs to be the same for ident files to gen same file hash
-                    byte[] iv = new MD5CryptoServiceProvider().ComputeHash(info.FileKey);
+                    RijndaelManaged crypt = Utilities.CommonFileKey(Core.User.Settings.OpKey, info.InternalHash);
+                    info.FileKey = crypt.Key;
 
                     // encrypt file to temp dir
                     string tempPath = Core.GetTempPath();
-                    using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, info.FileKey, iv))
-                    {
-                        using (FileStream localfile = File.OpenRead(pack.Path))
-                        {
-                            int read = HashBufferSize;
-                            while (read == HashBufferSize)
-                            {
-                                read = localfile.Read(HashBuffer, 0, HashBufferSize);
-                                stream.Write(HashBuffer, 0, read);
-                            }
-                        }
-
-                        stream.FlushFinalBlock();
-                    }
-
-                    // hash temp file
-                    Utilities.HashTagFile(tempPath, Core.Network.Protocol, ref info.Hash, ref info.Size);
+                    Utilities.EncryptTagFile(pack.Path, tempPath, crypt, Core.Network.Protocol, ref info.Hash, ref info.Size);
                     info.HashID = BitConverter.ToUInt64(info.Hash, 0);
 
                     // move to official path
@@ -1078,22 +1052,7 @@ namespace RiseOp.Services.Storage
             // extract file
             try
             {
-                string tempPath = Core.GetTempPath();
-
-                using (FileStream tempFile = new FileStream(tempPath, FileMode.CreateNew))
-                using (TaggedStream encFile = new TaggedStream(GetFilePath(file.HashID), Network.Protocol))
-                using (IVCryptoStream stream = IVCryptoStream.Load(encFile, file.FileKey))
-                {
-                    int read = FileBufferSize;
-                    while (read == FileBufferSize)
-                    {
-                        read = stream.Read(FileBuffer, 0, FileBufferSize);
-                        tempFile.Write(FileBuffer, 0, read);
-                    }
-                }
-
-                // move to official path
-                File.Move(tempPath, finalpath);
+                Utilities.DecryptTagFile(GetFilePath(file.HashID), finalpath, file.FileKey, Core);
             }
             catch (Exception ex)
             {

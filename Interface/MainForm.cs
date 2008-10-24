@@ -389,7 +389,10 @@ namespace RiseOp.Interface
             ToolStripMenuItem settings = new ToolStripMenuItem("Settings", InterfaceRes.settings);
 
             settings.DropDownItems.Add(new ManageItem("User", null, () => new RiseOp.Interface.Settings.User(Core).ShowDialog()));
-            settings.DropDownItems.Add(new ManageItem("Operation", null, () => new RiseOp.Interface.Settings.Operation(Core).ShowDialog()));
+            
+            if(!Core.Network.IsLookup)
+                settings.DropDownItems.Add(new ManageItem("Operation", null, () => new RiseOp.Interface.Settings.Operation(Core).ShowDialog()));
+            
             settings.DropDownItems.Add(new ManageItem("Connecting", null, () => new RiseOp.Interface.Settings.Connecting(Core).ShowDialog()));
             settings.DropDownItems.Add(new ManageItem("Ignore", null, () => new RiseOp.Interface.Settings.IgnoreForm(Core).ShowDialog()));
 

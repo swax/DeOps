@@ -520,10 +520,12 @@ namespace RiseOp.Services.Transfer
     {
         const byte Packet_FileID    = 0x10;
         const byte Packet_StartByte = 0x20;
-        const byte Packet_Block     = 0x30;
+        const byte Packet_Index     = 0x30;
+
 
         internal ulong  FileID;
         internal long   StartByte;
+        internal int    Index;
         internal byte[] Block;
 
 
@@ -539,6 +541,7 @@ namespace RiseOp.Services.Transfer
 
                 protocol.WritePacket(td, Packet_FileID, BitConverter.GetBytes(FileID));
                 protocol.WritePacket(td, Packet_StartByte, CompactNum.GetBytes(StartByte));
+                protocol.WritePacket(td, Packet_Index, CompactNum.GetBytes(Index));
 
                 return protocol.WriteFinish();
             }
@@ -569,6 +572,10 @@ namespace RiseOp.Services.Transfer
                     case Packet_StartByte:
                         td.StartByte = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
+
+                    case Packet_Index:
+                        td.Index = CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
                 }
             }
 
@@ -581,11 +588,13 @@ namespace RiseOp.Services.Transfer
         const byte Packet_FileID = 0x10;
         const byte Packet_StartByte = 0x20;
         const byte Packet_Retry = 0x30;
+        const byte Packet_Index = 0x40;
 
 
         internal ulong  FileID;
         internal long StartByte;
         internal bool Retry;
+        internal int Index;
 
         internal TransferStop() { }
 
@@ -598,6 +607,7 @@ namespace RiseOp.Services.Transfer
 
                 protocol.WritePacket(stop, Packet_FileID, BitConverter.GetBytes(FileID));
                 protocol.WritePacket(stop, Packet_StartByte, CompactNum.GetBytes(StartByte));
+                protocol.WritePacket(stop, Packet_Index, CompactNum.GetBytes(Index));
 
                 if(Retry)
                     protocol.WritePacket(stop, Packet_Retry, null);
@@ -628,6 +638,10 @@ namespace RiseOp.Services.Transfer
 
                     case Packet_StartByte:
                         stop.StartByte = CompactNum.ToInt64(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_Index:
+                        stop.Index = CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
                         break;
                 }
             }

@@ -135,7 +135,7 @@ namespace RiseOp.Services.IM
 
         void Location_KnowOnline(List<ulong> users)
         {
-            IMMap.LockReading(() => users.Union(IMMap.Keys));
+            IMMap.LockReading(() => users.AddRange(IMMap.Keys));
         }
 
         //crit not thread locked/protected

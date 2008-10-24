@@ -214,7 +214,7 @@ namespace RiseOp.Implementation.Transport
 
             if(G2Protocol.ReadPacket(packet.Root))
             {
-                packet.Source = new DhtContact(0, 0, sender.Address, 0, (ushort)sender.Port);
+                packet.Source = new DhtContact(0, 0, sender.Address, 0, 0);
 
                 byte[] packetData = copied ? buff : Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize);
 

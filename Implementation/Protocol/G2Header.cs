@@ -17,44 +17,6 @@ namespace RiseOp.Implementation.Protocol
         internal const byte Tunnel = 0x40;
     }
 
-	internal class G2Header
-	{
-		internal byte[] Data;
-
-		internal int    PacketPos;
-		internal int    PacketSize;
-
-        internal byte   Name;
-	
-		internal bool   HasChildren;
-
-		internal int    InternalPos;
-		internal int    InternalSize;
-
-		internal int    PayloadPos;
-		internal int    PayloadSize;
-
-		internal int    NextBytePos;
-		internal int    NextBytesLeft;
-
-		internal G2Header(byte[] data)
-		{
-			Data = data;
-		}
-	}
-
-	internal class G2Packet
-	{
-		internal G2Packet()
-		{
-		}
-
-		internal virtual byte[] Encode(G2Protocol protocol)
-		{
-            return null;
-		}
-	}
-
 	internal class G2ReceivedPacket
 	{
 		internal G2Header    Root;

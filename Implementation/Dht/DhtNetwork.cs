@@ -201,11 +201,11 @@ namespace RiseOp.Implementation.Dht
 
                 Cache.Reset();
 
-                if (StatusChange != null)
-                    StatusChange.Invoke();
-
                 UpdateLog("general", name + " network disconnected");
             }
+
+            if (StatusChange != null)
+                StatusChange.Invoke();
         }
 
         internal void EndSelfSearch(DhtSearch search)
@@ -407,7 +407,7 @@ namespace RiseOp.Implementation.Dht
 
                 if (socket != null)
                 {
-                    // strip TO flag, add from address
+                    // forward to proxied node - strip TO flag, add from address
                     commPacket.ToEndPoint = null;
                     commPacket.FromEndPoint = packet.Source;
 
@@ -423,6 +423,7 @@ namespace RiseOp.Implementation.Dht
                     DhtAddress address = commPacket.ToEndPoint;
 
                     commPacket.ToEndPoint = null; // strip TO flag
+                    //commPacket.FromEndPoint = packet.Source;
 
                     commPacket.SenderID = Local.UserID;
                     commPacket.SenderClient = Local.ClientID;
@@ -758,6 +759,10 @@ namespace RiseOp.Implementation.Dht
             if (ping.RemoteIP != null)
                 pong.RemoteIP = packet.Source.IP;
 
+            if (!IsLookup && Core.Context.SignedUpdate != null && Core.Context.SignedUpdate.Loaded)
+                pong.Version = Core.Context.SignedUpdate.SequentialVersion; 
+
+
             int sentBytes = 0;
 
             // received tcp
@@ -822,6 +827,10 @@ namespace RiseOp.Implementation.Dht
                     Routing.TryAdd(packet, ping.Source);
                 }
 
+                // if received over lan, the port isn't set
+                if (packet.Source.UdpPort == 0)
+                    packet.Source.UdpPort = ping.Source.UdpPort;
+
                 // send pong
                 sentBytes = SendPacket(packet.Source, pong);
             }
@@ -840,6 +849,14 @@ namespace RiseOp.Implementation.Dht
             bool lanIP = Utilities.IsLocalIP(packet.Source.IP);
             bool validSource = (!lanIP || LanMode && lanIP);
 
+            // check if remote has a newer version cached
+            if (!IsLookup && pong.Version != 0)
+                if (Core.Context.SignedUpdate == null ||
+                    !Core.Context.SignedUpdate.Loaded ||
+                    Core.Context.SignedUpdate.SequentialVersion < pong.Version)
+                {
+                    Core.Update.NewVersion(pong.Version, pong.Source.UserID);
+                }
 
             // if received tcp
             if (packet.ReceivedTcp)
@@ -1027,7 +1044,7 @@ namespace RiseOp.Implementation.Dht
             // received ack udp
             if (packet.ReceivedUdp)
             {
-                if (!TcpControl.ProxyMap.ContainsKey(ack.Source.UserID))
+                if (!TcpControl.ProxyMap.ContainsKey(ack.Source.RoutingID))
                     TcpControl.MakeOutbound(packet.Source, ack.Source.TcpPort, "proxy ack recv");
             }
 

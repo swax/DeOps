@@ -93,7 +93,7 @@ namespace RiseOp.Services.Share
 
         internal override Size GetDefaultSize()
         {
-            return new Size(500, 300);
+            return new Size(600, 350);
         }
 
         internal override Icon GetIcon()

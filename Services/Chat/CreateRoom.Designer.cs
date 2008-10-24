@@ -31,10 +31,11 @@ namespace RiseOp.Services.Chat
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CreateRoom));
             this.label1 = new System.Windows.Forms.Label();
             this.TitleBox = new System.Windows.Forms.TextBox();
-            this.PublicButton = new System.Windows.Forms.RadioButton();
+            this.PrivateRadio = new System.Windows.Forms.RadioButton();
             this.OkButton = new System.Windows.Forms.Button();
             this.ExitButton = new System.Windows.Forms.Button();
-            this.PrivateButton = new System.Windows.Forms.RadioButton();
+            this.SecretRadio = new System.Windows.Forms.RadioButton();
+            this.PublicRadio = new System.Windows.Forms.RadioButton();
             this.SuspendLayout();
             // 
             // label1
@@ -55,22 +56,21 @@ namespace RiseOp.Services.Chat
             this.TitleBox.Size = new System.Drawing.Size(195, 20);
             this.TitleBox.TabIndex = 1;
             // 
-            // PublicButton
+            // PrivateRadio
             // 
-            this.PublicButton.AutoSize = true;
-            this.PublicButton.Checked = true;
-            this.PublicButton.Location = new System.Drawing.Point(15, 51);
-            this.PublicButton.Name = "PublicButton";
-            this.PublicButton.Size = new System.Drawing.Size(209, 17);
-            this.PublicButton.TabIndex = 2;
-            this.PublicButton.TabStop = true;
-            this.PublicButton.Text = "Public - Anyone can invite more people";
-            this.PublicButton.UseVisualStyleBackColor = true;
+            this.PrivateRadio.AutoSize = true;
+            this.PrivateRadio.Checked = true;
+            this.PrivateRadio.Location = new System.Drawing.Point(15, 74);
+            this.PrivateRadio.Name = "PrivateRadio";
+            this.PrivateRadio.Size = new System.Drawing.Size(195, 17);
+            this.PrivateRadio.TabIndex = 2;
+            this.PrivateRadio.Text = "Private - Unlisted, anyone can invite";
+            this.PrivateRadio.UseVisualStyleBackColor = true;
             // 
             // OkButton
             // 
             this.OkButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.OkButton.Location = new System.Drawing.Point(84, 112);
+            this.OkButton.Location = new System.Drawing.Point(84, 132);
             this.OkButton.Name = "OkButton";
             this.OkButton.Size = new System.Drawing.Size(75, 23);
             this.OkButton.TabIndex = 3;
@@ -82,7 +82,7 @@ namespace RiseOp.Services.Chat
             // 
             this.ExitButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.ExitButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.ExitButton.Location = new System.Drawing.Point(165, 112);
+            this.ExitButton.Location = new System.Drawing.Point(165, 132);
             this.ExitButton.Name = "ExitButton";
             this.ExitButton.Size = new System.Drawing.Size(75, 23);
             this.ExitButton.TabIndex = 4;
@@ -90,15 +90,25 @@ namespace RiseOp.Services.Chat
             this.ExitButton.UseVisualStyleBackColor = true;
             this.ExitButton.Click += new System.EventHandler(this.ExitButton_Click);
             // 
-            // PrivateButton
+            // SecretRadio
             // 
-            this.PrivateButton.AutoSize = true;
-            this.PrivateButton.Location = new System.Drawing.Point(15, 74);
-            this.PrivateButton.Name = "PrivateButton";
-            this.PrivateButton.Size = new System.Drawing.Size(218, 17);
-            this.PrivateButton.TabIndex = 5;
-            this.PrivateButton.Text = "Private - Only you can invite more people";
-            this.PrivateButton.UseVisualStyleBackColor = true;
+            this.SecretRadio.AutoSize = true;
+            this.SecretRadio.Location = new System.Drawing.Point(15, 97);
+            this.SecretRadio.Name = "SecretRadio";
+            this.SecretRadio.Size = new System.Drawing.Size(216, 17);
+            this.SecretRadio.TabIndex = 5;
+            this.SecretRadio.Text = "Secret - Only you can invite more people";
+            this.SecretRadio.UseVisualStyleBackColor = true;
+            // 
+            // PublicRadio
+            // 
+            this.PublicRadio.AutoSize = true;
+            this.PublicRadio.Location = new System.Drawing.Point(15, 51);
+            this.PublicRadio.Name = "PublicRadio";
+            this.PublicRadio.Size = new System.Drawing.Size(212, 17);
+            this.PublicRadio.TabIndex = 6;
+            this.PublicRadio.Text = "Public - Anyone can join using room title";
+            this.PublicRadio.UseVisualStyleBackColor = true;
             // 
             // CreateRoom
             // 
@@ -106,11 +116,12 @@ namespace RiseOp.Services.Chat
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.ExitButton;
-            this.ClientSize = new System.Drawing.Size(252, 147);
-            this.Controls.Add(this.PrivateButton);
+            this.ClientSize = new System.Drawing.Size(252, 167);
+            this.Controls.Add(this.PublicRadio);
+            this.Controls.Add(this.SecretRadio);
             this.Controls.Add(this.ExitButton);
             this.Controls.Add(this.OkButton);
-            this.Controls.Add(this.PublicButton);
+            this.Controls.Add(this.PrivateRadio);
             this.Controls.Add(this.TitleBox);
             this.Controls.Add(this.label1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -130,7 +141,8 @@ namespace RiseOp.Services.Chat
         private System.Windows.Forms.Button OkButton;
         private System.Windows.Forms.Button ExitButton;
         internal System.Windows.Forms.TextBox TitleBox;
-        internal System.Windows.Forms.RadioButton PublicButton;
-        internal System.Windows.Forms.RadioButton PrivateButton;
+        internal System.Windows.Forms.RadioButton PrivateRadio;
+        internal System.Windows.Forms.RadioButton SecretRadio;
+        internal System.Windows.Forms.RadioButton PublicRadio;
     }
 }

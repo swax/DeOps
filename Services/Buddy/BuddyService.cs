@@ -47,7 +47,7 @@ namespace RiseOp.Services.Buddy
             Core.KeepDataCore += new KeepDataHandler(Core_KeepData);
             Core.Locations.KnowOnline += new KnowOnlineHandler(Location_KnowOnline);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
-            Cache = new VersionedCache(Network, ServiceID, 0, true);
+            Cache = new VersionedCache(Network, ServiceID, 0, false);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.Load();
@@ -115,7 +115,7 @@ namespace RiseOp.Services.Buddy
 
         void Network_StatusChange()
         {
-            if (!Network.Established)
+            if (!Network.Responsive)
                 return;
 
             // look for all buddies on network
@@ -141,7 +141,7 @@ namespace RiseOp.Services.Buddy
         {
             // keep aware if our buddies are online or not
             BuddyList.LockReading( () =>
-                users.Union(BuddyList.Keys));
+                users.AddRange(BuddyList.Keys));
         }
 
         void ForAllUsers(Action<ulong> action)

@@ -310,6 +310,7 @@ namespace RiseOp.Implementation.Dht
     {
         internal byte[] Value;
 
+        // these are the addresses of either the open node, or the proxy of the node that contains the results
         internal List<DhtAddress> Sources = new List<DhtAddress>();
 
         internal SearchValue(byte[] value, DhtAddress source)

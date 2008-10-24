@@ -344,7 +344,7 @@ namespace RiseOp.Services.Board
             }
 
             // disconnected, reset cache to unique
-            else
+            else if(!Network.Responsive)
             {
                 BoardMap.LockReading(delegate()
                 {

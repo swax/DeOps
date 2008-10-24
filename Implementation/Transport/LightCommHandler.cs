@@ -91,6 +91,8 @@ namespace RiseOp.Implementation.Transport
 
         internal void Update(DhtClient client, DhtAddress address)
         {
+            // clients can have different userids than their address (proxied)
+
             if (!Clients.ContainsKey(client.RoutingID))
                 Clients[client.RoutingID] = new LightClient(client);
 
@@ -142,7 +144,7 @@ namespace RiseOp.Implementation.Transport
 
         internal void ReceivePacket(G2ReceivedPacket raw, RudpPacket packet)
         {
-            DhtClient client = new DhtClient(packet.SenderID, packet.SenderClient);
+            DhtClient client = new DhtClient(raw.Source);
 
             if (!Clients.ContainsKey(client.RoutingID))
                 Clients[client.RoutingID] = new LightClient(client);
@@ -172,20 +174,20 @@ namespace RiseOp.Implementation.Transport
             }
         }
 
-        void SendAck(LightClient client, RudpPacket packet, uint service)
+        void SendAck(LightClient light, RudpPacket packet, uint service)
         {
             RudpPacket comm = new RudpPacket();
             comm.SenderID = Network.Local.UserID;
             comm.SenderClient = Network.Local.ClientID;
-            comm.TargetID = packet.SenderID;
-            comm.TargetClient = packet.SenderClient;
+            comm.TargetID = light.Client.UserID;
+            comm.TargetClient = light.Client.ClientID;
             comm.PacketType = RudpPacketType.LightAck;
             comm.PeerID = packet.PeerID; // so remote knows which packet we're acking
             comm.Ident = packet.Ident; // so remote knows which address is good
             comm.Sequence = 0;
 
             // send ack to first address, addresses moved to front on receive packet
-            int sentBytes = client.SendtoAddress(Network, client.Addresses.First.Value, comm);
+            int sentBytes = light.SendtoAddress(Network, light.Addresses.First.Value, comm);
 
             Core.ServiceBandwidth[service].OutPerSec += sentBytes;
 

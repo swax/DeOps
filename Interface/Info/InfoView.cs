@@ -57,17 +57,17 @@ of services that make coordination easier.<br>
     
 Double-click on someone in <?=op?> to send them a secure Mail, or if they're online, a secure IM.<br>
 <br>
-Keep <?=op?>'s files safe and secure in the common <op> File System<br>
+Keep <?=op?>'s files secure and synchronized in the common <op> File System<br>
 <br>
 Post on the Message Board to have a offline discussions with those around you<br>
 <br>
 Start making a timeline of your plans in the Scheduler<br>
 <br>
-Use the 'side mode' button in the bottom-left corner to switch RiseOp into IM interface.<br>
+Use the 'side mode' button in the bottom-left corner to switch RiseOp into an IM interface.<br>
 <br>
 Update your profile info so if you're offline people know how to find you.<br>
 <br>
-As <?=op?> grows, use Projects to create specialized groups with its own Storage and Communications.
+As <?=op?> grows, use Projects to create specialized groups with their own Storage and Communication.
 <br>
 <br>
 <b>Grow <?=op?> and let RiseOp facilitate your large scale coordination.</b>
@@ -97,18 +97,16 @@ As <?=op?> grows, use Projects to create specialized groups with its own Storage
                                 <b>Welcome to <?=op?></b><br>
                                 Status: <?=status?><br>
                                 <br>
-<b>What is it?</b><br>
-RiseOp Global IM is a simple Instant Messenger similiar to AOL IM or Yahoo.
-It supports additional features such as chat rooms and file transfer. To add someone 
-to your buddy list you need their Identity Link - yours can be found in the Options menu under My Identity.<br>
+When you create a new Op with RiseOp, use the Global IM to send people invitations.  The Global IM
+network is similar to AOL or Yahoo, but is different because it is fully decentralized and highly secure.<br>
 <br>
-<b>What's different about it?</b><br>
-The Global IM network is fully decentralized, and highly secure.  It also automatically
-multi-sources downloads when you send files to friends.<br>
+<b>How do I start?</b><br>
+Your Global IM identity can be found in the Options menu.  Give your identity to those with Ops you wish to join.
+They will use your identity to create an invitation specifically for you.<br>
 <br>
-<b>What's the point?</b><br>
-The primary reason for Global IM in RiseOp is to provide an easy way to for you to send 
-invitations to others for private networks you create.<br>
+<b>What else can I do?</b><br>
+Global IM includes a couple of the services found in a full RiseOp network.  These services are chat rooms, file
+transfer, and file sharing.  File transfers are automatically swarmed when multiple people are involved.<br>
                                 </body>
                             </html>";
 

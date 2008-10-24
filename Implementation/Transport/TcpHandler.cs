@@ -28,7 +28,7 @@ namespace RiseOp.Implementation.Transport
 		internal List<TcpConnect> SocketList = new List<TcpConnect>();
         internal List<TcpConnect> ProxyServers = new List<TcpConnect>();
         internal List<TcpConnect> ProxyClients = new List<TcpConnect>();
-        internal Dictionary<ulong, Dictionary<ushort, TcpConnect>> ProxyMap = new Dictionary<ulong, Dictionary<ushort, TcpConnect>>();
+        internal Dictionary<ulong, TcpConnect> ProxyMap = new Dictionary<ulong, TcpConnect>();
 
 
 		DateTime LastProxyCheck = new DateTime(0);
@@ -145,18 +145,8 @@ namespace RiseOp.Implementation.Transport
                 if (ProxyClients.Contains(socket))
                     ProxyClients.Remove(socket);
 
-                if (ProxyMap.ContainsKey(socket.UserID))
-                    foreach (ushort client in ProxyMap[socket.UserID].Keys)
-                        if (ProxyMap[socket.UserID][client] == socket)
-                        {
-                            ProxyMap[socket.UserID].Remove(client);
-
-                            if (ProxyMap[socket.UserID].Count == 0)
-                                ProxyMap.Remove(socket.UserID);
-
-                            break;
-                        }
-
+                if (ProxyMap.ContainsKey(socket.RoutingID))
+                    ProxyMap.Remove(socket.RoutingID);
 
                 ArrayList removeList = new ArrayList();
 
@@ -473,12 +463,10 @@ namespace RiseOp.Implementation.Transport
 
         internal void AddProxy(TcpConnect socket)
         {
-            if (!ProxyMap.ContainsKey(socket.UserID))
-                ProxyMap[socket.UserID] = new Dictionary<ushort, TcpConnect>();
+            if (ProxyMap.ContainsKey(socket.RoutingID))
+                return;
 
-            Debug.Assert(!ProxyMap[socket.UserID].ContainsKey(socket.ClientID)); //crit this was tripped!!!
-
-            ProxyMap[socket.UserID][socket.ClientID] = socket;
+            ProxyMap[socket.RoutingID] = socket;
 
             if (socket.Proxy == ProxyType.Server)
                 ProxyServers.Add(socket);
@@ -486,21 +474,21 @@ namespace RiseOp.Implementation.Transport
                 ProxyClients.Add(socket);
         }
 
-        internal TcpConnect GetProxy(DhtClient ident)
+        internal TcpConnect GetProxy(DhtClient client)
         {
-            if (ident == null)
+            if (client == null)
                 return null;
 
-            return GetProxy(ident.UserID, ident.ClientID);
+            return GetProxy(client.UserID, client.ClientID);
         }
 
         internal TcpConnect GetProxy(ulong user, ushort client)
         {
-            if (ProxyMap.ContainsKey(user) &&
-                ProxyMap[user].ContainsKey(client) &&
-                ProxyMap[user][client].State == TcpState.Connected &&
-                ProxyMap[user][client].Proxy != ProxyType.Unset)
-                return ProxyMap[user][client];
+            TcpConnect proxy;
+
+            if(ProxyMap.TryGetValue(user ^ client, out proxy))
+                if(proxy.State == TcpState.Connected && proxy.Proxy != ProxyType.Unset)
+                    return proxy;
 
             return null;
         }

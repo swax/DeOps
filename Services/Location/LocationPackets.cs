@@ -5,6 +5,7 @@ using System.Text;
 
 using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
+using RiseOp.Implementation.Protocol.Packets;
 
 namespace RiseOp.Services.Location
 {
@@ -36,6 +37,7 @@ namespace RiseOp.Services.Location
         const byte Packet_Tag       = 0xB0;
         const byte Packet_TunnelClient  = 0xC0;
         const byte Packet_TunnelServers = 0xD0;
+        const byte Packet_License = 0xE0;
 
 
         internal byte[] Key;
@@ -54,6 +56,7 @@ namespace RiseOp.Services.Location
         internal bool Away;
         internal string AwayMessage = "";
 
+        internal LightLicense License;
 
         internal ulong UserID;
         internal ulong RoutingID
@@ -63,6 +66,10 @@ namespace RiseOp.Services.Location
 
         internal override byte[] Encode(G2Protocol protocol)
         {
+            byte[] license = null;
+            if(License != null)
+                license = License.Encode(protocol);
+
             lock (protocol.WriteSection)
             {
                 G2Frame loc = protocol.WritePacket(null, LocationPacket.Data, null);
@@ -88,6 +95,9 @@ namespace RiseOp.Services.Location
 
                 foreach (DhtAddress server in TunnelServers)
                     server.WritePacket(protocol, loc, Packet_TunnelServers);
+
+                if(license != null)
+                    protocol.WritePacket(loc, Packet_License, license);
 
                 return protocol.WriteFinish();
             }
@@ -186,6 +196,10 @@ namespace RiseOp.Services.Location
 
                     case Packet_TunnelServers:
                         loc.TunnelServers.Add(DhtAddress.ReadPacket(child));
+                        break;
+
+                    case Packet_License:
+                        loc.License = LightLicense.Decode(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
                         break;
                 }
             }

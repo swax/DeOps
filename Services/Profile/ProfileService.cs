@@ -116,7 +116,7 @@ namespace RiseOp.Services.Profile
                         ServiceID.ToString() + Path.DirectorySeparatorChar +
                         DataTypeExtracted.ToString();
 
-            Cache = new VersionedCache(Network, ServiceID, DataTypeFile, true);
+            Cache = new VersionedCache(Network, ServiceID, DataTypeFile, false);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);

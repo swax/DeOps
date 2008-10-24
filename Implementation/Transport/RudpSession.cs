@@ -448,6 +448,8 @@ namespace RiseOp.Implementation.Transport
 			SessionAck ack = new SessionAck();
             ack.Name = Core.User.Settings.UserName;
 
+            Debug.Assert(ack.Name != "");
+
             Log("Session Ack Sent");
 
 			SendPacket(ack, true);

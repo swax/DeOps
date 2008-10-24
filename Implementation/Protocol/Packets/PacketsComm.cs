@@ -54,7 +54,7 @@ namespace RiseOp.Implementation.Protocol.Comm
         const byte Packet_Ident         = 0xA0;
 
 
-        internal ulong SenderID;
+        internal ulong SenderID; 
         internal ushort SenderClient;
 
         internal ulong TargetID;
@@ -340,7 +340,8 @@ namespace RiseOp.Implementation.Protocol.Comm
 			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
                 if (child.Name == Packet_Name)
-                    sa.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                    if (G2Protocol.ReadPayload(child))
+                        sa.Name = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
 			}
 
 			return sa;
@@ -423,17 +424,17 @@ namespace RiseOp.Implementation.Protocol.Comm
 
 			while( G2Protocol.ReadNextChild(packet.Root, child) == G2ReadResult.PACKET_GOOD )
 			{
+                if (!G2Protocol.ReadPayload(child))
+                    continue;
+
                 if (child.Name == Packet_Encryption)
-                    if (G2Protocol.ReadPayload(child))
-                        kr.Encryption = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
+                    kr.Encryption = UTF8Encoding.UTF8.GetString(child.Data, child.PayloadPos, child.PayloadSize);
 
-                if (child.Name == Packet_Key)
-                    if (G2Protocol.ReadPayload(child))
-                        kr.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                else if (child.Name == Packet_Key)
+                    kr.Key = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
 
-                if (child.Name == Packet_IV)
-                    if (G2Protocol.ReadPayload(child))
-                        kr.IV = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
+                else if (child.Name == Packet_IV)
+                    kr.IV = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
 			}
 
 			return kr;

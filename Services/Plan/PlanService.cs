@@ -60,7 +60,7 @@ namespace RiseOp.Services.Plan
             
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
 
-            Cache = new VersionedCache(Network, ServiceID, DataTypeFile, true);  
+            Cache = new VersionedCache(Network, ServiceID, DataTypeFile, false);  
          
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved += new FileRemovedHandler(Cache_FileRemoved);

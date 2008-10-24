@@ -12,6 +12,7 @@ using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
 using RiseOp.Implementation.Transport;
 
+using RiseOp.Services.Assist;
 using RiseOp.Services.Trust;
 using RiseOp.Services.Location;
 using RiseOp.Services.Share;
@@ -33,13 +34,16 @@ namespace RiseOp.Services.Chat
         internal DhtNetwork Network;
         internal TrustService Trust;
 
-        internal ThreadedDictionary<uint, ChatRoom> RoomMap = new ThreadedDictionary<uint, ChatRoom>();
+        internal ThreadedDictionary<ulong, ChatRoom> RoomMap = new ThreadedDictionary<ulong, ChatRoom>();
 
         internal Dictionary<ulong, bool> StatusUpdate = new Dictionary<ulong, bool>();
 
         internal RefreshHandler Refresh;
 
         bool ChatNewsUpdate;
+
+        const uint DataTypeLocation = 0x02;
+        TempCache TempLocation;
 
 
         internal ChatService(OpCore core)
@@ -63,6 +67,8 @@ namespace RiseOp.Services.Chat
                 Trust.LinkUpdate += new LinkUpdateHandler(Link_Update);
                 Link_Update(Trust.LocalTrust);
             }
+
+            TempLocation = new TempCache(Network, ServiceID, DataTypeLocation);
         }
 
         public void Dispose()
@@ -82,6 +88,8 @@ namespace RiseOp.Services.Chat
 
             if(Trust != null)
                 Trust.LinkUpdate -= new LinkUpdateHandler(Link_Update);
+
+            TempLocation.Dispose();
         }
 
         public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong key, uint proj)
@@ -161,6 +169,18 @@ namespace RiseOp.Services.Chat
 
             StatusUpdate.Clear();
 
+
+            // publish room location for public rooms hourly
+            RoomMap.LockReading(delegate()
+            {
+                foreach (ChatRoom room in RoomMap.Values)
+                    if (room.Active && room.PublishRoom && Core.TimeNow > room.NextPublish)
+                    {
+                        TempLocation.Publish(room.RoomID, Core.Locations.LocalClient.Data.EncodeLight(Network.Protocol));
+                        room.NextPublish = Core.TimeNow.AddHours(1);
+                    }
+            });
+           
             
             // for sim test write random msg ever 10 secs
             if (Core.Sim != null && SimTextActive && Core.RndGen.Next(10) == 0)
@@ -257,9 +277,11 @@ namespace RiseOp.Services.Chat
 
         internal ChatRoom CreateRoom(string name, RoomKind kind)
         {
-            // create room
-            uint id = (uint)Core.RndGen.Next();
-            
+            ulong id = Utilities.RandUInt64(Core.RndGen);
+
+            if (kind == RoomKind.Public)
+                id = ChatService.GetPublicRoomID(name);
+     
             ChatRoom room = new ChatRoom(kind, id, name);
 
             room.Active = true;
@@ -267,7 +289,7 @@ namespace RiseOp.Services.Chat
 
             RoomMap.SafeAdd(id, room);
             
-            if (kind == RoomKind.Private)
+            if (kind == RoomKind.Secret)
             {
                 room.Host = Core.UserID;
                 room.Verified[Core.UserID] = true;
@@ -276,7 +298,51 @@ namespace RiseOp.Services.Chat
 
             Core.RunInGuiThread(Refresh);
 
-            return room;    
+            if (room.PublishRoom)
+                SetupPublic(room);
+           
+            return room;
+        }
+
+        private void SetupPublic(ChatRoom room)
+        {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(() => SetupPublic(room));
+                return;
+            }
+
+            room.NextPublish = Core.TimeNow ;
+            TempLocation.Search(room.RoomID, room, new EndSearchHandler(EndRoomSearch));
+        }
+
+        void EndRoomSearch(DhtSearch search)
+        {
+            if (search.FoundValues.Count == 0)
+                return;
+
+            ChatRoom room = search.Carry as ChatRoom;
+
+            if (!room.Active)
+                return;
+
+            // add locations to running transfer
+            foreach (byte[] result in search.FoundValues.Select(v => v.Value))
+            {
+                LocationData loc = LocationData.Decode(result);
+                DhtClient client = new DhtClient(loc.UserID, loc.Source.ClientID);
+
+                Core.Network.LightComm.Update(loc);
+
+                if (!room.Members.SafeContains(client.UserID))
+                {
+                    room.AddMember(client.UserID);
+                    Core.Locations.Research(client.UserID);
+                }
+            }
+
+            // connect to new members
+            ConnectRoom(room); 
         }
 
         internal void JoinRoom(ChatRoom room)
@@ -287,7 +353,7 @@ namespace RiseOp.Services.Chat
                 return;
             }
 
-            if (room.Kind != RoomKind.Public && room.Kind != RoomKind.Private)
+            if ( IsCommandRoom(room.Kind))
             {
                 JoinCommand(room.ProjectID, room.Kind);
                 return;
@@ -297,7 +363,7 @@ namespace RiseOp.Services.Chat
             room.AddMember(Core.UserID);
 
             // for private rooms, send proof of invite first
-            if (room.Kind == RoomKind.Private)
+            if (room.Kind == RoomKind.Secret)
                 SendInviteProof(room);
 
             SendStatus(room);
@@ -305,6 +371,9 @@ namespace RiseOp.Services.Chat
             SendWhoRequest(room);
 
             ConnectRoom(room);
+
+            if (room.PublishRoom)
+                SetupPublic(room);
 
             Core.RunInGuiThread(Refresh);
             Core.RunInGuiThread(room.MembersUpdate);
@@ -362,7 +431,7 @@ namespace RiseOp.Services.Chat
 
         internal void RefreshCommand(ChatRoom room) // sends status updates to all members of room
         {
-            if (room.Kind == RoomKind.Private || room.Kind == RoomKind.Public)
+            if (!IsCommandRoom(room.Kind))
             {
                 Debug.Assert(false);
                 return;
@@ -579,7 +648,7 @@ namespace RiseOp.Services.Chat
                     message.Kind = RoomKind.Live_High;
             }
 
-            uint id = IsCommandRoom(message.Kind) ? GetRoomID(message.ProjectID, message.Kind) : message.RoomID;
+            ulong id = IsCommandRoom(message.Kind) ? GetRoomID(message.ProjectID, message.Kind) : message.RoomID;
 
             ChatRoom room = null;
 
@@ -619,7 +688,7 @@ namespace RiseOp.Services.Chat
                     {
                         if (room.NeedSendInvite(session.UserID, session.ClientID))
                             // invite not sent
-                            if (room.Kind == RoomKind.Public || room.Host == Core.UserID)
+                            if (room.Kind == RoomKind.Private || room.Host == Core.UserID)
                             {
                                 session.SendData(ServiceID, 0, room.Invites[session.UserID].First, true);
                                 room.Invites[session.UserID].Second.Add(session.ClientID);
@@ -633,7 +702,7 @@ namespace RiseOp.Services.Chat
                             }
 
                         // ask member who else is in room
-                        if ((room.Kind == RoomKind.Public || room.Kind == RoomKind.Private) &&
+                        if (!IsCommandRoom(room.Kind) &&
                             room.Members.SafeContains(session.UserID))
                             SendWhoRequest(room, session);
                     }
@@ -738,7 +807,7 @@ namespace RiseOp.Services.Chat
                     else if (status.ActiveRooms.Contains(room.RoomID))
                     {
                         // if room private check that sender is verified
-                        if (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.UserID))
+                        if (room.Kind == RoomKind.Secret && !room.Verified.ContainsKey(session.UserID))
                             continue;
 
                         if (!room.Members.SafeContains(session.UserID))
@@ -774,7 +843,7 @@ namespace RiseOp.Services.Chat
                 foreach (ChatRoom room in RoomMap.Values)
                     if (room.Active && !IsCommandRoom(room.Kind))
                     {
-                        if (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.UserID))
+                        if (room.Kind == RoomKind.Secret && !room.Verified.ContainsKey(session.UserID))
                             continue;
 
                         status.ActiveRooms.Add(room.RoomID);
@@ -804,7 +873,7 @@ namespace RiseOp.Services.Chat
             
 
             // if private room sign remote users id with our private key
-            if (room.Kind == RoomKind.Private)
+            if (room.Kind == RoomKind.Secret)
             {
                 invite.Host = Core.KeyMap[Core.UserID];
 
@@ -897,7 +966,7 @@ namespace RiseOp.Services.Chat
 
              if (!RoomMap.TryGetValue(invite.RoomID, out room))
              {
-                 RoomKind kind = invite.SignedInvite != null ? RoomKind.Private : RoomKind.Public;
+                 RoomKind kind = invite.SignedInvite != null ? RoomKind.Secret : RoomKind.Private;
                  room = new ChatRoom(kind, invite.RoomID, invite.Title);
                  room.RoomID = invite.RoomID;
                  room.Kind = kind;
@@ -915,7 +984,7 @@ namespace RiseOp.Services.Chat
              }
 
             // private room
-            if (room.Kind == RoomKind.Private)
+            if (room.Kind == RoomKind.Secret)
             {
                 if(!Core.KeyMap.ContainsKey(room.Host))
                     return;
@@ -1035,10 +1104,12 @@ namespace RiseOp.Services.Chat
             }
 
             // if room not public, and not from verified private room member or host, igonre
-            if (IsCommandRoom(room.Kind) || (room.Kind == RoomKind.Private && !room.Verified.ContainsKey(session.UserID)))
+            if (IsCommandRoom(room.Kind) || (room.Kind == RoomKind.Secret && !room.Verified.ContainsKey(session.UserID)))
                 return;
 
-                
+            if (!room.Active)
+                return;
+
             // if requset
             if(who.Request)
                 SendWhoResponse(room, session);
@@ -1078,10 +1149,16 @@ namespace RiseOp.Services.Chat
 
             SendMessage(room, message, TextFormat.Plain);
         }
+
+        static ulong GetPublicRoomID(string name)
+        {
+            return BitConverter.ToUInt64(new SHA1Managed().ComputeHash(UTF8Encoding.UTF8.GetBytes(name)), 0);
+
+        }
     }
 
 
-    internal enum RoomKind { Command_High, Command_Low, Live_High, Live_Low, Public, Private  }; // do not change order
+    internal enum RoomKind { Command_High, Command_Low, Live_High, Live_Low, Public, Private, Secret  }; // do not change order
 
 
     internal delegate void MembersUpdateHandler();
@@ -1089,12 +1166,15 @@ namespace RiseOp.Services.Chat
 
     internal class ChatRoom
     {
-        internal uint     RoomID;
+        internal ulong    RoomID;
         internal uint     ProjectID;
         internal string   Title;
         internal RoomKind Kind;
         internal bool     IsLoop;
         internal bool     Active;
+
+        internal bool     PublishRoom;
+        internal DateTime NextPublish;
 
         internal ulong Host;
         // members in room by key, if online there will be elements in list for each location
@@ -1122,7 +1202,7 @@ namespace RiseOp.Services.Chat
             ProjectID = project;
         }
 
-        internal ChatRoom( RoomKind kind, uint id, string title)
+        internal ChatRoom( RoomKind kind, ulong id, string title)
         {
             Debug.Assert( !ChatService.IsCommandRoom(kind) );
 
@@ -1130,10 +1210,16 @@ namespace RiseOp.Services.Chat
             RoomID = id;
             Title = title;
 
-            if (Kind == RoomKind.Private || kind == RoomKind.Public)
-                Invites = new Dictionary<ulong, Tuple<ChatInvite, List<ushort>>>();
+            Invites = new Dictionary<ulong, Tuple<ChatInvite, List<ushort>>>();
+            
+            // public rooms are private rooms with static room ids
+            if (Kind == RoomKind.Public)
+            {
+                PublishRoom = true;
+                Kind = RoomKind.Private;
+            }
 
-            if (Kind == RoomKind.Private)
+            if (Kind == RoomKind.Secret)
                 Verified = new Dictionary<ulong, bool>();
         }
 

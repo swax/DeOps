@@ -77,6 +77,7 @@ namespace RiseOp.Implementation
         internal BuddyService    Buddies;
         internal TransferService Transfers;
         internal LocalSync       Sync;
+        internal UpdateService   Update;
 
 
         internal ushort DhtServiceID = 0;
@@ -137,7 +138,6 @@ namespace RiseOp.Implementation
         internal AutoResetEvent ProcessEvent = new AutoResetEvent(false);
         Queue<AsyncCoreFunction> CoreMessages = new Queue<AsyncCoreFunction>();
 
-      
 
         // initializing operation network
         internal OpCore(RiseOpContext context, string path, string pass)
@@ -601,8 +601,8 @@ namespace RiseOp.Implementation
 
         internal void IndexName(ulong user, string name)
         {
-            Debug.Assert(name != null);
-            if (name == null) 
+            Debug.Assert(name != null && name != "");
+            if (name == null || name.Trim() == "") 
                 return;
 
             if (NameMap.SafeContainsKey(user))
@@ -620,12 +620,20 @@ namespace RiseOp.Implementation
             {
                 foreach (ulong user in KeyMap.Keys)
                     if (NameMap.ContainsKey(user))
-                        stream.WritePacket(new UserInfo() { Name = NameMap[user], Key = KeyMap[user] });
+                    {
+                        Debug.Assert(NameMap[user] != null);
+                        if (NameMap[user] != null)
+                            stream.WritePacket(new UserInfo() { Name = NameMap[user], Key = KeyMap[user] });
+                    }
             });
         }
 
         internal void IndexInfo(UserInfo info)
         {
+            Debug.Assert(info.Name != null);
+            if (info.Name == null)
+                return;
+
             KeyMap[info.ID] = info.Key;
             NameMap.SafeAdd(info.ID, info.Name);
         }

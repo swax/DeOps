@@ -193,7 +193,7 @@ namespace RiseOp.Services.Location
                             {
                                 staticCore.Network.UpdateLog("general", "Found " + staticCore.User.Settings.Operation);
 
-                                staticCore.Locations.OperationStore_Local(store);
+                                staticCore.Locations.Store_Local(store);
                             });
                     }
             });

@@ -29,51 +29,8 @@ namespace RiseOp
     enum TextFormat { Plain = 0, RTF = 1, HTML = 2 }
 
 
-	internal static class Utilities
+	internal static partial class Utilities
 	{  
-        internal static byte[] GetPasswordKey(string password, byte[] salt)
-        {
-            // to prevent rainbow attack salt needs to be hashed with password
-            byte[] textBytes = UTF8Encoding.UTF8.GetBytes(password);
-            byte[] passBytes = new byte[salt.Length + textBytes.Length];
-            salt.CopyTo(passBytes, 0);
-            textBytes.CopyTo(passBytes, salt.Length);
-
-            SHA256Managed sha256 = new SHA256Managed();
-            for (int i = 0; i < 25; i++)
-                passBytes = sha256.ComputeHash(passBytes);
-
-            return passBytes;
-        }
-
-        internal static bool VerifyPassphrase(OpCore core, ThreatLevel threat)
-        {
-            //crit revise
-            if (threat != ThreatLevel.High)
-                return true;
-
-            bool trying = true;
-
-            while (trying)
-            {
-                GetTextDialog form = new GetTextDialog(core, core.User.GetTitle(), "Enter Passphrase", "");
-
-                form.StartPosition = FormStartPosition.CenterScreen;
-                form.ResultBox.UseSystemPasswordChar = true;
-
-                if (form.ShowDialog() != DialogResult.OK)
-                    return false;
-
-                byte[] key = GetPasswordKey(form.ResultBox.Text, core.User.PasswordSalt);
-
-                if (MemCompare(core.User.PasswordKey, key))
-                    return true;
-
-                MessageBox.Show("Wrong passphrase", "RiseOp");
-            }
-
-            return false;
-        }
 
         internal static bool MemCompare(byte[] a, byte[] b)
         {
@@ -243,161 +200,6 @@ namespace RiseOp
 			return BitConverter.ToUInt64(pubHash, 0); // first 8 bytes of sha1 of internal key
 		}
 
-        internal static void ShaHashFile(string path, ref byte[] hash, ref long size)
-        {
-            using (FileStream file = File.OpenRead(path))
-            {
-                SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
-                hash = sha.ComputeHash(file);
-                size = file.Length;
-            }
-        }
-
-
-        internal static void Md5HashFile(string path, ref byte[] hash, ref long size)
-        {
-            using (FileStream file = File.OpenRead(path))
-            {
-                MD5CryptoServiceProvider md5 = new MD5CryptoServiceProvider();
-                hash = md5.ComputeHash(file);
-                size = file.Length;
-            }
-        }
-
-        internal static void HashTagFile(string path, G2Protocol protocol, ref byte[] hash, ref long size)
-        {
-            using (FileStream file = new FileStream(path, FileMode.Open, FileAccess.ReadWrite))
-            {
-                // record size of file
-                long originalSize = file.Length;
-
-                // sha hash 128k chunks of file
-                SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
-
-                int read = 0;
-                int chunkSize = 128; // 128kb chunks
-                int chunkBytes = chunkSize * 1024;
-                int buffSize = file.Length > chunkBytes ? chunkBytes : (int)file.Length;
-                byte[] chunk = new byte[buffSize];
-                List<byte[]> hashes = new List<byte[]>();
-
-                read = 1;
-                while (read > 0)
-                {
-                    read = file.Read(chunk, 0, buffSize);
-
-                    if (read > 0)
-                        hashes.Add(sha.ComputeHash(chunk, 0, read));
-                }
-
-                // write packets - 200 sub-hashes per packet
-                int writePos = 0;
-                int hashesLeft = hashes.Count;
-
-                while (hashesLeft > 0)
-                {
-                    int writeCount = (hashesLeft > 100) ? 100 : hashesLeft;
-
-                    hashesLeft -= writeCount;
-
-                    SubHashPacket packet = new SubHashPacket();
-                    packet.ChunkSize = chunkSize;
-                    packet.TotalCount = hashes.Count;
-                    packet.SubHashes = new byte[20 * writeCount];
-
-                    for (int i = 0; i < writeCount; i++)
-                        hashes[writePos++].CopyTo(packet.SubHashes, 20 * i);
-
-                    byte[] encoded = packet.Encode(protocol);
-
-                    file.Write(encoded, 0, encoded.Length);
-                }
-
-                // write null - end packets
-                file.WriteByte(0);
-
-                // attach original size to end of file
-                byte[] sizeBytes = BitConverter.GetBytes(originalSize);
-                file.Write(sizeBytes, 0, sizeBytes.Length);
-
-                // sha1 hash tagged file
-                file.Seek(0, SeekOrigin.Begin);
-                hash = sha.ComputeHash(file);
-                size = file.Length;
-            }
-        }
-
-        internal static string CryptType(object crypt)
-        {
-            if (crypt.GetType() == typeof(RijndaelManaged))
-            {
-                RijndaelManaged key = (RijndaelManaged)crypt;
-
-                return "aes " + key.KeySize.ToString();
-            }
-
-            if (crypt.GetType() == typeof(RSACryptoServiceProvider))
-            {
-                RSACryptoServiceProvider key = (RSACryptoServiceProvider)crypt;
-
-                return "rsa " + key.KeySize;
-            }
-
-            throw new Exception("Unknown Encryption Type");
-        }
-
-        internal static bool CheckSignedData(byte[] key, byte[] data, byte[] sig)
-        {
-            // check signature
-            RSACryptoServiceProvider rsa = Utilities.KeytoRsa(key);
-
-            return rsa.VerifyData(data, new SHA1CryptoServiceProvider(), sig);
-        }
-
-        internal static RSACryptoServiceProvider KeytoRsa(byte[] key)
-        {
-            RSAParameters param = new RSAParameters();
-            param.Modulus = key;
-            param.Exponent = new byte[] { 1, 0, 1 };
-
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
-            rsa.ImportParameters(param);
-            
-            return rsa;
-        }
-
-
-
-        internal static byte[] EncryptBytes(byte[] data, byte[] key)
-        {
-            RijndaelManaged crypt = new RijndaelManaged();
-            crypt.Key = key;
-            crypt.GenerateIV();
-            crypt.Padding = PaddingMode.PKCS7;
-
-            ICryptoTransform encryptor = crypt.CreateEncryptor();
-            byte[] transformed = encryptor.TransformFinalBlock(data, 0, data.Length);
-
-            byte[] final = new byte[crypt.IV.Length + transformed.Length];
-
-            crypt.IV.CopyTo(final, 0);
-            transformed.CopyTo(final, crypt.IV.Length);
-
-            return final;
-        }
-
-        internal static byte[] DecryptBytes(byte[] data, int length, byte[] key)
-        {
-            RijndaelManaged crypt = new RijndaelManaged();
-            crypt.Key     = key;
-            crypt.IV      = Utilities.ExtractBytes(data, 0, crypt.IV.Length);
-            crypt.Padding = PaddingMode.PKCS7;
-
-            ICryptoTransform decryptor = crypt.CreateDecryptor();
-
-            return decryptor.TransformFinalBlock(data, crypt.IV.Length, length - crypt.IV.Length);
-        }
-
         internal static void InsertSubNode(TreeListNode parent, TreeListNode node)
         {
             int index = 0;
@@ -412,36 +214,6 @@ namespace RiseOp
                     index++;
 
             parent.Nodes.Insert(index, node);
-        }
-
-        internal static string CryptFilename(OpCore core, string name)
-        {
-            // hash, base64 name with ~ instead of /, use for link as well
-
-            byte[] salt = Utilities.ExtractBytes(core.User.Settings.FileKey, 0, 4);
-
-            byte[] final = Utilities.CombineArrays(salt, UTF8Encoding.UTF8.GetBytes(name));
-
-            SHA1Managed sha1 = new SHA1Managed();
-            byte[] hash = new SHA1Managed().ComputeHash(final);
-
-            return Utilities.ToBase64String(hash);
-        }
-
-        internal static string CryptFilename(OpCore core, ulong id, byte[] hash)
-        {
-            // we salt so there are no common file names between users
-            byte[] salt = Utilities.ExtractBytes(core.User.Settings.FileKey, 0, 4);
-
-            byte[] buffer = new byte[4 + 8 + hash.Length];
-            salt.CopyTo(buffer, 0);
-            BitConverter.GetBytes(id).CopyTo(buffer, 4);
-            hash.CopyTo(buffer, 12);
-
-            SHA1Managed sha1 = new SHA1Managed();
-            byte[] totalHash = new SHA1Managed().ComputeHash(hash);
-
-            return Utilities.ToBase64String(totalHash);
         }
 
         internal static string ToBase64String(byte[] hash)
@@ -488,18 +260,6 @@ namespace RiseOp
                 return string.Format("{0:#.00} KB", (double)bytes / (double)BytesInKilo);
 
             return string.Format("{0} B", bytes);
-        }
-
-        internal static void ReadtoEnd(Stream stream)
-        {
-            //crit bug in crypto stream, cant open file read part of it and close
-            // doing so would cause an "padding is invalid and cannot be removed" error
-            // only solution is that when reading crypto we must read to end all the time so that Close() wont fail
-
-            byte[] buffer = new byte[4096];
-            
-            while (stream.Read(buffer, 0, 4096) == 4096)
-                ;
         }
 
         static public System.Drawing.SizeF MeasureDisplayString(System.Drawing.Graphics graphics, string text, System.Drawing.Font font)
@@ -575,21 +335,6 @@ namespace RiseOp
             }
         }
 
-        /*internal static void RemoveWhere(Dictionary<TKey, TValue> map, MatchType isMatch)
-        {
-            List<TKey> removeKeys = new List<TKey>();
-
-            foreach (KeyValuePair<TKey, TValue> pair in this)
-                if (isMatch(pair.Value))
-                    removeKeys.Add(pair.Key);
-
-
-            if (removeKeys.Count > 0)
-                foreach (TKey id in removeKeys)
-                    Remove(id);
-
-        }*/
-
         internal static string StripOneLevel(string path)
         {
             int pos = path.LastIndexOf('\\');
@@ -647,17 +392,6 @@ namespace RiseOp
             }
         }
 
-        internal static byte[] GetSalt(int amount, int buffsize, RNGCryptoServiceProvider rnd)
-        {
-            byte[] salt = new byte[amount];
-            rnd.GetBytes(salt);
-
-            byte[] final = new byte[buffsize];
-            salt.CopyTo(final, 0);
-
-            return final;
-        }
-
         internal static byte[] CombineArrays(byte[] a, byte[] b)
         {
             byte[] c = new byte[a.Length + b.Length];
@@ -666,13 +400,6 @@ namespace RiseOp
             b.CopyTo(c, a.Length);
 
             return c;
-        }
-
-        internal static byte[] GenerateKey(RNGCryptoServiceProvider rnd, int bits)
-        {
-            byte[] key = new byte[bits / 8];
-            rnd.GetBytes(key);
-            return key;
         }
 
         internal static bool IsLocalIP(IPAddress address)
@@ -987,81 +714,6 @@ namespace RiseOp.Implementation
         }
     }
 
-    internal class IVCryptoStream : CryptoStream
-    {
-
-        IVCryptoStream(Stream stream, ICryptoTransform transform, CryptoStreamMode mode)
-            : base(stream, transform, mode)
-        {
-
-        }
-
-        // this class saves the IV at the beginning of the file and loads it again during reading
-        internal static IVCryptoStream Load(string path, byte[] key)
-        {
-            FileStream file = File.OpenRead(path);
-
-            return IVCryptoStream.Load(file, key);
-        }
-
-        internal static IVCryptoStream Load(Stream stream, byte[] key)
-        {
-            // already disposed by called if fails
-            byte[] iv = new byte[16];
-            stream.Read(iv, 0, 16);
-
-            RijndaelManaged crypt = new RijndaelManaged();
-            crypt.Key = key;
-            crypt.IV = iv;
-
-            return new IVCryptoStream(stream, crypt.CreateDecryptor(), CryptoStreamMode.Read);
-        }
-
-        internal static IVCryptoStream Save(string path, byte[] key)
-        {
-            return Save(path, key, null);
-        }
-
-        internal static IVCryptoStream Save(string path, byte[] key, byte[] iv)
-        {
-            FileStream file = new FileStream(path, FileMode.Create);
-
-            RijndaelManaged crypt = new RijndaelManaged();
-            crypt.Key = key;
-
-            if (iv == null)
-                crypt.GenerateIV();
-            else
-            {
-                Debug.Assert(iv.Length == crypt.IV.Length);
-                crypt.IV = iv;
-            }
-
-            try
-            {
-                file.Write(crypt.IV, 0, crypt.IV.Length);
-            }
-            catch
-            {
-                file.Dispose();
-            }
-
-            return new IVCryptoStream(file, crypt.CreateEncryptor(), CryptoStreamMode.Write);
-
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (CanRead)
-                    Utilities.ReadtoEnd(this);
-            }
-
-            base.Dispose(disposing);
-        }
-    }
-
     internal class ServiceEvent<TDelegate>
     {
         internal Dictionary<uint, Dictionary<uint, TDelegate>> HandlerMap = new Dictionary<uint, Dictionary<uint, TDelegate>>();
@@ -1234,69 +886,6 @@ namespace RiseOp.Implementation
             Buffer = new T[Capacity];
             CurrentPos = -1;
             Length = 0;
-        }
-    }
-
-    // used to store sub-hashes for files that are transferred over the network
-    internal delegate void ProcessTagsHandler(PacketStream stream);
-
-    internal class TaggedStream : FileStream
-    {
-        long InternalSize;
-
-
-        internal TaggedStream(string path, G2Protocol protocol)
-            : base(path, FileMode.Open, FileAccess.Read, FileShare.Read)
-        {
-            Init(path, protocol, null);
-        }
-
-        internal TaggedStream(string path, G2Protocol protocol, ProcessTagsHandler processTags)
-            : base(path, FileMode.Open, FileAccess.Read, FileShare.Read)
-        {
-            Init(path, protocol, processTags);
-        }
-
-        void Init(string path, G2Protocol protocol, ProcessTagsHandler processTags)
-        {
-            Seek(-8, SeekOrigin.End);
-
-            byte[] sizeBytes = new byte[8];
-            Read(sizeBytes, 0, sizeBytes.Length);
-            long fileSize = BitConverter.ToInt64(sizeBytes, 0);
-
-            if (processTags != null)
-            {
-                // read internal packets
-                Seek(fileSize, SeekOrigin.Begin);
-                
-                PacketStream stream = new PacketStream(this, protocol, FileAccess.Read);
-
-                // dont need to close packetStream
-                processTags.Invoke(stream);
-            }
-
-            // set internal size down here so reading packet stream works without mixing up true file lenght
-            InternalSize = fileSize; 
-
-            // set back to the beginning of the file
-            Seek(0, SeekOrigin.Begin);
-        }
-
-        public override long Length
-        {
-            get
-            {
-                return (InternalSize == 0) ? base.Length : InternalSize;
-            }
-        }
-
-        public override int Read(byte[] array, int offset, int count)
-        {
-            if (Position + count > Length)
-                count = (int)(Length - Position);
-
-            return base.Read(array, offset, count);
         }
     }
 
