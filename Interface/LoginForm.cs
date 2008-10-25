@@ -334,8 +334,10 @@ namespace RiseOp.Interface
 
         private void pictureBox1_DoubleClick(object sender, EventArgs e)
         {
+#if DEBUG
             if (Context.Sim == null)
                 EnterSimLink.Visible = !EnterSimLink.Visible;
+#endif
         }
 
         private void LoginForm_Load(object sender, EventArgs e)

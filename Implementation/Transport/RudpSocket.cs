@@ -304,7 +304,7 @@ namespace RiseOp.Implementation.Transport
             if (raw.ReceivedTcp)
                 AddAddress(new RudpAddress(raw.Source, raw.Tcp));
 
-            AddAddress( new RudpAddress(raw.Source) );
+            AddAddress( new RudpAddress(raw.Source) ); // either direct node, or node's proxy
 
             // received syn, ident 5, from 1001 over tcp
             /*string log = "Received " + packet.PacketType.ToString();
@@ -852,7 +852,7 @@ namespace RiseOp.Implementation.Transport
 
             else
             {
-                tracked.Packet.ToEndPoint = target.Address;
+                tracked.Packet.ToAddress = target.Address;
 
                 TcpConnect proxy = Network.TcpControl.GetProxy(target.LocalProxy);
 

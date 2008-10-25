@@ -1393,8 +1393,6 @@ namespace RiseOp.Services.Trust
                 if (info.Data.UserID == Core.UserID && info.Data.Source.ClientID == Core.Network.Local.ClientID)
                     continue;
 
-                Debug.Assert(!locations.Contains(info.Data)); //crit - delete
-
                 if (!locations.Contains(info.Data))
                     locations.Add(info.Data);
             }

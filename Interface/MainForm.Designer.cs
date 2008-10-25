@@ -136,7 +136,7 @@ namespace RiseOp.Interface
             this.CommandSplit.Panel2.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandSplit.Panel2.Controls.Add(this.SelectionInfo);
             this.CommandSplit.Size = new System.Drawing.Size(171, 447);
-            this.CommandSplit.SplitterDistance = 340;
+            this.CommandSplit.SplitterDistance = 344;
             this.CommandSplit.SplitterWidth = 2;
             this.CommandSplit.TabIndex = 4;
             // 
@@ -161,11 +161,10 @@ namespace RiseOp.Interface
             this.BuddyList.Name = "BuddyList";
             this.BuddyList.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.BuddyList.RowTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.BuddyList.Size = new System.Drawing.Size(171, 312);
+            this.BuddyList.Size = new System.Drawing.Size(171, 316);
             this.BuddyList.SmallImageList = null;
             this.BuddyList.StateImageList = null;
             this.BuddyList.TabIndex = 0;
-            this.BuddyList.Text = "containerListViewEx1";
             this.BuddyList.Visible = false;
             // 
             // SideNavStrip
@@ -248,11 +247,10 @@ namespace RiseOp.Interface
             this.CommandTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.CommandTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandTree.ShowLines = true;
-            this.CommandTree.Size = new System.Drawing.Size(171, 312);
+            this.CommandTree.Size = new System.Drawing.Size(171, 316);
             this.CommandTree.SmallImageList = null;
             this.CommandTree.StateImageList = null;
             this.CommandTree.TabIndex = 0;
-            this.CommandTree.Text = "treeListViewEx1";
             this.CommandTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseClick);
             this.CommandTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.CommandTree_MouseDoubleClick);
             this.CommandTree.SelectedItemChanged += new System.EventHandler(this.CommandTree_SelectedItemChanged);
@@ -262,7 +260,7 @@ namespace RiseOp.Interface
             this.SelectionInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.SelectionInfo.Location = new System.Drawing.Point(0, 0);
             this.SelectionInfo.Name = "SelectionInfo";
-            this.SelectionInfo.Size = new System.Drawing.Size(171, 105);
+            this.SelectionInfo.Size = new System.Drawing.Size(171, 101);
             this.SelectionInfo.TabIndex = 0;
             // 
             // NavStrip
@@ -504,6 +502,7 @@ namespace RiseOp.Interface
             // 
             this.SearchButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
             this.SearchButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.SearchButton.Enabled = false;
             this.SearchButton.Image = ((System.Drawing.Image)(resources.GetObject("SearchButton.Image")));
             this.SearchButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.SearchButton.Name = "SearchButton";
@@ -514,6 +513,8 @@ namespace RiseOp.Interface
             // SearchBox
             // 
             this.SearchBox.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.SearchBox.BackColor = System.Drawing.Color.WhiteSmoke;
+            this.SearchBox.Enabled = false;
             this.SearchBox.Name = "SearchBox";
             this.SearchBox.Size = new System.Drawing.Size(100, 31);
             // 

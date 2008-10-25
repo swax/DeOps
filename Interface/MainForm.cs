@@ -402,6 +402,8 @@ namespace RiseOp.Interface
             ToolStripMenuItem tools = new ToolStripMenuItem("Tools", InterfaceRes.tools);
 
             tools.DropDownItems.Add(new ManageItem("Bandwidth", null, () => BandwidthForm.Show(Core.Context)));
+
+#if DEBUG
             tools.DropDownItems.Add(new ManageItem("Crawler", null, () => CrawlerForm.Show(Core.Network)));
 
             // global - crawler/graph/packets/search
@@ -423,6 +425,8 @@ namespace RiseOp.Interface
             tools.DropDownItems.Add(new ManageItem("Internals", null, () => InternalsForm.Show(Core)));
             tools.DropDownItems.Add(new ManageItem("Packets", null, () => PacketsForm.Show(Core.Network)));
             tools.DropDownItems.Add(new ManageItem("Search", null, () => SearchForm.Show(Core.Network)));
+#endif
+
             tools.DropDownItems.Add(new ManageItem("Transfers", null, () => TransferView.Show(Core.Network)));
 
             items.Add(tools);

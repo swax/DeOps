@@ -39,10 +39,8 @@ Section "RiseOp"
   ; Put file there
   File "..\bin\Protected\RiseOp.exe"
   File "..\Update\bin\Release\UpdateOp.exe"
-  File "..\bin\Protected\Interop.NetFwTypeLib.dll"
-  File "..\bin\Protected\NLipsum.Core.dll"
-  File "..\bin\Protected\ZedGraph.dll"
   File "..\bin\Protected\bootstrap.dat"
+  File dotnetfx35setup.exe
   
   ; Write the installation path into the registry
   WriteRegStr HKLM SOFTWARE\RiseOp "Install_Dir" "$INSTDIR"
@@ -56,6 +54,7 @@ Section "RiseOp"
   
   CreateDirectory "$SMPROGRAMS\RiseOp"
   CreateShortCut "$SMPROGRAMS\RiseOp\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
+  CreateShortCut "$SMPROGRAMS\RiseOp\Install .Net 3.5.lnk" "$INSTDIR\dotnetfx35setup.exe" "" "$INSTDIR\dotnetfx35setup.exe" 0
   CreateShortCut "$SMPROGRAMS\RiseOp\RiseOp.lnk" "$INSTDIR\RiseOp.exe" "" "$INSTDIR\RiseOp.exe" 0
   
 SectionEnd
@@ -79,7 +78,6 @@ Section "Uninstall"
 
   ; Remove files and uninstaller
   Delete $INSTDIR\*.exe
-  Delete $INSTDIR\*.dll
 
   ; Remove shortcuts, if any
   Delete $DESKTOP\RiseOp.lnk

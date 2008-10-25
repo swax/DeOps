@@ -76,6 +76,8 @@ namespace RiseOp.Interface
     {
         internal List<ExternalView> ExternalViews = new List<ExternalView>();
 
+        internal HostsExternalViews() { }
+
         internal HostsExternalViews(OpCore core)
             : base(core)
         { }

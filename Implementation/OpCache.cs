@@ -102,7 +102,7 @@ namespace RiseOp.Implementation
             }
 
             // send broadcast in lan mode every 20 secs
-            if (Network.LanMode)//&& !IsGlobal) //crit re-enable?
+            if (Network.LanMode)//&& !IsLookup) //crit re-enable?
             {
                 // if disconnected from LAN, once reconnected, establishing should be < 20 secs
                 if (BroadcastTimeout <= 0)

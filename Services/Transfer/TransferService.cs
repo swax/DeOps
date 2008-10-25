@@ -60,9 +60,9 @@ namespace RiseOp.Services.Transfer
 
         string PartialHeaderPath = "";
 
-#if DEBUG
-        internal bool Logging = true; //crit - turn off
-#endif
+
+        internal bool Logging = false;
+
 
         internal TransferService(OpCore core)
         {
@@ -929,7 +929,7 @@ namespace RiseOp.Services.Transfer
                            select p).FirstOrDefault();
 
                 //if (altPeer != null)
-                //    TestMatchDepth(client.RoutingID, altPeer.RoutingID, ping.MissingDepth); //crit - comment out
+                //    TestMatchDepth(client.RoutingID, altPeer.RoutingID, ping.MissingDepth); 
             }
 
             // didnt find an alt to bucket pref, just take a random one

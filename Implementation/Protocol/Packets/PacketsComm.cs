@@ -49,9 +49,9 @@ namespace RiseOp.Implementation.Protocol.Comm
         const byte Packet_Type          = 0x50;
         const byte Packet_ID            = 0x60;
         const byte Packet_Seq           = 0x70;
-        const byte Packet_To            = 0x80;
-        const byte Packet_From          = 0x90;
-        const byte Packet_Ident         = 0xA0;
+        const byte Packet_Ident         = 0x80;
+        const byte Packet_To            = 0x90;
+        const byte Packet_Proxy         = 0xA0;
 
 
         internal ulong SenderID; 
@@ -67,8 +67,8 @@ namespace RiseOp.Implementation.Protocol.Comm
 		internal byte[] Payload;
         internal uint   Ident;
 
-		internal DhtAddress ToEndPoint;
-        internal DhtAddress FromEndPoint;
+		internal DhtAddress ToAddress;
+        internal DhtAddress RemoteProxy;
 
 
         internal RudpPacket()
@@ -89,14 +89,10 @@ namespace RiseOp.Implementation.Protocol.Comm
                 protocol.WritePacket(bdy, Packet_ID,     BitConverter.GetBytes(PeerID));
                 protocol.WritePacket(bdy, Packet_Seq,    BitConverter.GetBytes(Sequence));
                 
-                if(Ident != 0)
-                    protocol.WritePacket(bdy, Packet_Ident, BitConverter.GetBytes(Ident));
+                if(Ident != 0) protocol.WritePacket(bdy, Packet_Ident, BitConverter.GetBytes(Ident));
 
-                if (ToEndPoint != null)
-                    ToEndPoint.WritePacket(protocol, bdy, Packet_To);
-
-                if (FromEndPoint != null)
-                    FromEndPoint.WritePacket(protocol, bdy, Packet_From);
+                if (ToAddress != null) ToAddress.WritePacket(protocol, bdy, Packet_To);
+                if (RemoteProxy != null) RemoteProxy.WritePacket(protocol, bdy, Packet_Proxy);
 
                 return protocol.WriteFinish();
             }
@@ -154,16 +150,16 @@ namespace RiseOp.Implementation.Protocol.Comm
                         gc.Sequence = (byte)child.Data[child.PayloadPos];
                         break;
 
-                    case Packet_To:
-                        gc.ToEndPoint = DhtAddress.ReadPacket(child);
-                        break;
-
-                    case Packet_From:
-                        gc.FromEndPoint = DhtAddress.ReadPacket(child);
-                        break;
-
                     case Packet_Ident:
                         gc.Ident = BitConverter.ToUInt32(child.Data, child.PayloadPos);
+                        break;
+
+                    case Packet_To:
+                        gc.ToAddress = DhtAddress.ReadPacket(child);
+                        break;
+
+                    case Packet_Proxy:
+                        gc.RemoteProxy = DhtAddress.ReadPacket(child);
                         break;
                 }																  
 			}

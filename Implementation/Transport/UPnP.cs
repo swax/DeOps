@@ -14,8 +14,6 @@ using RiseOp.Implementation.Dht;
 
 namespace RiseOp.Implementation.Transport
 {
-    //crit implement / make asyncronous yet / need to periodically advertise? (rate probably in response) / clean up on close
-
     internal class UPnPDevice
     {
         internal string Name;

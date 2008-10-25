@@ -46,7 +46,9 @@ namespace RiseOp.Services.Transfer
             Core = service.Core;
             Service = service;
 
+#if DEBUG
             Service.Logging = true;
+#endif
         }
 
         private void TransferView_Load(object sender, EventArgs e)

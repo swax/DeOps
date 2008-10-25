@@ -389,15 +389,17 @@ namespace RiseOp.Implementation.Dht
             {
                 RudpPacket commPacket = RudpPacket.Decode(packet);
 
+                // received direct
                 packet.Source.UserID = commPacket.SenderID;
                 packet.Source.ClientID = commPacket.SenderClient;
+
+                // remote node is proxied
+                if (commPacket.RemoteProxy != null)
+                    packet.Source = new DhtContact(commPacket.RemoteProxy);
 
                 // For local host
                 if (commPacket.TargetID == Local.UserID && commPacket.TargetClient == Local.ClientID)
                 {
-                    if (packet.ReceivedTcp && commPacket.FromEndPoint != null)
-                        packet.Source = new DhtContact(commPacket.FromEndPoint);
-
                     ReceiveCommPacket(packet, commPacket);
                     return;
                 }
@@ -408,26 +410,22 @@ namespace RiseOp.Implementation.Dht
                 if (socket != null)
                 {
                     // forward to proxied node - strip TO flag, add from address
-                    commPacket.ToEndPoint = null;
-                    commPacket.FromEndPoint = packet.Source;
+                    commPacket.ToAddress = null;
+                    commPacket.RemoteProxy = packet.Source; // if remote proxy is null, then we are setting this to the packet's original source
 
-                    commPacket.SenderID = Local.UserID;
-                    commPacket.SenderClient = Local.ClientID;
                     socket.SendPacket(commPacket);
                     return;
                 }
 
-                // forward udp if TO flag marked
-                if (packet.ReceivedTcp && commPacket.ToEndPoint != null)
+                // received from a proxied node, forward udp
+                if (packet.ReceivedTcp && commPacket.ToAddress != null)
                 {
-                    DhtAddress address = commPacket.ToEndPoint;
+                    DhtAddress target = commPacket.ToAddress;
 
-                    commPacket.ToEndPoint = null; // strip TO flag
-                    //commPacket.FromEndPoint = packet.Source;
+                    commPacket.ToAddress = null; // strip TO flag
+                    commPacket.RemoteProxy = new DhtAddress(Core.LocalIP, GetLocalSource());
 
-                    commPacket.SenderID = Local.UserID;
-                    commPacket.SenderClient = Local.ClientID;
-                    UdpControl.SendTo(address, commPacket);
+                    UdpControl.SendTo(target, commPacket);
                 }
             }
         }

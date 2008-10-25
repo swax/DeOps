@@ -144,7 +144,7 @@ namespace RiseOp.Implementation.Transport
 
         internal void ReceivePacket(G2ReceivedPacket raw, RudpPacket packet)
         {
-            DhtClient client = new DhtClient(raw.Source);
+            DhtClient client = new DhtClient(packet.SenderID, packet.SenderClient);
 
             if (!Clients.ContainsKey(client.RoutingID))
                 Clients[client.RoutingID] = new LightClient(client);
@@ -152,6 +152,7 @@ namespace RiseOp.Implementation.Transport
             LightClient light = Clients[client.RoutingID];
             light.LastSeen = Core.TimeNow;
 
+            // either direct, or node's proxy
             light.AddAddress(Core, new RudpAddress(raw.Source), true);
             
             if (raw.ReceivedTcp) // add this second so sending ack through tcp proxy is perferred
@@ -197,13 +198,6 @@ namespace RiseOp.Implementation.Transport
 
         void ReceiveAck(G2ReceivedPacket raw, LightClient client, RudpPacket packet)
         {
-            // add sources, dont promote to front, we move packet ident to front
-            client.AddAddress(Core, new RudpAddress(raw.Source), false);
-
-            if (raw.ReceivedTcp)
-                client.AddAddress(Core, new RudpAddress(raw.Source, raw.Tcp), false);
-
-
             // remove acked packet
             foreach(Tuple<uint, RudpPacket> tuple in client.Packets)
                 if(tuple.Second.PeerID == packet.PeerID)
@@ -341,7 +335,7 @@ namespace RiseOp.Implementation.Transport
 
             else
             {
-                packet.ToEndPoint = target.Address;
+                packet.ToAddress = target.Address;
 
                 TcpConnect proxy = network.TcpControl.GetProxy(target.LocalProxy);
 

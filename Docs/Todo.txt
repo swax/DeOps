@@ -1,13 +1,4 @@
 
-buddie lists
-	test 64 net, guy goes offline, empty dupe comes online, is buddy list updated?
-	drag/drop file into IM, ask user if like to send
-
-Cut out debug code from release mode
-check crits
-
-cache license ^ index id / user id in client
-
 release
 	xenocode - check disasm (hopefully supports linq, inspect)
 	test from wells - connect to home? upnp open?
@@ -20,7 +11,6 @@ release
 		http://www.riseop.com/index.php/licensed on success
 		
 	download page
-		put link to .net on website
 		ensure we get shipping address from buy button
 		
 	license
@@ -57,6 +47,8 @@ other
 	also status if killed
 	sortable columns that are either auto, or take a delegate comparer as a parameter
 	when switching rooms, put focus on chat input
+	drag/drop file into IM, ask user if like to send
+	cache license ^ index id / user id in client - handle clashes
 	
 	
 setting - save IM mode, buddies or structure view on close
