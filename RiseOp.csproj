@@ -251,7 +251,7 @@
     <Compile Include="Services\Board\BoardService.cs" />
     <Compile Include="Services\Buddy\BuddyService.cs" />
     <Compile Include="Services\Buddy\BuddyView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Services\Buddy\res\BuddyRes.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -355,7 +355,7 @@
       <DependentUpon>IMRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Services\Trust\LinkTree.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Services\Trust\RemoveLinks.cs">
       <SubType>Form</SubType>
@@ -634,12 +634,12 @@
     <Compile Include="Interface\TrayLock.cs" />
     <Compile Include="Interface\Views\ColorTable.cs" />
     <Compile Include="Interface\Views\TreeListViewEx\ContainerListView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Interface\Views\TreeListViewEx\IParentChildList.cs" />
     <Compile Include="Interface\Views\TreeListViewEx\StringTools.cs" />
     <Compile Include="Interface\Views\TreeListViewEx\TreeListView.cs">
-      <SubType>UserControl</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="Interface\Views\ViewShell.cs">
       <SubType>UserControl</SubType>

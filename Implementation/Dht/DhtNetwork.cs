@@ -72,8 +72,7 @@ namespace RiseOp.Implementation.Dht
                                             0x6c,0x76,0xda,0x4b,0x70,0x88,0x00,0xaa};
 
         internal RijndaelManaged OpCrypt;
-        internal RijndaelManaged AugmentedCrypt;
-        internal byte[] AugmentBytes = new byte[8];
+        internal byte[] LocalAugmentedKey;
 
         // log
         internal Queue<G2ReceivedPacket> IncomingPackets = new Queue<G2ReceivedPacket>();
@@ -111,8 +110,7 @@ namespace RiseOp.Implementation.Dht
             else
                 OpCrypt.Key = Core.User.Settings.OpKey;
 
-            AugmentedCrypt = new RijndaelManaged();
-            AugmentedCrypt.Key = (byte[])OpCrypt.Key.Clone();
+            LocalAugmentedKey = GetAugmentedKey(Local.UserID);
 
             Protocol = new G2Protocol();
             TcpControl = new TcpHandler(this);
@@ -184,7 +182,8 @@ namespace RiseOp.Implementation.Dht
             {
                 // done to fill up routing table down to self
 
-                Searches.Start(Routing.LocalRoutingID + 1, "Self", Core.DhtServiceID, 0, null, new EndSearchHandler(EndSelfSearch));
+                DhtSearch search = Searches.Start(Routing.LocalRoutingID + 1, "Self", Core.DhtServiceID, 0, null, null);
+                search.DoneEvent = Search_DoneSelf;
                 Routing.NextSelfSearch = Core.TimeNow.AddHours(1);
 
                 // at end of self search, status change count down triggered
@@ -208,7 +207,7 @@ namespace RiseOp.Implementation.Dht
                 StatusChange.Invoke();
         }
 
-        internal void EndSelfSearch(DhtSearch search)
+        internal void Search_DoneSelf(DhtSearch search)
         {
             // if not already established (an hourly self re-search)
             if (!Established)
@@ -583,13 +582,7 @@ namespace RiseOp.Implementation.Dht
 
             // encrypt, turn off encryption during simulation
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
-            {
-                lock (AugmentedCrypt)
-                {
-                    SetAugmentedKey(contact.UserID);
-                    packet.Payload = Utilities.EncryptBytes(encoded, AugmentedCrypt.Key);
-                }
-            }
+                packet.Payload = Utilities.EncryptBytes(encoded, GetAugmentedKey(contact.UserID));
             else
                 packet.Payload = encoded;
 
@@ -665,14 +658,10 @@ namespace RiseOp.Implementation.Dht
             // decrypt internal packet
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption) // turn off encryption during simulation
             {
-                if (tunnel.Payload.Length < AugmentedCrypt.IV.Length)
+                if (tunnel.Payload.Length < 16)
                     throw new Exception("Not enough data received for IV");
 
-                lock (AugmentedCrypt)
-                {
-                    SetAugmentedKey(Local.UserID);
-                    tunnel.Payload = Utilities.DecryptBytes(tunnel.Payload, tunnel.Payload.Length, AugmentedCrypt.Key);
-                }
+                tunnel.Payload = Utilities.DecryptBytes(tunnel.Payload, tunnel.Payload.Length, LocalAugmentedKey);
             }
 
             G2ReceivedPacket opPacket = new G2ReceivedPacket();
@@ -1284,14 +1273,18 @@ namespace RiseOp.Implementation.Dht
 
 
 
-        internal void SetAugmentedKey(ulong user)
+        internal byte[] GetAugmentedKey(ulong user)
         {
             // augmented key is original key with first 8 bytes xored with user id
 
-            BitConverter.GetBytes(user).CopyTo(AugmentedCrypt.Key, 0);
+            byte[] key = OpCrypt.Key;
+
+            byte[] prefix = BitConverter.GetBytes(user);
 
             for(int i = 0; i < 8; i++)
-                AugmentedCrypt.Key[i] ^= OpCrypt.Key[i];
+                key[i] ^= prefix[i];
+
+            return key;
         }
     }
 }

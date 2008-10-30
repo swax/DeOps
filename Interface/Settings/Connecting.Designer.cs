@@ -34,13 +34,13 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.OperationLabel = new System.Windows.Forms.Label();
-            this.GlobalLabel = new System.Windows.Forms.Label();
+            this.LookupLabel = new System.Windows.Forms.Label();
             this.OpUdpBox = new System.Windows.Forms.TextBox();
-            this.GlobalTcpBox = new System.Windows.Forms.TextBox();
-            this.GlobalUdpBox = new System.Windows.Forms.TextBox();
+            this.LookupTcpBox = new System.Windows.Forms.TextBox();
+            this.LookupUdpBox = new System.Windows.Forms.TextBox();
             this.label7 = new System.Windows.Forms.Label();
             this.OpStatusBox = new System.Windows.Forms.TextBox();
-            this.GlobalStatusBox = new System.Windows.Forms.TextBox();
+            this.LookupStatusBox = new System.Windows.Forms.TextBox();
             this.label8 = new System.Windows.Forms.Label();
             this.CacheList = new System.Windows.Forms.ListBox();
             this.AddLink = new System.Windows.Forms.LinkLabel();
@@ -50,7 +50,7 @@
             this.UPnPLink = new System.Windows.Forms.LinkLabel();
             this.OpLanBox = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
-            this.GlobalLanBox = new System.Windows.Forms.TextBox();
+            this.LookupLanBox = new System.Windows.Forms.TextBox();
             this.label6 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -118,12 +118,12 @@
             // 
             // GlobalLabel
             // 
-            this.GlobalLabel.AutoSize = true;
-            this.GlobalLabel.Location = new System.Drawing.Point(7, 63);
-            this.GlobalLabel.Name = "GlobalLabel";
-            this.GlobalLabel.Size = new System.Drawing.Size(43, 13);
-            this.GlobalLabel.TabIndex = 15;
-            this.GlobalLabel.Text = "Lookup";
+            this.LookupLabel.AutoSize = true;
+            this.LookupLabel.Location = new System.Drawing.Point(7, 63);
+            this.LookupLabel.Name = "GlobalLabel";
+            this.LookupLabel.Size = new System.Drawing.Size(43, 13);
+            this.LookupLabel.TabIndex = 15;
+            this.LookupLabel.Text = "Lookup";
             // 
             // OpUdpBox
             // 
@@ -136,21 +136,21 @@
             // 
             // GlobalTcpBox
             // 
-            this.GlobalTcpBox.Location = new System.Drawing.Point(76, 60);
-            this.GlobalTcpBox.Name = "GlobalTcpBox";
-            this.GlobalTcpBox.Size = new System.Drawing.Size(47, 20);
-            this.GlobalTcpBox.TabIndex = 17;
-            this.GlobalTcpBox.Text = "65536";
-            this.GlobalTcpBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.LookupTcpBox.Location = new System.Drawing.Point(76, 60);
+            this.LookupTcpBox.Name = "GlobalTcpBox";
+            this.LookupTcpBox.Size = new System.Drawing.Size(47, 20);
+            this.LookupTcpBox.TabIndex = 17;
+            this.LookupTcpBox.Text = "65536";
+            this.LookupTcpBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // GlobalUdpBox
             // 
-            this.GlobalUdpBox.Location = new System.Drawing.Point(129, 60);
-            this.GlobalUdpBox.Name = "GlobalUdpBox";
-            this.GlobalUdpBox.Size = new System.Drawing.Size(47, 20);
-            this.GlobalUdpBox.TabIndex = 18;
-            this.GlobalUdpBox.Text = "65536";
-            this.GlobalUdpBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.LookupUdpBox.Location = new System.Drawing.Point(129, 60);
+            this.LookupUdpBox.Name = "GlobalUdpBox";
+            this.LookupUdpBox.Size = new System.Drawing.Size(47, 20);
+            this.LookupUdpBox.TabIndex = 18;
+            this.LookupUdpBox.Text = "65536";
+            this.LookupUdpBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // label7
             // 
@@ -176,15 +176,15 @@
             // 
             // GlobalStatusBox
             // 
-            this.GlobalStatusBox.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.GlobalStatusBox.ForeColor = System.Drawing.Color.White;
-            this.GlobalStatusBox.Location = new System.Drawing.Point(235, 60);
-            this.GlobalStatusBox.Name = "GlobalStatusBox";
-            this.GlobalStatusBox.ReadOnly = true;
-            this.GlobalStatusBox.Size = new System.Drawing.Size(47, 20);
-            this.GlobalStatusBox.TabIndex = 22;
-            this.GlobalStatusBox.Text = "Blocked";
-            this.GlobalStatusBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.LookupStatusBox.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.LookupStatusBox.ForeColor = System.Drawing.Color.White;
+            this.LookupStatusBox.Location = new System.Drawing.Point(235, 60);
+            this.LookupStatusBox.Name = "GlobalStatusBox";
+            this.LookupStatusBox.ReadOnly = true;
+            this.LookupStatusBox.Size = new System.Drawing.Size(47, 20);
+            this.LookupStatusBox.TabIndex = 22;
+            this.LookupStatusBox.Text = "Blocked";
+            this.LookupStatusBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // label8
             // 
@@ -253,18 +253,18 @@
             this.groupBox1.Controls.Add(this.UPnPLink);
             this.groupBox1.Controls.Add(this.OpLanBox);
             this.groupBox1.Controls.Add(this.label1);
-            this.groupBox1.Controls.Add(this.GlobalLanBox);
+            this.groupBox1.Controls.Add(this.LookupLanBox);
             this.groupBox1.Controls.Add(this.OpTcpBox);
             this.groupBox1.Controls.Add(this.label2);
             this.groupBox1.Controls.Add(this.label3);
             this.groupBox1.Controls.Add(this.OperationLabel);
-            this.groupBox1.Controls.Add(this.GlobalLabel);
-            this.groupBox1.Controls.Add(this.GlobalStatusBox);
+            this.groupBox1.Controls.Add(this.LookupLabel);
+            this.groupBox1.Controls.Add(this.LookupStatusBox);
             this.groupBox1.Controls.Add(this.OpUdpBox);
             this.groupBox1.Controls.Add(this.OpStatusBox);
-            this.groupBox1.Controls.Add(this.GlobalTcpBox);
+            this.groupBox1.Controls.Add(this.LookupTcpBox);
             this.groupBox1.Controls.Add(this.label7);
-            this.groupBox1.Controls.Add(this.GlobalUdpBox);
+            this.groupBox1.Controls.Add(this.LookupUdpBox);
             this.groupBox1.Controls.Add(this.label6);
             this.groupBox1.Location = new System.Drawing.Point(12, 12);
             this.groupBox1.Name = "groupBox1";
@@ -307,13 +307,13 @@
             // 
             // GlobalLanBox
             // 
-            this.GlobalLanBox.Location = new System.Drawing.Point(182, 60);
-            this.GlobalLanBox.Name = "GlobalLanBox";
-            this.GlobalLanBox.ReadOnly = true;
-            this.GlobalLanBox.Size = new System.Drawing.Size(47, 20);
-            this.GlobalLanBox.TabIndex = 25;
-            this.GlobalLanBox.Text = "65536";
-            this.GlobalLanBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.LookupLanBox.Location = new System.Drawing.Point(182, 60);
+            this.LookupLanBox.Name = "GlobalLanBox";
+            this.LookupLanBox.ReadOnly = true;
+            this.LookupLanBox.Size = new System.Drawing.Size(47, 20);
+            this.LookupLanBox.TabIndex = 25;
+            this.LookupLanBox.Text = "65536";
+            this.LookupLanBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // label6
             // 
@@ -363,12 +363,12 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label OperationLabel;
-        private System.Windows.Forms.Label GlobalLabel;
-        private System.Windows.Forms.TextBox GlobalTcpBox;
-        private System.Windows.Forms.TextBox GlobalUdpBox;
+        private System.Windows.Forms.Label LookupLabel;
+        private System.Windows.Forms.TextBox LookupTcpBox;
+        private System.Windows.Forms.TextBox LookupUdpBox;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.TextBox OpStatusBox;
-        private System.Windows.Forms.TextBox GlobalStatusBox;
+        private System.Windows.Forms.TextBox LookupStatusBox;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.ListBox CacheList;
         private System.Windows.Forms.LinkLabel AddLink;
@@ -378,7 +378,7 @@
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.TextBox OpLanBox;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.TextBox GlobalLanBox;
+        private System.Windows.Forms.TextBox LookupLanBox;
         private System.Windows.Forms.LinkLabel UPnPLink;
         private System.Windows.Forms.Label label6;
     }

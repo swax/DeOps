@@ -83,11 +83,12 @@ namespace RiseOp.Services.Plan
             // 
             // DelegateLink
             // 
-            this.DelegateLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.DelegateLink.AutoSize = true;
+            this.DelegateLink.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.DelegateLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
             this.DelegateLink.Location = new System.Drawing.Point(3, 198);
             this.DelegateLink.Name = "DelegateLink";
-            this.DelegateLink.Size = new System.Drawing.Size(117, 13);
+            this.DelegateLink.Size = new System.Drawing.Size(350, 13);
             this.DelegateLink.TabIndex = 1;
             this.DelegateLink.TabStop = true;
             this.DelegateLink.Text = "Delegate Responsibility";
@@ -99,7 +100,7 @@ namespace RiseOp.Services.Plan
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.GoalTree.BackColor = System.Drawing.SystemColors.Window;
-            this.GoalTree.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.GoalTree.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             toggleColumnHeader1.Hovered = false;
             toggleColumnHeader1.Image = null;
             toggleColumnHeader1.Index = 0;
@@ -109,7 +110,7 @@ namespace RiseOp.Services.Plan
             toggleColumnHeader1.Text = "Goal";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 131;
+            toggleColumnHeader1.Width = 129;
             toggleColumnHeader2.Hovered = false;
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
@@ -149,6 +150,7 @@ namespace RiseOp.Services.Plan
             this.GoalTree.DisableHorizontalScroll = true;
             this.GoalTree.GridLineColor = System.Drawing.Color.WhiteSmoke;
             this.GoalTree.HeaderMenu = null;
+            this.GoalTree.HideSelection = false;
             this.GoalTree.ItemHeight = 20;
             this.GoalTree.ItemMenu = null;
             this.GoalTree.LabelEdit = false;
@@ -157,21 +159,22 @@ namespace RiseOp.Services.Plan
             this.GoalTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.GoalTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.GoalTree.ShowLines = true;
-            this.GoalTree.Size = new System.Drawing.Size(471, 197);
+            this.GoalTree.Size = new System.Drawing.Size(471, 214);
             this.GoalTree.SmallImageList = null;
             this.GoalTree.StateImageList = null;
             this.GoalTree.TabIndex = 0;
-            this.GoalTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.GoalTree_MouseDoubleClick);
             this.GoalTree.MouseClick += new System.Windows.Forms.MouseEventHandler(this.GoalTree_MouseClick);
+            this.GoalTree.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.GoalTree_MouseDoubleClick);
             this.GoalTree.SelectedItemChanged += new System.EventHandler(this.GoalTree_SelectedItemChanged);
             // 
             // AddItemLink
             // 
-            this.AddItemLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.AddItemLink.AutoSize = true;
-            this.AddItemLink.Location = new System.Drawing.Point(3, 114);
+            this.AddItemLink.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.AddItemLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
+            this.AddItemLink.Location = new System.Drawing.Point(3, 112);
             this.AddItemLink.Name = "AddItemLink";
-            this.AddItemLink.Size = new System.Drawing.Size(102, 13);
+            this.AddItemLink.Size = new System.Drawing.Size(463, 13);
             this.AddItemLink.TabIndex = 5;
             this.AddItemLink.TabStop = true;
             this.AddItemLink.Text = "Add Item to My Plan";
@@ -183,7 +186,7 @@ namespace RiseOp.Services.Plan
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.PlanList.BackColor = System.Drawing.SystemColors.Window;
-            this.PlanList.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.PlanList.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             toggleColumnHeader5.Hovered = false;
             toggleColumnHeader5.Image = null;
             toggleColumnHeader5.Index = 0;
@@ -193,7 +196,7 @@ namespace RiseOp.Services.Plan
             toggleColumnHeader5.Text = "Plan";
             toggleColumnHeader5.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader5.Visible = true;
-            toggleColumnHeader5.Width = 209;
+            toggleColumnHeader5.Width = 207;
             toggleColumnHeader6.Hovered = false;
             toggleColumnHeader6.Image = null;
             toggleColumnHeader6.Index = 0;
@@ -228,12 +231,12 @@ namespace RiseOp.Services.Plan
             this.PlanList.Name = "PlanList";
             this.PlanList.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.PlanList.RowTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.PlanList.Size = new System.Drawing.Size(469, 113);
+            this.PlanList.Size = new System.Drawing.Size(469, 127);
             this.PlanList.SmallImageList = null;
             this.PlanList.StateImageList = null;
             this.PlanList.TabIndex = 4;
-            this.PlanList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.PlanList_MouseClick);
             this.PlanList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.PlanList_MouseDoubleClick);
+            this.PlanList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.PlanList_MouseClick);
             this.PlanList.SelectedIndexChanged += new System.EventHandler(this.PlanList_SelectedIndexChanged);
             // 
             // GoalPanel
@@ -247,7 +250,6 @@ namespace RiseOp.Services.Plan
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel1.PerformLayout();
             this.splitContainer1.Panel2.ResumeLayout(false);
-            this.splitContainer1.Panel2.PerformLayout();
             this.splitContainer1.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -257,7 +259,7 @@ namespace RiseOp.Services.Plan
 
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.LinkLabel DelegateLink;
-        private RiseOp.Interface.TLVex.TreeListViewEx GoalTree;
+        internal RiseOp.Interface.TLVex.TreeListViewEx GoalTree;
         private System.Windows.Forms.CheckBox MineOnly;
         private System.Windows.Forms.LinkLabel AddItemLink;
         private RiseOp.Interface.TLVex.ContainerListViewEx PlanList;

@@ -94,20 +94,6 @@ namespace RiseOp.Services.Transfer
                 PartialHeaderPath = TransferPath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "PartialFileHeaders");
 
                 LoadPartials();
-
-                // remove lingering files that are not either a partial or the partial info header
-                string[] files = Directory.GetFiles(TransferPath);
-
-                foreach (string path in files)
-                    if (path.CompareTo(PartialHeaderPath) == 0)
-                        continue;
-                    else if (Partials.Count(p => path.CompareTo(p.FilePath) == 0) > 0)
-                        continue;
-                    else
-                    {
-                        try { File.Delete(path); }
-                        catch { }
-                    }
             }
             catch { }
         }
@@ -286,12 +272,13 @@ namespace RiseOp.Services.Transfer
                 {
                     byte[] parameters = transfer.Details.Encode(Network.Protocol);
 
-                    DhtSearch search = Core.Network.Searches.Start(transfer.Target, "Transfer", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
+                    DhtSearch search = Core.Network.Searches.Start(transfer.Target, "Transfer", ServiceID, 0, parameters, Search_Found);
 
                     if (search != null)
                     {
                         transfer.Searching = true;
                         search.Carry = transfer;
+                        search.DoneEvent = Search_Done;
                     }
                 }
             }
@@ -458,9 +445,10 @@ namespace RiseOp.Services.Transfer
             // set args and endevent for transfer (if endevent is null, TEST)
             // load sub hashes
 
-            // how do clean up commands in others services not delete the primary header file
-
             // after 10 mintues of network established, set save partial of those loaded from file to false
+
+            List<string> goodPaths = new List<string>();
+            goodPaths.Add(PartialHeaderPath);
 
             try
             {
@@ -486,6 +474,8 @@ namespace RiseOp.Services.Transfer
                             if (!File.Exists(path))
                                 continue;
 
+                            goodPaths.Add(path);
+
                             OpTransfer transfer = new OpTransfer(this, path, partial.Target, partial.Details, TransferStatus.Incomplete, null, null);
 
                             transfer.Created = partial.Created;
@@ -499,6 +489,13 @@ namespace RiseOp.Services.Transfer
                             Partials.AddLast(transfer);
                         }
                 }
+
+
+                // remove lingering files that are not either a partial or the partial info header
+                foreach (string testPath in Directory.GetFiles(TransferPath))
+                    if (!goodPaths.Contains(testPath))
+                        try { File.Delete(testPath); }
+                        catch { }
             }
             catch (Exception ex)
             {
@@ -538,7 +535,29 @@ namespace RiseOp.Services.Transfer
                 }
         }
 
-        void EndSearch(DhtSearch search)
+        void Search_Found(DhtSearch search, DhtAddress source, byte[] data)
+        {
+            OpTransfer transfer = search.Carry as OpTransfer;
+
+            if (transfer == null)
+                return;
+
+            try
+            {
+                LocationData location = LocationData.Decode(data);
+                // dont core.indexkey because key not sent in light location
+
+                Network.LightComm.Update(location); // primes all loc's addresses
+
+                transfer.AddPeer(location.Source);
+            }
+            catch (Exception ex)
+            {
+                Core.Network.UpdateLog("Transfer", "Search Results error " + ex.Message);
+            }
+        }
+
+        void Search_Done(DhtSearch search)
         {
             OpTransfer transfer = search.Carry as OpTransfer;
 
@@ -546,24 +565,6 @@ namespace RiseOp.Services.Transfer
                 return;
 
             transfer.Searching = false;
-
-            foreach (SearchValue found in search.FoundValues)
-            {
-                try
-                {
-                    LocationData location = LocationData.Decode(found.Value);
-                    // dont core.indexkey because key not sent in light location
-
-                    Network.LightComm.Update(location); // primes all loc's addresses
-
-                    transfer.AddPeer(location.Source);
-                }
-                catch (Exception ex)
-                {
-                    Core.Network.UpdateLog("Transfer", "Search Results error " + ex.Message);
-                }
-            }
-            
         }
 
         internal void StartUpload()

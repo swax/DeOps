@@ -60,14 +60,17 @@ namespace RiseOp.Implementation.Dht
             }
             else
             {
-                DhtSearch search = Network.Searches.Start(target, type, 0, 0, null, new EndSearchHandler(EndPublishSearch));
+                DhtSearch search = Network.Searches.Start(target, type, 0, 0, null, null);
 
                 if (search != null)
+                {
+                    search.DoneEvent = Search_DonePublish;
                     search.Carry = store;
+                }
             }
         }
 
-        void EndPublishSearch(DhtSearch search)
+        void Search_DonePublish(DhtSearch search)
         {
             DataReq publish = (DataReq)search.Carry;
 
@@ -162,8 +165,7 @@ namespace RiseOp.Implementation.Dht
                     }
 
             // pass to components
-            DataReq data = new DataReq(new List<DhtAddress>(), store.Key, store.Service, store.DataType, store.Data);
-            data.Sources.Add( packet.Source);
+            DataReq data = new DataReq(packet.Source, store.Key, store.Service, store.DataType, store.Data);
 
             if (packet.ReceivedTcp && packet.Tcp.Proxy == ProxyType.Server)
                 data.LocalProxy = new DhtClient(packet.Tcp);
@@ -260,7 +262,7 @@ namespace RiseOp.Implementation.Dht
 
     internal class DataReq
     {
-        internal List<DhtAddress> Sources;
+        internal DhtAddress Source;
         internal DhtClient LocalProxy;
 
         internal ulong  Target;
@@ -268,9 +270,9 @@ namespace RiseOp.Implementation.Dht
         internal uint DataType;
         internal byte[] Data;
 
-        internal DataReq(List<DhtAddress> sources, ulong target, uint service, uint datatype, byte[] data)
+        internal DataReq(DhtAddress source, ulong target, uint service, uint datatype, byte[] data)
         {
-            Sources   = sources;
+            Source    = source;
             Target    = target;
             Service   = service;
             DataType  = datatype;

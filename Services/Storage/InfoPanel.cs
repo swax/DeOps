@@ -15,7 +15,7 @@ using RiseOp.Interface;
 
 namespace RiseOp.Services.Storage
 {
-    internal partial class InfoPanel : UserControl
+    public partial class InfoPanel : UserControl
     {
         internal StorageView ParentView;
         internal StorageService Storages;
@@ -348,7 +348,7 @@ namespace RiseOp.Services.Storage
         StringBuilder ResetLine = new StringBuilder(20 * 2 * 60); // 10 history , 10 changes
 
 
-        internal InfoPanel()
+        public InfoPanel()
         {
             InitializeComponent();
         }

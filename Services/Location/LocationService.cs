@@ -278,18 +278,15 @@ namespace RiseOp.Services.Location
             location.Source.Firewall = Core.Context.Lookup.Firewall;
 
 
-            // location packet is encrypted inside global loc packet
-            // this embedded has OP TTL, while wrapper (CryptLoc) has global TTL
+            // location packet is encrypted and published on lookup network at op id dht position
 
-            byte[] data = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, location);
+            byte[] data =location.EncodeLight(Network.Protocol);
 
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
                 data = Utilities.EncryptBytes(data, Network.OpCrypt.Key);
 
-            data = new CryptLoc(LocationData.GLOBAL_TTL, data).Encode(Network.Protocol);
-
-            LookupService service = Core.Context.Lookup.GetService(Services.ServiceIDs.Global) as LookupService;
-            service.Publish(Network.OpID, data);
+            LookupService service = Core.Context.Lookup.GetService(Services.ServiceIDs.Lookup) as LookupService;
+            service.LookupCache.Publish(Network.OpID, data);
         }
 
         internal void UpdateLocation()
@@ -314,20 +311,17 @@ namespace RiseOp.Services.Location
         {
             byte[] parameters = BitConverter.GetBytes(version);
 
-            DhtSearch search = Network.Searches.Start(id, "Location", ServiceID, 0, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Network.Searches.Start(id, "Location", ServiceID, 0, parameters, Search_Found);
 
             if (search != null)
                 search.TargetResults = 2;
         }
 
-        internal void EndSearch(DhtSearch search)
+        void Search_Found(DhtSearch search, DhtAddress source, byte[] data)
         {
-            foreach (SearchValue found in search.FoundValues)
-            {
-                DataReq store = new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value);
+            DataReq store = new DataReq(source, search.TargetID, ServiceID, 0, data);
 
-                Store_Local(store);
-            }
+            Store_Local(store);
         }
 
         void Search_Local(ulong key, byte[] parameters, List<byte[]> results)
@@ -363,6 +357,8 @@ namespace RiseOp.Services.Location
 
                     if (Utilities.CheckSignedData(location.Key, signed.Data, signed.Signature))
                         Process_LocationData(store, signed, location);
+                    else
+                        Debug.Assert(false);
                 }
         }
 
@@ -385,9 +381,8 @@ namespace RiseOp.Services.Location
 
                 else if (location.Version < client.Data.Version)
                 {
-                    if (data != null && data.Sources != null)
-                        foreach (DhtAddress source in data.Sources)
-                            Network.Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, client.Data.UserID, ServiceID, 0, client.SignedData));
+                    if (data != null && data.Source != null)
+                        Network.Store.Send_StoreReq(data.Source, data.LocalProxy, new DataReq(null, client.Data.UserID, ServiceID, 0, client.SignedData));
 
                     return;
                 }
@@ -426,16 +421,7 @@ namespace RiseOp.Services.Location
                 LocalClient = client;
 
 
-            // if open and not global, add to routing
-            if (location.Source.Firewall == FirewallType.Open)
-                Network.Routing.Add(new DhtContact(location.Source, location.IP));
-
-            // add global proxies (they would only be included in location packet if source was not directly connected to OP
-            // even if open add the GP because pinging them will let host know of an open node on the network to connect to
-            foreach(DhtAddress server in location.TunnelServers)
-                Network.Routing.Add(new DhtContact(location.Source, location.IP, location.TunnelClient, server));
-
-            Network.LightComm.Update(location);
+            AddRoutingData(location);
 
             // only get down here if loc was new version in first place (recently published)
             // with live comm trickle down this prevents highers from being direct ping flooded to find their
@@ -443,6 +429,21 @@ namespace RiseOp.Services.Location
             client.LastSeen = Core.TimeNow;
 
             SignalUpdate(client, true);
+        }
+
+        internal void AddRoutingData(LocationData location) // a light loc can also be used here
+        {
+            // if open and not global, add to routing
+            if (location.Source.Firewall == FirewallType.Open)
+                Network.Routing.Add(new DhtContact(location.Source, location.IP));
+
+            // add global proxies (they would only be included in location packet if source was not directly connected to OP
+            // even if open add the GP because pinging them will let host know of an open node on the network to connect to
+            foreach (DhtAddress server in location.TunnelServers)
+                Network.Routing.Add(new DhtContact(location.Source, location.IP, location.TunnelClient, server));
+
+            Network.LightComm.Update(location);
+
         }
 
         internal LocationData GetLocalLocation()

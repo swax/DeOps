@@ -178,7 +178,7 @@ namespace RiseOp.Interface.TLVex
 		[
 		Browsable(false)
 		]
-		public SelectedTreeListNodeCollection SelectedNodes
+        public List<TreeListNode> SelectedNodes
 		{
 			get { return GetSelectedNodes(virtualParent); }
 		}
@@ -1262,11 +1262,12 @@ namespace RiseOp.Interface.TLVex
 							{
 								Control c = node.SubItems[j].ItemControl;
 
-                                c.Show();
+                                c.Visible = true;
                                 c.Location = new Point(r.Left + last - hscrollBar.Value, r.Top + (itemheight * totalRend) + headerBuffer + 2 + ControlPadding);
-								c.ClientSize = new Size(iColPlus1Width /* BMS 2003-05-24 columns[j+1].Width */-2, itemheight - (ControlPadding*2));
-								c.Parent = this;
-							}						
+								c.Size = new Size(iColPlus1Width /* BMS 2003-05-24 columns[j+1].Width */- 2, itemheight - (ControlPadding * 2));
+
+                                c.Parent = this;
+                            }						
 							else
 							{
 								string sp = "";
@@ -1416,10 +1417,10 @@ namespace RiseOp.Interface.TLVex
 
             return NodeInNodeRow(args);
 		}
-		
-		private SelectedTreeListNodeCollection GetSelectedNodes(TreeListNode node)
+
+        private List<TreeListNode> GetSelectedNodes(TreeListNode node)
 		{
-			SelectedTreeListNodeCollection list = new SelectedTreeListNodeCollection();
+            List<TreeListNode> list = new List<TreeListNode>();
 
 			for (int i=0; i<node.Nodes.Count; i++)
 			{
@@ -1433,7 +1434,7 @@ namespace RiseOp.Interface.TLVex
 				// selected children
 				if (node.Nodes[i].IsExpanded)
 				{
-					SelectedTreeListNodeCollection list2 = GetSelectedNodes(node.Nodes[i]);
+                    List<TreeListNode> list2 = GetSelectedNodes(node.Nodes[i]);
 					for (int j=0; j<list2.Count; j++)
 					{
 						list.Add(list2[j]);
@@ -1497,8 +1498,8 @@ namespace RiseOp.Interface.TLVex
 		private Font font;
 		// private Font nodeFont;
 		private Color forecolor = SystemColors.WindowText;
-		private int imageindex = 0;
-		private int stateimageindex = 0;
+		private int imageindex = -1;
+		private int stateimageindex = -1;
 		private int index = 0;
 		// private TreeListView treelistview = null;
 		// private ContainerListView containerlistview = null;
@@ -2419,55 +2420,6 @@ namespace RiseOp.Interface.TLVex
 #endregion
 
     }
-
-	public class SelectedTreeListNodeCollection: CollectionBase
-	{
-		#region Interface Implementations
-		public TreeListNode this[int index]
-		{
-			get { return List[index] as TreeListNode; }
-			set
-			{
-				List[index] = value;
-			}
-		}
-		
-		public int this[TreeListNode item]
-		{
-			get { return List.IndexOf(item); }
-		}
-		public int Add(TreeListNode item)
-		{
-			return item.Index = List.Add(item);
-		}
-
-		public void AddRange(TreeListNode[] items)
-		{
-			lock(List.SyncRoot)
-			{
-				for (int i=0; i<items.Length; i++)
-				{
-					items[i].Index = List.Add(items[i]);
-				}
-			}
-		}
-
-		public void Remove(TreeListNode item)
-		{
-			List.Remove(item);
-		}
-
-		public new void Clear()
-		{
-			List.Clear();
-		}
-
-		public int IndexOf(TreeListNode item)
-		{
-			return List.IndexOf(item);
-		}
-		#endregion
-	}
 
 	#endregion
 

@@ -52,7 +52,7 @@
             this.TextConfirm.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.TextConfirm.Location = new System.Drawing.Point(15, 146);
             this.TextConfirm.Name = "TextConfirm";
-            this.TextConfirm.PasswordChar = '•';
+            this.TextConfirm.UseSystemPasswordChar = true;
             this.TextConfirm.Size = new System.Drawing.Size(229, 20);
             this.TextConfirm.TabIndex = 2;
             // 
@@ -63,7 +63,7 @@
             this.TextPassword.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.TextPassword.Location = new System.Drawing.Point(15, 97);
             this.TextPassword.Name = "TextPassword";
-            this.TextPassword.PasswordChar = '•';
+            this.TextPassword.UseSystemPasswordChar = true;
             this.TextPassword.Size = new System.Drawing.Size(229, 20);
             this.TextPassword.TabIndex = 1;
             // 

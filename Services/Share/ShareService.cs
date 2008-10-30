@@ -59,6 +59,7 @@ namespace RiseOp.Services.Share
         bool KillThreads;        
 
         string SharePath;
+        string HeaderPath;
         string DownloadPath;
         string PublicPath;
 
@@ -72,6 +73,8 @@ namespace RiseOp.Services.Share
 
         TempCache TempLocation;
 
+        internal bool RunSave;
+
 
         internal ShareService(OpCore core)
         {
@@ -84,6 +87,8 @@ namespace RiseOp.Services.Share
 
             SharePath = rootPath + DataTypeShare.ToString() + Path.DirectorySeparatorChar;
             Directory.CreateDirectory(SharePath);
+
+            HeaderPath = SharePath + Utilities.CryptFilename(Core, "ShareHeaders");
 
             PublicPath = rootPath + DataTypePublic.ToString() + Path.DirectorySeparatorChar;
             Directory.CreateDirectory(PublicPath);
@@ -174,7 +179,7 @@ namespace RiseOp.Services.Share
 
        internal void SaveHeaders()
         {
-            // save public shared
+            // save public shared lists
             try
             {
                 Local.Key = Utilities.GenerateKey(Core.StrongRndGen, 256);
@@ -238,8 +243,7 @@ namespace RiseOp.Services.Share
                     crypto.FlushFinalBlock();
                 }
 
-                string finalPath = SharePath + Utilities.CryptFilename(Core, "ShareHeaders");
-                File.Copy(tempPath, finalPath, true);
+                File.Copy(tempPath, HeaderPath, true);
                 File.Delete(tempPath);
             }
             catch (Exception ex)
@@ -250,16 +254,18 @@ namespace RiseOp.Services.Share
 
         private void LoadHeaders()
         {
-            //crit - check for unused files and delete
+            List<string> goodPaths = new List<string>();
+            
+            // load shared file lists
 
             try
             {
-                string path = SharePath + Utilities.CryptFilename(Core, "ShareHeaders");
+                goodPaths.Add(HeaderPath);
 
-                if (!File.Exists(path))
+                if (!File.Exists(HeaderPath))
                     return;
 
-                using (IVCryptoStream crypto = IVCryptoStream.Load(path, Core.User.Settings.FileKey))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(HeaderPath, Core.User.Settings.FileKey))
                 {
                     PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
@@ -308,6 +314,12 @@ namespace RiseOp.Services.Share
                                 ProcessFileShare(share);*/
                         }
                 }
+
+                // clears most of files in direcotry, others shared public lists are not persisted between runs
+                foreach (string testPath in Directory.GetFiles(SharePath))
+                    if (!goodPaths.Contains(testPath))
+                        try { File.Delete(testPath); }
+                        catch { }
             }
             catch (Exception ex)
             {
@@ -317,6 +329,12 @@ namespace RiseOp.Services.Share
 
         void Core_SecondTimer()
         {
+            if (RunSave)
+            {
+                SaveHeaders();
+                RunSave = false;
+            }
+
             // interface has its own timer that updates automatically
             // done because transfers isnt multi-threaded
 
@@ -490,13 +508,10 @@ namespace RiseOp.Services.Share
                     file.FileStatus = "Secured";
 
                     // run in core thread -> save, send request to user
-                    Core.RunInCoreAsync(() =>
-                    {
-                        SaveHeaders();
+                    if (file.Processed != null)
+                        Core.RunInCoreAsync(() => file.Processed.First.Invoke(file, file.Processed.Second));
 
-                        if( file.Processed != null)
-                            file.Processed.First.Invoke(file, file.Processed.Second);
-                    });
+                    RunSave = true;
                 }
                 catch (Exception ex)
                 {
@@ -852,11 +867,8 @@ namespace RiseOp.Services.Share
                 Core.RunInGuiThread(GuiCollectionUpdate, Core.UserID);
             }
 
-
             Core.RunInCoreAsync(() =>
             {
-                SaveHeaders();
-
                 if (file.Sources.Count > 0)
                 {
                     OpTransfer transfer = StartTransfer(file.Sources[0], file);
@@ -864,8 +876,10 @@ namespace RiseOp.Services.Share
                     file.Sources.ForEach(s => transfer.AddPeer(s));
                 }
 
-                TempLocation.Search(file.FileID, file, new EndSearchHandler(EndLocationSearch));
+                TempLocation.Search(file.FileID, file, Search_FoundLocation);
             });
+
+            RunSave = true;
 
             file.FileStatus = "Incomplete";
 
@@ -934,7 +948,7 @@ namespace RiseOp.Services.Share
 
                     Process.Start(finalpath);
 
-                    Core.RunInCoreAsync(() => SaveHeaders());
+                    RunSave = true;
                 }
                 catch (Exception ex)
                 {
@@ -969,15 +983,14 @@ namespace RiseOp.Services.Share
                 if (OpenQueue.Contains(file))
                     OpenQueue.Remove(file);
 
+            RunSave = true;
+
             Core.RunInGuiThread(GuiFileUpdate, file);
         }
 
-        void EndLocationSearch(DhtSearch search)
+        void Search_FoundLocation(byte[] data, object arg)
         {
-            if (search.FoundValues.Count == 0)
-                return;
-
-            SharedFile file = search.Carry as SharedFile;
+            SharedFile file = arg as SharedFile;
 
             if (file.Completed)
                 return;
@@ -985,17 +998,14 @@ namespace RiseOp.Services.Share
             OpTransfer transfer = null;
 
             // add locations to running transfer
-            foreach (byte[] result in search.FoundValues.Select(v => v.Value))
-            {
-                LocationData loc = LocationData.Decode(result);
-                DhtClient client = new DhtClient(loc.UserID, loc.Source.ClientID);
+            LocationData loc = LocationData.Decode(data);
+            DhtClient client = new DhtClient(loc.UserID, loc.Source.ClientID);
 
-                if (transfer == null)
-                    transfer = StartTransfer(client, file);
+            if (transfer == null)
+                transfer = StartTransfer(client, file);
 
-                Core.Network.LightComm.Update(loc);
-                transfer.AddPeer(client);
-            }
+            Core.Network.LightComm.Update(loc);
+            transfer.AddPeer(client);
         }
     }
 

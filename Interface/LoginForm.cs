@@ -86,9 +86,10 @@ namespace RiseOp.Interface
 
             if (select != null)
                 OpCombo.SelectedItem = select;
-
-            else if(OpCombo.Items.Count > 0)
+            else if (OpCombo.Items.Count > 0)
                 OpCombo.SelectedIndex = 0;
+            else
+                CreateGlobalLink.Visible = true;
 
             OpCombo.Items.Add("Browse...");
 
@@ -356,6 +357,15 @@ namespace RiseOp.Interface
 
             else
                 new LicenseForm(Context.License).ShowDialog(this);
+        }
+
+        private void CreateGlobalLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            CreateUser form = new CreateUser(Context, "Global IM", AccessType.Secret);
+            form.GlobalIM = true;
+
+            if (form.ShowDialog(this) == DialogResult.OK)
+                Close();
         }
     }
 

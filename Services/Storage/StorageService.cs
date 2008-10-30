@@ -41,6 +41,8 @@ namespace RiseOp.Services.Storage
         internal TrustService Trust;
 
         bool Loading = true;
+        List<string> ReferencedPaths = new List<string>();
+
         internal string DataPath;
         internal string WorkingPath;
         internal string ResourcePath;
@@ -127,6 +129,12 @@ namespace RiseOp.Services.Storage
                 Working[project].AutoIntegrate(doSave);
             }
 
+            foreach (string testPath in Directory.GetFiles(DataPath))
+                if (!ReferencedPaths.Contains(testPath))
+                    try { File.Delete(testPath); }
+                    catch { }
+
+            ReferencedPaths.Clear();
             Loading = false;
         }
        
@@ -503,25 +511,6 @@ namespace RiseOp.Services.Storage
                     if (Network.Routing.InCacheArea(storage.UserID))
                         LoadHeaderFile(GetFilePath(storage), storage, true, false);
             });
-
-
-            // delete loose files not in map - do here because now files in cache range are marked as reffed
-            foreach (string filepath in Directory.GetFiles(DataPath))
-            {
-                byte[] hash = Utilities.FromBase64String(Path.GetFileName(filepath));
-
-                if (hash == null)
-                {
-                    File.Delete(filepath);
-                    continue;
-                }
-
-                ICryptoTransform transform = FileCrypt.CreateDecryptor(); //crit moved outside?
-                byte[] id = transform.TransformFinalBlock(hash, 0, hash.Length);
-
-                if (!FileMap.SafeContainsKey(BitConverter.ToUInt64(id, 0)))
-                    File.Delete(filepath);
-            }
         }
 
         internal void Research(ulong key)
@@ -624,7 +613,11 @@ namespace RiseOp.Services.Storage
                                 continue;
                             }
 
-                            file.Downloaded = File.Exists(GetFilePath(packet.HashID));
+                            string filepath = GetFilePath(packet.HashID);
+                            file.Downloaded = File.Exists(filepath);
+
+                            if (Loading && file.Downloaded && !ReferencedPaths.Contains(filepath))
+                                ReferencedPaths.Add(filepath);
 
                             if (!file.Downloaded)
                             {

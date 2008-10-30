@@ -84,12 +84,8 @@ namespace RiseOp.Interface.Tools
             ListResults.Items.Clear();
             LabelResults.Text = "";
 
-            Network.Searches.Start(TargetID, "MANUAL", Network.Core.DhtServiceID, 0, null, new RiseOp.Implementation.Dht.EndSearchHandler(EndManualSearch));
-        }
-
-        void EndManualSearch(DhtSearch search)
-        {
-            BeginInvoke(OnUpdateList, search);          
+            DhtSearch search = Network.Searches.Start(TargetID, "MANUAL", Network.Core.DhtServiceID, 0, null, null);
+            search.DoneEvent = (s) => BeginInvoke(OnUpdateList, s);
         }
 
         void UpdateList(DhtSearch search)

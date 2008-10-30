@@ -629,9 +629,8 @@ namespace RiseOp.Services.Board
                 // lower version, send update
                 if (header.Version < current.Header.Version)
                 {
-                    if (data != null && data.Sources != null)
-                        foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, header.TargetID, ServiceID, 0, current.SignedHeader));
+                    if (data != null && data.Source != null)
+                        Store.Send_StoreReq(data.Source, data.LocalProxy, new DataReq(null, header.TargetID, ServiceID, 0, current.SignedHeader));
 
                     return;
                 }
@@ -912,7 +911,7 @@ namespace RiseOp.Services.Board
             BitConverter.GetBytes(project).CopyTo(parameters, 1);
             BitConverter.GetBytes(parent).CopyTo(parameters, 5);
 
-            DhtSearch search = Network.Searches.Start(target, "Board:Thread", ServiceID, 0, parameters, new EndSearchHandler(EndThreadSearch));
+            DhtSearch search = Network.Searches.Start(target, "Board:Thread", ServiceID, 0, parameters, Search_FoundThread);
 
             if (search == null)
                 return;
@@ -920,44 +919,41 @@ namespace RiseOp.Services.Board
             search.TargetResults = 50;
         }
 
-        void EndThreadSearch(DhtSearch search)
+        void Search_FoundThread(DhtSearch search, DhtAddress source, byte[] data)
         {
-            foreach (SearchValue found in search.FoundValues)
+            if (data.Length < TheadSearch_ResultsSize)
+                return;
+
+            PostUID uid = PostUID.FromBytes(data, 0);
+            ushort version = BitConverter.ToUInt16(data, 16);
+            ushort replies = BitConverter.ToUInt16(data, 18);
+
+            OpPost post = GetPost(search.TargetID, uid);
+
+            if (post != null)
             {
-                if (found.Value.Length < TheadSearch_ResultsSize)
-                    continue;
-
-                PostUID uid = PostUID.FromBytes(found.Value, 0);
-                ushort version = BitConverter.ToUInt16(found.Value, 16);
-                ushort replies = BitConverter.ToUInt16(found.Value, 18);
-
-                OpPost post = GetPost(search.TargetID, uid);
-
-                if (post != null)
+                if (post.Replies < replies)
                 {
-                    if (post.Replies < replies)
-                    {
-                        post.Replies = replies;
-                        UpdateGui(post);
-                    }
-
-                    // if we have current version, pass, else download
-                    if(post.Header.Version >= version)
-                        continue;
+                    post.Replies = replies;
+                    UpdateGui(post);
                 }
 
-                PostSearch(search.TargetID, uid, version);
+                // if we have current version, pass, else download
+                if (post.Header.Version >= version)
+                    return;
+            }
 
-                // if parent save replies value
-                if (replies != 0)
-                {
-                    int hash = search.TargetID.GetHashCode() ^ uid.GetHashCode();
+            PostSearch(search.TargetID, uid, version);
 
-                    ushort savedReplies = 0;
-                    if (SavedReplyCount.SafeTryGetValue(hash, out savedReplies))
-                        if (savedReplies < replies)
-                            SavedReplyCount.SafeAdd(hash, replies);
-                }
+            // if parent save replies value
+            if (replies != 0)
+            {
+                int hash = search.TargetID.GetHashCode() ^ uid.GetHashCode();
+
+                ushort savedReplies = 0;
+                if (SavedReplyCount.SafeTryGetValue(hash, out savedReplies))
+                    if (savedReplies < replies)
+                        SavedReplyCount.SafeAdd(hash, replies);
             }
         }
 
@@ -978,7 +974,7 @@ namespace RiseOp.Services.Board
             BitConverter.GetBytes(project).CopyTo(parameters, 1);
             BitConverter.GetBytes(time.ToBinary()).CopyTo(parameters, 5);
 
-            DhtSearch search = Network.Searches.Start(target, "Board:Time", ServiceID, 0, parameters, new EndSearchHandler(EndTimeSearch));
+            DhtSearch search = Network.Searches.Start(target, "Board:Time", ServiceID, 0, parameters, Search_FoundTime);
 
             if (search == null)
                 return;
@@ -986,26 +982,23 @@ namespace RiseOp.Services.Board
             search.TargetResults = 50;
         }
 
-        void EndTimeSearch(DhtSearch search)
+        void Search_FoundTime(DhtSearch search, DhtAddress source, byte[] data)
         {
             OpBoard board = GetBoard(search.TargetID);
-            
-            foreach (SearchValue found in search.FoundValues)
-            {
-                if (found.Value.Length < TheadSearch_ResultsSize)
-                    continue;
 
-                PostUID uid = PostUID.FromBytes(found.Value, 0);
-                ushort version = BitConverter.ToUInt16(found.Value, 16);
+            if (data.Length < TheadSearch_ResultsSize)
+                return;
 
-                OpPost post = GetPost(search.TargetID, uid);
+            PostUID uid = PostUID.FromBytes(data, 0);
+            ushort version = BitConverter.ToUInt16(data, 16);
 
-                if (post != null)
-                    if (post.Header.Version >= version)
-                        continue;
+            OpPost post = GetPost(search.TargetID, uid);
 
-                PostSearch(search.TargetID, uid, version);
-            }
+            if (post != null)
+                if (post.Header.Version >= version)
+                    return;
+
+            PostSearch(search.TargetID, uid, version);
         }
 
         const int PostSearch_ParamsSize = 19;   // type/uid/version  1 + 16 + 2
@@ -1023,7 +1016,7 @@ namespace RiseOp.Services.Board
             uid.ToBytes().CopyTo(parameters, 1);
             BitConverter.GetBytes(version).CopyTo(parameters, 17);
 
-            DhtSearch search = Core.Network.Searches.Start(target, "Board:Post", ServiceID, 0, parameters, new EndSearchHandler(EndPostSearch));
+            DhtSearch search = Core.Network.Searches.Start(target, "Board:Post", ServiceID, 0, parameters, Search_FoundPost);
 
             if (search == null)
                 return;
@@ -1031,10 +1024,9 @@ namespace RiseOp.Services.Board
             search.TargetResults = 2;
         }
 
-        void EndPostSearch(DhtSearch search)
+        void Search_FoundPost(DhtSearch search, DhtAddress source, byte[] data)
         {
-            foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
+            Store_Local(new DataReq(source, search.TargetID, ServiceID, 0, data));
         }
 
         void Search_Local(ulong key, byte[] parameters, List<byte[]> results)

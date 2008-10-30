@@ -1,21 +1,8 @@
 ﻿
-password strengthened, salt added, invites as well
-invites implemented
-
-5/28/08	-   global proxying implementation fully working
-5/26/08 -	routing responsive status revised
-			small scale networks debugged
-5/22/08 -	revised contact/source/address from static byte encoded to packet (supports ipv6 and global proxy)
-5/20/08 -	packet reading all static
-			rudp control moved into network
-			ids on global network diff from those on operation
-5/16/08 -	debugged 1 on 1 open -> nat establishes global/operation network
-5/15/08 -	Net/Comm packets send client id
-			tcp reonnecting
-5/10/08 -	Add addresses - figure fast lookup in RudpReceive - done/test
-			prune addressList to 6 entries
-			disabled rudp logging
-5/9/08 -	fixed rudp open -> nat
-			nat <-> nat working
-			hole punching working
-5/8/08 -	added quick internet connection detection using pings to bootstrap
+1.0.2
+	new icon created supports all res
+	Fixed common hashing
+	Fixed user prefix encryption
+	Light Loc used on lookup network
+	Search results now returned immediately
+	un-reffed files in versioned cache and storage removed

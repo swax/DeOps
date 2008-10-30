@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Data;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Collections.Specialized;
@@ -277,6 +278,8 @@ namespace RiseOp.Services.Storage
 
             FolderTreeView.Nodes.Clear();
             FileListView.Items.Clear();
+
+            FolderTreeView.Nodes.Add(new TreeListNode());
 
             // if local
             if (IsLocal)
@@ -2589,7 +2592,8 @@ namespace RiseOp.Services.Storage
                 paths = new string[FolderTreeView.SelectedNodes.Count];
 
                 int i = 0;
-                foreach (FolderNode node in FolderTreeView.SelectedNodes)
+
+                foreach (FolderNode node in FolderTreeView.SelectedNodes.OfType <FolderNode>())
                 {
                     paths[i] = Storages.GetRootPath(UserID, ProjectID) + node.GetPath();
                     i++;

@@ -357,7 +357,8 @@ namespace RiseOp.Implementation
                 // networks
                 Network.SecondTimer();
 
-                SecondTimerEvent.Invoke();
+                if (SecondTimerEvent != null)
+                    SecondTimerEvent.Invoke();
 
                 // service bandwidth
                 foreach (BandwidthLog buffer in ServiceBandwidth.Values)
@@ -378,7 +379,9 @@ namespace RiseOp.Implementation
                 if (MinuteCounter == 60)
                 {
                     MinuteCounter = 0;
-                    MinuteTimerEvent.Invoke();
+                    
+                    if(MinuteTimerEvent != null)
+                        MinuteTimerEvent.Invoke();
 
                     // prune keys from keymap - dont remove focused, remove furthest first
                     if(KeyMap.Count > KeyMax)
@@ -754,7 +757,7 @@ namespace RiseOp.Implementation
             foreach (OpService service in ServiceMap.Values)
                 service.Dispose();
 
-
+            Network.UPnPControl.Shutdown();
             Network.RudpControl.Shutdown();
             Network.UdpControl.Shutdown();
             Network.LanControl.Shutdown();

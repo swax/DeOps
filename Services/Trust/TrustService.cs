@@ -542,8 +542,8 @@ namespace RiseOp.Services.Trust
                     trust.PingUser = false;
                 }
 
-                var shouldFocus = new Action<OpLink>(link => link.Trust.InLocalLinkTree = true);
-                var shouldPing = new Action<OpLink>(link => link.Trust.PingUser = true);
+                Action<OpLink> shouldFocus = link => link.Trust.InLocalLinkTree = true;
+                Action<OpLink> shouldPing = link => link.Trust.PingUser = true;
 
                 // TraverseDown 2 from self for each project
                 foreach (OpLink link in LocalTrust.Links.Values)
@@ -564,27 +564,12 @@ namespace RiseOp.Services.Trust
                         if (uplink != null)
                             DoToBranch(shouldFocus, uplink, 1);
 
+                        // only ping (know if online) one higher from self, so top isnt overwhelmed with pings
                         if(first)
                             DoToBranch(shouldPing, uplink, 1);
 
                         first = false;
                     }
-
-
-                    // TraverseDown 2 from Roots
-                    // dont keep focused on every untrusted node, will overwhelm us
-                    // other processes will keep right about of contacts and delete furthest
-                    /*List<OpLink> roots = null;
-                    if (ProjectRoots.SafeTryGetValue(project, out roots))
-                        foreach (OpLink root in roots)
-                        {
-                            // structure known if node found with no uplinks, and a number of downlinks
-                            if (project == 0 && root.Trust.Loaded && root.Uplink == null)
-                                if (root.Downlinks.Count > 0 && TrustMap.Count > 8)
-                                    StructureKnown = true;
-
-                            MarkBranchLinked(root, 2);
-                        }*/
                 }
 
                 if(Network.Responsive)

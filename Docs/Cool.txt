@@ -1,4 +1,22 @@
 ﻿
+The Point
+A secure, fully decentralized Instant Messenger that supports chat rooms and file sharing
+
+Allows spontaneous creation of public and private networks for group collaboration
+
+Collaborative file system that automatically synchronizes and keeps a history of changes
+
+No server required, no complicated setup, works over the internet or a private LAN
+
+Keep your files local, syncronized, and secure, let RiseOp run from your home, work and mobile computers
+
+RiseOp was built for easy mass coordination 10,000+ utilizing simple trust links
+
+Chat, Schedules, the File System, Message Board, etc.. are built to work in a large structured group without
+	overwhelming anyone
+
+
+
 massively scalable hierarchial darknet
 
 uses
@@ -13,3 +31,5 @@ features
 	
 security
 	full link specific encryption
+	
+encrypted file system with versioning

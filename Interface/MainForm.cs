@@ -390,7 +390,7 @@ namespace RiseOp.Interface
 
             settings.DropDownItems.Add(new ManageItem("User", null, () => new RiseOp.Interface.Settings.User(Core).ShowDialog()));
             
-            if(!Core.Network.IsLookup)
+            if(!Core.User.Settings.GlobalIM)
                 settings.DropDownItems.Add(new ManageItem("Operation", null, () => new RiseOp.Interface.Settings.Operation(Core).ShowDialog()));
             
             settings.DropDownItems.Add(new ManageItem("Connecting", null, () => new RiseOp.Interface.Settings.Connecting(Core).ShowDialog()));

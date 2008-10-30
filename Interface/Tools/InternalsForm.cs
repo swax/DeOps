@@ -506,26 +506,24 @@ namespace RiseOp.Interface.Tools
             if (Core.Context.Lookup == null)
                 return;
 
-            LookupService globalLocs = Core.Context.Lookup.GetService(ServiceIDs.Global) as LookupService;
+            LookupService globalLocs = Core.Context.Lookup.GetService(ServiceIDs.Lookup) as LookupService;
 
-            globalLocs.LookupIndex.LockReading(delegate()
-            {
-                foreach (ulong opid in globalLocs.LookupIndex.Keys)
-                    foreach (CryptLoc loc in globalLocs.LookupIndex[opid])
+
+                foreach (TempData temp in globalLocs.LookupCache.CachedData)
+                {
+                    SignedData signed = SignedData.Decode(temp.Data);
+
+                    if (signed != null)
                     {
-                        SignedData signed = SignedData.Decode(loc.Data);
+                        LocationData data = LocationData.Decode(signed.Data);
 
-                        if (signed != null)
-                        {
-                            LocationData data = LocationData.Decode(signed.Data);
+                        ClientInfo info = new ClientInfo();
+                        info.Data = data;
 
-                            ClientInfo info = new ClientInfo();
-                            info.Data = data;
-
-                            DisplayLoc(opid, info);
-                        }
+                        DisplayLoc(temp.TargetID, info);
                     }
-            });
+                }
+ 
         }
 
         internal void ShowLocOperation(object pass)

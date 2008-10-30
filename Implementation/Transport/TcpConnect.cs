@@ -237,18 +237,14 @@ namespace RiseOp.Implementation.Transport
 
         private void CreateEncryptor()
         {
-            lock (Network.AugmentedCrypt)
-            {
-                Network.AugmentedCrypt.GenerateIV();
-                Network.AugmentedCrypt.Padding = PaddingMode.None;
+            RijndaelManaged crypt = new RijndaelManaged();
+            crypt.Key = Network.GetAugmentedKey(UserID);
+            crypt.Padding = PaddingMode.None;
 
-                Network.SetAugmentedKey(UserID);
-      
-                Encryptor = Network.AugmentedCrypt.CreateEncryptor();
+            Encryptor = crypt.CreateEncryptor();
 
-                Network.AugmentedCrypt.IV.CopyTo(FinalSendBuffer, 0);
-                FinalSendBuffSize = Network.AugmentedCrypt.IV.Length;
-            }
+            crypt.IV.CopyTo(FinalSendBuffer, 0);
+            FinalSendBuffSize = crypt.IV.Length;
         }
 
 		internal void SetConnected()
@@ -506,21 +502,18 @@ namespace RiseOp.Implementation.Transport
                 //create decryptor
                 if (Decryptor == null)
                 {
-                    int ivlen = Network.AugmentedCrypt.IV.Length;
+                    int ivlen = 16;
 
                     if (RecvBuffSize < ivlen)
                         return;
 
-                    lock (Network.AugmentedCrypt)
-                    {
-                        Network.AugmentedCrypt.IV = Utilities.ExtractBytes(RecvBuffer, 0, ivlen);
-                        Network.AugmentedCrypt.Padding = PaddingMode.None;
+                    RijndaelManaged crypt = new RijndaelManaged();
+                    crypt.Key = Network.LocalAugmentedKey;
+                    crypt.IV = Utilities.ExtractBytes(RecvBuffer, 0, ivlen);
+                    crypt.Padding = PaddingMode.None;
 
-                        Network.SetAugmentedKey(Network.Local.UserID);
-
-                        Decryptor = Network.AugmentedCrypt.CreateDecryptor();
-                    }
-
+                    Decryptor = crypt.CreateDecryptor();
+                
                     RecvBuffSize -= ivlen;
 
                     if (RecvBuffSize == 0)

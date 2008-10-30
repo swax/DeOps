@@ -98,20 +98,25 @@ namespace RiseOp.Services.Update
             {
                 UpdateInfo info = new UpdateInfo();
 
-                info.Name = "RiseOp_1.0.1.exe";
-                info.DottedVersion = "1.0.1";
+                info.Name = "RiseOp_1.0.2.exe";
+                info.DottedVersion = "1.0.2";
 
                 // want to prevent infinite update loop, ensure the seq verison in the intaller, and the
                 // signed seq version in the update are equal
                 info.SequentialVersion = Core.Context.LocalSeqVersion;
 
-                info.Notes = "Release Version!!";
+                info.Notes = @"new icon created supports all res
+Fixed common hashing
+Fixed user prefix encryption
+Light Loc used on lookup network
+Search results now returned immediately
+un-reffed files in versioned cache and storage removed";
 
                 RijndaelManaged crypt = new RijndaelManaged();
                 crypt.Key = Utilities.GenerateKey(Core.StrongRndGen, 256);
                 info.Key = crypt.Key;
 
-                string source = Application.StartupPath + Path.DirectorySeparatorChar + info.Name;
+                string source = "..\\Protected\\RiseOp.exe";
                 string final = Application.StartupPath + Path.DirectorySeparatorChar + "update.dat";
 
                 string tempPath = Core.GetTempPath();
@@ -123,6 +128,9 @@ namespace RiseOp.Services.Update
                     info.Beginning = new byte[64];
                     stream.Read(info.Beginning, 0, info.Beginning.Length);
                 }
+
+                // test
+                //Utilities.DecryptTagFile(tempPath, "..\\Protected\\check.exe", crypt.Key, null);
 
                 File.Copy(tempPath, final, true);
                 File.Delete(tempPath);
@@ -151,7 +159,7 @@ namespace RiseOp.Services.Update
                 MessageBox.Show(ex.Message);
             }
 
-            
+            Application.Exit();
         }
 #endif
 
@@ -162,7 +170,8 @@ namespace RiseOp.Services.Update
             if (Core.Context.SignedUpdate == null || Core.Context.SignedUpdate.SequentialVersion < version)
             {
                 byte[] parameters = CompactNum.GetBytes(version);
-                Core.Network.Searches.Start(user, "Update Search", ServiceID, 0, parameters, new EndSearchHandler(EndUpdateSearch));
+                
+                Core.Network.Searches.Start(user, "Update Search", ServiceID, 0, parameters, Search_Found);
             }
 
             // else if just need file
@@ -183,35 +192,32 @@ namespace RiseOp.Services.Update
             results.Add(Core.Context.SignedUpdate.Encode(Core.Network.Protocol));
         }
 
-        void EndUpdateSearch(DhtSearch search)
+        void Search_Found(DhtSearch search, DhtAddress source, byte[] data)
         {
-            foreach (SearchValue result in search.FoundValues)
+            G2Header root = new G2Header(data);
+            if (!G2Protocol.ReadPacket(root))
+                return;
+
+            UpdateInfo info = UpdateInfo.Decode(root); // verifies signature
+            if (info == null)
+                return;
+
+            if (Core.Context.SignedUpdate == null || Core.Context.SignedUpdate.SequentialVersion < info.SequentialVersion)
             {
-                G2Header root = new G2Header(result.Value);
-                if (!G2Protocol.ReadPacket(root))
-                    continue;
-
-                UpdateInfo info = UpdateInfo.Decode(root); // verifies signature
-                if (info == null)
-                    continue;
-
-                if (Core.Context.SignedUpdate == null || Core.Context.SignedUpdate.SequentialVersion < info.SequentialVersion)
-                {
-                    Core.Context.SignedUpdate = info;
-                    LookupSettings.WriteUpdateInfo(Core);
-                }
-
-                // version less than what we have
-                else if (Core.Context.SignedUpdate.SequentialVersion > info.SequentialVersion)
-                    continue;
-
-                // version remote has already loaded
-                if (Core.Context.SignedUpdate.Loaded)
-                    continue;
-
-                // same sources will be hit as file download search progresses
-                StartDownload(search.TargetID);
+                Core.Context.SignedUpdate = info;
+                LookupSettings.WriteUpdateInfo(Core);
             }
+
+            // version less than what we have
+            else if (Core.Context.SignedUpdate.SequentialVersion > info.SequentialVersion)
+                return;
+
+            // version remote has already loaded
+            if (Core.Context.SignedUpdate.Loaded)
+                return;
+
+            // same sources will be hit as file download search progresses
+            StartDownload(search.TargetID);
         }
 
         private void StartDownload(ulong target)

@@ -42,8 +42,8 @@ namespace RiseOp.Interface
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.SendFileButton = new System.Windows.Forms.ToolStripButton();
             this.BlockButton = new System.Windows.Forms.ToolStripButton();
-            this.InputBox = new RiseOp.Interface.Views.RichTextBoxEx();
             this.AddBuddyButton = new System.Windows.Forms.ToolStripButton();
+            this.InputBox = new RiseOp.Interface.Views.RichTextBoxEx();
             this.FontToolStrip.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -78,13 +78,13 @@ namespace RiseOp.Interface
             this.toolStripDropDownButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripDropDownButton1.Name = "toolStripDropDownButton1";
             this.toolStripDropDownButton1.Size = new System.Drawing.Size(29, 22);
-            this.toolStripDropDownButton1.Text = "toolStripDropDownButton1";
+            this.toolStripDropDownButton1.Text = "Input Type";
             // 
             // PlainTextButton
             // 
             this.PlainTextButton.Image = ((System.Drawing.Image)(resources.GetObject("PlainTextButton.Image")));
             this.PlainTextButton.Name = "PlainTextButton";
-            this.PlainTextButton.Size = new System.Drawing.Size(132, 22);
+            this.PlainTextButton.Size = new System.Drawing.Size(152, 22);
             this.PlainTextButton.Text = "Plain Text";
             this.PlainTextButton.Click += new System.EventHandler(this.PlainTextButton_Click);
             // 
@@ -92,7 +92,7 @@ namespace RiseOp.Interface
             // 
             this.RichTextButton.Image = ((System.Drawing.Image)(resources.GetObject("RichTextButton.Image")));
             this.RichTextButton.Name = "RichTextButton";
-            this.RichTextButton.Size = new System.Drawing.Size(132, 22);
+            this.RichTextButton.Size = new System.Drawing.Size(152, 22);
             this.RichTextButton.Text = "Rich Text";
             this.RichTextButton.Click += new System.EventHandler(this.RichTextButton_Click_1);
             // 
@@ -183,6 +183,18 @@ namespace RiseOp.Interface
             this.BlockButton.Visible = false;
             this.BlockButton.Click += new System.EventHandler(this.BlockButton_Click);
             // 
+            // AddBuddyButton
+            // 
+            this.AddBuddyButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.AddBuddyButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.AddBuddyButton.Image = ((System.Drawing.Image)(resources.GetObject("AddBuddyButton.Image")));
+            this.AddBuddyButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.AddBuddyButton.Name = "AddBuddyButton";
+            this.AddBuddyButton.Size = new System.Drawing.Size(23, 22);
+            this.AddBuddyButton.ToolTipText = "Add Buddy";
+            this.AddBuddyButton.Visible = false;
+            this.AddBuddyButton.Click += new System.EventHandler(this.AddBuddyButton_Click);
+            // 
             // InputBox
             // 
             this.InputBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
@@ -195,18 +207,6 @@ namespace RiseOp.Interface
             this.InputBox.Text = "";
             this.InputBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.InputBox_KeyDown);
             this.InputBox.SelectionChanged += new System.EventHandler(this.InputBox_SelectionChanged);
-            // 
-            // AddBuddyButton
-            // 
-            this.AddBuddyButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.AddBuddyButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.AddBuddyButton.Image = ((System.Drawing.Image)(resources.GetObject("AddBuddyButton.Image")));
-            this.AddBuddyButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.AddBuddyButton.Name = "AddBuddyButton";
-            this.AddBuddyButton.Size = new System.Drawing.Size(23, 22);
-            this.AddBuddyButton.ToolTipText = "Add Buddy";
-            this.AddBuddyButton.Visible = false;
-            this.AddBuddyButton.Click += new System.EventHandler(this.AddBuddyButton_Click);
             // 
             // TextInput
             // 

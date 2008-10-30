@@ -38,6 +38,7 @@ namespace RiseOp.Services.Assist
 
         byte[] LocalKey;
         string CachePath;
+        string HeaderPath;
 
         internal ThreadedDictionary<ulong, OpVersionedFile> FileMap = new ThreadedDictionary<ulong, OpVersionedFile>();
 
@@ -70,6 +71,9 @@ namespace RiseOp.Services.Assist
                         "Data" + Path.DirectorySeparatorChar +
                         Service.ToString() + Path.DirectorySeparatorChar +
                         DataType.ToString();
+
+            HeaderPath = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "VersionedFileHeaders");
+                
 
             Directory.CreateDirectory(CachePath);
 
@@ -157,47 +161,35 @@ namespace RiseOp.Services.Assist
         void Core_MinuteTimer()
         {
             // prune
-            List<ulong> removeIDs = new List<ulong>();
+            List<OpVersionedFile> remove = null;
 
-            if (FileMap.SafeCount > PruneSize * 2)
+            if (FileMap.SafeCount > PruneSize)
                 FileMap.LockReading(delegate()
                 {
-                    if (FileMap.Count > PruneSize)
-                        foreach (OpVersionedFile vfile in FileMap.Values)
-                        {
-                            if (vfile.UserID != Core.UserID &&
-                                !Core.KeepData.SafeContainsKey(vfile.UserID) &&
-                                !Network.Routing.InCacheArea(vfile.UserID))
-                                removeIDs.Add(vfile.UserID);
-                        }
+                    remove = (from file in FileMap.Values
+                              where !Core.KeepData.SafeContainsKey(file.UserID) &&
+                                    !Network.Routing.InCacheArea(file.UserID)
+                              orderby file.UserID ^ Core.UserID descending
+                              select file).Take(FileMap.Count - PruneSize).ToList();
+                                      
                 });
 
-            if (removeIDs.Count > 0)
-                FileMap.LockWriting(delegate()
-                {
-                    while (removeIDs.Count > 0 && FileMap.Count > PruneSize / 2)
-                    {
-                        ulong furthest = Core.UserID;
-                        OpVersionedFile vfile = FileMap[furthest];
+            if (remove == null)
+                return;
 
-                        foreach (ulong id in removeIDs)
-                            if ((id ^ Core.UserID) > (furthest ^ Core.UserID))
-                                furthest = id;
+            foreach (OpVersionedFile file in remove)
+            {
+                if (FileRemoved != null)
+                    FileRemoved.Invoke(file);
 
-                        vfile = FileMap[furthest];
+                if (file.Header != null && file.Header.FileHash != null) // local sync doesnt use files
+                    try { File.Delete(GetFilePath(file.Header)); }
+                    catch { }
 
-                        if(FileRemoved != null)
-                            FileRemoved.Invoke(vfile);
+                FileMap.SafeRemove(file.UserID);
 
-                        if (vfile.Header != null && vfile.Header.FileHash != null) // local sync doesnt use files
-                            try { File.Delete(GetFilePath(vfile.Header)); }
-                            catch { }
-
-                        FileMap.Remove(furthest);
-                        removeIDs.Remove(furthest);
-                        RunSaveHeaders = true;
-                    }
-                });
+                RunSaveHeaders = true;
+            }
         }
 
         void Network_StatusChange()
@@ -235,14 +227,16 @@ namespace RiseOp.Services.Assist
 
         internal void LoadHeaders()
         {
+            List<string> goodPaths = new List<string>();
+
             try
             {
-                string path = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "VersionedFileHeaders");
+                goodPaths.Add(HeaderPath);
 
-                if (!File.Exists(path))
+                if (!File.Exists(HeaderPath))
                     return;
 
-                using (IVCryptoStream crypto = IVCryptoStream.Load(path, LocalKey))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(HeaderPath, LocalKey))
                 {
                     PacketStream stream = new PacketStream(crypto, Network.Protocol, FileAccess.Read);
 
@@ -258,9 +252,22 @@ namespace RiseOp.Services.Assist
                             // figure out data contained
                             if (G2Protocol.ReadPacket(embedded))
                                 if (embedded.Name == DataPacket.VersionedFile)
-                                    Process_VersionedFile(null, signed, VersionedFileHeader.Decode(embedded));
+                                {
+                                    VersionedFileHeader header = VersionedFileHeader.Decode(embedded);
+                                    
+                                    if(header.FileHash != null)
+                                        goodPaths.Add(GetFilePath(header));
+                                    
+                                    Process_VersionedFile(null, signed, header);
+                                }
                         }
                 }
+
+                // remove loose files
+                foreach (string testPath in Directory.GetFiles(CachePath))
+                    if (!goodPaths.Contains(testPath))
+                        try { File.Delete(testPath); }
+                        catch { }
             }
             catch (Exception ex)
             {
@@ -287,8 +294,7 @@ namespace RiseOp.Services.Assist
                     stream.FlushFinalBlock();
                 }
 
-                string finalPath = CachePath + Path.DirectorySeparatorChar + Utilities.CryptFilename(Core, "VersionedFileHeaders");
-                File.Copy(tempPath, finalPath, true);
+                File.Copy(tempPath, HeaderPath, true);
                 File.Delete(tempPath);
             }
             catch (Exception ex)
@@ -379,9 +385,8 @@ namespace RiseOp.Services.Assist
                 // lower version
                 if (header.Version < current.Header.Version)
                 {
-                    if (data != null && data.Sources != null)
-                        foreach (DhtAddress source in data.Sources)
-                            Store.Send_StoreReq(source, data.LocalProxy, new DataReq(null, current.UserID, Service, DataType, current.SignedHeader));
+                    if (data != null && data.Source != null)
+                        Store.Send_StoreReq(data.Source, data.LocalProxy, new DataReq(null, current.UserID, Service, DataType, current.SignedHeader));
 
                     return;
                 }
@@ -473,7 +478,10 @@ namespace RiseOp.Services.Assist
         private void Download(SignedData signed, VersionedFileHeader header)
         {
             if (!Utilities.CheckSignedData(header.Key, signed.Data, signed.Signature))
+            {
+                Debug.Assert(false);
                 return;
+            }
 
             FileDetails details = new FileDetails(Service, DataType, header.FileHash, header.FileSize, null);
 
@@ -627,7 +635,7 @@ namespace RiseOp.Services.Assist
             }
 
             byte[] parameters = BitConverter.GetBytes(version);
-            DhtSearch search = Core.Network.Searches.Start(user, Core.GetServiceName(Service), Service, DataType, parameters, new EndSearchHandler(EndSearch));
+            DhtSearch search = Core.Network.Searches.Start(user, Core.GetServiceName(Service), Service, DataType, parameters, Search_Found);
 
             if (search != null)
                 search.TargetResults = 2;
@@ -662,10 +670,9 @@ namespace RiseOp.Services.Assist
                     results.Add(vfile.SignedHeader);
         }
 
-        void EndSearch(DhtSearch search)
+        void Search_Found(DhtSearch search, DhtAddress source, byte[] data)
         {
-            foreach (SearchValue found in search.FoundValues)
-                Store_Local(new DataReq(found.Sources, search.TargetID, Service, DataType, found.Value));
+            Store_Local(new DataReq(source, search.TargetID, Service, DataType, data));
         }
 
         byte[] LocalSync_GetTag()

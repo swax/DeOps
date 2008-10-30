@@ -852,30 +852,28 @@ namespace RiseOp.Services.Mail
 
         private void StartMailSearch(ulong key, byte[] parameters)
         {
-            DhtSearch search = Core.Network.Searches.Start(key, "Mail", ServiceID, DataTypeMail, parameters, new EndSearchHandler(EndMailSearch));
+            DhtSearch search = Core.Network.Searches.Start(key, "Mail", ServiceID, DataTypeMail, parameters, Search_MailFound);
 
             if (search != null)
                 search.TargetResults = 2;
         }
 
-        void EndMailSearch(DhtSearch search)
+        void Search_MailFound(DhtSearch search, DhtAddress source, byte[] data)
         {
-            foreach (SearchValue found in search.FoundValues)
-                Store_LocalMail(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
+            Store_LocalMail(new DataReq(source, search.TargetID, ServiceID, 0, data));
         }
 
         private void StartAckSearch(ulong key, byte[] parameters)
         {
-            DhtSearch search = Core.Network.Searches.Start(key, "Mail", ServiceID, DataTypeAck, parameters, new EndSearchHandler(EndAckSearch));
+            DhtSearch search = Core.Network.Searches.Start(key, "Mail", ServiceID, DataTypeAck, parameters, Search_AckFound);
 
             if (search != null)
                 search.TargetResults = 2;
         }
 
-        void EndAckSearch(DhtSearch search)
+        void Search_AckFound(DhtSearch search, DhtAddress source, byte[] data)
         {
-            foreach (SearchValue found in search.FoundValues)
-                Store_LocalAck(new DataReq(found.Sources, search.TargetID, ServiceID, 0, found.Value));
+            Store_LocalAck(new DataReq(source, search.TargetID, ServiceID, 0, data));
         }
 
         void Search_LocalMail(ulong key, byte[] parameters, List<byte[]> results)

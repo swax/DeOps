@@ -75,7 +75,7 @@
             // 
             this.ConfirmPassBox.Location = new System.Drawing.Point(63, 54);
             this.ConfirmPassBox.Name = "ConfirmPassBox";
-            this.ConfirmPassBox.PasswordChar = '•';
+            this.ConfirmPassBox.UseSystemPasswordChar = true;
             this.ConfirmPassBox.Size = new System.Drawing.Size(164, 20);
             this.ConfirmPassBox.TabIndex = 7;
             // 
@@ -92,7 +92,7 @@
             // 
             this.NewPassBox.Location = new System.Drawing.Point(63, 28);
             this.NewPassBox.Name = "NewPassBox";
-            this.NewPassBox.PasswordChar = '•';
+            this.NewPassBox.UseSystemPasswordChar = true;
             this.NewPassBox.Size = new System.Drawing.Size(164, 20);
             this.NewPassBox.TabIndex = 5;
             // 

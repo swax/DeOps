@@ -26,7 +26,7 @@ namespace RiseOp.Services
         Plan = 9,
         Storage = 10,
         LocalSync = 11,
-        Global = 12,
+        Lookup = 12,
         Buddy = 13,
         Share = 14,
         Update = 15

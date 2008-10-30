@@ -98,10 +98,7 @@ namespace RiseOp.Implementation.Dht
             }
         }
 
-        delegate DhtSearch StartHandler(ulong key, string name, ushort component, byte[] parameters, EndSearchHandler endSearch);
-
-
-        internal DhtSearch Start(ulong key, string name, uint service, uint datatype, byte[] parameters, EndSearchHandler endSearch)
+        internal DhtSearch Start(ulong key, string name, uint service, uint datatype, byte[] parameters, Action<DhtSearch, DhtAddress, byte[]> found)
         {
             if (Core.InvokeRequired)
                 Debug.Assert(false);
@@ -120,7 +117,8 @@ namespace RiseOp.Implementation.Dht
                         return null;
             }
 
-            DhtSearch search = new DhtSearch(this, key, name, service, datatype, endSearch);
+            DhtSearch search = new DhtSearch(this, key, name, service, datatype);
+            search.FoundEvent = found;
             search.Parameters = parameters;
 
             search.Log("Pending");
@@ -185,7 +183,7 @@ namespace RiseOp.Implementation.Dht
 
                     if (proxySearches < MAX_SEARCHES)
                     {
-                        DhtSearch search = new DhtSearch(this, request.TargetID, "Proxy", request.Service, request.DataType, null);
+                        DhtSearch search = new DhtSearch(this, request.TargetID, "Proxy", request.Service, request.DataType);
 
                         search.Parameters = request.Parameters;
                         search.ProxyTcp = packet.Tcp;

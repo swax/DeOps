@@ -21,6 +21,9 @@ using RiseOp.Simulator;
 using RiseOp.Services.Share;
 using RiseOp.Services.Update;
 
+// v1.0.0 s1
+// v1.0.1 s2
+// v1.0.2 s3
 
 namespace RiseOp
 {
@@ -509,14 +512,21 @@ namespace RiseOp
 
                 Utilities.DecryptTagFile(LookupSettings.UpdatePath, finalpath, SignedUpdate.Key, null);
 
-                Process.Start("UpdateOp.exe", SignedUpdate.Name);
+                try
+                {
+                    Process.Start("UpdateOp.exe", SignedUpdate.Name);
 
-                // try to close interfaces
-                Cores.LockReading(() => Cores.ToList().ForEach(c => c.Exit()));
+                    // try to close interfaces
+                    Cores.LockReading(() => Cores.ToList().ForEach(c => c.Exit()));
 
-                Logins.ForEach(l => l.Close());
+                    Logins.ForEach(l => l.Close());
 
-                CheckExit();
+                    CheckExit();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
 
                 return true;
 

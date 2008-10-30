@@ -126,14 +126,7 @@ namespace RiseOp.Implementation.Transport
 
             // encrypt, turn off encryption during simulation
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
-            {
-                lock (Network.AugmentedCrypt)
-                {
-                    Network.SetAugmentedKey(address.UserID);
-
-                    final = Utilities.EncryptBytes(encoded, Network.AugmentedCrypt.Key);
-                }
-            }
+                final = Utilities.EncryptBytes(encoded, Network.GetAugmentedKey(address.UserID));
             else
                 final = encoded;
 
@@ -232,17 +225,12 @@ namespace RiseOp.Implementation.Transport
 
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption) // turn off encryption during simulation
             {
-                if (length < Network.AugmentedCrypt.IV.Length)
+                if (length < 16)
                     throw new Exception("Not enough data received for IV");
 
-                lock (Network.AugmentedCrypt)
-                {
-                    Network.SetAugmentedKey(Network.Local.UserID);
-
-                    finalBuff = Utilities.DecryptBytes(buff, length, Network.AugmentedCrypt.Key);
-                    length = finalBuff.Length;
-                    copied = true;
-                }
+                finalBuff = Utilities.DecryptBytes(buff, length, Network.LocalAugmentedKey);
+                length = finalBuff.Length;
+                copied = true;
             }
 
             ParsePacket(finalBuff, length, sender, copied);

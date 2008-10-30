@@ -75,7 +75,10 @@ namespace RiseOp.Implementation.Transport
 
                     foreach (UPnPDevice device in Devices) // to array so refs aren't reset
                     {
+                        if (StopThread) break;
                         OpenPort(device, "TCP", tcp);
+
+                        if (StopThread) break;
                         OpenPort(device, "UDP", udp);
                     }
                 });
@@ -137,7 +140,10 @@ namespace RiseOp.Implementation.Transport
                 {
                     foreach (UPnPDevice device in Devices) // to array so refs aren't reset
                     {
+                        if (StopThread) break;
                         ClosePort(device, "TCP", tcp);
+
+                        if (StopThread) break;
                         ClosePort(device, "UDP", udp);
                     }
                 });
@@ -186,7 +192,7 @@ namespace RiseOp.Implementation.Transport
                                 "Host:" + firewallIP + ":1900\r\n" +
                                 "ST:upnp:rootdevice\r\n" +
                                 "Man:\"ssdp:discover\"\r\n" +
-                                "MX:3\r\n" +
+                                "MX:1\r\n" +
                                 "\r\n";
 
                 UpdateLog(UpnpLogType.Out, query);

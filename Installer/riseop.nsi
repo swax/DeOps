@@ -1,9 +1,11 @@
 
+XPStyle on
+
 ; The name of the installer
 Name "RiseOp"
 
 ; The file to write
-OutFile "RiseOpInstall_1.0.0.exe"
+OutFile "RiseOpInstall_1.0.2.exe"
 
 ; The default installation directory
 InstallDir $PROGRAMFILES\RiseOp
@@ -14,6 +16,7 @@ InstallDirRegKey HKLM "Software\RiseOp" "Install_Dir"
 
 ; Request application privileges for Windows Vista
 RequestExecutionLevel admin
+
 
 ;--------------------------------
 
@@ -52,11 +55,16 @@ Section "RiseOp"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RiseOp" "NoRepair" 1
   WriteUninstaller "uninstall.exe"
   
+  DetailPrint "Optimizing..."
+  nsExec::Exec '"$WINDIR\Microsoft.NET\Framework\v2.0.50727\ngen.exe" install "$INSTDIR\RiseOp.exe" /queue'
+
   CreateDirectory "$SMPROGRAMS\RiseOp"
   CreateShortCut "$SMPROGRAMS\RiseOp\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
   CreateShortCut "$SMPROGRAMS\RiseOp\Install .Net 3.5.lnk" "$INSTDIR\dotnetfx35setup.exe" "" "$INSTDIR\dotnetfx35setup.exe" 0
   CreateShortCut "$SMPROGRAMS\RiseOp\RiseOp.lnk" "$INSTDIR\RiseOp.exe" "" "$INSTDIR\RiseOp.exe" 0
-  
+
+  MessageBox MB_OK "If RiseOp does not open, install .Net 3.5 from the RiseOp Start Menu." 
+
 SectionEnd
 
 ; Optional section (can be disabled by the user)
@@ -75,6 +83,8 @@ Section "Uninstall"
   ; Remove registry keys
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RiseOp"
   DeleteRegKey HKLM SOFTWARE\RiseOp
+
+  nsExec::Exec '"$WINDIR\Microsoft.NET\Framework\v2.0.50727\ngen.exe" uninstall "$INSTDIR\RiseOp.exe"'
 
   ; Remove files and uninstaller
   Delete $INSTDIR\*.exe

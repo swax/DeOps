@@ -14,16 +14,10 @@ namespace RiseOp.Services.Location
         internal const byte Data = 0x10;
         internal const byte Ping = 0x20;
         internal const byte Notify = 0x30;
-
-        internal const byte CryptLoc = 0x40;
     }
 
     internal class LocationData : G2Packet
     {
-        internal const int GLOBAL_TTL = 60;
-        internal const int OP_TTL = 6; // published to 8 closest so ~1 loc update per minute
-
-
         const byte Packet_Key       = 0x10;
         const byte Packet_Source    = 0x20;
         const byte Packet_IP        = 0x30;
@@ -317,77 +311,6 @@ namespace RiseOp.Services.Location
             }
 
             return notify;
-        }
-    }
-
-    internal class CryptLoc : G2Packet
-    {
-        const byte Packet_TTL = 0x10;
-        const byte Packet_Data = 0x20;
-
-        internal uint TTL;
-        internal byte[] Data;
-
-
-        internal CryptLoc()
-        {
-        }
-
-        internal CryptLoc(uint ttl, byte[] data)
-        {
-            TTL = ttl;
-            Data = data;
-        }
-
-        internal override byte[] Encode(G2Protocol protocol)
-        {
-            lock (protocol.WriteSection)
-            {
-                G2Frame wrap = protocol.WritePacket(null, LocationPacket.CryptLoc, null);
-
-                protocol.WritePacket(wrap, Packet_TTL, BitConverter.GetBytes(TTL));
-                protocol.WritePacket(wrap, Packet_Data, Data);
-
-                return protocol.WriteFinish();
-            }
-        }
-
-        internal static CryptLoc Decode(byte[] data)
-        {
-            G2Header root = new G2Header(data);
-
-            if (!G2Protocol.ReadPacket(root))
-                return null;
-
-            if (root.Name != LocationPacket.CryptLoc)
-                return null;
-
-            return CryptLoc.Decode(root);
-        }
-
-        internal static CryptLoc Decode(G2Header root)
-        {
-            CryptLoc wrap = new CryptLoc();
-            G2Header child = new G2Header(root.Data);
-
-            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                switch (child.Name)
-                {
-                    case Packet_TTL:
-                        wrap.TTL = BitConverter.ToUInt32(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_Data:
-                        wrap.Data = Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize);
-                        break;
-                }
-            }
-
-            return wrap;
         }
     }
 }

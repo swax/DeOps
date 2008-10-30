@@ -1,26 +1,59 @@
 
+try error report post, format xml
+install windows home virt box
+	try to install .net manually for riseop?
+
+make settings not modal, check other showdialog functions
+hour republish messed up cache entry? check
+if profile exists, give user option to delete and recreate over that profile
+all blocked friends not connecting to skynet network
+make it so im able to browse locations cached on lookup
+error reporting acount down
+change paypay company name to JMG
+
+drey error - ie6
+	System.NullReferenceException: Object reference not set to an instance of an object.
+   at RiseOp.Interface.StatusPanel.ShowNetwork()
+   at RiseOp.Interface.StatusPanel.SecondTimer_Tick(Object sender, EventArgs e)
+
+check that deployed bootstrap does not contain same udp/tcp/lookupID already set for everyone
+	new installer bootstrap should overwrite old, but later, ensure it doesnt overwrite
+keep internals - special click to activate? really useful for debugging compnoents, what am i caching, etc..
+	dont deploy bootstrap unless i want to get slammed with requests
+	store bootstrap port opid in registry, so if bootstrap file moved, or duped
+	to antoher comp, no chance of multiple port/lookup ids
+only saved cache data of those we've verified to be in the same trust hierarchy as ourselves
+	before prune trust
+		find all nodes in cache area
+		if highest node is same as our highest node, mark
+		don't prune the marked
+	if we are established, and file aquired in our area, search for higher, until no more
+	
+move load event to the first thing the core thread does on load so that interface loads faster
+
+test change time zone 
+
 release
-	xenocode - check disasm (hopefully supports linq, inspect)
-	test from wells - connect to home? upnp open?
-	update guide page
+	revise FAQ
 
-	udpate about page - saying if interested and very skilled, possible work options
-		
-	after payment take back to success/failure page - add quanity option
-		once email is received I sign licenses, and send back
-		http://www.riseop.com/index.php/licensed on success
-		
-	download page
-		ensure we get shipping address from buy button
-		
-	license
-		explain free individual use non-commercial use
-		commercial use suggest try for 30 days, afterwards license
-		licenses are per person, use it on what ever computer you want
-		buying license supports future development
-		also give user special support forums access, customer ID for priority support
+	
+create a marshalls picture net
 
-		
+
+
+update process
+	set sequence and version
+	set release notes
+	set release mode
+	obfuscate / create mapping
+	move to protected protected
+	sign protected exe
+	move bootstrap.dat to protected from debug
+	set version in installer
+	create installer
+	connect to network with new bootstrap/update.dat
+
+
 upgrades - user enters license id into purchase notes on paypal	
 	
 test global
@@ -31,7 +64,6 @@ test global
 		Commercial use
 		secret network
 
-login - instead of op, put profile
 if globalIM profile not detected, show link in red on login: Create Global IM Profile
 project coming before primary in nar bar drop down
 
@@ -49,31 +81,12 @@ other
 	when switching rooms, put focus on chat input
 	drag/drop file into IM, ask user if like to send
 	cache license ^ index id / user id in client - handle clashes
-	
+	write update to bootstrap.dat even if it doesnt exist
+	status panel icons not transparent?'
+	moving folders around in fs, discarding changes, causes crash
+	prioritize user generated search/transfer over cache replication s/t
 	
 setting - save IM mode, buddies or structure view on close
-
-// update IM/Chat/Gui in notify area, if state changed!!
-
-make sure diff networks use diff webcaches in sim
-	
-Buddy list Component
-	buddy - local synced only when trust is enabled
-	global list saved with op list - if association made
-		
-
-Global IM
-	remove direct trust references from location?
-	
-	Buddies component
-		Stores names / public keys on local drive
-		list can be exported / imported for moving between profiles
-		published only on op network
-		can be associated with other keys on other networks
-	
-	Buddies in buddy list are local interested
-		Confirmed if remote interested
-		Tag - puts it somwhere in the buddy list
 
 quick look at live comm
 	login search for highest that is online

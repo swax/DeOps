@@ -2,8 +2,6 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RiseOp", "RiseOp.csproj", "{83CFFBE4-8EB9-446D-851A-3874799F3172}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Installer", "Installer\Installer.vdproj", "{C304B561-EB0A-4442-8DD1-8FCC4D8C0368}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,8 +12,6 @@ Global
 		{83CFFBE4-8EB9-446D-851A-3874799F3172}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{83CFFBE4-8EB9-446D-851A-3874799F3172}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{83CFFBE4-8EB9-446D-851A-3874799F3172}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C304B561-EB0A-4442-8DD1-8FCC4D8C0368}.Debug|Any CPU.ActiveCfg = Debug
-		{C304B561-EB0A-4442-8DD1-8FCC4D8C0368}.Release|Any CPU.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

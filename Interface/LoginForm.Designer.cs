@@ -40,6 +40,7 @@ namespace RiseOp.Interface
             this.SplashBox = new System.Windows.Forms.PictureBox();
             this.VersionLabel = new System.Windows.Forms.Label();
             this.LicenseLabel = new System.Windows.Forms.Label();
+            this.CreateGlobalLink = new System.Windows.Forms.LinkLabel();
             ((System.ComponentModel.ISupportInitialize)(this.SplashBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -72,9 +73,9 @@ namespace RiseOp.Interface
             this.TextPassword.Enabled = false;
             this.TextPassword.Location = new System.Drawing.Point(15, 266);
             this.TextPassword.Name = "TextPassword";
-            this.TextPassword.PasswordChar = '•';
             this.TextPassword.Size = new System.Drawing.Size(241, 20);
             this.TextPassword.TabIndex = 1;
+            this.TextPassword.UseSystemPasswordChar = true;
             this.TextPassword.TextChanged += new System.EventHandler(this.TextPassword_TextChanged);
             // 
             // ButtonLoad
@@ -195,6 +196,21 @@ namespace RiseOp.Interface
             this.LicenseLabel.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             this.LicenseLabel.Click += new System.EventHandler(this.LicenseLabel_Click);
             // 
+            // CreateGlobalLink
+            // 
+            this.CreateGlobalLink.ActiveLinkColor = System.Drawing.Color.Red;
+            this.CreateGlobalLink.AutoSize = true;
+            this.CreateGlobalLink.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.CreateGlobalLink.LinkColor = System.Drawing.Color.Red;
+            this.CreateGlobalLink.Location = new System.Drawing.Point(12, 188);
+            this.CreateGlobalLink.Name = "CreateGlobalLink";
+            this.CreateGlobalLink.Size = new System.Drawing.Size(237, 15);
+            this.CreateGlobalLink.TabIndex = 13;
+            this.CreateGlobalLink.TabStop = true;
+            this.CreateGlobalLink.Text = "Create an Instant Messenger Profile";
+            this.CreateGlobalLink.Visible = false;
+            this.CreateGlobalLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.CreateGlobalLink_LinkClicked);
+            // 
             // LoginForm
             // 
             this.AcceptButton = this.ButtonLoad;
@@ -202,6 +218,7 @@ namespace RiseOp.Interface
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.ButtonExit;
             this.ClientSize = new System.Drawing.Size(268, 343);
+            this.Controls.Add(this.CreateGlobalLink);
             this.Controls.Add(this.LicenseLabel);
             this.Controls.Add(this.VersionLabel);
             this.Controls.Add(this.SplashBox);
@@ -241,6 +258,7 @@ namespace RiseOp.Interface
         internal System.Windows.Forms.PictureBox SplashBox;
         private System.Windows.Forms.Label VersionLabel;
         private System.Windows.Forms.Label LicenseLabel;
+        private System.Windows.Forms.LinkLabel CreateGlobalLink;
 
     }
 }

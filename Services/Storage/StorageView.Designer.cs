@@ -145,7 +145,7 @@ namespace RiseOp.Services.Storage
             // 
             this.FolderTreeView.AllowDrop = true;
             this.FolderTreeView.BackColor = System.Drawing.SystemColors.Window;
-            this.FolderTreeView.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.FolderTreeView.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.FolderTreeView.ColumnSortColor = System.Drawing.Color.Gainsboro;
             this.FolderTreeView.ColumnTrackColor = System.Drawing.Color.WhiteSmoke;
             this.FolderTreeView.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -165,7 +165,6 @@ namespace RiseOp.Services.Storage
             this.FolderTreeView.SmallImageList = null;
             this.FolderTreeView.StateImageList = null;
             this.FolderTreeView.TabIndex = 0;
-            this.FolderTreeView.Text = "FolderTeeView";
             this.FolderTreeView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.FolderTreeView_MouseClick);
             this.FolderTreeView.SelectedItemChanged += new System.EventHandler(this.FolderTreeView_SelectedItemChanged);
             this.FolderTreeView.DragDrop += new System.Windows.Forms.DragEventHandler(this.FolderTreeView_DragDrop);
@@ -232,17 +231,16 @@ namespace RiseOp.Services.Storage
             this.FileListView.SmallImageList = null;
             this.FileListView.StateImageList = null;
             this.FileListView.TabIndex = 0;
-            this.FileListView.Text = "FileListView";
-            this.FileListView.MouseUp += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseUp);
-            this.FileListView.DragOver += new System.Windows.Forms.DragEventHandler(this.FileListView_DragOver);
-            this.FileListView.MouseMove += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseMove);
-            this.FileListView.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDoubleClick);
-            this.FileListView.DragDrop += new System.Windows.Forms.DragEventHandler(this.FileListView_DragDrop);
-            this.FileListView.KeyUp += new System.Windows.Forms.KeyEventHandler(this.FileListView_KeyUp);
             this.FileListView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseClick);
-            this.FileListView.MouseDown += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDown);
+            this.FileListView.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDoubleClick);
             this.FileListView.SelectedIndexChanged += new System.EventHandler(this.FileListView_SelectedIndexChanged);
+            this.FileListView.MouseUp += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseUp);
+            this.FileListView.DragDrop += new System.Windows.Forms.DragEventHandler(this.FileListView_DragDrop);
+            this.FileListView.MouseMove += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseMove);
+            this.FileListView.MouseDown += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDown);
+            this.FileListView.KeyUp += new System.Windows.Forms.KeyEventHandler(this.FileListView_KeyUp);
             this.FileListView.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FileListView_KeyDown);
+            this.FileListView.DragOver += new System.Windows.Forms.DragEventHandler(this.FileListView_DragOver);
             // 
             // splitContainer1
             // 

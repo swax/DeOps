@@ -264,8 +264,8 @@ namespace RiseOp.Implementation
 
                     lookup.RunInCoreAsync(delegate()
                     {
-                        LookupService service = lookup.GetService(ServiceIDs.Global) as LookupService;
-                        service.StartSearch(Network.OpID, 0);
+                        LookupService service = lookup.GetService(ServiceIDs.Lookup) as LookupService;
+                        service.LookupCache.Search(Network.OpID, null, Search_FoundLookup);
                     });
                 }
             }
@@ -273,6 +273,23 @@ namespace RiseOp.Implementation
             TryWebCache();
 
             TryIPCache();
+        }
+
+        void Search_FoundLookup(byte[] data, object arg)
+        {
+            try
+            {
+                DataReq store = new DataReq(null, Network.OpID, 0, 0, data);
+
+                if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
+                    store.Data = Utilities.DecryptBytes(data, data.Length, Network.OpCrypt.Key);
+
+                LocationData loc = LocationData.Decode(data);
+
+                if (loc != null)
+                    Core.Locations.AddRoutingData(loc);
+            }
+            catch { }
         }
 
         private void TryWebCache()

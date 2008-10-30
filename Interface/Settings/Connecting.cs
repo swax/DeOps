@@ -13,7 +13,7 @@ namespace RiseOp.Interface.Settings
     internal partial class Connecting : CustomIconForm
     {
         OpCore Core;
-        OpCore Global;
+        OpCore Lookup;
         OpUser Profile;
 
         bool SaveCache;
@@ -25,18 +25,18 @@ namespace RiseOp.Interface.Settings
             InitializeComponent();
 
             Core = core;
-            Global = Core.Context.Lookup;
+            Lookup = Core.Context.Lookup;
             Profile = Core.User;
 
             OperationLabel.Text = Core.User.Settings.Operation;
 
-            if (Profile.Settings.OpAccess == AccessType.Secret)
+            if (Profile.Settings.OpAccess == AccessType.Secret && !Core.User.Settings.GlobalIM)
             {
-                GlobalLabel.Visible = false;
-                GlobalTcpBox.Visible = false;
-                GlobalUdpBox.Visible = false;
-                GlobalLanBox.Visible = false;
-                GlobalStatusBox.Visible = false;
+                LookupLabel.Visible = false;
+                LookupTcpBox.Visible = false;
+                LookupUdpBox.Visible = false;
+                LookupLanBox.Visible = false;
+                LookupStatusBox.Visible = false;
             }
 
             OpTcpBox.Text = Core.Network.TcpControl.ListenPort.ToString();
@@ -49,17 +49,17 @@ namespace RiseOp.Interface.Settings
             OpTcpBox.KeyPress += new KeyPressEventHandler(PortBox_KeyPress);
             OpUdpBox.KeyPress += new KeyPressEventHandler(PortBox_KeyPress);
 
-            if (Global != null)
+            if (Lookup != null)
             {
-                GlobalTcpBox.Text = Global.Network.TcpControl.ListenPort.ToString();
-                GlobalUdpBox.Text = Global.Network.UdpControl.ListenPort.ToString();
-                GlobalLanBox.Text = Global.Network.LanControl.ListenPort.ToString();
+                LookupTcpBox.Text = Lookup.Network.TcpControl.ListenPort.ToString();
+                LookupUdpBox.Text = Lookup.Network.UdpControl.ListenPort.ToString();
+                LookupLanBox.Text = Lookup.Network.LanControl.ListenPort.ToString();
 
-                GlobalStatusBox.Text = Global.GetFirewallString();
-                GlobalStatusBox.BackColor = GetStatusColor(Global.Firewall);
+                LookupStatusBox.Text = Lookup.GetFirewallString();
+                LookupStatusBox.BackColor = GetStatusColor(Lookup.Firewall);
 
-                GlobalTcpBox.KeyPress += new KeyPressEventHandler(PortBox_KeyPress);
-                GlobalUdpBox.KeyPress += new KeyPressEventHandler(PortBox_KeyPress);
+                LookupTcpBox.KeyPress += new KeyPressEventHandler(PortBox_KeyPress);
+                LookupUdpBox.KeyPress += new KeyPressEventHandler(PortBox_KeyPress);
             }
 
             // load web caches
@@ -136,11 +136,11 @@ namespace RiseOp.Interface.Settings
                 if (opTcp <= 0 || opUdp <= 0)
                     throw new Exception();
 
-                if (Global != null)
+                if (Lookup != null)
                 {
-                    globalTcp = ushort.Parse(GlobalTcpBox.Text);
-                    globalUdp = ushort.Parse(GlobalUdpBox.Text);
-                    globalLan = ushort.Parse(GlobalLanBox.Text);
+                    globalTcp = ushort.Parse(LookupTcpBox.Text);
+                    globalUdp = ushort.Parse(LookupUdpBox.Text);
+                    globalLan = ushort.Parse(LookupLanBox.Text);
 
                     if (globalTcp <= 0 || globalUdp <= 0)
                         throw new Exception();
@@ -153,7 +153,7 @@ namespace RiseOp.Interface.Settings
             }
 
             // check that tcp are not equal
-            if (Global != null && opTcp == globalTcp)
+            if (Lookup != null && opTcp == globalTcp)
             {
                 MessageBox.Show(this, "TCP ports cannot be equal", "RiseOp");
                 return;
@@ -164,13 +164,13 @@ namespace RiseOp.Interface.Settings
             checkMap.Add(opUdp, true);
             checkMap.Add(opLan, true);
             
-            if (Global != null)
+            if (Lookup != null)
             {
                 checkMap.Add(globalUdp, true);
                 checkMap.Add(globalLan, true);
             }
 
-            if ((Global == null && checkMap.Count != 2) || (Global != null && checkMap.Count != 4) )
+            if ((Lookup == null && checkMap.Count != 2) || (Lookup != null && checkMap.Count != 4) )
             {
                 MessageBox.Show(this, "UDP/LAN ports cannot be equal", "RiseOp");
                 return;
@@ -179,15 +179,15 @@ namespace RiseOp.Interface.Settings
             if (opTcp != Core.Network.TcpControl.ListenPort || opUdp != Core.Network.UdpControl.ListenPort)
                 savePorts = true;
 
-            if(Global != null)
-                if (globalTcp != Global.Network.TcpControl.ListenPort || globalUdp != Global.Network.UdpControl.ListenPort)
+            if(Lookup != null)
+                if (globalTcp != Lookup.Network.TcpControl.ListenPort || globalUdp != Lookup.Network.UdpControl.ListenPort)
                     savePorts = true;
 
             
             if (savePorts)
             {
                 Core.Network.ChangePorts(opTcp, opUdp);
-                Global.Network.ChangePorts(globalTcp, globalUdp);
+                Lookup.Network.ChangePorts(globalTcp, globalUdp);
             }
 
             if (SaveCache)

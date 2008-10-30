@@ -313,32 +313,26 @@ namespace RiseOp.Services.Chat
             }
 
             room.NextPublish = Core.TimeNow ;
-            TempLocation.Search(room.RoomID, room, new EndSearchHandler(EndRoomSearch));
+            TempLocation.Search(room.RoomID, room, Search_FoundRoom);
         }
 
-        void EndRoomSearch(DhtSearch search)
+        void Search_FoundRoom(byte[] data, object arg)
         {
-            if (search.FoundValues.Count == 0)
-                return;
-
-            ChatRoom room = search.Carry as ChatRoom;
+            ChatRoom room = arg as ChatRoom;
 
             if (!room.Active)
                 return;
 
             // add locations to running transfer
-            foreach (byte[] result in search.FoundValues.Select(v => v.Value))
+            LocationData loc = LocationData.Decode(data);
+            DhtClient client = new DhtClient(loc.UserID, loc.Source.ClientID);
+
+            Core.Network.LightComm.Update(loc);
+
+            if (!room.Members.SafeContains(client.UserID))
             {
-                LocationData loc = LocationData.Decode(result);
-                DhtClient client = new DhtClient(loc.UserID, loc.Source.ClientID);
-
-                Core.Network.LightComm.Update(loc);
-
-                if (!room.Members.SafeContains(client.UserID))
-                {
-                    room.AddMember(client.UserID);
-                    Core.Locations.Research(client.UserID);
-                }
+                room.AddMember(client.UserID);
+                Core.Locations.Research(client.UserID);
             }
 
             // connect to new members

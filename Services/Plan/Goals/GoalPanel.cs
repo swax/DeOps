@@ -16,7 +16,7 @@ using RiseOp.Services.Trust;
 
 namespace RiseOp.Services.Plan
 {
-    internal partial class GoalPanel : UserControl
+    public partial class GoalPanel : UserControl
     {
         internal GoalsView View;
         internal OpCore Core;
@@ -28,7 +28,7 @@ namespace RiseOp.Services.Plan
 
         Dictionary<ulong, List<GoalNode>> TreeMap = new Dictionary<ulong, List<GoalNode>>();
 
-        internal GoalPanel()
+        public GoalPanel()
         {
             InitializeComponent();
         }
@@ -248,15 +248,9 @@ namespace RiseOp.Services.Plan
                 DelegateLink.Hide();
 
             if (Selected.Person == Core.UserID)
-            {
-                PlanList.Height = splitContainer1.Panel2.Height - 15;
                 AddItemLink.Show();
-            }
             else
-            {
-                PlanList.Height = splitContainer1.Panel2.Height;
                 AddItemLink.Hide();
-            }
 
             // name's Plan for <goal>
 

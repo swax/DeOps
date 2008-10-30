@@ -310,7 +310,7 @@ namespace RiseOp
                 // 256 bit rijn
 
                 SHA256Managed sha256 = new SHA256Managed();
-                user.Settings.OpKey = sha256.ComputeHash(UTF8Encoding.UTF8.GetBytes(opName));
+                user.Settings.OpKey = sha256.ComputeHash(UTF8Encoding.UTF8.GetBytes(opName.ToLowerInvariant()));
                 user.Settings.Security = SecurityLevel.Low;
             }
 

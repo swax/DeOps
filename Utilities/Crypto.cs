@@ -205,7 +205,7 @@ namespace RiseOp
 
             crypt.IV.CopyTo(final, 0);
             transformed.CopyTo(final, crypt.IV.Length);
-
+            
             return final;
         }
 
@@ -274,12 +274,16 @@ namespace RiseOp
         {
             RijndaelManaged crypt = new RijndaelManaged();
 
+            byte[] key = new byte[crypt.Key.Length];
+
             // file key is opID and internal hash xor'd so that files won't be duplicated on the network
-            opKey.CopyTo(crypt.Key, 0);
+            opKey.CopyTo(key, 0);
 
             // hash is 16 bytes, key is 32
             for (int i = 0; i < crypt.Key.Length; i++)
-                crypt.Key[i] ^= internalHash[i % 16];
+                key[i] ^= internalHash[i % 16];
+
+            crypt.Key = key;
 
             // iv needs to be the same for ident files to gen same file hash
             crypt.IV = new MD5CryptoServiceProvider().ComputeHash(crypt.Key);

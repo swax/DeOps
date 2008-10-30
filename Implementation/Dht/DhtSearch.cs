@@ -10,9 +10,6 @@ using RiseOp.Implementation.Protocol.Net;
 
 namespace RiseOp.Implementation.Dht
 {
-    internal delegate void EndSearchHandler(DhtSearch search);
-
-
 	/// <summary>
 	/// Summary description for DhtSearch.
 	/// </summary>
@@ -32,9 +29,9 @@ namespace RiseOp.Implementation.Dht
         internal string    Name;
         internal uint      Service;
         internal uint      DataType;
-        EndSearchHandler   EndSearch;
+        internal Action<DhtSearch>  DoneEvent;
         internal int       TargetResults = 10;
-
+        
         internal List<DhtLookup> LookupList = new List<DhtLookup>();
 
 		internal bool   Finished;
@@ -42,14 +39,15 @@ namespace RiseOp.Implementation.Dht
         
         internal bool   FoundProxy;
 		internal DhtContact FoundContact;
-        internal List<SearchValue> FoundValues = new List<SearchValue>();
+        internal List<byte[]> FoundValues = new List<byte[]>();
+        internal Action<DhtSearch, DhtAddress, byte[]> FoundEvent;
 
 		internal TcpConnect ProxyTcp;
         internal byte[] Parameters;
         internal object Carry;
 
 
-        internal DhtSearch(DhtSearchControl control, UInt64 targetID, string name, uint service, uint datatype, EndSearchHandler endSearch)
+        internal DhtSearch(DhtSearchControl control, UInt64 targetID, string name, uint service, uint datatype)
 		{
             Core      = control.Core;
             Network   = control.Network ;
@@ -58,8 +56,7 @@ namespace RiseOp.Implementation.Dht
 			Name      = name;
             Service   = service;
             DataType  = datatype;
-            EndSearch = endSearch;
-
+ 
             SearchID = (uint) Core.RndGen.Next(1, int.MaxValue);
 		}
 
@@ -243,8 +240,8 @@ namespace RiseOp.Implementation.Dht
                 ProxyTcp.SendPacket(req);
             }
 
-            if(EndSearch != null)
-                EndSearch.Invoke(this);
+            if(DoneEvent != null)
+                DoneEvent.Invoke(this);
 		}
 
 		internal void Found(DhtContact contact, bool proxied)
@@ -263,17 +260,14 @@ namespace RiseOp.Implementation.Dht
 
         internal void Found(byte[] value, DhtAddress source)
         {
-            foreach (SearchValue found in FoundValues)
-                if(Utilities.MemCompare(found.Value, value))
-                {
-                    found.AddSource(source);
+            if(FoundEvent != null)
+                FoundEvent.Invoke(this, source, value);
+
+            foreach (byte[] found in FoundValues)
+                if(Utilities.MemCompare(found, value))
                     return;
-                }
 
-            if(FoundValues.Count > TargetResults)
-                return;
-
-            FoundValues.Add( new SearchValue(value, source) );
+            FoundValues.Add(value);
         }
 
 		internal void Log(string message)
@@ -305,27 +299,4 @@ namespace RiseOp.Implementation.Dht
 			Status  = LookupStatus.None;
 		}
 	}
-
-    internal class SearchValue
-    {
-        internal byte[] Value;
-
-        // these are the addresses of either the open node, or the proxy of the node that contains the results
-        internal List<DhtAddress> Sources = new List<DhtAddress>();
-
-        internal SearchValue(byte[] value, DhtAddress source)
-        {
-            Value = value;
-            Sources.Add(source);
-        }
-
-        internal void AddSource(DhtAddress add)
-        {
-            foreach (DhtAddress source in Sources)
-                if( source.Equals(add))
-                    return;
-
-            Sources.Add(add);
-        }
-    }
 }

@@ -750,7 +750,7 @@ namespace RiseOp.Interface.TLVex
 
 	[DefaultProperty("Items")]
 	[ToolboxItem(true)]
-	public class ContainerListViewEx: UserControl
+	public class ContainerListViewEx: Control // deriving from UserControl causes selection of rows with embedded controls to mess up
 	{
 		#region Events
 		public event LabelEditEventHandler AfterLabelEdit;
@@ -1196,7 +1196,7 @@ namespace RiseOp.Interface.TLVex
 		Description("Specifies what style border the control has."),
 		DefaultValue(BorderStyle.Fixed3D)
 		]
-        public new BorderStyle BorderStyle
+        public BorderStyle BorderStyle
         {
             get { return borderstyle; }
             set
@@ -2036,6 +2036,7 @@ namespace RiseOp.Interface.TLVex
 				multiSelectMode = MultiSelectMode.Single;
 			}
 		}
+ 
 		protected override void OnGotFocus(EventArgs e)
 		{
 			base.OnGotFocus(e);

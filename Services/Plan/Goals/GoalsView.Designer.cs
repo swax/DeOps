@@ -30,13 +30,13 @@ namespace RiseOp.Services.Plan
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(GoalsView));
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
+            this.SelectGoalButton = new System.Windows.Forms.ToolStripDropDownButton();
+            this.DetailsButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.DetailsBrowser = new System.Windows.Forms.WebBrowser();
             this.DiscardButton = new RiseOp.Interface.Views.ImageButton();
             this.SaveButton = new RiseOp.Interface.Views.ImageButton();
-            this.SelectGoalButton = new System.Windows.Forms.ToolStripDropDownButton();
-            this.DetailsButton = new System.Windows.Forms.ToolStripButton();
             MainPanel = new GoalPanel();
             this.toolStrip1.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -58,6 +58,27 @@ namespace RiseOp.Services.Plan
             this.toolStrip1.Size = new System.Drawing.Size(594, 25);
             this.toolStrip1.TabIndex = 20;
             this.toolStrip1.Text = "toolStrip1";
+            // 
+            // SelectGoalButton
+            // 
+            this.SelectGoalButton.Image = ((System.Drawing.Image)(resources.GetObject("SelectGoalButton.Image")));
+            this.SelectGoalButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.SelectGoalButton.Name = "SelectGoalButton";
+            this.SelectGoalButton.Size = new System.Drawing.Size(89, 22);
+            this.SelectGoalButton.Text = "Select Goal";
+            this.SelectGoalButton.DropDownOpening += new System.EventHandler(this.SelectGoal_DropDownOpening);
+            // 
+            // DetailsButton
+            // 
+            this.DetailsButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.DetailsButton.CheckOnClick = true;
+            this.DetailsButton.Image = ((System.Drawing.Image)(resources.GetObject("DetailsButton.Image")));
+            this.DetailsButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.DetailsButton.Name = "DetailsButton";
+            this.DetailsButton.Size = new System.Drawing.Size(59, 22);
+            this.DetailsButton.Text = "Details";
+            this.DetailsButton.CheckedChanged += new System.EventHandler(this.DetailsButton_CheckedChanged);
+            this.DetailsButton.Click += new System.EventHandler(this.DetailsButton_Click);
             // 
             // splitContainer1
             // 
@@ -144,27 +165,6 @@ namespace RiseOp.Services.Plan
             this.SaveButton.TabStop = false;
             this.SaveButton.Visible = false;
             this.SaveButton.Click += new System.EventHandler(this.SaveButton_Click);
-            // 
-            // SelectGoalButton
-            // 
-            this.SelectGoalButton.Image = ((System.Drawing.Image)(resources.GetObject("SelectGoalButton.Image")));
-            this.SelectGoalButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.SelectGoalButton.Name = "SelectGoalButton";
-            this.SelectGoalButton.Size = new System.Drawing.Size(89, 22);
-            this.SelectGoalButton.Text = "Select Goal";
-            this.SelectGoalButton.DropDownOpening += new System.EventHandler(this.SelectGoal_DropDownOpening);
-            // 
-            // DetailsButton
-            // 
-            this.DetailsButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.DetailsButton.CheckOnClick = true;
-            this.DetailsButton.Image = ((System.Drawing.Image)(resources.GetObject("DetailsButton.Image")));
-            this.DetailsButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.DetailsButton.Name = "DetailsButton";
-            this.DetailsButton.Size = new System.Drawing.Size(59, 22);
-            this.DetailsButton.Text = "Details";
-            this.DetailsButton.CheckedChanged += new System.EventHandler(this.DetailsButton_CheckedChanged);
-            this.DetailsButton.Click += new System.EventHandler(this.DetailsButton_Click);
             // 
             // GoalsView
             // 

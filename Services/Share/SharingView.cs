@@ -349,7 +349,7 @@ namespace RiseOp.Services.Share
                 item.RefreshStatus();
             }
 
-            Core.RunInCoreAsync(() => Sharing.SaveHeaders());
+            Sharing.RunSave = true;
         }
 
         void Menu_MakePrivate(object sender, EventArgs e)
@@ -360,7 +360,7 @@ namespace RiseOp.Services.Share
                 item.RefreshStatus();
             }
 
-            Core.RunInCoreAsync(() => Sharing.SaveHeaders());
+            Sharing.RunSave = true;
         }
 
         private void SharedFiles_DragOver(object sender, DragEventArgs e)
