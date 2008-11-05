@@ -3,6 +3,7 @@
     File registration moved to the installer
 	Data for users in trust tree cached/preferenced over untrusted
 	Fixed transfer bug when source file has been deleted
+	Fixed packetstream bug when packet read was exactly at the end of the buffer
 	
 1.0.6
 	Auto-updating fixed

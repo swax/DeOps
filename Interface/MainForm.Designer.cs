@@ -136,7 +136,7 @@ namespace RiseOp.Interface
             this.CommandSplit.Panel2.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandSplit.Panel2.Controls.Add(this.SelectionInfo);
             this.CommandSplit.Size = new System.Drawing.Size(171, 447);
-            this.CommandSplit.SplitterDistance = 354;
+            this.CommandSplit.SplitterDistance = 324;
             this.CommandSplit.SplitterWidth = 2;
             this.CommandSplit.TabIndex = 4;
             // 
@@ -161,7 +161,7 @@ namespace RiseOp.Interface
             this.BuddyList.Name = "BuddyList";
             this.BuddyList.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.BuddyList.RowTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.BuddyList.Size = new System.Drawing.Size(171, 326);
+            this.BuddyList.Size = new System.Drawing.Size(171, 296);
             this.BuddyList.SmallImageList = null;
             this.BuddyList.StateImageList = null;
             this.BuddyList.TabIndex = 0;
@@ -246,7 +246,7 @@ namespace RiseOp.Interface
             this.CommandTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.CommandTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandTree.ShowLines = true;
-            this.CommandTree.Size = new System.Drawing.Size(171, 326);
+            this.CommandTree.Size = new System.Drawing.Size(171, 296);
             this.CommandTree.SmallImageList = null;
             this.CommandTree.StateImageList = null;
             this.CommandTree.TabIndex = 0;
@@ -259,7 +259,7 @@ namespace RiseOp.Interface
             this.SelectionInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.SelectionInfo.Location = new System.Drawing.Point(0, 0);
             this.SelectionInfo.Name = "SelectionInfo";
-            this.SelectionInfo.Size = new System.Drawing.Size(171, 91);
+            this.SelectionInfo.Size = new System.Drawing.Size(171, 121);
             this.SelectionInfo.TabIndex = 0;
             // 
             // NavStrip
@@ -565,9 +565,8 @@ namespace RiseOp.Interface
             // 
             this.toolStripLabel2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.None;
             this.toolStripLabel2.Margin = new System.Windows.Forms.Padding(0, 25, 0, 2);
-            this.toolStripLabel2.Name = "";
+            this.toolStripLabel2.Name = "toolStripLabel2";
             this.toolStripLabel2.Size = new System.Drawing.Size(18, 0);
-            this.toolStripLabel2.Text = "";
             // 
             // OperationButton
             // 

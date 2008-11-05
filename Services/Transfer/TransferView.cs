@@ -288,7 +288,7 @@ namespace RiseOp.Services.Transfer
             // remote name / IP - last seen, timeout: x
 			// flags: UL (active?, chunk index, progress) / DL (chunk index, progress) / RBU
 
-            if (transfer.RoutingTable[peer.DhtIndex] == peer)
+            if (peer.DhtIndex < transfer.RoutingTable.Length && transfer.RoutingTable[peer.DhtIndex] == peer)
                 text += "(B" + peer.DhtIndex + ") ";
 
             text += Service.Core.GetName(peer.Client.UserID) + ", ";

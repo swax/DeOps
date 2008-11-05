@@ -471,7 +471,6 @@ namespace RiseOp.Implementation.Protocol
             if (ReadNext(root))
                 return true;
 
-
             return false;
         }
 
@@ -488,6 +487,10 @@ namespace RiseOp.Implementation.Protocol
                 if (ReadStatus == G2ReadResult.PACKET_GOOD)
                     return true;
             }
+
+            // hit the exact end of the buffer read in, signal to read the next buffer in
+            else
+                ReadStatus = G2ReadResult.PACKET_INCOMPLETE;
 
             return false;
         }

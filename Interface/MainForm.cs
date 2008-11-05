@@ -1311,9 +1311,6 @@ namespace RiseOp.Interface
         {
             OnShowExternal(new InfoView(Core, true, false));
         }
-
-
-
     }
 
     class NewsItem : ToolStripMenuItem, IViewParams

@@ -425,7 +425,8 @@ namespace RiseOp.Services.Mail
         {
             try
             {
-                using (IVCryptoStream crypto = IVCryptoStream.Load(Mail.GetLocalPath(message.Header), message.Header.LocalKey))
+                using (TaggedStream tagged = new TaggedStream(Mail.GetLocalPath(message.Header), Core.Network.Protocol))
+                using (IVCryptoStream crypto = IVCryptoStream.Load(tagged, message.Header.LocalKey))
                 {
                     // get past packet section of file
                     const int buffSize = 4096;

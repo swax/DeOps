@@ -1,6 +1,8 @@
 
-disable board file post
-	check mail file send - opening error
+default status panel too small?
+
+disable board file 4
+	check board file opening, mail/board archive?
 	clicking email/post/sharing attachment should default save to temp - which is deleted after
 	warn user files unlocked on close
 	board archive working?

@@ -355,23 +355,21 @@ namespace RiseOp.Simulator
 
                     // send messages from gui
                     if (!TestCoreThread)
-                    {
-                        AsyncCoreFunction function = null;
-
                         // process invoked functions, dequeue quickly to continue processing
-                        lock (CoreMessages)
-                            while (CoreMessages.Count > 0)
-                            {
+                        while (CoreMessages.Count > 0)
+                        {
+                            AsyncCoreFunction function = null;
+
+                            lock (CoreMessages)
                                 function = CoreMessages.Dequeue();
 
-                                if (function != null)
-                                {
-                                    function.Result = function.Method.DynamicInvoke(function.Args);
-                                    function.Completed = true;
-                                    function.Processed.Set();
-                                }
+                            if (function != null)
+                            {
+                                function.Result = function.Method.DynamicInvoke(function.Args);
+                                function.Completed = true;
+                                function.Processed.Set();
                             }
-                    }
+                        }
 
                     TimeNow = TimeNow.AddMilliseconds(1000 / pumps);
 

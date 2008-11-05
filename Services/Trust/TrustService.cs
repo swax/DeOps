@@ -436,11 +436,10 @@ namespace RiseOp.Services.Trust
         {
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreAsync(delegate() { SimTest(); });
+                Core.RunInCoreAsync(() => SimTest());
                 return;
             }
 
-            // link up to anyone with a 'higher' name
             OpLink localLink = LocalTrust.Links[0];
 
             if (localLink.Uplink == null)
@@ -452,7 +451,8 @@ namespace RiseOp.Services.Trust
                 {
                     randTrust = (from t in TrustMap.Values
                                  where t.Loaded &&
-                                       LocalTrust.Name.CompareTo(t.Name) > 0
+                                       LocalTrust.Name.CompareTo(t.Name) > 0 && // avoids loops by linking to 'higher' name
+                                       t.Links[0].GetHighest().Trust.Loaded // avoid trusting someone who is hidded to us
                                  orderby Core.RndGen.Next()
                                  select t).FirstOrDefault();
                 });
@@ -486,6 +486,11 @@ namespace RiseOp.Services.Trust
 
         public void SimCleanup()
         {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(() => SimCleanup());
+                return;
+            }
         }
 
         void Core_KeepData()

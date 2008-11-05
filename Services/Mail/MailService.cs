@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -214,77 +215,44 @@ namespace RiseOp.Services.Mail
 
         void Core_MinuteTimer()
         {
+            // prune mail items
+            foreach (List<CachedMail> list in MailMap.Values)
+                if (list.Count > PruneSize) // no other way to ident, cant remove by age
+                    list.RemoveRange(0, list.Count - PruneSize);
+
             // prune mail 
             if (MailMap.Count > PruneSize)
-            {
-                List<ulong> removeIds = new List<ulong>();
-
-                foreach (List<CachedMail> list in MailMap.Values)
+                foreach (ulong id in (from target in MailMap.Keys 
+                                      where !Core.KeepData.SafeContainsKey(target)
+                                      orderby target ^ Core.UserID descending
+                                      select target).Take(MailMap.Count - PruneSize).ToArray())
                 {
-                    if (list.Count > PruneSize) // no other way to ident, cant remove by age
-                        list.RemoveRange(0, list.Count - PruneSize);
-
-                    foreach (CachedMail mail in list)
-                        if (!Core.KeepData.SafeContainsKey(mail.Header.TargetID))
-                        {
-                            removeIds.Add(mail.Header.TargetID);
-                            break;
-                        }
-                }
-
-                while (removeIds.Count > 0 && MailMap.Count > PruneSize / 2)
-                {
-                    ulong furthest = Core.UserID;
-                    List<CachedMail> mails = MailMap[furthest];
-
-                    foreach (ulong id in removeIds)
-                        if ((id ^ Core.UserID) > (furthest ^ Core.UserID))
-                            furthest = id;
-
-                    mails = MailMap[furthest];
-
-                    foreach(CachedMail mail in mails)
-                        if(mail.Header != null)
-                            try { File.Delete(GetCachePath(mail.Header)); }
+                    foreach (CachedMail item in MailMap[id])
+                        if (item.Header != null)
+                            try { File.Delete(GetCachePath(item.Header)); }
                             catch { }
 
-                    MailMap.Remove(furthest);
-                    removeIds.Remove(furthest);
+                    MailMap.Remove(id);
                     RunSaveHeaders = true;
                 }
-            }
+
+
+            // prune ack items
+            foreach (List<CachedAck> list in AckMap.Values)
+                if (list.Count > PruneSize) // no other way to ident, cant remove by age
+                    list.RemoveRange(0, list.Count - PruneSize);
+
 
             // prune acks 
             if (AckMap.Count > PruneSize)
-            {
-                List<ulong> removeIds = new List<ulong>();
-
-                foreach (List<CachedAck> list in AckMap.Values)
+                foreach (ulong id in (from target in AckMap.Keys
+                                      where !Core.KeepData.SafeContainsKey(target)
+                                      orderby target ^ Core.UserID descending
+                                      select target).Take(AckMap.Count - PruneSize).ToArray())
                 {
-                    if (list.Count > PruneSize) // no other way to ident, cant remove by age
-                        list.RemoveRange(0, list.Count - PruneSize);
-
-                    foreach (CachedAck cached in list)
-                        if (!Core.KeepData.SafeContainsKey(cached.Ack.TargetID))
-                        {
-                            removeIds.Add(cached.Ack.TargetID);
-                            break;
-                        }
-                }
-
-                while (removeIds.Count > 0 && AckMap.Count > PruneSize / 2)
-                {
-                    ulong furthest = Core.UserID;
-
-                    foreach (ulong id in removeIds)
-                        if ((id ^ Core.UserID) > (furthest ^ Core.UserID))
-                            furthest = id;
-
-                    AckMap.Remove(furthest);
-                    removeIds.Remove(furthest);
+                    AckMap.Remove(id);
                     RunSaveHeaders = true;
                 }
-            }
         }
 
         public void SimTest()
