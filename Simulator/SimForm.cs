@@ -62,6 +62,7 @@ namespace RiseOp.Simulator
             ListInstances.ListViewItemSorter = lvwColumnSorter;
 
             Sim = new InternetSim(this);
+
         }
 
         private void ControlForm_Load(object sender, EventArgs e)
@@ -91,7 +92,7 @@ namespace RiseOp.Simulator
             {
                 FolderBrowserDialog browse = new FolderBrowserDialog();
 
-                string path = Application.UserAppDataRegistry.GetValue("LastSimPath") as string;
+                string path = Properties.Settings.Default.LastSimPath;
 
                 if (path == null)
                     path = Application.StartupPath;
@@ -103,7 +104,7 @@ namespace RiseOp.Simulator
                    
                 LoadDirectory(browse.SelectedPath);
 
-                Application.UserAppDataRegistry.SetValue("LastSimPath", browse.SelectedPath);
+                Properties.Settings.Default.LastSimPath = browse.SelectedPath;
             }
             catch (Exception ex)
             {

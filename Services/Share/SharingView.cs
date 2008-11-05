@@ -40,8 +40,8 @@ namespace RiseOp.Services.Share
 
             Sharing = core.GetService(ServiceIDs.Share) as ShareService;
 
-            TopStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
-
+            Utilities.SetupToolstrip(TopStrip, new OpusColorTable());
+            
             SharedFiles.SmallImageList = FileIcons;
 
             StatusLabel.Text = "";

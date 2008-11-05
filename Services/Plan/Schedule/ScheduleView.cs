@@ -109,9 +109,10 @@ namespace RiseOp.Services.Plan
 
             StartTime = Core.TimeNow;
             EndTime   = Core.TimeNow.AddMonths(3);
-            
-            TopStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
-            splitContainer1.Panel2Collapsed = true;
+
+            Utilities.SetupToolstrip(TopStrip, new OpusColorTable());
+
+            MainSplit.Panel2Collapsed = true;
 
             Core.KeepDataGui += new KeepDataHandler(Core_KeepData);
 
@@ -239,7 +240,7 @@ namespace RiseOp.Services.Plan
 
             DateRange.Width = LabelPlus.Location.X + 1 - DateRange.Location.X;
             
-            ScheduleSlider.Location = new Point( splitContainer1.Panel1.Width - PlanStructure.Columns[1].Width, ScheduleSlider.Location.Y);
+            ScheduleSlider.Location = new Point( MainSplit.Panel1.Width - PlanStructure.Columns[1].Width, ScheduleSlider.Location.Y);
             ScheduleSlider.Width = PlanStructure.Columns[1].Width;
 
             ExtendedLabel.Location = new Point(ScheduleSlider.Location.X, ExtendedLabel.Location.Y);
@@ -815,6 +816,8 @@ namespace RiseOp.Services.Plan
             SaveButton.Visible = false;
             DiscardButton.Visible = false;
 
+            PlanStructure.Height = MainSplit.Panel1.Height - PlanStructure.Top;
+
             Plans.SaveLocal();
         }
 
@@ -823,7 +826,7 @@ namespace RiseOp.Services.Plan
             SaveButton.Visible = false;
             DiscardButton.Visible = false;
 
-            PlanStructure.Height += 20;
+            PlanStructure.Height = MainSplit.Panel1.Height - PlanStructure.Top;
 
             Plans.LoadPlan(Core.UserID);
             Plans_Update(Plans.LocalPlan);
@@ -833,6 +836,20 @@ namespace RiseOp.Services.Plan
         {
             SaveButton.Visible = true;
             DiscardButton.Visible = true;
+
+            int height = MainSplit.Panel1.Height;
+            PlanStructure.Height = height - PlanStructure.Top - SaveButton.Height - 8;
+
+
+            if (Utilities.IsRunningOnMono())
+            {
+                // buttons aren't positioned when they aren't visible
+                SaveButton.Location = new Point(Width - 156, height - 22);
+                DiscardButton.Location = new Point(Width - 86, height - 22);
+            }
+          
+            SaveButton.BringToFront();
+            DiscardButton.BringToFront();
         }
 
 
@@ -932,7 +949,7 @@ namespace RiseOp.Services.Plan
 
         private void DetailsButton_Click(object sender, EventArgs e)
         {
-            splitContainer1.Panel2Collapsed = !DetailsButton.Checked;
+            MainSplit.Panel2Collapsed = !DetailsButton.Checked;
 
             if (DetailsButton.Checked)
                 DetailsButton.Image = PlanRes.details2;
@@ -963,7 +980,7 @@ namespace RiseOp.Services.Plan
             // set details button
             DetailsButton.ForeColor = Color.Black;
 
-            if (splitContainer1.Panel2Collapsed && notes != null && notes != "")
+            if (MainSplit.Panel2Collapsed && notes != null && notes != "")
                 DetailsButton.ForeColor = Color.Red;
 
 
@@ -984,7 +1001,7 @@ namespace RiseOp.Services.Plan
             else
             {
                 foreach (string[] tuple in tuples)
-                    DetailsBrowser.Document.InvokeScript("SetElement", new String[] { tuple[0], tuple[1] });
+                    DetailsBrowser.SafeInvokeScript("SetElement", new String[] { tuple[0], tuple[1] });
             }
 
             LastBlock = block;
@@ -1002,9 +1019,7 @@ namespace RiseOp.Services.Plan
                 return;
 
             // prevents clicking sound when browser navigates
-            DetailsBrowser.Hide();
-            DetailsBrowser.DocumentText = html;
-            DetailsBrowser.Show();
+            DetailsBrowser.SetDocNoClick( html);
         }
 
         // call is a MarshalByRefObject so cant access value types directly

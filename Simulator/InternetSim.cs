@@ -244,6 +244,7 @@ namespace RiseOp.Simulator
             if (RunThread == null || !RunThread.IsAlive)
             {
                 RunThread = new Thread(Run);
+                RunThread.Name = "Sim Thread";
                 RunThread.Start();
             }
 
@@ -258,6 +259,7 @@ namespace RiseOp.Simulator
             if (RunThread == null)
             {
                 RunThread = new Thread(Run);
+                RunThread.Name = "Sim Thread";
                 RunThread.Start();
             }              
         }

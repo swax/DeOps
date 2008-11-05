@@ -37,7 +37,8 @@ namespace RiseOp.Services.Chat
 
             Chat.Refresh += new RefreshHandler(Chat_Refresh);
 
-            toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+            Utilities.SetupToolstrip(toolStrip1, new OpusColorTable());
+            Utilities.FixMonoDropDownOpening(RoomsButton, RoomsButton_DropDownOpening);
 
             RoomsButton.Visible  = true;
             RoomSeparator.Visible = true;

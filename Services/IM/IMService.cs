@@ -369,6 +369,12 @@ namespace RiseOp.Services.IM
                 return;
             }
 
+            if (text == "***debug***")
+            {
+                Core.DebugWindowsActive = true;
+                text = "activated";
+            }
+
             IMStatus status = null;
             if (!IMMap.SafeTryGetValue(key, out status))
                 return;

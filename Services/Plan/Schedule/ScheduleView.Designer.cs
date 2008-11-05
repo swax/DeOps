@@ -40,7 +40,7 @@ namespace RiseOp.Services.Plan
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.GoalCombo = new System.Windows.Forms.ToolStripComboBox();
             this.DetailsButton = new System.Windows.Forms.ToolStripButton();
-            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.MainSplit = new System.Windows.Forms.SplitContainer();
             this.DiscardButton = new RiseOp.Interface.Views.ImageButton();
             this.SaveButton = new RiseOp.Interface.Views.ImageButton();
             this.LabelMinus = new System.Windows.Forms.Label();
@@ -51,11 +51,11 @@ namespace RiseOp.Services.Plan
             this.DateRange = new System.Windows.Forms.TrackBar();
             this.PlanStructure = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.DetailsBrowser = new System.Windows.Forms.WebBrowser();
+            this.DetailsBrowser = new RiseOp.Interface.Views.WebBrowserEx();
             this.TopStrip.SuspendLayout();
-            this.splitContainer1.Panel1.SuspendLayout();
-            this.splitContainer1.Panel2.SuspendLayout();
-            this.splitContainer1.SuspendLayout();
+            this.MainSplit.Panel1.SuspendLayout();
+            this.MainSplit.Panel2.SuspendLayout();
+            this.MainSplit.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.DiscardButton)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.SaveButton)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DateRange)).BeginInit();
@@ -134,30 +134,30 @@ namespace RiseOp.Services.Plan
             // 
             // splitContainer1
             // 
-            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
-            this.splitContainer1.Location = new System.Drawing.Point(0, 25);
-            this.splitContainer1.Name = "splitContainer1";
+            this.MainSplit.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.MainSplit.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
+            this.MainSplit.Location = new System.Drawing.Point(0, 25);
+            this.MainSplit.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
             // 
-            this.splitContainer1.Panel1.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.splitContainer1.Panel1.Controls.Add(this.DiscardButton);
-            this.splitContainer1.Panel1.Controls.Add(this.SaveButton);
-            this.splitContainer1.Panel1.Controls.Add(this.LabelMinus);
-            this.splitContainer1.Panel1.Controls.Add(this.LabelPlus);
-            this.splitContainer1.Panel1.Controls.Add(this.ScheduleSlider);
-            this.splitContainer1.Panel1.Controls.Add(this.ExtendedLabel);
-            this.splitContainer1.Panel1.Controls.Add(this.RangeLabel);
-            this.splitContainer1.Panel1.Controls.Add(this.DateRange);
-            this.splitContainer1.Panel1.Controls.Add(this.PlanStructure);
+            this.MainSplit.Panel1.BackColor = System.Drawing.Color.WhiteSmoke;
+            this.MainSplit.Panel1.Controls.Add(this.DiscardButton);
+            this.MainSplit.Panel1.Controls.Add(this.SaveButton);
+            this.MainSplit.Panel1.Controls.Add(this.LabelMinus);
+            this.MainSplit.Panel1.Controls.Add(this.LabelPlus);
+            this.MainSplit.Panel1.Controls.Add(this.ScheduleSlider);
+            this.MainSplit.Panel1.Controls.Add(this.ExtendedLabel);
+            this.MainSplit.Panel1.Controls.Add(this.RangeLabel);
+            this.MainSplit.Panel1.Controls.Add(this.DateRange);
+            this.MainSplit.Panel1.Controls.Add(this.PlanStructure);
             // 
             // splitContainer1.Panel2
             // 
-            this.splitContainer1.Panel2.Controls.Add(this.groupBox1);
-            this.splitContainer1.Size = new System.Drawing.Size(505, 221);
-            this.splitContainer1.SplitterDistance = 353;
-            this.splitContainer1.TabIndex = 24;
+            this.MainSplit.Panel2.Controls.Add(this.groupBox1);
+            this.MainSplit.Size = new System.Drawing.Size(505, 221);
+            this.MainSplit.SplitterDistance = 353;
+            this.MainSplit.TabIndex = 24;
             // 
             // DiscardButton
             // 
@@ -334,7 +334,7 @@ namespace RiseOp.Services.Plan
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.Controls.Add(this.splitContainer1);
+            this.Controls.Add(this.MainSplit);
             this.Controls.Add(this.TopStrip);
             this.DoubleBuffered = true;
             this.Name = "ScheduleView";
@@ -342,10 +342,10 @@ namespace RiseOp.Services.Plan
             this.Load += new System.EventHandler(this.ScheduleView_Load);
             this.TopStrip.ResumeLayout(false);
             this.TopStrip.PerformLayout();
-            this.splitContainer1.Panel1.ResumeLayout(false);
-            this.splitContainer1.Panel1.PerformLayout();
-            this.splitContainer1.Panel2.ResumeLayout(false);
-            this.splitContainer1.ResumeLayout(false);
+            this.MainSplit.Panel1.ResumeLayout(false);
+            this.MainSplit.Panel1.PerformLayout();
+            this.MainSplit.Panel2.ResumeLayout(false);
+            this.MainSplit.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.DiscardButton)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.SaveButton)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DateRange)).EndInit();
@@ -365,7 +365,7 @@ namespace RiseOp.Services.Plan
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;
         private System.Windows.Forms.ToolStripComboBox GoalCombo;
         private System.Windows.Forms.ToolStripButton DetailsButton;
-        private System.Windows.Forms.SplitContainer splitContainer1;
+        private System.Windows.Forms.SplitContainer MainSplit;
         private System.Windows.Forms.Label LabelMinus;
         private System.Windows.Forms.Label LabelPlus;
         internal DateSlider ScheduleSlider;
@@ -373,7 +373,7 @@ namespace RiseOp.Services.Plan
         private System.Windows.Forms.Label RangeLabel;
         private System.Windows.Forms.TrackBar DateRange;
         internal RiseOp.Interface.TLVex.TreeListViewEx PlanStructure;
-        private System.Windows.Forms.WebBrowser DetailsBrowser;
+        private RiseOp.Interface.Views.WebBrowserEx DetailsBrowser;
         private RiseOp.Interface.Views.ImageButton SaveButton;
         private RiseOp.Interface.Views.ImageButton DiscardButton;
         private System.Windows.Forms.GroupBox groupBox1;

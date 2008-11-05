@@ -634,7 +634,7 @@ namespace RiseOp.Services.Transfer
             peer.UploadData = false;
             peer.CurrentPos = 0;
 
-            if (Logging) LogTransfer(peer, false, "Upload Stopped");
+            if (Logging) LogTransfer(peer, false, "Upload Stopped: " + reason);
 
             // removes from upload list as well
             if (deletePeer)
@@ -1139,13 +1139,20 @@ namespace RiseOp.Services.Transfer
             Send_Data(session);
         }
 
-        private void LogTransfer(RemotePeer peer, bool download, string message)
+        internal void LogTransfer(OpTransfer transfer, bool download, string message)
+        {
+            string tag = download ? "Download: " : "Upload: ";
+
+            Network.UpdateLog(transfer.DebugTag, tag + message);
+        }
+
+        internal void LogTransfer(RemotePeer peer, bool download, string message)
         {
             string tag = download ? "Download: " : "Upload: ";
 
             Network.UpdateLog(peer.Transfer.DebugTag, tag + message);
-            
-            /*if(download)
+
+            /*if (download)
                 peer.DebugDownload += message + "\r\n";
             else
                 peer.DebugUpload += message + "\r\n";*/
@@ -1319,9 +1326,6 @@ namespace RiseOp.Services.Transfer
 
         internal void Send_Data(RudpSession session)
         {
-            if (session.SendBuffLow())
-                return;
-
             DhtClient client = new DhtClient(session.UserID, session.ClientID);
             ulong id = client.RoutingID;
 
@@ -1349,8 +1353,8 @@ namespace RiseOp.Services.Transfer
 
                 if (data.Block == null || data.Block.Length == 0)
                 {
-                    //crit Debug.Assert(false);
-                    StopUpload(peer, false, "Data error");
+                    // file probably pruned
+                    StopUpload(peer, true, "Data error");
                     return;
                 }
 
@@ -1693,8 +1697,6 @@ namespace RiseOp.Services.Transfer
 
             try
             {
-                //crit - if this throws exception we might want to notify peers not to try back, all failed
-
                 LoadFile();
                 
                 if(ReadBuffer == null)
@@ -1711,7 +1713,10 @@ namespace RiseOp.Services.Transfer
                 else
                     return null;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                if (Control.Logging) Control.LogTransfer(this, false, "Read Error: " + ex.Message);
+            }
 
             return null;
         }
@@ -1765,7 +1770,10 @@ namespace RiseOp.Services.Transfer
 
                 return true;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                if (Control.Logging) Control.LogTransfer(this, true, "Write Error: " + ex.Message);
+            }
 
             return false;
         }

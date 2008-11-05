@@ -44,12 +44,12 @@ namespace RiseOp.Services.Storage
             this.FolderTreeView = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.FileListView = new RiseOp.Interface.TLVex.ContainerListViewEx();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.SelectedInfo = new RiseOp.Services.Storage.InfoPanel();
             this.SecondTimer = new System.Windows.Forms.Timer(this.components);
             this.RescanLabel = new System.Windows.Forms.Label();
             this.DiscardButton = new RiseOp.Interface.Views.ImageButton();
             this.SaveButton = new RiseOp.Interface.Views.ImageButton();
             this.ChangesLabel = new System.Windows.Forms.Label();
-            SelectedInfo = new InfoPanel();
             this.toolStrip1.SuspendLayout();
             this.splitContainer2.Panel1.SuspendLayout();
             this.splitContainer2.Panel2.SuspendLayout();
@@ -73,7 +73,7 @@ namespace RiseOp.Services.Storage
             this.GhostsButton});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(523, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(503, 25);
             this.toolStrip1.TabIndex = 1;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -137,7 +137,7 @@ namespace RiseOp.Services.Storage
             // splitContainer2.Panel2
             // 
             this.splitContainer2.Panel2.Controls.Add(this.FileListView);
-            this.splitContainer2.Size = new System.Drawing.Size(523, 272);
+            this.splitContainer2.Size = new System.Drawing.Size(503, 147);
             this.splitContainer2.SplitterDistance = 145;
             this.splitContainer2.TabIndex = 2;
             // 
@@ -161,7 +161,7 @@ namespace RiseOp.Services.Storage
             this.FolderTreeView.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.FolderTreeView.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.FolderTreeView.ShowLines = true;
-            this.FolderTreeView.Size = new System.Drawing.Size(145, 272);
+            this.FolderTreeView.Size = new System.Drawing.Size(145, 147);
             this.FolderTreeView.SmallImageList = null;
             this.FolderTreeView.StateImageList = null;
             this.FolderTreeView.TabIndex = 0;
@@ -188,7 +188,7 @@ namespace RiseOp.Services.Storage
             toggleColumnHeader1.Text = "Name";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader1.Visible = true;
-            toggleColumnHeader1.Width = 182;
+            toggleColumnHeader1.Width = 162;
             toggleColumnHeader2.Hovered = false;
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
@@ -227,20 +227,20 @@ namespace RiseOp.Services.Storage
             this.FileListView.Name = "FileListView";
             this.FileListView.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.FileListView.RowTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.FileListView.Size = new System.Drawing.Size(374, 272);
+            this.FileListView.Size = new System.Drawing.Size(354, 147);
             this.FileListView.SmallImageList = null;
             this.FileListView.StateImageList = null;
             this.FileListView.TabIndex = 0;
-            this.FileListView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseClick);
-            this.FileListView.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDoubleClick);
-            this.FileListView.SelectedIndexChanged += new System.EventHandler(this.FileListView_SelectedIndexChanged);
             this.FileListView.MouseUp += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseUp);
-            this.FileListView.DragDrop += new System.Windows.Forms.DragEventHandler(this.FileListView_DragDrop);
-            this.FileListView.MouseMove += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseMove);
-            this.FileListView.MouseDown += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDown);
-            this.FileListView.KeyUp += new System.Windows.Forms.KeyEventHandler(this.FileListView_KeyUp);
-            this.FileListView.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FileListView_KeyDown);
             this.FileListView.DragOver += new System.Windows.Forms.DragEventHandler(this.FileListView_DragOver);
+            this.FileListView.MouseMove += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseMove);
+            this.FileListView.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDoubleClick);
+            this.FileListView.DragDrop += new System.Windows.Forms.DragEventHandler(this.FileListView_DragDrop);
+            this.FileListView.KeyUp += new System.Windows.Forms.KeyEventHandler(this.FileListView_KeyUp);
+            this.FileListView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseClick);
+            this.FileListView.MouseDown += new System.Windows.Forms.MouseEventHandler(this.FileListView_MouseDown);
+            this.FileListView.SelectedIndexChanged += new System.EventHandler(this.FileListView_SelectedIndexChanged);
+            this.FileListView.KeyDown += new System.Windows.Forms.KeyEventHandler(this.FileListView_KeyDown);
             // 
             // splitContainer1
             // 
@@ -259,8 +259,8 @@ namespace RiseOp.Services.Storage
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.SelectedInfo);
-            this.splitContainer1.Size = new System.Drawing.Size(523, 380);
-            this.splitContainer1.SplitterDistance = 272;
+            this.splitContainer1.Size = new System.Drawing.Size(503, 255);
+            this.splitContainer1.SplitterDistance = 147;
             this.splitContainer1.TabIndex = 0;
             // 
             // SelectedInfo
@@ -268,7 +268,7 @@ namespace RiseOp.Services.Storage
             this.SelectedInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.SelectedInfo.Location = new System.Drawing.Point(0, 0);
             this.SelectedInfo.Name = "SelectedInfo";
-            this.SelectedInfo.Size = new System.Drawing.Size(523, 104);
+            this.SelectedInfo.Size = new System.Drawing.Size(503, 104);
             this.SelectedInfo.TabIndex = 0;
             // 
             // SecondTimer
@@ -282,7 +282,7 @@ namespace RiseOp.Services.Storage
             this.RescanLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.RescanLabel.AutoSize = true;
             this.RescanLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.RescanLabel.Location = new System.Drawing.Point(3, 413);
+            this.RescanLabel.Location = new System.Drawing.Point(3, 288);
             this.RescanLabel.Name = "RescanLabel";
             this.RescanLabel.Size = new System.Drawing.Size(86, 13);
             this.RescanLabel.TabIndex = 26;
@@ -296,13 +296,12 @@ namespace RiseOp.Services.Storage
             this.DiscardButton.ButtonHot = global::RiseOp.Properties.Resources.discard_hot;
             this.DiscardButton.ButtonNormal = global::RiseOp.Properties.Resources.discard_norm;
             this.DiscardButton.Image = global::RiseOp.Properties.Resources.discard_norm;
-            this.DiscardButton.Location = new System.Drawing.Point(437, 410);
+            this.DiscardButton.Location = new System.Drawing.Point(417, 285);
             this.DiscardButton.Name = "DiscardButton";
             this.DiscardButton.Size = new System.Drawing.Size(64, 19);
             this.DiscardButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
             this.DiscardButton.TabIndex = 33;
             this.DiscardButton.TabStop = false;
-            this.DiscardButton.Visible = false;
             this.DiscardButton.Click += new System.EventHandler(this.DiscardButton_Click);
             // 
             // SaveButton
@@ -312,13 +311,12 @@ namespace RiseOp.Services.Storage
             this.SaveButton.ButtonHot = global::RiseOp.Properties.Resources.save_hot;
             this.SaveButton.ButtonNormal = global::RiseOp.Properties.Resources.save_norm;
             this.SaveButton.Image = global::RiseOp.Properties.Resources.save_norm;
-            this.SaveButton.Location = new System.Drawing.Point(367, 410);
+            this.SaveButton.Location = new System.Drawing.Point(347, 285);
             this.SaveButton.Name = "SaveButton";
             this.SaveButton.Size = new System.Drawing.Size(64, 19);
             this.SaveButton.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
             this.SaveButton.TabIndex = 32;
             this.SaveButton.TabStop = false;
-            this.SaveButton.Visible = false;
             this.SaveButton.Click += new System.EventHandler(this.SaveButton_Click);
             // 
             // ChangesLabel
@@ -326,7 +324,7 @@ namespace RiseOp.Services.Storage
             this.ChangesLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.ChangesLabel.AutoSize = true;
             this.ChangesLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.ChangesLabel.Location = new System.Drawing.Point(279, 413);
+            this.ChangesLabel.Location = new System.Drawing.Point(260, 288);
             this.ChangesLabel.Name = "ChangesLabel";
             this.ChangesLabel.Size = new System.Drawing.Size(81, 13);
             this.ChangesLabel.TabIndex = 34;
@@ -345,7 +343,7 @@ namespace RiseOp.Services.Storage
             this.Controls.Add(this.RescanLabel);
             this.Controls.Add(this.toolStrip1);
             this.Name = "StorageView";
-            this.Size = new System.Drawing.Size(523, 432);
+            this.Size = new System.Drawing.Size(503, 307);
             this.Load += new System.EventHandler(this.StorageView_Load);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();

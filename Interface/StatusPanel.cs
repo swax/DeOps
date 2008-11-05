@@ -57,8 +57,8 @@ namespace RiseOp.Interface
                 </head>
                 <body bgcolor=WhiteSmoke>
 
-                    <div class='header' id='header'></div>
-                    <div class='content' id='content'></div>
+                    <div class='header' id='header'><?=header?></div>
+                    <div class='content' id='content'><?=content?></div>
 
                 </body>
                 </html>";
@@ -67,8 +67,8 @@ namespace RiseOp.Interface
         OpCore Core;
 
         enum StatusModeType { None, Network, User, Project, Group };
-        
-        StatusModeType CurrentMode = StatusModeType.Network;
+
+        StatusModeType CurrentMode = StatusModeType.None;
 
         ulong UserID;
         uint  ProjectID;
@@ -84,8 +84,6 @@ namespace RiseOp.Interface
             InitializeComponent();
 
             StatusBrowser.DocumentText = ContentPage;
-
-            
         }
 
         internal void Init(OpCore core)
@@ -164,8 +162,19 @@ namespace RiseOp.Interface
                 ShowNetwork();
         }
 
+        bool PrevLookup;
+        bool PrevOp;
+        FirewallType PrevFirewall;
+
         internal void ShowNetwork()
         {
+            if(Utilities.IsRunningOnMono())
+                if(CurrentMode == StatusModeType.Network &&
+                    PrevOp ==  Core.Network.Responsive &&
+                    PrevFirewall == Core.Firewall &&
+                    (Core.Context.Lookup == null || PrevLookup == Core.Context.Lookup.Network.Responsive))
+                    return;
+
             CurrentMode = StatusModeType.Network;
             UserID = 0;
 
@@ -179,12 +188,16 @@ namespace RiseOp.Interface
             {
                 string lookup = Core.Context.Lookup.Network.Responsive ? "Connected" : "Connecting";
                 content += "<b>Lookup: </b>" + lookup + "<br>";
+
+                PrevLookup = Core.Context.Lookup.Network.Responsive;
             }
 
             string operation = Core.Network.Responsive ? "Connected" : "Connecting";
             content += "<b>Network: </b>" + operation + "<br>";
+            PrevOp = Core.Network.Responsive;
 
-            content += "<b>Firewall: </b>" + Core.GetFirewallString() + "<br>";
+            content += "<b>Firewall: </b>" + Core.Firewall.ToString() + "<br>";
+            PrevFirewall = Core.Firewall;
 
             content += "<b><a href='http://settings'>Settings</a></b><br>";
 
@@ -200,12 +213,12 @@ namespace RiseOp.Interface
             header += "<b>" + title + "</b>";
             header += "</div>";
 
-            StatusBrowser.Document.InvokeScript("SetElement", new String[] { "header", header });
+            StatusBrowser.SafeInvokeScript("SetElement", new String[] { "header", header });
         }
 
         private void UpdateContent(string content)
         {
-            StatusBrowser.Document.InvokeScript("SetElement", new String[] { "content", content });
+            StatusBrowser.SafeInvokeScript("SetElement", new String[] { "content", content });
         }
 
 
@@ -312,7 +325,7 @@ namespace RiseOp.Interface
                 content += "</div>";
 
                 UpdateHeader("MediumSlateBlue", "Trust Loop");
-                StatusBrowser.Document.InvokeScript("SetElement", new String[] { "content", content });
+                StatusBrowser.SafeInvokeScript("SetElement", new String[] { "content", content });
                 return;
             }
 
@@ -333,7 +346,7 @@ namespace RiseOp.Interface
             {
                 OpLink local = Core.Trust.GetLink(Core.UserID, ProjectID);
 
-                if (local.Uplink == link)
+                if (local != null && local.Uplink == link)
                     content += getImgLine("untrust", UntrustImg); 
                 else
                     content += getImgLine("trust", TrustImg); 
@@ -398,6 +411,7 @@ namespace RiseOp.Interface
 
             LastLicense = null;
 
+            string aliases = "";
             string locations = "";
 
             foreach (ClientInfo info in Core.Locations.GetClients(user))
@@ -405,7 +419,9 @@ namespace RiseOp.Interface
                 string name = Core.Locations.GetLocationName(user, info.ClientID);
                 bool local = Core.Network.Local.Equals(info);
 
-
+                if (info.Data.Name != username)
+                    aliases += AddAlias(info.Data.Name);
+                 
                 if (local)
                     name = "<a href='http://edit_location'>" + name + "</a>";
 
@@ -427,7 +443,7 @@ namespace RiseOp.Interface
                     locations += status;
 
 
-                if (info.Data.GmtOffset != System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes)
+                if (info.Data.GmtOffset != System.TimeZone.CurrentTimeZone.GetUtcOffset(Core.TimeNow).TotalMinutes)
                     locations += ", Local Time " + Core.TimeNow.ToUniversalTime().AddMinutes(info.Data.GmtOffset).ToString("t");
 
                 locations += "<br>";
@@ -449,27 +465,32 @@ namespace RiseOp.Interface
                 content += locations;
                 content += "</div>";
             }
-
-            string aliases = "";
+            
+            // add aliases
             if (Core.Trust != null)
             {
                 OpTrust trust = Core.Trust.GetTrust(user);
 
                 if (trust != null && trust.Name != username)
-                    aliases += "<a href='http://use_name/" + trust.Name + "'>" + trust.Name + "</a>, ";
+                    aliases += AddAlias(trust.Name);
             }
 
             OpBuddy buddy;
             if(Core.Buddies.BuddyList.SafeTryGetValue(user, out buddy))
-                if(buddy.Name != username)
-                    aliases += "<a href='http://use_name/" + buddy.Name + "'>" + buddy.Name + "</a>, ";
+                if(buddy.Name != username) // should be equal unless we synced our buddy list with ourselves somewhere else
+                    aliases += AddAlias(buddy.Name);
 
             if(aliases != "")
                 content += "<b>Aliases: </b>" + aliases.Trim(',', ' ') + "<br>";
 
 
             UpdateHeader("MediumSlateBlue", header);
-            StatusBrowser.Document.InvokeScript("SetElement", new String[] { "content", content });
+            StatusBrowser.SafeInvokeScript("SetElement", new String[] { "content", content });
+        }
+
+        private string AddAlias(string name)
+        {
+            return "<a href='http://use_name/" + name + "'>" + name + "</a>, ";
         }
 
         string GenerateContent(List<Tuple<string, string>> tuples, List<Tuple<string, string>> locations, bool online)
@@ -496,6 +517,9 @@ namespace RiseOp.Interface
         private void StatusBrowser_Navigating(object sender, WebBrowserNavigatingEventArgs e)
         {
             string url = e.Url.OriginalString;
+
+            if (Utilities.IsRunningOnMono() && url.StartsWith("wyciwyg"))
+                return;
 
             if (url.StartsWith("about:blank"))
                 return;

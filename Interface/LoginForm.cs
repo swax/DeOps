@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -26,9 +27,9 @@ namespace RiseOp.Interface
     {
         RiseOpContext Context;
 
-        internal string Arg = "";
         string LastBrowse;
-        //bool SuppressProcessLink;
+        string LastOpened;
+        internal string Arg = "";
 
         internal G2Protocol Protocol = new G2Protocol();
 
@@ -51,50 +52,58 @@ namespace RiseOp.Interface
             if (Context.Sim != null) // prevent sim recursion
                 EnterSimLink.Visible = false;
 
+            LastBrowse = ApplicationEx.UserAppDataPath();
+
+            LastOpened = (arg != "") ? arg : Properties.Settings.Default.LastOpened;
+
             // each profile (.rop) is in its own directory
             // /root/profiledirs[]/profile.rop
-            LastBrowse = (context.Sim == null) ? Application.StartupPath : context.Sim.Internet.LoadedPath;
+            if (context.Sim == null)
+            {
+                LoadProfiles(ApplicationEx.UserAppDataPath());
+                LoadProfiles(Application.StartupPath);
 
-            // if started with file argument, load profiles around the same location
-            if (File.Exists(arg))
-                LastBrowse = Path.GetDirectoryName(Path.GetDirectoryName(arg));
+                // if started with file argument, load profiles around the same location
+                if (File.Exists(arg))
+                    LoadProfiles(Path.GetDirectoryName(Path.GetDirectoryName(arg)));
+            }
+            else
+                LoadProfiles(context.Sim.Internet.LoadedPath);
 
-            /* if started wtih url argument, select an already created user by default
-            string publicNet = null;
-            if (arg.StartsWith(@"riseop://") && !arg.StartsWith(@"riseop://invite/"))
-                publicNet = arg.Substring(9).TrimEnd('/');*/
 
-            // load combo box
             OpComboItem select = null;
-
-            foreach (string directory in Directory.GetDirectories(LastBrowse))
-                foreach (string file in Directory.GetFiles(directory, "*.rop"))
-                {
-                    OpComboItem item = new OpComboItem(this, file);
-
-                    if (file == arg)
+            if(LastOpened != null)
+                foreach (OpComboItem item in OpCombo.Items)
+                    if (item.Fullpath == LastOpened)
                         select = item;
 
-                    /*if (publicNet != null && Path.GetFileName(file).Contains(publicNet))
-                    {
-                        select = item;
-                        SuppressProcessLink = true; // found an existing profile, dont need to bother user to create a new one
-                    }*/
-
-                    OpCombo.Items.Add(item);
-                }
 
             if (select != null)
                 OpCombo.SelectedItem = select;
+
             else if (OpCombo.Items.Count > 0)
                 OpCombo.SelectedIndex = 0;
+
             else
                 CreateGlobalLink.Visible = true;
 
             OpCombo.Items.Add("Browse...");
 
-            if(OpCombo.SelectedItem != null)
+            if (OpCombo.SelectedItem != null)
                 TextPassword.Select();
+        }
+
+        private void LoadProfiles(string root)
+        {
+            foreach (string directory in Directory.GetDirectories(root))
+                foreach (string file in Directory.GetFiles(directory, "*.rop"))
+                {
+                    foreach (OpComboItem item in OpCombo.Items)
+                        if (item.Fullpath == file)
+                            continue;
+
+                    OpCombo.Items.Add(new OpComboItem(this, file));
+                }
         }
 
         internal bool ProcessLink()
@@ -240,47 +249,72 @@ namespace RiseOp.Interface
 
         private void ButtonLoad_Click(object sender, EventArgs e)
         {
+            Debug.WriteLine("GUI Thread: " + Thread.CurrentThread.ManagedThreadId);
+
+
+            OpComboItem item = OpCombo.SelectedItem as OpComboItem;
+
+            if (item == null)
+                return;
+
+            bool handled = false;
+
+            // look for item in context cores, show mainGui, or notify user to check tray
+            Context.Cores.LockReading(delegate()
+            {
+                foreach (OpCore core in Context.Cores)
+                    if (core.User.ProfilePath == item.Fullpath)
+                    {
+                        if (core.GuiMain != null)
+                        {
+                            core.GuiMain.WindowState = FormWindowState.Normal;
+                            core.GuiMain.Activate();
+
+                            Close(); // user thinks they logged back on, window just brought to front
+                        }
+                        else
+                            MessageBox.Show(this, "This profile is already loaded, check the system tray", "RiseOp");
+
+                        handled = true;
+                    }
+            });
+
+            if (handled)
+                return;
+
+            OpCore newCore = null;
+
             try
             {
-                OpComboItem item = OpCombo.SelectedItem as OpComboItem;
+                newCore = new OpCore(Context, item.Fullpath, TextPassword.Text);
 
-                if (item == null)
-                    return;
+                Context.ShowCore(newCore);
 
-                bool unique = true;
+                Properties.Settings.Default.LastOpened = item.Fullpath;
 
-                // look for item in context cores, show mainGui, or notify user to check tray
-                Context.Cores.LockReading(delegate()
-                {
-                    foreach (OpCore core in Context.Cores)
-                        if (core.User.ProfilePath == item.Fullpath)
-                        {
-                            if (core.GuiMain != null)
-                            {
-                                core.GuiMain.WindowState = FormWindowState.Normal;
-                                core.GuiMain.Activate();
-
-                                Close(); // user thinks they logged back on, window just brought to front
-                            }
-                            else
-                                MessageBox.Show(this, "This profile is already loaded, check the system tray", "RiseOp");
-
-                            unique = false;
-                        }
-                });
-
-                if (unique)
-                {
-                    Context.ShowCore(new OpCore(Context, item.Fullpath, TextPassword.Text));
-
-                    Close();
-                }
+                Close();
             }
-            catch
+            catch(Exception ex)
             {
-                //MessageBox.Show(ex.ToString());
-                //UpdateLog("Exception", "Login: " + ex.ToString());
-                MessageBox.Show(this, "Wrong Passphrase");
+                // if interface threw exception, remove the added core
+                if (newCore != null)
+                    Context.RemoveCore(newCore);
+
+                if (ex is System.Security.Cryptography.CryptographicException)
+                    MessageBox.Show(this, "Wrong Passphrase");
+
+                else
+                {
+                    //crit - delete
+                    using (StreamWriter log = File.CreateText("debug.txt"))
+                    {
+                        log.Write(ex.Message);
+                        log.WriteLine("");
+                        log.Write(ex.StackTrace); 
+                    }
+
+                    new ErrorReport(ex).ShowDialog();
+                }
             }
         }
 

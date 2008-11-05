@@ -136,7 +136,7 @@ namespace RiseOp.Interface
             this.CommandSplit.Panel2.BackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandSplit.Panel2.Controls.Add(this.SelectionInfo);
             this.CommandSplit.Size = new System.Drawing.Size(171, 447);
-            this.CommandSplit.SplitterDistance = 344;
+            this.CommandSplit.SplitterDistance = 354;
             this.CommandSplit.SplitterWidth = 2;
             this.CommandSplit.TabIndex = 4;
             // 
@@ -161,7 +161,7 @@ namespace RiseOp.Interface
             this.BuddyList.Name = "BuddyList";
             this.BuddyList.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.BuddyList.RowTrackColor = System.Drawing.Color.WhiteSmoke;
-            this.BuddyList.Size = new System.Drawing.Size(171, 316);
+            this.BuddyList.Size = new System.Drawing.Size(171, 326);
             this.BuddyList.SmallImageList = null;
             this.BuddyList.StateImageList = null;
             this.BuddyList.TabIndex = 0;
@@ -169,7 +169,6 @@ namespace RiseOp.Interface
             // 
             // SideNavStrip
             // 
-            this.SideNavStrip.BackColor = System.Drawing.Color.CornflowerBlue;
             this.SideNavStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.SideNavStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.SideViewsButton,
@@ -247,7 +246,7 @@ namespace RiseOp.Interface
             this.CommandTree.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.CommandTree.RowTrackColor = System.Drawing.Color.WhiteSmoke;
             this.CommandTree.ShowLines = true;
-            this.CommandTree.Size = new System.Drawing.Size(171, 316);
+            this.CommandTree.Size = new System.Drawing.Size(171, 326);
             this.CommandTree.SmallImageList = null;
             this.CommandTree.StateImageList = null;
             this.CommandTree.TabIndex = 0;
@@ -260,12 +259,11 @@ namespace RiseOp.Interface
             this.SelectionInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.SelectionInfo.Location = new System.Drawing.Point(0, 0);
             this.SelectionInfo.Name = "SelectionInfo";
-            this.SelectionInfo.Size = new System.Drawing.Size(171, 101);
+            this.SelectionInfo.Size = new System.Drawing.Size(171, 91);
             this.SelectionInfo.TabIndex = 0;
             // 
             // NavStrip
             // 
-            this.NavStrip.BackColor = System.Drawing.Color.CornflowerBlue;
             this.NavStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.NavStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.PersonNavButton,
@@ -275,7 +273,6 @@ namespace RiseOp.Interface
             this.NewsButton});
             this.NavStrip.Location = new System.Drawing.Point(0, 31);
             this.NavStrip.Name = "NavStrip";
-            this.NavStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
             this.NavStrip.ShowItemToolTips = false;
             this.NavStrip.Size = new System.Drawing.Size(568, 25);
             this.NavStrip.TabIndex = 3;
@@ -507,7 +504,7 @@ namespace RiseOp.Interface
             this.SearchButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.SearchButton.Name = "SearchButton";
             this.SearchButton.Size = new System.Drawing.Size(23, 28);
-            this.SearchButton.Text = "toolStripButton1";
+            this.SearchButton.Text = "Search";
             this.SearchButton.Click += new System.EventHandler(this.SearchButton_Click);
             // 
             // SearchBox
@@ -568,9 +565,9 @@ namespace RiseOp.Interface
             // 
             this.toolStripLabel2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.None;
             this.toolStripLabel2.Margin = new System.Windows.Forms.Padding(0, 25, 0, 2);
-            this.toolStripLabel2.Name = "toolStripLabel2";
+            this.toolStripLabel2.Name = "";
             this.toolStripLabel2.Size = new System.Drawing.Size(18, 0);
-            this.toolStripLabel2.Text = "toolStripLabel2";
+            this.toolStripLabel2.Text = "";
             // 
             // OperationButton
             // 

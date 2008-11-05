@@ -29,7 +29,7 @@ namespace RiseOp.Services.Profile
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PreviewTemplate));
-            this.Browser = new System.Windows.Forms.WebBrowser();
+            this.Browser = new RiseOp.Interface.Views.WebBrowserEx();
             this.SuspendLayout();
             // 
             // Browser
@@ -62,6 +62,6 @@ namespace RiseOp.Services.Profile
 
         #endregion
 
-        private System.Windows.Forms.WebBrowser Browser;
+        private RiseOp.Interface.Views.WebBrowserEx Browser;
     }
 }

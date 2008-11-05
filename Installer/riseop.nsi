@@ -1,11 +1,12 @@
 
 XPStyle on
 
+
 ; The name of the installer
 Name "RiseOp"
 
 ; The file to write
-OutFile "RiseOpInstall_1.0.2.exe"
+OutFile "RiseOpInstall_1.0.6.exe"
 
 ; The default installation directory
 InstallDir $PROGRAMFILES\RiseOp
@@ -39,15 +40,17 @@ Section "RiseOp"
   ; Set output path to the installation directory.
   SetOutPath $INSTDIR
   
+
   ; Put file there
   File "..\bin\Protected\RiseOp.exe"
   File "..\Update\bin\Release\UpdateOp.exe"
   File "..\bin\Protected\bootstrap.dat"
-  File dotnetfx35setup.exe
   
+
   ; Write the installation path into the registry
   WriteRegStr HKLM SOFTWARE\RiseOp "Install_Dir" "$INSTDIR"
   
+
   ; Write the uninstall keys for Windows
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RiseOp" "DisplayName" "RiseOp"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RiseOp" "UninstallString" '"$INSTDIR\uninstall.exe"'
@@ -55,15 +58,30 @@ Section "RiseOp"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RiseOp" "NoRepair" 1
   WriteUninstaller "uninstall.exe"
   
+
+  ; start menu entries
+  CreateDirectory "$SMPROGRAMS\RiseOp"
+  CreateShortCut "$SMPROGRAMS\RiseOp\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
+  CreateShortCut "$SMPROGRAMS\RiseOp\RiseOp.lnk" "$INSTDIR\RiseOp.exe" "" "$INSTDIR\RiseOp.exe" 0
+
+
+  ; register .rop with riseop
+  WriteRegStr HKCR ".rop" "" "rop"
+  WriteRegStr HKCR "rop"  "" "RiseOp Identity"
+  WriteRegStr HKCR "rop\DefaultIcon" "" "$\"$INSTDIR\RiseOp.exe$\""
+  WriteRegStr HKCR "rop\shell\open\command" "" "$\"$INSTDIR\RiseOp.exe$\" $\"%1$\""
+
+
+  ; register riseop:// with riseop
+  WriteRegStr HKCR "riseop" "" "URL:riseop Protocol"
+  WriteRegStr HKCR "riseop" "URL Protocol" ""
+  WriteRegStr HKCR "riseop\DefaultIcon" "" "$\"$INSTDIR\RiseOp.exe$\""
+  WriteRegStr HKCR "riseop\shell\open\command" "" "$\"$INSTDIR\RiseOp.exe$\" $\"%1$\""
+            
+
   DetailPrint "Optimizing..."
   nsExec::Exec '"$WINDIR\Microsoft.NET\Framework\v2.0.50727\ngen.exe" install "$INSTDIR\RiseOp.exe" /queue'
 
-  CreateDirectory "$SMPROGRAMS\RiseOp"
-  CreateShortCut "$SMPROGRAMS\RiseOp\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
-  CreateShortCut "$SMPROGRAMS\RiseOp\Install .Net 3.5.lnk" "$INSTDIR\dotnetfx35setup.exe" "" "$INSTDIR\dotnetfx35setup.exe" 0
-  CreateShortCut "$SMPROGRAMS\RiseOp\RiseOp.lnk" "$INSTDIR\RiseOp.exe" "" "$INSTDIR\RiseOp.exe" 0
-
-  MessageBox MB_OK "If RiseOp does not open, install .Net 3.5 from the RiseOp Start Menu." 
 
 SectionEnd
 

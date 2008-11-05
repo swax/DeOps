@@ -26,6 +26,8 @@ namespace RiseOp
        {
             Application.EnableVisualStyles();
 
+            Application.ThreadException += new ThreadExceptionEventHandler(Application_ThreadException);
+
             try
             {
                 RiseOpContext context = new RiseOpContext(args);
@@ -35,10 +37,29 @@ namespace RiseOp
             }
             catch(Exception ex)
             {
-                ErrorReport report = new ErrorReport(ex);
-
-                Application.Run(report);
+                CrashApp(ex);
             }
+        }
+
+        static void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
+        {
+            CrashApp(e.Exception);
+        }
+
+        private static void CrashApp(Exception ex)
+        {
+            // cascading errors, we want to catch the FIRST error, so if another one comes in, ignore it
+            foreach (Form window in Application.OpenForms)
+                if (window is ErrorReport)
+                    return; // dont want to call app exit, causing first error form to closed
+
+            // need to exit app asap
+            // this signals timers (possibly looping crashing timers) to die
+            // also signals running core threads to die
+            Application.Exit();
+
+            
+            new System.Threading.Thread(() => Application.Run(new ErrorReport(ex))).Start();
         }
     }
 

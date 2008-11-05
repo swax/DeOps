@@ -256,7 +256,7 @@ namespace RiseOp.Implementation.Transport
 		{
             if (State == RudpState.Connecting)
             {
-                State = RudpState.Closed;
+                ChangeState(RudpState.Closed);
                 return;
             }
 
@@ -403,7 +403,7 @@ namespace RiseOp.Implementation.Transport
 			if(SynAckSent && SynAckReceieved)
 			{
                 Session.Log("Connected (recv syn)");
-				State = RudpState.Connected;
+				ChangeState(RudpState.Connected);
 				SetConnected();
 			}
 		}
@@ -467,7 +467,7 @@ namespace RiseOp.Implementation.Transport
 				    if(SynAckSent && SynAckReceieved)
 				    {
                         Session.Log("Connected (recv ack)");
-					    State = RudpState.Connected;
+					    ChangeState(RudpState.Connected);
 					    SetConnected();
 
                         // if data packets received before final connection ack, process them now
@@ -612,7 +612,7 @@ namespace RiseOp.Implementation.Transport
                 FinPacket.Payload = new byte[1] { (byte)reason };
             }
 
-            State = RudpState.Finishing;
+            ChangeState(RudpState.Finishing);
             FinTimeout = 15;
 
             TrySendFin();
@@ -962,11 +962,11 @@ namespace RiseOp.Implementation.Transport
                     FinTimeout--;
 
                 if (FinTimeout == 0)
-                    State = RudpState.Closed;
+                    ChangeState(RudpState.Closed);
 
                 // buffer clear, all packets acked in sequence including fins
                 if (FinSent && FinReceived && SendPacketMap.Count == 0) 
-                    State = RudpState.Closed;
+                    ChangeState(RudpState.Closed);
             }
 
 			// re-send packets in out buffer
@@ -982,12 +982,20 @@ namespace RiseOp.Implementation.Transport
             Bandwidth.NextSecond();
 		}
 
+ 
+
         internal void CheckRoutes()
         {
             PrimaryAddress.Reset = true;
 
             foreach (RudpAddress address in AddressMap.Values)
                 SendPing(address);
+        }
+
+        private void ChangeState(RudpState state)
+        {
+            Session.Log("Socket - " + state);
+            State = state;
         }
 	}
 

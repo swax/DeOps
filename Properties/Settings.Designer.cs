@@ -22,5 +22,89 @@ namespace RiseOp.Properties {
                 return defaultInstance;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool NeedUpgrade {
+            get {
+                return ((bool)(this["NeedUpgrade"]));
+            }
+            set {
+                this["NeedUpgrade"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LastOpened {
+            get {
+                return ((string)(this["LastOpened"]));
+            }
+            set {
+                this["LastOpened"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LastSimPath {
+            get {
+                return ((string)(this["LastSimPath"]));
+            }
+            set {
+                this["LastSimPath"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public ulong LookupID {
+            get {
+                return ((ulong)(this["LookupID"]));
+            }
+            set {
+                this["LookupID"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public ushort LookupTcp {
+            get {
+                return ((ushort)(this["LookupTcp"]));
+            }
+            set {
+                this["LookupTcp"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public ushort LookupUdp {
+            get {
+                return ((ushort)(this["LookupUdp"]));
+            }
+            set {
+                this["LookupUdp"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool MonoHelp {
+            get {
+                return ((bool)(this["MonoHelp"]));
+            }
+            set {
+                this["MonoHelp"] = value;
+            }
+        }
     }
 }

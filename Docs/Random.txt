@@ -371,7 +371,7 @@ Pro
 	Single file storage
 	Auto language translation - use little drop down flags on left hand side project bar
 	componentized, pro version lets you set visibility(up/down) on files/messages, free version everything is transparent
-	
+	upgrades - user enters license id into purchase notes on paypal
 
 Packets
 	Transport

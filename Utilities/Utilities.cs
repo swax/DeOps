@@ -11,6 +11,8 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
+using Microsoft.Win32;
+
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
@@ -19,6 +21,7 @@ using RiseOp.Implementation.Protocol.Special;
 
 using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
+using RiseOp.Interface.Views;
 
 
 namespace RiseOp
@@ -576,8 +579,80 @@ namespace RiseOp
 
             return rtf;
         }
+
+        internal static bool IsRunningOnMono()
+        {
+            return (Type.GetType("Mono.Runtime") != null && Properties.Settings.Default.MonoHelp);
+        }
+
+        internal static void SetupToolstrip(ToolStrip strip, OpusColorTable colorTable)
+        {
+            strip.Renderer = new ToolStripProfessionalRenderer(colorTable);
+
+            if (IsRunningOnMono() && strip.Items != null)
+                foreach (ToolStripItem item in strip.Items)
+                {
+                    //item.Image = null;
+                    //item.DisplayStyle = ToolStripItemDisplayStyle.Text;
+                }
+        }
+
+        internal static void FixMonoDropDownOpening(ToolStripDropDownButton button, EventHandler action)
+        {
+            if (IsRunningOnMono())
+                button.MouseEnter += (s, e) => action.Invoke(s, null);
+        }
     }
 
+    internal static partial class ApplicationEx
+    {
+        internal static string CommonAppDataPath()
+        {
+            // can crash on linux if we cant access dir
+            try
+            {
+                // srtip version info
+                string path = Path.GetDirectoryName(Application.CommonAppDataPath);
+
+                if (Directory.Exists(path))
+                    return path;
+            }
+            catch { }
+
+            return Application.StartupPath;
+        }
+
+        internal static string UserAppDataPath()
+        {
+            
+            try
+            {
+                // srtip version info
+                string path = Path.GetDirectoryName(Application.UserAppDataPath);
+
+                if (Directory.Exists(path))
+                    return path;
+            }
+            catch { }
+
+            return Application.StartupPath;
+        }
+
+        private static RegistryKey GetParent(RegistryKey hive, RegistryKey value)
+        {
+            int first = value.Name.IndexOf(@"\");
+            int last = value.Name.LastIndexOf(@"\");
+
+            string parentname = value.Name.Substring(first + 1, last - first);
+
+            RegistryKey parent = hive.OpenSubKey(parentname);
+
+            if (parent != null)
+                return parent;
+
+            return null;
+        }
+    }
 
     internal class ListViewColumnSorter : IComparer
     {

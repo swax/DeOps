@@ -67,7 +67,7 @@ namespace RiseOp.Services.Storage
         internal StorageView(StorageService storages, ulong id, uint project)
         {
             InitializeComponent();
-            
+
             Storages = storages;
             Core = Storages.Core;
             Trust = Core.Trust;
@@ -91,7 +91,7 @@ namespace RiseOp.Services.Storage
             MenuDelete = new ToolStripMenuItem("Delete", StorageRes.Reject, FileView_Delete);
             MenuDetails = new ToolStripMenuItem("Details", StorageRes.details, FileView_Details);
 
-            toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+            Utilities.SetupToolstrip(toolStrip1, new OpusColorTable());
         }
 
         internal override string GetTitle(bool small)
@@ -2181,7 +2181,7 @@ namespace RiseOp.Services.Storage
                     SaveButton.Visible = false;
                     DiscardButton.Visible = false;
 
-                    splitContainer1.Height = Height - 24 - toolStrip1.Height;
+                    splitContainer1.Height = Height - ChangesLabel.Height - toolStrip1.Height - 8;
                 }
 
                 ChangesLabel.Text = "Processing " + (Storages.HashQueue.Count).ToString() + " Changes...";
@@ -2195,7 +2195,7 @@ namespace RiseOp.Services.Storage
                     SaveButton.Visible = true;
                     DiscardButton.Visible = true;
 
-                    splitContainer1.Height = Height - 24 - toolStrip1.Height;
+                    splitContainer1.Height = Height - toolStrip1.Height - SaveButton.Height - 8;
                 }
             }
             else
@@ -2207,6 +2207,13 @@ namespace RiseOp.Services.Storage
                     DiscardButton.Visible = false;
                     splitContainer1.Height = Height - toolStrip1.Height;
                 }
+            }
+
+            if (Utilities.IsRunningOnMono())
+            {
+                // buttons aren't positioned when they aren't visible
+                SaveButton.Location = new Point(Width - 156, Height - 22);
+                DiscardButton.Location = new Point(Width - 86, Height - 22);
             }
         }
 

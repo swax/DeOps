@@ -34,7 +34,7 @@ namespace RiseOp.Services.Plan
             this.DetailsButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.DetailsBrowser = new System.Windows.Forms.WebBrowser();
+            this.DetailsBrowser = new RiseOp.Interface.Views.WebBrowserEx();
             this.DiscardButton = new RiseOp.Interface.Views.ImageButton();
             this.SaveButton = new RiseOp.Interface.Views.ImageButton();
             MainPanel = new GoalPanel();
@@ -198,7 +198,7 @@ namespace RiseOp.Services.Plan
         private System.Windows.Forms.ToolStripDropDownButton SelectGoalButton;
         private System.Windows.Forms.ToolStripButton DetailsButton;
         private GoalPanel MainPanel;
-        private System.Windows.Forms.WebBrowser DetailsBrowser;
+        private RiseOp.Interface.Views.WebBrowserEx DetailsBrowser;
         private RiseOp.Interface.Views.ImageButton SaveButton;
         private RiseOp.Interface.Views.ImageButton DiscardButton;
         private System.Windows.Forms.GroupBox groupBox1;

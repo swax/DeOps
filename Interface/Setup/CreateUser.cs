@@ -33,7 +33,7 @@ namespace RiseOp.Interface.Startup
 
             OpNameLabel.Text = OpName;
 
-            BrowseLink.Text = (context.Sim == null) ? Application.StartupPath : context.Sim.Internet.LoadedPath;
+            BrowseLink.Text = (context.Sim == null) ? ApplicationEx.UserAppDataPath() : context.Sim.Internet.LoadedPath;
         }
 
         internal CreateUser(RiseOpContext context, InvitePackage invite)
@@ -48,7 +48,7 @@ namespace RiseOp.Interface.Startup
             OpNameLabel.Text = OpName;
             TextName.Text = invite.Info.UserName;
 
-            BrowseLink.Text = (context.Sim == null) ? Application.StartupPath : context.Sim.Internet.LoadedPath;
+            BrowseLink.Text = (context.Sim == null) ? ApplicationEx.UserAppDataPath() : context.Sim.Internet.LoadedPath;
         }
 
         private void BrowseLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -87,8 +87,28 @@ namespace RiseOp.Interface.Startup
                 Directory.CreateDirectory(BrowseLink.Text + Path.DirectorySeparatorChar + filename);
 
                 if (File.Exists(path))
-                    throw new Exception("Cannot create because " + filename + " already exists");
+                {
+                    // A profile for test - swax already exists, overwrite? Yes / No / Cancel
+                    DialogResult result = MessageBox.Show("A profile for " + filename + " already exists. Overwrite?", "Overwrite?", MessageBoxButtons.YesNoCancel);
 
+                    if (result == DialogResult.Cancel)
+                        return;
+                    
+                    if (result == DialogResult.No)
+                    {
+                        Close();
+                        return;
+                    }
+
+                    // All data for test - swax will be lost OK/Cancel
+                    result = MessageBox.Show("Are you sure? All previous data will be lost for " + filename, "Overwrite?", MessageBoxButtons.YesNo);
+
+                    if (result == DialogResult.No)
+                        return;
+
+                    Directory.Delete(Path.GetDirectoryName(path), true);
+                }
+                
                 byte[] opKey = null;
 
                 if (Invite != null)

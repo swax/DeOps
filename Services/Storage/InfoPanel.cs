@@ -119,7 +119,7 @@ namespace RiseOp.Services.Storage
 	                                    <?=reset?>
                                     }
 
-                                    function UpdateStatus(id, text)
+                                    function SetElement(id, text)
                                     {
                                         document.getElementById(id).innerHTML = text;
                                     }
@@ -405,10 +405,8 @@ namespace RiseOp.Services.Storage
                 return;
             
             // prevents clicking sound when browser navigates
-            InfoDisplay.Hide();
-            InfoDisplay.DocumentText = html;
+            InfoDisplay.SetDocNoClick(html);
             CurrentWebSource = html; // document text doesn't update immediate, so for compare to work above we need this
-            InfoDisplay.Show();
         }
 
         internal void ShowDots()
@@ -442,6 +440,9 @@ namespace RiseOp.Services.Storage
             Html.Length = 0;
             Html.Append(DifferencePage);
 
+            if (ParentView == null)
+                return;
+            
             if (ParentView.CurrentDiffs.Count > 0)
             {
                 Html.Replace("<?=table?>", DifferenceTable);
@@ -1028,6 +1029,9 @@ namespace RiseOp.Services.Storage
 
             string url = e.Url.OriginalString;
 
+            if (Utilities.IsRunningOnMono() && url.StartsWith("wyciwyg"))
+                return;
+
             if (url.StartsWith("about:blank"))
                 return;
 
@@ -1374,7 +1378,7 @@ namespace RiseOp.Services.Storage
                     string tag = "status" + i.ToString();
 
                     if (InfoDisplay.DocumentText.Contains(tag))
-                        InfoDisplay.Document.InvokeScript("UpdateStatus", new String[] { tag, status });
+                        InfoDisplay.SafeInvokeScript("SetElement", new object[] { tag, status });
                 }
             }
         }
@@ -1387,7 +1391,7 @@ namespace RiseOp.Services.Storage
             string tag = "status" + id.ToString();
 
             if (InfoDisplay.DocumentText.Contains(tag))
-                InfoDisplay.Document.InvokeScript("UpdateStatus", new String[] { tag, GetDiffStatus(id) });
+                InfoDisplay.SafeInvokeScript("SetElement", new String[] { tag, GetDiffStatus(id) });
         }
 
         private string GetDiffStatus(ulong id)

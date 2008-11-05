@@ -52,6 +52,14 @@ using RiseOp.Services.Trust;
 
 namespace RiseOp.Services.Mail
 {
+    /* when mail is sent, and entry is put in our local pending header that is published locally
+     * the mail is sent to the target dht id and cached there
+     * when received, an ack is created and sent back, the ack is also stored in the receivers pending file
+     * 
+     * only cache mail if target is verified in our hierarchy
+     * only cache ack if target is verified in our hierarchy
+     * */
+
 
     enum MailBoxType { Inbox, Outbox }
 
@@ -217,7 +225,7 @@ namespace RiseOp.Services.Mail
                         list.RemoveRange(0, list.Count - PruneSize);
 
                     foreach (CachedMail mail in list)
-                        if (!Network.Routing.InCacheArea(mail.Header.TargetID))
+                        if (!Core.KeepData.SafeContainsKey(mail.Header.TargetID))
                         {
                             removeIds.Add(mail.Header.TargetID);
                             break;
@@ -257,7 +265,7 @@ namespace RiseOp.Services.Mail
                         list.RemoveRange(0, list.Count - PruneSize);
 
                     foreach (CachedAck cached in list)
-                        if (!Network.Routing.InCacheArea(cached.Ack.TargetID))
+                        if (!Core.KeepData.SafeContainsKey(cached.Ack.TargetID))
                         {
                             removeIds.Add(cached.Ack.TargetID);
                             break;

@@ -3,19 +3,22 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
+using System.Threading;
+using System.Web;
 using System.Windows.Forms;
+
+using RiseOp.Implementation.Protocol.Packets;
 
 
 namespace RiseOp.Interface
 {
     internal partial class ErrorReport : CustomIconForm
     {
-        bool Sent;
-        SmtpClient smtp = new SmtpClient("smtp.gmail.com", 587);
-        
         internal Exception Details;
 
 
@@ -26,72 +29,71 @@ namespace RiseOp.Interface
             Details = details;
 
             DetailsBox.Text = Details.Message + ": \r\n" + Details.StackTrace;
-
-            smtp.EnableSsl = true;
-            smtp.Credentials = new NetworkCredential("riseop.errors", "r1530p3rr0r5");
-            smtp.Timeout = 10;
         }
 
         private void SendButton_Click(object sender, EventArgs e)
         {
-            if (Sent)
+            SendButton.Text = "Sending...";
+
+            try
             {
-                Close();
-                return;
+                FullLicense full = null;
+                LightLicense light = null;
+                RiseOpContext.LoadLicense(ref full, ref light);
+
+                Dictionary<string, string> post = new Dictionary<string, string>();
+
+
+                post["message"] = Details.Message;
+                post["stacktrace"] = Details.StackTrace;
+                post["notes"] = NotesBox.Text;
+                post["licensed"] = (full != null) ? "yes" : "no";
+                post["riseop"] = Application.ProductVersion;
+                post["windows"] = Environment.OSVersion.Version.ToString();
+                post["net"] = Environment.Version.ToString();
+                post["culture"] = Thread.CurrentThread.CurrentCulture.EnglishName;
+                post["email"] = EmailBox.Text;
+                // date will be inserted by php script
+
+
+                // Create a request using a URL that can receive a post. 
+                WebRequest request = WebRequest.Create("http://www.riseop.com/error/handler.php");
+                request.Method = "POST";
+                request.ContentType = "application/x-www-form-urlencoded";
+
+                StringBuilder report = new StringBuilder(4096);
+
+                foreach (var pair in post)
+                    report.Append(pair.Key + "=" + HttpUtility.UrlEncode(pair.Value) + "&");
+
+                byte[] data = UTF8Encoding.UTF8.GetBytes(report.ToString());
+                request.ContentLength = data.Length;
+
+                Stream dataStream = request.GetRequestStream();
+                dataStream.Write(data, 0, data.Length);
+                dataStream.Close();
+
+                // Get the response.
+                WebResponse response = request.GetResponse();
+                StreamReader reader = new StreamReader(response.GetResponseStream());
+                string responseFromServer = reader.ReadToEnd();
+
+
+                // Clean up the streams.
+                reader.Close();
+                dataStream.Close();
+                response.Close();
+
+                MessageBox.Show(responseFromServer, "Error Report");
             }
-
-            MailMessage mail = new MailMessage();
-
-            // set the addresses
-            mail.From = new MailAddress("riseop.errors@gmail.com");
-            mail.To.Add("riseop.errors@gmail.com");
-
-            // set the content
-            mail.Subject = Details.Message;
-            mail.Body = DateTime.Now.ToString() + "\r\n\r\n";
-            mail.Body += Details.Message + "\r\n\r\n";
-            mail.Body += "Stack Trace\r\n" + Details.StackTrace + "\r\n\r\n";
-            mail.Body += "Additional Notes\r\n" + NotesBox.Text + "\r\n\r\n";
-            mail.Body += "Version: " + Application.ProductVersion.ToString() + "\r\n\r\n";
-
-            Object userState = mail;
-
-            smtp.SendCompleted += new SendCompletedEventHandler(SmtpClient_OnCompleted);
-
-            smtp.SendAsync(mail, userState);
+            catch (Exception ex)
+            {
+                MessageBox.Show("Unable to report error\r\n" + ex.Message, "Error Report");
+            }
 
             SendButton.Enabled = false;
-            SendButton.Text = "Sending...";
-        }
-
-        internal void SmtpClient_OnCompleted(object sender, AsyncCompletedEventArgs e )
-        {
-            SendButton.Enabled = true;
-            SendButton.Text = "Done";
-            Sent = true;
-
-            //Get the Original MailMessage object
-            MailMessage mail = e.UserState as MailMessage;
-
-            if (mail == null)
-                return;
-
-            //write out the subject
-            string subject = mail.Subject;
-
-            if( e.Cancelled )
-            {
-                Console.WriteLine("Send canceled for mail with subject [{0}].", subject);
-            }
-            if(e.Error != null) 
-            {
-                MessageBox.Show(e.Error.ToString());
-                Console.WriteLine("Error {1} occurred when sending mail [{0}] ", subject, e.Error.ToString());
-            }
-            else
-            {
-                Console.WriteLine("Message [{0}] sent.", subject);
-            }
+            SendButton.Text = "Sent";
+            Close();
         }
 
         private void ExitButton_Click(object sender, EventArgs e)

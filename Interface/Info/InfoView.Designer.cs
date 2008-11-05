@@ -32,7 +32,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(InfoView));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.networkPanel1 = new RiseOp.Interface.Tools.NetworkPanel();
-            this.webBrowser1 = new System.Windows.Forms.WebBrowser();
+            this.webBrowser1 = new RiseOp.Interface.Views.WebBrowserEx();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.HelpButton = new System.Windows.Forms.ToolStripButton();
             this.NewsButton = new System.Windows.Forms.ToolStripButton();
@@ -164,7 +164,7 @@
         #endregion
 
         private System.Windows.Forms.SplitContainer splitContainer1;
-        private System.Windows.Forms.WebBrowser webBrowser1;
+        private RiseOp.Interface.Views.WebBrowserEx webBrowser1;
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.ToolStripButton NewsButton;
         private System.Windows.Forms.ToolStripButton HelpButton;

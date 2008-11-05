@@ -53,7 +53,7 @@ namespace RiseOp.Services.Update
             bool good = Utilities.MemCompare(priv, test);*/
 
 #if DEBUG
-            //SignNewUpdate();
+           //SignNewUpdate();
 #endif
 
             Core.Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(Search_Local);
@@ -98,26 +98,21 @@ namespace RiseOp.Services.Update
             {
                 UpdateInfo info = new UpdateInfo();
 
-                info.Name = "RiseOp_1.0.2.exe";
-                info.DottedVersion = "1.0.2";
+                info.Name = "RiseOp_1.0.6.exe";
+                info.DottedVersion = "1.0.6";
 
                 // want to prevent infinite update loop, ensure the seq verison in the intaller, and the
                 // signed seq version in the update are equal
                 info.SequentialVersion = Core.Context.LocalSeqVersion;
 
-                info.Notes = @"new icon created supports all res
-Fixed common hashing
-Fixed user prefix encryption
-Light Loc used on lookup network
-Search results now returned immediately
-un-reffed files in versioned cache and storage removed";
+                info.Notes = "Auto-updating fixed\r\n";
 
                 RijndaelManaged crypt = new RijndaelManaged();
                 crypt.Key = Utilities.GenerateKey(Core.StrongRndGen, 256);
                 info.Key = crypt.Key;
 
                 string source = "..\\Protected\\RiseOp.exe";
-                string final = Application.StartupPath + Path.DirectorySeparatorChar + "update.dat";
+                string final = Path.Combine(ApplicationEx.CommonAppDataPath(), "update.dat");
 
                 string tempPath = Core.GetTempPath();
                 Utilities.EncryptTagFile(source, tempPath, crypt, Core.Network.Protocol, ref info.Hash, ref info.Size);
@@ -153,6 +148,9 @@ un-reffed files in versioned cache and storage removed";
                 LookupSettings.WriteUpdateInfo(Core);
 
                 MessageBox.Show("Sign Update Success");
+
+                Process.Start("explorer.exe", ApplicationEx.CommonAppDataPath());
+                Debug.Assert(false);
             }
             catch (Exception ex)
             {

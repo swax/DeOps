@@ -107,15 +107,19 @@ namespace RiseOp.Implementation
 
         internal event KeepDataHandler KeepDataGui; // event for gui thread
         internal event KeepDataHandler KeepDataCore; // event for core thread
+
         // only safe to use this from core_minuteTimer because updated 2 secs before it
+        // every min keep data is updated and then pruning is done on internal data structures
+        // local data that is in use by views or we are caching and shouldn't be removed by the pruning process
         internal ThreadedDictionary<ulong, bool> KeepData = new ThreadedDictionary<ulong, bool>();
 
         // interfaces
         internal HostsExternalViews GuiMain;
         internal TrayLock      GuiTray;
         internal ConsoleForm   GuiConsole;
-        internal InternalsForm GuiInternal;
         internal G2Protocol    GuiProtocol;
+        internal InternalsForm GuiInternal;
+        internal bool DebugWindowsActive;
 
         internal ShowExternalHandler ShowExternal;
         internal ShowInternalHandler ShowInternal;
@@ -204,9 +208,14 @@ namespace RiseOp.Implementation
                 Sim.Internet.RegisterAddress(this);
 
             CoreThread = new Thread(RunCore);
-            
+            CoreThread.Name = User.Settings.Operation + " Thread";
+
             if (Sim == null || Sim.Internet.TestCoreThread)
                 CoreThread.Start();
+
+#if DEBUG
+            DebugWindowsActive = true;
+#endif
         }
 
         // initializing lookup network (from the settings of a loaded operation)
@@ -236,6 +245,7 @@ namespace RiseOp.Implementation
                 Sim.Internet.RegisterAddress(this);
             
             CoreThread = new Thread(RunCore);
+            CoreThread.Name = "Lookup Thread";
 
             if (Sim == null || Sim.Internet.TestCoreThread)
                 CoreThread.Start();
@@ -290,12 +300,12 @@ namespace RiseOp.Implementation
             // so only place we need to be real careful is at the core/gui interface
 
             bool keepGoing = false;
- 
 
-            while (CoreRunning)
+
+            while (CoreRunning && Context.ContextThread.IsAlive)
             {
                 if (!keepGoing)
-                    ProcessEvent.WaitOne();
+                    ProcessEvent.WaitOne(1000, false); // if context crashes this will release us
 
                 keepGoing = false;
 
@@ -386,7 +396,9 @@ namespace RiseOp.Implementation
                     // prune keys from keymap - dont remove focused, remove furthest first
                     if(KeyMap.Count > KeyMax)
                         foreach (ulong user in (from id in KeyMap.Keys
-                                                where !KeepData.SafeContainsKey(id)
+                                                where !KeepData.SafeContainsKey(id) &&
+                                                      !Network.RudpControl.SessionMap.Values.Any(socket => socket.UserID == id) &&
+                                                      !Network.TcpControl.SocketList.Any(socket => socket.UserID == id)
                                                 orderby Network.Local.UserID ^ id descending
                                                 select id).Take(KeyMap.Count - KeyMax).ToArray())
                         {
@@ -451,7 +463,7 @@ namespace RiseOp.Implementation
 				}
 				if(commands[0] == "fwstatus")
 				{
-                    ConsoleLog("Status set to " + GetFirewallString());
+                    ConsoleLog("Status set to " + Firewall.ToString());
 				}
 
 
@@ -491,18 +503,6 @@ namespace RiseOp.Implementation
 			}
 		}
 
-        internal string GetFirewallString()
-        {
-            if (Firewall == FirewallType.Open)
-                return "Open";
-
-            else if (Firewall == FirewallType.NAT)
-                return "NAT";
-
-            else
-                return "Blocked";
-        }
-
         // firewall set at core level so that networks can exist on internet and on internal LANs simultaneously
         internal void SetFirewallType(FirewallType type)
         {
@@ -530,7 +530,7 @@ namespace RiseOp.Implementation
 
             }
 
-            string message = "Firewall changed to " + GetFirewallString();
+            string message = "Firewall changed to " + type.ToString();
             Network.UpdateLog("Network", message);
             Network.UpdateLog("general", message);
         }
@@ -902,13 +902,11 @@ namespace RiseOp.Implementation
                 RunInGuiThread(Trust.GuiUpdate, user);
             }
 
-            if (Buddies != null)
+            OpBuddy buddy;
+            if(Buddies.BuddyList.SafeTryGetValue(user, out buddy))
             {
-                if (user == UserID)
-                {
-                    Buddies.LocalBuddy.Name = name;
-                    Buddies.SaveLocal();
-                }
+                buddy.Name = name;
+                Buddies.SaveLocal();
 
                 RunInGuiThread(Buddies.GuiUpdate);
             }
@@ -917,12 +915,15 @@ namespace RiseOp.Implementation
 
         internal string GetIdentity(ulong user)
         {
+            if (!KeyMap.ContainsKey(user))
+                return "User Public Key Unknown";
+
             IdentityLink link = new IdentityLink()
             {
                 Name = GetName(user),
                 OpName = User.Settings.Operation,
                 PublicOpID = User.Settings.PublicOpID,
-                PublicKey = User.Settings.KeyPublic
+                PublicKey = KeyMap[user]
             };
 
             string test = link.Encode();
@@ -1018,7 +1019,7 @@ namespace RiseOp.Implementation
                 OpenFileDialog open = new OpenFileDialog();
 
                 open.Title = "Open " + name + "'s " + op + " Profile to Verify Invitation";
-                open.InitialDirectory = Application.StartupPath;
+                open.InitialDirectory = ApplicationEx.UserAppDataPath();
                 open.Filter = "RiseOp Identity (*.rop)|*.rop";
 
                 if (open.ShowDialog() != DialogResult.OK)

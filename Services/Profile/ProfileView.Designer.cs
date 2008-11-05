@@ -29,7 +29,7 @@ namespace RiseOp.Services.Profile
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.Browser = new System.Windows.Forms.WebBrowser();
+            this.Browser = new RiseOp.Interface.Views.WebBrowserEx();
             this.RightClickMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.EditMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.RightClickMenu.SuspendLayout();
@@ -48,6 +48,7 @@ namespace RiseOp.Services.Profile
             this.Browser.Size = new System.Drawing.Size(216, 200);
             this.Browser.TabIndex = 0;
             this.Browser.WebBrowserShortcutsEnabled = false;
+            this.Browser.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.Browser_Navigating);
             // 
             // RightClickMenu
             // 
@@ -79,7 +80,7 @@ namespace RiseOp.Services.Profile
 
         #endregion
 
-        private System.Windows.Forms.WebBrowser Browser;
+        private RiseOp.Interface.Views.WebBrowserEx Browser;
         private System.Windows.Forms.ContextMenuStrip RightClickMenu;
         private System.Windows.Forms.ToolStripMenuItem EditMenu;
     }

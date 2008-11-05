@@ -55,7 +55,6 @@ namespace RiseOp.Interface
   
             Close();
             MainViews.Remove(this);
-            Shell.Dispose();
 
             return true;
         }
@@ -63,10 +62,7 @@ namespace RiseOp.Interface
         private void ExternalView_FormClosing(object sender, FormClosingEventArgs e)
         {
             if (Shell.Fin())
-            {
                 MainViews.Remove(this);
-                Shell.Dispose();
-            }
             else
                 e.Cancel = true;
         }

@@ -39,25 +39,11 @@ namespace RiseOp.Implementation.Transport
 
         internal void SecondTimer()
         {
-            List<ulong> closed = new List<ulong>();
-
             foreach (RudpSession session in SessionMap.Values)
-            {
                 session.SecondTimer();
 
-                if (session.Comm.State == RudpState.Closed)
-                {
-                    lock (SocketMap)
-                        if (SocketMap.ContainsKey(session.Comm.PeerID))
-                            SocketMap.Remove(session.Comm.PeerID);
-
-                    closed.Add(session.RoutingID);
-                }
-            }
-
-            foreach (ulong id in closed)
-                SessionMap.Remove(id);
-
+            foreach (RudpSession session in SessionMap.Values.Where(s => s.Comm.State == RudpState.Closed).ToArray())
+                RemoveSession(session);
 
             // every 10 secs check for sessions no longer in use
             if (Network.Core.TimeNow.Second % 10 != 0)
@@ -77,6 +63,15 @@ namespace RiseOp.Implementation.Transport
                         session.Send_Close("Not Active");
                     else
                         session.Lingering++;
+        }
+
+        internal void RemoveSession(RudpSession session)
+        {
+            lock (SocketMap)
+                if (SocketMap.ContainsKey(session.Comm.PeerID))
+                    SocketMap.Remove(session.Comm.PeerID);
+
+            SessionMap.Remove(session.RoutingID);
         }
 
         internal bool Connect(DhtClient client)

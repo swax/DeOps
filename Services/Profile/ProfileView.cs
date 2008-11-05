@@ -52,9 +52,17 @@ namespace RiseOp.Services.Profile
 
             if (profile == null)
                 DisplayLoading();
-
             else
                 Profile_Update(profile);
+
+            // have to set twice (init document?) for page to show up
+            if (Utilities.IsRunningOnMono())
+            {
+                if (profile == null)
+                    DisplayLoading();
+                else
+                    Profile_Update(profile);
+            }
 
             List<ulong> ids = new List<ulong>();
             ids.AddRange(Trust.GetUplinkIDs(UserID, ProjectID));
@@ -62,7 +70,6 @@ namespace RiseOp.Services.Profile
             foreach (ulong id in ids)
                 Profiles.Research(id);
         }
-
 
         internal override bool Fin()
         {
@@ -72,7 +79,6 @@ namespace RiseOp.Services.Profile
 
             return true;
         }
-
 
         void Core_KeepData()
         {
@@ -93,13 +99,7 @@ namespace RiseOp.Services.Profile
                             </body>
                         </html>";
 
-           // prevents clicking sound
-           if (!Browser.DocumentText.Equals(html))
-           {
-               Browser.Hide();
-               Browser.DocumentText = html;
-               Browser.Show();
-           }
+           Browser.SetDocNoClick(html);
         }
 
         internal override string GetTitle(bool small)
@@ -147,7 +147,6 @@ namespace RiseOp.Services.Profile
             if (!uplinks.Contains(profile.UserID))
                 return;
 
-
             // get fields from profile
 
             // if temp/id dir exists use it
@@ -182,7 +181,7 @@ namespace RiseOp.Services.Profile
             }
 
             string template = LoadProfile(Profiles, profile, tempPath, TextFields, FileFields);
-
+            
             if (template == null)
             {
                 template = @"<html>
@@ -199,14 +198,8 @@ namespace RiseOp.Services.Profile
             }
 
             string html = FleshTemplate(Profiles, profile.UserID, ProjectID, template, TextFields, FileFields);
-
-            // prevents clicking sound when browser navigates
-            if (!Browser.DocumentText.Equals(html))
-            {
-                Browser.Hide();
-                Browser.DocumentText = html;
-                Browser.Show();
-            }
+           
+            Browser.SetDocNoClick(html);
         }
 
         private static string LoadProfile(ProfileService service, OpProfile profile, string tempPath, Dictionary<string, string> textFields, Dictionary<string, string> fileFields)
@@ -214,7 +207,7 @@ namespace RiseOp.Services.Profile
             string template = null;
 
             textFields.Clear();
-            textFields["local_help"] = (profile.UserID == service.Core.UserID) ? "Right-click to Edit" : "";
+            textFields["local_help"] = (profile.UserID == service.Core.UserID) ? "<font size=2>Right-click or click <a href='http://edit'>here</a> to Edit</font>" : "";
 
             if(fileFields != null)
                 fileFields.Clear();
@@ -520,6 +513,28 @@ namespace RiseOp.Services.Profile
         internal uint GetProjectID()
         {
             return ProjectID; // call is a MarshalByRefObject so cant access value types directly
+        }
+
+        private void Browser_Navigating(object sender, WebBrowserNavigatingEventArgs e)
+        {
+            string url = e.Url.OriginalString;
+
+            if (Utilities.IsRunningOnMono() && url.StartsWith("wyciwyg"))
+                return;
+
+            if (url.StartsWith("about:blank"))
+                return;
+
+            url = url.Replace("http://", "");
+            url = url.TrimEnd('/');
+
+            string[] command = url.Split('/');
+
+            if (command.Length > 0)
+                if (command[0] == "edit")
+                    EditMenu_Click(null, null);
+
+            e.Cancel = true;
         }
     }
 }

@@ -10,7 +10,7 @@ namespace RiseOp.Interface.Views
     {
         internal ContextMenuStripEx()
         {
-            Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+            Utilities.SetupToolstrip(this, new OpusColorTable());
         }
     }
 }

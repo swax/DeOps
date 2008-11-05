@@ -183,6 +183,7 @@ namespace RiseOp.Interface.Tools
             // 
             // StartButton
             // 
+            this.StartButton.FlatStyle = System.Windows.Forms.FlatStyle.System;
             this.StartButton.Location = new System.Drawing.Point(8, 8);
             this.StartButton.Name = "StartButton";
             this.StartButton.Size = new System.Drawing.Size(75, 23);
@@ -192,6 +193,7 @@ namespace RiseOp.Interface.Tools
             // 
             // RefreshButton
             // 
+            this.RefreshButton.FlatStyle = System.Windows.Forms.FlatStyle.System;
             this.RefreshButton.Location = new System.Drawing.Point(96, 8);
             this.RefreshButton.Name = "RefreshButton";
             this.RefreshButton.Size = new System.Drawing.Size(75, 23);

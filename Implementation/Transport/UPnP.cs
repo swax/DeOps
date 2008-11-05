@@ -123,6 +123,7 @@ namespace RiseOp.Implementation.Transport
 
                 WorkingThread = null;
             });
+            WorkingThread.Name = "UPnP Thread";
 
             WorkingThread.Start();
         }

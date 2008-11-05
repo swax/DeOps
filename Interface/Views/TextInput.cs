@@ -134,7 +134,8 @@ namespace RiseOp.Interface
         {
             InitializeComponent();
 
-            FontToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+            Utilities.SetupToolstrip(FontToolStrip, new OpusColorTable());
+
 
             // need to init, so when we get the rtf there is color encoding info in it we can re-assign if need be
             InputBox.SelectionColor = Color.Black; 

@@ -280,13 +280,16 @@ namespace RiseOp.Services.Location
 
             // location packet is encrypted and published on lookup network at op id dht position
 
-            byte[] data =location.EncodeLight(Network.Protocol);
+            byte[] data = location.EncodeLight(Network.Protocol);
 
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
                 data = Utilities.EncryptBytes(data, Network.OpCrypt.Key);
 
-            LookupService service = Core.Context.Lookup.GetService(Services.ServiceIDs.Lookup) as LookupService;
-            service.LookupCache.Publish(Network.OpID, data);
+            Core.Context.Lookup.RunInCoreAsync(delegate()
+            {
+                LookupService service = Core.Context.Lookup.GetService(Services.ServiceIDs.Lookup) as LookupService;
+                service.LookupCache.Publish(Network.OpID, data);
+            });
         }
 
         internal void UpdateLocation()
@@ -467,7 +470,7 @@ namespace RiseOp.Services.Location
 
             location.Name = Core.User.Settings.UserName;
             location.Place = Core.User.Settings.Location;
-            location.GmtOffset = System.TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Minutes;
+            location.GmtOffset = (int)TimeZone.CurrentTimeZone.GetUtcOffset(Core.TimeNow).TotalMinutes;
             location.Away = LocalAway;
             location.AwayMessage = LocalAway ? Core.User.Settings.AwayMessage : "";
 

@@ -64,6 +64,8 @@ namespace RiseOp.Implementation.Transport
         // bandwidth
         internal BandwidthLog Bandwidth;
 
+        int TotalIn; //crit - delete
+
 
         // inbound
         internal TcpConnect(TcpHandler control)
@@ -241,6 +243,9 @@ namespace RiseOp.Implementation.Transport
             crypt.Key = Network.GetAugmentedKey(UserID);
             crypt.Padding = PaddingMode.None;
 
+            if (UserID == Network.Local.UserID)
+                Debug.Assert(Utilities.MemCompare(crypt.Key, Network.LocalAugmentedKey));
+
             Encryptor = crypt.CreateEncryptor();
 
             crypt.IV.CopyTo(FinalSendBuffer, 0);
@@ -323,6 +328,9 @@ namespace RiseOp.Implementation.Transport
 		{
             if (Core.InvokeRequired)
                 Debug.Assert(false);
+
+            if (State != TcpState.Connected)
+                return 0;
 
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
                 if(Encryptor == null)
@@ -455,12 +463,12 @@ namespace RiseOp.Implementation.Transport
 			}
 		}
 
-        
-		void Socket_Receive(IAsyncResult asyncResult)
-		{
-			try
-			{
-				int recvLength = TcpSocket.EndReceive(asyncResult);
+
+        void Socket_Receive(IAsyncResult asyncResult)
+        {
+            try
+            {
+                int recvLength = TcpSocket.EndReceive(asyncResult);
                 //Core.UpdateConsole(recvLength.ToString() + " received");
 
                 if (recvLength <= 0)
@@ -470,16 +478,24 @@ namespace RiseOp.Implementation.Transport
                 }
 
                 OnReceive(recvLength);
+            }
+            catch (Exception ex)
+            {
+                LogException("Socket_Receive:1", ex.Message);
+                Disconnect();
+            }
 
+            try
+            {
                 if (State == TcpState.Connected)
                     TcpSocket.BeginReceive(RecvBuffer, RecvBuffSize, RecvBuffer.Length, SocketFlags.None, new AsyncCallback(Socket_Receive), TcpSocket);
-			}
-			catch(Exception ex)
-			{ 
-				LogException("Socket_Receive", ex.Message);
+            }
+            catch (Exception ex)
+            {
+                LogException("Socket_Receive:2", ex.Message);
                 Disconnect();
-			}	
-		}
+            }
+        }
 
         internal void OnReceive(int length)
         {
@@ -491,6 +507,7 @@ namespace RiseOp.Implementation.Transport
                 Disconnect();
                 return;
             }
+            TotalIn += length;
 
             Bandwidth.InPerSec += length;
             BytesReceivedinSec += length;

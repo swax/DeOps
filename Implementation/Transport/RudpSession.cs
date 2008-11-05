@@ -38,7 +38,7 @@ namespace RiseOp.Implementation.Transport
 
         internal DateTime NegotiateTimeout;
 
-        internal const int BUFF_SIZE = 8 * 1024;
+        internal const int BUFF_SIZE = 10 * 1024;
 		
         // sending
         int SendBlockSize = 16;
@@ -101,11 +101,13 @@ namespace RiseOp.Implementation.Transport
 
 			Status = status;
 
-			Log("Status changed to " + status.ToString());
+			Log("Session - " + status.ToString());
 
             if (RudpControl.SessionUpdate != null)
                 RudpControl.SessionUpdate.Invoke(this);
-		}	
+		}
+
+        Queue<Tuple<int, int>> LastSends = new Queue<Tuple<int, int>>();
 
 		internal bool SendPacket(G2Packet packet, bool expedite)
 		{
@@ -135,6 +137,10 @@ namespace RiseOp.Implementation.Transport
 
             if (EncryptBuffer == null)
                 EncryptBuffer = new byte[BUFF_SIZE];
+
+            LastSends.Enqueue(new Tuple<int, int>(EncryptBuffSize, final.Length));
+            if (LastSends.Count > 100)
+                LastSends.Dequeue();
 
             // ensure enough space in encrypt buff for packet and expedite packets
             if (BUFF_SIZE - EncryptBuffSize < final.Length + 128)
@@ -522,6 +528,7 @@ namespace RiseOp.Implementation.Transport
             Comm.Close(); 
 
 			UpdateStatus(SessionStatus.Closed);
+            // socket not closed until fin received
 		}
 		
 		internal void Receive_Close(G2ReceivedPacket embeddedPacket)
@@ -604,7 +611,9 @@ namespace RiseOp.Implementation.Transport
 		}
 
 		internal void OnAccept()
-		{
+        {
+            Log("OnAccept");
+
 			//wait for remote host to send session request
             NegotiateTimeout = Core.TimeNow.AddSeconds(10);
 		}

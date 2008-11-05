@@ -59,7 +59,7 @@ namespace RiseOp.Services.Mail
                 </head>
                 <body bgcolor=whitesmoke>
                     <p>
-                        <span id='content'></span>
+                        <span id='content'><?=content?></span>
                     </p>
                 </body>
             </html>";
@@ -79,7 +79,7 @@ namespace RiseOp.Services.Mail
 
             MessageHeader.DocumentText = HeaderPage.ToString();
 
-            toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+            Utilities.SetupToolstrip(toolStrip1, new OpusColorTable());
 
             MessageBody.Core = Core;
         }
@@ -129,7 +129,7 @@ namespace RiseOp.Services.Mail
 
         internal void SetHeader(string content)
         {
-            MessageHeader.Document.InvokeScript("SetElement", new String[] { "content", content });
+            MessageHeader.SafeInvokeScript("SetElement", new String[] { "content", content });
         }
 
         private void InboxButton_Click(object sender, EventArgs e)
@@ -283,7 +283,7 @@ namespace RiseOp.Services.Mail
                     if (message.Attached[i].Name == "body")
                         continue;
 
-                    attachHtml += "<a href='attach:" + i.ToString() + "'>" + message.Attached[i].Name + "</a> (" + Utilities.ByteSizetoString(message.Attached[i].Size) + "), ";
+                    attachHtml += "<a href='http://attach/" + i.ToString() + "'>" + message.Attached[i].Name + "</a> (" + Utilities.ByteSizetoString(message.Attached[i].Size) + "), ";
                 }
 
                 attachHtml = attachHtml.TrimEnd(new char[] { ' ', ',' });
@@ -296,10 +296,10 @@ namespace RiseOp.Services.Mail
             string actions = "";
 
             if (message.Header.TargetID == Core.UserID)
-                actions += @"<a href='reply:x" + "'>Reply</a>";
+                actions += @"<a href='http://reply/x" + "'>Reply</a>";
 
-            actions += @", <a href='forward:x'>Forward</a>";
-            actions += @", <a href='delete:x'>Delete</a>";
+            actions += @", <a href='http://forward/x'>Forward</a>";
+            actions += @", <a href='http://delete/x'>Delete</a>";
 
             content += "<b>Actions: </b>" + actions.Trim(',', ' ');
 
@@ -363,7 +363,14 @@ namespace RiseOp.Services.Mail
         private void MessageHeader_Navigating(object sender, WebBrowserNavigatingEventArgs e)
         {
             string url = e.Url.OriginalString;
-            string[] parts = url.Split(new char[] { ':' });
+
+            if (Utilities.IsRunningOnMono() && url.StartsWith("wyciwyg"))
+                return;
+
+            url = url.Replace("http://", "");
+            url = url.TrimEnd('/');
+
+            string[] parts = url.Split('/');
 
             if (parts.Length < 2)
                 return;

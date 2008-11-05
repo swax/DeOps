@@ -99,6 +99,7 @@
     </Reference>
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Data">
       <Name>System.Data</Name>
@@ -244,6 +245,9 @@
       <DependentUpon>ViewRes.resx</DependentUpon>
     </Compile>
     <Compile Include="Interface\Views\RichTextBoxEx.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Interface\Views\WebBrowserEx.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Services\Assist\TempCache.cs" />
@@ -777,10 +781,13 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Win32.cs" />
+    <Content Include="Docs\build.txt" />
     <Content Include="Docs\ChangeLog.txt" />
     <Content Include="Docs\Cool.txt" />
     <Content Include="Docs\future.txt" />
+    <Content Include="Docs\mono.txt" />
     <Content Include="Docs\testing.txt" />
+    <None Include="app.config" />
     <None Include="Services\Buddy\res\buddy_add.png" />
     <None Include="Services\Buddy\res\buddy_remove.png" />
     <None Include="Services\Buddy\res\group.png" />
@@ -800,6 +807,7 @@
     <None Include="Interface\Res\reg.jpg" />
     <None Include="Interface\Res\reg.gif" />
     <None Include="Interface\Res\reg.png" />
+    <None Include="Interface\Res\splash.png" />
     <Content Include="Interface\Views\Res\bold.ico" />
     <Content Include="Interface\Views\Res\colors.png" />
     <Content Include="Interface\Views\Res\copy.png" />

@@ -74,7 +74,7 @@ namespace RiseOp.Implementation
                 while (IPs.Count > MAX_CACHE)
                 {
                     DhtContact entry = IPs.Last.Value;
-                    IPTable.Remove(entry.GetHashCode());
+                    IPTable.Remove(entry.CacheHash());
                     IPs.RemoveLast();
                 }
 
@@ -127,7 +127,7 @@ namespace RiseOp.Implementation
                         // if fails, NextPublishAny won't be set, and next minute we will try to publish
                         // to another working cache
 
-                        new Thread(WebPublish).Start(cache);
+                        StartThread("WebCache Publish", WebPublish, cache);
                         break;
                     }
 
@@ -161,9 +161,16 @@ namespace RiseOp.Implementation
                 foreach (WebCache cache in WebCaches)
                     if (cache.LastTried == default(DateTime))
                     {
-                        new Thread(WebPing).Start(cache);
+                        StartThread("WebCache Ping", WebPing, cache);
                         break;
                     }
+        }
+
+        void StartThread(string name, ParameterizedThreadStart start, object arg)
+        {
+            Thread thread = new Thread(start);
+            thread.Name = name;
+            thread.Start(arg);
         }
 
         private WebCache GetMostUnresponsiveCache()
@@ -185,9 +192,9 @@ namespace RiseOp.Implementation
         {
             lock (IPs)
             {
-                if (IPTable.ContainsKey(entry.GetHashCode()))
+                if (IPTable.ContainsKey(entry.CacheHash()))
                 {
-                    entry = IPTable[entry.GetHashCode()].Value; // replace entry with dupe to maintain next try info
+                    entry = IPTable[entry.CacheHash()].Value; // replace entry with dupe to maintain next try info
                     IPs.Remove(entry);
                 }
 
@@ -198,7 +205,7 @@ namespace RiseOp.Implementation
                     if (entry.LastSeen > node.Value.LastSeen)
                         break;
 
-                IPTable[entry.GetHashCode()] = (node != null) ? IPs.AddBefore(node, entry) : IPs.AddLast(entry);
+                IPTable[entry.CacheHash()] = (node != null) ? IPs.AddBefore(node, entry) : IPs.AddLast(entry);
             }
         }
 
@@ -279,10 +286,8 @@ namespace RiseOp.Implementation
         {
             try
             {
-                DataReq store = new DataReq(null, Network.OpID, 0, 0, data);
-
                 if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
-                    store.Data = Utilities.DecryptBytes(data, data.Length, Network.OpCrypt.Key);
+                    data = Utilities.DecryptBytes(data, data.Length, Network.OpCrypt.Key);
 
                 LocationData loc = LocationData.Decode(data);
 
@@ -305,7 +310,7 @@ namespace RiseOp.Implementation
                 {
                      foreach (WebCache cache in WebCaches)
                          if (Core.TimeNow > cache.NextQuery)
-                             new Thread(WebQuery).Start(cache);
+                             StartThread("WebCache Query", WebQuery, cache);
                 }
 
                 // only can d/l from global cache in sim, or a secret network with private web cache

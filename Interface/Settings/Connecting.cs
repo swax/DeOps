@@ -43,7 +43,7 @@ namespace RiseOp.Interface.Settings
             OpUdpBox.Text = Core.Network.UdpControl.ListenPort.ToString();
             OpLanBox.Text = Core.Network.LanControl.ListenPort.ToString();
 
-            OpStatusBox.Text = Core.GetFirewallString();
+            OpStatusBox.Text = Core.Firewall.ToString();
             OpStatusBox.BackColor = GetStatusColor(Core.Firewall);
 
             OpTcpBox.KeyPress += new KeyPressEventHandler(PortBox_KeyPress);
@@ -55,7 +55,7 @@ namespace RiseOp.Interface.Settings
                 LookupUdpBox.Text = Lookup.Network.UdpControl.ListenPort.ToString();
                 LookupLanBox.Text = Lookup.Network.LanControl.ListenPort.ToString();
 
-                LookupStatusBox.Text = Lookup.GetFirewallString();
+                LookupStatusBox.Text = Lookup.Firewall.ToString();
                 LookupStatusBox.BackColor = GetStatusColor(Lookup.Firewall);
 
                 LookupTcpBox.KeyPress += new KeyPressEventHandler(PortBox_KeyPress);

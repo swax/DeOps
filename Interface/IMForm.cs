@@ -32,7 +32,8 @@ namespace RiseOp.Interface
 
             Core = core;
 
-            TopStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+            Utilities.SetupToolstrip(TopStrip, new OpusColorTable());
+            Utilities.FixMonoDropDownOpening(OptionsButton, OptionsButton_DropDownOpening);
 
             Core.ShowExternal += new ShowExternalHandler(OnShowExternal);
 
@@ -43,7 +44,11 @@ namespace RiseOp.Interface
 
             SelectionInfo.ShowNetwork();
 
-            MainForm.FillManageMenu(Core, OptionsButton.DropDownItems);
+            if (Utilities.IsRunningOnMono())
+            {
+                AddButton.Text = "Add";
+                SharedButton.Text = "Files";
+            }
 
             Rectangle screen = Screen.GetWorkingArea(this);
             Location = new Point(screen.Width - Width, screen.Height / 2 - Height / 2); 
@@ -92,6 +97,9 @@ namespace RiseOp.Interface
 
         private void IMForm_SizeChanged(object sender, EventArgs e)
         {
+            if (Core == null)
+                return;
+
             if (!InTray && WindowState == FormWindowState.Minimized)
             {
                 InTray = true;
@@ -129,6 +137,13 @@ namespace RiseOp.Interface
                 ChatService chat = Core.GetService(ServiceIDs.Chat) as ChatService;
                 OnShowExternal(new ChatView(chat, 0));
             }
+        }
+
+        private void OptionsButton_DropDownOpening(object sender, EventArgs e)
+        {
+            OptionsButton.DropDownItems.Clear();
+
+            MainForm.FillManageMenu(Core, OptionsButton.DropDownItems);
         }
     }
 }

@@ -54,6 +54,19 @@ namespace RiseOp.Implementation.Transport
 
 			UdpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
+            try
+            {
+                uint IOC_IN = 0x80000000;
+                uint IOC_VENDOR = 0x18000000;
+                uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
+
+                UdpSocket.IOControl((int)SIO_UDP_CONNRESET, new byte[] { 0 }, null);
+            }
+            catch
+            {
+                // will fail in mono
+            }
+
 			// listen
 			bool bound    = false;
 			int  attempts = 0;
@@ -194,7 +207,7 @@ namespace RiseOp.Implementation.Transport
 			}
 			
 
-            //crit
+            //crit - may have been fixed by io control - check release exception log on larger network
 			// calling a sendto to a good host but unreachable port causes exceptions that stack the more sentto's you call
 			// endreceivefrom will throw and so will begin until begin has been called enough to makeup for the unreachable hosts
 			// if this loop is exited without a successful call to beginreceive from, inbound udb is game over

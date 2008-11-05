@@ -18,7 +18,7 @@ namespace RiseOp.Interface
         {
             Icon = InterfaceRes.riseop;
 
-            if (Application.RenderWithVisualStyles)
+            if (Application.RenderWithVisualStyles && !Utilities.IsRunningOnMono())
                 BackColor = System.Drawing.Color.WhiteSmoke;
         }
 
@@ -32,7 +32,7 @@ namespace RiseOp.Interface
 
 
             // dialog background color
-            if (Application.RenderWithVisualStyles)
+            if (Application.RenderWithVisualStyles && !Utilities.IsRunningOnMono())
                 BackColor = System.Drawing.Color.WhiteSmoke;
 
 

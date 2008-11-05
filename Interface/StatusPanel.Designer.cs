@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.StatusBrowser = new System.Windows.Forms.WebBrowser();
+            this.StatusBrowser = new RiseOp.Interface.Views.WebBrowserEx();
             this.SecondTimer = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
@@ -41,7 +41,7 @@
             this.StatusBrowser.Location = new System.Drawing.Point(0, 0);
             this.StatusBrowser.MinimumSize = new System.Drawing.Size(20, 20);
             this.StatusBrowser.Name = "StatusBrowser";
-            this.StatusBrowser.ScriptErrorsSuppressed = true;
+            this.StatusBrowser.IsWebBrowserContextMenuEnabled = true;
             this.StatusBrowser.ScrollBarsEnabled = false;
             this.StatusBrowser.Size = new System.Drawing.Size(150, 150);
             this.StatusBrowser.TabIndex = 0;
@@ -66,7 +66,7 @@
 
         #endregion
 
-        private System.Windows.Forms.WebBrowser StatusBrowser;
+        private RiseOp.Interface.Views.WebBrowserEx StatusBrowser;
         private System.Windows.Forms.Timer SecondTimer;
     }
 }

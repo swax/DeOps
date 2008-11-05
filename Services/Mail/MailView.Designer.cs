@@ -43,7 +43,7 @@ namespace RiseOp.Services.Mail
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.MessageView = new RiseOp.Interface.TLVex.TreeListViewEx();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.MessageHeader = new System.Windows.Forms.WebBrowser();
+            this.MessageHeader = new RiseOp.Interface.Views.WebBrowserEx();
             this.MessageBody = new RiseOp.Interface.Views.RichTextBoxEx();
             this.ListImages = new System.Windows.Forms.ImageList(this.components);
             this.toolStrip1.SuspendLayout();
@@ -287,7 +287,7 @@ namespace RiseOp.Services.Mail
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.SplitContainer splitContainer2;
         private RiseOp.Interface.Views.RichTextBoxEx MessageBody;
-        private System.Windows.Forms.WebBrowser MessageHeader;
+        private RiseOp.Interface.Views.WebBrowserEx MessageHeader;
         private System.Windows.Forms.ImageList ListImages;
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;
         private System.Windows.Forms.ToolStripLabel toolStripLabel2;

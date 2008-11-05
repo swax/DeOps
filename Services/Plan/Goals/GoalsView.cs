@@ -130,7 +130,10 @@ namespace RiseOp.Services.Plan
             UserID = id;
             ProjectID = project;
 
-            toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+            Utilities.SetupToolstrip(toolStrip1, new OpusColorTable());
+
+            Utilities.FixMonoDropDownOpening(SelectGoalButton, SelectGoal_DropDownOpening);
+
             splitContainer1.Panel2Collapsed = true;
 
             SetDetails(null, null);
@@ -271,7 +274,14 @@ namespace RiseOp.Services.Plan
             SaveButton.Visible = true;
             DiscardButton.Visible = true;
 
-            splitContainer1.Height = Height - toolStrip1.Height - 24;
+            splitContainer1.Height = Height - toolStrip1.Height - SaveButton.Height - 8;
+
+            if (Utilities.IsRunningOnMono())
+            {
+                // buttons aren't positioned when they aren't visible
+                SaveButton.Location = new Point(Width - 156, Height - 22);
+                DiscardButton.Location = new Point(Width - 86, Height - 22);
+            }
         }
 
         private void SaveButton_Click(object sender, EventArgs e)
@@ -554,7 +564,7 @@ namespace RiseOp.Services.Plan
             else
             {
                 foreach (string[] tuple in tuples)
-                    DetailsBrowser.Document.InvokeScript("SetElement", new String[] { tuple[0], tuple[1] });
+                    DetailsBrowser.SafeInvokeScript("SetElement", new String[] { tuple[0], tuple[1] });
             }
         }
 
@@ -563,9 +573,7 @@ namespace RiseOp.Services.Plan
             Debug.Assert(!html.Contains("<?"));
 
             // prevents clicking sound when browser navigates
-            DetailsBrowser.Hide();
-            DetailsBrowser.DocumentText = html;
-            DetailsBrowser.Show();
+            DetailsBrowser.SetDocNoClick(html);
         }
 
         private void DetailsButton_Click(object sender, EventArgs e)

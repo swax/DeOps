@@ -120,12 +120,19 @@ namespace RiseOp.Services.Assist
             Network.Store.PublishNetwork(target, ServiceID, DataType, encoded);
         }
 
+        // for cross-core thread lookup search
         internal void Search(ulong target, object hostArg, Action<byte[], object> hostFoundEvent)
+        {
+            Search(target, hostArg, hostFoundEvent, null);
+        }
+
+
+        internal void Search(ulong target, object hostArg, Action<byte[], object> hostFoundEvent, OpCore core)
         {
             DhtSearch search = Network.Searches.Start(target, "Temp Search", ServiceID, DataType, null, Search_FoundTemp);
 
             if (search != null)
-                search.Carry = new object[] { hostArg, hostFoundEvent };
+                search.Carry = new object[] { hostArg, hostFoundEvent, core };
         }
 
         void Search_FoundTemp(DhtSearch search, DhtAddress source, byte[] data)
@@ -134,15 +141,22 @@ namespace RiseOp.Services.Assist
 
             object hostArg = carry[0];
             Action<byte[], object> hostFoundEvent = carry[1] as Action<byte[], object>;
+            OpCore sourceCore = carry[2] as OpCore;
+
 
             // strip temp data
             TempData temp = TempData.Decode(search.TargetID, data);
 
             if (temp == null)
                 return;
+            
+            Action FireEvent = () => hostFoundEvent.Invoke(temp.Data, hostArg);
 
             // fire host event with carry vars
-            hostFoundEvent.Invoke(temp.Data, hostArg);
+            if (sourceCore != null)
+                sourceCore.RunInCoreAsync(FireEvent);
+            else
+                FireEvent.Invoke();
         }
 
         List<byte[]> Store_Replicate(DhtContact contact)

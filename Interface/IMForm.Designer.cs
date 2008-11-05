@@ -35,9 +35,9 @@
             this.OptionsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.HelpInfoButton = new System.Windows.Forms.ToolStripButton();
             this.SharedButton = new System.Windows.Forms.ToolStripButton();
+            this.ChatButton = new System.Windows.Forms.ToolStripButton();
             this.AddButton = new System.Windows.Forms.ToolStripButton();
             this.SelectionInfo = new RiseOp.Interface.StatusPanel();
-            this.ChatButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
@@ -112,6 +112,7 @@
             this.OptionsButton.Size = new System.Drawing.Size(73, 22);
             this.OptionsButton.Text = "Options";
             this.OptionsButton.ToolTipText = "Options";
+            this.OptionsButton.DropDownOpening += new System.EventHandler(this.OptionsButton_DropDownOpening);
             // 
             // HelpInfoButton
             // 
@@ -135,6 +136,17 @@
             this.SharedButton.Text = "Shared Files";
             this.SharedButton.Click += new System.EventHandler(this.SharedButton_Click);
             // 
+            // ChatButton
+            // 
+            this.ChatButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.ChatButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.ChatButton.Image = ((System.Drawing.Image)(resources.GetObject("ChatButton.Image")));
+            this.ChatButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.ChatButton.Name = "ChatButton";
+            this.ChatButton.Size = new System.Drawing.Size(23, 22);
+            this.ChatButton.Text = "Chat";
+            this.ChatButton.Click += new System.EventHandler(this.ChatButton_Click);
+            // 
             // AddButton
             // 
             this.AddButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
@@ -154,17 +166,6 @@
             this.SelectionInfo.Name = "SelectionInfo";
             this.SelectionInfo.Size = new System.Drawing.Size(200, 123);
             this.SelectionInfo.TabIndex = 0;
-            // 
-            // ChatButton
-            // 
-            this.ChatButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.ChatButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.ChatButton.Image = ((System.Drawing.Image)(resources.GetObject("ChatButton.Image")));
-            this.ChatButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.ChatButton.Name = "ChatButton";
-            this.ChatButton.Size = new System.Drawing.Size(23, 22);
-            this.ChatButton.Text = "Chat";
-            this.ChatButton.Click += new System.EventHandler(this.ChatButton_Click);
             // 
             // IMForm
             // 

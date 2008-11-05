@@ -38,7 +38,7 @@
             // 
             this.LaterButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.LaterButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.LaterButton.Location = new System.Drawing.Point(159, 144);
+            this.LaterButton.Location = new System.Drawing.Point(272, 144);
             this.LaterButton.Name = "LaterButton";
             this.LaterButton.Size = new System.Drawing.Size(75, 23);
             this.LaterButton.TabIndex = 0;
@@ -49,7 +49,7 @@
             // UpdateButton
             // 
             this.UpdateButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.UpdateButton.Location = new System.Drawing.Point(78, 144);
+            this.UpdateButton.Location = new System.Drawing.Point(191, 144);
             this.UpdateButton.Name = "UpdateButton";
             this.UpdateButton.Size = new System.Drawing.Size(75, 23);
             this.UpdateButton.TabIndex = 1;
@@ -64,7 +64,7 @@
             this.MessageLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.MessageLabel.Location = new System.Drawing.Point(12, 21);
             this.MessageLabel.Name = "MessageLabel";
-            this.MessageLabel.Size = new System.Drawing.Size(222, 37);
+            this.MessageLabel.Size = new System.Drawing.Size(335, 37);
             this.MessageLabel.TabIndex = 2;
             this.MessageLabel.Text = "RiseOp needs to be restarted to finish updating to version 1.0.0";
             // 
@@ -79,9 +79,8 @@
             this.NotesBox.Multiline = true;
             this.NotesBox.Name = "NotesBox";
             this.NotesBox.ReadOnly = true;
-            this.NotesBox.Size = new System.Drawing.Size(219, 77);
+            this.NotesBox.Size = new System.Drawing.Size(332, 77);
             this.NotesBox.TabIndex = 3;
-            this.NotesBox.Text = "Notes";
             // 
             // UpdateForm
             // 
@@ -89,7 +88,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.LaterButton;
-            this.ClientSize = new System.Drawing.Size(246, 179);
+            this.ClientSize = new System.Drawing.Size(359, 179);
             this.Controls.Add(this.NotesBox);
             this.Controls.Add(this.MessageLabel);
             this.Controls.Add(this.UpdateButton);
@@ -108,6 +107,6 @@
         private System.Windows.Forms.Button LaterButton;
         private System.Windows.Forms.Button UpdateButton;
         internal System.Windows.Forms.Label MessageLabel;
-        internal System.Windows.Forms.TextBox NotesBox;
+        private System.Windows.Forms.TextBox NotesBox;
     }
 }

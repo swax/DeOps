@@ -23,12 +23,12 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("RiseOp")]
 [assembly: AssemblyDescription("Decentralized Operations")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("John Marshall Group")]
-[assembly: AssemblyProduct("")]
+[assembly: AssemblyCompany("JMG")]
+[assembly: AssemblyProduct("RiseOp")]
 [assembly: AssemblyCopyright("2005-2008")]
 [assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]		
-
+[assembly: AssemblyCulture("")]
+ 
 //
 // Version information for an assembly consists of the following four values:
 //
@@ -40,7 +40,7 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
 
-[assembly: AssemblyVersion("1.0.2.0")]
+[assembly: AssemblyVersion("1.0.6.0")]
 
 //
 // In order to sign your assembly you must specify a key to use. Refer to the 
@@ -71,4 +71,4 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyKeyFile("")]
 [assembly: AssemblyKeyName("")]
 [assembly: ComVisibleAttribute(false)]
-[assembly: AssemblyFileVersionAttribute("1.0.2.0")]
+[assembly: AssemblyFileVersionAttribute("1.0.6.0")]

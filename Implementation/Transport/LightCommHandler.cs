@@ -271,6 +271,8 @@ namespace RiseOp.Implementation.Transport
 
         internal void AddAddress(OpCore core, RudpAddress address, bool moveFront)
         {
+            Debug.Assert(address.Address.UdpPort != 0);
+
             foreach (RudpAddress check in Addresses)
                 if (check.GetHashCode() == address.GetHashCode())
                 {

@@ -8,6 +8,8 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 
+using Microsoft.Win32;
+
 using RiseOp.Services.Storage;
 using RiseOp.Services.Location;
 using RiseOp.Services.Transfer;
@@ -28,11 +30,13 @@ namespace RiseOp
 
 	internal class Test
 	{
+
+ 
+
 		internal Test()
         {
             Random rnd = new Random();
 
-  
             /* // testing selecting next chunk to send
             ChunkBit[] chunks = new ChunkBit[10];
 

@@ -47,7 +47,7 @@ namespace RiseOp.Services.Board
             this.ButtonHigh = new System.Windows.Forms.ToolStripButton();
             this.toolStripLabel3 = new System.Windows.Forms.ToolStripLabel();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.PostHeader = new System.Windows.Forms.WebBrowser();
+            this.PostHeader = new RiseOp.Interface.Views.WebBrowserEx();
             this.PostBody = new RiseOp.Interface.Views.RichTextBoxEx();
             this.PostImageList = new System.Windows.Forms.ImageList(this.components);
             this.splitContainer1.Panel1.SuspendLayout();
@@ -334,7 +334,7 @@ namespace RiseOp.Services.Board
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.SplitContainer splitContainer2;
-        private System.Windows.Forms.WebBrowser PostHeader;
+        private RiseOp.Interface.Views.WebBrowserEx PostHeader;
         private RiseOp.Interface.Views.RichTextBoxEx PostBody;
         private RiseOp.Interface.TLVex.TreeListViewEx PostView;
         private System.Windows.Forms.ToolStripButton PostButton;

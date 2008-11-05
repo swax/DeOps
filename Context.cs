@@ -8,8 +8,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
-using Microsoft.Win32;
-
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
@@ -24,6 +22,10 @@ using RiseOp.Services.Update;
 // v1.0.0 s1
 // v1.0.1 s2
 // v1.0.2 s3
+// v1.0.3 s4
+// v1.0.4 s5
+// v1.0.5 s6
+// v1.0.6 s7
 
 namespace RiseOp
 {
@@ -31,7 +33,7 @@ namespace RiseOp
     {
         internal bool StartSuccess;
         RiseOpMutex SingleInstance;
-
+         
         internal OpCore Lookup;
         internal ThreadedList<OpCore> Cores = new ThreadedList<OpCore>();
         List<LoginForm> Logins = new List<LoginForm>();
@@ -50,10 +52,12 @@ namespace RiseOp
         Queue<string[]> NewInstances = new Queue<string[]>();
 
         internal UpdateInfo SignedUpdate;
-        internal uint LocalSeqVersion = 3;
+        internal uint LocalSeqVersion = 7;
 
         internal BandwidthLog Bandwidth = new BandwidthLog(10);
         internal Dictionary<uint, string> KnownServices = new Dictionary<uint, string>();
+
+        internal System.Threading.Thread ContextThread;
 
 
         internal RiseOpContext(string[] args)
@@ -64,6 +68,15 @@ namespace RiseOp
 
             if (!SingleInstance.First)
                 return;
+
+            ContextThread = System.Threading.Thread.CurrentThread;
+
+            // upgrade properties if we need to 
+            if (Properties.Settings.Default.NeedUpgrade)
+            {
+                Properties.Settings.Default.Upgrade();
+                Properties.Settings.Default.NeedUpgrade = false;
+            }
 
             // open windows firewall
             Win32.AuthorizeApplication("RiseOp", Application.ExecutablePath,
@@ -81,11 +94,17 @@ namespace RiseOp
             FastTimer.Tick += new EventHandler(FastTimer_Tick);
             FastTimer.Enabled = true;
 
+            // create directories if need be
+            try { Directory.CreateDirectory(ApplicationEx.CommonAppDataPath()); }
+            catch { }
+            try { Directory.CreateDirectory(ApplicationEx.UserAppDataPath()); }
+            catch { }
+
             // check for updates - update through network, use news page to notify user of updates
             //new System.Threading.Thread(CheckForUpdates).Start();
             SignedUpdate = UpdateService.LoadUpdate();
 
-            LoadLicense();
+            LoadLicense(ref License, ref LicenseProof);
 
             if (CanUpdate() && NotifyUpdateReady())
                 return;
@@ -146,8 +165,18 @@ namespace RiseOp
 
         void RegisterType()
         {
-            // try to register file type
-            try
+            // taken out and added to nullsoft installer because as MS specifies, all HKLM entries
+            // should be done by the installer, also app running in vista has no access to HKLM without
+            // admin privlidges
+
+
+            // register file type
+            // HKCR ".rop" "" "rop"
+            // HKCR "rop"  ""   "RiseOp Identity"
+            // HKCR "rop\DefaultIcon" "" "$\"Application.ExecutablePath$\""
+            // HKCR "rop\shell\open\command" "" "$\"Application.ExecutablePath$\" $\"%1$\""
+            
+            /*try
             {
                 RegistryKey type = Registry.ClassesRoot.CreateSubKey(".rop");
                 type.SetValue("", "rop");
@@ -166,10 +195,16 @@ namespace RiseOp
             catch
             {
                 //UpdateLog("Exception", "LoginForm::RegisterType: " + ex.Message);
-            }
+            }*/
 
-            // try to register protocol
-            try
+
+            // register protocol
+            // HKCR "riseop" "" "URL:riseop Protocol"
+            // HKCR "riseop" "URL Protocol" ""
+            // HKCR "riseop\DefaultIcon" "" "$\"Application.ExecutablePath$\""
+            // HKCR "riseop\shell\open\command" "" "$\"Application.ExecutablePath$\" $\"%1$\""
+            
+           /* try
             {
                 RegistryKey root = Registry.ClassesRoot.CreateSubKey("riseop");
                 root.SetValue("", "URL:riseop Protocol");
@@ -186,7 +221,7 @@ namespace RiseOp
             catch
             {
                 //UpdateLog("Exception", "LoginForm::RegisterType: " + ex.Message);
-            }
+            }*/
         }
 
         float FastestUploadSpeed = 10;
@@ -483,6 +518,8 @@ namespace RiseOp
 
                 if (Sim == null) // context not running inside a simulation
                 {
+                    Properties.Settings.Default.Save();
+
                     if (Simulator == null) // simulation interface closed
                         ExitThread();
                 }
@@ -508,13 +545,13 @@ namespace RiseOp
 
             try
             {
-                string finalpath = Application.StartupPath + Path.DirectorySeparatorChar + SignedUpdate.Name;
+                string finalpath = ApplicationEx.CommonAppDataPath() + Path.DirectorySeparatorChar + SignedUpdate.Name;
 
                 Utilities.DecryptTagFile(LookupSettings.UpdatePath, finalpath, SignedUpdate.Key, null);
 
                 try
                 {
-                    Process.Start("UpdateOp.exe", SignedUpdate.Name);
+                    Process.Start("UpdateOp.exe", "\"" + finalpath + "\"");
 
                     // try to close interfaces
                     Cores.LockReading(() => Cores.ToList().ForEach(c => c.Exit()));
@@ -539,27 +576,33 @@ namespace RiseOp
             return false;
         }
 
-        private void LoadLicense()
+        internal static void LoadLicense(ref FullLicense full, ref LightLicense light)
         {
-            DirectoryInfo info = new DirectoryInfo(Application.StartupPath);
-            FileInfo[] files = info.GetFiles("license-*.dat");
-
-            if (files.Length == 0)
-                return;
-
-            byte[] licenseKey = Convert.FromBase64String("4mdBmbUIjh2p6sff42O9AfYdWKZfVUgeK6vOv514XVw=");
-
-            using (IVCryptoStream crypto = IVCryptoStream.Load(files[0].Name, licenseKey))
+            try
             {
-                PacketStream stream = new PacketStream(crypto, new G2Protocol(), FileAccess.Read);
+                DirectoryInfo info = new DirectoryInfo(Application.StartupPath);
+                FileInfo[] files = info.GetFiles("license-*.dat");
 
-                G2Header root = null;
+                if (files.Length == 0)
+                    return;
 
-                while (stream.ReadPacket(ref root))
-                    if (root.Name == LicensePacket.Full)
-                        License = FullLicense.Decode(root);
-                    else if (root.Name == LicensePacket.Light)
-                        LicenseProof = LightLicense.Decode(root);
+                byte[] licenseKey = Convert.FromBase64String("4mdBmbUIjh2p6sff42O9AfYdWKZfVUgeK6vOv514XVw=");
+
+                using (IVCryptoStream crypto = IVCryptoStream.Load(files[0].FullName, licenseKey))
+                {
+                    PacketStream stream = new PacketStream(crypto, new G2Protocol(), FileAccess.Read);
+
+                    G2Header root = null;
+
+                    while (stream.ReadPacket(ref root))
+                        if (root.Name == LicensePacket.Full)
+                            full = FullLicense.Decode(root);
+                        else if (root.Name == LicensePacket.Light)
+                            light = LightLicense.Decode(root);
+                }
+            }
+            catch
+            {
             }
         }
     }

@@ -28,7 +28,7 @@ namespace RiseOp.Services.Storage
         /// </summary>
         private void InitializeComponent()
         {
-            this.InfoDisplay = new System.Windows.Forms.WebBrowser();
+            this.InfoDisplay = new RiseOp.Interface.Views.WebBrowserEx();
             this.SuspendLayout();
             // 
             // InfoDisplay
@@ -56,6 +56,6 @@ namespace RiseOp.Services.Storage
 
         #endregion
 
-        internal System.Windows.Forms.WebBrowser InfoDisplay;
+        internal RiseOp.Interface.Views.WebBrowserEx InfoDisplay;
     }
 }

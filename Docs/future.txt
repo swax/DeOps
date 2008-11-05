@@ -29,6 +29,8 @@ investigate html over rtf - no clean solution - unicode considerations - rtf tak
 de-ops urls boards storages chats anything, extendable
 	peoples emails, profiles, etc.. can include <links>
 
+get verisign signature so when installer / exe is launched its not marked as unverified
+
 website
 	use sources from random file to make blog entries on arguing the need for the software
 	use youtube to make a product demo video and narrate the vision

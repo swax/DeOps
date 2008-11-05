@@ -769,67 +769,12 @@ namespace RiseOp
     }
 
     // save independently so all operations use same lookup settings for quick startup and lookup network stability
-    internal class LookupSettings : G2Packet
+    internal class LookupSettings
     {
-        const byte Packet_UserID = 0x10;
-        const byte Packet_TcpPort = 0x20;
-        const byte Packet_UdpPort = 0x30;
-
-        internal ulong UserID;
+        internal ulong  UserID;
         internal ushort TcpPort;
         internal ushort UdpPort;
 
-        internal LookupSettings()
-        {
-        }
-
-        internal override byte[] Encode(G2Protocol protocol)
-        {
-            lock (protocol.WriteSection)
-            {
-                G2Frame settings = protocol.WritePacket(null, IdentityPacket.LookupSettings, null);
-
-                protocol.WritePacket(settings, Packet_UserID, BitConverter.GetBytes(UserID));
-                protocol.WritePacket(settings, Packet_TcpPort, BitConverter.GetBytes(TcpPort));
-                protocol.WritePacket(settings, Packet_UdpPort, BitConverter.GetBytes(UdpPort));
-
-                return protocol.WriteFinish();
-            }
-        }
-
-        internal static LookupSettings Decode(G2Header root)
-        {
-            LookupSettings settings = new LookupSettings();
-
-            G2Header child = new G2Header(root.Data);
-
-            while (G2Protocol.ReadNextChild(root, child) == G2ReadResult.PACKET_GOOD)
-            {
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                if (!G2Protocol.ReadPayload(child))
-                    continue;
-
-                switch (child.Name)
-                {
-                    case Packet_UserID:
-                        settings.UserID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_TcpPort:
-                        settings.TcpPort = BitConverter.ToUInt16(child.Data, child.PayloadPos);
-                        break;
-
-                    case Packet_UdpPort:
-                        settings.UdpPort = BitConverter.ToUInt16(child.Data, child.PayloadPos);
-                        break;
-                }
-            }
-
-
-            return settings;
-        }
 
         static byte[] BootstrapKey
         {
@@ -843,7 +788,7 @@ namespace RiseOp
         {
             get
             {
-                return Application.StartupPath + Path.DirectorySeparatorChar + "bootstrap.dat";
+                return Path.Combine(ApplicationEx.CommonAppDataPath(), "bootstrap.dat");
             }
         }
 
@@ -851,15 +796,35 @@ namespace RiseOp
         {
             get
             {
-                return Application.StartupPath + Path.DirectorySeparatorChar + "update.dat";
+                return Path.Combine(ApplicationEx.CommonAppDataPath(), "update.dat");
             }
         }
 
         internal static LookupSettings Load(DhtNetwork network)
         {
-            // so that accross multiple ops, lookup access points are maintained more or less
-            // also bootstrap file can be sent to others to help them out
-            LookupSettings settings = null;
+            // if the user has multiple ops, the lookup network is setup with the same settings
+            // so it is easy to find and predictable for other's bootstrapping
+            // we put it in local settings so we safe-guard these settings from moving to other computers
+            // and having dupe dht lookup ids on the network
+
+            LookupSettings settings = new LookupSettings();
+
+            try
+            {
+                settings.UserID = Properties.Settings.Default.LookupID;
+                if (settings.UserID == 0 || network.Core.Sim != null)
+                    settings.UserID = Utilities.StrongRandUInt64(network.Core.StrongRndGen);
+
+                // keep tcp/udp the same by default
+                settings.TcpPort = Properties.Settings.Default.LookupTcp;
+                if (settings.TcpPort == 0 || network.Core.Sim != null)
+                    settings.TcpPort = (ushort)network.Core.RndGen.Next(3000, 15000);
+
+                settings.UdpPort = Properties.Settings.Default.LookupUdp;
+                if (settings.UdpPort == 0 || network.Core.Sim != null)
+                    settings.UdpPort = settings.TcpPort;
+            }
+            catch { }
 
             // dont want instances saving and loading same lookup file
             if (network.Core.Sim == null && File.Exists(BootstrapPath))
@@ -874,9 +839,6 @@ namespace RiseOp
 
                         while (stream.ReadPacket(ref root))
                         {
-                            if (root.Name == IdentityPacket.LookupSettings)
-                                settings = LookupSettings.Decode(root);
-
                             if (root.Name == IdentityPacket.LookupCachedIP)
                                 network.Cache.AddContact(CachedIP.Decode(root).Contact);
 
@@ -892,22 +854,20 @@ namespace RiseOp
                 }
             }
 
-            // file not found / loaded
-            if (settings == null)
-            {
-                settings = new LookupSettings();
-
-                settings.UserID = Utilities.StrongRandUInt64(network.Core.StrongRndGen);
-                settings.TcpPort = (ushort)network.Core.RndGen.Next(5000, 9000);
-                settings.UdpPort = settings.TcpPort;
-            }
-
             return settings;
         }
 
         internal void Save(OpCore core)
         {
             Debug.Assert(core.Network.IsLookup);
+
+            try
+            {
+                Properties.Settings.Default.LookupID = UserID;
+                Properties.Settings.Default.LookupTcp = TcpPort;
+                Properties.Settings.Default.LookupUdp = UdpPort;
+            }
+            catch { }
 
             if (core.Sim != null)
                 return;
@@ -921,8 +881,6 @@ namespace RiseOp
 
                     if(core.Context.SignedUpdate != null)
                         stream.WritePacket(core.Context.SignedUpdate);
-
-                    stream.WritePacket(this);
 
                     core.Network.Cache.SaveIPs(stream);
                     core.Network.Cache.SaveWeb(stream);
@@ -940,7 +898,7 @@ namespace RiseOp
             // non lookup core, embedding update packet
             Debug.Assert(!core.Network.IsLookup);
 
-            string temp = Application.StartupPath + Path.DirectorySeparatorChar + "temp.dat";
+            string temp = Path.Combine(ApplicationEx.CommonAppDataPath(), "temp.dat");
 
             try
             {

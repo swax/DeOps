@@ -56,7 +56,7 @@ namespace RiseOp.Interface
         internal MainForm(OpCore core, bool sideMode) : base(core)
         {
             InitializeComponent();
-            
+
             Core = core;
             Trust = Core.Trust;
 
@@ -70,25 +70,45 @@ namespace RiseOp.Interface
             CommandTree.SelectedLink = Core.UserID;
             CommandTree.SearchOnline = true;
 
-            TopToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
-            NavStrip.Renderer = new ToolStripProfessionalRenderer(new NavColorTable());
-            SideToolStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
-            SideNavStrip.Renderer = new ToolStripProfessionalRenderer(new NavColorTable());
+            Utilities.SetupToolstrip(TopToolStrip, new OpusColorTable());
+            Utilities.SetupToolstrip(NavStrip, new NavColorTable());
+            Utilities.SetupToolstrip(SideToolStrip, new OpusColorTable());
+            Utilities.SetupToolstrip(SideNavStrip, new NavColorTable());
+
+            Utilities.FixMonoDropDownOpening(SideViewsButton, SideViewsButton_DropDownOpening);
+            Utilities.FixMonoDropDownOpening(SideNewsButton, SideNewsButton_DropDownOpening);
+            Utilities.FixMonoDropDownOpening(NewsButton, NewsButton_DropDownOpening);
+            Utilities.FixMonoDropDownOpening(ProjectsButton, ProjectsButton_DropDownOpening);
+
+            if (Utilities.IsRunningOnMono())
+            {
+                foreach (ToolStripItem item in SideToolStrip.Items)
+                {
+                    //item.DisplayStyle = ToolStripItemDisplayStyle.Text;
+                    //item.TextDirection = ToolStripTextDirection.Horizontal;
+                    //item.Alignment = ToolStripItemAlignment.Left;
+                }
+
+                NetworkButton.Text = "Network";
+                SideButton.Text = "Sidebar";
+                LockButton.Text = "Lockdown";
+
+                NewsButton.ForeColor = Color.White;
+                PopoutButton.ForeColor = Color.White;
+
+                SideViewsButton.ForeColor = Color.White;
+                SideNewsButton.ForeColor = Color.White;
+                SideHelpButton.ForeColor = Color.White;
+            }
             
-            SideNavStrip.Visible = false;
-            CommandTree.Top = 0;
-            CommandTree.Height = CommandSplit.Panel1.Height;
-
-            BuddyList.Top = 0;
-            BuddyList.Height = CommandSplit.Panel1.Height;
-
+            SideNavStrip.Visible = sideMode;
             SideMode = sideMode;
         }
 
         private void MainForm_Load(object sender, EventArgs e)
         {
             UpdateTitle();
-          
+
             CommandTree.Init(Trust);
             CommandTree.ShowProject(0);
 
@@ -97,6 +117,17 @@ namespace RiseOp.Interface
 
             OnSelectChange(Core.UserID, CommandTree.Project);
             UpdateStatusPanel();
+
+            CommandTree.Top = 0;
+            BuddyList.Top = 0;
+
+            // reize trees to ensure they take up the whole space
+            CommandTree.Size = new Size(CommandSplit.Panel1.Width, CommandSplit.Panel1.Height);
+            BuddyList.Size = CommandTree.Size;
+
+            // resize inner panel as well
+            InternalPanel.Location = new Point(0, NavStrip.Bottom);
+            InternalPanel.Height = MainSplit.Panel2.Height - NavStrip.Bottom;
 
             if (SideMode)
             {
@@ -191,9 +222,9 @@ namespace RiseOp.Interface
         {
             if (!CleanInternal())
                 return;
-
+    
             view.Dock = DockStyle.Fill;
-
+           
             InternalPanel.Visible = false;
             InternalPanel.Controls.Add(view);
             InternalView = view;
@@ -370,7 +401,7 @@ namespace RiseOp.Interface
 
         internal static void FillManageMenu(OpCore Core, ToolStripItemCollection items)
         {
-            items.Add(new ManageItem("My Identity", BuddyRes.buddy_who, () => new IdentityForm(Core, Core.UserID).ShowDialog()));
+            items.Add(new ManageItem("My Identity", BuddyRes.buddy_who, () => new IdentityForm(Core, Core.UserID).Show(Core.GuiMain)));
 
             // invite
             if(!Core.User.Settings.GlobalIM)
@@ -379,22 +410,19 @@ namespace RiseOp.Interface
                     if (Core.User.Settings.OpAccess == AccessType.Public)
                         MessageBox.Show("Give out this link to invite others \r\n \r\n riseop://" + Core.User.Settings.Operation, "RiseOp");
                     else
-                    {
-                        InviteForm form = new InviteForm(Core);
-                        form.ShowDialog();
-                    }
+                        new InviteForm(Core).Show(Core.GuiMain);
                 }));
 
             // settings
             ToolStripMenuItem settings = new ToolStripMenuItem("Settings", InterfaceRes.settings);
 
-            settings.DropDownItems.Add(new ManageItem("User", null, () => new RiseOp.Interface.Settings.User(Core).ShowDialog()));
+            settings.DropDownItems.Add(new ManageItem("User", null, () => new RiseOp.Interface.Settings.User(Core).Show(Core.GuiMain)));
             
             if(!Core.User.Settings.GlobalIM)
-                settings.DropDownItems.Add(new ManageItem("Operation", null, () => new RiseOp.Interface.Settings.Operation(Core).ShowDialog()));
-            
-            settings.DropDownItems.Add(new ManageItem("Connecting", null, () => new RiseOp.Interface.Settings.Connecting(Core).ShowDialog()));
-            settings.DropDownItems.Add(new ManageItem("Ignore", null, () => new RiseOp.Interface.Settings.IgnoreForm(Core).ShowDialog()));
+                settings.DropDownItems.Add(new ManageItem("Operation", null, () => new RiseOp.Interface.Settings.Operation(Core).Show(Core.GuiMain)));
+
+            settings.DropDownItems.Add(new ManageItem("Connecting", null, () => new RiseOp.Interface.Settings.Connecting(Core).Show(Core.GuiMain)));
+            settings.DropDownItems.Add(new ManageItem("Ignore", null, () => new RiseOp.Interface.Settings.IgnoreForm(Core).Show(Core.GuiMain)));
 
             items.Add(settings);
 
@@ -403,29 +431,30 @@ namespace RiseOp.Interface
 
             tools.DropDownItems.Add(new ManageItem("Bandwidth", null, () => BandwidthForm.Show(Core.Context)));
 
-#if DEBUG
-            tools.DropDownItems.Add(new ManageItem("Crawler", null, () => CrawlerForm.Show(Core.Network)));
-
-            // global - crawler/graph/packets/search
-            if (Core.Context.Lookup != null)
+            if (Core.DebugWindowsActive)
             {
-                ToolStripMenuItem global = new ToolStripMenuItem("Lookup", null);
+                tools.DropDownItems.Add(new ManageItem("Crawler", null, () => CrawlerForm.Show(Core.Network)));
 
-                DhtNetwork globalNetwork = Core.Context.Lookup.Network;
+                // global - crawler/graph/packets/search
+                if (Core.Context.Lookup != null)
+                {
+                    ToolStripMenuItem global = new ToolStripMenuItem("Lookup", null);
 
-                global.DropDownItems.Add(new ManageItem("Crawler", null, () => CrawlerForm.Show(globalNetwork)));
-                global.DropDownItems.Add(new ManageItem("Graph", null, () => GraphForm.Show(globalNetwork)));
-                global.DropDownItems.Add(new ManageItem("Packets", null, () => PacketsForm.Show(globalNetwork)));
-                global.DropDownItems.Add(new ManageItem("Search", null, () => SearchForm.Show(globalNetwork)));
+                    DhtNetwork globalNetwork = Core.Context.Lookup.Network;
 
-                tools.DropDownItems.Add(global);
+                    global.DropDownItems.Add(new ManageItem("Crawler", null, () => CrawlerForm.Show(globalNetwork)));
+                    global.DropDownItems.Add(new ManageItem("Graph", null, () => GraphForm.Show(globalNetwork)));
+                    global.DropDownItems.Add(new ManageItem("Packets", null, () => PacketsForm.Show(globalNetwork)));
+                    global.DropDownItems.Add(new ManageItem("Search", null, () => SearchForm.Show(globalNetwork)));
+
+                    tools.DropDownItems.Add(global);
+                }
+
+                tools.DropDownItems.Add(new ManageItem("Graph", null, () => GraphForm.Show(Core.Network)));
+                tools.DropDownItems.Add(new ManageItem("Internals", null, () => InternalsForm.Show(Core)));
+                tools.DropDownItems.Add(new ManageItem("Packets", null, () => PacketsForm.Show(Core.Network)));
+                tools.DropDownItems.Add(new ManageItem("Search", null, () => SearchForm.Show(Core.Network)));
             }
-
-            tools.DropDownItems.Add(new ManageItem("Graph", null, () => GraphForm.Show(Core.Network)));
-            tools.DropDownItems.Add(new ManageItem("Internals", null, () => InternalsForm.Show(Core)));
-            tools.DropDownItems.Add(new ManageItem("Packets", null, () => PacketsForm.Show(Core.Network)));
-            tools.DropDownItems.Add(new ManageItem("Search", null, () => SearchForm.Show(Core.Network)));
-#endif
 
             tools.DropDownItems.Add(new ManageItem("Transfers", null, () => TransferView.Show(Core.Network)));
 
@@ -824,7 +853,7 @@ namespace RiseOp.Interface
 
             // create button for project
             ProjectButton = new ToolStripButton(Trust.GetProjectName(ProjectButtonID), null, new EventHandler(ShowProject));
-            ProjectButton.TextDirection = ToolStripTextDirection.Vertical90;
+            ProjectButton.TextDirection = Utilities.IsRunningOnMono() ? ToolStripTextDirection.Horizontal : ToolStripTextDirection.Vertical90;
             ProjectButton.CheckOnClick = true;
             ProjectButton.Checked = true;
             SideToolStrip.Items.Add(ProjectButton);

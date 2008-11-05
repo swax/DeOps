@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.InfoBrowser = new System.Windows.Forms.WebBrowser();
+            this.InfoBrowser = new RiseOp.Interface.Views.WebBrowserEx();
             this.SuspendLayout();
             // 
             // InfoBrowser
@@ -57,6 +57,6 @@
 
         #endregion
 
-        private System.Windows.Forms.WebBrowser InfoBrowser;
+        private RiseOp.Interface.Views.WebBrowserEx InfoBrowser;
     }
 }

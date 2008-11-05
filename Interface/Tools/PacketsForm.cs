@@ -312,26 +312,7 @@ namespace RiseOp.Interface.Tools
 		{
 			// hash, protocol, direction, address, type, size
 			string hash      = Utilities.BytestoHex(sha.ComputeHash( logEntry.Data), 0, 2, false);
-            string protocol = "?";
-
-            switch (logEntry.Protocol)
-            {
-                case TransportProtocol.Tcp:
-                    protocol = "tcp";
-                    break;
-                case TransportProtocol.Udp:
-                    protocol = "udp";
-                    break;
-                case TransportProtocol.LAN:
-                    protocol = "lan";
-                    break;
-                case TransportProtocol.Rudp:
-                    protocol = "rudp";
-                    break;
-                case TransportProtocol.Tunnel:
-                    protocol = "tunnel";
-                    break;
-            }
+            string protocol = logEntry.Protocol.ToString();
 
             // Network - Search / Search Req / Store ... - Component
 

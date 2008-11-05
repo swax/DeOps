@@ -63,7 +63,7 @@ namespace RiseOp.Services.Board
                 </head>
                 <body bgcolor=whitesmoke>
                     <p>
-                        <span id='content'></span>
+                        <span id='content'><?=content?></span>
                     </p>
                 </body>
             </html>";
@@ -87,7 +87,7 @@ namespace RiseOp.Services.Board
                 ArchiveButton.Visible = false;
             }
 
-            toolStrip1.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+            Utilities.SetupToolstrip(toolStrip1, new OpusColorTable());
 
             PostHeader.DocumentText = HeaderPage.ToString();
 
@@ -223,7 +223,7 @@ namespace RiseOp.Services.Board
 
         internal void SetHeader(string content)
         {
-            PostHeader.Document.InvokeScript("SetElement", new String[] { "content", content });
+            PostHeader.SafeInvokeScript("SetElement", new String[] { "content", content });
         }
 
         void Board_PostUpdate(OpPost post)
@@ -471,18 +471,18 @@ namespace RiseOp.Services.Board
             string actions = "";
 
             if (!post.Header.Archived)
-                actions += @" <a href='reply:" + parent.Ident.ToString() + "'>Reply</a>";
+                actions += @" <a href='http://reply/" + parent.Ident.ToString() + "'>Reply</a>";
 
             if (post.Header.SourceID == Core.UserID)
             {
                 if (!post.Header.Archived)
-                    actions += @", <a href='edit:" + post.Ident.ToString() + "'>Edit</a>";
+                    actions += @", <a href='http://edit/" + post.Ident.ToString() + "'>Edit</a>";
 
                 if (post == parent)
                     if (post.Header.Archived)
-                        actions += @", <a href='restore:" + post.Ident.ToString() + "'>Restore</a>";
+                        actions += @", <a href='http://restore/" + post.Ident.ToString() + "'>Restore</a>";
                     else
-                        actions += @", <a href='archive:" + post.Ident.ToString() + "'>Archive</a>";
+                        actions += @", <a href='http://archive/" + post.Ident.ToString() + "'>Archive</a>";
             }
 
             content += "<b>Actions: </b>" + actions.Trim(',', ' ');
@@ -520,7 +520,7 @@ namespace RiseOp.Services.Board
                             PostBody.SelectionFont = new Font("Tahoma", 9.75f);
                             PostBody.SelectionColor = Color.Black;
 
-                            if(post.Info.Format == TextFormat.RTF)
+                            if (post.Info.Format == TextFormat.RTF)
                                 PostBody.Rtf = utf.GetString(msgBytes);
                             else
                                 PostBody.Text = utf.GetString(msgBytes);
@@ -540,7 +540,13 @@ namespace RiseOp.Services.Board
         {
             string url = e.Url.OriginalString;
 
-            string[] parts = url.Split(new char[] { ':' });
+            if (Utilities.IsRunningOnMono() && url.StartsWith("wyciwyg"))
+                return;
+
+            url = url.Replace("http://", "");
+            url = url.TrimEnd('/');
+
+            string[] parts = url.Split('/');
 
             if (parts.Length < 2)
                 return;

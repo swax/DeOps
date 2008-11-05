@@ -260,6 +260,11 @@ namespace RiseOp.Implementation.Protocol.Net
             return false;
         }
 
+        public int CacheHash()
+        {
+            return UserID.GetHashCode() ^ IP.GetHashCode() ^ UdpPort.GetHashCode();
+        }
+
         public override int GetHashCode()
         {
             int hash = UserID.GetHashCode() ^ ClientID.GetHashCode() ^ IP.GetHashCode() ^ UdpPort.GetHashCode();

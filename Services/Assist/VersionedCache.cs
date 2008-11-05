@@ -166,9 +166,10 @@ namespace RiseOp.Services.Assist
             if (FileMap.SafeCount > PruneSize)
                 FileMap.LockReading(delegate()
                 {
+                    // local cache region is in KeepData and consists of the closest dht nodes that are part of our
+                    // same trust hierarchy (so that we don't cache or flood the network with old data of people who've left)
                     remove = (from file in FileMap.Values
-                              where !Core.KeepData.SafeContainsKey(file.UserID) &&
-                                    !Network.Routing.InCacheArea(file.UserID)
+                              where !Core.KeepData.SafeContainsKey(file.UserID)
                               orderby file.UserID ^ Core.UserID descending
                               select file).Take(FileMap.Count - PruneSize).ToList();
                                       

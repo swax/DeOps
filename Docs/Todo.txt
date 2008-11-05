@@ -1,71 +1,46 @@
 
-try error report post, format xml
-install windows home virt box
-	try to install .net manually for riseop?
+disable board file post
+	check mail file send - opening error
+	clicking email/post/sharing attachment should default save to temp - which is deleted after
+	warn user files unlocked on close
+	board archive working?
+		
+limit proxy throughput, add proxy breakdown to bandwidth window
 
-make settings not modal, check other showdialog functions
-hour republish messed up cache entry? check
-if profile exists, give user option to delete and recreate over that profile
-all blocked friends not connecting to skynet network
-make it so im able to browse locations cached on lookup
-error reporting acount down
-change paypay company name to JMG
+link
+	options to show unloaded trust fragmetns
+	option to show just trusted structure, red filtered
 
-drey error - ie6
-	System.NullReferenceException: Object reference not set to an instance of an object.
-   at RiseOp.Interface.StatusPanel.ShowNetwork()
-   at RiseOp.Interface.StatusPanel.SecondTimer_Tick(Object sender, EventArgs e)
+when sending IM from multi-instance person to someone else, its not going to the other instances
 
-check that deployed bootstrap does not contain same udp/tcp/lookupID already set for everyone
-	new installer bootstrap should overwrite old, but later, ensure it doesnt overwrite
-keep internals - special click to activate? really useful for debugging compnoents, what am i caching, etc..
-	dont deploy bootstrap unless i want to get slammed with requests
-	store bootstrap port opid in registry, so if bootstrap file moved, or duped
-	to antoher comp, no chance of multiple port/lookup ids
-only saved cache data of those we've verified to be in the same trust hierarchy as ourselves
-	before prune trust
-		find all nodes in cache area
-		if highest node is same as our highest node, mark
-		don't prune the marked
-	if we are established, and file aquired in our area, search for higher, until no more
-	
-move load event to the first thing the core thread does on load so that interface loads faster
+does sending mail received from support@riseop go back through support email address?	
 
-test change time zone 
-
-release
-	revise FAQ
-
-	
-create a marshalls picture net
+op associations - put in diff sturcture buddyinfo data type/file?
 
 
+drag/drop IM/Chat window
+drag out file from share
+IM msg sounds - high, mid, low beep - put in im/chat
+Right-click clear IM/Chat log
 
-update process
-	set sequence and version
-	set release notes
-	set release mode
-	obfuscate / create mapping
-	move to protected protected
-	sign protected exe
-	move bootstrap.dat to protected from debug
-	set version in installer
-	create installer
-	connect to network with new bootstrap/update.dat
+look at store caching
 
+design realignment
+add lockdown to IM manage menu
+add move/save profile to manage menu?
 
-upgrades - user enters license id into purchase notes on paypal	
-	
-test global
-	associations? put in diff sturcture buddyinfo data type/file?
+verify can open rudp ports on vista
 
-	RiseOp Pro
-		Higher encryption
-		Commercial use
-		secret network
+1.0.6 tonight, 1.0.7 upgrade test tomorrow
+test upgrade on vista
+test license vista
 
-if globalIM profile not detected, show link in red on login: Create Global IM Profile
-project coming before primary in nar bar drop down
+test crawler
+
+web page - revise FAQ
+	icon looks like korea
+	add Linux/Mac section
+	where does riseOp store my files?
 
 
 share
@@ -78,16 +53,19 @@ other
 	storage unlock should be threaded like sharing
 	also status if killed
 	sortable columns that are either auto, or take a delegate comparer as a parameter
-	when switching rooms, put focus on chat input
+	when switching rooms, put focus on chat inputrooo
 	drag/drop file into IM, ask user if like to send
 	cache license ^ index id / user id in client - handle clashes
-	write update to bootstrap.dat even if it doesnt exist
+	write mupdate to bootstrap.dat even if it doesnt exist
 	status panel icons not transparent?'
 	moving folders around in fs, discarding changes, causes crash
 	prioritize user generated search/transfer over cache replication s/t
+	move load event to the first thing the core thread does on load so that interface loads faster
+	save IM mode, buddies or structure view on close
+	project coming before primary in nar bar drop down
+	dropped packet stats, sliding window stats, add to internal
+	ReaderWriterLockSlim
 	
-setting - save IM mode, buddies or structure view on close
-
 quick look at live comm
 	login search for highest that is online
 	create a persistant connection with them
@@ -97,12 +75,7 @@ quick look at live comm
 	dont need to worry about highers getting flooded in loc component
 	signed location notify is the 'heart beat'
 
-
 having trouble with getting location offline message to user during logout in the sim
-
-in status panel - show LED indicator if online / **searching** / offline
-
-
 
 
 
@@ -246,13 +219,6 @@ other
 
 	test message board - doesnt seem like refresh is thread safe
 
-
-default views
-	mail - help
-	board - help
-	storage - help
-	chat - help (introduction to 'trust')
-
 	
 re-alignment
 	leave old network once all subs confirmed to be re-aligned
@@ -266,9 +232,7 @@ re-alignment
 	anything new created is with new file keys that anyone left out doesnt have access to
 	
 fall release
-	licensing
-	
-	
+
 	*** items from todo
 	31 crits
 	

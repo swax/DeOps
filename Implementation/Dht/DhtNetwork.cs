@@ -183,11 +183,14 @@ namespace RiseOp.Implementation.Dht
                 // done to fill up routing table down to self
 
                 DhtSearch search = Searches.Start(Routing.LocalRoutingID + 1, "Self", Core.DhtServiceID, 0, null, null);
-                search.DoneEvent = Search_DoneSelf;
-                Routing.NextSelfSearch = Core.TimeNow.AddHours(1);
 
-                // at end of self search, status change count down triggered
-
+                if (search != null)
+                {
+                    search.DoneEvent = Search_DoneSelf;
+                    Routing.NextSelfSearch = Core.TimeNow.AddHours(1);
+                    // at end of self search, status change count down triggered
+                }
+                
                 UpdateLog("general", name + " network connected");
             }
 
@@ -276,7 +279,8 @@ namespace RiseOp.Implementation.Dht
             if (Core.Sim == null || Core.Sim.Internet.TestCoreThread)
             {
                 lock (IncomingPackets)
-                    if (IncomingPackets.Count < 100)
+                    // if each packet 1kb, have a megabyte buffer for backed up packets (hashing, etc..) 
+                    if (IncomingPackets.Count < 1000)
                         IncomingPackets.Enqueue(packet);
 
                 Core.ProcessEvent.Set();
@@ -471,20 +475,17 @@ namespace RiseOp.Implementation.Dht
                         (session.Comm.State != RudpState.Closed && session.Comm.RemotePeerID == syn.ConnID)) // duplicate syn
                     {
                         session.Comm.RudpReceive(raw, packet, IsLookup);
+                        return;
+                    }
+
+                    else if (session.Comm.State == RudpState.Finishing)
+                    {
+                        RudpControl.RemoveSession(session);
+                        // remove session, allow new one to be created
                     }
                     else
-                        session.Log("Session request denied (already active)");
-
-                    return;
+                        return;
                 }
-
-                //crit check if this is the peer id of a failed connection attempt
-                /*if (buddy.LastPeerIDs.Contains(syn.ConnID))
-                {
-                    buddy.Log("Session denied due to recent peer id");
-                    return;
-                }*/
-
 
                 // if clientid not in session, create new session
                 RudpSession newSession = new RudpSession(RudpControl, syn.SenderID, syn.ClientID, true);
@@ -675,6 +676,7 @@ namespace RiseOp.Implementation.Dht
                 // used to add direct op contact if source firewall is open
                 // or re-routing through same lookup proxy
                 opPacket.Source.IP = raw.Source.IP;
+                opPacket.Source.UdpPort = raw.Source.UdpPort;
 
                 // op user/client set by net/comm processing
 

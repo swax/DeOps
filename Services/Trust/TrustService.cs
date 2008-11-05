@@ -451,7 +451,8 @@ namespace RiseOp.Services.Trust
                 TrustMap.LockReading(delegate()
                 {
                     randTrust = (from t in TrustMap.Values
-                                 where LocalTrust.Name.CompareTo(t.Name) > 0
+                                 where t.Loaded &&
+                                       LocalTrust.Name.CompareTo(t.Name) > 0
                                  orderby Core.RndGen.Next()
                                  select t).FirstOrDefault();
                 });
@@ -499,10 +500,12 @@ namespace RiseOp.Services.Trust
 
                     // if in bounds, set highers of node to focused
                     // because if highers removed, they will just be re-added when inbounds link cache is refreshed
-                    else if (Network.Routing.InCacheArea(trust.UserID))
-                        foreach(OpLink link in trust.Links.Values)
-                            foreach(ulong id in link.GetHighers())
-                                Core.KeepData.SafeAdd(id, true);
+                    else if (Network.Routing.InCacheArea(trust.UserID))                 // for nodes in cache bounds
+                        foreach (OpLink link in trust.Links.Values)                     // for each project node is apart of
+                            if (LocalTrust.Links.ContainsKey(link.Project))             // if local host also part of project
+                                if (link.GetHighest() == LocalTrust.Links[link.Project].GetHighest()) // if local host and remote are part of the same hierarchy
+                                    foreach (ulong id in link.GetHighers())             // keep that node and all their higher's data
+                                        Core.KeepData.SafeAdd(id, true);
             });
         }
 
@@ -562,11 +565,13 @@ namespace RiseOp.Services.Trust
                         OpLink uplink = GetLink(id, project);
 
                         if (uplink != null)
+                        {
                             DoToBranch(shouldFocus, uplink, 1);
 
-                        // only ping (know if online) one higher from self, so top isnt overwhelmed with pings
-                        if(first)
-                            DoToBranch(shouldPing, uplink, 1);
+                            // only ping (know if online) one higher from self, so top isnt overwhelmed with pings
+                            if (first)
+                                DoToBranch(shouldPing, uplink, 1);
+                        }
 
                         first = false;
                     }
@@ -632,6 +637,7 @@ namespace RiseOp.Services.Trust
                     downlinks.Add(downlink.UserID);
                 }
 
+                //crit - review
                 foreach (ulong id in link.Confirmed)
                     if (!searchList.Contains(id))
                         if (searchDownlinks || (!TrustMap.SafeContainsKey(id) && !downlinks.Contains(id)))
@@ -1028,11 +1034,8 @@ namespace RiseOp.Services.Trust
                 foreach (OpLink link in trust.Links.Values)
                     if (link.Uplink == null)
                         AddRoot(link);
-
-                // add root for projects this node is not apart of - above code should do this fine
-                /* foreach (uint project in trust.Downlinks.Keys)
-                    if (!trust.Projects.Contains(project) && !trust.Uplink.ContainsKey(project))
-                        AddRoot(project, trust);*/
+                    // if uplink is unknown - process link data will search for the unknown parent
+                
 
                 // if loop created, create new loop node with unique ID, assign all nodes in loop the ID and add as downlinks
                 foreach (OpLink link in trust.Links.Values)
@@ -1211,8 +1214,8 @@ namespace RiseOp.Services.Trust
                 if (!targetTrust.Loaded)
                     Cache.Research(targetTrust.UserID);
 
-                if (targetLink.Uplink == null)
-                    AddRoot(targetLink);
+                //if (targetLink.Uplink == null)
+                //    AddRoot(targetLink);
             }
 
             else
@@ -2001,6 +2004,22 @@ namespace RiseOp.Services.Trust
             }
 
             return list;
+        }
+
+        internal OpLink GetHighest()
+        {
+            // top is loop root
+            if (LoopRoot != null)
+                return LoopRoot;
+
+            OpLink uplink = GetHigher(true);
+
+            // recurse on higher
+            if (uplink != null)
+                return uplink.GetHighest();
+
+            // else this is the top
+            return this;
         }
     }
 }

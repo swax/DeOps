@@ -508,22 +508,15 @@ namespace RiseOp.Interface.Tools
 
             LookupService globalLocs = Core.Context.Lookup.GetService(ServiceIDs.Lookup) as LookupService;
 
+            foreach (TempData temp in globalLocs.LookupCache.CachedData)
+            {
+                LocationData data = LocationData.Decode(temp.Data);
 
-                foreach (TempData temp in globalLocs.LookupCache.CachedData)
-                {
-                    SignedData signed = SignedData.Decode(temp.Data);
+                ClientInfo info = new ClientInfo();
+                info.Data = data;
 
-                    if (signed != null)
-                    {
-                        LocationData data = LocationData.Decode(signed.Data);
-
-                        ClientInfo info = new ClientInfo();
-                        info.Data = data;
-
-                        DisplayLoc(temp.TargetID, info);
-                    }
-                }
- 
+                DisplayLoc(temp.TargetID, info);
+            }
         }
 
         internal void ShowLocOperation(object pass)
@@ -543,6 +536,7 @@ namespace RiseOp.Interface.Tools
             listValues.Items.Add(new ListViewItem(new string[]
 				{
                     xStr(opID),
+                    "xx",
                     IDtoStr(info.Data.UserID),
 					xStr(info.Data.Source.ClientID),		
 					xStr(info.Data.Source.TcpPort),

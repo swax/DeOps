@@ -54,7 +54,7 @@ namespace RiseOp.Services.Chat
             Core = chat.Core;
             Locations = Core.Locations;
 
-            BottomStrip.Renderer = new ToolStripProfessionalRenderer(new OpusColorTable());
+            Utilities.SetupToolstrip(BottomStrip, new OpusColorTable());
 
             if (room.Kind == RoomKind.Command_High || room.Kind == RoomKind.Live_High)
                 MessageTextBox.BackColor = Color.FromArgb(255, 250, 250);

@@ -8,7 +8,7 @@ namespace RiseOp.Interface.Views
 {
     class OpusColorTable : ProfessionalColorTable
     {
-
+        // button
         public override Color ButtonSelectedHighlight
         {
             get
@@ -128,6 +128,8 @@ namespace RiseOp.Interface.Views
                 return Color.FromArgb(255, 193, 202, 218);
             }
         }
+
+        // check
         public override Color CheckBackground
         {
             get
@@ -149,6 +151,8 @@ namespace RiseOp.Interface.Views
                 return Color.FromArgb(255, 193, 202, 218);
             }
         }
+
+        // grip
         public override Color GripDark
         {
             get
@@ -163,6 +167,8 @@ namespace RiseOp.Interface.Views
                 return Color.FromArgb(255, 255, 255, 255);
             }
         }
+
+        // image
         public override Color ImageMarginGradientBegin
         {
             get
@@ -205,6 +211,8 @@ namespace RiseOp.Interface.Views
                 return Color.FromArgb(255, 230, 229, 224);
             }
         }
+
+        // menu
         public override Color MenuStripGradientBegin
         {
             get
@@ -275,6 +283,8 @@ namespace RiseOp.Interface.Views
                 return Color.FromArgb(255, 241, 241, 238);
             }
         }
+
+        // rafting
         public override Color RaftingContainerGradientBegin
         {
             get
@@ -289,6 +299,8 @@ namespace RiseOp.Interface.Views
                 return Color.FromArgb(255, 249, 249, 248);
             }
         }
+
+        // separator
         public override Color SeparatorDark
         {
             get
@@ -303,6 +315,8 @@ namespace RiseOp.Interface.Views
                 return Color.FromArgb(255, 244, 244, 242);
             }
         }
+
+        // status
         public override Color StatusStripGradientBegin
         {
             get
@@ -317,6 +331,8 @@ namespace RiseOp.Interface.Views
                 return Color.FromArgb(255, 249, 249, 248);
             }
         }
+
+        // toolstrip
         public override Color ToolStripBorder
         {
             get
@@ -352,6 +368,8 @@ namespace RiseOp.Interface.Views
                 return Color.FromArgb(255, 227, 226, 221);
             }
         }
+
+        // panel
         public override Color ToolStripContentPanelGradientBegin
         {
             get
@@ -403,12 +421,38 @@ namespace RiseOp.Interface.Views
         }
     }
 
+
+
+
     class NavColorTable : OpusColorTable
     {
         // cornflower 100,149,237
 
         // 120,169,255
         // 80,129,217
+
+        // panel
+        public override Color ToolStripGradientBegin
+        {
+            get
+            {
+                return Color.FromArgb(255, 100, 149, 237);
+            }
+        }
+        public override Color ToolStripGradientMiddle
+        {
+            get
+            {
+                return Color.FromArgb(255, 100, 149, 237);
+            }
+        }
+        public override Color ToolStripGradientEnd
+        {
+            get
+            {
+                return Color.FromArgb(255, 100, 149, 237);
+            }
+        }
 
         // mouse over lighter
         public override Color ButtonSelectedGradientBegin
