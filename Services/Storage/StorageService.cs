@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -16,6 +17,7 @@ using RiseOp.Services.Assist;
 using RiseOp.Services.Location;
 using RiseOp.Services.Transfer;
 using RiseOp.Services.Trust;
+using RiseOp.Utility;
 
 
 namespace RiseOp.Services.Storage
@@ -65,9 +67,9 @@ namespace RiseOp.Services.Storage
         internal WorkingUpdateHandler WorkingFileUpdate;
         internal WorkingUpdateHandler WorkingFolderUpdate;
 
-    
-        Thread HashThreadHandle;
-        internal Queue<HashPack> HashQueue = new Queue<HashPack>();
+        internal WorkerQueue UnlockFiles = new WorkerQueue("Storage Copy");
+        internal WorkerQueue CopyFiles = new WorkerQueue("Storage Copy");
+        internal WorkerQueue HashFiles = new WorkerQueue("Storage Hash");
 
 
         internal StorageService(OpCore core)
@@ -141,11 +143,15 @@ namespace RiseOp.Services.Storage
 
         public void Dispose()
         {
-            if(HashingActive())
+
+            if (HashFiles.Pending.Count > 0)
             {
                 HashStatus status = new HashStatus(this);
                 status.ShowDialog();
             }
+
+            HashFiles.Dispose();
+            CopyFiles.Dispose();
 
             // lock down working
             List<LockError> errors = new List<LockError>();
@@ -213,13 +219,6 @@ namespace RiseOp.Services.Storage
 
         void Core_SecondTimer()
         {
-            // hashing
-            if (HashQueue.Count > 0 && (HashThreadHandle == null || !HashThreadHandle.IsAlive))
-            {
-                HashThreadHandle = new Thread(HashThread);
-                HashThreadHandle.Start();
-            }
-
             // every 10 seconds
             if (Core.TimeNow.Second % 9 == 0) 
                 foreach(WorkingStorage working in Working.Values)
@@ -233,12 +232,14 @@ namespace RiseOp.Services.Storage
         void Core_MinuteTimer()
         {
             // clear de-reffed files
-            FileMap.LockReading(delegate()
+            
+            // not working reliable, un-reffed files cleared out when app loads
+            /*FileMap.LockReading(delegate()
             {
                 foreach (KeyValuePair<ulong, OpFile> pair in FileMap)
                     if (pair.Value.References == 0)
                         File.Delete(GetFilePath(pair.Key)); //crit test
-            });
+            });*/
         }
 
         public void SimTest()
@@ -383,6 +384,10 @@ namespace RiseOp.Services.Storage
             {
                 Core.Network.UpdateLog("Storage", "Error updating local " + ex.Message);
             }
+
+            if (StorageUpdate != null)
+                Core.RunInGuiThread(StorageUpdate, GetStorage(Core.UserID));
+
         }
 
         void Cache_FileAquired(OpVersionedFile file)
@@ -658,18 +663,12 @@ namespace RiseOp.Services.Storage
  
             FileDetails details = new FileDetails(ServiceID, FileTypeData, file.Hash, file.Size, null);
 
-            Core.Transfers.StartDownload(id, details, new object[] { file }, new EndDownloadHandler(EndDownloadFile));
+            Core.Transfers.StartDownload(id, details, GetFilePath(file.HashID), new EndDownloadHandler(EndDownloadFile), new object[] { file });
         }
 
-        private void EndDownloadFile(string path, object[] args)
+        private void EndDownloadFile(object[] args)
         {
             StorageFile file = (StorageFile) args[0];
-
-            try
-            {
-                File.Copy(path, GetFilePath(file.HashID), true);
-            }
-            catch { return; }
 
             OpFile commonFile = null;
             if (FileMap.SafeTryGetValue(file.HashID, out commonFile))
@@ -720,159 +719,113 @@ namespace RiseOp.Services.Storage
         {
             HashPack pack = new HashPack(file, path, project, dir);
 
-            lock (HashQueue)
-                if (!HashQueue.Contains(pack))
-                 
-                {
-                    file.Info.Size = new FileInfo(path).Length; // set so we can get hash status
+            lock (HashFiles.Pending)
+                if (HashFiles.Pending.Any(p => ((HashPack)p.Param2).File == file))
+                    return;
 
-                    // will be reset if file data modified
-                    /*file.Info.Size = 0;
-                    file.Info.Hash = null;
-                    file.Info.HashID = 0;
-                    file.Info.FileKey = new RijndaelManaged();
-                    file.Info.FileKey.IV = new byte[file.Info.FileKey.IV.Length]; // zero out
+            file.Info.Size = new FileInfo(path).Length; // set so we can get hash status
 
-                    file.Info.InternalSize = 0;
-                    file.Info.InternalHash = null;
-                    file.Info.InternalHashID = 0;*/
-
-                    HashQueue.Enqueue(pack);
-                }
+            HashFiles.Enqueue(() => HashFile(pack), pack);
         }
 
-        bool HashRetry = false;
-
-        void HashThread()
+ 
+        void HashFile(HashPack pack)
         {
-            while (HashQueue.Count > 0)
+            // three steps, hash file, encrypt file, hash encrypted file
+            try
             {
-                HashPack pack = null;
+                OpFile file = null;
+                StorageFile info = pack.File.Info.Clone();
 
+                // remove old references from local file
+                OpFile commonFile = null;
+                if (FileMap.SafeTryGetValue(pack.File.Info.HashID, out commonFile))
+                    commonFile.DeRef(); //crit test
+                
+                if (!File.Exists(pack.Path))
+                    return;
+
+                // do internal hash
+                Utilities.ShaHashFile(pack.Path, ref info.InternalHash, ref info.InternalSize);
+                info.InternalHashID = BitConverter.ToUInt64(info.InternalHash, 0);
+
+                // if file exists in internal map, use key for that file
+                OpFile internalFile = null;
+                InternalFileMap.SafeTryGetValue(info.InternalHashID, out internalFile);
+
+                if (internalFile != null)
+                {
+                    file = internalFile;
+                    file.References++;
+
+                    // if file already encrypted in our system, continue
+                    if (File.Exists(GetFilePath(info.HashID)))
+                    {
+                        info.Size = file.Size;
+                        info.FileKey = file.Key;
+
+                        info.Hash = file.Hash;
+                        info.HashID = file.HashID;
+
+                        if (!Utilities.MemCompare(file.Hash, pack.File.Info.Hash))
+                            ReviseFile(pack, info);
+
+                        return;
+                    }
+                }
+
+                // file key is opID and internal hash xor'd so that files won't be duplicated on the network
+                // apply special compartment key here as well, xor again
+                RijndaelManaged crypt = Utilities.CommonFileKey(Core.User.Settings.OpKey, info.InternalHash);
+                info.FileKey = crypt.Key;
+
+                // encrypt file to temp dir
+                string tempPath = Core.GetTempPath();
+                Utilities.EncryptTagFile(pack.Path, tempPath, crypt, Core.Network.Protocol, ref info.Hash, ref info.Size);
+                info.HashID = BitConverter.ToUInt64(info.Hash, 0);
+
+                // move to official path
+                string path = GetFilePath(info.HashID);
+                if (!File.Exists(path))
+                    File.Move(tempPath, path);
+
+                // if we dont have record of file make one
+                if (file == null)
+                {
+                    file = new OpFile(info);
+                    file.References++;
+                    FileMap.SafeAdd(info.HashID, file);
+                    InternalFileMap.SafeAdd(info.InternalHashID, file);
+                }
+                // else, record already made, just needed to put the actual file in the system
+                else
+                {
+                    Debug.Assert(info.HashID == file.HashID);
+                }
+
+                
+                // if hash is different than previous mark as modified
+                if (!Utilities.MemCompare(file.Hash, pack.File.Info.Hash))
+                    ReviseFile(pack, info);
+            }
+            catch (Exception ex)
+            {
+                /*rotate file to back of queue
                 lock (HashQueue)
-                    if (HashQueue.Count > 0)
-                        pack = HashQueue.Peek();
+                    if (HashQueue.Count > 1)
+                        HashQueue.Enqueue(HashQueue.Dequeue());*/
 
-                if (pack == null)
-                    continue;
-
-                // three steps, hash file, encrypt file, hash encrypted file
-                try
-                {
-                    OpFile file = null;
-                    StorageFile info = pack.File.Info.Clone();
-
-
-                    // remove old references from local file
-                    if (!HashRetry)
-                    {
-                        OpFile commonFile = null;
-                        if (FileMap.SafeTryGetValue(pack.File.Info.HashID, out commonFile))
-                            commonFile.DeRef(); //crit test
-                    }
-
-                    if (!File.Exists(pack.Path))
-                    {
-                        lock(HashQueue) 
-                            HashQueue.Dequeue();
-
-                        HashRetry = false;
-
-                        continue;
-                    }
-
-                    // do internal hash
-                    Utilities.ShaHashFile(pack.Path, ref info.InternalHash, ref info.InternalSize);
-                    info.InternalHashID = BitConverter.ToUInt64(info.InternalHash, 0);
-
-                    // if file exists in internal map, use key for that file
-                    OpFile internalFile = null;
-                    InternalFileMap.SafeTryGetValue(info.InternalHashID, out internalFile);
-
-                    if (internalFile != null)
-                    {
-                        file = internalFile;
-                        file.References++;
-
-                        // if file already encrypted in our system, continue
-                        if (File.Exists(GetFilePath(info.HashID)))
-                        {
-                            info.Size = file.Size;
-                            info.FileKey = file.Key;
-
-                            info.Hash = file.Hash;
-                            info.HashID = file.HashID;
-
-                            if (!Utilities.MemCompare(file.Hash, pack.File.Info.Hash))
-                                ReviseFile(pack, info);
-
-                            lock (HashQueue) HashQueue.Dequeue();
-                            HashRetry = false;
-
-                            continue;
-                        }
-                    }
-
-                    // file key is opID and internal hash xor'd so that files won't be duplicated on the network
-                    // apply special compartment key here as well, xor again
-                    RijndaelManaged crypt = Utilities.CommonFileKey(Core.User.Settings.OpKey, info.InternalHash);
-                    info.FileKey = crypt.Key;
-
-                    // encrypt file to temp dir
-                    string tempPath = Core.GetTempPath();
-                    Utilities.EncryptTagFile(pack.Path, tempPath, crypt, Core.Network.Protocol, ref info.Hash, ref info.Size);
-                    info.HashID = BitConverter.ToUInt64(info.Hash, 0);
-
-                    // move to official path
-                    string path = GetFilePath(info.HashID);
-                    if (!File.Exists(path))
-                        File.Move(tempPath, path);
-
-                    // if we dont have record of file make one
-                    if (file == null)
-                    {
-                        file = new OpFile(info);
-                        file.References++;
-                        FileMap.SafeAdd(info.HashID, file);
-                        InternalFileMap.SafeAdd(info.InternalHashID, file);
-                    }
-                    // else, record already made, just needed to put the actual file in the system
-                    else
-                    {
-                        Debug.Assert(info.HashID == file.HashID);
-                    }
-
-                    // if hash is different than previous mark as modified
-                    if (!Utilities.MemCompare(file.Hash, pack.File.Info.Hash))
-                        ReviseFile(pack, info);
-
-
-                    lock (HashQueue) 
-                        HashQueue.Dequeue(); // try to hash until finished without exception (wait for access to file)
-                    
-                    HashRetry = false; // make sure we only deref once per file
-                }
-                catch (Exception ex)
-                {
-                    HashRetry = true;
-
-                    // rotate file to back of queue
-                    lock (HashQueue)
-                        if (HashQueue.Count > 1)
-                            HashQueue.Enqueue(HashQueue.Dequeue());
-
-                    Core.Network.UpdateLog("Storage", "Hash thread: " + ex.Message);
-                    continue; // file might not exist anymore, name changed, etc..
-                }
+                Core.Network.UpdateLog("Storage", "Hash thread: " + ex.Message);
             }
         }
+        
 
         private void ReviseFile(HashPack pack, StorageFile info)
         {
             // called from hash thread
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreAsync(delegate() { ReviseFile(pack, info); });
+                Core.RunInCoreAsync(() => ReviseFile(pack, info));
                 return;
             }
 
@@ -915,6 +868,9 @@ namespace RiseOp.Services.Storage
                  
             //loadworking
             Working[project] = new WorkingStorage(this, project);
+
+            if (StorageUpdate != null)
+                Core.RunInGuiThread(StorageUpdate, GetStorage(Core.UserID));
 
             return Working[project];
         }
@@ -1255,15 +1211,6 @@ namespace RiseOp.Services.Storage
 
 
             return highers;
-        }
-
-        internal bool HashingActive()
-        {
-            if (HashQueue.Count > 0 || 
-                (HashThreadHandle != null && HashThreadHandle.IsAlive))
-                return true;
-
-            return false;
         }
     }
 

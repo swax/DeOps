@@ -6,6 +6,7 @@ using System.IO;
 using System.Text;
 using System.Security.Cryptography;
 using System.Linq;
+using System.Threading;
 
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
@@ -14,11 +15,12 @@ using RiseOp.Implementation.Protocol.Net;
 using RiseOp.Implementation.Protocol.Special;
 using RiseOp.Implementation.Transport;
 using RiseOp.Services.Location;
+using RiseOp.Utility;
 
 
 namespace RiseOp.Services.Transfer
 {
-    internal delegate void EndDownloadHandler(string path, object[] args);
+    internal delegate void EndDownloadHandler(object[] args);
     internal delegate bool FileSearchHandler(ulong key, FileDetails details);
     internal delegate string FileRequestHandler(ulong key, FileDetails details);
 
@@ -60,6 +62,7 @@ namespace RiseOp.Services.Transfer
 
         string PartialHeaderPath = "";
 
+        internal WorkerQueue VerifyTransfers = new WorkerQueue("Transfer Verify");
 
         internal bool Logging = false;
 
@@ -100,6 +103,8 @@ namespace RiseOp.Services.Transfer
 
         public void Dispose()
         {
+            VerifyTransfers.Dispose();
+
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
 
             Core.Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(Search_Local);
@@ -126,7 +131,7 @@ namespace RiseOp.Services.Transfer
         {
         }
 
-        internal OpTransfer StartDownload( ulong target, FileDetails details, object[] args, EndDownloadHandler endEvent)
+        internal OpTransfer StartDownload( ulong target, FileDetails details, string finalPath, EndDownloadHandler endEvent, object[] args)
         {
             if (Core.InvokeRequired)
                 Debug.Assert(false);
@@ -145,6 +150,7 @@ namespace RiseOp.Services.Transfer
                 transfer.SavePartial = true;
                 transfer.Args = args;
                 transfer.EndEvent = endEvent;
+                transfer.FinalPath = finalPath;
 
                 if(transfer.LocalBitfield[transfer.LocalBitfield.Length -1])
                     transfer.LoadSubhashes(); // if we have the last piece, load sub hashes
@@ -168,7 +174,7 @@ namespace RiseOp.Services.Transfer
                           Utilities.CryptFilename(Core, id, details.Hash);
 
             OpTransfer pending = new OpTransfer(this, path, target, details, TransferStatus.Empty, args, endEvent);
-
+            pending.FinalPath = finalPath;
             Pending.AddLast(pending);
 
             return pending;
@@ -299,11 +305,11 @@ namespace RiseOp.Services.Transfer
                                             !peer.Active()
                                       select peer.RoutingID).ToArray())
                     transfer.RemovePeer(id);
-                    
+
 
                 // if we are completed, we don't need completed sources in our mesh 
                 // (hangs mesh as well, peer wont be removed and hence transfer wont be removed)
-                if(transfer.Status == TransferStatus.Complete)
+                if (transfer.Status == TransferStatus.Complete)
                     foreach (ulong id in (from peer in transfer.Peers.Values
                                           where peer.Status == TransferStatus.Complete &&
                                                 !peer.Active()
@@ -322,7 +328,7 @@ namespace RiseOp.Services.Transfer
 
                     foreach (ulong id in x)
                         transfer.RemovePeer(id);
-                 
+
                     // transfer keeps a mini-dht so that entire download mesh is always pinging each other
                     // uploads still preference closer, so replication is faster, but further references aren't lost
                     // if peers were just closest, mesh would become desynched
@@ -350,7 +356,7 @@ namespace RiseOp.Services.Transfer
 
             // 0 peers, and incomplete move to partials list
             foreach (OpTransfer transfer in (from t in Transfers.Values
-                                             where   t.Peers.Count == 0 && 
+                                             where t.Peers.Count == 0 &&
                                                     !t.Searching &&
                                                      t.Status == TransferStatus.Incomplete
                                              select t).ToArray())
@@ -360,8 +366,8 @@ namespace RiseOp.Services.Transfer
 
             // remove dead empty and complete transfers with 0 peers (no one interested)
             foreach (OpTransfer transfer in (from t in Transfers.Values
-                                             where t.Peers.Count == 0 && 
-                                                   (( !t.Searching && t.Status == TransferStatus.Empty) || t.Status == TransferStatus.Complete)
+                                             where t.Peers.Count == 0 &&
+                                                   ((!t.Searching && t.Status == TransferStatus.Empty) || (t.Status == TransferStatus.Complete && !t.Verifying))
                                              select t).ToArray())
             {
                 transfer.Dispose();
@@ -384,7 +390,7 @@ namespace RiseOp.Services.Transfer
                                   select download.Client.RoutingID).ToArray())
                 DownloadPeers.Remove(id);
 
-            
+
             // let context know that we need to upload a piece
             if (Transfers.Count > 0)
                 NeedUploadWeight++;
@@ -392,9 +398,14 @@ namespace RiseOp.Services.Transfer
             ActiveUploads = UploadPeers.Values.Count(p => p.Active != null);
 
 
-            // save partials every 20 seconds
-            if (Core.TimeNow.Second % 15 == 0)
-                SavePartials();
+            // save partials every 15 seconds
+            if (Core.TimeNow.Second % 15 != 0)
+                return;
+
+            SavePartials();
+
+            while (RecentStops.Count > 50)
+                RecentStops.Dequeue();
         }
 
         private void MoveTransferTo(LinkedList<OpTransfer> list, OpTransfer transfer)
@@ -1506,8 +1517,20 @@ namespace RiseOp.Services.Transfer
             transfer.CheckCompletion();
         }
 
+        // recent stops - routing id / fileid / index - clear every minute
+        // prevents multiple stops being sent for the same chunk
+        Queue<Tuple<ulong, ulong, int>> RecentStops = new Queue<Tuple<ulong, ulong, int>>();
+
         private void Send_Stop(RudpSession session, TransferData data, bool retry)
         {
+            if(RecentStops.Any(rs => rs.Param1 == session.RoutingID &&
+                                     rs.Param2 == data.FileID &&
+                                     rs.Param3 == data.Index))
+                return;
+
+            // invalidate prev stops, for diff files/indexes
+            RecentStops.Enqueue(new Tuple<ulong, ulong, int>(session.RoutingID, data.FileID, data.Index));
+
             TransferStop stop = new TransferStop();
             stop.FileID = data.FileID;
             stop.StartByte = data.StartByte;
@@ -1566,6 +1589,7 @@ namespace RiseOp.Services.Transfer
         internal bool DoSearch = true;
         internal bool Searching;
         internal bool SavePartial = true;
+        internal bool Verifying;
 
         internal const int MaxPeers = 16;
         internal Dictionary<ulong, RemotePeer> Peers = new Dictionary<ulong, RemotePeer>(); // routing id, peer
@@ -1602,6 +1626,7 @@ namespace RiseOp.Services.Transfer
         byte[] ReadBuffer;
         byte[] Subhashes;
         byte[] VerifyBuffer;
+        internal string FinalPath;
 
         string DebugLog = "";
         internal string DebugTag;
@@ -1851,12 +1876,66 @@ namespace RiseOp.Services.Transfer
 
         internal void CheckCompletion()
         {
+            if (Status == TransferStatus.Complete)
+                return;
+
             if (!LocalBitfield.AreAllSet(true))
                 return;
-            
-            // dont dispose, could still be transferring
 
-            if (!CheckIntegrity())
+            Verifying = true;
+            Status = TransferStatus.Complete;
+
+            // re-open file so it can be shared with the the stream thats going to hash/check
+            LocalFile.Close();
+            LocalFile = File.OpenRead(FilePath);
+
+            Control.VerifyTransfers.Enqueue(() => Verify());
+        }
+
+        void Verify() // runs on a separate thread - hash/copy takes a while
+        {
+            byte[] hash = null;
+            long size = 0;
+
+            try
+            {
+                // opens a stream diff from the one being used to transfer
+                Utilities.ShaHashFile(FilePath, ref hash, ref size);
+
+                if (Utilities.MemCompare(hash, Details.Hash) && size == Details.Size)
+                {
+                    // copy file to final path
+                    File.Copy(FilePath, FinalPath, true);
+
+                    // final ops to be done in core thread so transfers not disturbed
+                    Control.Core.RunInCoreAsync(() =>
+                    {
+                        // clean file from temp dir, ref from new location
+                        LocalFile.Close();
+                        File.Delete(FilePath);
+
+                        FilePath = FinalPath;
+                        LocalFile = File.OpenRead(FilePath);
+
+                        EndEvent.Invoke(Args);
+
+                        Verifying = false; // allows transfer to now be cleaned up
+                    });
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Control.Core.RunInCoreAsync(() =>
+                {
+                    if (Control.Logging)
+                        Control.LogTransfer(this, true, ex.Message);
+                });
+            }
+
+            Verifying = false;
+
+            Control.Core.RunInCoreAsync(() =>
             {
                 // remove peers, delete transfer, delete file
                 Debug.Assert(false);
@@ -1864,32 +1943,9 @@ namespace RiseOp.Services.Transfer
                 Control.Transfers.Remove(FileID);
                 SavePartial = false;
                 Dispose();
-
-                return;
-            }
-            
-            Status = TransferStatus.Complete;
-
-            // re-open file for share read, so others can read without worrying of write
-            LocalFile.Close();
-            LocalFile = File.OpenRead(FilePath);
-
-            // those invoked should copy file, not move it, transfer control will clean itself up
-            EndEvent.Invoke(FilePath, Args);         
+            });
         }
-
-        bool CheckIntegrity()
-        {
-            if (LocalFile == null)
-                return false;
-
-            LocalFile.Seek(0, SeekOrigin.Begin);
-
-            byte[] check = Control.sha1.ComputeHash(LocalFile);
-
-            return Utilities.MemCompare(check, Details.Hash);
-        }
-
+  
         internal long GetProgress()
         {
             if(LocalBitfield == null)

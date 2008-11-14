@@ -1,21 +1,20 @@
 
-default status panel too small?
+storage view not changing when changing projects on nav bar
+	nav bar not completely working
+clicking during connect
+needs unknown section to show trust nodes that are not resolved yet
+multiple clients in chat room - when signed off - all sign off
+link trust kill switch
+really try to get offline messages sent out
 
-disable board file 4
-	check board file opening, mail/board archive?
-	clicking email/post/sharing attachment should default save to temp - which is deleted after
-	warn user files unlocked on close
-	board archive working?
-		
+
+warn user files unlocked on close
+
 limit proxy throughput, add proxy breakdown to bandwidth window
 
 link
 	options to show unloaded trust fragmetns
 	option to show just trusted structure, red filtered
-
-when sending IM from multi-instance person to someone else, its not going to the other instances
-
-does sending mail received from support@riseop go back through support email address?	
 
 op associations - put in diff sturcture buddyinfo data type/file?
 
@@ -25,24 +24,15 @@ drag out file from share
 IM msg sounds - high, mid, low beep - put in im/chat
 Right-click clear IM/Chat log
 
+
 look at store caching
 
 design realignment
 add lockdown to IM manage menu
 add move/save profile to manage menu?
 
-verify can open rudp ports on vista
-
-1.0.6 tonight, 1.0.7 upgrade test tomorrow
-test upgrade on vista
-test license vista
-
 test crawler
 
-web page - revise FAQ
-	icon looks like korea
-	add Linux/Mac section
-	where does riseOp store my files?
 
 
 share
@@ -190,30 +180,18 @@ other
 		that way someone changes positions, switches super / sup, goals remain basically the same
 		goal deligation is like a request, once accepted the task remains no matter what happens to above?
 
-	sql error reports
 	move global cache to cache.riseop.com so it can be turned off by dns or redirected
 
 	on linkup, trigger inherit from top node
 	doesnt seem like trust icon/splash changes are propagated to subs quickly should auto post
 
-	test crawlable over home lan
-		crawl requests must be signed?
-			
 	sending large block of text crashes, test other places where string input is unchecked size
 	
-	locations not expiring, there are a million of em
-	looooooooootta dupes in ipcache
-
 	list box header color is awful
-
-	repeat load failure and ensure that core isnt left hanging
 
 	chat not selecting default input box
 	dont show update when in room
-	if no default chat view, show riseOp help page, if can't connect, show profile
-	if no chat panels - put up profile for now, later help
-		on first chat message, put news update if chat not visible
-			
+
 	keep list of keys contacted over broadcast - on rudp connect to key send LAN address
 		also for rudp over global proxy, send our local IP specified in global network
 
@@ -238,7 +216,6 @@ fall release
 	*** items from todo
 	31 crits
 	
-	store caching
 	network bandwidth limits/audit - tracking in sim triggers node to start logging bw data
 	do larger sim (128) - test create/find public ops
 	
@@ -266,7 +243,7 @@ global proxying
 
 next
 	use packetstream instead of protocl.writetofile	
-	put stream closing calls in finally block
+
 	do check tags on node click, or local sync search...
 
 	bandwidth limits / auditing
@@ -294,7 +271,6 @@ other
 	news message when connected / disconnected from op
 	if news area too small for update, scroll across
 	test32 nodes 3 lvls down disposing trust of adjacent link node
-	location signoff tag
 	assert in deconstructors that events are set back to null
 	GetActiveSessions not threaded for gui, try not to thread dictionary
 		
@@ -302,30 +278,19 @@ other
 	alert user of desyncs detected in localSync, maybe as news alert,
 		if local versions are newer than those specified in localSync
 
-	chat
-		private triggering 2 invites, members dont see each other
-		if node starts up untrusted, display help service by default instead of chat
-		auto-open local chatroom when link made
-
 	publishing / pruing / re-publishing / replicating uplink requests
 	posts, outbound mail re-published on startup?
 	use common assist for posts/mail/uplinkReqs?
 	crawler - bandwidth, location storage load
 
 	nav bar work with loops?
-	test clients with different local times, init random gmt offsets
-	GetDownlinkIDs not thread safe
-
 
 Interface
 	General
 		Sorting of listviews
 		status panel needs to update as network connects network_statusupdate, trigger news as well
-		test gmt visible in status panel
 		unload tray icon on exit?
 		dont allow nav bar person switch on mail/chat components
-		trust info box - options like trust, IM, mail, leave/join project
-		exception catching/reporting - move to POST, get last 50 log entries as well by time
 		multiline text in tree list row exceeds clip bounds
 		
 	graphics
@@ -520,7 +485,7 @@ Core
 		probably better if built on top of database component ;)
 		
 Simulator
-	track bandwidth / memory / allocated objects
+	track memory / allocated objects
 	figure out why IO writes in FiresoftDemo so high, getting 2min/sec through, pretty damn good
 	record max udp burst sizes, or do packet size distribution histogram
 

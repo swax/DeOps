@@ -203,12 +203,7 @@ namespace RiseOp.Services.IM
                 return;
             }
 
-            IMStatus status = null;
-            if(!IMMap.SafeTryGetValue(user, out status))
-            {
-                status = new IMStatus(user);
-                IMMap.SafeAdd(user, status);
-            }
+            IMStatus status = OpenStatus(user);
 
             foreach (ClientInfo loc in Core.Locations.GetClients(user))
                 Network.RudpControl.Connect(loc.Data);
@@ -385,35 +380,59 @@ namespace RiseOp.Services.IM
 
             foreach (RudpSession session in Network.RudpControl.GetActiveSessions(key))
             {
-                sent = true;
+                sent = true; // only sent if target receies
                 session.SendData(ServiceID, 0, message, true);
             }
+
+            // send copies to other selves running
+            message.TargetID = key;
+            foreach (RudpSession session in Network.RudpControl.GetActiveSessions(Core.UserID))
+                session.SendData(ServiceID, 0, message, true);
 
             ProcessMessage(status, new InstantMessage(Core, text, format) { Sent = sent });
         }
 
         void Session_Data(RudpSession session, byte[] data)
         {
-            IMStatus status = null;
-            if (!IMMap.SafeTryGetValue(session.UserID, out status))
-            {
-                status = new IMStatus(session.UserID);
-                IMMap.SafeAdd(session.UserID, status);
-            }
+            IMStatus status = OpenStatus(session.UserID);
 
-            
 
             G2Header root = new G2Header(data);
 
             if (G2Protocol.ReadPacket(root))
             {
                 if (root.Name == IMPacket.Message)
-                    ProcessMessage(status, new InstantMessage(Core, session, MessageData.Decode(root)));
+                {
+                    MessageData message = MessageData.Decode(root);
+
+                    if(message.TargetID != 0)
+                    {
+                        Debug.Assert(session.UserID == Core.UserID);
+                        if(session.UserID != Core.UserID)
+                            return;
+
+                        status = OpenStatus(message.TargetID);
+                    }
+
+                    ProcessMessage(status, new InstantMessage(Core, session, message));
+                }
 
                 if (root.Name == IMPacket.Alive)
                     status.SetTTL(session.ClientID, SessionTimeout * 2);
             }
+        }
 
+        private IMStatus OpenStatus(ulong user)
+        {
+            IMStatus status;
+
+            if (!IMMap.SafeTryGetValue(user, out status))
+            {
+                status = new IMStatus(user);
+                IMMap.SafeAdd(user, status);
+            }
+
+            return status;
         }
 
         internal void ProcessMessage(IMStatus status, InstantMessage message)

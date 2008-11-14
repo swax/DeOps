@@ -92,6 +92,9 @@ namespace RiseOp.Services.Storage
             MenuDetails = new ToolStripMenuItem("Details", StorageRes.details, FileView_Details);
 
             Utilities.SetupToolstrip(toolStrip1, new OpusColorTable());
+
+            RescanLabel.Text = "";
+            StatusLabel.Text = "";
         }
 
         internal override string GetTitle(bool small)
@@ -1223,8 +1226,7 @@ namespace RiseOp.Services.Storage
 
             NextRescan = 2;
 
-            RescanLabel.Visible = true;
-
+            RescanLabel.Text = "Rescanning...";
         }
 
         void Storages_WorkingFileUpdate(uint project, string dir, ulong uid, WorkingChange action)
@@ -1335,19 +1337,11 @@ namespace RiseOp.Services.Storage
         private void SaveButton_Click(object sender, EventArgs e)
         {
             Storages.SaveLocal(ProjectID);
-
-            RefreshView();
-
-            CheckWorkingStatus();
         }
 
         private void DiscardButton_Click(object sender, EventArgs e)
         {
             Working = Storages.Discard(ProjectID);
-
-            RefreshView();
-
-            CheckWorkingStatus();
         }
 
         private void FolderTreeView_MouseClick(object sender, MouseEventArgs e)
@@ -1996,7 +1990,7 @@ namespace RiseOp.Services.Storage
 
             // rescan remote files against specific locals
             // happens when local file / folders are changed
-            if (NextRescan > 0 && !Storages.HashingActive())
+            if (NextRescan > 0 && Storages.HashFiles.Pending.Count == 0)
             {
                 NextRescan--;
 
@@ -2025,7 +2019,7 @@ namespace RiseOp.Services.Storage
                     // clear maps
                     RescanFolderMap.Clear();
 
-                    RescanLabel.Visible = false;
+                    RescanLabel.Text = "";
                 }
             }
         }
@@ -2173,45 +2167,60 @@ namespace RiseOp.Services.Storage
             if (!IsLocal)
                 return;
 
-            if (Storages.HashingActive())
+            if (Storages.UnlockFiles.Pending.Count > 0 || 
+                Storages.HashFiles.Pending.Count > 0 ||
+                Storages.CopyFiles.Pending.Count > 0)
             {
-                if (!ChangesLabel.Visible || SaveButton.Visible)
-                {
-                    ChangesLabel.Visible = true;
-                    SaveButton.Visible = false;
-                    DiscardButton.Visible = false;
+                StatusLabel.Visible = true;
 
-                    splitContainer1.Height = Height - ChangesLabel.Height - toolStrip1.Height - 8;
+                string text = "";
+
+                if (Storages.UnlockFiles.Pending.Count > 0)
+                    text += "Unlocking " + Storages.UnlockFiles.Pending.Count.ToString() + " Files";
+
+                if (Storages.CopyFiles.Pending.Count > 0)
+                {
+                    if (text != "")
+                        text += ", ";
+
+                    text += "Copying " + Storages.CopyFiles.Pending.Count.ToString() + " Files";
                 }
 
-                ChangesLabel.Text = "Processing " + (Storages.HashQueue.Count).ToString() + " Changes...";
-            }
+                if (Storages.HashFiles.Pending.Count > 0)
+                {
+                    if (text != "")
+                        text += ", ";
 
-            else if (Working.Modified)
+                    text += "Processing " + Storages.HashFiles.Pending.Count.ToString() + " Changes";
+                }
+
+                StatusLabel.Text = text;
+            }
+            else
+                StatusLabel.Visible = false;
+
+
+            if (Working.Modified)
             {
                 if (!SaveButton.Visible)
                 {
-                    ChangesLabel.Visible = false;
                     SaveButton.Visible = true;
                     DiscardButton.Visible = true;
-
-                    splitContainer1.Height = Height - toolStrip1.Height - SaveButton.Height - 8;
                 }
             }
             else
             {
                 if (SaveButton.Visible)
                 {
-                    ChangesLabel.Visible = false;
                     SaveButton.Visible = false;
                     DiscardButton.Visible = false;
-                    splitContainer1.Height = Height - toolStrip1.Height;
                 }
             }
 
             if (Utilities.IsRunningOnMono())
             {
                 // buttons aren't positioned when they aren't visible
+                StatusLabel.Location = new Point(3, Height - 18);
                 SaveButton.Location = new Point(Width - 156, Height - 22);
                 DiscardButton.Location = new Point(Width - 86, Height - 22);
             }
@@ -2460,63 +2469,7 @@ namespace RiseOp.Services.Storage
 
 
             foreach (string sourcePath in paths)
-            {
-                try
-                {
-                    // move secure folder or file
-                    if (sourcePath.StartsWith(Working.RootPath))
-                    {
-                        string securePath = sourcePath.Replace(Working.RootPath, "");
-
-                        LocalFolder folder = Working.GetLocalFolder(securePath);
-
-                        // secure folder
-                        if (folder != null)
-                        {
-                            if (folder.Info.IsFlagged(StorageFlags.Archived))
-                                continue;
-
-                            Working.MoveFolder(folder, destPath, errors);
-                        }
-
-                        // secure file
-                        LocalFile file = Working.GetLocalFile(securePath);
-
-                        if (file != null)
-                        {
-                            if (file.Info.IsFlagged(StorageFlags.Archived))
-                                continue;
-
-                            Working.MoveFile(securePath, destPath, errors);
-                        }
-                    }
-
-                    // move local folder or file
-                    string finalPath = destPath + Path.DirectorySeparatorChar + Path.GetFileName(sourcePath);
-
-                    if (Directory.Exists(sourcePath))
-                    {
-                        //crit allow overwrite if files exist in spot
-                        // if on file sys erased
-                        // new entries made in file item's history
-
-                        string fullDestination = Working.RootPath + destPath;
-
-                        if (!fullDestination.Contains(sourcePath)) // dont let folder move into itself
-                            CopyDiskDirectory(sourcePath, finalPath, errors);
-                    }
-                    else if (File.Exists(sourcePath))
-                    {
-                        Directory.CreateDirectory(Working.RootPath + destPath);
-
-                        CopyDiskFile(sourcePath, finalPath, errors);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    errors.Add("Exception " + ex.Message + " " + sourcePath);
-                }
-            }
+                Working.ImportFiles(sourcePath, destPath, errors);
 
 
             if (errors.Count > 0)
@@ -2528,42 +2481,6 @@ namespace RiseOp.Services.Storage
                 MessageBox.Show(this, "Errors:\n" + message);
             }
         }
-
-        public void CopyDiskDirectory(string sourcePath, string destPath, List<string> errors)
-        {
-            // create folder to copy to
-            if (!Directory.Exists(Working.RootPath + destPath))
-                Directory.CreateDirectory(Working.RootPath + destPath);
-
-            Working.TrackFolder(destPath); // if already there simply returns
-
-            // add folders and files
-            String[] sourceFiles = Directory.GetFileSystemEntries(sourcePath);
-
-            foreach (string diskFile in sourceFiles)
-            {
-                string finalPath = destPath + Path.DirectorySeparatorChar + Path.GetFileName(diskFile);
-
-                if (Directory.Exists(diskFile))
-                    CopyDiskDirectory(diskFile, finalPath, errors);
-
-                else if ( File.Exists(diskFile) )
-                    CopyDiskFile(diskFile, finalPath, errors);
-            }
-        }
-
-        public void CopyDiskFile(string sourcePath, string destPath, List<string> errors)
-        {
-            if (Working.FileExists(destPath))
-            {
-                errors.Add("File " + destPath + " already exists in files");
-                return;
-            }
-
-            File.Copy(sourcePath, Working.RootPath + destPath, false);
-            Working.TrackFile(destPath);
-        }
-
 
         bool Dragging;
         Point DragStart = Point.Empty;

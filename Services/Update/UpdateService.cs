@@ -98,14 +98,16 @@ namespace RiseOp.Services.Update
             {
                 UpdateInfo info = new UpdateInfo();
 
-                info.Name = "RiseOp_1.0.6.exe";
-                info.DottedVersion = "1.0.6";
+                info.Name = "RiseOp_1.0.8.exe";
+                info.DottedVersion = "1.0.8";
 
                 // want to prevent infinite update loop, ensure the seq verison in the intaller, and the
                 // signed seq version in the update are equal
                 info.SequentialVersion = Core.Context.LocalSeqVersion;
 
-                info.Notes = "Auto-updating fixed\r\n";
+                info.Notes = "";
+                info.Notes += "Fixed vista upnp bug\r\n";
+                info.Notes += "Fixed vista updateOp bug\r\n";
 
                 RijndaelManaged crypt = new RijndaelManaged();
                 crypt.Key = Utilities.GenerateKey(Core.StrongRndGen, 256);
@@ -222,7 +224,7 @@ namespace RiseOp.Services.Update
         {
             FileDetails details = new FileDetails(ServiceID, 0, Core.Context.SignedUpdate.Hash, Core.Context.SignedUpdate.Size, null);
 
-            Core.Transfers.StartDownload(target, details, null, new EndDownloadHandler(DownloadFinished));
+            Core.Transfers.StartDownload(target, details, LookupSettings.UpdatePath, new EndDownloadHandler(DownloadFinished), null);
         }
 
         bool Transfers_FileSearch(ulong key, FileDetails details)
@@ -254,12 +256,12 @@ namespace RiseOp.Services.Update
             return null;
         }
 
-        void DownloadFinished(string path, object[] args)
+        void DownloadFinished(object[] args)
         {
             bool success = false;
 
             // check size and beginning - ensure new signed update wasnt received before transfer finished
-            using (FileStream stream = File.OpenRead(path))
+            using (FileStream stream = File.OpenRead(LookupSettings.UpdatePath))
             {
                 UpdateInfo signed = Core.Context.SignedUpdate;
 
@@ -269,7 +271,6 @@ namespace RiseOp.Services.Update
                 if (stream.Length == signed.Size &&
                     Utilities.MemCompare(check, signed.Beginning))
                 {
-                    File.Copy(path, LookupSettings.UpdatePath, true);
                     signed.Loaded = true;
 
                     // signed already written to bootstrap

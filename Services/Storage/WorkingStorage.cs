@@ -1683,6 +1683,114 @@ namespace RiseOp.Services.Storage
                 }
             }
         }
+
+
+
+        internal void ImportFiles(string source, string destination, List<string> errors)
+        {
+            if (Core.InvokeRequired)
+            {
+                Core.RunInCoreAsync(() => ImportFiles(source, destination, errors));
+                return;
+            }
+
+            try
+            {
+                // move secure folder or file
+                if (source.StartsWith(RootPath))
+                {
+                    string securePath = source.Replace(RootPath, "");
+
+                    LocalFolder folder = GetLocalFolder(securePath);
+
+                    // secure folder
+                    if (folder != null)
+                    {
+                        if (folder.Info.IsFlagged(StorageFlags.Archived))
+                            return;
+
+                        MoveFolder(folder, destination, errors);
+                    }
+
+                    // secure file
+                    LocalFile file = GetLocalFile(securePath);
+
+                    if (file != null)
+                    {
+                        if (file.Info.IsFlagged(StorageFlags.Archived))
+                            return;
+
+                        MoveFile(securePath, destination, errors);
+                    }
+                }
+
+                // move local folder or file
+                string finalPath = destination + Path.DirectorySeparatorChar + Path.GetFileName(source);
+
+                if (Directory.Exists(source))
+                {
+                    //crit allow overwrite if files exist in spot
+                    // if on file sys erased
+                    // new entries made in file item's history
+
+                    string fullDestination = RootPath + destination;
+
+                    if (!fullDestination.Contains(source)) // dont let folder move into itself
+                        CopyDiskDirectory(source, finalPath, errors);
+                }
+                else if (File.Exists(source))
+                {
+                    Directory.CreateDirectory(RootPath + destination);
+
+                    CopyDiskFile(source, finalPath, errors);
+                }
+            }
+            catch (Exception ex)
+            {
+                errors.Add("Exception " + ex.Message + " " + source);
+            }
+
+            return;
+        }
+
+        public void CopyDiskDirectory(string source, string destination, List<string> errors)
+        {
+            // create folder to copy to
+            if (!Directory.Exists(RootPath + destination))
+                Directory.CreateDirectory(RootPath + destination);
+
+            TrackFolder(destination); // if already there simply returns
+
+            // add folders and files
+            String[] sourceFiles = Directory.GetFileSystemEntries(source);
+
+            foreach (string diskFile in sourceFiles)
+            {
+                string finalPath = destination + Path.DirectorySeparatorChar + Path.GetFileName(diskFile);
+
+                if (Directory.Exists(diskFile))
+                    CopyDiskDirectory(diskFile, finalPath, errors);
+
+                else if (File.Exists(diskFile))
+                    CopyDiskFile(diskFile, finalPath, errors);
+            }
+        }
+
+        public void CopyDiskFile(string source, string destination, List<string> errors)
+        {
+            if (FileExists(RootPath + destination))
+            {
+                errors.Add("File " + destination + " already exists in files");
+                return;
+            }
+
+            Storages.CopyFiles.Enqueue(() =>
+            {
+                File.Copy(source, RootPath + destination, false);
+                
+                Core.RunInCoreAsync(() => TrackFile(destination));
+            });
+        }
     }
 
     internal class LocalFolder

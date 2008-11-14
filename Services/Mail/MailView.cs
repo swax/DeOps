@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Data;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
@@ -14,6 +16,7 @@ using RiseOp.Implementation;
 using RiseOp.Services.Trust;
 using RiseOp.Interface.TLVex;
 using RiseOp.Interface.Views;
+
 
 namespace RiseOp.Services.Mail
 {
@@ -58,7 +61,7 @@ namespace RiseOp.Services.Mail
 
                 </head>
                 <body bgcolor=whitesmoke>
-                    <p>
+                    <p style='margin-left:5'>
                         <span id='content'><?=content?></span>
                     </p>
                 </body>
@@ -296,10 +299,10 @@ namespace RiseOp.Services.Mail
             string actions = "";
 
             if (message.Header.TargetID == Core.UserID)
-                actions += @"<a href='http://reply/x" + "'>Reply</a>";
+                actions += @"<a href='http://reply" + "'>Reply</a>";
 
-            actions += @", <a href='http://forward/x'>Forward</a>";
-            actions += @", <a href='http://delete/x'>Delete</a>";
+            actions += @", <a href='http://forward'>Forward</a>";
+            actions += @", <a href='http://delete'>Delete</a>";
 
             content += "<b>Actions: </b>" + actions.Trim(',', ' ');
 
@@ -314,12 +317,12 @@ namespace RiseOp.Services.Mail
                 {
                     int buffSize = 4096;
                     byte[] buffer = new byte[4096];
-                    ulong bytesLeft = message.Header.FileStart;
+                    long bytesLeft = message.Header.FileStart;
                     while (bytesLeft > 0)
                     {
-                        int readSize = (bytesLeft > (ulong)buffSize) ? buffSize : (int)bytesLeft;
+                        int readSize = (bytesLeft > buffSize) ? buffSize : (int)bytesLeft;
                         int read = crypto.Read(buffer, 0, readSize);
-                        bytesLeft -= (ulong)read;
+                        bytesLeft -= read;
                     }
 
                     // load file
@@ -372,7 +375,7 @@ namespace RiseOp.Services.Mail
 
             string[] parts = url.Split('/');
 
-            if (parts.Length < 2)
+            if (parts.Length < 1)
                 return;
 
             if (MessageView.SelectedNodes.Count == 0)
@@ -388,25 +391,33 @@ namespace RiseOp.Services.Mail
 
             LocalMail message = item.Message;
 
-            if (parts[0] == "attach")
+            if (parts[0] == "attach" && parts.Length > 1)
             {
                 int index = int.Parse(parts[1]);
 
-                
+                if (index < message.Attached.Count)
+                {
+                    string path = Core.User.RootPath + Path.DirectorySeparatorChar +
+                        "Downloads" + Path.DirectorySeparatorChar + message.Attached[index].Name;
+                        
 
-                for(int i = 0; i < message.Attached.Count; i++)
-                    if (i == index)
+                    try
                     {
-                        SaveFileDialog save = new SaveFileDialog();
-                        save.FileName = message.Attached[i].Name;
-                        save.Title = "Save " + message.Attached[i].Name;
+                        if (!File.Exists(path))
+                            Utilities.ExtractAttachedFile(Mail.GetLocalPath(message.Header),
+                                                            message.Header.LocalKey,
+                                                            message.Header.FileStart,
+                                                            message.Attached.Select(a => a.Size).ToArray(),
+                                                            index,
+                                                            path);
 
-                        if (save.ShowDialog() == DialogResult.OK)
-                            SaveFile(save.FileName, message, message.Attached[i]);
-    
-                        e.Cancel = true;
-                        break;
+                        Process.Start(path);
                     }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(this, "Error Opening Attachment: " + ex.Message);
+                    }
+                }
             }
 
             if (parts[0] == "reply")
@@ -421,52 +432,6 @@ namespace RiseOp.Services.Mail
             e.Cancel = true;
         }
 
-        private void SaveFile(string path, LocalMail message, MailFile file)
-        {
-            try
-            {
-                using (TaggedStream tagged = new TaggedStream(Mail.GetLocalPath(message.Header), Core.Network.Protocol))
-                using (IVCryptoStream crypto = IVCryptoStream.Load(tagged, message.Header.LocalKey))
-                {
-                    // get past packet section of file
-                    const int buffSize = 4096;
-                    byte[] buffer = new byte[4096];
-
-                    ulong bytesLeft = message.Header.FileStart;
-                    while (bytesLeft > 0)
-                    {
-                        int readSize = (bytesLeft > (ulong)buffSize) ? buffSize : (int)bytesLeft;
-                        int read = crypto.Read(buffer, 0, readSize);
-                        bytesLeft -= (ulong)read;
-                    }
-
-                    // setup write file
-                    using (FileStream outstream = new FileStream(path, FileMode.Create, FileAccess.Write))
-                    {
-                        // read files, write the right one :P
-                        foreach (MailFile attached in message.Attached)
-                        {
-                            bytesLeft = (ulong)attached.Size;
-
-                            while (bytesLeft > 0)
-                            {
-                                int readSize = (bytesLeft > (ulong)buffSize) ? buffSize : (int)bytesLeft;
-                                int read = crypto.Read(buffer, 0, readSize);
-                                bytesLeft -= (ulong)read;
-
-                                if (attached == file)
-                                    outstream.Write(buffer, 0, read);
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(this, "Error Opening Mail: " + ex.Message);
-            }
-
-        }
 
         void Message_Reply(object sender, EventArgs e)
         {
@@ -491,15 +456,16 @@ namespace RiseOp.Services.Mail
 
         void Message_Delete(object sender, EventArgs e)
         {
-            MessageMenuItem item = sender as MessageMenuItem;
-
-            if (item == null)
+            MessageNode[] selected = MessageView.SelectedNodes.OfType<MessageNode>().ToArray();
+        
+            if(selected.Length == 0)
                 return;
 
             if (MessageBox.Show(this, "Are you sure you want to delete this message?", "Delete", MessageBoxButtons.YesNo) == DialogResult.No)
                 return;
 
-            Mail.DeleteLocal(item.Message);
+            foreach (MessageNode item in selected)
+                Mail.DeleteLocal(item.Message);
 
             // need to figure if parent or child, if parent then first child is the new parent in thread
             // refresh is quick fix for now

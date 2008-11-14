@@ -200,7 +200,7 @@ namespace RiseOp.Implementation.Transport
         {
             // remove acked packet
             foreach(Tuple<uint, RudpPacket> tuple in client.Packets)
-                if(tuple.Second.PeerID == packet.PeerID)
+                if (tuple.Param2.PeerID == packet.PeerID)
                 {
                     client.Packets.Remove(tuple);
                     client.Attempts = 0;
@@ -312,12 +312,12 @@ namespace RiseOp.Implementation.Transport
             NextTry = network.Core.TimeNow.AddSeconds(3);
 
             Tuple<uint, RudpPacket> tuple = Packets.First.Value;
-            RudpPacket packet = tuple.Second;
+            RudpPacket packet = tuple.Param2;
             packet.Ident = target.Ident;
 
             int sentBytes = SendtoAddress(network, target, packet);
 
-            network.Core.ServiceBandwidth[tuple.First].OutPerSec += sentBytes;
+            network.Core.ServiceBandwidth[tuple.Param1].OutPerSec += sentBytes;
         }
 
         internal int SendtoAddress(DhtNetwork network, RudpAddress target, RudpPacket packet)

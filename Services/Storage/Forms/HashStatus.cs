@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
@@ -23,22 +24,19 @@ namespace RiseOp.Services.Storage
 
         private void QuarterSecondTimer_Tick(object sender, EventArgs e)
         {
-            if (!Storages.HashingActive())
+            if (Storages.HashFiles.Pending.Count == 0)
                 Close();
-
-            if (Storages.HashQueue.Count == 0)
-                return;
 
             // Securing test.mpg, 2 files left, 200 MB total
 
             HashPack pack = null;
             long totalSize = 0;
 
-            lock (Storages.HashQueue)
+            lock (Storages.HashFiles.Pending)
             {
-                pack = Storages.HashQueue.Peek();
+                pack = Storages.HashFiles.Pending.First.Value.Param2 as HashPack;
 
-                foreach (HashPack packy in Storages.HashQueue)
+                foreach (HashPack packy in Storages.HashFiles.Pending.Select(p => p.Param2 as HashPack))
                     totalSize += packy.File.Info.Size;
             }
 
@@ -47,7 +45,7 @@ namespace RiseOp.Services.Storage
 
             string status = "Securing '" + pack.File.Info.Name + "'\r\n";
 
-            int filesLeft = Storages.HashQueue.Count - 1;
+            int filesLeft = Storages.HashFiles.Pending.Count - 1;
 
             if (filesLeft > 0)
                 if (filesLeft == 1)

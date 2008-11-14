@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -851,5 +852,209 @@ namespace RiseOp
                 finally { Access.ReleaseReaderLock(); }
             }
         }
+    }
+
+    public class Tuple<T1>
+    {
+        public T1 Param1;
+
+        public Tuple(T1 t1)
+        {
+            Param1 = t1;
+        }
+
+        public override string ToString()
+        {
+            return Param1.ToString();
+        }
+
+        public override int GetHashCode()
+        {
+            return Param1.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            Tuple<T1> tuple = obj as Tuple<T1>;
+
+            return Param1.Equals(tuple.Param1);
+        }
+    }
+
+    public class Tuple<T1, T2> : Tuple<T1>
+    {
+        public T2 Param2;
+
+        public Tuple(T1 t1, T2 t2)
+            : base(t1)
+        {
+            Param2 = t2;
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + " - " + Param2.ToString();
+        }
+
+        public override int GetHashCode()
+        {
+            return Param2.GetHashCode() ^ base.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            Tuple<T1, T2> tuple = obj as Tuple<T1, T2>;
+
+            return Param2.Equals(tuple.Param2) && base.Equals(obj);
+        }
+    }
+
+    public class Tuple<T1, T2, T3> : Tuple<T1, T2>
+    {
+        public T3 Param3;
+
+        public Tuple(T1 t1, T2 t2, T3 t3)
+            : base(t1, t2)
+        {
+            Param3 = t3;
+        }
+
+
+        public override string ToString()
+        {
+            return base.ToString() + " - " + Param3.ToString();
+        }
+
+        public override int GetHashCode()
+        {
+            return Param3.GetHashCode() ^ base.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            Tuple<T1, T2, T3> tuple = obj as Tuple<T1, T2, T3>;
+
+            return Param3.Equals(tuple.Param3) && base.Equals(obj);
+        }
+    }
+
+    internal class CircularBuffer<T> : IEnumerable<T>
+    {
+        internal T[] Buffer;
+        internal int CurrentPos = -1;
+        internal int Length;
+
+        internal int Capacity
+        {
+            set
+            {
+                // copy prev elements
+                T[] copy = new T[Length];
+
+                for (int i = 0; i < Length && i < value; i++)
+                    copy[i] = this[i];
+
+                // re-init buff
+                Buffer = new T[value];
+                CurrentPos = -1;
+                Length = 0;
+
+                // add back values
+                Array.Reverse(copy);
+                foreach (T init in copy)
+                    Add(init);
+            }
+            get
+            {
+                return Buffer.Length;
+            }
+        }
+
+
+        internal CircularBuffer(int capacity)
+        {
+            Capacity = capacity;
+        }
+
+        internal T this[int index]
+        {
+            get
+            {
+                return Buffer[ToCircleIndex(index)];
+            }
+            set
+            {
+                Buffer[ToCircleIndex(index)] = value;
+            }
+        }
+
+        int ToCircleIndex(int index)
+        {
+            // linear index to circular index
+
+            if (CurrentPos == -1)
+                throw new Exception("Index value not valid");
+
+            if (index >= Length)
+                throw new Exception("Index value exceeds bounds of array");
+
+            int circIndex = CurrentPos - index;
+
+            if (circIndex < 0)
+                circIndex = Buffer.Length + circIndex;
+
+            return circIndex;
+        }
+
+        internal void Add(T value)
+        {
+            if (Buffer == null || Buffer.Length == 0)
+                return;
+
+            CurrentPos++;
+
+            // circle around
+            if (CurrentPos >= Buffer.Length)
+                CurrentPos = 0;
+
+            Buffer[CurrentPos] = value;
+
+            if (Length <= CurrentPos)
+                Length = CurrentPos + 1;
+        }
+
+
+        internal void Clear()
+        {
+            Buffer = new T[Capacity];
+            CurrentPos = -1;
+            Length = 0;
+        }
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        {
+            return GetNext();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetNext();
+        }
+
+        private IEnumerator<T> GetNext()
+        {
+            if (CurrentPos == -1)
+                yield break;
+
+            // iterate from most recent to beginning
+            for (int i = CurrentPos; i >= 0; i--)
+                yield return Buffer[i];
+
+            // iterate the back down
+            if (Length == Buffer.Length)
+                for (int i = Length - 1; i > CurrentPos; i--)
+                    yield return Buffer[i];
+        }
+
     }
 }

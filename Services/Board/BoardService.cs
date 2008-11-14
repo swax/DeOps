@@ -742,19 +742,13 @@ namespace RiseOp.Services.Board
 
             FileDetails details = new FileDetails(ServiceID, 0, header.FileHash, header.FileSize, new PostUID(header).ToBytes());
 
-            Core.Transfers.StartDownload(header.TargetID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
+            Core.Transfers.StartDownload(header.TargetID, details, GetPostPath(header), new EndDownloadHandler(EndDownload), new object[] { signed, header });
         }
 
-        private void EndDownload(string path, object[] args)
+        private void EndDownload(object[] args)
         {
             SignedData signedHeader = (SignedData)args[0];
             PostHeader header = (PostHeader)args[1];
-
-            try
-            {
-                File.Copy(path, GetPostPath(header), true);
-            }
-            catch { return; }
 
             CachePost(signedHeader, header);
         }
@@ -1298,6 +1292,17 @@ namespace RiseOp.Services.Board
         {
             if (PostUpdate != null)
                 Core.RunInGuiThread(PostUpdate, post);
+        }
+
+        // cant delete post because we dont control them with any master header
+        // future - local board file that consists of deleted post ids
+        internal void Archive(OpPost post, bool state)
+        {
+            post.Header.Archived = state;
+
+            PostEdit(post);
+
+            UpdateGui(null);
         }
     }
 

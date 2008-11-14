@@ -2,10 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Security.Cryptography;
-using System.Drawing;
 using System.Data;
+using System.Diagnostics;
+using System.Drawing;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
@@ -13,8 +15,8 @@ using RiseOp.Implementation;
 using RiseOp.Interface;
 using RiseOp.Interface.TLVex;
 using RiseOp.Interface.Views;
-
 using RiseOp.Services.Trust;
+
 
 namespace RiseOp.Services.Board
 {
@@ -62,7 +64,7 @@ namespace RiseOp.Services.Board
 
                 </head>
                 <body bgcolor=whitesmoke>
-                    <p>
+                    <p style='margin-left:5'>
                         <span id='content'><?=content?></span>
                     </p>
                 </body>
@@ -124,6 +126,13 @@ namespace RiseOp.Services.Board
                 PostView.Select(node);
                 ShowMessage(node.Post, null);
             }
+            else
+                ShowTips();
+        }
+
+        private void ShowTips()
+        {
+            SetHeader("<b>Tip</b> - Your posts can be seen by those directly above and below you in the trust tree");
         }
 
         internal override bool Fin()
@@ -228,6 +237,13 @@ namespace RiseOp.Services.Board
 
         void Board_PostUpdate(OpPost post)
         {
+            if (post == null)
+            {
+                RefreshBoard();
+               
+                return;
+            }
+
             if (post.Header.ProjectID != ProjectID)
                 return;
 
@@ -312,11 +328,13 @@ namespace RiseOp.Services.Board
                 if (!ThreadMap.ContainsKey(parentIdent))
                     return;
 
+                PostViewNode parent = ThreadMap[parentIdent];
+                parent.Update(Boards, parentPost);
+
+
                 // if post has replies, add an empty item below so it has an expand option
                 if(!ActiveThreads.ContainsKey(parentIdent))
                 {
-                    PostViewNode parent = ThreadMap[parentIdent];
-
                     if (parent.Nodes.Count == 0)
                         parent.Nodes.Add(new TreeListNode());
 
@@ -325,8 +343,6 @@ namespace RiseOp.Services.Board
                 }
 
                 // else post is active
-                PostViewNode parentNode = ThreadMap[parentIdent];
-
                 PostViewNode replyNode = null;
 
                 if (!ActiveThreads[parentIdent].ContainsKey(post.Ident))
@@ -335,16 +351,18 @@ namespace RiseOp.Services.Board
 
                     ActiveThreads[parentIdent][post.Ident] = replyNode;
 
-                    AddPostNode(parentNode.Nodes, replyNode, true);
+                    AddPostNode(parent.Nodes, replyNode, true);
                 }
                 else
                 {
                     replyNode = ActiveThreads[parentIdent][post.Ident];
-                    replyNode.Update(Boards, post);
+                    replyNode.Update(Boards, post);               
                 }
 
                 if (replyNode.Selected)
-                    ShowMessage(replyNode.Post, parentNode.Post);
+                    ShowMessage(replyNode.Post, parent.Post);
+
+                PostView.Invalidate();
             } 
         }
 
@@ -431,7 +449,10 @@ namespace RiseOp.Services.Board
         private void PostView_SelectedItemChanged(object sender, EventArgs e)
         {
             if (PostView.SelectedNodes.Count == 0)
+            {
+                ShowTips();
                 return;
+            }
 
             PostViewNode node = PostView.SelectedNodes[0] as PostViewNode;
 
@@ -463,7 +484,25 @@ namespace RiseOp.Services.Board
 
             // edit time
             if (post.Header.EditTime > post.Header.Time)
-                content += "Edited at " + Utilities.FormatTime(post.Header.EditTime);
+                content += "Edited at " + Utilities.FormatTime(post.Header.EditTime) + "<br>";
+
+            // attached files
+            if (post.Attached.Count > 1)
+            {
+                string attachHtml = "";
+
+                for (int i = 0; i < post.Attached.Count; i++)
+                {
+                    if (post.Attached[i].Name == "body")
+                        continue;
+
+                    attachHtml += "<a href='http://attach/" + i.ToString() + "'>" + post.Attached[i].Name + "</a> (" + Utilities.ByteSizetoString(post.Attached[i].Size) + "), ";
+                }
+
+                attachHtml = attachHtml.TrimEnd(new char[] { ' ', ',' });
+
+                content += "<b>Attachments: </b> " + attachHtml;
+            }
 
             content += "<br>";
 
@@ -471,18 +510,20 @@ namespace RiseOp.Services.Board
             string actions = "";
 
             if (!post.Header.Archived)
-                actions += @" <a href='http://reply/" + parent.Ident.ToString() + "'>Reply</a>";
+                actions += @" <a href='http://reply'>Reply</a>";
 
             if (post.Header.SourceID == Core.UserID)
             {
                 if (!post.Header.Archived)
-                    actions += @", <a href='http://edit/" + post.Ident.ToString() + "'>Edit</a>";
+                    actions += @", <a href='http://edit'>Edit</a>";
 
                 if (post == parent)
+                {
                     if (post.Header.Archived)
-                        actions += @", <a href='http://restore/" + post.Ident.ToString() + "'>Restore</a>";
+                        actions += @", <a href='http://restore'>Restore</a>";
                     else
-                        actions += @", <a href='http://archive/" + post.Ident.ToString() + "'>Archive</a>";
+                        actions += @", <a href='http://archive'>Remove</a>";
+                }
             }
 
             content += "<b>Actions: </b>" + actions.Trim(',', ' ');
@@ -548,51 +589,70 @@ namespace RiseOp.Services.Board
 
             string[] parts = url.Split('/');
 
-            if (parts.Length < 2)
+            if (parts.Length < 1)
                 return;
 
             if (parts[0] == "about")
                 return;
 
-            int hash = int.Parse(parts[1]);
+            if (PostView.SelectedNodes.Count == 0)
+                return;
 
-            OpPost post = null;
+            PostViewNode node = PostView.SelectedNodes[0] as PostViewNode;
 
-            if (ThreadMap.ContainsKey(hash))
-                post = ThreadMap[hash].Post;
-            else
+            if (node == null || node.Post == null)
+                return;
+
+            OpPost post = node.Post;
+
+            if (parts[0] == "reply")
             {
-                foreach (Dictionary<int, PostViewNode> thread in ActiveThreads.Values)
-                {
-                    foreach (PostViewNode reply in thread.Values)
-                        if (reply.Post.Ident == hash)
-                        {
-                            post = reply.Post;
-                            break;
-                        }
+                // replies are directed at parent
+                PostViewNode parent = node.ParentNode() as PostViewNode;
 
-                    if (post != null)
-                        break;
+                if (parent != null)
+                    post = parent.Post;
+
+                ReplyPost(post);
+            }
+            if (parts[0] == "edit")
+                EditPost(post);
+
+            if (parts[0] == "archive")
+                Boards.Archive(post, true);
+
+            if (parts[0] == "restore")
+                Boards.Archive(post, false);
+
+            if (parts[0] == "attach" && parts.Length > 1)
+            {
+                int index = int.Parse(parts[1]);
+
+                if (index < post.Attached.Count)
+                {
+                    string path = Core.User.RootPath + Path.DirectorySeparatorChar +
+                        "Downloads" + Path.DirectorySeparatorChar + post.Attached[index].Name;
+
+                    try
+                    {
+                        if (!File.Exists(path))
+                            Utilities.ExtractAttachedFile(Boards.GetPostPath(post.Header),
+                                                            post.Header.FileKey,
+                                                            post.Header.FileStart,
+                                                            post.Attached.Select(a => a.Size).ToArray(),
+                                                            index,
+                                                            path);
+
+                        Process.Start(path);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(this, "Error Opening Attachment: " + ex.Message);
+                    }
                 }
             }
 
-            if (post != null)
-            {
-                if (parts[0] == "reply")
-                    Post_Reply(new PostMenuItem(post), null);
-
-                if (parts[0] == "edit")
-                    Post_Edit(new PostMenuItem(post), null);
-
-                if (parts[0] == "archive")
-                    Post_Archive(new PostMenuItem(post), null);
-
-                if (parts[0] == "restore")
-                    Post_Restore(new PostMenuItem(post), null);
-            }
-
             e.Cancel = true;
-
         }
 
         private void PostButton_Click(object sender, EventArgs e)
@@ -640,79 +700,43 @@ namespace RiseOp.Services.Board
             ContextMenuStripEx menu = new ContextMenuStripEx();
 
             if (!replyTo.Header.Archived)
-                menu.Items.Add(new PostMenuItem("Reply", replyTo, new EventHandler(Post_Reply)));
+                menu.Items.Add(new PostMenuItem("Reply", replyTo, (s, a) => ReplyPost(replyTo)));
 
             if (node.Post.Header.SourceID == Core.UserID)
             {
                 if (!replyTo.Header.Archived)
                 {
-                    menu.Items.Add(new PostMenuItem("Edit", node.Post, new EventHandler(Post_Edit)));
+                    menu.Items.Add(new PostMenuItem("Edit", node.Post, (s, a) => EditPost(node.Post)));
                     menu.Items.Add("-");
                 }
 
-                if(parent == null)
-                    if(node.Post.Header.Archived)
-                        menu.Items.Add(new PostMenuItem("Restore", node.Post, new EventHandler(Post_Restore)));
+                if (parent == null)
+                {
+                    if (node.Post.Header.Archived)
+                        menu.Items.Add(new PostMenuItem("Restore", node.Post, (s, a) => Boards.Archive(node.Post, false)));
                     else
-                        menu.Items.Add(new PostMenuItem("Archive", node.Post, new EventHandler(Post_Archive)));
+                        menu.Items.Add(new PostMenuItem("Archive", node.Post, (s, a) => Boards.Archive(node.Post, true)));
+                }
 
             }
 
             menu.Show(PostView, e.Location);
         }
 
-        void Post_Reply(object sender, EventArgs e)
+        void ReplyPost(OpPost parent)
         {
-            PostMenuItem item = sender as PostMenuItem;
-
-            if (item == null)
-                return;
-
-            OpPost parent = item.Post;
-
             PostMessage form = new PostMessage(Boards, parent.Header.TargetID, parent.Header.ProjectID);
             form.PostReply(parent);
 
             Core.RunInGuiThread(Core.ShowExternal, form);
         }
 
-        void Post_Edit(object sender, EventArgs e)
+        void EditPost(OpPost post)
         {
-            PostMenuItem item = sender as PostMenuItem;
-
-            if (item == null)
-                return;
-
-            OpPost post = item.Post;
-
             PostMessage form = new PostMessage(Boards, post.Header.TargetID, post.Header.ProjectID);
             form.PostEdit(post, post.Header.ParentID, PostBody.Rtf, post.Info.Format == TextFormat.Plain);
 
             Core.RunInGuiThread(Core.ShowExternal, form);
-        }
-
-        void Post_Archive(object sender, EventArgs e)
-        {
-            PostMenuItem item = sender as PostMenuItem;
-
-            if (item == null)
-                return;
-
-            item.Post.Header.Archived = true;
-            Boards.PostEdit(item.Post);
-            RefreshBoard();
-        }
-
-        void Post_Restore(object sender, EventArgs e)
-        {
-            PostMenuItem item = sender as PostMenuItem;
-
-            if (item == null)
-                return;
-
-            item.Post.Header.Archived = false;
-            Boards.PostEdit(item.Post);
-            RefreshBoard();
         }
 
         private void ArchiveButton_Click(object sender, EventArgs e)

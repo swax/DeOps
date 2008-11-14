@@ -191,6 +191,7 @@ namespace RiseOp.Services.Mail
             this.MessageView.ItemMenu = null;
             this.MessageView.LabelEdit = false;
             this.MessageView.Location = new System.Drawing.Point(0, 0);
+            this.MessageView.MultiSelect = true;
             this.MessageView.Name = "MessageView";
             this.MessageView.RowSelectColor = System.Drawing.SystemColors.Highlight;
             this.MessageView.RowTrackColor = System.Drawing.Color.WhiteSmoke;

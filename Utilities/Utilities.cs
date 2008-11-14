@@ -602,6 +602,46 @@ namespace RiseOp
             if (IsRunningOnMono())
                 button.MouseEnter += (s, e) => action.Invoke(s, null);
         }
+
+
+        internal static void ExtractAttachedFile(string source, byte[] key, long fileStart, long[] attachments, int index, string destination)
+        {
+            using (TaggedStream tagged = new TaggedStream(source, new G2Protocol()))
+            using (IVCryptoStream crypto = IVCryptoStream.Load(tagged, key))
+            {
+                // get past packet section of file
+                const int buffSize = 4096;
+                byte[] buffer = new byte[4096];
+
+                long bytesLeft = fileStart;
+                while (bytesLeft > 0)
+                {
+                    int readSize = (bytesLeft > buffSize) ? buffSize : (int)bytesLeft;
+                    int read = crypto.Read(buffer, 0, readSize);
+                    bytesLeft -= read;
+                }
+
+                // setup write file
+                using (FileStream outstream = new FileStream(destination, FileMode.Create, FileAccess.Write))
+                {
+                    // read files, write the right one :P
+                    for (int i = 0; i < attachments.Length; i++)
+                    {
+                        bytesLeft = attachments[i];
+
+                        while (bytesLeft > 0)
+                        {
+                            int readSize = (bytesLeft > buffSize) ? buffSize : (int)bytesLeft;
+                            int read = crypto.Read(buffer, 0, readSize);
+                            bytesLeft -= read;
+
+                            if (i == index)
+                                outstream.Write(buffer, 0, read);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     internal static partial class ApplicationEx
@@ -831,136 +871,6 @@ namespace RiseOp.Implementation
         internal bool Contains(uint service, uint type)
         {
             return HandlerMap.ContainsKey(service) && HandlerMap[service].ContainsKey(type);
-        }
-    }
-
-    internal class Tuple<T, U>
-    {
-        internal T First;
-        internal U Second;
-
-        internal Tuple(T first, U second)
-        {
-            First = first;
-            Second = second;
-        }
-
-        public override int GetHashCode()
-        {
-            return First.GetHashCode() ^ Second.GetHashCode();
-        }
-
-        public override string ToString()
-        {
-            return First + " - " + Second;
-        }
-    }
-
-    internal class CircularBuffer<T> : IEnumerable
-    {
-        internal T[] Buffer;
-        internal int CurrentPos = -1;
-        internal int Length;
-
-        internal int Capacity
-        {
-            set
-            {
-                // copy prev elements
-                T[] copy = new T[Length];
-
-                for (int i = 0; i < Length && i < value; i++)
-                    copy[i] = this[i];
-
-                // re-init buff
-                Buffer = new T[value];
-                CurrentPos = -1;
-                Length = 0;
-
-                // add back values
-                Array.Reverse(copy);
-                foreach (T init in copy)
-                    Add(init);
-            }
-            get
-            {
-                return Buffer.Length;
-            }
-        }
-
-
-        internal CircularBuffer(int capacity)
-        {
-            Capacity = capacity;
-        }
-
-        internal T this[int index]
-        {
-            get
-            {
-                return Buffer[ToCircleIndex(index)];
-            }
-            set
-            {
-                Buffer[ToCircleIndex(index)] = value;
-            }
-        }
-
-        int ToCircleIndex(int index)
-        {
-            // linear index to circular index
-
-            if (CurrentPos == -1)
-                throw new Exception("Index value not valid");
-
-            if (index >= Length)
-                throw new Exception("Index value exceeds bounds of array");
-
-            int circIndex = CurrentPos - index;
-
-            if (circIndex < 0)
-                circIndex = Buffer.Length + circIndex;
-
-            return circIndex;
-        }
-
-        internal void Add(T value)
-        {
-            if (Buffer == null || Buffer.Length == 0)
-                return;
-
-            CurrentPos++;
-
-            // circle around
-            if (CurrentPos >= Buffer.Length)
-                CurrentPos = 0;
-
-            Buffer[CurrentPos] = value;
-
-            if (Length <= CurrentPos)
-                Length = CurrentPos + 1;
-        }
-
-        public IEnumerator GetEnumerator()
-        {
-            if (CurrentPos == -1)
-                yield break;
-
-            // iterate from most recent to beginning
-            for (int i = CurrentPos; i >= 0; i--)
-                yield return Buffer[i];
-
-            // iterate the back down
-            if (Length == Buffer.Length)
-                for (int i = Length - 1; i > CurrentPos; i--)
-                    yield return Buffer[i];
-        }
-
-        internal void Clear()
-        {
-            Buffer = new T[Capacity];
-            CurrentPos = -1;
-            Length = 0;
         }
     }
 

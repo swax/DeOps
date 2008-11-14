@@ -486,7 +486,7 @@ namespace RiseOp.Services.Assist
 
             FileDetails details = new FileDetails(Service, DataType, header.FileHash, header.FileSize, null);
 
-            Core.Transfers.StartDownload(header.KeyID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload));
+            Core.Transfers.StartDownload(header.KeyID, details, GetFilePath(header), new EndDownloadHandler(EndDownload), new object[] { signed, header } );
         }
 
         bool Transfers_FileSearch(ulong key, FileDetails details)
@@ -512,16 +512,10 @@ namespace RiseOp.Services.Assist
             return null;
         }
 
-        private void EndDownload(string path, object[] args)
+        private void EndDownload(object[] args)
         {
-            SignedData signedHeader = (SignedData)args[0];
-            VersionedFileHeader header = (VersionedFileHeader)args[1];
-
-            try
-            {
-                File.Copy(path, GetFilePath(header), true);
-            }
-            catch { return; }
+            SignedData signedHeader = args[0] as SignedData;
+            VersionedFileHeader header = args[1] as VersionedFileHeader;
 
             CacheFile(signedHeader, header);
         }

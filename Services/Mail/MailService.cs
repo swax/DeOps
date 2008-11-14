@@ -679,7 +679,7 @@ namespace RiseOp.Services.Mail
             string tempPath = Core.GetTempPath();
             using (IVCryptoStream stream = IVCryptoStream.Save(tempPath, header.LocalKey))
             {
-                int written = 0;
+                long written = 0;
 
                 // build mail file
                 written += Protocol.WriteToFile(new MailInfo(subject, format, Utilities.GetQuip(body, format), Core.TimeNow.ToUniversalTime(), files.Count > 0), stream);
@@ -694,7 +694,7 @@ namespace RiseOp.Services.Mail
                     written += Protocol.WriteToFile(new MailFile(attached.Name, attached.Size), stream);
 
                 stream.WriteByte(0); // end packets
-                header.FileStart = (ulong)written + 1;
+                header.FileStart = written + 1;
 
                 // write files
                 stream.Write(bodyBytes, 0, bodyBytes.Length);
@@ -789,7 +789,7 @@ namespace RiseOp.Services.Mail
         }
 
         // key to decrypt the email file is encoded with the receiver's public key
-        byte[] EncodeFileKey(RSACryptoServiceProvider rsa, byte[] crypt, ulong fileStart)
+        byte[] EncodeFileKey(RSACryptoServiceProvider rsa, byte[] crypt, long fileStart)
         {
             byte[] buffer = new byte[crypt.Length + 8];
 
@@ -799,7 +799,7 @@ namespace RiseOp.Services.Mail
             return rsa.Encrypt(buffer, false);
         }
 
-        void DecodeFileKey(byte[] encoded, ref byte[] fileKey, ref ulong fileStart)
+        void DecodeFileKey(byte[] encoded, ref byte[] fileKey, ref long fileStart)
         {
             byte[] decoded = Core.User.Settings.KeyPair.Decrypt(encoded, false);
 
@@ -808,7 +808,7 @@ namespace RiseOp.Services.Mail
 
             fileKey = Utilities.ExtractBytes(decoded, 0, 256/8);
 
-            fileStart = BitConverter.ToUInt64(decoded, fileKey.Length);
+            fileStart = BitConverter.ToInt64(decoded, fileKey.Length);
         }
 
         internal byte[] GetMailID(ulong hashID, ulong userID)
@@ -1136,19 +1136,13 @@ namespace RiseOp.Services.Mail
 
             FileDetails details = new FileDetails(ServiceID, DataTypeMail, header.FileHash, header.FileSize, null);
 
-            Core.Transfers.StartDownload(header.TargetID, details, new object[] { signed, header }, new EndDownloadHandler(EndDownload_Mail));
+            Core.Transfers.StartDownload(header.TargetID, details, GetCachePath(header), new EndDownloadHandler(EndDownload_Mail), new object[] { signed, header });
         }
 
-        private void EndDownload_Mail(string path, object[] args)
+        private void EndDownload_Mail(object[] args)
         {
             SignedData signedHeader = (SignedData)args[0];
             MailHeader header = (MailHeader)args[1];
-
-            try
-            {
-                File.Copy(path, GetCachePath(header), true);
-            }
-            catch { return; }
 
             CacheMail(signedHeader, header);
         }
@@ -1217,7 +1211,7 @@ namespace RiseOp.Services.Mail
             if (File.Exists(localPath))
                 return;
 
-            File.Move(cachePath, localPath);
+            File.Copy(cachePath, localPath, true);
 
             // add to inbound list
             if (LocalMailbox == null)

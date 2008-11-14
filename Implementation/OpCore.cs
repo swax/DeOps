@@ -747,29 +747,35 @@ namespace RiseOp.Implementation
             }
             CoreThread = null;
 
-
-            if (Network.IsLookup)
-                Network.LookupConfig.Save(this);
-            else
-                User.Save();
-
-
-            foreach (OpService service in ServiceMap.Values)
-                service.Dispose();
-
-            Network.UPnPControl.Shutdown();
-            Network.RudpControl.Shutdown();
-            Network.UdpControl.Shutdown();
-            Network.LanControl.Shutdown();
-            Network.TcpControl.Shutdown();
+            try
+            {
+                if (Network.IsLookup)
+                    Network.LookupConfig.Save(this);
+                else
+                    User.Save();
 
 
-            ServiceMap.Clear();
-            ServiceBandwidth.Clear();
-            
+                foreach (OpService service in ServiceMap.Values)
+                    service.Dispose();
 
-            if (Sim != null)
-                Sim.Internet.UnregisterAddress(this);
+                Network.UPnPControl.Shutdown();
+                Network.RudpControl.Shutdown();
+                Network.UdpControl.Shutdown();
+                Network.LanControl.Shutdown();
+                Network.TcpControl.Shutdown();
+
+
+                ServiceMap.Clear();
+                ServiceBandwidth.Clear();
+
+
+                if (Sim != null)
+                    Sim.Internet.UnregisterAddress(this);
+            }
+            catch
+            {
+                Debug.Assert(false);
+            }
 
             Context.RemoveCore(this);
         }

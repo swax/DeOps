@@ -1,0 +1,23 @@
+﻿	
+	
+set sequence and version
+set release notes
+set release mode
+obfuscate / create mapping
+	dont obf
+		FirewallType
+		TransportProtocol
+		RudpState
+		ProxyType
+		TcpState 
+		StorageFlags
+		StorageActions
+		graph Ipoint
+move to protected
+set version in installer
+create installer
+
+sign protected exe
+open Installed riseop, should start propagating update
+
+connect to network with new bootstrap/update.dat

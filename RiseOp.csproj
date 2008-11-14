@@ -776,10 +776,11 @@
     <Compile Include="Utilities\Test.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Utilities\ThreadedGenerics.cs" />
+    <Compile Include="Utilities\Collections.cs" />
     <Compile Include="Utilities\Utilities.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Utilities\WorkerQueue.cs" />
     <Compile Include="Win32.cs" />
     <Content Include="Docs\build.txt" />
     <Content Include="Docs\ChangeLog.txt" />

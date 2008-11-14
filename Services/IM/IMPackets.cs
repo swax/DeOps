@@ -17,10 +17,12 @@ namespace RiseOp.Services.IM
     {
         const byte Packet_Text = 0x10;
         const byte Packet_Format = 0x20;
+        const byte Packet_TargetID = 0x30;
 
 
         internal string Text;
         internal TextFormat Format;
+        internal ulong TargetID; // used to sync duplicate clients
 
 
         internal MessageData()
@@ -41,6 +43,9 @@ namespace RiseOp.Services.IM
 
                 protocol.WritePacket(msg, Packet_Text, UTF8Encoding.UTF8.GetBytes(Text));
                 protocol.WritePacket(msg, Packet_Format, CompactNum.GetBytes((int)Format));
+
+                if(TargetID != 0)
+                    protocol.WritePacket(msg, Packet_TargetID, BitConverter.GetBytes(TargetID));
 
                 return protocol.WriteFinish();
             }
@@ -65,6 +70,10 @@ namespace RiseOp.Services.IM
 
                     case Packet_Format:
                         msg.Format = (TextFormat)CompactNum.ToInt32(child.Data, child.PayloadPos, child.PayloadSize);
+                        break;
+
+                    case Packet_TargetID:
+                        msg.TargetID = BitConverter.ToUInt64(child.Data, child.PayloadPos);
                         break;
                 }
             }

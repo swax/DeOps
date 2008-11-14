@@ -19,6 +19,7 @@ using RiseOp.Services.Assist;
 using RiseOp.Services.Location;
 using RiseOp.Services.Transfer;
 
+using RiseOp.Utility;
 
 /* active shares are periodically published at fileID on network so that when source goes offline
  * more locations can be found
@@ -50,13 +51,8 @@ namespace RiseOp.Services.Share
         internal ShareCollection Local;
         internal ThreadedDictionary<ulong, ShareCollection> Collections = new ThreadedDictionary<ulong, ShareCollection>();
 
-        Thread ProcessFilesHandle;
-        LinkedList<SharedFile> ProcessingQueue = new LinkedList<SharedFile>();
-
-        Thread OpenFilesHandle;
-        LinkedList<SharedFile> OpenQueue = new LinkedList<SharedFile>();
-
-        bool KillThreads;        
+        WorkerQueue ProcessFiles = new WorkerQueue("Share Process");
+        WorkerQueue OpenFiles = new WorkerQueue("Share Open");
 
         string SharePath;
         string HeaderPath;
@@ -121,13 +117,8 @@ namespace RiseOp.Services.Share
         {
             //crit - public shared directory can be deleted here, except for our local public header
 
-            KillThreads = true;
-
-            if (ProcessFilesHandle != null)
-                Debug.Assert(ProcessFilesHandle.Join(5000));
-
-            if(OpenFilesHandle != null)
-                Debug.Assert(OpenFilesHandle.Join(5000));
+            ProcessFiles.Dispose();
+            OpenFiles.Dispose();
 
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
  
@@ -368,6 +359,9 @@ namespace RiseOp.Services.Share
                                 active = true;
                         }
 
+                        else if (transfer.Verifying)
+                            file.TransferStatus = "Verifying...";
+
                         else if (Core.Transfers.UploadPeers.Values.Where(u => u.Active != null && u.Active.Transfer.FileID == file.FileID).Count() > 0)
                         {
                             file.TransferStatus = "Uploading at " + Utilities.ByteSizetoString((long)transfer.Bandwidth.OutAvg()) + "/s";
@@ -427,7 +421,7 @@ namespace RiseOp.Services.Share
             Local.Files.SafeAdd(file);
             Core.RunInGuiThread(GuiFileUpdate, file);
 
-            ProcessFileShare(file);
+            ProcessFiles.Enqueue(() => ProcessFile(file));
         }
 
         internal void AddTargets(List<DhtClient> targets, ulong user, ushort client)
@@ -451,75 +445,47 @@ namespace RiseOp.Services.Share
                 targets.Add(new DhtClient(user, client));
         }
 
-        private void ProcessFileShare(SharedFile file)
+        void ProcessFile(SharedFile file)
         {
-            // enqueue file for processing
-            lock (ProcessingQueue)
-                ProcessingQueue.AddLast(file);
-
-            // hashing
-            if (ProcessFilesHandle == null || !ProcessFilesHandle.IsAlive)
+            try
             {
-                ProcessFilesHandle = new Thread(ProcessFiles);
-                ProcessFilesHandle.Start();
-            }  
-        }
+                // copied from storage service
 
-        void ProcessFiles()
-        {
-            SharedFile file = null;
+                // hash file fast - used to gen key/iv
+                file.FileStatus = "Identifying...";
+                byte[] internalHash = null;
+                long internalSize = 0;
+                Utilities.Md5HashFile(file.SystemPath, ref internalHash, ref internalSize);
 
-            // while files on processing list
-            while (ProcessingQueue.Count > 0 && !KillThreads)
-            {
-                lock (ProcessingQueue)
-                {
-                    file = ProcessingQueue.First.Value;
-                    ProcessingQueue.RemoveFirst();
-                }
+                // dont bother find dupe, becaues dupe might be incomplete, in which case we want to add 
+                // completed file to our shared, have timer find dupes, and if both have the same file path that exists, remove one
 
-                try
-                {
-                    // copied from storage service
+                RijndaelManaged crypt = Utilities.CommonFileKey(Core.User.Settings.OpKey, internalHash);
+                file.FileKey = crypt.Key;
 
-                    // hash file fast - used to gen key/iv
-                    file.FileStatus = "Identifying...";
-                    byte[] internalHash = null;
-                    long internalSize = 0;
-                    Utilities.Md5HashFile(file.SystemPath, ref internalHash, ref internalSize);
+                // encrypt file to temp dir
+                file.FileStatus = "Securing...";
+                string tempPath = Core.GetTempPath();
+                Utilities.EncryptTagFile(file.SystemPath, tempPath, crypt, Network.Protocol, ref file.Hash, ref file.Size);
+                file.FileID = OpTransfer.GetFileID(ServiceID, file.Hash, file.Size);
 
-                    // dont bother find dupe, becaues dupe might be incomplete, in which case we want to add 
-                    // completed file to our shared, have timer find dupes, and if both have the same file path that exists, remove one
+                // move to official path
+                string path = GetFilePath(file);
+                if (!File.Exists(path))
+                    File.Move(tempPath, path);
 
-                    RijndaelManaged crypt = Utilities.CommonFileKey(Core.User.Settings.OpKey, internalHash);
-                    file.FileKey = crypt.Key;
+                file.FileStatus = "Secured";
 
-                    // encrypt file to temp dir
-                    file.FileStatus = "Securing...";
-                    string tempPath = Core.GetTempPath();
-                    Utilities.EncryptTagFile(file.SystemPath, tempPath, crypt, Network.Protocol, ref file.Hash, ref file.Size);
-                    file.FileID = OpTransfer.GetFileID(ServiceID, file.Hash, file.Size);
+                // run in core thread -> save, send request to user
+                if (file.Processed != null)
+                    Core.RunInCoreAsync(() => file.Processed.Param1.Invoke(file, file.Processed.Param2));
 
-                    // move to official path
-                    string path = GetFilePath(file);
-                    if (!File.Exists(path))
-                        File.Move(tempPath, path);
-
-                    file.FileStatus = "Secured";
-
-                    // run in core thread -> save, send request to user
-                    if (file.Processed != null)
-                        Core.RunInCoreAsync(() => file.Processed.First.Invoke(file, file.Processed.Second));
-
-                    RunSave = true;
-                }
-                catch (Exception ex)
-                {
-                    Network.UpdateLog("Sharing", "Error: " + ex.Message);
-                }
+                RunSave = true;
             }
-
-            ProcessFilesHandle = null;
+            catch(Exception ex)
+            {
+                file.FileStatus = "Error: " + ex.Message;
+            }
         }
 
 
@@ -629,7 +595,7 @@ namespace RiseOp.Services.Share
 
 
             DhtClient client = new DhtClient(session.UserID, session.ClientID);
-            OpTransfer transfer = Core.Transfers.StartDownload(client.UserID, details, args, new EndDownloadHandler(CollectionDownloadFinished));
+            OpTransfer transfer = Core.Transfers.StartDownload(client.UserID, details, GetPublicPath(collection), new EndDownloadHandler(CollectionDownloadFinished), args);
             transfer.AddPeer(client);
             transfer.DoSearch = false;
 
@@ -656,7 +622,7 @@ namespace RiseOp.Services.Share
             return GetPublicPath(collection);
         }
 
-        internal void CollectionDownloadFinished(string path, object[] args)
+        internal void CollectionDownloadFinished(object[] args)
         {
             ShareCollection collection = args[0] as ShareCollection;
             ushort client = (ushort) args[1];
@@ -670,9 +636,6 @@ namespace RiseOp.Services.Share
             try
             {
                 string finalpath = GetPublicPath(collection);
-
-                File.Delete(finalpath);
-                File.Copy(path, finalpath);
 
                 using (TaggedStream tagged = new TaggedStream(finalpath, Network.Protocol))
                 using (IVCryptoStream crypto = IVCryptoStream.Load(tagged, collection.Key))
@@ -713,7 +676,7 @@ namespace RiseOp.Services.Share
             FileDetails details = new FileDetails(ServiceID, DataTypeShare, file.Hash, file.Size, null);
             object[] args = new object[] { file };
 
-            OpTransfer transfer = Core.Transfers.StartDownload(client.UserID, details, args, new EndDownloadHandler(FileDownloadFinished));
+            OpTransfer transfer = Core.Transfers.StartDownload(client.UserID, details, GetFilePath(file), new EndDownloadHandler(FileDownloadFinished), args);
 
             transfer.AddPeer(client);
 
@@ -752,11 +715,9 @@ namespace RiseOp.Services.Share
             return null;
         }
 
-        internal void FileDownloadFinished(string path, object[] args)
+        internal void FileDownloadFinished(object[] args)
         {
             SharedFile file = args[0] as SharedFile;
-
-            File.Copy(path, GetFilePath(file));
 
             file.Completed = true;
             file.Sources.Add(Core.Network.Local);
@@ -898,65 +859,31 @@ namespace RiseOp.Services.Share
                 return;
             }
 
-            lock (OpenQueue)
-            {
-                if (OpenQueue.Contains(file))
-                    return;
-
-                OpenQueue.AddLast(file);
-            }
-
-            // hashing
-            if (OpenFilesHandle == null || !OpenFilesHandle.IsAlive)
-            {
-                OpenFilesHandle = new Thread(OpenFiles);
-                OpenFilesHandle.Start();
-            }  
+            OpenFiles.Enqueue(() => OpenFile(file));
         }
 
-        void OpenFiles()
+        void OpenFile(SharedFile file)
         {
-            SharedFile file = null;
+            if (!Directory.Exists(DownloadPath))
+                Directory.CreateDirectory(DownloadPath);
 
-            // while files on open list
-            while (OpenQueue.Count > 0 && !KillThreads)
-            {
-                lock (OpenQueue)
-                {
-                    file = OpenQueue.First.Value;
-                    OpenQueue.RemoveFirst();
-                }
+            string finalpath = DownloadPath + file.Name;
 
-                try
-                {
-                    if(!Directory.Exists(DownloadPath))
-                        Directory.CreateDirectory(DownloadPath);
-
-                    string finalpath = DownloadPath + file.Name;
-
-                    int i = 1;
-                    while(File.Exists(finalpath))
-                        finalpath = DownloadPath + "(" + (i++) + ") " + file.Name;
+            int i = 1;
+            while (File.Exists(finalpath))
+                finalpath = DownloadPath + "(" + (i++) + ") " + file.Name;
 
 
-                    // decrypt file to temp dir
-                    file.FileStatus = "Unsecuring...";
-                    Utilities.DecryptTagFile(GetFilePath(file), finalpath, file.FileKey, Core);
-          
-                    file.SystemPath = finalpath;
-                    file.FileStatus = "File in Downloads Folder";
+            // decrypt file to temp dir
+            file.FileStatus = "Unsecuring...";
+            Utilities.DecryptTagFile(GetFilePath(file), finalpath, file.FileKey, Core);
 
-                    Process.Start(finalpath);
+            file.SystemPath = finalpath;
+            file.FileStatus = "File in Downloads Folder";
 
-                    RunSave = true;
-                }
-                catch (Exception ex)
-                {
-                    Network.UpdateLog("Sharing", "Error: " + ex.Message);
-                }
-            }
+            Process.Start(finalpath);
 
-            OpenFilesHandle = null;
+            RunSave = true;
         }
 
         internal void RemoveFile(SharedFile file)
@@ -974,14 +901,6 @@ namespace RiseOp.Services.Share
             }
 
             Local.Files.SafeRemove(file);
-
-            lock (ProcessingQueue)
-                if (ProcessingQueue.Contains(file))
-                    ProcessingQueue.Remove(file);
-
-            lock(OpenQueue)
-                if (OpenQueue.Contains(file))
-                    OpenQueue.Remove(file);
 
             RunSave = true;
 

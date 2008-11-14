@@ -79,6 +79,7 @@
             this.NotesBox.Multiline = true;
             this.NotesBox.Name = "NotesBox";
             this.NotesBox.ReadOnly = true;
+            this.NotesBox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.NotesBox.Size = new System.Drawing.Size(332, 77);
             this.NotesBox.TabIndex = 3;
             // 

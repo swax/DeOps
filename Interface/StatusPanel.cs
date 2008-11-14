@@ -498,7 +498,7 @@ namespace RiseOp.Interface
             string content = "<table callpadding=3>  ";
 
             foreach (Tuple<string, string> tuple in tuples)
-                content += "<tr><td><p><b>" + tuple.First + "</b></p></td> <td><p>" + tuple.Second + "</p></td></tr>";
+                content += "<tr><td><p><b>" + tuple.Param1 + "</b></p></td> <td><p>" + tuple.Param2 + "</p></td></tr>";
 
             if (locations == null)
                 return content + "</table>";
@@ -508,7 +508,7 @@ namespace RiseOp.Interface
 
             content += "<tr><td colspan=2><p><b>" + ifonline + "</b><br>";
             foreach (Tuple<string, string> tuple in locations)
-                content += "&nbsp&nbsp&nbsp <b>" + tuple.First + ":</b> " + tuple.Second + "<br>";
+                content += "&nbsp&nbsp&nbsp <b>" + tuple.Param1 + ":</b> " + tuple.Param2 + "<br>";
             content += "</p></td></tr>";
 
             return content + "</table>";

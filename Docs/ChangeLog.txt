@@ -1,9 +1,20 @@
 ﻿
+1.0.9
+	Chatroom name now case-insensitive
+	Fixed if untrusted the schedules above were not showing up
+
+1.0.8
+	Fixed vista upnp bug
+	Fixed vista updateOp bug
+
 1.0.7
     File registration moved to the installer
 	Data for users in trust tree cached/preferenced over untrusted
 	Fixed transfer bug when source file has been deleted
 	Fixed packetstream bug when packet read was exactly at the end of the buffer
+	Fixed opening mail attachment bug
+	Verifying/Copying file put into its own thread
+	Asyncronously lock files to storage
 	
 1.0.6
 	Auto-updating fixed

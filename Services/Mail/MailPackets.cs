@@ -52,7 +52,7 @@ namespace RiseOp.Services.Mail
 
         // only saved in inbox file, **not put out on netork
         internal byte[]   LocalKey;
-        internal ulong    FileStart;
+        internal long     FileStart;
         internal bool     Read;
         internal DateTime Received;
 
@@ -149,7 +149,7 @@ namespace RiseOp.Services.Mail
                         break;
 
                     case Packet_FileStart:
-                        header.FileStart = BitConverter.ToUInt64(child.Data, child.PayloadPos);
+                        header.FileStart = BitConverter.ToInt64(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Read:

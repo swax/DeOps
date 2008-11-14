@@ -5,7 +5,6 @@ using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -19,6 +18,7 @@ namespace UpdateOp
         Thread Worker;
         bool KillThread;
         AutoResetEvent TryUpdate = new AutoResetEvent(false);
+
 
         public MainForm(string newExe)
         {
@@ -57,15 +57,12 @@ namespace UpdateOp
                     string windir = Environment.GetEnvironmentVariable("windir");
                     string ngen = windir + "\\Microsoft.NET\\Framework\\v2.0.50727\\ngen.exe";
 
-
                     RunInGui(() => StatusLabel.Text = "Uninstalling...");
                     StartSilent(ngen, "uninstall RiseOp.exe");
-
 
                     RunInGui(() => StatusLabel.Text = "Installing...");
                     File.Copy(NewExe, "RiseOp.exe", true);
                     File.Delete(NewExe);
-
 
                     RunInGui(() => StatusLabel.Text = "Optimizing...");
                     StartSilent(ngen, "install RiseOp.exe /queue");
@@ -89,7 +86,7 @@ namespace UpdateOp
             Process.Start(info).WaitForExit();
         }
 
-        void RunInGui(Action action)
+        void RunInGui(MethodInvoker action)
         {
             BeginInvoke(action);
         }
@@ -109,7 +106,5 @@ namespace UpdateOp
                 Worker.Join();
             }
         }
-
-
     }
 }

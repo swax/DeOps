@@ -45,7 +45,7 @@ namespace RiseOp.Interface.Settings
                     LogBox.SelectionStart = LogBox.Text.Length;
                     LogBox.SelectionLength = 0;
 
-                    switch (item.First)
+                    switch (item.Param1)
                     {
                         case UpnpLogType.In:
                             LogBox.SelectionColor = Color.Blue;
@@ -61,7 +61,7 @@ namespace RiseOp.Interface.Settings
                             break;
                     }
 
-                    LogBox.AppendText(item.Second + "\n\n");
+                    LogBox.AppendText(item.Param2 + "\n\n");
                 }
             });
         }

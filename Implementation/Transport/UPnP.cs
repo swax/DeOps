@@ -160,11 +160,18 @@ namespace RiseOp.Implementation.Transport
             {
                 try
                 {
-                    var unicasts = nic.GetIPProperties().UnicastAddresses;
-                    if (unicasts.Count == 0)
-                        continue;
+                    string machineIP = null;
 
-                    string machineIP = unicasts[0].Address.ToString();
+                    // on vista the first address is IPv6 - routers dont know how to deal with that
+                    foreach (UnicastIPAddressInformation info in nic.GetIPProperties().UnicastAddresses)
+                        if (info.Address.AddressFamily == AddressFamily.InterNetwork)
+                        {
+                            machineIP = info.Address.ToString();
+                            break;
+                        }
+
+                    if (machineIP == null)
+                        continue;
 
                     //send msg to each gateway configured on this nic
                     foreach (GatewayIPAddressInformation gwInfo in nic.GetIPProperties().GatewayAddresses)

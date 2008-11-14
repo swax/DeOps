@@ -601,6 +601,7 @@ namespace RiseOp.Services.Chat
 
                 room.Members.LockReading(delegate()
                 {
+                    // also sends to other instances of self
                     foreach (ulong member in room.Members)
                         foreach (RudpSession session in Network.RudpControl.GetActiveSessions(member))
                         {
@@ -684,8 +685,8 @@ namespace RiseOp.Services.Chat
                             // invite not sent
                             if (room.Kind == RoomKind.Private || room.Host == Core.UserID)
                             {
-                                session.SendData(ServiceID, 0, room.Invites[session.UserID].First, true);
-                                room.Invites[session.UserID].Second.Add(session.ClientID);
+                                session.SendData(ServiceID, 0, room.Invites[session.UserID].Param1, true);
+                                room.Invites[session.UserID].Param2.Add(session.ClientID);
                                 ProcessMessage(room, "Invite sent to " + GetNameAndLocation(session));
                                 SendWhoResponse(room, session);
                             }
@@ -889,7 +890,7 @@ namespace RiseOp.Services.Chat
             foreach (RudpSession session in Network.RudpControl.GetActiveSessions(id))
             {
                 session.SendData(ServiceID, 0, invite, true);
-                room.Invites[id].Second.Add(session.ClientID);
+                room.Invites[id].Param2.Add(session.ClientID);
                 ProcessMessage(room, "Invite sent to " + GetNameAndLocation(session));
                 SendStatus(room); // so we get added as active to new room invitee creates
                 SendWhoResponse(room, session);
@@ -931,15 +932,15 @@ namespace RiseOp.Services.Chat
                 room.Invites[session.UserID] = tried;
             }
 
-            if (tried.Second.Contains(session.ClientID))
+            if (tried.Param2.Contains(session.ClientID))
                 return;
 
-            tried.Second.Add(session.ClientID);
+            tried.Param2.Add(session.ClientID);
 
             ChatInvite invite = new ChatInvite();
             invite.RoomID = room.RoomID;
             invite.Title = room.Title;
-            invite.SignedInvite = room.Invites[Core.UserID].First.SignedInvite;
+            invite.SignedInvite = room.Invites[Core.UserID].Param1.SignedInvite;
 
             session.SendData(ServiceID, 0, invite, true);
         }
@@ -1146,8 +1147,7 @@ namespace RiseOp.Services.Chat
 
         static ulong GetPublicRoomID(string name)
         {
-            return BitConverter.ToUInt64(new SHA1Managed().ComputeHash(UTF8Encoding.UTF8.GetBytes(name)), 0);
-
+            return BitConverter.ToUInt64(new SHA1Managed().ComputeHash(UTF8Encoding.UTF8.GetBytes(name.ToLowerInvariant())), 0);
         }
     }
 
@@ -1235,7 +1235,7 @@ namespace RiseOp.Services.Chat
         {
             return  Invites != null &&
                     Invites.ContainsKey(id) &&
-                    !Invites[id].Second.Contains(client);
+                    !Invites[id].Param2.Contains(client);
         }
 
         internal void AddMember(ulong user)

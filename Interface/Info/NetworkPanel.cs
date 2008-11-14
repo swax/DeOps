@@ -145,12 +145,12 @@ namespace RiseOp.Interface.Tools
 
             if (drawLookup)
                 lock (Core.Context.Lookup.Network.GeneralLog)
-                    log.AddRange(Core.Context.Lookup.Network.GeneralLog.Select(i => 
-                        new GeneralLogItem() { Entry = i.Second, Time = i.First, Lookup = true }));
+                    log.AddRange(Core.Context.Lookup.Network.GeneralLog.Select(i =>
+                        new GeneralLogItem() { Entry = i.Param2, Time = i.Param1, Lookup = true }));
 
             lock (Core.Network.GeneralLog)
                 log.AddRange(Core.Network.GeneralLog.Select(i =>
-                        new GeneralLogItem() { Entry = i.Second, Time = i.First, Lookup = false }));
+                        new GeneralLogItem() { Entry = i.Param2, Time = i.Param1, Lookup = false }));
 
             DrawGeneralLog(buffer, log);
 

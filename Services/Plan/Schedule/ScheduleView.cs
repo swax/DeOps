@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
@@ -235,7 +236,6 @@ namespace RiseOp.Services.Plan
 
         void PlanStructure_Resized(object sender, EventArgs args)
         {
-
             LabelPlus.Location = new Point(PlanStructure.Columns[0].Width - 30, LabelPlus.Location.Y);
 
             DateRange.Width = LabelPlus.Location.X + 1 - DateRange.Location.X;
@@ -374,13 +374,14 @@ namespace RiseOp.Services.Plan
             node.AddSubs = true;
 
             // go through downlinks
-            foreach (ulong id in Trust.GetDownlinkIDs(node.Link.UserID, ProjectID, 1))
+
+            OpLink[] downlinks = (from link in node.Link.Downlinks
+                                  where node.Link.Confirmed.Contains(link.UserID) ||
+                                        Uplinks.Contains(link.UserID)
+                                  select link).ToArray();
+
+            foreach (OpLink link in downlinks)
             {
-                OpLink link = Trust.GetLink(id, ProjectID);
-
-                if (link == null)
-                    continue;
-
                 // if doesnt exist search for it
                 if (!link.Trust.Loaded)
                 {

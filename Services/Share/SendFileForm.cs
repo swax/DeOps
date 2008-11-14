@@ -83,7 +83,7 @@ namespace RiseOp.Services.Share
                 if (file != null)
                 {
                     if (FileProcessed != null)
-                        Core.RunInCoreAsync(() => FileProcessed.First.Invoke(file, FileProcessed.Second));
+                        Core.RunInCoreAsync(() => FileProcessed.Param1.Invoke(file, FileProcessed.Param2));
                 }
                 else
                 {
