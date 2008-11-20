@@ -1,4 +1,7 @@
 ﻿
+1.1
+	Voice chat 
+
 1.0.9
 	Chatroom name now case-insensitive
 	Fixed if untrusted the schedules above were not showing up

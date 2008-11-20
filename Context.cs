@@ -28,6 +28,8 @@ using RiseOp.Services.Update;
 // v1.0.6 s7
 // v1.0.7 s8
 // v1.0.8 s9
+// v1.0.9
+// v1.1.0 s10
 
 namespace RiseOp
 {
@@ -54,7 +56,7 @@ namespace RiseOp
         Queue<string[]> NewInstances = new Queue<string[]>();
 
         internal UpdateInfo SignedUpdate;
-        internal uint LocalSeqVersion = 9;
+        internal uint LocalSeqVersion = 10;
 
         internal BandwidthLog Bandwidth = new BandwidthLog(10);
         internal Dictionary<uint, string> KnownServices = new Dictionary<uint, string>();

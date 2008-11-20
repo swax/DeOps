@@ -195,7 +195,9 @@ namespace RiseOp.Services.Voice
         
         void SettingsButton_Clicked(object sender, EventArgs args)
         {
-            // show settings window
+            VoiceSettings settings = new VoiceSettings(Voices);
+
+            settings.ShowDialog();
         }
 
         private void SetSelected(ToolStripMenuItem button)

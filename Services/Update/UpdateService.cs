@@ -98,17 +98,16 @@ namespace RiseOp.Services.Update
             {
                 UpdateInfo info = new UpdateInfo();
 
-                info.Name = "RiseOp_1.0.8.exe";
-                info.DottedVersion = "1.0.8";
+                info.Name = "RiseOp_1.1.0.exe";
+                info.DottedVersion = "1.1.0";
 
                 // want to prevent infinite update loop, ensure the seq verison in the intaller, and the
                 // signed seq version in the update are equal
                 info.SequentialVersion = Core.Context.LocalSeqVersion;
 
                 info.Notes = "";
-                info.Notes += "Fixed vista upnp bug\r\n";
-                info.Notes += "Fixed vista updateOp bug\r\n";
-
+                info.Notes += "Voice Chat\r\n";
+    
                 RijndaelManaged crypt = new RijndaelManaged();
                 crypt.Key = Utilities.GenerateKey(Core.StrongRndGen, 256);
                 info.Key = crypt.Key;

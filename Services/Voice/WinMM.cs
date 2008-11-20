@@ -26,6 +26,12 @@ namespace RiseOp.Services.Voice
         public const int TIME_SAMPLES = 0x0002;  // number of wave samples 
         public const int TIME_BYTES = 0x0004;  // current byte offset 
 
+        public const int WHDR_DONE = 0x00000001;
+        public const int WHDR_PREPARED = 0x00000002;
+        public const int WHDR_BEGINLOOP = 0x00000004;
+        public const int WHDR_ENDLOOP = 0x00000008;
+        public const int WHDR_INQUEUE = 0x00000010;
+
         /*
         #define MIDIMAPPER              -1
 
@@ -105,9 +111,38 @@ namespace RiseOp.Services.Voice
             public int reserved; // reserved for driver
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WaveOutCaps
+        {
+            public short wMid;
+            public short wPid;
+            public uint vDriverVersion;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+            public string szPname;
+            public uint dwFormats;
+            public short wChannels;
+            public short wReserved1;
+            public int dwSupport;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WaveInCaps
+        {
+            public short wMid;
+            public short wPid;
+            public uint vDriverVersion;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+            public string szPname;
+            public uint dwFormats;
+            public short wChannels;
+            public short wReserved1;
+        }
+
         // WaveOut calls
         [DllImport("winmm.dll")]
         public static extern int waveOutGetNumDevs();
+        [DllImport("winmm.dll")]
+        public static extern int waveOutGetDevCaps(int uDeviceID, ref WaveOutCaps pwoc, int cbwoc);
         [DllImport("winmm.dll")]
         public static extern int waveOutPrepareHeader(IntPtr hWaveOut, ref WaveHdr lpWaveOutHdr, int uSize);
         [DllImport("winmm.dll")]
@@ -134,6 +169,8 @@ namespace RiseOp.Services.Voice
         // WaveIn calls
         [DllImport("winmm.dll")]
         public static extern int waveInGetNumDevs();
+        [DllImport("winmm.dll")]
+        public static extern int waveInGetDevCaps(int uDeviceID, ref WaveInCaps pwoc, int cbwoc);
         [DllImport("winmm.dll")]
         public static extern int waveInAddBuffer(IntPtr hwi, ref WaveHdr pwh, int cbwh);
         [DllImport("winmm.dll")]

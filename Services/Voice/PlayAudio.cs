@@ -14,7 +14,6 @@ namespace RiseOp.Services.Voice
         RemoteVoice User;
 
         internal int FrameSize;
-        int PlayingDevice = -1;
 
         IntPtr WaveHandle;
         WinMM.WaveFormat Format;
@@ -75,7 +74,7 @@ namespace RiseOp.Services.Voice
                 SpeexDecoder = Speex.speex_decoder_init(modePtr);
 
                 // init wave
-                WinMM.ErrorCheck(WinMM.waveOutOpen(out WaveHandle, PlayingDevice, Format, CallbackHandler, 0, WinMM.CALLBACK_FUNCTION));
+                WinMM.ErrorCheck(WinMM.waveOutOpen(out WaveHandle, Voices.PlaybackDevice, Format, CallbackHandler, 0, WinMM.CALLBACK_FUNCTION));
 
                 for (int i = 0; i < BufferCount; i++)
                     Buffers[i] = new PlayBuffer(i, WaveHandle, BufferSize);
@@ -91,12 +90,9 @@ namespace RiseOp.Services.Voice
         {
             if (uMsg == WinMM.MM_WOM_DONE)
             {
-                lock (AudioQueue)
-                {
-                    FilledBuffers--;
+                FilledBuffers--;
 
-                    FillBuffers();
-                }
+                Voices.AudioEvent.Set();
             }
         }
 
@@ -129,20 +125,20 @@ namespace RiseOp.Services.Voice
                     User.Streams.Remove(routing);
                     break;
                 }
+
+            Voices.Players.SafeRemove(this);
         }
 
         internal void Receive_AudioData(byte[] data)
         {
             // enqueue, trigger fill audio buffers
             lock (AudioQueue)
-            {
                 AudioQueue.Enqueue(data);
 
-                FillBuffers();
-            }
+            Voices.AudioEvent.Set();
         }
 
-        private void FillBuffers()
+        internal void ProcessBuffers()
         {
             try
             {
@@ -151,20 +147,20 @@ namespace RiseOp.Services.Voice
                     byte[] data = null;
                     lock (AudioQueue) // either gets called from core, or system thread
                     {
-
                         if (AudioQueue.Count == 0)
                             return;
 
                         data = AudioQueue.Dequeue();
                     }
+
                     // keep a log of received audio that user can back track through
+                    lock (History)
+                    {
+                        History.Enqueue(data);
 
-                    History.Enqueue(data);
-
-                    while (History.Count > HistoryLength)
-                        History.Dequeue();
-
-
+                        while (History.Count > HistoryLength)
+                            History.Dequeue();
+                    }
 
                     // decode
                     Speex.speex_bits_reset(ref DecodeBits);
@@ -186,10 +182,8 @@ namespace RiseOp.Services.Voice
                             maxVolume = val;
                     }
 
-
-                    foreach (int window in User.ListeningTo.Keys)
-                        if (Voices.MaxVolume.ContainsKey(window) && maxVolume > Voices.MaxVolume[window].Param1)
-                            Voices.MaxVolume[window].Param1 = maxVolume;
+                    if (maxVolume > User.VolumeIn)
+                        User.VolumeIn = maxVolume;
 
 
                     // find out where audio should come out from, if at all

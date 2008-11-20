@@ -1,6 +1,4 @@
 
-settings window
-
 check that voice button is disposed on window close chat/IM
 
 storage view not changing when changing projects on nav bar

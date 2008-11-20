@@ -13,7 +13,6 @@ namespace RiseOp.Services.Voice
     {
         VoiceService Voices;
 
-        int RecordingDevice = -1;
         IntPtr WaveHandle;
         WinMM.WaveFormat Format;
         WinMM.WaveDelegate CallbackHandler;
@@ -26,9 +25,6 @@ namespace RiseOp.Services.Voice
         int NextBuffer;
         const int BufferCount = 5; // 1/10 of a second in buffers, 20ms each
         RecordBuffer[] Buffers = new RecordBuffer[BufferCount];
-
-        Thread RecordThread;
-        bool Recording;
 
         Speex.SpeexBits EncodeBits;
         IntPtr SpeexEncoder;
@@ -61,17 +57,12 @@ namespace RiseOp.Services.Voice
             {
                 InitSpeexEncoder();
 
-                WinMM.ErrorCheck(WinMM.waveInOpen(out WaveHandle, RecordingDevice, Format, CallbackHandler, 0, WinMM.CALLBACK_FUNCTION));
+                WinMM.ErrorCheck(WinMM.waveInOpen(out WaveHandle, Voices.RecordingDevice, Format, CallbackHandler, 0, WinMM.CALLBACK_FUNCTION));
 
                 for (int i = 0; i < BufferCount; i++)
                     Buffers[i] = new RecordBuffer(i, WaveHandle, BufferSize);
 
                 WinMM.ErrorCheck(WinMM.waveInStart(WaveHandle));
-
-                Recording = true;
-                RecordThread = new Thread(new ThreadStart(RunRecord));
-                RecordThread.Name = "Voice Record";
-                RecordThread.Start();
             }
             catch (Exception ex)
             {
@@ -119,40 +110,43 @@ namespace RiseOp.Services.Voice
             EncodedBytes = new byte[BufferSize];
         }
 
+        int AddedBuffers;
+
         internal void WaveCallback(IntPtr hdrvr, int uMsg, int dwUser, ref WinMM.WaveHdr wavhdr, int dwParam2)
         {
             if (uMsg == WinMM.MM_WIM_DATA)
             {
                 // use dwUser parameter of header to keep buffers in sync?
                 // doesnt seem like buffers are getting out of sync at all
-            
-                RecordEvent.Set();
+
+                AddedBuffers--;
+
+                Voices.AudioEvent.Set();
             }
         }
 
-        void RunRecord()
+        internal void ProcessBuffers()
         {
             try
             {
-                while (Recording)
+                while (AddedBuffers < BufferCount)
                 {
-                    RecordEvent.WaitOne();
-
-                    if (!Recording)
-                        return;
-
                     RecordBuffer buffer = Buffers[NextBuffer];
 
-                    EncodeAudio(buffer);
-     
+                    if(buffer.Added)
+                        EncodeAudio(buffer);
+
                     WinMM.ErrorCheck(WinMM.waveInAddBuffer(WaveHandle, ref buffer.Header, Marshal.SizeOf(buffer.Header)));
+                    buffer.Added = true;
 
                     NextBuffer++;
                     if (NextBuffer >= BufferCount)
                         NextBuffer = 0;
+
+                    AddedBuffers++;
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Debug.Assert(false);
 
@@ -203,14 +197,6 @@ namespace RiseOp.Services.Voice
             {
                 WinMM.ErrorCheck(WinMM.waveInReset(WaveHandle));
 
-                Recording = false;
-
-                if (RecordThread != null)
-                {
-                    RecordEvent.Set();
-                    RecordThread.Join(2000);
-                }
-
                 // free buffers
                 foreach (RecordBuffer buffer in Buffers)
                     buffer.Dispose();
@@ -232,19 +218,20 @@ namespace RiseOp.Services.Voice
     }
 
 
-    public class RecordBuffer : IDisposable
+    internal class RecordBuffer : IDisposable
     {
         IntPtr WaveHandle;
 
-        public WinMM.WaveHdr Header;
+        internal WinMM.WaveHdr Header;
         GCHandle HeaderHandle;
 
-        public byte[] Data;
+        internal byte[] Data;
         GCHandle DataHandle;
-        public IntPtr DataPtr;
+        internal IntPtr DataPtr;
 
+        internal bool Added;
 
-        public RecordBuffer(int index, IntPtr handle, int size)
+        internal RecordBuffer(int index, IntPtr handle, int size)
         {
             WaveHandle = handle;
 
@@ -259,8 +246,6 @@ namespace RiseOp.Services.Voice
             Header.dwBufferLength = size;
 
             WinMM.ErrorCheck(WinMM.waveInPrepareHeader(WaveHandle, ref Header, Marshal.SizeOf(Header)));
-
-            WinMM.ErrorCheck(WinMM.waveInAddBuffer(WaveHandle, ref Header, Marshal.SizeOf(Header)));
         }
 
         public void Dispose()

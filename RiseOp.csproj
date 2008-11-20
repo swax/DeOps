@@ -741,6 +741,12 @@
     </Compile>
     <Compile Include="Services\Voice\Speex.cs" />
     <Compile Include="Services\Voice\VoiceService.cs" />
+    <Compile Include="Services\Voice\VoiceSettings.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Services\Voice\VoiceSettings.Designer.cs">
+      <DependentUpon>VoiceSettings.cs</DependentUpon>
+    </Compile>
     <Compile Include="Services\Voice\VoiceToolstripButton.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -1335,6 +1341,10 @@
     <EmbeddedResource Include="Services\Voice\Res\VoiceRes.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>VoiceRes.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Services\Voice\VoiceSettings.resx">
+      <DependentUpon>VoiceSettings.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Simulator\GenerateUsers.resx">

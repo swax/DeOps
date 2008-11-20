@@ -6,7 +6,7 @@ XPStyle on
 Name "RiseOp"
 
 ; The file to write
-OutFile "RiseOpInstall_1.0.8.exe"
+OutFile "RiseOpInstall_1.1.0.exe"
 
 ; The default installation directory
 InstallDir $PROGRAMFILES\RiseOp
@@ -45,7 +45,7 @@ Section "RiseOp"
   File "..\bin\Protected\RiseOp.exe"
   File "..\Update\bin\Release\UpdateOp.exe"
   File "..\bin\Protected\bootstrap.dat"
-  
+  File "..\bin\Debug\libspeex.dll"
 
   ; Write the installation path into the registry
   WriteRegStr HKLM SOFTWARE\RiseOp "Install_Dir" "$INSTDIR"

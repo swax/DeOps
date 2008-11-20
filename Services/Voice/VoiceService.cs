@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
@@ -26,9 +27,14 @@ namespace RiseOp.Services.Voice
         internal Dictionary<int, VolumeUpdateHandler> VolumeUpdate = new Dictionary<int, VolumeUpdateHandler>(); // gui event
 
         internal Dictionary<ulong, RemoteVoice> RemoteVoices = new Dictionary<ulong, RemoteVoice>();
+        internal ThreadedList<PlayAudio> Players = new ThreadedList<PlayAudio>();
+
         internal Dictionary<ulong, List<int>> SpeakingTo = new Dictionary<ulong, List<int>>(); // user, window
 
         internal RecordAudio Recorder;
+
+        internal int RecordingDevice = -1;
+        internal int PlaybackDevice = -1;
 
         int UpdateTimeout = 1000 / 4; // 200ms, 5/second
         Stopwatch LastUpdate = new Stopwatch();
@@ -51,17 +57,35 @@ namespace RiseOp.Services.Voice
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Network.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
 
+            ResetDevices();
 
-            if (Recorder != null)
-                Recorder.Dispose();
             SpeakingTo.Clear();
+            RemoteVoices.Clear();
+            VolumeUpdate.Clear();
+        }
 
-            List<PlayAudio> players = new List<PlayAudio>();
+        internal void ResetDevices()
+        {
+            // kill thread
+            if (AudioThread != null)
+            {
+                ThreadRunning = false;
+                AudioEvent.Set();
+                AudioThread.Join(2000);
+                AudioThread = null;
+            }
 
-            foreach (RemoteVoice user in RemoteVoices.Values)
-                players = players.Union(user.Streams.Values).ToList();
+            // deconstruct all record/play streams
+            if (Recorder != null)
+            {
+                Recorder.Dispose();
+                Recorder = null;
+            }
 
-            players.ForEach(p => p.Dispose());
+            Players.ForEach(p => p.Dispose());
+            Players.SafeClear();
+            
+            // will auto be recreated
         }
 
         public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
@@ -83,20 +107,52 @@ namespace RiseOp.Services.Voice
         {
             UpdateVolume();
 
-            if (Core.TimeNow.Second % 3 != 0)
-                return;
-
-            // every 3 seconds check if we should dispose the recorder
-            // done here to avoid quick on/off fluxes when voice system changes state
             if (SpeakingTo.Count == 0)
-            {
-                if (Recorder != null)
-                    Recorder.Dispose();
-
-                Recorder = null;
-            }
+                RecordingActive = false;
 
             // hearing audio does not time out, we keep it so the history can always be had
+        }
+
+        Thread AudioThread;
+        bool ThreadRunning;
+        internal AutoResetEvent AudioEvent = new AutoResetEvent(false);
+        bool RecordingActive;
+
+        void StartAudioThread(bool record)
+        {
+            if (record)
+            {
+                if (Recorder == null)
+                {
+                    RecordAudio tmp = new RecordAudio(this);
+                    Recorder = tmp; // use temp so audio thread doesn't use before ready
+                }
+
+                RecordingActive = true;
+                AudioEvent.Set();
+            }
+
+            if (AudioThread != null && AudioThread.IsAlive)
+                return;
+
+            AudioThread = new Thread(new ThreadStart(RunAudioThread));
+            AudioThread.Name = "Voice Thread";
+            ThreadRunning = true;
+            AudioThread.Start();
+        }
+
+        void RunAudioThread()
+        {
+            while (ThreadRunning)
+            {
+                AudioEvent.WaitOne();
+
+                if (Recorder != null && RecordingActive)
+                    lock(Recorder)
+                        Recorder.ProcessBuffers();
+
+                Players.LockReading(() => Players.ForEach(p => p.ProcessBuffers()));
+            }
         }
 
         internal void RegisterWindow(int window, VolumeUpdateHandler volumeEvent)
@@ -179,8 +235,7 @@ namespace RiseOp.Services.Voice
                 SpeakingTo[user].Add(window);
 
 
-            if (Recorder == null)
-                Recorder = new RecordAudio(this);
+            StartAudioThread(true);
         }
 
         internal void Mute(int window)
@@ -229,6 +284,17 @@ namespace RiseOp.Services.Voice
         {
             if (LastUpdate.ElapsedMilliseconds > UpdateTimeout)
             {
+                // thread safe get volume of incoming audio
+                foreach (RemoteVoice remote in RemoteVoices.Values)
+                {
+                    foreach (int window in remote.ListeningTo.Keys)
+                        if (MaxVolume.ContainsKey(window) && remote.VolumeIn > MaxVolume[window].Param1)
+                            MaxVolume[window].Param1 = remote.VolumeIn;
+
+                    remote.VolumeIn = 0;
+                }
+
+                // alert each window with its current volume status in/out and reset
                 foreach (int window in MaxVolume.Keys)
                 {
                     Tuple<int, int> volume = MaxVolume[window];
@@ -267,7 +333,10 @@ namespace RiseOp.Services.Voice
             RemoteVoice user = RemoteVoices[session.UserID];
 
             if (!user.Streams.ContainsKey(session.RoutingID))
+            {
                 user.Streams[session.RoutingID] = new PlayAudio(this, packet.FrameSize, user);
+                Players.SafeAdd(user.Streams[session.RoutingID]);
+            }
 
             PlayAudio stream = user.Streams[session.RoutingID];
 
@@ -276,8 +345,11 @@ namespace RiseOp.Services.Voice
             {
                 stream.Dispose();
                 user.Streams[session.RoutingID] = new PlayAudio(this, packet.FrameSize, user);
+                Players.SafeAdd(user.Streams[session.RoutingID]);
                 stream = user.Streams[session.RoutingID];
             }
+
+            StartAudioThread(false);
 
             stream.Receive_AudioData(packet.Audio);
 
@@ -292,6 +364,9 @@ namespace RiseOp.Services.Voice
 
         // routing ID, and audio stream for that user
         internal Dictionary<ulong, PlayAudio> Streams = new Dictionary<ulong, PlayAudio>();
+
+        internal int VolumeIn;
+
 
         internal AudioDirection GetDirection()
         {
