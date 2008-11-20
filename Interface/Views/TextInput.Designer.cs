@@ -225,7 +225,7 @@ namespace RiseOp.Interface
 
         #endregion
 
-        private System.Windows.Forms.ToolStrip FontToolStrip;
+        internal System.Windows.Forms.ToolStrip FontToolStrip;
         private System.Windows.Forms.ToolStripSeparator FontSeparator;
         private System.Windows.Forms.ToolStripButton BoldButton;
         private System.Windows.Forms.ToolStripButton ItalicsButton;

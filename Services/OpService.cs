@@ -29,7 +29,8 @@ namespace RiseOp.Services
         Lookup = 12,
         Buddy = 13,
         Share = 14,
-        Update = 15
+        Update = 15,
+        Voice = 16
     }
     
     public enum InterfaceMenuType { Internal, External, Settings, Quick };

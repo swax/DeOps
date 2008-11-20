@@ -13,6 +13,7 @@ using RiseOp.Interface.Views.Res;
 
 using RiseOp.Services.Location;
 using RiseOp.Services.Share;
+using RiseOp.Services.Voice;
 
 
 namespace RiseOp.Services.IM
@@ -35,6 +36,8 @@ namespace RiseOp.Services.IM
         Font RegularFont = new Font("Tahoma", 10, FontStyle.Regular);
         Font TimeFont = new Font("Tahoma", 8, FontStyle.Regular);
         Font SystemFont = new Font("Tahoma", 8, FontStyle.Bold);
+
+        VoiceToolstripButton VoiceButton;
 
 
         internal IM_View(IMService im, ulong key)
@@ -89,6 +92,15 @@ namespace RiseOp.Services.IM
 
             if (!Core.Buddies.BuddyList.SafeContainsKey(UserID))
                 InputControl.AddBuddyButton.Visible = true;
+
+
+            VoiceService voices = Core.GetService(ServiceIDs.Voice) as VoiceService;
+            if (voices != null)
+            {
+                VoiceButton = new VoiceToolstripButton(voices);
+                InputControl.FontToolStrip.Items.Add(VoiceButton);
+                VoiceButton.SetUsers(new List<ulong>() { Core.UserID, UserID }, AudioDirection.Both);
+            }
         }
 
         internal override bool Fin()

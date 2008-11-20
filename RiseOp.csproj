@@ -732,6 +732,19 @@
       <DependentUpon>UpdateForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Services\Update\UpdateService.cs" />
+    <Compile Include="Services\Voice\PlayAudio.cs" />
+    <Compile Include="Services\Voice\RecordAudio.cs" />
+    <Compile Include="Services\Voice\Res\VoiceRes.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>VoiceRes.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Services\Voice\Speex.cs" />
+    <Compile Include="Services\Voice\VoiceService.cs" />
+    <Compile Include="Services\Voice\VoiceToolstripButton.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Services\Voice\WinMM.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Simulator\GenerateUsers.cs">
       <SubType>Form</SubType>
@@ -925,6 +938,11 @@
     <None Include="Graphics\storage\InHigher.png" />
     <None Include="Graphics\storage\InLower.png" />
     <Content Include="Implementation\Design.txt" />
+    <None Include="Services\Voice\Res\VoicePTT.png" />
+    <None Include="Services\Voice\Res\VoiceOff.png" />
+    <None Include="Services\Voice\Res\VoiceMute.png" />
+    <None Include="Services\Voice\Res\VoiceVAD.png" />
+    <None Include="Services\Voice\Res\VoiceSettings.png" />
     <None Include="Services\Trust\Res\unlink.png" />
     <None Include="Services\Trust\Res\linkup.png" />
     <None Include="Interface\Res\views.png" />
@@ -1312,6 +1330,11 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Update\UpdateForm.resx">
       <DependentUpon>UpdateForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Services\Voice\Res\VoiceRes.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>VoiceRes.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Simulator\GenerateUsers.resx">

@@ -130,6 +130,7 @@ namespace RiseOp.Interface
         internal MethodInvoker IgnoreUser;
         internal MethodInvoker AddBuddy;
 
+
         public TextInput()
         {
             InitializeComponent();
@@ -138,7 +139,7 @@ namespace RiseOp.Interface
 
 
             // need to init, so when we get the rtf there is color encoding info in it we can re-assign if need be
-            InputBox.SelectionColor = Color.Black; 
+            InputBox.SelectionColor = Color.Black;
         }
 
 

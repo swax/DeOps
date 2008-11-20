@@ -1,4 +1,8 @@
 
+settings window
+
+check that voice button is disposed on window close chat/IM
+
 storage view not changing when changing projects on nav bar
 	nav bar not completely working
 clicking during connect
@@ -6,6 +10,8 @@ needs unknown section to show trust nodes that are not resolved yet
 multiple clients in chat room - when signed off - all sign off
 link trust kill switch
 really try to get offline messages sent out
+set plain/rich text checked in drop down
+set text red when new version of component updated in region, so user knows what to check
 
 
 warn user files unlocked on close

@@ -532,7 +532,7 @@ namespace RiseOp.Services.Profile
 
             if (command.Length > 0)
                 if (command[0] == "edit")
-                    EditMenu_Click(null, null);
+                    EditMenu.PerformClick();
 
             e.Cancel = true;
         }

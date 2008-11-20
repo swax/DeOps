@@ -17,9 +17,9 @@ namespace RiseOp.Services.Chat
     {
         ChatService Chat;
         uint ProjectID;
-        
-        RoomView ViewHigh;
-        RoomView ViewLow;
+
+        internal RoomView ViewHigh;
+        internal RoomView ViewLow;
         internal ChatRoom Custom; // can also be used to set default room on init
 
          
@@ -62,7 +62,7 @@ namespace RiseOp.Services.Chat
                 SetCustomRoom(Custom);
 
             else if (RoomsActive(RoomKind.Command_High, RoomKind.Command_Low))
-                LocalButton_Click(null, null);
+                LocalButton.PerformClick();
 
             else
             {
@@ -385,7 +385,7 @@ namespace RiseOp.Services.Chat
             CustomButton.Text = room.Title;
             Custom = room;
 
-            CustomButton_Click(null, null);
+            CustomButton.PerformClick();
         }
 
         private void InviteButton_Click(object sender, EventArgs e)

@@ -26,6 +26,7 @@ using RiseOp.Services.Storage;
 using RiseOp.Services.Transfer;
 using RiseOp.Services.Trust;
 using RiseOp.Services.Update;
+using RiseOp.Services.Voice;
 
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
@@ -194,6 +195,9 @@ namespace RiseOp.Implementation
             AddService(new IMService(this));
             AddService(new ChatService(this));
             AddService(new ShareService(this));
+
+            if(!Utilities.IsRunningOnMono())
+                AddService(new VoiceService(this));
             
             if (!User.Settings.GlobalIM)
             { 

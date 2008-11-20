@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Data;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
@@ -20,6 +21,7 @@ using RiseOp.Services.Location;
 using RiseOp.Services.Mail;
 using RiseOp.Services.Trust;
 using RiseOp.Services.Share;
+using RiseOp.Services.Voice;
 
 
 namespace RiseOp.Services.Chat
@@ -41,6 +43,8 @@ namespace RiseOp.Services.Chat
         Font SystemFont = new Font("Tahoma", 8, FontStyle.Bold);
 
         Dictionary<ulong, MemberNode> NodeMap = new Dictionary<ulong, MemberNode>();
+
+        VoiceToolstripButton VoiceButton; 
 
 
         internal RoomView(ChatView parent, ChatService chat, ChatRoom room)
@@ -69,6 +73,14 @@ namespace RiseOp.Services.Chat
 
             TimestampMenu = new ToolStripMenuItem("Timestamps", ViewRes.timestamp, new EventHandler(Menu_Timestamps));
             MessageTextBox.ContextMenuStrip.Items.Insert(0, TimestampMenu);
+
+           
+            VoiceService voices = Core.GetService(ServiceIDs.Voice) as VoiceService;
+            if (voices != null)
+            {
+                VoiceButton = new VoiceToolstripButton(voices);
+                BottomStrip.Items.Add(VoiceButton);
+            }
         }
 
         internal void Init()
@@ -118,6 +130,8 @@ namespace RiseOp.Services.Chat
             MemberTree.Nodes.Clear();
             NodeMap.Clear();
 
+            List<ulong> users = new List<ulong>();
+
             Room.Members.LockReading(delegate()
             {
                 if (Room.Members.SafeCount == 0)
@@ -125,6 +139,8 @@ namespace RiseOp.Services.Chat
                     MemberTree.EndUpdate();
                     return;
                 }
+
+                users = Room.Members.ToList();
 
                 TreeListNode root = MemberTree.virtualParent;
 
@@ -136,32 +152,46 @@ namespace RiseOp.Services.Chat
                         ((MemberNode)root).IsLoopRoot = true;
                     else
                         NodeMap[Room.Host] = root as MemberNode;
-                    
+
                     UpdateNode(root as MemberNode);
 
                     MemberTree.Nodes.Add(root);
                     root.Expand();
                 }
 
-                Room.Members.LockReading(delegate()
-                {
-                    foreach (ulong id in Room.Members)
-                        if (id != Room.Host)
-                        {
-                            // if they left the room dont show them
-                            if (!ChatService.IsCommandRoom(Room.Kind))
-                                if (Room.Members.SafeCount == 0)
-                                    continue; 
+                foreach (ulong id in Room.Members)
+                    if (id != Room.Host)
+                    {
+                        // if they left the room dont show them
+                        if (!ChatService.IsCommandRoom(Room.Kind))
+                            if (Room.Members.SafeCount == 0)
+                                continue;
 
-                            MemberNode node = new MemberNode(this, id);
-                            NodeMap[id] = node;
-                            UpdateNode(node);
-                            Utilities.InsertSubNode(root, node);
-                        }
-                });
+                        MemberNode node = new MemberNode(this, id);
+                        NodeMap[id] = node;
+                        UpdateNode(node);
+                        Utilities.InsertSubNode(root, node);
+                    }
+
             });
 
             MemberTree.EndUpdate();
+
+            if (VoiceButton != null)
+            {
+                AudioDirection direction = AudioDirection.Both;
+
+                if (ParentView.ViewHigh != null && ParentView.ViewLow != null)
+                {
+                    if (Room.Kind == RoomKind.Command_High || Room.Kind == RoomKind.Live_High)
+                        direction = AudioDirection.Right;
+
+                    else if (Room.Kind == RoomKind.Command_Low || Room.Kind == RoomKind.Live_Low)
+                        direction = AudioDirection.Left;
+                }
+
+                VoiceButton.SetUsers(users, direction);
+            }
         }
 
         void UpdateNode(MemberNode node)
