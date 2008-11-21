@@ -1,3 +1,54 @@
+index voice packets, if 1 missing / out of order, play null
+
+copy clipboard crash
+
+Cannot access a disposed object.
+Object name: 'WebBrowserEx'.
+
+at System.Windows.Forms.WebBrowser.get_AxIWebBrowser2()
+   at System.Windows.Forms.WebBrowser.PerformNavigate2(Object& URL, Object& flags, Object& targetFrameName, Object& postData, Object& headers)
+   at System.Windows.Forms.WebBrowser.PerformNavigateHelper(String urlString, Boolean newWindow, String targetFrameName, Byte[] postData, String headers)
+   at System.Windows.Forms.WebBrowser.set_Url(Uri value)
+   at System.Windows.Forms.WebBrowser.set_DocumentStream(Stream value)
+   at System.Windows.Forms.WebBrowser.set_DocumentText(String value)
+   at RiseOp.Interface.Views.WebBrowserEx.set_DocumentText(String value)
+   at RiseOp.Interface.Info.InfoView.RefreshHelp()
+   at RiseOp.Interface.Info.InfoView.Network_StatusChange()
+
+
+test on vista
+
+test noise, perpetual enhance, pre processsor, hookup echo cancelation
+handle skipping a frame, keeping count, dont play out of order
+secure send, move code over to secure session
+
+
+move unreliable send to rudp - send using current rudp encryption key
+
+key sent in rudp that can be used with secure light comm
+
+run in debug mode
+test direct udp stream that is numbered sequentially
+	unacked, fast as possible, use top address from rudp?
+
+
+windows key capture hook?
+
+test left/right in chat room
+
+test vista
+speech working
+publish new version
+update adwords, keywords for voip
+create higherarchy main page splash
+    each service show its unique properties
+    compare to waste/skype
+publish re-direct on gnucleus.com, move to trouble-free and monitor
+publish annoucement on downloadsquad
+think up test nework
+
+
+
 
 lightComm, order addresses by success, on each send, retry index is down the line of success
 change from expedite, to reliable and send voice packets quickly
