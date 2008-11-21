@@ -279,7 +279,8 @@ namespace RiseOp.Services.Voice
                         MaxVolume[window].Param2 = maxVolume;
 
                 foreach (RudpSession session in Network.RudpControl.GetActiveSessions(user))
-                    Core.Network.LightComm.SendUnreliable(session.Comm.PrimaryAddress, ServiceID, 0, packet);
+                    session.SendUnreliable(ServiceID, 0, packet);
+                    //Core.Network.LightComm.SendUnreliable(session.Comm.PrimaryAddress, ServiceID, 0, packet);
 
                 //foreach (RudpSession session in Network.RudpControl.GetActiveSessions(user))
                 //    session.SendData(ServiceID, 0, packet, true);

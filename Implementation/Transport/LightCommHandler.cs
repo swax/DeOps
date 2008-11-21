@@ -22,6 +22,9 @@ namespace RiseOp.Implementation.Transport
     // a user is a collection of addresses, a message sent to a user through lightComm
     // will automatically try various addresses to send the packet without the service
     // having to write complicated netcode for preferencing addresses, trying, and timeouts, etc..
+    
+    // not as secure as rudp because only opkey is used, no public encryption
+    // rudp has a fast unreliable way of sending packets if more security is needed
 
     // only 1 packet outstanding to an address at a time
     // next packet not sent until ack received, or timeout
@@ -152,14 +155,16 @@ namespace RiseOp.Implementation.Transport
             return comm;
         }
 
-        internal void SendUnreliable(RudpAddress address, uint service, int type, G2Packet packet)
+        /*internal void SendUnreliable(RudpAddress address, uint service, int type, G2Packet packet)
         {
+            // insecure, rudp provides this same method which is more secure, if a rudp connection is already established
+
             RudpPacket wrap = CreateRudpPacket(address.Address, service, type, packet, false);
 
             int sentBytes = LightClient.SendtoAddress(Core.Network, address, wrap);
 
             Core.ServiceBandwidth[service].OutPerSec += sentBytes;
-        }
+        }*/
 
         internal void ReceivePacket(G2ReceivedPacket raw, RudpPacket packet)
         {

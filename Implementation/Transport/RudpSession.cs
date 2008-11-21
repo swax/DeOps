@@ -740,6 +740,27 @@ namespace RiseOp.Implementation.Transport
             return true;
         }
 
+        internal void SendUnreliable(uint service, int type, G2Packet packet)
+        {
+            // check rudp socket is connected
+            if (Status != SessionStatus.Active)
+                return;
 
+            // add to special rudp packet
+            RudpPacket comm = new RudpPacket();
+            comm.SenderID = Network.Local.UserID;
+            comm.SenderClient = Network.Local.ClientID;
+            comm.TargetID = UserID;
+            comm.TargetClient = ClientID;
+            comm.PacketType = RudpPacketType.Unreliable;
+            
+            CommData data = new CommData(service, type, packet.Encode(Network.Protocol));
+            comm.Payload = Utilities.EncryptBytes(data.Encode(Network.Protocol), OutboundEnc.Key);
+
+
+            // send
+
+            // should be handled by same receive data interface
+        }
     }
 }

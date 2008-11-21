@@ -171,8 +171,16 @@ transfer, and file sharing.  File transfers are automatically swarmed when multi
 
         void Network_StatusChange()
         {
-            if (HelpButton.Checked)
-                RefreshHelp();
+            try
+            {
+                if (HelpButton.Checked)
+                    RefreshHelp();
+            }
+            catch (Exception ex)
+            {
+                // throwing exception that web browser isn't disposed even though this event seems to be properly desconstructed
+                Core.Network.UpdateLog("GuiError", "Info view status change: " + ex.Message);
+            }
         }
 
         private void NewsButton_CheckedChanged(object sender, EventArgs e)
