@@ -54,7 +54,7 @@ namespace RiseOp.Services.Assist
 
             GlobalIM = Core.User.Settings.GlobalIM;
 
-            Network.StatusChange += new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange += new StatusChange(Network_StatusChange);
 
             Core.Locations.GetTag[ServiceID, DataTypeSync] += new GetLocationTagHandler(Locations_GetTag);
             Core.Locations.TagReceived[ServiceID, DataTypeSync] += new LocationTagReceivedHandler(Locations_TagReceived);

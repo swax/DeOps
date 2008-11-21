@@ -8,6 +8,7 @@ using System.Threading;
 using RiseOp.Implementation;
 using RiseOp.Implementation.Dht;
 using RiseOp.Implementation.Protocol;
+using RiseOp.Implementation.Protocol.Net;
 using RiseOp.Implementation.Transport;
 
 
@@ -47,7 +48,9 @@ namespace RiseOp.Services.Voice
             Network = core.Network;
 
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            
             Network.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
+            Network.LightComm.Data[ServiceID, 0] += new LightDataHandler(LightComm_ReceiveData);
 
             LastUpdate.Start();
         }
@@ -55,7 +58,9 @@ namespace RiseOp.Services.Voice
         public void Dispose()
         {
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            
             Network.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
+            Network.LightComm.Data[ServiceID, 0] -= new LightDataHandler(LightComm_ReceiveData);
 
             ResetDevices();
 
@@ -274,7 +279,10 @@ namespace RiseOp.Services.Voice
                         MaxVolume[window].Param2 = maxVolume;
 
                 foreach (RudpSession session in Network.RudpControl.GetActiveSessions(user))
-                    session.SendData(ServiceID, 0, packet, true);
+                    Core.Network.LightComm.SendUnreliable(session.Comm.PrimaryAddress, ServiceID, 0, packet);
+
+                //foreach (RudpSession session in Network.RudpControl.GetActiveSessions(user))
+                //    session.SendData(ServiceID, 0, packet, true);
             }
 
             UpdateVolume();
@@ -310,7 +318,17 @@ namespace RiseOp.Services.Voice
             }
         }
 
+        void LightComm_ReceiveData(DhtClient client, byte[] data)
+        {
+            Comm_ReceiveData(client, data);
+        }
+
         void Session_Data(RudpSession session, byte[] data)
+        {
+            Comm_ReceiveData(session, data);     
+        }
+
+        void Comm_ReceiveData(DhtClient client, byte[] data)
         {
             G2Header root = new G2Header(data);
 
@@ -319,34 +337,34 @@ namespace RiseOp.Services.Voice
                 switch (root.Name)
                 {
                     case VoicePacket.Audio:
-                        ReceiveAudio(AudioPacket.Decode(root), session);
+                        ReceiveAudio(AudioPacket.Decode(root), client);
                         break;
                 }
             }
         }
 
-        private void ReceiveAudio(AudioPacket packet, RudpSession session)
+        private void ReceiveAudio(AudioPacket packet, DhtClient client)
         {
-            if (!RemoteVoices.ContainsKey(session.UserID))
-                RemoteVoices[session.UserID] = new RemoteVoice();
+            if (!RemoteVoices.ContainsKey(client.UserID))
+                RemoteVoices[client.UserID] = new RemoteVoice();
 
-            RemoteVoice user = RemoteVoices[session.UserID];
+            RemoteVoice user = RemoteVoices[client.UserID];
 
-            if (!user.Streams.ContainsKey(session.RoutingID))
+            if (!user.Streams.ContainsKey(client.RoutingID))
             {
-                user.Streams[session.RoutingID] = new PlayAudio(this, packet.FrameSize, user);
-                Players.SafeAdd(user.Streams[session.RoutingID]);
+                user.Streams[client.RoutingID] = new PlayAudio(this, packet.FrameSize, user);
+                Players.SafeAdd(user.Streams[client.RoutingID]);
             }
 
-            PlayAudio stream = user.Streams[session.RoutingID];
+            PlayAudio stream = user.Streams[client.RoutingID];
 
             // reset if user changed quality setting
             if (stream.FrameSize != packet.FrameSize)
             {
                 stream.Dispose();
-                user.Streams[session.RoutingID] = new PlayAudio(this, packet.FrameSize, user);
-                Players.SafeAdd(user.Streams[session.RoutingID]);
-                stream = user.Streams[session.RoutingID];
+                user.Streams[client.RoutingID] = new PlayAudio(this, packet.FrameSize, user);
+                Players.SafeAdd(user.Streams[client.RoutingID]);
+                stream = user.Streams[client.RoutingID];
             }
 
             StartAudioThread(false);

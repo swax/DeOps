@@ -62,7 +62,7 @@ namespace RiseOp.Services.Board
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
-            Network.StatusChange += new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange += new StatusChange(Network_StatusChange);
 
             Store.StoreEvent[ServiceID, 0] += new StoreHandler(Store_Local);
             Store.ReplicateEvent[ServiceID, 0] += new ReplicateHandler(Store_Replicate);
@@ -117,7 +117,7 @@ namespace RiseOp.Services.Board
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
-            Network.StatusChange -= new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange -= new StatusChange(Network_StatusChange);
 
             Store.StoreEvent[ServiceID, 0] -= new StoreHandler(Store_Local);
             Store.ReplicateEvent[ServiceID, 0] -= new ReplicateHandler(Store_Replicate);

@@ -107,6 +107,13 @@ namespace RiseOp.Services.Voice
         }
 
 
+        /* Values allowed for *ctl() requests */
+
+        /** Set enhancement on/off (decoder only) */
+        public static int SPEEX_SET_ENH = 0;
+        /** Get enhancement state (decoder only) */
+        public static int SPEEX_GET_ENH = 1;
+
         /*Would be SPEEX_SET_FRAME_SIZE, but it's (currently) invalid*/
         /** Obtain frame size used by encoder/decoder */
         public static int SPEEX_GET_FRAME_SIZE = 3;
@@ -526,5 +533,285 @@ namespace RiseOp.Services.Voice
         [DllImport("libspeex.dll")]
         //const SpeexMode * speex_lib_get_mode (int mode);
         public static extern IntPtr speex_lib_get_mode(int mode);
+
+
+
+
+        /** Creates a new preprocessing state. You MUST create one state per channel processed.
+         * @param frame_size Number of samples to process at one time (should correspond to 10-20 ms). Must be
+         * the same value as that used for the echo canceller for residual echo cancellation to work.
+         * @param sampling_rate Sampling rate used for the input.
+         * @return Newly created preprocessor state
+        */
+        [DllImport("libspeex.dll")]
+        //SpeexPreprocessState *speex_preprocess_state_init(int frame_size, int sampling_rate);
+        public static extern IntPtr speex_preprocess_state_init(int frame_size, int sampling_rate);
+
+        /** Destroys a preprocessor state 
+         * @param st Preprocessor state to destroy
+        */
+        [DllImport("libspeex.dll")]
+        //void speex_preprocess_state_destroy(SpeexPreprocessState *st);
+        public static extern void speex_preprocess_state_destroy(IntPtr st);
+
+        /** Preprocess a frame 
+         * @param st Preprocessor state
+         * @param x Audio sample vector (in and out). Must be same size as specified in speex_preprocess_state_init().
+         * @return Bool value for voice activity (1 for speech, 0 for noise/silence), ONLY if VAD turned on.
+        */
+        [DllImport("libspeex.dll")]
+        //int speex_preprocess_run(SpeexPreprocessState *st, spx_int16_t *x);
+        public static extern int speex_preprocess_run(IntPtr st, byte[] x);
+
+        /** Preprocess a frame (deprecated, use speex_preprocess_run() instead)*/
+        [DllImport("libspeex.dll")]
+        //int speex_preprocess(SpeexPreprocessState *st, spx_int16_t *x, spx_int32_t *echo);
+        public static extern int speex_preprocess(IntPtr st, byte[] x, byte[] echo);
+
+        /** Update preprocessor state, but do not compute the output
+         * @param st Preprocessor state
+         * @param x Audio sample vector (in only). Must be same size as specified in speex_preprocess_state_init().
+        */
+        [DllImport("libspeex.dll")]
+        //void speex_preprocess_estimate_update(SpeexPreprocessState *st, spx_int16_t *x);
+        public static extern void speex_preprocess_estimate_update(IntPtr st, byte[] x);
+
+        /** Used like the ioctl function to control the preprocessor parameters 
+         * @param st Preprocessor state
+         * @param request ioctl-type request (one of the SPEEX_PREPROCESS_* macros)
+         * @param ptr Data exchanged to-from function
+         * @return 0 if no error, -1 if request in unknown
+        */
+        [DllImport("libspeex.dll")]
+        //int speex_preprocess_ctl(SpeexPreprocessState *st, int request, void *ptr);
+        public static extern int speex_preprocess_ctl(IntPtr st, int request, ref int ptr);
+
+        [DllImport("libspeex.dll")]
+        public static extern int speex_preprocess_ctl(IntPtr st, int request, IntPtr ptr);
+
+        /** Set preprocessor denoiser state */
+        public static int SPEEX_PREPROCESS_SET_DENOISE = 0;
+        /** Get preprocessor denoiser state */
+        public static int SPEEX_PREPROCESS_GET_DENOISE = 1;
+
+        /** Set preprocessor Automatic Gain Control state */
+        public static int SPEEX_PREPROCESS_SET_AGC = 2;
+        /** Get preprocessor Automatic Gain Control state */
+        public static int SPEEX_PREPROCESS_GET_AGC = 3;
+
+        /** Set preprocessor Voice Activity Detection state */
+        public static int SPEEX_PREPROCESS_SET_VAD = 4;
+        /** Get preprocessor Voice Activity Detection state */
+        public static int SPEEX_PREPROCESS_GET_VAD = 5;
+
+        /** Set preprocessor Automatic Gain Control level (float) */
+        public static int SPEEX_PREPROCESS_SET_AGC_LEVEL = 6;
+        /** Get preprocessor Automatic Gain Control level (float) */
+        public static int SPEEX_PREPROCESS_GET_AGC_LEVEL = 7;
+
+        /** Set preprocessor dereverb state */
+        public static int SPEEX_PREPROCESS_SET_DEREVERB = 8;
+        /** Get preprocessor dereverb state */
+        public static int SPEEX_PREPROCESS_GET_DEREVERB = 9;
+
+        /** Set preprocessor dereverb level */
+        public static int SPEEX_PREPROCESS_SET_DEREVERB_LEVEL = 10;
+        /** Get preprocessor dereverb level */
+        public static int SPEEX_PREPROCESS_GET_DEREVERB_LEVEL = 11;
+
+        /** Set preprocessor dereverb decay */
+        public static int SPEEX_PREPROCESS_SET_DEREVERB_DECAY = 12;
+        /** Get preprocessor dereverb decay */
+        public static int SPEEX_PREPROCESS_GET_DEREVERB_DECAY = 13;
+
+        /** Set probability required for the VAD to go from silence to voice */
+        public static int SPEEX_PREPROCESS_SET_PROB_START = 14;
+        /** Get probability required for the VAD to go from silence to voice */
+        public static int SPEEX_PREPROCESS_GET_PROB_START = 15;
+
+        /** Set probability required for the VAD to stay in the voice state (integer percent) */
+        public static int SPEEX_PREPROCESS_SET_PROB_CONTINUE = 16;
+        /** Get probability required for the VAD to stay in the voice state (integer percent) */
+        public static int SPEEX_PREPROCESS_GET_PROB_CONTINUE = 17;
+
+        /** Set maximum attenuation of the noise in dB (negative number) */
+        public static int SPEEX_PREPROCESS_SET_NOISE_SUPPRESS = 18;
+        /** Get maximum attenuation of the noise in dB (negative number) */
+        public static int SPEEX_PREPROCESS_GET_NOISE_SUPPRESS = 19;
+
+        /** Set maximum attenuation of the residual echo in dB (negative number) */
+        public static int SPEEX_PREPROCESS_SET_ECHO_SUPPRESS = 20;
+        /** Get maximum attenuation of the residual echo in dB (negative number) */
+        public static int SPEEX_PREPROCESS_GET_ECHO_SUPPRESS = 21;
+
+        /** Set maximum attenuation of the residual echo in dB when near end is active (negative number) */
+        public static int SPEEX_PREPROCESS_SET_ECHO_SUPPRESS_ACTIVE = 22;
+        /** Get maximum attenuation of the residual echo in dB when near end is active (negative number) */
+        public static int SPEEX_PREPROCESS_GET_ECHO_SUPPRESS_ACTIVE = 23;
+
+        /** Set the corresponding echo canceller state so that residual echo suppression can be performed (NULL for no residual echo suppression) */
+        public static int SPEEX_PREPROCESS_SET_ECHO_STATE = 24;
+        /** Get the corresponding echo canceller state */
+        public static int SPEEX_PREPROCESS_GET_ECHO_STATE = 25;
+
+        /** Set maximal gain increase in dB/second (int32) */
+        public static int SPEEX_PREPROCESS_SET_AGC_INCREMENT = 26;
+
+        /** Get maximal gain increase in dB/second (int32) */
+        public static int SPEEX_PREPROCESS_GET_AGC_INCREMENT = 27;
+
+        /** Set maximal gain decrease in dB/second (int32) */
+        public static int SPEEX_PREPROCESS_SET_AGC_DECREMENT = 28;
+
+        /** Get maximal gain decrease in dB/second (int32) */
+        public static int SPEEX_PREPROCESS_GET_AGC_DECREMENT = 29;
+
+        /** Set maximal gain in dB (int32) */
+        public static int SPEEX_PREPROCESS_SET_AGC_MAX_GAIN = 30;
+
+        /** Get maximal gain in dB (int32) */
+        public static int SPEEX_PREPROCESS_GET_AGC_MAX_GAIN = 31;
+
+        /*  Can't set loudness */
+        /** Get loudness */
+        public static int SPEEX_PREPROCESS_GET_AGC_LOUDNESS = 33;
+
+        /*  Can't set gain */
+        /** Get current gain (int32 percent) */
+        public static int SPEEX_PREPROCESS_GET_AGC_GAIN = 35;
+
+        /*  Can't set spectrum size */
+        /** Get spectrum size for power spectrum (int32) */
+        public static int SPEEX_PREPROCESS_GET_PSD_SIZE = 37;
+
+        /*  Can't set power spectrum */
+        /** Get power spectrum (int32[] of squared values) */
+        public static int SPEEX_PREPROCESS_GET_PSD = 39;
+
+        /*  Can't set noise size */
+        /** Get spectrum size for noise estimate (int32)  */
+        public static int SPEEX_PREPROCESS_GET_NOISE_PSD_SIZE = 41;
+
+        /*  Can't set noise estimate */
+        /** Get noise estimate (int32[] of squared values) */
+        public static int SPEEX_PREPROCESS_GET_NOISE_PSD = 43;
+
+        /* Can't set speech probability */
+        /** Get speech probability in last frame (int32).  */
+        public static int SPEEX_PREPROCESS_GET_PROB = 45;
+
+        /** Set preprocessor Automatic Gain Control level (int32) */
+        public static int SPEEX_PREPROCESS_SET_AGC_TARGET = 46;
+        /** Get preprocessor Automatic Gain Control level (int32) */
+        public static int SPEEX_PREPROCESS_GET_AGC_TARGET = 47;
+
+
+
+
+        /** Obtain frame size used by the AEC */
+        public static int SPEEX_ECHO_GET_FRAME_SIZE = 3;
+
+        /** Set sampling rate */
+        public static int SPEEX_ECHO_SET_SAMPLING_RATE = 24;
+        /** Get sampling rate */
+        public static int SPEEX_ECHO_GET_SAMPLING_RATE = 25;
+
+        /* Can't set window sizes */
+        /** Get size of impulse response (int32) */
+        public static int SPEEX_ECHO_GET_IMPULSE_RESPONSE_SIZE = 27;
+
+        /* Can't set window content */
+        /** Get impulse response (int32[]) */
+        public static int SPEEX_ECHO_GET_IMPULSE_RESPONSE = 29;
+
+        /** Internal echo canceller state. Should never be accessed directly. */
+        //struct SpeexEchoState_;
+
+        /** @class SpeexEchoState
+         * This holds the state of the echo canceller. You need one per channel. 
+        */
+
+        /** Internal echo canceller state. Should never be accessed directly. */
+        //typedef struct SpeexEchoState_ SpeexEchoState;
+
+        /** Creates a new echo canceller state
+         * @param frame_size Number of samples to process at one time (should correspond to 10-20 ms)
+         * @param filter_length Number of samples of echo to cancel (should generally correspond to 100-500 ms)
+         * @return Newly-created echo canceller state
+         */
+        [DllImport("libspeex.dll")]
+        //SpeexEchoState *speex_echo_state_init(int frame_size, int filter_length);
+        public static extern IntPtr speex_echo_state_init(int frame_size, int filter_length);
+
+        /** Creates a new multi-channel echo canceller state
+         * @param frame_size Number of samples to process at one time (should correspond to 10-20 ms)
+         * @param filter_length Number of samples of echo to cancel (should generally correspond to 100-500 ms)
+         * @param nb_mic Number of microphone channels
+         * @param nb_speakers Number of speaker channels
+         * @return Newly-created echo canceller state
+         */
+        [DllImport("libspeex.dll")]
+        //SpeexEchoState *speex_echo_state_init_mc(int frame_size, int filter_length, int nb_mic, int nb_speakers);
+        public static extern IntPtr speex_echo_state_init_mc(int frame_size, int filter_length, int nb_mic, int nb_speakers);
+
+        /** Destroys an echo canceller state 
+         * @param st Echo canceller state
+        */
+        [DllImport("libspeex.dll")]
+        //void speex_echo_state_destroy(SpeexEchoState *st);
+        public static extern void speex_echo_state_destroy(IntPtr st);
+
+        /** Performs echo cancellation a frame, based on the audio sent to the speaker (no delay is added
+         * to playback in this form)
+         *
+         * @param st Echo canceller state
+         * @param rec Signal from the microphone (near end + far end echo)
+         * @param play Signal played to the speaker (received from far end)
+         * @param out Returns near-end signal with echo removed
+         */
+        [DllImport("libspeex.dll")]
+        //void speex_echo_cancellation(SpeexEchoState *st, const spx_int16_t *rec, const spx_int16_t *play, spx_int16_t *out);
+        public static extern void speex_echo_cancellation(IntPtr st, byte[] rec, byte[] play, byte[] outbuffer);
+
+        /** Performs echo cancellation a frame (deprecated) */
+        [DllImport("libspeex.dll")]
+        //void speex_echo_cancel(SpeexEchoState *st, const spx_int16_t *rec, const spx_int16_t *play, spx_int16_t *out, spx_int32_t *Yout);
+        public static extern void speex_echo_cancel(IntPtr st, byte[] rec, byte[] play, byte[] outbuffer, byte[] Yout);
+
+        /** Perform echo cancellation using internal playback buffer, which is delayed by two frames
+         * to account for the delay introduced by most soundcards (but it could be off!)
+         * @param st Echo canceller state
+         * @param rec Signal from the microphone (near end + far end echo)
+         * @param out Returns near-end signal with echo removed
+        */
+        [DllImport("libspeex.dll")]
+        //void speex_echo_capture(SpeexEchoState *st, const spx_int16_t *rec, spx_int16_t *out);
+        public static extern void speex_echo_capture(IntPtr st, byte[] rec, byte[] outbuffer);
+
+        /** Let the echo canceller know that a frame was just queued to the soundcard
+         * @param st Echo canceller state
+         * @param play Signal played to the speaker (received from far end)
+        */
+        [DllImport("libspeex.dll")]
+        //void speex_echo_playback(SpeexEchoState *st, const spx_int16_t *play);
+        public static extern void speex_echo_playback(IntPtr st, byte[] play);
+
+        /** Reset the echo canceller to its original state 
+         * @param st Echo canceller state
+         */
+        [DllImport("libspeex.dll")]
+        //void speex_echo_state_reset(SpeexEchoState *st);
+        public static extern void speex_echo_state_reset(IntPtr st);
+
+        /** Used like the ioctl function to control the echo canceller parameters
+         *
+         * @param st Echo canceller state
+         * @param request ioctl-type request (one of the SPEEX_ECHO_* macros)
+         * @param ptr Data exchanged to-from function
+         * @return 0 if no error, -1 if request in unknown
+         */
+        [DllImport("libspeex.dll")]
+        //int speex_echo_ctl(SpeexEchoState *st, int request, void *ptr);
+        public static extern int speex_echo_ctl(IntPtr st, int request, ref int ptr);
     }
 }

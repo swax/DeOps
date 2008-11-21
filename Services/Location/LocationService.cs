@@ -78,7 +78,7 @@ namespace RiseOp.Services.Location
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
-            Network.StatusChange += new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange += new StatusChange(Network_StatusChange);
 
             Network.Store.StoreEvent[ServiceID, 0] += new StoreHandler(Store_Local);
             Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(Search_Local);
@@ -100,7 +100,7 @@ namespace RiseOp.Services.Location
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.SecondTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
-            Network.StatusChange -= new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange -= new StatusChange(Network_StatusChange);
 
             Network.Store.StoreEvent[ServiceID, 0] -= new StoreHandler(Store_Local);
             Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(Search_Local);
@@ -207,7 +207,7 @@ namespace RiseOp.Services.Location
                 LocationNotify notify = new LocationNotify();
                 notify.Timeout = CurrentTimeout;
                 notify.SignedLocation = LocalClient.SignedData;
-                Network.LightComm.SendPacket(client, ServiceID, 0, notify);
+                Network.LightComm.SendReliable(client, ServiceID, 0, notify);
 
                 PendingNotifications.Remove(client);
             }
@@ -521,7 +521,7 @@ namespace RiseOp.Services.Location
 
             ping.RemoteVersion = client.Data.Version;
 
-            Network.LightComm.SendPacket(client, ServiceID, 0, ping);
+            Network.LightComm.SendReliable(client, ServiceID, 0, ping);
         }
 
         int CurrentTimeout = 60;
@@ -561,7 +561,7 @@ namespace RiseOp.Services.Location
             // byte[] signed = SignedData.Encode(Network.Protocol, Core.User.Settings.KeyPair, notify);
 
 
-            Network.LightComm.SendPacket(client, ServiceID, 0, notify);
+            Network.LightComm.SendReliable(client, ServiceID, 0, notify);
         }
 
         void Receive_Notify(DhtClient client, LocationNotify notify)
@@ -720,7 +720,7 @@ namespace RiseOp.Services.Location
                 LocationNotify notify = new LocationNotify();
                 notify.Timeout = CurrentTimeout;
                 notify.GoingOffline = true;
-                Network.LightComm.SendPacket(client, ServiceID, 0, notify, true);
+                Network.LightComm.SendReliable(client, ServiceID, 0, notify, true);
             }
 
             NotifyUsers.Clear();

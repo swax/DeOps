@@ -82,7 +82,7 @@ namespace RiseOp.Services.Assist
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
-            Network.StatusChange += new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange += new StatusChange(Network_StatusChange);
  
             Store.StoreEvent[Service, DataType] += new StoreHandler(Store_Local);
 
@@ -118,7 +118,7 @@ namespace RiseOp.Services.Assist
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
-            Network.StatusChange -= new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange -= new StatusChange(Network_StatusChange);
 
             Store.StoreEvent[Service, DataType] -= new StoreHandler(Store_Local);
 

@@ -58,7 +58,8 @@ namespace RiseOp.Implementation.Dht
         internal bool Established; // situated on dht, ready to publish to adjacents
         
         internal int FireStatusChange; // timeout until established is called
-        internal StatusChange StatusChange; // operation only
+        internal StatusChange CoreStatusChange; // operation only
+        internal StatusChange GuiStatusChange;
 
         byte[] LookupKey = new byte[]  {0x33,0xf6,0x89,0xf3,0xd2,0xf5,0xae,0xc2,
                                         0x49,0x59,0xe6,0xbb,0xe2,0xc6,0x3c,0xc8,
@@ -156,10 +157,17 @@ namespace RiseOp.Implementation.Dht
                 {
                     Established = true;
 
-                    if (StatusChange != null)
-                        StatusChange.Invoke();
+                    FireStatusChangeEvent();
                 }
             }
+        }
+
+        private void FireStatusChangeEvent()
+        {
+            if (CoreStatusChange != null)
+                CoreStatusChange.Invoke();
+
+            Core.RunInGuiThread(GuiStatusChange);
         }
 
         internal void CheckConnectionStatus()
@@ -206,8 +214,7 @@ namespace RiseOp.Implementation.Dht
                 UpdateLog("general", name + " network disconnected");
             }
 
-            if (StatusChange != null)
-                StatusChange.Invoke();
+            FireStatusChangeEvent();
         }
 
         internal void Search_DoneSelf(DhtSearch search)

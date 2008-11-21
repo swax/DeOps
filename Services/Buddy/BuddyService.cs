@@ -43,7 +43,7 @@ namespace RiseOp.Services.Buddy
             Network = Core.Network;
             Core.Buddies = this;
 
-            Network.StatusChange += new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange += new StatusChange(Network_StatusChange);
             Core.KeepDataCore += new KeepDataHandler(Core_KeepData);
             Core.Locations.KnowOnline += new KnowOnlineHandler(Location_KnowOnline);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
@@ -60,7 +60,7 @@ namespace RiseOp.Services.Buddy
 
         public void Dispose()
         {
-            Network.StatusChange     -= new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange     -= new StatusChange(Network_StatusChange);
             Core.KeepDataCore      -= new KeepDataHandler(Core_KeepData);
             Core.Locations.KnowOnline -= new KnowOnlineHandler(Location_KnowOnline);
             Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);

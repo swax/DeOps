@@ -69,7 +69,7 @@ namespace RiseOp.Services.Trust
 
             Cache = new VersionedCache(Network, ServiceID, DataTypeFile, false);
 
-            Network.StatusChange += new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange += new StatusChange(Network_StatusChange);
 
             // piggyback searching for uplink requests on cache file data
             Store.StoreEvent[ServiceID, DataTypeFile] += new StoreHandler(Store_Local);
@@ -116,7 +116,7 @@ namespace RiseOp.Services.Trust
             Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
             Core.KeepDataCore -= new KeepDataHandler(Core_KeepData);
 
-            Network.StatusChange -= new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange -= new StatusChange(Network_StatusChange);
 
             Store.StoreEvent[ServiceID, DataTypeFile] -= new StoreHandler(Store_Local);
             Network.Searches.SearchEvent[ServiceID, DataTypeFile] -= new SearchRequestHandler(Search_Local);

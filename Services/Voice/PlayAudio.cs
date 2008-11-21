@@ -43,19 +43,19 @@ namespace RiseOp.Services.Voice
 
             CallbackHandler = new WinMM.WaveDelegate(WaveCallback);
 
-
             FrameSize = frameSize;
+            int sampleRate = 0;
 
             // if 20ms, at high quality (16khz) is 320 samples at 2 bytes each
             if (FrameSize == 320)
             {
-                Format = new WinMM.WaveFormat(16000, 16, 2);
+                sampleRate = 16000;
                 BufferSize = 320 * 2 * 2; // 2 bytes each frame, 2 channels
                 SpeexMode = Speex.SPEEX_MODEID_WB;
             }
             else if(FrameSize == 160)
             {
-                Format = new WinMM.WaveFormat(8000, 16, 2);
+                sampleRate = 8000;
                 BufferSize = 160 * 2 * 2;
                 SpeexMode = Speex.SPEEX_MODEID_NB;
             }
@@ -73,7 +73,11 @@ namespace RiseOp.Services.Voice
                 IntPtr modePtr = Speex.speex_lib_get_mode(SpeexMode);
                 SpeexDecoder = Speex.speex_decoder_init(modePtr);
 
+                int tmp = 1;
+                Speex.speex_decoder_ctl(SpeexDecoder, Speex.SPEEX_SET_ENH, ref tmp);  
+
                 // init wave
+                Format = new WinMM.WaveFormat(sampleRate, 16, 2);
                 WinMM.ErrorCheck(WinMM.waveOutOpen(out WaveHandle, Voices.PlaybackDevice, Format, CallbackHandler, 0, WinMM.CALLBACK_FUNCTION));
 
                 for (int i = 0; i < BufferCount; i++)
@@ -172,6 +176,10 @@ namespace RiseOp.Services.Voice
 
                     if (success != 0)
                         continue;
+
+                    // cancel echo
+                    //if (Voices.Recorder != null && FrameSize == Voices.Recorder.FrameSize)
+                     //   Speex.speex_echo_playback(Voices.Recorder.EchoState, mono); 
 
                     // get volume
                     short maxVolume = 0;

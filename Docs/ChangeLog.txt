@@ -1,4 +1,7 @@
-﻿
+﻿1.1.1
+	Pre-processor added
+	InfoView deconstructor fixed
+
 1.1
 	Voice chat 
 

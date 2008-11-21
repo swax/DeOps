@@ -122,7 +122,7 @@ namespace RiseOp.Services.Mail
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
-            Network.StatusChange += new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange += new StatusChange(Network_StatusChange);
 
             Store.StoreEvent[ServiceID, DataTypeMail] += new StoreHandler(Store_LocalMail);
             Store.StoreEvent[ServiceID, DataTypeAck] += new StoreHandler(Store_LocalAck);
@@ -169,7 +169,7 @@ namespace RiseOp.Services.Mail
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
-            Network.StatusChange -= new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange -= new StatusChange(Network_StatusChange);
 
             Store.StoreEvent[ServiceID, DataTypeMail] -= new StoreHandler(Store_LocalMail);
             Store.StoreEvent[ServiceID, DataTypeAck] -= new StoreHandler(Store_LocalAck);

@@ -794,7 +794,7 @@ namespace RiseOp.Services.Transfer
                 ping.RequestInfo = true;
 
 
-            Network.LightComm.SendPacket(peer.Client, ServiceID, 0, ping);
+            Network.LightComm.SendReliable(peer.Client, ServiceID, 0, ping);
         }
 
         void Receive_Ping(DhtClient client, TransferPing ping)
@@ -878,7 +878,7 @@ namespace RiseOp.Services.Transfer
             if (transfer == null)
             {
                 pong.Error = true;
-                Network.LightComm.SendPacket(client, ServiceID, 0, pong);
+                Network.LightComm.SendReliable(client, ServiceID, 0, pong);
                 return;
             }
 
@@ -969,7 +969,7 @@ namespace RiseOp.Services.Transfer
                     pong.Alts[altPeer.Client] = addresses;
             }
 
-            Network.LightComm.SendPacket(client, ServiceID, 0, pong);
+            Network.LightComm.SendReliable(client, ServiceID, 0, pong);
         }
 
         void TestMatchDepth(ulong remoteID, ulong alt, int check)

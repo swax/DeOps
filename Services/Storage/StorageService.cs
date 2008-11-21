@@ -83,7 +83,7 @@ namespace RiseOp.Services.Storage
             Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
 
-            Network.StatusChange += new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange += new StatusChange(Network_StatusChange);
 
             Core.Transfers.FileSearch[ServiceID, FileTypeData] += new FileSearchHandler(Transfers_DataFileSearch);
             Core.Transfers.FileRequest[ServiceID, FileTypeData] += new FileRequestHandler(Transfers_DataFileRequest);
@@ -205,7 +205,7 @@ namespace RiseOp.Services.Storage
             Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
             Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
 
-            Network.StatusChange -= new StatusChange(Network_StatusChange);
+            Network.CoreStatusChange -= new StatusChange(Network_StatusChange);
 
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);

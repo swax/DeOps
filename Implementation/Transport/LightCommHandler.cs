@@ -99,26 +99,17 @@ namespace RiseOp.Implementation.Transport
             Clients[client.RoutingID].AddAddress(Core, address, false);
         }
 
-        internal void SendPacket(DhtClient client, uint service, int type, G2Packet packet)
+        internal void SendReliable(DhtClient client, uint service, int type, G2Packet packet)
         {
-            SendPacket(client, service, type, packet, false);
+            SendReliable(client, service, type, packet, false);
         }
 
-        internal void SendPacket(DhtClient client, uint service, int type, G2Packet packet, bool expedite)
+        internal void SendReliable(DhtClient client, uint service, int type, G2Packet packet, bool expedite)
         {
-            RudpPacket comm     = new RudpPacket();
-            comm.SenderID       = Network.Local.UserID;
-            comm.SenderClient   = Network.Local.ClientID;
-            comm.TargetID       = client.UserID;
-            comm.TargetClient   = client.ClientID;
-            comm.PacketType     = RudpPacketType.Light;
-            comm.Payload        = RudpLight.Encode(service, type, packet.Encode(Network.Protocol));
-            comm.PeerID         = (ushort)Core.RndGen.Next(ushort.MaxValue); // used to ack
-            comm.Sequence       = 0;
-
-
             if (!Clients.ContainsKey(client.RoutingID))
                 return;
+
+            RudpPacket comm = CreateRudpPacket(client, service, type, packet, true);
 
             LightClient target = Clients[client.RoutingID];
 
@@ -133,13 +124,41 @@ namespace RiseOp.Implementation.Transport
             Active[client.RoutingID] = target;
 
             target.Packets.AddLast(new Tuple<uint, RudpPacket>(service, comm));
-            while (target.Packets.Count > 15)
+            while (target.Packets.Count > 30)
             {
                 //crit - log to console? Debug.Assert(false);
                 target.Packets.RemoveFirst();
             }
 
             target.TrySend(Network);
+        }
+
+        RudpPacket CreateRudpPacket(DhtClient client, uint service, int type, G2Packet packet, bool reliable)
+        {
+            RudpPacket comm = new RudpPacket();
+            comm.SenderID = Network.Local.UserID;
+            comm.SenderClient = Network.Local.ClientID;
+            comm.TargetID = client.UserID;
+            comm.TargetClient = client.ClientID;
+            comm.PacketType = RudpPacketType.Light;
+            comm.Payload = RudpLight.Encode(service, type, packet.Encode(Network.Protocol));
+
+            if (reliable)
+            {
+                comm.PeerID = (ushort)Core.RndGen.Next(ushort.MaxValue); // used to ack
+                comm.Sequence = 1;
+            }
+
+            return comm;
+        }
+
+        internal void SendUnreliable(RudpAddress address, uint service, int type, G2Packet packet)
+        {
+            RudpPacket wrap = CreateRudpPacket(address.Address, service, type, packet, false);
+
+            int sentBytes = LightClient.SendtoAddress(Core.Network, address, wrap);
+
+            Core.ServiceBandwidth[service].OutPerSec += sentBytes;
         }
 
         internal void ReceivePacket(G2ReceivedPacket raw, RudpPacket packet)
@@ -161,7 +180,8 @@ namespace RiseOp.Implementation.Transport
             
             if (packet.PacketType == RudpPacketType.LightAck)
                 ReceiveAck( raw, light, packet);
-            else
+
+            else if(packet.PacketType == RudpPacketType.Light)
             {
                 RudpLight info = new RudpLight(packet.Payload);
 
@@ -171,7 +191,8 @@ namespace RiseOp.Implementation.Transport
                 if (Data.Contains(info.Service, info.Type))
                     Data[info.Service, info.Type].Invoke(client, info.Data);
 
-                SendAck(light, packet, info.Service);
+                if(packet.Sequence == 1) // reliable packet
+                    SendAck(light, packet, info.Service);
             }
         }
 
@@ -188,7 +209,7 @@ namespace RiseOp.Implementation.Transport
             comm.Sequence = 0;
 
             // send ack to first address, addresses moved to front on receive packet
-            int sentBytes = light.SendtoAddress(Network, light.Addresses.First.Value, comm);
+            int sentBytes = LightClient.SendtoAddress(Network, light.Addresses.First.Value, comm);
 
             Core.ServiceBandwidth[service].OutPerSec += sentBytes;
 
@@ -320,7 +341,7 @@ namespace RiseOp.Implementation.Transport
             network.Core.ServiceBandwidth[tuple.Param1].OutPerSec += sentBytes;
         }
 
-        internal int SendtoAddress(DhtNetwork network, RudpAddress target, RudpPacket packet)
+        internal static int SendtoAddress(DhtNetwork network, RudpAddress target, RudpPacket packet)
         {
             Debug.Assert(packet.Payload != null || packet.PacketType == RudpPacketType.LightAck);
 

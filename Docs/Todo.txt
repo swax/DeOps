@@ -1,4 +1,7 @@
 
+lightComm, order addresses by success, on each send, retry index is down the line of success
+change from expedite, to reliable and send voice packets quickly
+
 check that voice button is disposed on window close chat/IM
 
 storage view not changing when changing projects on nav bar

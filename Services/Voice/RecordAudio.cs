@@ -20,6 +20,7 @@ namespace RiseOp.Services.Voice
 
         bool HighQuality = true;
         internal int FrameSize;
+        int SampleRate;
 
         int BufferSize;
         int NextBuffer;
@@ -30,6 +31,8 @@ namespace RiseOp.Services.Voice
         IntPtr SpeexEncoder;
         int SpeexMode;
         byte[] EncodedBytes;
+        IntPtr PreProcessor;
+        //internal IntPtr EchoState;
 
 
         internal RecordAudio(VoiceService voices)
@@ -42,21 +45,24 @@ namespace RiseOp.Services.Voice
             // if 20ms, at high quality (16khz) is 320 samples at 2 bytes each
             if (HighQuality)
             {
-                Format = new WinMM.WaveFormat(16000, 16, 1);
+                SampleRate = 16000;
                 BufferSize = 320 * 2;
                 SpeexMode = Speex.SPEEX_MODEID_WB;
             }
             else
             {
-                Format = new WinMM.WaveFormat(8000, 16, 1);
+                SampleRate = 8000;
                 BufferSize = 160 * 2;
                 SpeexMode = Speex.SPEEX_MODEID_NB;
             }
+
+            //LastBuffer = new byte[BufferSize];
 
             try
             {
                 InitSpeexEncoder();
 
+                Format = new WinMM.WaveFormat(SampleRate, 16, 1);
                 WinMM.ErrorCheck(WinMM.waveInOpen(out WaveHandle, Voices.RecordingDevice, Format, CallbackHandler, 0, WinMM.CALLBACK_FUNCTION));
 
                 for (int i = 0; i < BufferCount; i++)
@@ -107,6 +113,20 @@ namespace RiseOp.Services.Voice
             tmp = 1;
             Speex.speex_encoder_ctl(SpeexEncoder, Speex.SPEEX_SET_HIGHPASS, ref tmp);
 
+    
+            // pre-processor
+            PreProcessor = Speex.speex_preprocess_state_init(FrameSize, SampleRate);
+
+            tmp = 1;
+            Speex.speex_preprocess_ctl(PreProcessor, Speex.SPEEX_PREPROCESS_SET_DENOISE, ref tmp);
+
+            // echo cancelation
+            //EchoState = Speex.speex_echo_state_init(FrameSize, FrameSize * 3); // 100ms tail length suggested
+
+            //Speex.speex_preprocess_ctl(PreProcessor, Speex.SPEEX_PREPROCESS_SET_ECHO_STATE, EchoState); 
+
+
+
             EncodedBytes = new byte[BufferSize];
         }
 
@@ -133,8 +153,46 @@ namespace RiseOp.Services.Voice
                 {
                     RecordBuffer buffer = Buffers[NextBuffer];
 
-                    if(buffer.Added)
+                    if (buffer.Added)
                         EncodeAudio(buffer);
+
+                        /*if (!EncodeAudio(buffer) && LastBufferSet)
+                        {
+                            // no data sent - send last buffer so that audio doesnt snap, but fades out
+                            // reverse - so waves match up
+                            byte[] frame = new byte[2];
+                            int backpos = 0;
+                            for (int i = 0; i < FrameSize / 2; i++)
+                            {
+                                backpos = LastBuffer.Length - 2 - i * 2;
+                                Buffer.BlockCopy(LastBuffer, i * 2, frame, 0, 2); // front to temp
+                                Buffer.BlockCopy(LastBuffer, backpos, LastBuffer, i * 2, 2); // back to front
+                                Buffer.BlockCopy(frame, 0, LastBuffer, backpos, 2); // temp to back
+                            }
+
+                            // fade so no sharp end to the sound
+                            for (int i = 0; i < FrameSize; i++)
+                            {
+                                short value = BitConverter.ToInt16(LastBuffer, i * 2);
+                                value = (short) (value * (FrameSize - i) / FrameSize);
+                                BitConverter.GetBytes(value).CopyTo(LastBuffer, i * 2);
+                            }
+
+                            LastBuffer.CopyTo(buffer.Data, 0);
+                            
+                            int tmp = 0;
+                            Speex.speex_encoder_ctl(SpeexEncoder, Speex.SPEEX_SET_VAD, ref tmp);
+                            Speex.speex_encoder_ctl(SpeexEncoder, Speex.SPEEX_SET_DTX, ref tmp);
+
+                            //EncodeAudio(buffer);
+
+                            tmp = 1;
+                            Speex.speex_encoder_ctl(SpeexEncoder, Speex.SPEEX_SET_VAD, ref tmp);
+                            Speex.speex_encoder_ctl(SpeexEncoder, Speex.SPEEX_SET_DTX, ref tmp);
+
+
+                            LastBufferSet = false;
+                        }*/
 
                     WinMM.ErrorCheck(WinMM.waveInAddBuffer(WaveHandle, ref buffer.Header, Marshal.SizeOf(buffer.Header)));
                     buffer.Added = true;
@@ -158,7 +216,11 @@ namespace RiseOp.Services.Voice
             }
         }
 
-        private void EncodeAudio(RecordBuffer buffer)
+        //byte[] LastBuffer;
+        //bool LastBufferSet;
+        //byte[] EchoBuff;
+
+        private bool EncodeAudio(RecordBuffer buffer)
         {
             // done in a seperate function to avoid buffer from being re-assigned while delegate is being processed
 
@@ -170,24 +232,39 @@ namespace RiseOp.Services.Voice
                     maxVolume = val;
             }
 
+            // pre-process
+            Speex.speex_preprocess_run(PreProcessor, buffer.Data); 
+
+            // echo cancel
+            //if (EchoBuff == null) EchoBuff = new byte[BufferSize];
+            //Speex.speex_echo_capture(EchoState, buffer.Data, EchoBuff);
+            //EchoBuff.CopyTo(buffer.Data, 0);
+
             // encode
             Speex.speex_bits_reset(ref EncodeBits);
 
             int success = Speex.speex_encode_int(SpeexEncoder, buffer.DataPtr, ref EncodeBits);
 
             if (success == 0) // dtx returns 0 if no data
-                return;
+                return false;
 
             int written = Speex.speex_bits_write(ref EncodeBits, EncodedBytes, EncodedBytes.Length);
 
             // filler is 10b high quality, 6b low quality, dont write filler only good audio
             if (written > 10)
             {
+                //buffer.Data.CopyTo(LastBuffer, 0);
+                //LastBufferSet = true;
+
                 byte[] safeBuffer = Utilities.ExtractBytes(EncodedBytes, 0, written);
 
                 // pass frame size because recorder could be null by the time event gets there
                 Voices.Core.RunInCoreAsync(() => Voices.Recorder_AudioData(safeBuffer, maxVolume, FrameSize));
+                
+                return true;
             }
+
+            return false;
         }
 
 
@@ -205,6 +282,8 @@ namespace RiseOp.Services.Voice
                 // free speex
                 Speex.speex_bits_destroy(ref EncodeBits);
                 Speex.speex_encoder_destroy(SpeexEncoder);
+                Speex.speex_preprocess_state_destroy(PreProcessor);
+                //Speex.speex_echo_state_destroy(EchoState); 
 
                 WinMM.ErrorCheck(WinMM.waveInClose(WaveHandle));
             }

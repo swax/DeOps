@@ -151,12 +151,12 @@ transfer, and file sharing.  File transfers are automatically swarmed when multi
         {
             networkPanel1.Init(Core);
 
-            Core.Network.StatusChange += new RiseOp.Implementation.Dht.StatusChange(Network_StatusChange);
+            Core.Network.GuiStatusChange += new RiseOp.Implementation.Dht.StatusChange(Network_StatusChange);
         }
 
         internal override bool Fin()
         {
-            Core.Network.StatusChange -= new RiseOp.Implementation.Dht.StatusChange(Network_StatusChange);
+            Core.Network.GuiStatusChange -= new RiseOp.Implementation.Dht.StatusChange(Network_StatusChange);
             
             return true;
         }
