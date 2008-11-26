@@ -1050,7 +1050,7 @@ namespace RiseOp.Services.Transfer
                 pong.ChunkSize = transfer.ChunkSize;
                 pong.BitCount = transfer.LocalBitfield.Count;
                 peer.Uninitialized = false;
-                session.SendData(ServiceID, 0, pong, true);
+                session.SendData(ServiceID, 0, pong);
             }
 
             int bits = transfer.LocalBitfield.Length;
@@ -1138,7 +1138,7 @@ namespace RiseOp.Services.Transfer
 
             if (Logging) LogTransfer(peer, false, "Sending Request/Data starting at " + request.StartByte + ", chunk " + peer.LastRequest.ChunkIndex); 
 
-            session.SendData(ServiceID, 0, request, true);
+            session.SendData(ServiceID, 0, request);
 
             // start sending data immediately, if we wait for response transfer speed is severely reduced ~50kb/s max
             peer.UploadAttempts = 0;
@@ -1179,7 +1179,7 @@ namespace RiseOp.Services.Transfer
                 Transfers[request.FileID].Status == TransferStatus.Complete)
             {
                 ack.Error = true;
-                session.SendData(ServiceID, 0, ack, true);
+                session.SendData(ServiceID, 0, ack);
                 return;
             }
 
@@ -1193,7 +1193,7 @@ namespace RiseOp.Services.Transfer
             {
                 ack.Uninitialized = true;
                 ack.StartByte = -1;
-                session.SendData(ServiceID, 0, ack, true);
+                session.SendData(ServiceID, 0, ack);
                 return;
             }
 
@@ -1201,7 +1201,7 @@ namespace RiseOp.Services.Transfer
                 peer.Warnings > 3)
             {
                 ack.Error = true;
-                session.SendData(ServiceID, 0, ack, true);
+                session.SendData(ServiceID, 0, ack);
                 return;
             }
 
@@ -1239,7 +1239,7 @@ namespace RiseOp.Services.Transfer
                 if (Logging) LogTransfer(peer, true, "Request Accepted for " + request.ChunkIndex);
             }
 
-            session.SendData(ServiceID, 0, ack, true);
+            session.SendData(ServiceID, 0, ack);
         }
 
         // sender confirming or denying the range we want to send
@@ -1370,7 +1370,7 @@ namespace RiseOp.Services.Transfer
                 }
 
                 // send data
-                if (session.SendData(ServiceID, 0, data, false))
+                if (session.SendData(ServiceID, 0, data))
                     peer.CurrentPos += data.Block.Length;
 
                 else // no room in comm buffer for more sends
@@ -1537,7 +1537,7 @@ namespace RiseOp.Services.Transfer
             stop.Retry = retry;
             stop.Index = data.Index;
 
-            session.SendData(ServiceID, 0, stop, true);
+            session.SendData(ServiceID, 0, stop);
         }
 
         void Receive_Stop(RudpSession session, TransferStop stop)

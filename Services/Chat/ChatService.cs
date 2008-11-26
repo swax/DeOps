@@ -606,7 +606,7 @@ namespace RiseOp.Services.Chat
                         foreach (RudpSession session in Network.RudpControl.GetActiveSessions(member))
                         {
                             sent = true;
-                            session.SendData(ServiceID, 0, message, true);
+                            session.SendData(ServiceID, 0, message);
                         }
                 });
             }
@@ -685,7 +685,7 @@ namespace RiseOp.Services.Chat
                             // invite not sent
                             if (room.Kind == RoomKind.Private || room.Host == Core.UserID)
                             {
-                                session.SendData(ServiceID, 0, room.Invites[session.UserID].Param1, true);
+                                session.SendData(ServiceID, 0, room.Invites[session.UserID].Param1);
                                 room.Invites[session.UserID].Param2.Add(session.ClientID);
                                 ProcessMessage(room, "Invite sent to " + GetNameAndLocation(session));
                                 SendWhoResponse(room, session);
@@ -845,7 +845,7 @@ namespace RiseOp.Services.Chat
                     }
             });
 
-            session.SendData(ServiceID, 0, status, true);
+            session.SendData(ServiceID, 0, status);
         }
 
         internal void SendInviteRequest(ChatRoom room, ulong id)
@@ -889,7 +889,7 @@ namespace RiseOp.Services.Chat
             // send invite to already connected locations
             foreach (RudpSession session in Network.RudpControl.GetActiveSessions(id))
             {
-                session.SendData(ServiceID, 0, invite, true);
+                session.SendData(ServiceID, 0, invite);
                 room.Invites[id].Param2.Add(session.ClientID);
                 ProcessMessage(room, "Invite sent to " + GetNameAndLocation(session));
                 SendStatus(room); // so we get added as active to new room invitee creates
@@ -942,7 +942,7 @@ namespace RiseOp.Services.Chat
             invite.Title = room.Title;
             invite.SignedInvite = room.Invites[Core.UserID].Param1.SignedInvite;
 
-            session.SendData(ServiceID, 0, invite, true);
+            session.SendData(ServiceID, 0, invite);
         }
 
         void ReceiveInvite(ChatInvite invite, RudpSession session)
@@ -1051,7 +1051,7 @@ namespace RiseOp.Services.Chat
             ChatWho whoReq = new ChatWho();
             whoReq.Request = true;
             whoReq.RoomID = room.RoomID;
-            session.SendData(ServiceID, 0, whoReq, true);
+            session.SendData(ServiceID, 0, whoReq);
         }
 
         void SendWhoResponse(ChatRoom room, RudpSession session)
@@ -1082,7 +1082,7 @@ namespace RiseOp.Services.Chat
 
             // send who to already connected locations
             foreach(ChatWho packet in whoPackets)
-                session.SendData(ServiceID, 0, packet, true);
+                session.SendData(ServiceID, 0, packet);
         }
 
 

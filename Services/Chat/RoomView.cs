@@ -184,10 +184,10 @@ namespace RiseOp.Services.Chat
                 if (ParentView.ViewHigh != null && ParentView.ViewLow != null)
                 {
                     if (Room.Kind == RoomKind.Command_High || Room.Kind == RoomKind.Live_High)
-                        direction = AudioDirection.Right;
+                        direction = AudioDirection.Left;
 
                     else if (Room.Kind == RoomKind.Command_Low || Room.Kind == RoomKind.Live_Low)
-                        direction = AudioDirection.Left;
+                        direction = AudioDirection.Right;
                 }
 
                 VoiceButton.SetUsers(users, direction);

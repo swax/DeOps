@@ -559,7 +559,7 @@ namespace RiseOp.Services.Share
         {
             collection.Status = "Requesting List";
 
-            session.SendData(ServiceID, DataTypeSession, new PublicShareRequest(), true);
+            session.SendData(ServiceID, DataTypeSession, new PublicShareRequest());
         }
 
         private void ReceivePublicRequest(RudpSession session)
@@ -573,7 +573,7 @@ namespace RiseOp.Services.Share
                 return;
 
             if(Local.Hash != null)
-                session.SendData(ServiceID, DataTypeSession, Local, true);
+                session.SendData(ServiceID, DataTypeSession, Local);
         }
 
         private void ReceivePublicDetails(RudpSession session, ShareCollection file)

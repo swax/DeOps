@@ -100,7 +100,7 @@ namespace RiseOp.Services.IM
                                 if (session != null)
                                 {
                                     status.TTL[client].Value = SessionTimeout * 2;
-                                    session.SendData(ServiceID, 0, new IMKeepAlive(), true);
+                                    session.SendData(ServiceID, 0, new IMKeepAlive());
                                 }
                             }
                 }
@@ -350,7 +350,7 @@ namespace RiseOp.Services.IM
                 // needs to be set here as well be cause we don't receive a keep alive from remote host on connect
                 status.SetTTL(session.ClientID, SessionTimeout * 2);
 
-                session.SendData(ServiceID, 0, new IMKeepAlive(), true);
+                session.SendData(ServiceID, 0, new IMKeepAlive());
             }
 
             Update(status);
@@ -381,13 +381,13 @@ namespace RiseOp.Services.IM
             foreach (RudpSession session in Network.RudpControl.GetActiveSessions(key))
             {
                 sent = true; // only sent if target receies
-                session.SendData(ServiceID, 0, message, true);
+                session.SendData(ServiceID, 0, message);
             }
 
             // send copies to other selves running
             message.TargetID = key;
             foreach (RudpSession session in Network.RudpControl.GetActiveSessions(Core.UserID))
-                session.SendData(ServiceID, 0, message, true);
+                session.SendData(ServiceID, 0, message);
 
             ProcessMessage(status, new InstantMessage(Core, text, format) { Sent = sent });
         }

@@ -1,36 +1,17 @@
 
-copy clipboard crash
+Voice Activated (Headphones)
+Push to Talk (Speakers)
+Remove Mute
 
-settings microphone quality high/low
-expedite move to socket, call manage send window immediately, maybe auto expediate, since nothing wants to wait
-	faster on all sides is better for everyone
-test downloads over lan with always expedite policy
-implement unreliable rudp and test
-implement reliable voice again and test
-downside voice over rudp is that sliding window may not open fast enough, upside is that its reliable
-	upside out of band - during transfer with remote - voice packets not pushed back
-	implement history 
-	implment index
-	test with drey voice during transfer
-
-test on vista
-
-handle skipping a frame, keeping count, dont play out of order
-secure send, move code over to secure session
-
-
-move unreliable send to rudp - send using current rudp encryption key
-
-key sent in rudp that can be used with secure light comm
-
-test direct udp stream that is numbered sequentially
-	unacked, fast as possible, use top address from rudp?
-index voice packets, if 1 missing / out of order, play null
-
+test lan transfer speed, how big does sliding window get?
+implement history 
+	
+inflight voip -> advertising
+	
+test with drey voice during transfer
+prioritize trust - search / transfer over buddy/profile, etc..
 
 windows key capture hook?
-
-test left/right in chat room
 
 test vista
 speech working
@@ -44,12 +25,8 @@ publish annoucement on downloadsquad
 think up test nework
 
 
+copy clipboard crash
 
-
-lightComm, order addresses by success, on each send, retry index is down the line of success
-change from expedite, to reliable and send voice packets quickly
-
-check that voice button is disposed on window close chat/IM
 
 storage view not changing when changing projects on nav bar
 	nav bar not completely working

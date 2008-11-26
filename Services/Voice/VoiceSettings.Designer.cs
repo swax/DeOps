@@ -34,13 +34,14 @@
             this.label2 = new System.Windows.Forms.Label();
             this.DeviceInCombo = new System.Windows.Forms.ComboBox();
             this.DeviceOutCombo = new System.Windows.Forms.ComboBox();
+            this.label3 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // CloseButton
             // 
             this.CloseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.CloseButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.CloseButton.Location = new System.Drawing.Point(199, 138);
+            this.CloseButton.Location = new System.Drawing.Point(199, 170);
             this.CloseButton.Name = "CloseButton";
             this.CloseButton.Size = new System.Drawing.Size(75, 23);
             this.CloseButton.TabIndex = 0;
@@ -51,7 +52,7 @@
             // OkButton
             // 
             this.OkButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.OkButton.Location = new System.Drawing.Point(118, 138);
+            this.OkButton.Location = new System.Drawing.Point(118, 170);
             this.OkButton.Name = "OkButton";
             this.OkButton.Size = new System.Drawing.Size(75, 23);
             this.OkButton.TabIndex = 1;
@@ -101,13 +102,25 @@
             this.DeviceOutCombo.Size = new System.Drawing.Size(262, 21);
             this.DeviceOutCombo.TabIndex = 5;
             // 
+            // label3
+            // 
+            this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.label3.Location = new System.Drawing.Point(12, 123);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(262, 44);
+            this.label3.TabIndex = 6;
+            this.label3.Text = "For best results use headphones or a headset.  Using speakers may cause unwanted " +
+                "feedback.";
+            // 
             // VoiceSettings
             // 
             this.AcceptButton = this.OkButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.CloseButton;
-            this.ClientSize = new System.Drawing.Size(286, 173);
+            this.ClientSize = new System.Drawing.Size(286, 205);
+            this.Controls.Add(this.label3);
             this.Controls.Add(this.DeviceOutCombo);
             this.Controls.Add(this.DeviceInCombo);
             this.Controls.Add(this.label2);
@@ -132,5 +145,6 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.ComboBox DeviceInCombo;
         private System.Windows.Forms.ComboBox DeviceOutCombo;
+        private System.Windows.Forms.Label label3;
     }
 }

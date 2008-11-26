@@ -10,7 +10,7 @@ database to storage system (for use with bug trackers, inventories, etc..)
 detect when computer changes then prompt user for location string update
 project/op name and other settings should be taken from whoever is the root node of self, info in projectdata
 quota storage space per node, interface to show, per component storage req as well as over all memory auditing interface
-voice chat in rooms / IM using skype API - can get to land lines
+SIP, get to land lines through voice?
 load goal/board/mail archives serperately to speed load / reduce memory usage
 put all strings in resource file, mass convert using google translate, let user on run choose flag/language from upper left corner
 	autodetect lang on OS as well

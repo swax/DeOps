@@ -37,7 +37,9 @@ namespace RiseOp.Implementation.Protocol.Comm
         internal const byte Fin   = 0x50;
 
         internal const byte Light = 0x60;
-        internal const byte LightAck = 0x70; 
+        internal const byte LightAck = 0x70;
+
+        internal const byte Unreliable = 0x80;
     };
 
 	internal class RudpPacket : G2Packet

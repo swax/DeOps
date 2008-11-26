@@ -44,7 +44,7 @@ namespace RiseOp.Implementation.Transport
 		MovingAvg AvgLatency   = new MovingAvg(10);
 		MovingAvg AvgBytesSent = new MovingAvg(10);
 
-		const int MAX_WINDOW_SIZE  = 25;
+		const int MAX_WINDOW_SIZE  = 50;
 		internal const int SEND_BUFFER_SIZE = 64 * 1024;
 		const int CHUNK_SIZE       = 1024;
 		const int MAX_CHUNK_SIZE   = 1024;
@@ -121,38 +121,47 @@ namespace RiseOp.Implementation.Transport
                 PrimaryAddress = address;
         }
 
-		internal int Send(byte[] buff, int buffLength)
+		internal void Send(byte[] data, ref int length)
 		{
             if (State != RudpState.Connected)
-                return -1;
+                return;// -1;
 
             //Session.Log("Send " + buffLength + " bytes");
 
 			// multiplied by 2 so room to expand and basically 2 second buffer
-            int maxBuffSize = GetSendBuffSize();
+            int bufferSize = GetSendBuffSize();
 		
-            int copysize = 0;
+            int copySize = 0;
 			
             //int MaxBufferSize = SEND_BUFFER_SIZE;//m_SendWindowSize * CHUNK_SIZE;
             lock (SendSection)
             {
-                if (SendBuffLength >= maxBuffSize)
+                if (SendBuffLength >= bufferSize)
                 {
                     RudpSendBlock = true;
-                    return -1;
+                    return;// -1;
                 }
 
-                int buffspace = maxBuffSize - SendBuffLength;
-                copysize = buffspace >= buffLength ? buffLength : buffspace;
+                int space = bufferSize - SendBuffLength;
 
-                Buffer.BlockCopy(buff, 0, SendBuff, SendBuffLength, copysize);
-                SendBuffLength += copysize;
+                copySize = (space >= length) ? length : space;
 
-                if (copysize != buffLength)
+                Buffer.BlockCopy(data, 0, SendBuff, SendBuffLength, copySize);
+                SendBuffLength += copySize;
+
+                if (copySize != length)
                     RudpSendBlock = true;
             }
 
-			return copysize;
+            if (copySize > 0)
+            {
+                // length and session buffers modified here (not in calling function) because 
+                // manageSendWindow -> OnSend -> FlushSend -> Send .. is recursive
+                length -= copySize;
+                Buffer.BlockCopy(data, copySize, data, 0, length);
+            }
+
+            ManageSendWindow(); // try to send immedaitely
 		}
 
         int GetSendBuffSize()
@@ -316,7 +325,12 @@ namespace RiseOp.Implementation.Transport
             else
                 log += " udp";
             Session.Log(log);*/
-            
+
+            if (packet.PacketType == RudpPacketType.Unreliable)
+            {
+                Session.UnreliableReceive(packet.Payload);
+                return;
+            }
 
 			// try to clear up bufffer, helps if full, better than calling this on each return statement
 			ManageRecvWindow();
@@ -812,7 +826,7 @@ namespace RiseOp.Implementation.Transport
 
 
             if (tracked.Packet.PacketType != RudpPacketType.Syn)
-                SendPacket(tracked, target);
+                SendPacket(tracked.Packet, target);
 
             else
             {
@@ -823,14 +837,14 @@ namespace RiseOp.Implementation.Transport
                     tracked.Packet.Ident = address.Ident;
                     tracked.Target = address;
 
-                    SendPacket(tracked, address);
+                    SendPacket(tracked.Packet, address);
                 }
             }
 		}
 
-        private void SendPacket(TrackPacket tracked, RudpAddress target)
+        internal void SendPacket(RudpPacket packet, RudpAddress target)
         {
-            Debug.Assert(tracked.Packet.Payload != null);
+            Debug.Assert(packet.Payload != null);
 
             // sending syn  to (tracked target) through (address target) udp / tcp
 
@@ -844,22 +858,22 @@ namespace RiseOp.Implementation.Transport
             // same code used in lightComm
             if (Core.Firewall != FirewallType.Blocked && target.LocalProxy == null)
             {
-                sentBytes = Network.SendPacket(target.Address, tracked.Packet);
+                sentBytes = Network.SendPacket(target.Address, packet);
             }
 
             else if (target.Address.TunnelClient != null)
-                sentBytes = Network.SendTunnelPacket(target.Address, tracked.Packet);
+                sentBytes = Network.SendTunnelPacket(target.Address, packet);
 
             else
             {
-                tracked.Packet.ToAddress = target.Address;
+                packet.ToAddress = target.Address;
 
                 TcpConnect proxy = Network.TcpControl.GetProxy(target.LocalProxy);
 
                 if (proxy != null)
-                    sentBytes = proxy.SendPacket(tracked.Packet);
+                    sentBytes = proxy.SendPacket(packet);
                 else
-                    sentBytes = Network.TcpControl.SendRandomProxy(tracked.Packet);
+                    sentBytes = Network.TcpControl.SendRandomProxy(packet);
 
                 //log += " proxied by local tcp";
             }

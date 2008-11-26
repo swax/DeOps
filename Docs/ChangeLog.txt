@@ -1,4 +1,8 @@
-﻿1.1.1
+﻿1.1.2
+	Rudp expedite fixed, all packets sent asap
+	Download spiking fixed, session flushsend can be recursed
+
+1.1.1
 	Pre-processor added - de-noise, perpetual enhancement
 	InfoView deconstructor fixed
 

@@ -42,7 +42,6 @@ namespace RiseOp.Implementation.Transport
 		
         // sending
         int SendBlockSize = 16;
-        bool SendBufferFlushed = true;
 
         internal byte[] SendBuffer;
         internal int SendBuffSize = 0;
@@ -109,7 +108,7 @@ namespace RiseOp.Implementation.Transport
 
         Queue<Tuple<int, int>> LastSends = new Queue<Tuple<int, int>>();
 
-		internal bool SendPacket(G2Packet packet, bool expedite)
+		internal bool SendPacket(G2Packet packet)
 		{
             if (Core.InvokeRequired)
                 Debug.Assert(false);
@@ -125,7 +124,8 @@ namespace RiseOp.Implementation.Transport
             // dont worry about buffers, cause initial comm buffer is large enough to fit all negotiating packets
             if (SendEncryptor == null)
             {
-                Comm.Send(final, final.Length);
+                int length = final.Length;
+                Comm.Send(final, ref length);
                 return true;
             }
 
@@ -151,23 +151,22 @@ namespace RiseOp.Implementation.Transport
             {
                 final.CopyTo(SendBuffer, SendBuffSize);
                 SendBuffSize += final.Length;
-
-                SendBufferFlushed = false;
             }
 
-            return FlushSend(expedite); // return true if room in comm buffer
+            return FlushSend(); // return true if room in comm buffer
 		}
 
-        internal bool FlushSend(bool expedite)
+        internal bool FlushSend()
         {
             if (SendEncryptor == null)
                 return false;
 
             lock (SendBuffer)
             {
-                // add padding to send buff if expedidted to ensure all packets sent
+                // add padding to send buff to ensure all packets sent
                 int remainder = SendBuffSize % SendBlockSize;
-                if (!SendBufferFlushed && expedite && remainder > 0 && SendBuffSize < BUFF_SIZE - 32)
+
+                if (remainder > 0 && SendBuffSize < BUFF_SIZE - 32)
                 {
                     int paddingNeeded = SendBlockSize - remainder;
 
@@ -200,16 +199,7 @@ namespace RiseOp.Implementation.Transport
                 // send encrypt buff
                 if(EncryptBuffSize > 0)
                 {
-                    int sent = Comm.Send(EncryptBuffer, EncryptBuffSize);
-
-                    if (sent > 0)
-                    {
-                        EncryptBuffSize -= sent;
-                        Buffer.BlockCopy(EncryptBuffer, sent, EncryptBuffer, 0, EncryptBuffSize);
-
-                        if (expedite)
-                            SendBufferFlushed = true;
-                    }
+                    Comm.Send(EncryptBuffer, ref EncryptBuffSize);
                 }
             }
 
@@ -283,7 +273,8 @@ namespace RiseOp.Implementation.Transport
 			
             if(Status == SessionStatus.Active)
 			{
-                if (FlushSend(true))
+                //crit - still need this?
+                if (FlushSend())
                     Core.Transfers.Send_Data(this); // a hack for stalled transfers
 			}
 		}
@@ -312,7 +303,7 @@ namespace RiseOp.Implementation.Transport
 
             Log("Key Request Sent");
 
-			SendPacket(keyRequest, true);
+			SendPacket(keyRequest);
 		}
 
 		internal void Receive_KeyRequest(G2ReceivedPacket embeddedPacket)
@@ -338,7 +329,7 @@ namespace RiseOp.Implementation.Transport
 
 			Log("Key Ack Sent");
 
-			SendPacket(keyAck, true);
+			SendPacket(keyAck);
 		}
 
 		internal void Receive_KeyAck(G2ReceivedPacket embeddedPacket)
@@ -382,7 +373,7 @@ namespace RiseOp.Implementation.Transport
 
             Log("Session Request Sent");
 
-            SendPacket(request, true);
+            SendPacket(request);
 		}
 
 		internal void Receive_SessionRequest(G2ReceivedPacket embeddedPacket)
@@ -441,7 +432,7 @@ namespace RiseOp.Implementation.Transport
             Debug.Assert(!EncryptionStarted);
             EncryptionStarted = true;
             
-            SendPacket( new EncryptionUpdate(true), false ); // dont expedite because very next packet is expedited
+            SendPacket( new EncryptionUpdate(true) ); // dont expedite because very next packet is expedited
 
             OutboundEnc.Padding = PaddingMode.None;
             SendEncryptor = OutboundEnc.CreateEncryptor();
@@ -458,7 +449,7 @@ namespace RiseOp.Implementation.Transport
 
             Log("Session Ack Sent");
 
-			SendPacket(ack, true);
+			SendPacket(ack);
 		}
 
 		internal void Receive_SessionAck(G2ReceivedPacket embeddedPacket)
@@ -484,13 +475,13 @@ namespace RiseOp.Implementation.Transport
             UpdateStatus(SessionStatus.Active);
 		}
 
-        internal bool SendData(uint service, uint datatype, G2Packet packet, bool expedite)
+        internal bool SendData(uint service, uint datatype, G2Packet packet)
         {
             CommData data = new CommData(service, datatype, packet.Encode(Network.Protocol));
 
             Core.ServiceBandwidth[service].OutPerSec += data.Data.Length;
 
-            return SendPacket(data, expedite);
+            return SendPacket(data);
         }
 
         internal void ReceiveData(G2ReceivedPacket embeddedPacket)
@@ -524,7 +515,7 @@ namespace RiseOp.Implementation.Transport
 			CommClose close = new CommClose();
 			close.Reason    = reason;
 
-            SendPacket(close, true);
+            SendPacket(close);
             Comm.Close(); 
 
 			UpdateStatus(SessionStatus.Closed);
@@ -551,7 +542,7 @@ namespace RiseOp.Implementation.Transport
 
             Log("Sent Proxy Update (" + update.Proxy + ")");
 
-            SendPacket(update, true);
+            SendPacket(update);
         }
 
         internal void Receive_ProxyUpdate(G2ReceivedPacket embeddedPacket)
@@ -719,7 +710,7 @@ namespace RiseOp.Implementation.Transport
 		internal void OnSend()
 		{
             // try to flush remaining data
-            if (!FlushSend(false))
+            if (!FlushSend())
                 return;
 
             Core.Transfers.Send_Data(this);
@@ -740,27 +731,52 @@ namespace RiseOp.Implementation.Transport
             return true;
         }
 
-        internal void SendUnreliable(uint service, int type, G2Packet packet)
+        internal void SendUnreliable(uint service, uint type, G2Packet packet)
         {
+            // fast, secure, out-of-band method of sending data
+            // useful for things like VOIP during a file transfer with host
+            // data has got to go out asap, no matter what
+
             // check rudp socket is connected
             if (Status != SessionStatus.Active)
                 return;
 
             // add to special rudp packet
-            RudpPacket comm = new RudpPacket();
-            comm.SenderID = Network.Local.UserID;
-            comm.SenderClient = Network.Local.ClientID;
-            comm.TargetID = UserID;
-            comm.TargetClient = ClientID;
-            comm.PacketType = RudpPacketType.Unreliable;
-            
+            RudpPacket rudp = new RudpPacket();
+            rudp.SenderID = Network.Local.UserID;
+            rudp.SenderClient = Network.Local.ClientID;
+            rudp.TargetID = UserID;
+            rudp.TargetClient = ClientID;
+            rudp.PeerID = Comm.RemotePeerID;
+            rudp.PacketType = RudpPacketType.Unreliable;
+          
             CommData data = new CommData(service, type, packet.Encode(Network.Protocol));
-            comm.Payload = Utilities.EncryptBytes(data.Encode(Network.Protocol), OutboundEnc.Key);
-
+            rudp.Payload = Utilities.EncryptBytes(data.Encode(Network.Protocol), OutboundEnc.Key);
 
             // send
+            Comm.SendPacket(rudp, Comm.PrimaryAddress);
 
-            // should be handled by same receive data interface
+            // stats
+            Core.ServiceBandwidth[service].OutPerSec += data.Data.Length;
+
+            PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Rudp, DirectionType.Out, Comm.PrimaryAddress.Address, rudp.Payload);
+            Core.Network.LogPacket(logEntry);
+        }
+
+        internal void UnreliableReceive(byte[] data)
+        {
+            byte[] decrypted = Utilities.DecryptBytes(data, data.Length, InboundEnc.Key);
+
+            G2ReceivedPacket packet = new G2ReceivedPacket();
+            packet.Root = new G2Header(decrypted);
+
+            if (G2Protocol.ReadPacket(packet.Root))
+            {
+                PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Rudp, DirectionType.In, Comm.PrimaryAddress.Address, decrypted);
+                Core.Network.LogPacket(logEntry);
+
+                ReceivePacket(packet);
+            }
         }
     }
 }
