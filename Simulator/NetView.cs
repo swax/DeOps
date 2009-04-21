@@ -492,20 +492,21 @@ namespace RiseOp.Simulator
 
             lock (Sim.OutPackets)
             {
-                foreach (SimPacket packet in Sim.OutPackets)
-                    if (SelectedID == 0 || (!ShowInbound && SelectedID == packet.SenderID) || (ShowInbound && SelectedID == packet.Dest.Local.UserID))
-                        if ((packet.Dest.IsLookup && OpID == 0) || (!packet.Dest.IsLookup && packet.Dest.OpID == OpID))
-                        {
-                            Dictionary<ulong, Dictionary<ulong, PacketGroup>> TrafficGroup = packet.Tcp != null ? TcpTraffic : UdpTraffic;
+                for(int i = 0; i < Sim.OutPackets.Length; i++)
+                    foreach (SimPacket packet in Sim.OutPackets[i])
+                        if (SelectedID == 0 || (!ShowInbound && SelectedID == packet.SenderID) || (ShowInbound && SelectedID == packet.Dest.Local.UserID))
+                            if ((packet.Dest.IsLookup && OpID == 0) || (!packet.Dest.IsLookup && packet.Dest.OpID == OpID))
+                            {
+                                Dictionary<ulong, Dictionary<ulong, PacketGroup>> TrafficGroup = packet.Tcp != null ? TcpTraffic : UdpTraffic;
 
-                            if (!TrafficGroup.ContainsKey(packet.SenderID))
-                                TrafficGroup[packet.SenderID] = new Dictionary<ulong, PacketGroup>();
+                                if (!TrafficGroup.ContainsKey(packet.SenderID))
+                                    TrafficGroup[packet.SenderID] = new Dictionary<ulong, PacketGroup>();
 
-                            if (!TrafficGroup[packet.SenderID].ContainsKey(packet.Dest.Local.UserID))
-                                TrafficGroup[packet.SenderID][packet.Dest.Local.UserID] = new PacketGroup(packet.SenderID, packet.Dest.Local.UserID);
+                                if (!TrafficGroup[packet.SenderID].ContainsKey(packet.Dest.Local.UserID))
+                                    TrafficGroup[packet.SenderID][packet.Dest.Local.UserID] = new PacketGroup(packet.SenderID, packet.Dest.Local.UserID);
 
-                            TrafficGroup[packet.SenderID][packet.Dest.Local.UserID].Add(packet);
-                        }
+                                TrafficGroup[packet.SenderID][packet.Dest.Local.UserID].Add(packet);
+                            }
 
                 DrawGroup(buffer, UdpTraffic, false);
                 DrawGroup(buffer, TcpTraffic, true);

@@ -1,6 +1,6 @@
 ﻿	
 	
-set sequence and version
+set sequence and version in context.cs and updateservice.cs
 set release notes
 set release mode
 obfuscate / create mapping

@@ -7,6 +7,15 @@ using System.Threading;
 
 namespace RiseOp
 {
+    internal static class GenericExtensions
+    {
+        internal static void ForEach<T>(this T[] array, Action<T> code)
+        {
+            foreach (T item in array)
+                code.Invoke(item);
+        }
+    }
+
     internal class ThreadedDictionary<TKey, TValue> : Dictionary<TKey, TValue>
     {
         // default functions accessible but lock checked when accessed

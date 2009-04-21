@@ -6,7 +6,7 @@ XPStyle on
 Name "RiseOp"
 
 ; The file to write
-OutFile "RiseOpInstall_1.1.1.exe"
+OutFile "RiseOpInstall_1.1.3.exe"
 
 ; The default installation directory
 InstallDir $PROGRAMFILES\RiseOp

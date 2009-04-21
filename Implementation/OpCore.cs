@@ -802,8 +802,9 @@ namespace RiseOp.Implementation
                     if (Sim.Internet.RunThread == null) // core thread not started, run funtinos directly through
                         return false;
 
+                    // if not testing individual core thread, its the pump thread that controls the core thread
                     if (!Sim.Internet.TestCoreThread)
-                        return Sim.Internet.RunThread.ManagedThreadId != Thread.CurrentThread.ManagedThreadId;
+                        return Sim.Internet.PumpThreads[Sim.ThreadIndex].ManagedThreadId != Thread.CurrentThread.ManagedThreadId;
                 }
 
                 return CoreThread.ManagedThreadId != Thread.CurrentThread.ManagedThreadId ;

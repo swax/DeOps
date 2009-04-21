@@ -18,6 +18,8 @@ using RiseOp.Implementation.Protocol;
 using RiseOp.Implementation.Protocol.Net;
 
 
+
+
 namespace RiseOp.Services.Update
 {
     internal class UpdateService : OpService
@@ -98,15 +100,15 @@ namespace RiseOp.Services.Update
             {
                 UpdateInfo info = new UpdateInfo();
 
-                info.Name = "RiseOp_1.1.0.exe";
-                info.DottedVersion = "1.1.0";
+                info.Name = "RiseOp_1.1.3.exe";
+                info.DottedVersion = "1.1.3";
 
                 // want to prevent infinite update loop, ensure the seq verison in the intaller, and the
                 // signed seq version in the update are equal
                 info.SequentialVersion = Core.Context.LocalSeqVersion;
 
                 info.Notes = "";
-                info.Notes += "Voice Chat\r\n";
+                info.Notes += "Fixed stupid bug\r\n";
     
                 RijndaelManaged crypt = new RijndaelManaged();
                 crypt.Key = Utilities.GenerateKey(Core.StrongRndGen, 256);

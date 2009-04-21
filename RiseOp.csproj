@@ -1127,6 +1127,7 @@
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>LinkRes.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>RiseOp.Services.Trust</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Mail\ComposeMail.resx">
       <SubType>Designer</SubType>

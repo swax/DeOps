@@ -196,9 +196,9 @@ namespace RiseOp.Services.Buddy
 
         private void RefreshView()
         {  
-            SortedList<string, BuddyItem> Online = new SortedList<string,BuddyItem>();
-            SortedList<string, BuddyItem> Offline = new SortedList<string,BuddyItem>();
-            Dictionary<string, SortedList<string, BuddyItem>> Groups = new Dictionary<string, SortedList<string, BuddyItem>>();
+            List<BuddyItem> Online = new List<BuddyItem>();
+            List<BuddyItem> Offline = new List<BuddyItem>();
+            Dictionary<string, List<BuddyItem>> Groups = new Dictionary<string, List<BuddyItem>>();
 
 
             Buddies.BuddyList.LockReading(delegate()
@@ -241,14 +241,14 @@ namespace RiseOp.Services.Buddy
                     if (buddy.Group != null)
                     {
                         if (!Groups.ContainsKey(buddy.Group))
-                            Groups[buddy.Group] = new SortedList<string, BuddyItem>();
+                            Groups[buddy.Group] = new List<BuddyItem>();
 
-                        Groups[buddy.Group].Add(name, item);
+                        Groups[buddy.Group].Add(item);
                     }
                     else if (online)
-                        Online.Add(name, item);
+                        Online.Add(item);
                     else
-                        Offline.Add(name, item);
+                        Offline.Add(item);
                 }
             });
 
@@ -280,14 +280,14 @@ namespace RiseOp.Services.Buddy
             Update(); // invalidate takes too long?
         }
 
-        private void AddSection(string title, SortedList<string, BuddyItem> people, bool group)
+        private void AddSection(string title, List<BuddyItem> people, bool group)
         {
             if (people.Count == 0)
                 return;
 
             Items.Add(new BuddyItem(title, LabelFont, group));
 
-            foreach (BuddyItem item in people.Values)
+            foreach (BuddyItem item in people.OrderBy(p => p.Text))
                 Items.Add(item);
 
             Items.Add(new BuddyItem());

@@ -1,4 +1,20 @@
 
+vox not cutting out
+closing IM/Chat cutting voice? still transmitting
+
+compartmentalization
+	each file/folder has access list
+		entry can be 
+			group (higher/lower
+			specific person
+		for group - filekey is encoded with group key
+		for person - filekey is encoded with persons public key
+	
+		file header just contains who has access, no encrypted keys
+			except if directory or files are encrypted and we dont want those outside group to see..
+		file itself appended with access list and keys
+
+
 Voice Activated (Headphones)
 Push to Talk (Speakers)
 Remove Mute

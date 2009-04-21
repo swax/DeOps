@@ -100,7 +100,7 @@ namespace RiseOp.Interface
             MailImg     = ExtractImage("Mail",      RiseOp.Services.Mail.MailRes.Mail);
             BuddyWhoImg = ExtractImage("BuddyWho",  RiseOp.Services.Buddy.BuddyRes.buddy_who);
             TrustImg    = ExtractImage("Trust",     RiseOp.Services.Trust.LinkRes.linkup);
-            UntrustImg  = ExtractImage("Untrust",   RiseOp.Services.Trust.LinkRes.unlink);
+            UntrustImg = ExtractImage("Untrust",    RiseOp.Services.Trust.LinkRes.unlink);
             RegImg      = ExtractImage("Reg",       InterfaceRes.reg);
 
             ShowNetwork();

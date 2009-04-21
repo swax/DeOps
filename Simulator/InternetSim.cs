@@ -28,7 +28,6 @@ namespace RiseOp.Simulator
 
         Random RndGen = new Random(unchecked((int)DateTime.Now.Ticks));
 
-        
         internal InstanceChangeHandler InstanceChange;
         internal UpdateViewHandler UpdateView;
 
@@ -37,8 +36,8 @@ namespace RiseOp.Simulator
         internal Dictionary<IPEndPoint, DhtNetwork> UdpEndPoints = new Dictionary<IPEndPoint, DhtNetwork>();
         Dictionary<IPAddress, SimInstance> SimMap = new Dictionary<IPAddress, SimInstance>();
 
-        internal List<SimPacket> OutPackets = new List<SimPacket>();
-        internal List<SimPacket> InPackets = new List<SimPacket>();
+        internal List<SimPacket>[] OutPackets = new List<SimPacket>[Environment.ProcessorCount];
+        internal List<SimPacket>[] InPackets = new List<SimPacket>[Environment.ProcessorCount];
 
         internal Queue<AsyncCoreFunction> CoreMessages = new Queue<AsyncCoreFunction>();
 
@@ -82,6 +81,15 @@ namespace RiseOp.Simulator
 
         int InstanceCount = 1;
 
+        // pump threads
+        internal Thread[] PumpThreads = new Thread[Environment.ProcessorCount];
+        AutoResetEvent[] PumpStart = new AutoResetEvent[Environment.ProcessorCount];
+        AutoResetEvent[] PumpEnd = new AutoResetEvent[Environment.ProcessorCount];
+
+        int CurrentPump = 0;
+        int PumpsPerSec = 8;
+        int NextAffinity = 0;
+
 
         internal InternetSim(SimForm form)
         {
@@ -89,6 +97,12 @@ namespace RiseOp.Simulator
 
             StartTime = new DateTime(2006, 1, 1, 0, 0, 0);
             TimeNow = StartTime;
+
+            for (int i = 0; i < OutPackets.Length; i++)
+            {
+                OutPackets[i] = new List<SimPacket>();
+                InPackets[i] = new List<SimPacket>();
+            }
         }
 
         internal void StartInstance(string path)
@@ -116,6 +130,11 @@ namespace RiseOp.Simulator
 
             else if (num < PercentBlocked + PercentNAT)
                 instance.RealFirewall = FirewallType.NAT;
+
+            // processor
+            instance.ThreadIndex = NextAffinity++;
+            if (NextAffinity >= Environment.ProcessorCount)
+                NextAffinity = 0;
 
             // hook instance into maps
             SimMap[instance.RealIP] = instance;
@@ -270,18 +289,114 @@ namespace RiseOp.Simulator
                 Paused = true;
         }
 
+        void PumpThread(int index)
+        {
+            while (true)
+            {
+                PumpStart[index].WaitOne();
+
+                if (Shutdown)
+                    return;
+
+
+                // send packets
+                foreach (SimPacket packet in InPackets[index])
+                {
+                    switch (packet.Type)
+                    {
+                        case SimPacketType.Udp:
+                            packet.Dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
+                            packet.Dest.UdpControl.OnReceive(packet.Packet, packet.Packet.Length, packet.Source);
+                            break;
+                        case SimPacketType.TcpConnect:
+                            TcpConnect socket = packet.Dest.TcpControl.OnAccept(null, packet.Source);
+
+                            if (socket != null)
+                            {
+                                TcpSourcetoDest[packet.Tcp] = socket;
+                                TcpSourcetoDest[socket] = packet.Tcp;
+
+                                packet.Tcp.OnConnect();
+                            }
+
+                            break;
+                        case SimPacketType.Tcp:
+                            if (TcpSourcetoDest.ContainsKey(packet.Tcp))
+                            {
+                                TcpConnect dest = TcpSourcetoDest[packet.Tcp];
+
+                                dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
+
+                                packet.Packet.CopyTo(dest.RecvBuffer, dest.RecvBuffSize);
+                                dest.OnReceive(packet.Packet.Length);
+                            }
+                            break;
+                        case SimPacketType.TcpClose:
+                            if (TcpSourcetoDest.ContainsKey(packet.Tcp))
+                            {
+                                TcpConnect dest = TcpSourcetoDest[packet.Tcp];
+                                dest.OnReceive(0);
+
+                                TcpSourcetoDest.Remove(packet.Tcp);
+                                TcpSourcetoDest.Remove(dest);
+                            }
+                            break;
+                    }
+                }
+
+                // send messages from gui
+                if (!TestCoreThread)
+                    // process invoked functions, dequeue quickly to continue processing
+                    while (CoreMessages.Count > 0)
+                    {
+                        AsyncCoreFunction function = null;
+
+                        lock (CoreMessages)
+                            function = CoreMessages.Dequeue();
+
+                        if (function != null)
+                        {
+                            function.Result = function.Method.DynamicInvoke(function.Args);
+                            function.Completed = true;
+                            function.Processed.Set();
+                        }
+                    }
+
+                // instance timer
+                if (CurrentPump == 0) // stepping would cause second timer to run every 250ms without this
+                    lock (Instances)
+                        foreach (SimInstance instance in Instances)
+                            if(instance.ThreadIndex == index)
+                                instance.Context.SecondTimer_Tick(null, null);
+
+  
+                PumpEnd[index].Set();
+            }
+        }
+
+
         void Run()
         {
-            // 2 threads, background (core) and foreground (interface)
+            for(int i = 0; i < PumpThreads.Length; i++)
+            {
+                PumpStart[i] = new AutoResetEvent(false);
+                PumpEnd[i] = new AutoResetEvent(false);
 
-            int i = 0;
-            int pumps = 8;
+                int index = i;
+
+                PumpThreads[i] = new Thread(() => PumpThread(index)); // re-assign i so it is preserved
+                PumpThreads[i].Name = "Pump Thread: " + i.ToString();
+                PumpThreads[i].Start();
+            }
 
 
             while (true)
             {
                 if (Shutdown)
+                {
+                    PumpStart.ForEach(e => e.Set());
                     return;
+                }
 
                 if (Paused && !Step)
                 {
@@ -295,87 +410,26 @@ namespace RiseOp.Simulator
 
 
                 // pump packets, 4 times (250ms latency
-
-                while (i < pumps)
+                while (CurrentPump < PumpsPerSec)
                 {
-                    InPackets.Clear();
-
-                    lock (OutPackets)
-                    {
-                        foreach (SimPacket x in OutPackets)
-                            InPackets.Add(x);
-
-                        OutPackets.Clear();
-                    }
-
-                    // send packets
-                    foreach (SimPacket packet in InPackets)
-                    {
-                        switch (packet.Type)
+                    for (int i = 0; i < OutPackets.Length; i++)
+                        lock(OutPackets[i])
                         {
-                            case SimPacketType.Udp:
-                                packet.Dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
-                                packet.Dest.UdpControl.OnReceive(packet.Packet, packet.Packet.Length, packet.Source);
-                                break;
-                            case SimPacketType.TcpConnect:
-                                TcpConnect socket = packet.Dest.TcpControl.OnAccept(null, packet.Source);
-
-                                if (socket != null)
-                                {
-                                    TcpSourcetoDest[packet.Tcp] = socket;
-                                    TcpSourcetoDest[socket] = packet.Tcp;
-
-                                    packet.Tcp.OnConnect();
-                                }
-
-                                break;
-                            case SimPacketType.Tcp:
-                                if (TcpSourcetoDest.ContainsKey(packet.Tcp))
-                                {
-                                    TcpConnect dest = TcpSourcetoDest[packet.Tcp];
-
-                                    dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
-
-                                    packet.Packet.CopyTo(dest.RecvBuffer, dest.RecvBuffSize);
-                                    dest.OnReceive(packet.Packet.Length);
-                                }
-                                break;
-                            case SimPacketType.TcpClose:
-                                if (TcpSourcetoDest.ContainsKey(packet.Tcp))
-                                {
-                                    TcpConnect dest = TcpSourcetoDest[packet.Tcp];
-                                    dest.OnReceive(0);
-
-                                    TcpSourcetoDest.Remove(packet.Tcp);
-                                    TcpSourcetoDest.Remove(dest);
-                                }
-                                break;
-                        }
-                    }
-
-                    // send messages from gui
-                    if (!TestCoreThread)
-                        // process invoked functions, dequeue quickly to continue processing
-                        while (CoreMessages.Count > 0)
-                        {
-                            AsyncCoreFunction function = null;
-
-                            lock (CoreMessages)
-                                function = CoreMessages.Dequeue();
-
-                            if (function != null)
-                            {
-                                function.Result = function.Method.DynamicInvoke(function.Args);
-                                function.Completed = true;
-                                function.Processed.Set();
-                            }
+                            InPackets[i] = OutPackets[i];
+                            OutPackets[i] = new List<SimPacket>();
                         }
 
-                    TimeNow = TimeNow.AddMilliseconds(1000 / pumps);
+                    // tell all pump threads to go and wait for them to complete
+                    PumpStart.ForEach(e => e.Set());
+
+                    AutoResetEvent.WaitAll(PumpEnd);
+
+
+                    TimeNow = TimeNow.AddMilliseconds(1000 / PumpsPerSec);
 
                     Interface.BeginInvoke(UpdateView, null);
 
-                    i++;
+                    CurrentPump++;
 
                     if (Step)
                     {
@@ -384,22 +438,14 @@ namespace RiseOp.Simulator
                     }
                 }
 
-                // instance timer
-                if (i == pumps) // stepping would cause second timer to run every 250ms without this
-                {
-                    lock (Instances)
-                        foreach (SimInstance instance in Instances)
-                            instance.Context.SecondTimer_Tick(null, null);
-
-                    i = 0;
-                }
+                CurrentPump = 0;
 
                 // if run sim slow
                 if (SleepTime > 0)
                     Thread.Sleep(SleepTime);
-
             }
         }
+
 
         /* object TimerLock = new object();
          object[] PacketsLock = new object[4] { new object(), new object(), new object(), new object() };
@@ -684,8 +730,9 @@ namespace RiseOp.Simulator
             if (packet != null && packet.Length == 0)
                 Debug.Assert(false, "Empty Packet");
 
-            lock (OutPackets)
-                OutPackets.Add(new SimPacket(type, source, packet, targetNet, tcp, network.Local.UserID));
+            int index = destInstance.ThreadIndex;
+            lock (OutPackets[index])
+                OutPackets[index].Add(new SimPacket(type, source, packet, targetNet, tcp, network.Local.UserID));
 
             if (packet == null)
                 return 0;
@@ -743,6 +790,7 @@ namespace RiseOp.Simulator
         internal List<string> Ops = new List<string>();
 
         internal int Index;
+        internal int ThreadIndex;
 
         internal FirewallType RealFirewall;
         internal IPAddress RealIP;
