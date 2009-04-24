@@ -285,10 +285,7 @@ namespace RiseOp
             {
                 next.Transfers.NeedUploadWeight = 0; // do here so that if core is crashed/throwing exceptions - other cores can still u/l
 
-                next.RunInCoreAsync(delegate()
-                {
-                    next.Transfers.StartUpload();
-                });
+                next.RunInCoreAsync(() => next.Transfers.StartUpload());
             }
         }
 

@@ -141,7 +141,7 @@ namespace RiseOp.Implementation
         bool   CoreRunning = true;
         bool   RunTimer;
         internal AutoResetEvent ProcessEvent = new AutoResetEvent(false);
-        Queue<AsyncCoreFunction> CoreMessages = new Queue<AsyncCoreFunction>();
+        internal Queue<AsyncCoreFunction> CoreMessages = new Queue<AsyncCoreFunction>();
 
 
         // initializing operation network
@@ -833,19 +833,10 @@ namespace RiseOp.Implementation
         {
             AsyncCoreFunction function = new AsyncCoreFunction(method, args);
 
-            if (Sim != null && !Sim.Internet.TestCoreThread)
-            {
-                lock (Sim.Internet.CoreMessages)
-                    if (Sim.Internet.CoreMessages.Count < 100)
-                        Sim.Internet.CoreMessages.Enqueue(function);
-            }
-            else
-            {
-                lock (CoreMessages)
-                    if (CoreMessages.Count < 100)
-                        CoreMessages.Enqueue(function);
-            }
-
+            lock (CoreMessages)
+                if (CoreMessages.Count < 100)
+                    CoreMessages.Enqueue(function);
+      
             ProcessEvent.Set();
 
             return function;

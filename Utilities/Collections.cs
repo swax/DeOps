@@ -301,6 +301,15 @@ namespace RiseOp
             finally { Access.ReleaseReaderLock(); }
         }
 
+        internal void SafeForEach(Action<T> action)
+        {
+            LockReading(() =>
+            {
+                foreach (T item in this)
+                    action.Invoke(item);
+            });
+        }
+
         internal void LockWriting(VoidType code)
         {
             if (Access.IsReaderLockHeld)

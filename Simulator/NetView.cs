@@ -156,7 +156,7 @@ namespace RiseOp.Simulator
             TransferPoints.Clear();
             Dictionary<ulong, DhtNetwork> networks = new Dictionary<ulong, DhtNetwork>();
 
-            foreach (SimInstance instance in Sim.Instances)
+            Sim.Instances.SafeForEach(instance =>
             {
                 if (OpID == 0)
                 {
@@ -170,7 +170,7 @@ namespace RiseOp.Simulator
                             if (OpID == core.Network.OpID)
                                 networks[core.UserID] = core.Network;
                     });
-            }
+            });
 
 
             NodeBitfields.Clear();
@@ -707,7 +707,7 @@ namespace RiseOp.Simulator
                     {
                         string name = "Unknown";
 
-                        foreach (SimInstance instance in Sim.Instances)
+                        Sim.Instances.SafeForEach(instance =>
                         {
                             if (instance.Context.Lookup != null && instance.Context.Lookup.UserID == id)
                                 name = instance.Context.Lookup.LocalIP.ToString();
@@ -722,7 +722,7 @@ namespace RiseOp.Simulator
                                             break;
                                         }
                                 });
-                        }
+                        });
 
                         NodeTip.Show(name, this, client.X, client.Y);
 

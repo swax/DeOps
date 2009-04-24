@@ -147,7 +147,10 @@ namespace RiseOp.Simulator
                     string name = parts[1].Trim();
 
                     // if instance with same user name, who has not joined this operation - add to same instance
-                    SimInstance instance = Sim.Instances.Where(i => i.Name == name && !i.Ops.Contains(op)).FirstOrDefault();
+                    SimInstance instance = null;
+
+                    Sim.Instances.LockReading(() =>
+                        instance = Sim.Instances.Where(i => i.Name == name && !i.Ops.Contains(op)).FirstOrDefault());
 
                     if (instance != null)
                         Sim.Login(instance, path);
@@ -165,12 +168,14 @@ namespace RiseOp.Simulator
         {
             Sim.Pause();
 
-            foreach (SimInstance instance in Sim.Instances)
+            Sim.Instances.SafeForEach(instance =>
+            {
                 instance.Context.Cores.LockReading(delegate()
                 {
                     foreach (OpCore core in instance.Context.Cores)
                         core.User.Save();
                 });
+            });
 
             MessageBox.Show(this, "Nodes Saved");
         }
@@ -208,10 +213,12 @@ namespace RiseOp.Simulator
             {
                 ListInstances.Items.Clear();
 
-                foreach (SimInstance inst in Sim.Instances)
-                    AddItem(inst);
+                Sim.Instances.SafeForEach(i =>
+                {
+                    AddItem(i);
+                });
 
-                LabelInstances.Text = Sim.Instances.Count.ToString() + " Instances";
+                LabelInstances.Text = Sim.Instances.SafeCount.ToString() + " Instances";
             }
 
             // update
@@ -558,8 +565,7 @@ namespace RiseOp.Simulator
 
             OnInstanceChange(null, InstanceChangeType.Refresh);
 
-            //lock(Sim.Instances)
-            //    foreach (SimInstance instance in Sim.Instances)
+            //Sim.Instances.SafeForEach(instance =>
             //        OnInstanceChange(instance, InstanceChangeType.Update);
         }
 

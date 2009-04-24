@@ -50,29 +50,23 @@ namespace RiseOp.Interface.Tools
             // find Dht id or user or operation
             if (Sim != null)
             {
-                if (RadioUser.Checked)
-                    foreach (SimInstance instance in Sim.Instances)
-                        instance.Context.Cores.LockReading(delegate()
+                Sim.Instances.SafeForEach(instance =>
+                {
+                    instance.Context.Cores.SafeForEach(core =>
+                    {
+                        if (RadioOp.Checked && core.User.Settings.Operation == TextSearch.Text)
                         {
-                            foreach (OpCore core in instance.Context.Cores)
-                                if (core.User.Settings.UserName == TextSearch.Text)
-                                {
-                                    TargetID = Network.IsLookup ? core.Context.Lookup.UserID : core.UserID;
-                                    break;
-                                }
-                        });
+                            TargetID = core.Network.OpID;
+                            return;
+                        }
 
-                if (RadioOp.Checked)
-                    foreach (SimInstance instance in Sim.Instances)
-                        instance.Context.Cores.LockReading(delegate()
+                        if (RadioUser.Checked && core.User.Settings.UserName == TextSearch.Text)
                         {
-                            foreach (OpCore core in instance.Context.Cores)
-                                if (core.User.Settings.Operation == TextSearch.Text)
-                                {
-                                    TargetID = core.Network.OpID;
-                                    break;
-                                }
-                        });
+                            TargetID = Network.IsLookup ? core.Context.Lookup.UserID : core.UserID;
+                            return;
+                        }
+                    });
+                });
             }
 
             if (TargetID == 0)

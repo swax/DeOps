@@ -24,7 +24,7 @@ namespace RiseOp.Simulator
         SimForm Interface;
 
 
-        internal List<SimInstance> Instances = new List<SimInstance>();
+        internal ThreadedList<SimInstance> Instances = new ThreadedList<SimInstance>();
 
         Random RndGen = new Random(unchecked((int)DateTime.Now.Ticks));
 
@@ -39,12 +39,10 @@ namespace RiseOp.Simulator
         internal List<SimPacket>[] OutPackets = new List<SimPacket>[Environment.ProcessorCount];
         internal List<SimPacket>[] InPackets = new List<SimPacket>[Environment.ProcessorCount];
 
-        internal Queue<AsyncCoreFunction> CoreMessages = new Queue<AsyncCoreFunction>();
-
         internal Dictionary<ulong, string> UserNames = new Dictionary<ulong, string>();
         internal Dictionary<ulong, string> OpNames = new Dictionary<ulong, string>();
 
-        internal Dictionary<TcpConnect, TcpConnect> TcpSourcetoDest = new Dictionary<TcpConnect, TcpConnect>();
+        internal ThreadedDictionary<TcpConnect, TcpConnect> TcpSourcetoDest = new ThreadedDictionary<TcpConnect, TcpConnect>();
 
         internal DateTime StartTime;
         internal DateTime TimeNow;
@@ -142,8 +140,7 @@ namespace RiseOp.Simulator
             if (LoadOnline)
                 Login(instance, path);
 
-            lock (Instances) 
-                Instances.Add(instance);
+            Instances.SafeAdd(instance);
             
             Interface.BeginInvoke(InstanceChange, instance, InstanceChangeType.Add);
         }
@@ -313,18 +310,17 @@ namespace RiseOp.Simulator
 
                             if (socket != null)
                             {
-                                TcpSourcetoDest[packet.Tcp] = socket;
-                                TcpSourcetoDest[socket] = packet.Tcp;
+                                TcpSourcetoDest.SafeAdd(packet.Tcp, socket);
+                                TcpSourcetoDest.SafeAdd(socket, packet.Tcp);
 
                                 packet.Tcp.OnConnect();
                             }
 
                             break;
                         case SimPacketType.Tcp:
-                            if (TcpSourcetoDest.ContainsKey(packet.Tcp))
+                            TcpConnect dest;
+                            if (TcpSourcetoDest.SafeTryGetValue(packet.Tcp, out dest))
                             {
-                                TcpConnect dest = TcpSourcetoDest[packet.Tcp];
-
                                 dest.Core.Sim.BytesRecvd += (ulong)packet.Packet.Length;
 
                                 packet.Packet.CopyTo(dest.RecvBuffer, dest.RecvBuffSize);
@@ -332,13 +328,13 @@ namespace RiseOp.Simulator
                             }
                             break;
                         case SimPacketType.TcpClose:
-                            if (TcpSourcetoDest.ContainsKey(packet.Tcp))
+                            TcpConnect destClose;
+                            if (TcpSourcetoDest.SafeTryGetValue(packet.Tcp, out destClose))
                             {
-                                TcpConnect dest = TcpSourcetoDest[packet.Tcp];
-                                dest.OnReceive(0);
+                                destClose.OnReceive(0);
 
-                                TcpSourcetoDest.Remove(packet.Tcp);
-                                TcpSourcetoDest.Remove(dest);
+                                TcpSourcetoDest.SafeRemove(packet.Tcp);
+                                TcpSourcetoDest.SafeRemove(destClose);
                             }
                             break;
                     }
@@ -346,29 +342,36 @@ namespace RiseOp.Simulator
 
                 // send messages from gui
                 if (!TestCoreThread)
-                    // process invoked functions, dequeue quickly to continue processing
-                    while (CoreMessages.Count > 0)
+                    Instances.SafeForEach(instance =>
                     {
-                        AsyncCoreFunction function = null;
+                        if (instance.ThreadIndex == index)
+                            instance.Context.Cores.SafeForEach(core =>
+                            {
+                                // process invoked functions, dequeue quickly to continue processing
+                                while (core.CoreMessages.Count > 0)
+                                {
+                                    AsyncCoreFunction function = null;
 
-                        lock (CoreMessages)
-                            function = CoreMessages.Dequeue();
+                                    lock (core.CoreMessages)
+                                        function = core.CoreMessages.Dequeue();
 
-                        if (function != null)
-                        {
-                            function.Result = function.Method.DynamicInvoke(function.Args);
-                            function.Completed = true;
-                            function.Processed.Set();
-                        }
-                    }
+                                    if (function != null)
+                                    {
+                                        function.Result = function.Method.DynamicInvoke(function.Args);
+                                        function.Completed = true;
+                                        function.Processed.Set();
+                                    }
+                                }
+                            });
+                    });
 
                 // instance timer
                 if (CurrentPump == 0) // stepping would cause second timer to run every 250ms without this
-                    lock (Instances)
-                        foreach (SimInstance instance in Instances)
-                            if(instance.ThreadIndex == index)
-                                instance.Context.SecondTimer_Tick(null, null);
-
+                    Instances.SafeForEach(instance =>
+                    {
+                        if (instance.ThreadIndex == index)
+                            instance.Context.SecondTimer_Tick(null, null);
+                    });
   
                 PumpEnd[index].Set();
             }
@@ -639,17 +642,19 @@ namespace RiseOp.Simulator
             List<DhtNetwork> open = new List<DhtNetwork>();
 
             // find matching networks that are potential cache entries
-            foreach (RiseOpContext context in from i in Instances
-                                              where i.RealFirewall == FirewallType.Open && i != network.Core.Sim
-                                              select i.Context)
+            Instances.LockReading(() =>
             {
-                if (context.Lookup != null && context.Lookup.Network.OpID == network.OpID)
-                    open.Add(context.Lookup.Network);
+                foreach (RiseOpContext context in from i in Instances
+                                                  where i.RealFirewall == FirewallType.Open && i != network.Core.Sim
+                                                  select i.Context)
+                {
+                    if (context.Lookup != null && context.Lookup.Network.OpID == network.OpID)
+                        open.Add(context.Lookup.Network);
 
-                context.Cores.LockReading(() =>
-                    open.AddRange(from c in context.Cores where c.Network.OpID == network.OpID select c.Network));
-            }
-
+                    context.Cores.LockReading(() =>
+                        open.AddRange(from c in context.Cores where c.Network.OpID == network.OpID select c.Network));
+                }
+            });
 
             // give back 3 random cache entries
             foreach (DhtNetwork net in open.OrderBy(n => RndGen.Next()).Take(3))
@@ -690,7 +695,7 @@ namespace RiseOp.Simulator
 
             // tcp connection must be present to send tcp
             if (type == SimPacketType.Tcp)
-                if( !TcpSourcetoDest.ContainsKey(tcp))
+                if( !TcpSourcetoDest.SafeContainsKey(tcp))
                 {
                     //this is what actually happens -> throw new Exception("Disconnected");
                     return -1;
@@ -747,12 +752,14 @@ namespace RiseOp.Simulator
             //foreach(ManualResetEvent handle in WaitHandles)
             //    handle.Set();
 
-            foreach (SimInstance instance in Instances)
+            Instances.SafeForEach(instance =>
+            {
                 instance.Context.Cores.LockReading(delegate()
                 {
                     while (instance.Context.Cores.Count > 0)
                         Logout(instance.Context.Cores[0]);
                 });
+            });
         }
     }
 
