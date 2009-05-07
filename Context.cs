@@ -240,11 +240,7 @@ namespace RiseOp
             if (Lookup != null)
                 Lookup.SecondTimer();
 
-            Cores.LockReading(delegate()
-            {
-                foreach (OpCore core in Cores)
-                    core.SecondTimer();
-            });
+            Cores.SafeForEach(c => c.SecondTimer());
 
             // bandwidth
             Bandwidth.NextSecond();
@@ -262,15 +258,12 @@ namespace RiseOp
             int activeTransfers = 0;
             OpCore next = null;
 
-            Cores.LockReading(delegate()
+            Cores.SafeForEach(core =>
             {
-                foreach (OpCore core in Cores)
-                {
-                    activeTransfers += core.Transfers.ActiveUploads;
+                activeTransfers += core.Transfers.ActiveUploads;
 
-                    if (next == null || core.Transfers.NeedUploadWeight > next.Transfers.NeedUploadWeight)
-                        next = core;
-                }
+                if (next == null || core.Transfers.NeedUploadWeight > next.Transfers.NeedUploadWeight)
+                    next = core;
             });
 
             // max number of active transfers 15

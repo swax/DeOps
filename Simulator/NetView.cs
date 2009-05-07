@@ -483,16 +483,15 @@ namespace RiseOp.Simulator
             Invalidate();
         }
 
-        
+
         void DrawTraffic(Graphics buffer)
         {
 
-            Dictionary<ulong, Dictionary<ulong, PacketGroup>> UdpTraffic = new Dictionary<ulong,Dictionary<ulong,PacketGroup>>();
+            Dictionary<ulong, Dictionary<ulong, PacketGroup>> UdpTraffic = new Dictionary<ulong, Dictionary<ulong, PacketGroup>>();
             Dictionary<ulong, Dictionary<ulong, PacketGroup>> TcpTraffic = new Dictionary<ulong, Dictionary<ulong, PacketGroup>>();
 
-            lock (Sim.OutPackets)
-            {
-                for(int i = 0; i < Sim.OutPackets.Length; i++)
+            for (int i = 0; i < Sim.OutPackets.Length; i++)
+                lock (Sim.OutPackets[i])
                     foreach (SimPacket packet in Sim.OutPackets[i])
                         if (SelectedID == 0 || (!ShowInbound && SelectedID == packet.SenderID) || (ShowInbound && SelectedID == packet.Dest.Local.UserID))
                             if ((packet.Dest.IsLookup && OpID == 0) || (!packet.Dest.IsLookup && packet.Dest.OpID == OpID))
@@ -508,9 +507,8 @@ namespace RiseOp.Simulator
                                 TrafficGroup[packet.SenderID][packet.Dest.Local.UserID].Add(packet);
                             }
 
-                DrawGroup(buffer, UdpTraffic, false);
-                DrawGroup(buffer, TcpTraffic, true);
-            }
+            DrawGroup(buffer, UdpTraffic, false);
+            DrawGroup(buffer, TcpTraffic, true);
         }
 
         private void DrawGroup(Graphics buffer, Dictionary<ulong, Dictionary<ulong, PacketGroup>> TrafficGroup, bool tcp)

@@ -344,25 +344,31 @@ namespace RiseOp.Simulator
                 if (!TestCoreThread)
                     Instances.SafeForEach(instance =>
                     {
-                        if (instance.ThreadIndex == index)
-                            instance.Context.Cores.SafeForEach(core =>
+                        if (instance.ThreadIndex != index)
+                            return;
+
+                        Action<OpCore> runMessages = core =>
+                        {
+                            // process invoked functions, dequeue quickly to continue processing
+                            while (core.CoreMessages.Count > 0)
                             {
-                                // process invoked functions, dequeue quickly to continue processing
-                                while (core.CoreMessages.Count > 0)
+                                AsyncCoreFunction function = null;
+
+                                lock (core.CoreMessages)
+                                    function = core.CoreMessages.Dequeue();
+
+                                if (function != null)
                                 {
-                                    AsyncCoreFunction function = null;
-
-                                    lock (core.CoreMessages)
-                                        function = core.CoreMessages.Dequeue();
-
-                                    if (function != null)
-                                    {
-                                        function.Result = function.Method.DynamicInvoke(function.Args);
-                                        function.Completed = true;
-                                        function.Processed.Set();
-                                    }
+                                    function.Result = function.Method.DynamicInvoke(function.Args);
+                                    function.Completed = true;
+                                    function.Processed.Set();
                                 }
-                            });
+                            }
+                        };
+
+                        runMessages(instance.Context.Lookup);
+
+                        instance.Context.Cores.SafeForEach(c => runMessages(c));
                     });
 
                 // instance timer
