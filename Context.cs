@@ -86,8 +86,8 @@ namespace RiseOp
             }
 
             // open windows firewall
-            Win32.AuthorizeApplication("RiseOp", Application.ExecutablePath,
-                NetFwTypeLib.NET_FW_SCOPE_.NET_FW_SCOPE_ALL, NetFwTypeLib.NET_FW_IP_VERSION_.NET_FW_IP_VERSION_ANY);
+            //Win32.AuthorizeApplication("RiseOp", Application.ExecutablePath,
+            //    NetFwTypeLib.NET_FW_SCOPE_.NET_FW_SCOPE_ALL, NetFwTypeLib.NET_FW_IP_VERSION_.NET_FW_IP_VERSION_ANY);
 
             // register file types
             RegisterType();

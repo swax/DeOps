@@ -35,9 +35,26 @@ namespace RiseOp
 
 		internal Test()
         {
-            Random rnd = new Random();
+            /* Random rnd = new Random();
 
-            /* // testing selecting next chunk to send
+            while (true)
+            {
+                System.Windows.Forms.OpenFileDialog dialog = new System.Windows.Forms.OpenFileDialog();
+                dialog.ShowDialog();
+
+                byte[] hash = new byte[16];
+                long size = 0;
+
+                long start = Environment.TickCount;
+                Utilities.Md5HashFile(dialog.FileName, ref hash, ref size);
+                long diff = Environment.TickCount - start;
+
+                System.Windows.Forms.MessageBox.Show(diff + " " + Utilities.BytestoHex(hash));
+
+                int i = 0;
+                i++;
+            }
+            // testing selecting next chunk to send
             ChunkBit[] chunks = new ChunkBit[10];
 
             for(int i = 0; i < chunks.Length; i++)

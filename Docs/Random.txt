@@ -573,6 +573,8 @@ naming ideas
 	Prepared
 	nuOps
 	
+	CloudControl
+	
 	De-Ops
 	
 	i got de opped
