@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Trust
+namespace DeOps.Services.Trust
 {
     partial class RemoveLinks
     {

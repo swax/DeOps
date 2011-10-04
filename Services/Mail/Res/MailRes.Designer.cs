@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace RiseOp.Services.Mail {
+namespace DeOps.Services.Mail {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace RiseOp.Services.Mail {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("RiseOp.Services.Mail.Res.MailRes", typeof(MailRes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Services.Mail.Res.MailRes", typeof(MailRes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

@@ -5,12 +5,12 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Dht;
 
 
-namespace RiseOp.Implementation.Transport
+namespace DeOps.Implementation.Transport
 {
 	/// <summary>
 	/// Summary description for TcpHandler.

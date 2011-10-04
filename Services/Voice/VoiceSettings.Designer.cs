@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Services.Voice
+﻿namespace DeOps.Services.Voice
 {
     partial class VoiceSettings
     {

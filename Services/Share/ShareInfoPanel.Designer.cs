@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Services.Share
+﻿namespace DeOps.Services.Share
 {
     partial class ShareInfoPanel
     {
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.InfoBrowser = new RiseOp.Interface.Views.WebBrowserEx();
+            this.InfoBrowser = new DeOps.Interface.Views.WebBrowserEx();
             this.SuspendLayout();
             // 
             // InfoBrowser
@@ -57,6 +57,6 @@
 
         #endregion
 
-        private RiseOp.Interface.Views.WebBrowserEx InfoBrowser;
+        private DeOps.Interface.Views.WebBrowserEx InfoBrowser;
     }
 }

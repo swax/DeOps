@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Services.Update
+﻿namespace DeOps.Services.Update
 {
     partial class UpdateForm
     {
@@ -66,7 +66,7 @@
             this.MessageLabel.Name = "MessageLabel";
             this.MessageLabel.Size = new System.Drawing.Size(335, 37);
             this.MessageLabel.TabIndex = 2;
-            this.MessageLabel.Text = "RiseOp needs to be restarted to finish updating to version 1.0.0";
+            this.MessageLabel.Text = "DeOps needs to be restarted to finish updating to version 1.0.0";
             // 
             // NotesBox
             // 

@@ -5,14 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Transport;
 
 
-namespace RiseOp.Services.Voice
+namespace DeOps.Services.Voice
 {
     internal delegate void VolumeUpdateHandler(int inMax, int outMax);
 

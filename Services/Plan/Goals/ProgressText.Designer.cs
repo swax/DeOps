@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Plan
+namespace DeOps.Services.Plan
 {
     partial class ProgressText
     {

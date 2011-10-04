@@ -5,15 +5,15 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
-using RiseOp.Services;
-using RiseOp.Services.Location;
+using DeOps.Services;
+using DeOps.Services.Location;
 
 
-namespace RiseOp.Implementation
+namespace DeOps.Implementation
 {
 
     class OpCache
@@ -61,7 +61,7 @@ namespace RiseOp.Implementation
                 (Core.User != null && Core.User.Settings.GlobalIM))
             {
                 WebCache cache = new WebCache();
-                cache.Address = "http://www.riseop.com/cache/update.php";
+                cache.Address = "http://www.c0re.net/deops/cache/update.php";
                 cache.AccessKey = Convert.FromBase64String("O+6IRs7GY1r/JIk+DFY/VK+i8pFTWhsDfNH9R3j3f9Q=");
                 AddCache(cache);
             }

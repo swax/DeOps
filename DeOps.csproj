@@ -7,10 +7,10 @@
     <ProjectGuid>{83CFFBE4-8EB9-446D-851A-3874799F3172}</ProjectGuid>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ApplicationIcon>riseop.ico</ApplicationIcon>
+    <ApplicationIcon>deops.ico</ApplicationIcon>
     <AssemblyKeyContainerName>
     </AssemblyKeyContainerName>
-    <AssemblyName>RiseOp</AssemblyName>
+    <AssemblyName>DeOps</AssemblyName>
     <AssemblyOriginatorKeyFile>
     </AssemblyOriginatorKeyFile>
     <DefaultClientScript>JScript</DefaultClientScript>
@@ -18,9 +18,9 @@
     <DefaultTargetSchema>IE50</DefaultTargetSchema>
     <DelaySign>false</DelaySign>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>RiseOp</RootNamespace>
+    <RootNamespace>DeOps</RootNamespace>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
-    <StartupObject>RiseOp.Startup</StartupObject>
+    <StartupObject>DeOps.Startup</StartupObject>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
     <UpgradeBackupLocation>
@@ -804,6 +804,7 @@
     </Compile>
     <Compile Include="Utilities\WorkerQueue.cs" />
     <Compile Include="Win32.cs" />
+    <Content Include="deops.ico" />
     <Content Include="Docs\build.txt" />
     <Content Include="Docs\ChangeLog.txt" />
     <Content Include="Docs\Cool.txt" />
@@ -860,7 +861,6 @@
     <None Include="Interface\Res\discard_hot.png" />
     <None Include="Interface\Res\discard_norm.png" />
     <None Include="Interface\Res\save_down.png" />
-    <Content Include="riseop.ico" />
     <Content Include="Services\Board\Board.txt" />
     <None Include="Services\Chat\Res\chat.ico" />
     <None Include="Services\Board\Res\lower.png" />
@@ -1045,7 +1045,7 @@
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>BoardRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>RiseOp.Services.Board</CustomToolNamespace>
+      <CustomToolNamespace>DeOps.Services.Board</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Board\BoardView.resx">
       <SubType>Designer</SubType>
@@ -1059,7 +1059,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>BuddyRes.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
-      <CustomToolNamespace>RiseOp.Services.Buddy</CustomToolNamespace>
+      <CustomToolNamespace>DeOps.Services.Buddy</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Chat\CreateRoom.resx">
       <SubType>Designer</SubType>
@@ -1073,7 +1073,7 @@
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ChatRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>RiseOp.Services.Chat</CustomToolNamespace>
+      <CustomToolNamespace>DeOps.Services.Chat</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Chat\RoomView.resx">
       <SubType>Designer</SubType>
@@ -1087,7 +1087,7 @@
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>IMRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>RiseOp.Services.IM</CustomToolNamespace>
+      <CustomToolNamespace>DeOps.Services.IM</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\IM\IM_View.resx">
       <SubType>Designer</SubType>
@@ -1130,7 +1130,7 @@
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>LinkRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>RiseOp.Services.Trust</CustomToolNamespace>
+      <CustomToolNamespace>DeOps.Services.Trust</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Mail\ComposeMail.resx">
       <SubType>Designer</SubType>
@@ -1140,7 +1140,7 @@
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>MailRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>RiseOp.Services.Mail</CustomToolNamespace>
+      <CustomToolNamespace>DeOps.Services.Mail</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Mail\MailView.resx">
       <SubType>Designer</SubType>
@@ -1170,7 +1170,7 @@
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>PlanRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>RiseOp.Services.Plan</CustomToolNamespace>
+      <CustomToolNamespace>DeOps.Services.Plan</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Plan\Schedule\BlockRow.resx">
       <SubType>Designer</SubType>
@@ -1247,7 +1247,7 @@
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>StorageRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>RiseOp.Services.Storage</CustomToolNamespace>
+      <CustomToolNamespace>DeOps.Services.Storage</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Services\Storage\Forms\UnlockForm.resx">
       <SubType>Designer</SubType>
@@ -1273,7 +1273,7 @@
       <SubType>Designer</SubType>
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>InterfaceRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>RiseOp.Interface</CustomToolNamespace>
+      <CustomToolNamespace>DeOps.Interface</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\Views\TreeListViewEx\ContainerListView.resx">
       <DependentUpon>ContainerListView.cs</DependentUpon>

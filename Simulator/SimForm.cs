@@ -13,18 +13,18 @@ using System.Security.Cryptography;
 
 using Microsoft.Win32;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Transport;
 
-using RiseOp.Services;
-using RiseOp.Services.Transfer;
+using DeOps.Services;
+using DeOps.Services.Transfer;
 
-using RiseOp.Interface;
-using RiseOp.Interface.Tools;
+using DeOps.Interface;
+using DeOps.Interface.Tools;
 
 
-namespace RiseOp.Simulator
+namespace DeOps.Simulator
 {
     delegate void RunServiceMethod(OpService service);
 

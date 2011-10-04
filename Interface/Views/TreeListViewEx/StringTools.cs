@@ -2,7 +2,7 @@
 //  © Copyright 2002, Pierre ARNAUD, OPaC bright ideas, Switzerland.
 //    All rights reserved.
 
-namespace RiseOp.Interface.TLVex
+namespace DeOps.Interface.TLVex
 {
 	public class StringTools
 	{

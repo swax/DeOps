@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 
-namespace RiseOp
+namespace DeOps
 {
     internal static class GenericExtensions
     {

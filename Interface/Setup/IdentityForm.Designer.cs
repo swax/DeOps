@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Interface.Setup
+﻿namespace DeOps.Interface.Setup
 {
     partial class IdentityForm
     {

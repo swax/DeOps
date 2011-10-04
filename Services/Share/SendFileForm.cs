@@ -8,11 +8,11 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Interface;
+using DeOps.Implementation;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Interface;
 
-namespace RiseOp.Services.Share
+namespace DeOps.Services.Share
 {
     internal partial class SendFileForm : CustomIconForm
     {

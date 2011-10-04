@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
-namespace RiseOp.Services.Assist
+namespace DeOps.Services.Assist
 {
     // provides temporary caching of data at a target spot on the network
 

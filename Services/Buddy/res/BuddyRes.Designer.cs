@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace RiseOp.Services.Buddy {
+namespace DeOps.Services.Buddy {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace RiseOp.Services.Buddy {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("RiseOp.Services.Buddy.res.BuddyRes", typeof(BuddyRes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Services.Buddy.res.BuddyRes", typeof(BuddyRes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

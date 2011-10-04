@@ -9,18 +9,18 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Protocol.Packets;
+using DeOps.Implementation;
+using DeOps.Implementation.Protocol.Packets;
 
-using RiseOp.Services;
-using RiseOp.Services.Trust;
-using RiseOp.Services.Buddy;
-using RiseOp.Services.IM;
-using RiseOp.Services.Location;
-using RiseOp.Services.Mail;
+using DeOps.Services;
+using DeOps.Services.Trust;
+using DeOps.Services.Buddy;
+using DeOps.Services.IM;
+using DeOps.Services.Location;
+using DeOps.Services.Mail;
 
 
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     public partial class StatusPanel : CustomDisposeControl
     {
@@ -96,11 +96,11 @@ namespace RiseOp.Interface
             if (Core.Trust != null)
                 Core.Trust.GuiUpdate += new LinkGuiUpdateHandler(Trust_Update);
 
-            IMImg       = ExtractImage("IM",        RiseOp.Services.IM.IMRes.Icon.ToBitmap());
-            MailImg     = ExtractImage("Mail",      RiseOp.Services.Mail.MailRes.Mail);
-            BuddyWhoImg = ExtractImage("BuddyWho",  RiseOp.Services.Buddy.BuddyRes.buddy_who);
-            TrustImg    = ExtractImage("Trust",     RiseOp.Services.Trust.LinkRes.linkup);
-            UntrustImg = ExtractImage("Untrust",    RiseOp.Services.Trust.LinkRes.unlink);
+            IMImg       = ExtractImage("IM",        DeOps.Services.IM.IMRes.Icon.ToBitmap());
+            MailImg     = ExtractImage("Mail",      DeOps.Services.Mail.MailRes.Mail);
+            BuddyWhoImg = ExtractImage("BuddyWho",  DeOps.Services.Buddy.BuddyRes.buddy_who);
+            TrustImg    = ExtractImage("Trust",     DeOps.Services.Trust.LinkRes.linkup);
+            UntrustImg = ExtractImage("Untrust",    DeOps.Services.Trust.LinkRes.unlink);
             RegImg      = ExtractImage("Reg",       InterfaceRes.reg);
 
             ShowNetwork();
@@ -548,7 +548,7 @@ namespace RiseOp.Interface
 
                 else if (url == "settings")
                 {
-                    new RiseOp.Interface.Settings.Operation(Core).ShowDialog(this);
+                    new DeOps.Interface.Settings.Operation(Core).ShowDialog(this);
                 }
             }
 
@@ -692,7 +692,7 @@ namespace RiseOp.Interface
             {
                 if (url == "settings")
                 {
-                    new RiseOp.Interface.Settings.Connecting(Core).ShowDialog();
+                    new DeOps.Interface.Settings.Connecting(Core).ShowDialog();
                 }
             }
 

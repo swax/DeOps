@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Mail
+namespace DeOps.Services.Mail
 {
     partial class MailView
     {
@@ -30,9 +30,9 @@ namespace RiseOp.Services.Mail
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MailView));
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.ReceivedButton = new System.Windows.Forms.ToolStripButton();
@@ -41,10 +41,10 @@ namespace RiseOp.Services.Mail
             this.ComposeButton = new System.Windows.Forms.ToolStripButton();
             this.toolStripLabel3 = new System.Windows.Forms.ToolStripLabel();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.MessageView = new RiseOp.Interface.TLVex.TreeListViewEx();
+            this.MessageView = new DeOps.Interface.TLVex.TreeListViewEx();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.MessageHeader = new RiseOp.Interface.Views.WebBrowserEx();
-            this.MessageBody = new RiseOp.Interface.Views.RichTextBoxEx();
+            this.MessageHeader = new DeOps.Interface.Views.WebBrowserEx();
+            this.MessageBody = new DeOps.Interface.Views.RichTextBoxEx();
             this.ListImages = new System.Windows.Forms.ImageList(this.components);
             this.toolStrip1.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -152,7 +152,7 @@ namespace RiseOp.Services.Mail
             toggleColumnHeader1.Image = null;
             toggleColumnHeader1.Index = 0;
             toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
             toggleColumnHeader1.Selected = false;
             toggleColumnHeader1.Text = "Message";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -162,7 +162,7 @@ namespace RiseOp.Services.Mail
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
             toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader2.Selected = false;
             toggleColumnHeader2.Text = "Who";
             toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -172,13 +172,13 @@ namespace RiseOp.Services.Mail
             toggleColumnHeader3.Image = null;
             toggleColumnHeader3.Index = 0;
             toggleColumnHeader3.Pressed = false;
-            toggleColumnHeader3.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader3.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader3.Selected = false;
             toggleColumnHeader3.Text = "Date";
             toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader3.Visible = true;
             toggleColumnHeader3.Width = 150;
-            this.MessageView.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
+            this.MessageView.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader1,
             toggleColumnHeader2,
             toggleColumnHeader3});
@@ -287,12 +287,12 @@ namespace RiseOp.Services.Mail
         private System.Windows.Forms.ToolStripButton ComposeButton;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.SplitContainer splitContainer2;
-        private RiseOp.Interface.Views.RichTextBoxEx MessageBody;
-        private RiseOp.Interface.Views.WebBrowserEx MessageHeader;
+        private DeOps.Interface.Views.RichTextBoxEx MessageBody;
+        private DeOps.Interface.Views.WebBrowserEx MessageHeader;
         private System.Windows.Forms.ImageList ListImages;
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;
         private System.Windows.Forms.ToolStripLabel toolStripLabel2;
         private System.Windows.Forms.ToolStripLabel toolStripLabel3;
-        private RiseOp.Interface.TLVex.TreeListViewEx MessageView;
+        private DeOps.Interface.TLVex.TreeListViewEx MessageView;
     }
 }

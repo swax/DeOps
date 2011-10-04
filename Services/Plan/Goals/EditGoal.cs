@@ -6,15 +6,15 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Interface;
-using RiseOp.Services.Trust;
+using DeOps.Implementation;
+using DeOps.Interface;
+using DeOps.Services.Trust;
 
-namespace RiseOp.Services.Plan
+namespace DeOps.Services.Plan
 {
     enum EditGoalMode { New, Delgate, Edit, View };
 
-    internal partial class EditGoal : RiseOp.Interface.CustomIconForm
+    internal partial class EditGoal : DeOps.Interface.CustomIconForm
     {
         EditGoalMode Mode;
         OpCore Core;

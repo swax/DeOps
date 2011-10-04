@@ -6,7 +6,7 @@ using System.Text;
 using System.Windows.Forms;
 
 
-namespace RiseOp.Services.Voice 
+namespace DeOps.Services.Voice 
 {
     internal class VoiceToolstripButton : ToolStripSplitButton
     {

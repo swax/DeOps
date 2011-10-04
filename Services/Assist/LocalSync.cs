@@ -3,15 +3,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
-using RiseOp.Services.Assist;
-using RiseOp.Services.Location;
+using DeOps.Services.Assist;
+using DeOps.Services.Location;
 
-namespace RiseOp.Services.Assist
+namespace DeOps.Services.Assist
 {
     internal delegate byte[] GetLocalSyncTagHandler();
     internal delegate void LocalSyncTagReceivedHandler(ulong user, byte[] tag);

@@ -6,16 +6,16 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Transport;
 
-namespace RiseOp.Interface.Tools
+namespace DeOps.Interface.Tools
 {
 	/// <summary>
 	/// Summary description for GraphForm.
 	/// </summary>
-    internal class GraphForm : RiseOp.Interface.CustomIconForm
+    internal class GraphForm : DeOps.Interface.CustomIconForm
 	{
 		/// <summary>
 		/// Required designer variable.

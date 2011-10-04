@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-namespace RiseOp.Services.Share
+namespace DeOps.Services.Share
 {
     public partial class ShareInfoPanel : UserControl
     {

@@ -9,11 +9,11 @@ using System.Resources;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Interface;
+using DeOps.Implementation;
+using DeOps.Interface;
 
 
-namespace RiseOp.Services.Storage
+namespace DeOps.Services.Storage
 {
     public partial class InfoPanel : UserControl
     {

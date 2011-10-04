@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Interface.Startup
+﻿namespace DeOps.Interface.Startup
 {
     partial class CreateUser
     {

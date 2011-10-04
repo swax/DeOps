@@ -6,14 +6,14 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol.Net;
 
 
-namespace RiseOp.Services.Trust
+namespace DeOps.Services.Trust
 {
-    internal partial class EditLink : RiseOp.Interface.CustomIconForm
+    internal partial class EditLink : DeOps.Interface.CustomIconForm
     {
         OpCore Core;
         TrustService Trust;

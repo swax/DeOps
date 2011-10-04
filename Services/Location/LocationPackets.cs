@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text;
 
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Protocol.Packets;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Protocol.Packets;
 
-namespace RiseOp.Services.Location
+namespace DeOps.Services.Location
 {
     internal class LocationPacket
     {

@@ -6,30 +6,30 @@ using System.ComponentModel;
 using System.Windows.Forms;
 using System.Net;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Transport;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Transport;
+using DeOps.Implementation.Protocol.Net;
 
-using RiseOp.Services;
-using RiseOp.Services.Assist;
-using RiseOp.Services.Board;
-using RiseOp.Services.Chat;
-using RiseOp.Services.IM;
-using RiseOp.Services.Location;
-using RiseOp.Services.Mail;
-using RiseOp.Services.Profile;
-using RiseOp.Services.Transfer;
-using RiseOp.Services.Trust;
+using DeOps.Services;
+using DeOps.Services.Assist;
+using DeOps.Services.Board;
+using DeOps.Services.Chat;
+using DeOps.Services.IM;
+using DeOps.Services.Location;
+using DeOps.Services.Mail;
+using DeOps.Services.Profile;
+using DeOps.Services.Transfer;
+using DeOps.Services.Trust;
 
-namespace RiseOp.Interface.Tools
+namespace DeOps.Interface.Tools
 {
 	internal delegate void ShowDelegate(object pass);
 
 	/// <summary>
 	/// Summary description for InternalsForm.
 	/// </summary>
-    internal class InternalsForm : RiseOp.Interface.CustomIconForm
+    internal class InternalsForm : DeOps.Interface.CustomIconForm
 	{
 		OpCore Core;
         BoardService Boards;

@@ -8,20 +8,20 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Windows.Forms;
 
-using RiseOp.Services;
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Comm;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Services;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Comm;
+using DeOps.Implementation.Protocol.Net;
 
 
-namespace RiseOp.Interface.Tools
+namespace DeOps.Interface.Tools
 {
 	/// <summary>
 	/// Summary description for PacketsForm.
 	/// </summary>
-    internal class PacketsForm : RiseOp.Interface.CustomIconForm
+    internal class PacketsForm : DeOps.Interface.CustomIconForm
 	{
         DhtNetwork Network;
 		G2Protocol Protocol;

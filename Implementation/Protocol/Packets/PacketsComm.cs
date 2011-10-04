@@ -7,12 +7,12 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 
-using RiseOp.Implementation.Transport;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation.Transport;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
 
-namespace RiseOp.Implementation.Protocol.Comm
+namespace DeOps.Implementation.Protocol.Comm
 {
     internal class CommPacket
     {

@@ -5,20 +5,20 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Services;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation;
+using DeOps.Services;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
-namespace RiseOp.Interface.Tools
+namespace DeOps.Interface.Tools
 {
 	internal enum CrawlStatus {Active, Paused};
 
 	/// <summary>
 	/// Summary description for CrawlerForm.
 	/// </summary>
-    internal class CrawlerForm : RiseOp.Interface.CustomIconForm
+    internal class CrawlerForm : DeOps.Interface.CustomIconForm
 	{
         OpCore Core;
 		DhtNetwork Network;

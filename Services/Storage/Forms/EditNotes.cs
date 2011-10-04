@@ -6,9 +6,9 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace RiseOp.Services.Storage
+namespace DeOps.Services.Storage
 {
-    internal partial class EditNotes : RiseOp.Interface.CustomIconForm
+    internal partial class EditNotes : DeOps.Interface.CustomIconForm
     {
         internal EditNotes()
         {

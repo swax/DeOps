@@ -6,10 +6,10 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
 
-namespace RiseOp.Interface.Settings
+namespace DeOps.Interface.Settings
 {
     internal partial class Operation : CustomIconForm
     {
@@ -70,7 +70,7 @@ namespace RiseOp.Interface.Settings
                 SelectedIcon = null;
 
                 using (Graphics g = Graphics.FromImage((Image)result))
-                    g.DrawImage(InterfaceRes.riseop.ToBitmap(), 0, 0, 16, 16);
+                    g.DrawImage(InterfaceRes.deops.ToBitmap(), 0, 0, 16, 16);
 
                 IconPicture.Image = result;
             }

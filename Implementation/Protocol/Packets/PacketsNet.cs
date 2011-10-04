@@ -8,12 +8,12 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Transport;
-using RiseOp.Implementation.Protocol;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Transport;
+using DeOps.Implementation.Protocol;
 
 
-namespace RiseOp.Implementation.Protocol.Net
+namespace DeOps.Implementation.Protocol.Net
 {
     internal class DhtClient
     {

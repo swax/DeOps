@@ -6,15 +6,15 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Transport;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Transport;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
-using RiseOp.Services.Assist;
-using RiseOp.Services.Transfer;
-using RiseOp.Services.Trust;
+using DeOps.Services.Assist;
+using DeOps.Services.Transfer;
+using DeOps.Services.Trust;
 
 /* files
  *      mail folder
@@ -51,7 +51,7 @@ using RiseOp.Services.Trust;
  * */
 
 
-namespace RiseOp.Services.Mail
+namespace DeOps.Services.Mail
 {
     /* when mail is sent, and entry is put in our local pending header that is published locally
      * the mail is sent to the target dht id and cached there

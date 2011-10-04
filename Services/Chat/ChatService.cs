@@ -6,21 +6,21 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Transport;
 
-using RiseOp.Services.Assist;
-using RiseOp.Services.Trust;
-using RiseOp.Services.Location;
-using RiseOp.Services.Share;
+using DeOps.Services.Assist;
+using DeOps.Services.Trust;
+using DeOps.Services.Location;
+using DeOps.Services.Share;
 
 using NLipsum.Core;
 
 
-namespace RiseOp.Services.Chat
+namespace DeOps.Services.Chat
 {
     internal delegate void RefreshHandler();
 

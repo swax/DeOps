@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Storage
+namespace DeOps.Services.Storage
 {
     partial class InfoPanel
     {
@@ -28,7 +28,7 @@ namespace RiseOp.Services.Storage
         /// </summary>
         private void InitializeComponent()
         {
-            this.InfoDisplay = new RiseOp.Interface.Views.WebBrowserEx();
+            this.InfoDisplay = new DeOps.Interface.Views.WebBrowserEx();
             this.SuspendLayout();
             // 
             // InfoDisplay
@@ -56,6 +56,6 @@ namespace RiseOp.Services.Storage
 
         #endregion
 
-        internal RiseOp.Interface.Views.WebBrowserEx InfoDisplay;
+        internal DeOps.Interface.Views.WebBrowserEx InfoDisplay;
     }
 }

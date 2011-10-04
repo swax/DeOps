@@ -6,15 +6,15 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Interface;
-using RiseOp.Implementation;
+using DeOps.Interface;
+using DeOps.Implementation;
 
 
-namespace RiseOp.Services.Plan
+namespace DeOps.Services.Plan
 {
     internal enum BlockViewMode { New, Edit, Show };
 
-    internal partial class EditBlock : RiseOp.Interface.CustomIconForm
+    internal partial class EditBlock : DeOps.Interface.CustomIconForm
     {
         BlockViewMode Mode;
 

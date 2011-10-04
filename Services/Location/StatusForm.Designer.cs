@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Services.Location
+﻿namespace DeOps.Services.Location
 {
     partial class StatusForm
     {

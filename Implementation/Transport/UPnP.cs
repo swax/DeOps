@@ -9,10 +9,10 @@ using System.Text;
 using System.Threading;
 using System.Xml;
 
-using RiseOp.Implementation.Dht;
+using DeOps.Implementation.Dht;
 
 
-namespace RiseOp.Implementation.Transport
+namespace DeOps.Implementation.Transport
 {
     internal class UPnPDevice
     {
@@ -335,7 +335,7 @@ namespace RiseOp.Implementation.Transport
         {
             UpdateLog(UpnpLogType.Other, "Opening " + protocol + " Port " + port + " on " + device.Name);
 
-            string description = "RiseOp - ";
+            string description = "DeOps - ";
 
             if (Network.Core.User != null)
                 description += Network.Core.User.Settings.Operation + " - " + Network.Core.User.Settings.UserName;

@@ -8,11 +8,11 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Interface;
-using RiseOp.Implementation.Protocol;
+using DeOps.Interface;
+using DeOps.Implementation.Protocol;
 
 
-namespace RiseOp.Simulator
+namespace DeOps.Simulator
 {
     internal partial class GenerateUsers : CustomIconForm
     {

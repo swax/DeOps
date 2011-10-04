@@ -6,10 +6,10 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Interface;
+using DeOps.Implementation;
+using DeOps.Interface;
 
-namespace RiseOp.Services.Board
+namespace DeOps.Services.Board
 {
     internal partial class PostMessage : ViewShell
     {

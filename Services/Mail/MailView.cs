@@ -11,14 +11,14 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Interface;
-using RiseOp.Implementation;
-using RiseOp.Services.Trust;
-using RiseOp.Interface.TLVex;
-using RiseOp.Interface.Views;
+using DeOps.Interface;
+using DeOps.Implementation;
+using DeOps.Services.Trust;
+using DeOps.Interface.TLVex;
+using DeOps.Interface.Views;
 
 
-namespace RiseOp.Services.Mail
+namespace DeOps.Services.Mail
 {
 
     internal partial class MailView : ViewShell

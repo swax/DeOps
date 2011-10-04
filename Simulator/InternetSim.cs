@@ -8,11 +8,11 @@ using System.Threading;
 using System.Diagnostics;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Transport;
 
-namespace RiseOp.Simulator
+namespace DeOps.Simulator
 {
     internal enum InstanceChangeType { Add, Remove, Update, Refresh };
     internal delegate void InstanceChangeHandler(SimInstance instance, InstanceChangeType type);
@@ -107,7 +107,7 @@ namespace RiseOp.Simulator
         {
             SimInstance instance = new SimInstance(this, InstanceCount++);
 
-            instance.Context = new RiseOpContext(instance);
+            instance.Context = new DeOpsContext(instance);
 
             // ip
             byte[] ipbytes = new byte[4] { (byte)RndGen.Next(99), (byte)RndGen.Next(99), (byte)RndGen.Next(99), (byte)RndGen.Next(99) };
@@ -650,7 +650,7 @@ namespace RiseOp.Simulator
             // find matching networks that are potential cache entries
             Instances.LockReading(() =>
             {
-                foreach (RiseOpContext context in from i in Instances
+                foreach (DeOpsContext context in from i in Instances
                                                   where i.RealFirewall == FirewallType.Open && i != network.Core.Sim
                                                   select i.Context)
                 {
@@ -795,7 +795,7 @@ namespace RiseOp.Simulator
     {
         internal InternetSim Internet;
 
-        internal RiseOpContext Context;
+        internal DeOpsContext Context;
 
         internal string LastPath;
 

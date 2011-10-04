@@ -8,12 +8,12 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Interface.TLVex;
+using DeOps.Interface.TLVex;
 
 
-namespace RiseOp.Services.Storage
+namespace DeOps.Services.Storage
 {
-    internal partial class LockMessage : RiseOp.Interface.CustomIconForm
+    internal partial class LockMessage : DeOps.Interface.CustomIconForm
     {
         LockErrorType Type;
         List<LockError> Errors;

@@ -6,10 +6,10 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Interface;
+using DeOps.Interface;
 
 
-namespace RiseOp.Simulator
+namespace DeOps.Simulator
 {
     internal partial class TrackFile : CustomIconForm
     {

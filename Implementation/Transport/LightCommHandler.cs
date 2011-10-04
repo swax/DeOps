@@ -4,16 +4,16 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Comm;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Comm;
+using DeOps.Implementation.Protocol.Net;
 
-using RiseOp.Services.Location;
+using DeOps.Services.Location;
 
 
-namespace RiseOp.Implementation.Transport
+namespace DeOps.Implementation.Transport
 {
     internal delegate void LightDataHandler(DhtClient client, byte[] data);
 

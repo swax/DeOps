@@ -5,14 +5,14 @@ using System.Collections;
 using System.Security.Cryptography;
 using System.Diagnostics;
 
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Dht;
 
-using RiseOp.Simulator;
+using DeOps.Simulator;
 
 
-namespace RiseOp.Implementation.Transport
+namespace DeOps.Implementation.Transport
 {
 	internal enum ProxyType { Unset, Server, ClientBlocked, ClientNAT };
     internal enum TcpState { Connecting, Connected, Closed };

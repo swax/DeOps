@@ -6,9 +6,9 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
-namespace RiseOp.Interface.Settings
+namespace DeOps.Interface.Settings
 {
     internal partial class Connecting : CustomIconForm
     {
@@ -148,14 +148,14 @@ namespace RiseOp.Interface.Settings
             }
             catch
             {
-                MessageBox.Show(this, "Port must be between 1 and " + ushort.MaxValue, "RiseOp");
+                MessageBox.Show(this, "Port must be between 1 and " + ushort.MaxValue, "DeOps");
                 return;
             }
 
             // check that tcp are not equal
             if (Lookup != null && opTcp == globalTcp)
             {
-                MessageBox.Show(this, "TCP ports cannot be equal", "RiseOp");
+                MessageBox.Show(this, "TCP ports cannot be equal", "DeOps");
                 return;
             }
 
@@ -172,7 +172,7 @@ namespace RiseOp.Interface.Settings
 
             if ((Lookup == null && checkMap.Count != 2) || (Lookup != null && checkMap.Count != 4) )
             {
-                MessageBox.Show(this, "UDP/LAN ports cannot be equal", "RiseOp");
+                MessageBox.Show(this, "UDP/LAN ports cannot be equal", "DeOps");
                 return;
             }
 

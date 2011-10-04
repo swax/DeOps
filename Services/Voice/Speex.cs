@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace RiseOp.Services.Voice
+namespace DeOps.Services.Voice
 {
     class Speex
     {

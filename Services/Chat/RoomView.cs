@@ -7,24 +7,24 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Interface;
-using RiseOp.Interface.TLVex;
-using RiseOp.Interface.Views;
-using RiseOp.Interface.Views.Res;
+using DeOps.Interface;
+using DeOps.Interface.TLVex;
+using DeOps.Interface.Views;
+using DeOps.Interface.Views.Res;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation;
+using DeOps.Implementation.Transport;
 
-using RiseOp.Services.Buddy;
-using RiseOp.Services.IM;
-using RiseOp.Services.Location;
-using RiseOp.Services.Mail;
-using RiseOp.Services.Trust;
-using RiseOp.Services.Share;
-using RiseOp.Services.Voice;
+using DeOps.Services.Buddy;
+using DeOps.Services.IM;
+using DeOps.Services.Location;
+using DeOps.Services.Mail;
+using DeOps.Services.Trust;
+using DeOps.Services.Share;
+using DeOps.Services.Voice;
 
 
-namespace RiseOp.Services.Chat
+namespace DeOps.Services.Chat
 {
     internal partial class RoomView : UserControl
     {

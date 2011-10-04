@@ -12,15 +12,15 @@ using System.Text;
 using System.Windows.Forms;
 using System.Xml;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Protocol.Special;
-using RiseOp.Services.Update;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Protocol.Special;
+using DeOps.Services.Update;
 
 
-namespace RiseOp
+namespace DeOps
 {
 
     internal enum LoadModeType { Settings, AllCaches, LookupCache };
@@ -364,7 +364,7 @@ namespace RiseOp
                 return Icon.FromHandle(OpIcon.GetHicon());
 
             else
-                return Interface.InterfaceRes.riseop;
+                return Interface.InterfaceRes.deops;
         }
     }
 

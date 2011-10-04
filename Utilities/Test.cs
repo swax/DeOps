@@ -10,17 +10,17 @@ using System.Text;
 
 using Microsoft.Win32;
 
-using RiseOp.Services.Storage;
-using RiseOp.Services.Location;
-using RiseOp.Services.Transfer;
+using DeOps.Services.Storage;
+using DeOps.Services.Location;
+using DeOps.Services.Transfer;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Transport;
 
-namespace RiseOp
+namespace DeOps
 {
     class TestFile
     {
@@ -216,7 +216,7 @@ namespace RiseOp
             byte[] ivEnc = Utilities.CombineArrays(crypt.IV, encrypted);
             string request = Convert.ToBase64String(ivEnc);
 
-            string response = Utilities.WebDownloadString("http://www.riseop.com/cache/update.php?get=" + Uri.EscapeDataString(request));
+            string response = Utilities.WebDownloadString("http://www.c0re.net/deops/cache/update.php?get=" + Uri.EscapeDataString(request));
 
             // php encode response
             byte[] decoded = Convert.FromBase64String(response);

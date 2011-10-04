@@ -4,15 +4,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 
-using RiseOp.Simulator;
-using RiseOp.Services;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Simulator;
+using DeOps.Services;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
 
 // network size = bucket size * 2 ^ (bucket count - 1)
 
-namespace RiseOp.Implementation.Dht
+namespace DeOps.Implementation.Dht
 {
 	internal class DhtRouting
 	{

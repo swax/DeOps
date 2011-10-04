@@ -9,26 +9,26 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
 
-using RiseOp.Services;
-using RiseOp.Services.Buddy;
-using RiseOp.Services.Chat;
-using RiseOp.Services.IM;
-using RiseOp.Services.Location;
-using RiseOp.Services.Mail;
-using RiseOp.Services.Transfer;
-using RiseOp.Services.Trust;
+using DeOps.Services;
+using DeOps.Services.Buddy;
+using DeOps.Services.Chat;
+using DeOps.Services.IM;
+using DeOps.Services.Location;
+using DeOps.Services.Mail;
+using DeOps.Services.Transfer;
+using DeOps.Services.Trust;
 
-using RiseOp.Interface.Info;
-using RiseOp.Interface.Setup;
-using RiseOp.Interface.Tools;
-using RiseOp.Interface.TLVex;
-using RiseOp.Interface.Views;
+using DeOps.Interface.Info;
+using DeOps.Interface.Setup;
+using DeOps.Interface.Tools;
+using DeOps.Interface.TLVex;
+using DeOps.Interface.Views;
 
 
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     internal partial class MainForm : HostsExternalViews
     {
@@ -408,7 +408,7 @@ namespace RiseOp.Interface
                 items.Add(new ManageItem("Invite", ChatRes.invite, delegate()
                 {
                     if (Core.User.Settings.OpAccess == AccessType.Public)
-                        MessageBox.Show("Give out this link to invite others \r\n \r\n riseop://" + Core.User.Settings.Operation, "RiseOp");
+                        MessageBox.Show("Give out this link to invite others \r\n \r\n deops://" + Core.User.Settings.Operation, "DeOps");
                     else
                         new InviteForm(Core).Show(Core.GuiMain);
                 }));
@@ -416,13 +416,13 @@ namespace RiseOp.Interface
             // settings
             ToolStripMenuItem settings = new ToolStripMenuItem("Settings", InterfaceRes.settings);
 
-            settings.DropDownItems.Add(new ManageItem("User", null, () => new RiseOp.Interface.Settings.User(Core).Show(Core.GuiMain)));
+            settings.DropDownItems.Add(new ManageItem("User", null, () => new DeOps.Interface.Settings.User(Core).Show(Core.GuiMain)));
             
             if(!Core.User.Settings.GlobalIM)
-                settings.DropDownItems.Add(new ManageItem("Operation", null, () => new RiseOp.Interface.Settings.Operation(Core).Show(Core.GuiMain)));
+                settings.DropDownItems.Add(new ManageItem("Operation", null, () => new DeOps.Interface.Settings.Operation(Core).Show(Core.GuiMain)));
 
-            settings.DropDownItems.Add(new ManageItem("Connecting", null, () => new RiseOp.Interface.Settings.Connecting(Core).Show(Core.GuiMain)));
-            settings.DropDownItems.Add(new ManageItem("Ignore", null, () => new RiseOp.Interface.Settings.IgnoreForm(Core).Show(Core.GuiMain)));
+            settings.DropDownItems.Add(new ManageItem("Connecting", null, () => new DeOps.Interface.Settings.Connecting(Core).Show(Core.GuiMain)));
+            settings.DropDownItems.Add(new ManageItem("Ignore", null, () => new DeOps.Interface.Settings.IgnoreForm(Core).Show(Core.GuiMain)));
 
             items.Add(settings);
 

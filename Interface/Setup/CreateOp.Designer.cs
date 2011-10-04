@@ -1,4 +1,4 @@
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     partial class CreateOp
     {
@@ -132,7 +132,7 @@ namespace RiseOp.Interface
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(245, 31);
             this.label2.TabIndex = 13;
-            this.label2.Text = "Anyone can join by entering riseop://orgname";
+            this.label2.Text = "Anyone can join by entering deops://orgname";
             // 
             // label4
             // 

@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-namespace RiseOp.Services.Transfer
+namespace DeOps.Services.Transfer
 {
     public partial class BitfieldControl : UserControl
     {

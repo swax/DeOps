@@ -6,10 +6,10 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Interface;
-using RiseOp.Implementation;
+using DeOps.Interface;
+using DeOps.Implementation;
 
-namespace RiseOp.Services.Trust
+namespace DeOps.Services.Trust
 {
     internal partial class RemoveLinks : CustomIconForm
     {

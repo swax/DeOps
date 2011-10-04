@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Services.Location;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Services.Location;
 
 
-namespace RiseOp.Implementation.Protocol.Special
+namespace DeOps.Implementation.Protocol.Special
 {
     internal class TunnelPacket : G2Packet
     {

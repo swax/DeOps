@@ -1,4 +1,4 @@
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     partial class LoginForm
     {
@@ -236,7 +236,7 @@ namespace RiseOp.Interface
             this.MinimizeBox = false;
             this.Name = "LoginForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "RiseOp";
+            this.Text = "DeOps";
             this.Load += new System.EventHandler(this.LoginForm_Load);
             ((System.ComponentModel.ISupportInitialize)(this.SplashBox)).EndInit();
             this.ResumeLayout(false);

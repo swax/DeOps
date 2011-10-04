@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Profile
+namespace DeOps.Services.Profile
 {
     partial class EditTemplate
     {

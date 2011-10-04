@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace RiseOp.Services.Voice.Res {
+namespace DeOps.Services.Voice.Res {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace RiseOp.Services.Voice.Res {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("RiseOp.Services.Voice.Res.VoiceRes", typeof(VoiceRes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Services.Voice.Res.VoiceRes", typeof(VoiceRes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

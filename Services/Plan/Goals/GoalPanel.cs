@@ -7,14 +7,14 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Interface;
-using RiseOp.Interface.Views;
-using RiseOp.Interface.TLVex;
-using RiseOp.Services.Trust;
+using DeOps.Implementation;
+using DeOps.Interface;
+using DeOps.Interface.Views;
+using DeOps.Interface.TLVex;
+using DeOps.Services.Trust;
 
 
-namespace RiseOp.Services.Plan
+namespace DeOps.Services.Plan
 {
     public partial class GoalPanel : UserControl
     {
@@ -362,7 +362,7 @@ namespace RiseOp.Services.Plan
             if (menu == null)
                 return;
 
-            DialogResult result = MessageBox.Show(this, "Are you sure you want to delete:\n" + menu.Item.Title + "?", "RiseOp", MessageBoxButtons.YesNo);
+            DialogResult result = MessageBox.Show(this, "Are you sure you want to delete:\n" + menu.Item.Title + "?", "DeOps", MessageBoxButtons.YesNo);
 
             if (result == DialogResult.No)
                 return;
@@ -486,7 +486,7 @@ namespace RiseOp.Services.Plan
             if (item == null)
                 return;
 
-            DialogResult result = MessageBox.Show(this, "Are you sure you want to delete:\n" + item.Goal.Title + "?", "RiseOp", MessageBoxButtons.YesNo);
+            DialogResult result = MessageBox.Show(this, "Are you sure you want to delete:\n" + item.Goal.Title + "?", "DeOps", MessageBoxButtons.YesNo);
 
             if (result == DialogResult.No)
                 return;
@@ -515,7 +515,7 @@ namespace RiseOp.Services.Plan
             if (item == null)
                 return;
 
-            DialogResult result = MessageBox.Show(this, "Are you sure you want to archive:\n" + item.Goal.Title + "?", "RiseOp", MessageBoxButtons.YesNo);
+            DialogResult result = MessageBox.Show(this, "Are you sure you want to archive:\n" + item.Goal.Title + "?", "DeOps", MessageBoxButtons.YesNo);
 
             if (result == DialogResult.No)
                 return;

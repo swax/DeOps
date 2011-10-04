@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Services.Share
+﻿namespace DeOps.Services.Share
 {
     partial class SharingView
     {
@@ -30,17 +30,17 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SharingView));
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             this.TopStrip = new System.Windows.Forms.ToolStrip();
             this.DownloadButton = new System.Windows.Forms.ToolStripButton();
             this.ShareButton = new System.Windows.Forms.ToolStripButton();
             this.StatusLabel = new System.Windows.Forms.ToolStripLabel();
             this.RefreshButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.SharedFiles = new RiseOp.Interface.TLVex.ContainerListViewEx();
-            this.shareInfoPanel1 = new RiseOp.Services.Share.ShareInfoPanel();
+            this.SharedFiles = new DeOps.Interface.TLVex.ContainerListViewEx();
+            this.shareInfoPanel1 = new DeOps.Services.Share.ShareInfoPanel();
             this.SecondTimer = new System.Windows.Forms.Timer(this.components);
             this.TopStrip.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -123,7 +123,7 @@
             toggleColumnHeader1.Image = null;
             toggleColumnHeader1.Index = 0;
             toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader1.Selected = false;
             toggleColumnHeader1.Text = "Name";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -133,7 +133,7 @@
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
             toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader2.Selected = false;
             toggleColumnHeader2.Text = "Size";
             toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
@@ -143,13 +143,13 @@
             toggleColumnHeader3.Image = null;
             toggleColumnHeader3.Index = 0;
             toggleColumnHeader3.Pressed = false;
-            toggleColumnHeader3.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader3.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader3.Selected = false;
             toggleColumnHeader3.Text = "Status";
             toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader3.Visible = true;
             toggleColumnHeader3.Width = 200;
-            this.SharedFiles.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
+            this.SharedFiles.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader1,
             toggleColumnHeader2,
             toggleColumnHeader3});
@@ -213,7 +213,7 @@
         private System.Windows.Forms.ToolStripButton DownloadButton;
         private System.Windows.Forms.ToolStripButton ShareButton;
         private System.Windows.Forms.SplitContainer splitContainer1;
-        private RiseOp.Interface.TLVex.ContainerListViewEx SharedFiles;
+        private DeOps.Interface.TLVex.ContainerListViewEx SharedFiles;
         private System.Windows.Forms.Timer SecondTimer;
         private ShareInfoPanel shareInfoPanel1;
         private System.Windows.Forms.ToolStripLabel StatusLabel;

@@ -4,17 +4,17 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-using RiseOp.Interface.Setup;
+using DeOps.Interface.Setup;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
 
-using RiseOp.Services.Assist;
-using RiseOp.Services.Location;
+using DeOps.Services.Assist;
+using DeOps.Services.Location;
 
 
-namespace RiseOp.Services.Buddy
+namespace DeOps.Services.Buddy
 {
     internal delegate void BuddyGuiUpdateHandler();
 

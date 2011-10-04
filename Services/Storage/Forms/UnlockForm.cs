@@ -7,9 +7,9 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
-namespace RiseOp.Services.Storage
+namespace DeOps.Services.Storage
 {
-    internal partial class UnlockForm : RiseOp.Interface.CustomIconForm
+    internal partial class UnlockForm : DeOps.Interface.CustomIconForm
     {
         StorageView View;
 

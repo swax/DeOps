@@ -1,4 +1,4 @@
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     partial class TextInput
     {
@@ -43,7 +43,7 @@ namespace RiseOp.Interface
             this.SendFileButton = new System.Windows.Forms.ToolStripButton();
             this.BlockButton = new System.Windows.Forms.ToolStripButton();
             this.AddBuddyButton = new System.Windows.Forms.ToolStripButton();
-            this.InputBox = new RiseOp.Interface.Views.RichTextBoxEx();
+            this.InputBox = new DeOps.Interface.Views.RichTextBoxEx();
             this.FontToolStrip.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -232,7 +232,7 @@ namespace RiseOp.Interface
         private System.Windows.Forms.ToolStripButton UnderlineButton;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripButton ColorsButton;
-        internal RiseOp.Interface.Views.RichTextBoxEx InputBox;
+        internal DeOps.Interface.Views.RichTextBoxEx InputBox;
         private System.Windows.Forms.ToolStripButton FontButton;
         private System.Windows.Forms.ToolStripDropDownButton toolStripDropDownButton1;
         private System.Windows.Forms.ToolStripMenuItem PlainTextButton;

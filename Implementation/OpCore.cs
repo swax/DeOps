@@ -11,40 +11,40 @@ using System.Threading;
 using System.Web;
 using System.Windows.Forms;
 
-using RiseOp.Services;
-using RiseOp.Services.Assist;
-using RiseOp.Services.Board;
-using RiseOp.Services.Buddy;
-using RiseOp.Services.Chat;
-using RiseOp.Services.IM;
-using RiseOp.Services.Location;
-using RiseOp.Services.Mail;
-using RiseOp.Services.Plan;
-using RiseOp.Services.Profile;
-using RiseOp.Services.Share;
-using RiseOp.Services.Storage;
-using RiseOp.Services.Transfer;
-using RiseOp.Services.Trust;
-using RiseOp.Services.Update;
-using RiseOp.Services.Voice;
+using DeOps.Services;
+using DeOps.Services.Assist;
+using DeOps.Services.Board;
+using DeOps.Services.Buddy;
+using DeOps.Services.Chat;
+using DeOps.Services.IM;
+using DeOps.Services.Location;
+using DeOps.Services.Mail;
+using DeOps.Services.Plan;
+using DeOps.Services.Profile;
+using DeOps.Services.Share;
+using DeOps.Services.Storage;
+using DeOps.Services.Transfer;
+using DeOps.Services.Trust;
+using DeOps.Services.Update;
+using DeOps.Services.Voice;
 
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Comm;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Protocol.Special;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Comm;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Protocol.Special;
+using DeOps.Implementation.Transport;
 
-using RiseOp.Interface;
-using RiseOp.Interface.Tools;
-using RiseOp.Interface.Views;
+using DeOps.Interface;
+using DeOps.Interface.Tools;
+using DeOps.Interface.Views;
 
-using RiseOp.Simulator;
+using DeOps.Simulator;
 
 using NLipsum.Core;
 
 
-namespace RiseOp.Implementation
+namespace DeOps.Implementation
 {
 	internal enum FirewallType { Blocked, NAT, Open };
     internal enum TransportProtocol { Tcp, Udp, LAN, Rudp, Tunnel };
@@ -65,7 +65,7 @@ namespace RiseOp.Implementation
 	internal class OpCore
 	{
         // super-classes
-        internal RiseOpContext Context;
+        internal DeOpsContext Context;
         internal SimInstance Sim;
 
         // sub-classes
@@ -145,7 +145,7 @@ namespace RiseOp.Implementation
 
 
         // initializing operation network
-        internal OpCore(RiseOpContext context, string path, string pass)
+        internal OpCore(DeOpsContext context, string path, string pass)
         {
             Context = context;
             Sim = context.Sim;
@@ -153,7 +153,7 @@ namespace RiseOp.Implementation
             StartTime = TimeNow;
             GuiProtocol = new G2Protocol();
 
-            ConsoleLog("RiseOp " + Application.ProductVersion);
+            ConsoleLog("DeOps " + Application.ProductVersion);
 
             User = new OpUser(path, pass, this);
             User.Load(LoadModeType.Settings);
@@ -223,7 +223,7 @@ namespace RiseOp.Implementation
         }
 
         // initializing lookup network (from the settings of a loaded operation)
-        internal OpCore(RiseOpContext context)
+        internal OpCore(DeOpsContext context)
         {
             Context = context;
             Sim = context.Sim;
@@ -945,9 +945,9 @@ namespace RiseOp.Implementation
 
             name = ident.Name;
             
-            // riseop://firesoft/invite/person@GlobalIM/originalopID~invitedata {op key web caches ips}
+            // deops://firesoft/invite/person@GlobalIM/originalopID~invitedata {op key web caches ips}
 
-            string link = "riseop://" + HttpUtility.UrlEncode(User.Settings.Operation) + "/invite/";
+            string link = "deops://" + HttpUtility.UrlEncode(User.Settings.Operation) + "/invite/";
             link += HttpUtility.UrlEncode(ident.Name) + "@" + HttpUtility.UrlEncode(ident.OpName) + "/";
 
             // encode invite info in user's public key
@@ -986,9 +986,9 @@ namespace RiseOp.Implementation
             return link + Utilities.ToBase64String(final);
         }
 
-        internal static InvitePackage OpenInvite(RiseOpContext context, G2Protocol protocol, string link)
+        internal static InvitePackage OpenInvite(DeOpsContext context, G2Protocol protocol, string link)
         {
-            string[] mainParts = link.Replace("riseop://", "").Split('/');
+            string[] mainParts = link.Replace("deops://", "").Split('/');
 
             if (mainParts.Length < 4)
                 throw new Exception("Invalid Link");
@@ -1022,7 +1022,7 @@ namespace RiseOp.Implementation
 
                 open.Title = "Open " + name + "'s " + op + " Profile to Verify Invitation";
                 open.InitialDirectory = ApplicationEx.UserAppDataPath();
-                open.Filter = "RiseOp Identity (*.rop)|*.rop";
+                open.Filter = "DeOps Identity (*.dop)|*.dop";
 
                 if (open.ShowDialog() != DialogResult.OK)
                     return null; // user doesnt want to try any more
@@ -1104,12 +1104,12 @@ namespace RiseOp.Implementation
         internal byte[] PublicOpID;
         internal byte[] PublicKey;
 
-        // riseop://opname/ident/name/opid~publickey
+        // deops://opname/ident/name/opid~publickey
 
 
         internal string Encode()
         {
-            string link = "riseop://" + HttpUtility.UrlEncode(OpName) + "/ident/" + HttpUtility.UrlEncode(Name) + "/";
+            string link = "deops://" + HttpUtility.UrlEncode(OpName) + "/ident/" + HttpUtility.UrlEncode(Name) + "/";
 
             byte[] totalKey = Utilities.CombineArrays(PublicOpID, PublicKey);
 
@@ -1118,7 +1118,7 @@ namespace RiseOp.Implementation
 
         internal static IdentityLink Decode(string link)
         {
-            if (link.StartsWith("riseop://"))
+            if (link.StartsWith("deops://"))
                 link = link.Substring(9);
             else
                 throw new Exception("Invalid Link");
@@ -1149,12 +1149,12 @@ namespace RiseOp.Implementation
         internal byte[] OpID;
         internal byte[] PublicKey;
 
-        // riseop://opname/ident/name/opid~publickey/sig
+        // deops://opname/ident/name/opid~publickey/sig
 
 
         internal string Encode(OpCore core)
         {
-            string link = "riseop://" + OpName + "/ident/" + Name + "/";
+            string link = "deops://" + OpName + "/ident/" + Name + "/";
 
             byte[] totalKey = Utilities.CombineArrays(OpID, PublicKey);
             link += Utilities.ToBase64String(totalKey);
@@ -1167,7 +1167,7 @@ namespace RiseOp.Implementation
 
         internal static IdentityLink Decode(string link)
         {
-            if (!link.StartsWith("riseop://"))
+            if (!link.StartsWith("deops://"))
                throw new Exception("Invalid Link");
 
             string[] mainParts = link.Substring(9).Split('/');

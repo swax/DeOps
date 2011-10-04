@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Services.Share
+﻿namespace DeOps.Services.Share
 {
     partial class SendFileForm
     {

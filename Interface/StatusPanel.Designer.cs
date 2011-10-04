@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Interface
+﻿namespace DeOps.Interface
 {
     partial class StatusPanel
     {
@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.StatusBrowser = new RiseOp.Interface.Views.WebBrowserEx();
+            this.StatusBrowser = new DeOps.Interface.Views.WebBrowserEx();
             this.SecondTimer = new System.Windows.Forms.Timer(this.components);
             this.SuspendLayout();
             // 
@@ -66,7 +66,7 @@
 
         #endregion
 
-        private RiseOp.Interface.Views.WebBrowserEx StatusBrowser;
+        private DeOps.Interface.Views.WebBrowserEx StatusBrowser;
         private System.Windows.Forms.Timer SecondTimer;
     }
 }

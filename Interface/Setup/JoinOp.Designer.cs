@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Interface.Startup
+﻿namespace DeOps.Interface.Startup
 {
     partial class JoinOp
     {
@@ -77,7 +77,7 @@
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(168, 13);
             this.label2.TabIndex = 20;
-            this.label2.Text = "or enter a RiseOp link below";
+            this.label2.Text = "or enter a DeOps link below";
             // 
             // JoinGlobalLink
             // 

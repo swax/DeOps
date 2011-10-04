@@ -1,4 +1,26 @@
 
+
+integrate back with svn folder
+commit
+test on linux/osx
+implement a console mode
+
+replace main graphic
+clean up first time UI
+test sim 
+
+put alpha label in the name
+
+
+
+how will caching work?
+how will upgrading clients work?
+Keep private key, embed public on release?
+test on linux / osx
+distribute just as a zip - run anywhere - store settings locally to deops.exe
+
+----------------
+
 vox not cutting out
 closing IM/Chat cutting voice? still transmitting
 

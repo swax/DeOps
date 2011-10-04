@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Transfer
+namespace DeOps.Services.Transfer
 {
     partial class TransferView
     {
@@ -29,10 +29,10 @@ namespace RiseOp.Services.Transfer
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             this.FastTimer = new System.Windows.Forms.Timer(this.components);
-            this.TransferList = new RiseOp.Interface.TLVex.TreeListViewEx();
+            this.TransferList = new DeOps.Interface.TLVex.TreeListViewEx();
             this.ShowDownloads = new System.Windows.Forms.CheckBox();
             this.ShowUploads = new System.Windows.Forms.CheckBox();
             this.ShowPending = new System.Windows.Forms.CheckBox();
@@ -57,7 +57,7 @@ namespace RiseOp.Services.Transfer
             toggleColumnHeader1.Image = null;
             toggleColumnHeader1.Index = 0;
             toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
             toggleColumnHeader1.Selected = false;
             toggleColumnHeader1.Text = "Details";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -67,13 +67,13 @@ namespace RiseOp.Services.Transfer
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
             toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader2.Selected = false;
             toggleColumnHeader2.Text = "Bitfield";
             toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader2.Visible = true;
             toggleColumnHeader2.Width = 200;
-            this.TransferList.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
+            this.TransferList.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader1,
             toggleColumnHeader2});
             this.TransferList.ColumnSortColor = System.Drawing.Color.Gainsboro;
@@ -191,7 +191,7 @@ namespace RiseOp.Services.Transfer
         #endregion
 
         private System.Windows.Forms.Timer FastTimer;
-        private RiseOp.Interface.TLVex.TreeListViewEx TransferList;
+        private DeOps.Interface.TLVex.TreeListViewEx TransferList;
         private System.Windows.Forms.CheckBox ShowDownloads;
         private System.Windows.Forms.CheckBox ShowUploads;
         private System.Windows.Forms.CheckBox ShowPending;

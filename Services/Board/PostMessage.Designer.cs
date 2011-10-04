@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Board
+namespace DeOps.Services.Board
 {
     partial class PostMessage
     {
@@ -34,7 +34,7 @@ namespace RiseOp.Services.Board
             this.label4 = new System.Windows.Forms.Label();
             this.ExitButton = new System.Windows.Forms.Button();
             this.PostButton = new System.Windows.Forms.Button();
-            this.MessageBody = new RiseOp.Interface.TextInput();
+            this.MessageBody = new DeOps.Interface.TextInput();
             this.SubjectTextBox = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.ScopeLabel = new System.Windows.Forms.Label();
@@ -231,7 +231,7 @@ namespace RiseOp.Services.Board
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Button ExitButton;
         private System.Windows.Forms.Button PostButton;
-        internal RiseOp.Interface.TextInput MessageBody;
+        internal DeOps.Interface.TextInput MessageBody;
         internal System.Windows.Forms.TextBox SubjectTextBox;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label ScopeLabel;

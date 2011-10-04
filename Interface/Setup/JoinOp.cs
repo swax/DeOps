@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace RiseOp.Interface.Startup
+namespace DeOps.Interface.Startup
 {
     internal partial class JoinOp : CustomIconForm
     {

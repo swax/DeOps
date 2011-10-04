@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 
 
-namespace RiseOp.Services.Voice
+namespace DeOps.Services.Voice
 {
     class PlayAudio : IDisposable
     {

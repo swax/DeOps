@@ -8,11 +8,11 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
-namespace RiseOp.Services.Storage
+namespace DeOps.Services.Storage
 {
-    internal partial class DiffForm : RiseOp.Interface.CustomIconForm
+    internal partial class DiffForm : DeOps.Interface.CustomIconForm
     {
         internal OpCore Core;
         internal InfoPanel Info;

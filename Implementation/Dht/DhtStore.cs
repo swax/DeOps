@@ -5,16 +5,16 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Net;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Transport;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation;
+using DeOps.Implementation.Transport;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
-using RiseOp.Services;
-using RiseOp.Services.Location;
+using DeOps.Services;
+using DeOps.Services.Location;
 
 
-namespace RiseOp.Implementation.Dht
+namespace DeOps.Implementation.Dht
 {
     internal delegate void StoreHandler(DataReq data);
     internal delegate List<byte[]> ReplicateHandler(DhtContact contact);

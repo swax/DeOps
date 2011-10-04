@@ -2,12 +2,12 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Transport;
 
 
-namespace RiseOp.Implementation.Protocol
+namespace DeOps.Implementation.Protocol
 {
     internal class RootPacket
     {

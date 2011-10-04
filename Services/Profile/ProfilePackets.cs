@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
-using RiseOp.Implementation.Protocol;
+using DeOps.Implementation.Protocol;
 
 
-namespace RiseOp.Services.Profile
+namespace DeOps.Services.Profile
 {
     internal class ProfilePacket
     {

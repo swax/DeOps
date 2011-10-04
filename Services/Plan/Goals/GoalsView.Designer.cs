@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Plan
+namespace DeOps.Services.Plan
 {
     partial class GoalsView
     {
@@ -34,9 +34,9 @@ namespace RiseOp.Services.Plan
             this.DetailsButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.DetailsBrowser = new RiseOp.Interface.Views.WebBrowserEx();
-            this.DiscardButton = new RiseOp.Interface.Views.ImageButton();
-            this.SaveButton = new RiseOp.Interface.Views.ImageButton();
+            this.DetailsBrowser = new DeOps.Interface.Views.WebBrowserEx();
+            this.DiscardButton = new DeOps.Interface.Views.ImageButton();
+            this.SaveButton = new DeOps.Interface.Views.ImageButton();
             MainPanel = new GoalPanel();
             this.toolStrip1.SuspendLayout();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -137,10 +137,10 @@ namespace RiseOp.Services.Plan
             // DiscardButton
             // 
             this.DiscardButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.DiscardButton.ButtonDown = global::RiseOp.Properties.Resources.discard_down;
-            this.DiscardButton.ButtonHot = global::RiseOp.Properties.Resources.discard_hot;
-            this.DiscardButton.ButtonNormal = global::RiseOp.Properties.Resources.discard_norm;
-            this.DiscardButton.Image = global::RiseOp.Properties.Resources.discard_norm;
+            this.DiscardButton.ButtonDown = global::DeOps.Properties.Resources.discard_down;
+            this.DiscardButton.ButtonHot = global::DeOps.Properties.Resources.discard_hot;
+            this.DiscardButton.ButtonNormal = global::DeOps.Properties.Resources.discard_norm;
+            this.DiscardButton.Image = global::DeOps.Properties.Resources.discard_norm;
             this.DiscardButton.Location = new System.Drawing.Point(511, 384);
             this.DiscardButton.Name = "DiscardButton";
             this.DiscardButton.Size = new System.Drawing.Size(64, 19);
@@ -153,10 +153,10 @@ namespace RiseOp.Services.Plan
             // SaveButton
             // 
             this.SaveButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.SaveButton.ButtonDown = global::RiseOp.Properties.Resources.save_down;
-            this.SaveButton.ButtonHot = global::RiseOp.Properties.Resources.save_hot;
-            this.SaveButton.ButtonNormal = global::RiseOp.Properties.Resources.save_norm;
-            this.SaveButton.Image = global::RiseOp.Properties.Resources.save_norm;
+            this.SaveButton.ButtonDown = global::DeOps.Properties.Resources.save_down;
+            this.SaveButton.ButtonHot = global::DeOps.Properties.Resources.save_hot;
+            this.SaveButton.ButtonNormal = global::DeOps.Properties.Resources.save_norm;
+            this.SaveButton.Image = global::DeOps.Properties.Resources.save_norm;
             this.SaveButton.Location = new System.Drawing.Point(441, 384);
             this.SaveButton.Name = "SaveButton";
             this.SaveButton.Size = new System.Drawing.Size(64, 19);
@@ -198,9 +198,9 @@ namespace RiseOp.Services.Plan
         private System.Windows.Forms.ToolStripDropDownButton SelectGoalButton;
         private System.Windows.Forms.ToolStripButton DetailsButton;
         private GoalPanel MainPanel;
-        private RiseOp.Interface.Views.WebBrowserEx DetailsBrowser;
-        private RiseOp.Interface.Views.ImageButton SaveButton;
-        private RiseOp.Interface.Views.ImageButton DiscardButton;
+        private DeOps.Interface.Views.WebBrowserEx DetailsBrowser;
+        private DeOps.Interface.Views.ImageButton SaveButton;
+        private DeOps.Interface.Views.ImageButton DiscardButton;
         private System.Windows.Forms.GroupBox groupBox1;
     }
 }

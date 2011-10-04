@@ -4,12 +4,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-using RiseOp.Services;
-using RiseOp.Services.Location;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Services;
+using DeOps.Services.Location;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol.Net;
 
-namespace RiseOp.Implementation.Transport
+namespace DeOps.Implementation.Transport
 {
     internal delegate void SessionUpdateHandler(RudpSession session);
     internal delegate void SessionDataHandler(RudpSession session, byte[] data);

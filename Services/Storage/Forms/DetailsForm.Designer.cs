@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Storage
+namespace DeOps.Services.Storage
 {
     partial class DetailsForm
     {
@@ -28,14 +28,14 @@ namespace RiseOp.Services.Storage
         /// </summary>
         private void InitializeComponent()
         {
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DetailsForm));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.EditLink = new System.Windows.Forms.LinkLabel();
             this.RemoveLink = new System.Windows.Forms.LinkLabel();
             this.AddLink = new System.Windows.Forms.LinkLabel();
-            this.VisList = new RiseOp.Interface.TLVex.ContainerListViewEx();
+            this.VisList = new DeOps.Interface.TLVex.ContainerListViewEx();
             this.ExitButton = new System.Windows.Forms.Button();
             this.OkButton = new System.Windows.Forms.Button();
             this.NameBox = new System.Windows.Forms.TextBox();
@@ -110,7 +110,7 @@ namespace RiseOp.Services.Storage
             toggleColumnHeader1.Image = null;
             toggleColumnHeader1.Index = 0;
             toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
             toggleColumnHeader1.Selected = false;
             toggleColumnHeader1.Text = "Person";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -120,12 +120,12 @@ namespace RiseOp.Services.Storage
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
             toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader2.Selected = false;
             toggleColumnHeader2.Text = "Sub-Levels";
             toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader2.Visible = true;
-            this.VisList.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
+            this.VisList.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader1,
             toggleColumnHeader2});
             this.VisList.ColumnSortColor = System.Drawing.Color.Gainsboro;
@@ -240,7 +240,7 @@ namespace RiseOp.Services.Storage
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label SizeLabel;
         private System.Windows.Forms.Label label8;
-        private RiseOp.Interface.TLVex.ContainerListViewEx VisList;
+        private DeOps.Interface.TLVex.ContainerListViewEx VisList;
         private System.Windows.Forms.LinkLabel RemoveLink;
         private System.Windows.Forms.LinkLabel AddLink;
         private System.Windows.Forms.LinkLabel EditLink;

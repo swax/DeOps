@@ -6,13 +6,13 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Services;
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Simulator;
+using DeOps.Services;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Simulator;
 
-namespace RiseOp.Interface.Tools
+namespace DeOps.Interface.Tools
 {
     internal partial class SearchForm : CustomIconForm
     {

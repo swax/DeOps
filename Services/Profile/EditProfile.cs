@@ -8,13 +8,13 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Services.Trust;
+using DeOps.Implementation;
+using DeOps.Services.Trust;
 
 
-namespace RiseOp.Services.Profile
+namespace DeOps.Services.Profile
 {
-    internal partial class EditProfile : RiseOp.Interface.CustomIconForm
+    internal partial class EditProfile : DeOps.Interface.CustomIconForm
     {
         internal OpCore Core;
         TrustService     Links;

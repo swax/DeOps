@@ -18,6 +18,6 @@ set version in installer
 create installer
 
 sign protected exe
-open Installed riseop, should start propagating update
+open Installed deops, should start propagating update
 
 connect to network with new bootstrap/update.dat

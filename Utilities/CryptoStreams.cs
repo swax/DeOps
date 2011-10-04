@@ -6,9 +6,9 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
-using RiseOp.Implementation.Protocol;
+using DeOps.Implementation.Protocol;
 
-namespace RiseOp.Implementation
+namespace DeOps.Implementation
 {
     // used to store sub-hashes for files that are transferred over the network
     internal delegate void ProcessTagsHandler(PacketStream stream);

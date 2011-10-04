@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 
-namespace RiseOp.Services.Voice
+namespace DeOps.Services.Voice
 {
     public class WinMM
     {

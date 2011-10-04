@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Plan
+namespace DeOps.Services.Plan
 {
     partial class ScheduleView
     {
@@ -30,8 +30,8 @@ namespace RiseOp.Services.Plan
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ScheduleView));
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             this.HoverTimer = new System.Windows.Forms.Timer(this.components);
             this.TopStrip = new System.Windows.Forms.ToolStrip();
             this.NewButton = new System.Windows.Forms.ToolStripButton();
@@ -41,17 +41,17 @@ namespace RiseOp.Services.Plan
             this.GoalCombo = new System.Windows.Forms.ToolStripComboBox();
             this.DetailsButton = new System.Windows.Forms.ToolStripButton();
             this.MainSplit = new System.Windows.Forms.SplitContainer();
-            this.DiscardButton = new RiseOp.Interface.Views.ImageButton();
-            this.SaveButton = new RiseOp.Interface.Views.ImageButton();
+            this.DiscardButton = new DeOps.Interface.Views.ImageButton();
+            this.SaveButton = new DeOps.Interface.Views.ImageButton();
             this.LabelMinus = new System.Windows.Forms.Label();
             this.LabelPlus = new System.Windows.Forms.Label();
-            this.ScheduleSlider = new RiseOp.Services.Plan.DateSlider();
+            this.ScheduleSlider = new DeOps.Services.Plan.DateSlider();
             this.ExtendedLabel = new System.Windows.Forms.Label();
             this.RangeLabel = new System.Windows.Forms.Label();
             this.DateRange = new System.Windows.Forms.TrackBar();
-            this.PlanStructure = new RiseOp.Interface.TLVex.TreeListViewEx();
+            this.PlanStructure = new DeOps.Interface.TLVex.TreeListViewEx();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.DetailsBrowser = new RiseOp.Interface.Views.WebBrowserEx();
+            this.DetailsBrowser = new DeOps.Interface.Views.WebBrowserEx();
             this.TopStrip.SuspendLayout();
             this.MainSplit.Panel1.SuspendLayout();
             this.MainSplit.Panel2.SuspendLayout();
@@ -162,10 +162,10 @@ namespace RiseOp.Services.Plan
             // DiscardButton
             // 
             this.DiscardButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.DiscardButton.ButtonDown = global::RiseOp.Properties.Resources.discard_down;
-            this.DiscardButton.ButtonHot = global::RiseOp.Properties.Resources.discard_hot;
-            this.DiscardButton.ButtonNormal = global::RiseOp.Properties.Resources.discard_norm;
-            this.DiscardButton.Image = global::RiseOp.Properties.Resources.discard_norm;
+            this.DiscardButton.ButtonDown = global::DeOps.Properties.Resources.discard_down;
+            this.DiscardButton.ButtonHot = global::DeOps.Properties.Resources.discard_hot;
+            this.DiscardButton.ButtonNormal = global::DeOps.Properties.Resources.discard_norm;
+            this.DiscardButton.Image = global::DeOps.Properties.Resources.discard_norm;
             this.DiscardButton.Location = new System.Drawing.Point(269, 199);
             this.DiscardButton.Name = "DiscardButton";
             this.DiscardButton.Size = new System.Drawing.Size(64, 19);
@@ -178,10 +178,10 @@ namespace RiseOp.Services.Plan
             // SaveButton
             // 
             this.SaveButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.SaveButton.ButtonDown = global::RiseOp.Properties.Resources.save_down;
-            this.SaveButton.ButtonHot = global::RiseOp.Properties.Resources.save_hot;
-            this.SaveButton.ButtonNormal = global::RiseOp.Properties.Resources.save_norm;
-            this.SaveButton.Image = global::RiseOp.Properties.Resources.save_norm;
+            this.SaveButton.ButtonDown = global::DeOps.Properties.Resources.save_down;
+            this.SaveButton.ButtonHot = global::DeOps.Properties.Resources.save_hot;
+            this.SaveButton.ButtonNormal = global::DeOps.Properties.Resources.save_norm;
+            this.SaveButton.Image = global::DeOps.Properties.Resources.save_norm;
             this.SaveButton.Location = new System.Drawing.Point(199, 199);
             this.SaveButton.Name = "SaveButton";
             this.SaveButton.Size = new System.Drawing.Size(64, 19);
@@ -266,7 +266,7 @@ namespace RiseOp.Services.Plan
             toggleColumnHeader1.Image = null;
             toggleColumnHeader1.Index = 0;
             toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader1.Selected = false;
             toggleColumnHeader1.Text = "Structure";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -276,13 +276,13 @@ namespace RiseOp.Services.Plan
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
             toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
             toggleColumnHeader2.Selected = false;
             toggleColumnHeader2.Text = "Items";
             toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader2.Visible = true;
             toggleColumnHeader2.Width = 171;
-            this.PlanStructure.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
+            this.PlanStructure.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader1,
             toggleColumnHeader2});
             this.PlanStructure.ColumnSortColor = System.Drawing.Color.Gainsboro;
@@ -372,10 +372,10 @@ namespace RiseOp.Services.Plan
         internal System.Windows.Forms.Label ExtendedLabel;
         private System.Windows.Forms.Label RangeLabel;
         private System.Windows.Forms.TrackBar DateRange;
-        internal RiseOp.Interface.TLVex.TreeListViewEx PlanStructure;
-        private RiseOp.Interface.Views.WebBrowserEx DetailsBrowser;
-        private RiseOp.Interface.Views.ImageButton SaveButton;
-        private RiseOp.Interface.Views.ImageButton DiscardButton;
+        internal DeOps.Interface.TLVex.TreeListViewEx PlanStructure;
+        private DeOps.Interface.Views.WebBrowserEx DetailsBrowser;
+        private DeOps.Interface.Views.ImageButton SaveButton;
+        private DeOps.Interface.Views.ImageButton DiscardButton;
         private System.Windows.Forms.GroupBox groupBox1;
     }
 }

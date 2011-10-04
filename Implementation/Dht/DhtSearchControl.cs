@@ -4,14 +4,14 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Transport;
 
-using RiseOp.Services.Location;
+using DeOps.Services.Location;
 
 
-namespace RiseOp.Implementation.Dht
+namespace DeOps.Implementation.Dht
 {
     internal delegate void SearchRequestHandler(ulong key, byte[] parameters, List<byte[]> values);
 

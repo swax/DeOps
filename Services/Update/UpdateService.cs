@@ -7,20 +7,20 @@ using System.Text;
 using System.Security.Cryptography;
 using System.Windows.Forms;
 
-using RiseOp.Services;
-using RiseOp.Services.Transfer;
+using DeOps.Services;
+using DeOps.Services.Transfer;
 
-using RiseOp.Interface;
+using DeOps.Interface;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-
-
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
 
-namespace RiseOp.Services.Update
+
+
+namespace DeOps.Services.Update
 {
     internal class UpdateService : OpService
     {
@@ -100,7 +100,7 @@ namespace RiseOp.Services.Update
             {
                 UpdateInfo info = new UpdateInfo();
 
-                info.Name = "RiseOp_1.1.3.exe";
+                info.Name = "DeOps_1.1.3.exe";
                 info.DottedVersion = "1.1.3";
 
                 // want to prevent infinite update loop, ensure the seq verison in the intaller, and the
@@ -114,7 +114,7 @@ namespace RiseOp.Services.Update
                 crypt.Key = Utilities.GenerateKey(Core.StrongRndGen, 256);
                 info.Key = crypt.Key;
 
-                string source = "..\\Protected\\RiseOp.exe";
+                string source = "..\\Protected\\DeOps.exe";
                 string final = Path.Combine(ApplicationEx.CommonAppDataPath(), "update.dat");
 
                 string tempPath = Core.GetTempPath();
@@ -245,7 +245,7 @@ namespace RiseOp.Services.Update
             {
                 string sharePath = Core.User.TempPath + Path.DirectorySeparatorChar + signed.TempName;
 
-                // cannot share from riseop root directory because when new update.dat is downloaded the old one
+                // cannot share from deops root directory because when new update.dat is downloaded the old one
                 // cant be replaced if it is locked up by the transfer service
 
                 if (!File.Exists(sharePath))

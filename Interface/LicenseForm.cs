@@ -7,10 +7,10 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation.Protocol.Packets;
+using DeOps.Implementation.Protocol.Packets;
 
 
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     internal partial class LicenseForm : CustomIconForm
     {
@@ -30,7 +30,7 @@ namespace RiseOp.Interface
              */
 
 
-            string text = "This version of RiseOp is licensed for\r\n\r\n";
+            string text = "This version of DeOps is licensed for\r\n\r\n";
 
             text += license.Name + "\r\n";
             text += license.Address + "\r\n\r\n";

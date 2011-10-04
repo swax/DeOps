@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace RiseOp.Interface {
+namespace DeOps.Interface {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace RiseOp.Interface {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("RiseOp.Interface.Res.InterfaceRes", typeof(InterfaceRes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Interface.Res.InterfaceRes", typeof(InterfaceRes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -71,6 +71,13 @@ namespace RiseOp.Interface {
             get {
                 object obj = ResourceManager.GetObject("data", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Icon deops {
+            get {
+                object obj = ResourceManager.GetObject("deops", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
             }
         }
         
@@ -134,13 +141,6 @@ namespace RiseOp.Interface {
             get {
                 object obj = ResourceManager.GetObject("reg", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        internal static System.Drawing.Icon riseop {
-            get {
-                object obj = ResourceManager.GetObject("riseop", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
             }
         }
         

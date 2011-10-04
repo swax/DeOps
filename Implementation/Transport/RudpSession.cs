@@ -6,14 +6,14 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Diagnostics;
 
-using RiseOp.Services.Location;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Comm;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Services.Location;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Comm;
+using DeOps.Implementation.Protocol.Net;
 
 
-namespace RiseOp.Implementation.Transport
+namespace DeOps.Implementation.Transport
 {
     internal enum SessionStatus { Connecting, Active, Closed };
 

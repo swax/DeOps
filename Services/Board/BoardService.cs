@@ -5,17 +5,17 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
-using RiseOp.Services.Trust;
-using RiseOp.Services.Transfer;
-using RiseOp.Services.Location;
+using DeOps.Services.Trust;
+using DeOps.Services.Transfer;
+using DeOps.Services.Location;
 
 
-namespace RiseOp.Services.Board
+namespace DeOps.Services.Board
 {
     internal enum ScopeType {All, High, Low, None };
     internal enum BoardSearch { Threads, Time, Post };

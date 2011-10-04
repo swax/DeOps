@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Interface.Settings
+﻿namespace DeOps.Interface.Settings
 {
     partial class Operation
     {

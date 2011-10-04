@@ -9,24 +9,24 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Services;
-using RiseOp.Services.Board;
-using RiseOp.Services.Mail;
-using RiseOp.Services.Profile;
-using RiseOp.Services.Storage;
-using RiseOp.Services.Transfer;
-using RiseOp.Services.Trust;
+using DeOps.Services;
+using DeOps.Services.Board;
+using DeOps.Services.Mail;
+using DeOps.Services.Profile;
+using DeOps.Services.Storage;
+using DeOps.Services.Transfer;
+using DeOps.Services.Trust;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Transport;
 
-using RiseOp.Interface;
+using DeOps.Interface;
 
 
-namespace RiseOp.Simulator
+namespace DeOps.Simulator
 {
     internal partial class NetView : CustomIconForm
     {

@@ -5,11 +5,11 @@ using System.Text;
 using System.Security.Cryptography;
 using System.Net;
 
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Transport;
 
 
-namespace RiseOp.Services
+namespace DeOps.Services
 {
     // Built-in Service IDs
     public enum ServiceIDs : uint

@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Board
+namespace DeOps.Services.Board
 {
     partial class BoardView
     {
@@ -29,12 +29,12 @@ namespace RiseOp.Services.Board
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(BoardView));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.PostView = new RiseOp.Interface.TLVex.TreeListViewEx();
+            this.PostView = new DeOps.Interface.TLVex.TreeListViewEx();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.ArchiveButton = new System.Windows.Forms.ToolStripButton();
             this.RightSplitter = new System.Windows.Forms.ToolStripSeparator();
@@ -47,8 +47,8 @@ namespace RiseOp.Services.Board
             this.ButtonHigh = new System.Windows.Forms.ToolStripButton();
             this.toolStripLabel3 = new System.Windows.Forms.ToolStripLabel();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.PostHeader = new RiseOp.Interface.Views.WebBrowserEx();
-            this.PostBody = new RiseOp.Interface.Views.RichTextBoxEx();
+            this.PostHeader = new DeOps.Interface.Views.WebBrowserEx();
+            this.PostBody = new DeOps.Interface.Views.RichTextBoxEx();
             this.PostImageList = new System.Windows.Forms.ImageList(this.components);
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -86,7 +86,7 @@ namespace RiseOp.Services.Board
             toggleColumnHeader1.Image = null;
             toggleColumnHeader1.Index = 0;
             toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
             toggleColumnHeader1.Selected = false;
             toggleColumnHeader1.Text = "Subject";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -96,7 +96,7 @@ namespace RiseOp.Services.Board
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
             toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader2.Selected = false;
             toggleColumnHeader2.Text = "Author";
             toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -106,13 +106,13 @@ namespace RiseOp.Services.Board
             toggleColumnHeader3.Image = null;
             toggleColumnHeader3.Index = 0;
             toggleColumnHeader3.Pressed = false;
-            toggleColumnHeader3.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader3.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader3.Selected = false;
             toggleColumnHeader3.Text = "Date";
             toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader3.Visible = true;
             toggleColumnHeader3.Width = 140;
-            this.PostView.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
+            this.PostView.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader1,
             toggleColumnHeader2,
             toggleColumnHeader3});
@@ -334,9 +334,9 @@ namespace RiseOp.Services.Board
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.SplitContainer splitContainer2;
-        private RiseOp.Interface.Views.WebBrowserEx PostHeader;
-        private RiseOp.Interface.Views.RichTextBoxEx PostBody;
-        private RiseOp.Interface.TLVex.TreeListViewEx PostView;
+        private DeOps.Interface.Views.WebBrowserEx PostHeader;
+        private DeOps.Interface.Views.RichTextBoxEx PostBody;
+        private DeOps.Interface.TLVex.TreeListViewEx PostView;
         private System.Windows.Forms.ToolStripButton PostButton;
         private System.Windows.Forms.ToolStripButton ArchiveButton;
         private System.Windows.Forms.ToolStripSeparator RightSplitter;

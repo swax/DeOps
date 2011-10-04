@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Interface.Settings
+﻿namespace DeOps.Interface.Settings
 {
     partial class UpnpSetup
     {
@@ -35,7 +35,7 @@
             this.LogLink = new System.Windows.Forms.LinkLabel();
             this.CloseButton = new System.Windows.Forms.Button();
             this.RemoveLink = new System.Windows.Forms.LinkLabel();
-            this.AddRiseOpLink = new System.Windows.Forms.LinkLabel();
+            this.AddDeOpsLink = new System.Windows.Forms.LinkLabel();
             this.IPradio = new System.Windows.Forms.RadioButton();
             this.PPPradio = new System.Windows.Forms.RadioButton();
             this.ActionLabel = new System.Windows.Forms.Label();
@@ -51,7 +51,7 @@
             this.label1.Size = new System.Drawing.Size(394, 37);
             this.label1.TabIndex = 0;
             this.label1.Text = "Universal Plug n Play automatically configures your router so that the right port" +
-                "s RiseOp needs are open. Use the refresh button to check which ports are open. ";
+                "s DeOps needs are open. Use the refresh button to check which ports are open. ";
             // 
             // EntryList
             // 
@@ -115,18 +115,18 @@
             this.RemoveLink.Text = "Remove Selected";
             this.RemoveLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.RemoveLink_LinkClicked);
             // 
-            // AddRiseOpLink
+            // AddDeOpsLink
             // 
-            this.AddRiseOpLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.AddRiseOpLink.AutoSize = true;
-            this.AddRiseOpLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.AddRiseOpLink.Location = new System.Drawing.Point(12, 259);
-            this.AddRiseOpLink.Name = "AddRiseOpLink";
-            this.AddRiseOpLink.Size = new System.Drawing.Size(100, 13);
-            this.AddRiseOpLink.TabIndex = 36;
-            this.AddRiseOpLink.TabStop = true;
-            this.AddRiseOpLink.Text = "Reset RiseOp Ports";
-            this.AddRiseOpLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.AddRiseOpLink_LinkClicked);
+            this.AddDeOpsLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.AddDeOpsLink.AutoSize = true;
+            this.AddDeOpsLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
+            this.AddDeOpsLink.Location = new System.Drawing.Point(12, 259);
+            this.AddDeOpsLink.Name = "AddDeOpsLink";
+            this.AddDeOpsLink.Size = new System.Drawing.Size(100, 13);
+            this.AddDeOpsLink.TabIndex = 36;
+            this.AddDeOpsLink.TabStop = true;
+            this.AddDeOpsLink.Text = "Reset DeOps Ports";
+            this.AddDeOpsLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.AddDeOpsLink_LinkClicked);
             // 
             // IPradio
             // 
@@ -177,7 +177,7 @@
             this.Controls.Add(this.ActionLabel);
             this.Controls.Add(this.PPPradio);
             this.Controls.Add(this.IPradio);
-            this.Controls.Add(this.AddRiseOpLink);
+            this.Controls.Add(this.AddDeOpsLink);
             this.Controls.Add(this.RemoveLink);
             this.Controls.Add(this.CloseButton);
             this.Controls.Add(this.LogLink);
@@ -202,7 +202,7 @@
         private System.Windows.Forms.LinkLabel LogLink;
         private System.Windows.Forms.Button CloseButton;
         private System.Windows.Forms.LinkLabel RemoveLink;
-        private System.Windows.Forms.LinkLabel AddRiseOpLink;
+        private System.Windows.Forms.LinkLabel AddDeOpsLink;
         private System.Windows.Forms.RadioButton IPradio;
         private System.Windows.Forms.RadioButton PPPradio;
         private System.Windows.Forms.Label ActionLabel;

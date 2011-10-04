@@ -8,10 +8,10 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Interface;
+using DeOps.Interface;
 
 
-namespace RiseOp.Services.Voice
+namespace DeOps.Services.Voice
 {
     internal partial class VoiceSettings : CustomIconForm 
     {

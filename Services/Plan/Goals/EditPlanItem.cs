@@ -6,11 +6,11 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace RiseOp.Services.Plan
+namespace DeOps.Services.Plan
 {
     enum EditItemMode { New, Edit, View };
 
-    internal partial class EditPlanItem : RiseOp.Interface.CustomIconForm
+    internal partial class EditPlanItem : DeOps.Interface.CustomIconForm
     {
         EditItemMode Mode;
         PlanGoal Goal;

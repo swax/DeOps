@@ -6,19 +6,19 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation;
+using DeOps.Implementation.Transport;
 
 using ZedGraph;
 
 
-namespace RiseOp.Interface.Tools
+namespace DeOps.Interface.Tools
 {
-    internal partial class BandwidthForm : RiseOp.Interface.CustomIconForm
+    internal partial class BandwidthForm : DeOps.Interface.CustomIconForm
     {
         List<OpCore> Cores;
 
-        Dictionary<RiseOpContext, int> ContextIndex = new Dictionary<RiseOpContext, int>();
+        Dictionary<DeOpsContext, int> ContextIndex = new Dictionary<DeOpsContext, int>();
         int ContextCount = 1;
 
         bool Paused;
@@ -28,7 +28,7 @@ namespace RiseOp.Interface.Tools
         Dictionary<uint, ServiceItem> ServiceItemMap = new Dictionary<uint, ServiceItem>();
 
 
-        internal static void Show(RiseOpContext context)
+        internal static void Show(DeOpsContext context)
         {
             List<OpCore> cores = new List<OpCore>();
 
@@ -55,7 +55,7 @@ namespace RiseOp.Interface.Tools
 
             if (Cores.Count > 0)
             {
-                RiseOpContext sample = Cores[0].Context;
+                DeOpsContext sample = Cores[0].Context;
                 RecordSeconds = Cores[0].RecordBandwidthSeconds;
 
                 foreach (uint id in sample.KnownServices.Keys)

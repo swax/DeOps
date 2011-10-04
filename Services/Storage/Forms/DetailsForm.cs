@@ -7,15 +7,15 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Interface;
-using RiseOp.Interface.TLVex;
-using RiseOp.Services.Trust;
+using DeOps.Implementation;
+using DeOps.Interface;
+using DeOps.Interface.TLVex;
+using DeOps.Services.Trust;
 
 
-namespace RiseOp.Services.Storage
+namespace DeOps.Services.Storage
 {
-    internal partial class DetailsForm : RiseOp.Interface.CustomIconForm
+    internal partial class DetailsForm : DeOps.Interface.CustomIconForm
     {
         OpCore Core;
         StorageView View;

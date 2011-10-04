@@ -5,15 +5,15 @@ using System.ComponentModel;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
-namespace RiseOp.Interface.Tools
+namespace DeOps.Interface.Tools
 {
 	 
 	/// <summary>
 	/// Summary description for ConsoleForm.
 	/// </summary>
-	internal class ConsoleForm : RiseOp.Interface.CustomIconForm
+	internal class ConsoleForm : DeOps.Interface.CustomIconForm
 	{
         OpCore Core;
 

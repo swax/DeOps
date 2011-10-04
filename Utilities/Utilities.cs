@@ -13,18 +13,18 @@ using System.Windows.Forms;
 
 using Microsoft.Win32;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Protocol.Special;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Protocol.Special;
 
-using RiseOp.Interface;
-using RiseOp.Interface.TLVex;
-using RiseOp.Interface.Views;
+using DeOps.Interface;
+using DeOps.Interface.TLVex;
+using DeOps.Interface.Views;
 
 
-namespace RiseOp
+namespace DeOps
 {
     // at high security, low threats and above must be checked
     enum ThreatLevel { Low = 3, Medium = 5, High = 7 }
@@ -730,7 +730,7 @@ namespace RiseOp
     }
 }
 
-namespace RiseOp.Implementation
+namespace DeOps.Implementation
 {
 	internal class BufferData
 	{

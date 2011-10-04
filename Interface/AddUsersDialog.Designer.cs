@@ -1,4 +1,4 @@
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     partial class AddUsersDialog
     {
@@ -32,8 +32,8 @@ namespace RiseOp.Interface
             this.AddButton = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.ProjectCombo = new System.Windows.Forms.ComboBox();
-            this.TrustTree = new RiseOp.Services.Trust.LinkTree();
-            this.BuddyList = new RiseOp.Services.Buddy.BuddyView();
+            this.TrustTree = new DeOps.Services.Trust.LinkTree();
+            this.BuddyList = new DeOps.Services.Buddy.BuddyView();
             this.SuspendLayout();
             // 
             // TheCancelButton
@@ -159,10 +159,10 @@ namespace RiseOp.Interface
         #endregion
 
         private System.Windows.Forms.Button TheCancelButton;
-        internal RiseOp.Services.Trust.LinkTree TrustTree;
+        internal DeOps.Services.Trust.LinkTree TrustTree;
         private System.Windows.Forms.Label label2;
         internal System.Windows.Forms.ComboBox ProjectCombo;
         internal System.Windows.Forms.Button AddButton;
-        private RiseOp.Services.Buddy.BuddyView BuddyList;
+        private DeOps.Services.Buddy.BuddyView BuddyList;
     }
 }

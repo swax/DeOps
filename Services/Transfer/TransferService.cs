@@ -8,17 +8,17 @@ using System.Security.Cryptography;
 using System.Linq;
 using System.Threading;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Protocol.Special;
-using RiseOp.Implementation.Transport;
-using RiseOp.Services.Location;
-using RiseOp.Utility;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Protocol.Special;
+using DeOps.Implementation.Transport;
+using DeOps.Services.Location;
+using DeOps.Utility;
 
 
-namespace RiseOp.Services.Transfer
+namespace DeOps.Services.Transfer
 {
     internal delegate void EndDownloadHandler(object[] args);
     internal delegate bool FileSearchHandler(ulong key, FileDetails details);

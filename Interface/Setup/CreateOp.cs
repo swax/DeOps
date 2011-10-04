@@ -9,9 +9,9 @@ using System.Windows.Forms;
 using System.Security.Cryptography;
 using System.Xml;
 
-using RiseOp.Implementation.Protocol;
+using DeOps.Implementation.Protocol;
 
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     internal partial class CreateOp : CustomIconForm
     {

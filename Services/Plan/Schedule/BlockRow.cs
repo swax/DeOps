@@ -7,15 +7,15 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Services.Trust;
-using RiseOp.Services.Plan;
-using RiseOp.Interface;
-using RiseOp.Interface.Views;
-using RiseOp.Interface.TLVex;
+using DeOps.Implementation;
+using DeOps.Services.Trust;
+using DeOps.Services.Plan;
+using DeOps.Interface;
+using DeOps.Interface.Views;
+using DeOps.Interface.TLVex;
 
 
-namespace RiseOp.Services.Plan
+namespace DeOps.Services.Plan
 {
     internal partial class BlockRow : UserControl
     {

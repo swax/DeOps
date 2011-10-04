@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Storage
+namespace DeOps.Services.Storage
 {
     partial class StorageView
     {
@@ -30,9 +30,9 @@ namespace RiseOp.Services.Storage
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(StorageView));
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
-            RiseOp.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new RiseOp.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader1 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader2 = new DeOps.Interface.TLVex.ToggleColumnHeader();
+            DeOps.Interface.TLVex.ToggleColumnHeader toggleColumnHeader3 = new DeOps.Interface.TLVex.ToggleColumnHeader();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.FoldersButton = new System.Windows.Forms.ToolStripButton();
@@ -42,14 +42,14 @@ namespace RiseOp.Services.Storage
             this.GhostsButton = new System.Windows.Forms.ToolStripButton();
             this.RescanLabel = new System.Windows.Forms.ToolStripLabel();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.FolderTreeView = new RiseOp.Interface.TLVex.TreeListViewEx();
-            this.FileListView = new RiseOp.Interface.TLVex.ContainerListViewEx();
+            this.FolderTreeView = new DeOps.Interface.TLVex.TreeListViewEx();
+            this.FileListView = new DeOps.Interface.TLVex.ContainerListViewEx();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.SelectedInfo = new RiseOp.Services.Storage.InfoPanel();
+            this.SelectedInfo = new DeOps.Services.Storage.InfoPanel();
             this.SecondTimer = new System.Windows.Forms.Timer(this.components);
             this.StatusLabel = new System.Windows.Forms.Label();
-            this.DiscardButton = new RiseOp.Interface.Views.ImageButton();
-            this.SaveButton = new RiseOp.Interface.Views.ImageButton();
+            this.DiscardButton = new DeOps.Interface.Views.ImageButton();
+            this.SaveButton = new DeOps.Interface.Views.ImageButton();
             this.toolStrip1.SuspendLayout();
             this.splitContainer2.Panel1.SuspendLayout();
             this.splitContainer2.Panel2.SuspendLayout();
@@ -87,7 +87,7 @@ namespace RiseOp.Services.Storage
             // FoldersButton
             // 
             this.FoldersButton.CheckOnClick = true;
-            this.FoldersButton.Image = global::RiseOp.Properties.Resources.folder;
+            this.FoldersButton.Image = global::DeOps.Properties.Resources.folder;
             this.FoldersButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.FoldersButton.Name = "FoldersButton";
             this.FoldersButton.Size = new System.Drawing.Size(62, 22);
@@ -190,7 +190,7 @@ namespace RiseOp.Services.Storage
             toggleColumnHeader1.Image = null;
             toggleColumnHeader1.Index = 0;
             toggleColumnHeader1.Pressed = false;
-            toggleColumnHeader1.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Spring;
+            toggleColumnHeader1.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Spring;
             toggleColumnHeader1.Selected = false;
             toggleColumnHeader1.Text = "Name";
             toggleColumnHeader1.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
@@ -200,7 +200,7 @@ namespace RiseOp.Services.Storage
             toggleColumnHeader2.Image = null;
             toggleColumnHeader2.Index = 0;
             toggleColumnHeader2.Pressed = false;
-            toggleColumnHeader2.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader2.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader2.Selected = false;
             toggleColumnHeader2.Text = "Size";
             toggleColumnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
@@ -210,13 +210,13 @@ namespace RiseOp.Services.Storage
             toggleColumnHeader3.Image = null;
             toggleColumnHeader3.Index = 0;
             toggleColumnHeader3.Pressed = false;
-            toggleColumnHeader3.ScaleStyle = RiseOp.Interface.TLVex.ColumnScaleStyle.Slide;
+            toggleColumnHeader3.ScaleStyle = DeOps.Interface.TLVex.ColumnScaleStyle.Slide;
             toggleColumnHeader3.Selected = false;
             toggleColumnHeader3.Text = "Date Modified";
             toggleColumnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Left;
             toggleColumnHeader3.Visible = true;
             toggleColumnHeader3.Width = 120;
-            this.FileListView.Columns.AddRange(new RiseOp.Interface.TLVex.ToggleColumnHeader[] {
+            this.FileListView.Columns.AddRange(new DeOps.Interface.TLVex.ToggleColumnHeader[] {
             toggleColumnHeader1,
             toggleColumnHeader2,
             toggleColumnHeader3});
@@ -299,10 +299,10 @@ namespace RiseOp.Services.Storage
             // DiscardButton
             // 
             this.DiscardButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.DiscardButton.ButtonDown = global::RiseOp.Properties.Resources.discard_down;
-            this.DiscardButton.ButtonHot = global::RiseOp.Properties.Resources.discard_hot;
-            this.DiscardButton.ButtonNormal = global::RiseOp.Properties.Resources.discard_norm;
-            this.DiscardButton.Image = global::RiseOp.Properties.Resources.discard_norm;
+            this.DiscardButton.ButtonDown = global::DeOps.Properties.Resources.discard_down;
+            this.DiscardButton.ButtonHot = global::DeOps.Properties.Resources.discard_hot;
+            this.DiscardButton.ButtonNormal = global::DeOps.Properties.Resources.discard_norm;
+            this.DiscardButton.Image = global::DeOps.Properties.Resources.discard_norm;
             this.DiscardButton.Location = new System.Drawing.Point(417, 285);
             this.DiscardButton.Name = "DiscardButton";
             this.DiscardButton.Size = new System.Drawing.Size(64, 19);
@@ -315,10 +315,10 @@ namespace RiseOp.Services.Storage
             // SaveButton
             // 
             this.SaveButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.SaveButton.ButtonDown = global::RiseOp.Properties.Resources.save_down;
-            this.SaveButton.ButtonHot = global::RiseOp.Properties.Resources.save_hot;
-            this.SaveButton.ButtonNormal = global::RiseOp.Properties.Resources.save_norm;
-            this.SaveButton.Image = global::RiseOp.Properties.Resources.save_norm;
+            this.SaveButton.ButtonDown = global::DeOps.Properties.Resources.save_down;
+            this.SaveButton.ButtonHot = global::DeOps.Properties.Resources.save_hot;
+            this.SaveButton.ButtonNormal = global::DeOps.Properties.Resources.save_norm;
+            this.SaveButton.Image = global::DeOps.Properties.Resources.save_norm;
             this.SaveButton.Location = new System.Drawing.Point(347, 285);
             this.SaveButton.Name = "SaveButton";
             this.SaveButton.Size = new System.Drawing.Size(64, 19);
@@ -361,9 +361,9 @@ namespace RiseOp.Services.Storage
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.ToolStripLabel divLabel;
         private System.Windows.Forms.SplitContainer splitContainer2;
-        private RiseOp.Interface.TLVex.TreeListViewEx FolderTreeView;
+        private DeOps.Interface.TLVex.TreeListViewEx FolderTreeView;
         private System.Windows.Forms.SplitContainer splitContainer1;
-        private RiseOp.Interface.TLVex.ContainerListViewEx FileListView;
+        private DeOps.Interface.TLVex.ContainerListViewEx FileListView;
         private System.Windows.Forms.ToolStripLabel toolStripLabel2;
         private System.Windows.Forms.ToolStripComboBox DiffCombo;
         internal System.Windows.Forms.ToolStripButton GhostsButton;
@@ -372,8 +372,8 @@ namespace RiseOp.Services.Storage
         private System.Windows.Forms.ToolStripLabel toolStripLabel1;
         private InfoPanel SelectedInfo;
         private System.Windows.Forms.Label StatusLabel;
-        private RiseOp.Interface.Views.ImageButton DiscardButton;
-        private RiseOp.Interface.Views.ImageButton SaveButton;
+        private DeOps.Interface.Views.ImageButton DiscardButton;
+        private DeOps.Interface.Views.ImageButton SaveButton;
         private System.Windows.Forms.ToolStripLabel RescanLabel;
     }
 }

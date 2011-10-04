@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace RiseOp.Services.Share.Res {
+namespace DeOps.Services.Share.Res {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace RiseOp.Services.Share.Res {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("RiseOp.Services.Share.Res.ShareRes", typeof(ShareRes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Services.Share.Res.ShareRes", typeof(ShareRes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

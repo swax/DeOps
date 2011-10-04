@@ -8,25 +8,25 @@ using System.Text;
 using System.Threading;
 using System.Web;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Transport;
 
-using RiseOp.Services;
-using RiseOp.Services.Assist;
-using RiseOp.Services.Location;
-using RiseOp.Services.Transfer;
+using DeOps.Services;
+using DeOps.Services.Assist;
+using DeOps.Services.Location;
+using DeOps.Services.Transfer;
 
-using RiseOp.Utility;
+using DeOps.Utility;
 
 /* active shares are periodically published at fileID on network so that when source goes offline
  * more locations can be found
  */
 
 
-namespace RiseOp.Services.Share
+namespace DeOps.Services.Share
 {
     internal class SharePacket
     {
@@ -940,9 +940,9 @@ namespace RiseOp.Services.Share
 
         internal string Encode(OpCore core)
         {
-            //  riseop://opName/file/name/size/opId~size~hash~key/sources
+            //  deops://opName/file/name/size/opId~size~hash~key/sources
 
-            string link = "riseop://" + HttpUtility.UrlEncode(OpName) +
+            string link = "deops://" + HttpUtility.UrlEncode(OpName) +
                             "/file/" + HttpUtility.UrlEncode(FileName) + "/" + 
                             HttpUtility.UrlEncode(Utilities.ByteSizetoString(Size)) + "/";
 
@@ -965,7 +965,7 @@ namespace RiseOp.Services.Share
         {
             FileLink link = new FileLink();
 
-            if (!text.StartsWith("riseop://"))
+            if (!text.StartsWith("deops://"))
                 throw new Exception("Invalid Link");
 
             string[] parts = text.Substring(9).Split('/');

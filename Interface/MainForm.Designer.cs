@@ -1,4 +1,4 @@
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     partial class MainForm
     {
@@ -32,14 +32,14 @@ namespace RiseOp.Interface
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.MainSplit = new System.Windows.Forms.SplitContainer();
             this.CommandSplit = new System.Windows.Forms.SplitContainer();
-            this.BuddyList = new RiseOp.Services.Buddy.BuddyView();
+            this.BuddyList = new DeOps.Services.Buddy.BuddyView();
             this.SideNavStrip = new System.Windows.Forms.ToolStrip();
             this.SideViewsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.SideHelpButton = new System.Windows.Forms.ToolStripButton();
             this.SideSearchButton = new System.Windows.Forms.ToolStripButton();
             this.SideNewsButton = new System.Windows.Forms.ToolStripDropDownButton();
-            this.CommandTree = new RiseOp.Services.Trust.LinkTree();
-            this.SelectionInfo = new RiseOp.Interface.StatusPanel();
+            this.CommandTree = new DeOps.Services.Trust.LinkTree();
+            this.SelectionInfo = new DeOps.Interface.StatusPanel();
             this.NavStrip = new System.Windows.Forms.ToolStrip();
             this.PersonNavButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.ProjectNavButton = new System.Windows.Forms.ToolStripDropDownButton();
@@ -665,7 +665,7 @@ namespace RiseOp.Interface
             this.Controls.Add(this.SideToolStrip);
             this.DoubleBuffered = true;
             this.Name = "MainForm";
-            this.Text = "RiseOp";
+            this.Text = "DeOps";
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.MainSplit.Panel1.ResumeLayout(false);
@@ -714,7 +714,7 @@ namespace RiseOp.Interface
         private System.Windows.Forms.ToolStripDropDownButton DataButton;
         private System.Windows.Forms.ToolStripMenuItem commonToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem personalToolStripMenuItem2;
-        private RiseOp.Services.Trust.LinkTree CommandTree;
+        private DeOps.Services.Trust.LinkTree CommandTree;
         private System.Windows.Forms.ToolStrip NavStrip;
         private System.Windows.Forms.ToolStripDropDownButton PersonNavButton;
         private System.Windows.Forms.ToolStripDropDownButton ProjectNavButton;
@@ -735,7 +735,7 @@ namespace RiseOp.Interface
         private System.Windows.Forms.ToolStripMenuItem signOnToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem signOffToolStripMenuItem;
         private System.Windows.Forms.ToolStripButton SideSearchButton;
-        private RiseOp.Services.Buddy.BuddyView BuddyList;
+        private DeOps.Services.Buddy.BuddyView BuddyList;
         private StatusPanel SelectionInfo;
         private System.Windows.Forms.ToolStripButton HelpInfoButton;
         private System.Windows.Forms.ToolStripButton NetworkButton;

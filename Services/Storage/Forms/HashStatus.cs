@@ -9,9 +9,9 @@ using System.Windows.Forms;
 
 
 
-namespace RiseOp.Services.Storage
+namespace DeOps.Services.Storage
 {
-    internal partial class HashStatus : RiseOp.Interface.CustomIconForm
+    internal partial class HashStatus : DeOps.Interface.CustomIconForm
     {
         StorageService Storages;
 

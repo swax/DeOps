@@ -10,10 +10,10 @@ using System.Threading;
 using System.Windows.Forms;
 
 
-using RiseOp.Interface;
+using DeOps.Interface;
 
 
-namespace RiseOp
+namespace DeOps
 {
     class Startup
     {
@@ -30,7 +30,7 @@ namespace RiseOp
 
             try
             {
-                RiseOpContext context = new RiseOpContext(args);
+                DeOpsContext context = new DeOpsContext(args);
 
                 if (context.StartSuccess)
                     Application.Run(context);
@@ -64,18 +64,18 @@ namespace RiseOp
     }
 
 
-    public class RiseOpMutex
+    public class DeOpsMutex
     {
         private Mutex TheMutex;
         private IChannel IpcChannel;
         internal bool First;
 
 
-        internal RiseOpMutex(RiseOpContext context, string[] args)
+        internal DeOpsMutex(DeOpsContext context, string[] args)
         {
             try
             {
-                string name = "RiseOp" + Application.ProductVersion;
+                string name = "DeOps" + Application.ProductVersion;
 
                 TheMutex = new Mutex(true, name, out First);
 

@@ -7,10 +7,10 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
 
-namespace RiseOp.Interface.Setup
+namespace DeOps.Interface.Setup
 {
     internal partial class IdentityForm : CustomIconForm
     {

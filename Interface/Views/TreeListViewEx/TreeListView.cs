@@ -58,7 +58,7 @@ using System.Windows.Forms;
 using System.Windows.Forms.VisualStyles;
 
 
-namespace RiseOp.Interface.TLVex
+namespace DeOps.Interface.TLVex
 {
 	#region Enumerations
 	#endregion

@@ -8,10 +8,10 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using System.Threading;
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
 
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     internal partial class ExternalView : CustomIconForm
     {

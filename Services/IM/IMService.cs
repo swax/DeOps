@@ -5,18 +5,18 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Transport;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Transport;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
-using RiseOp.Services.Location;
-using RiseOp.Services.Share;
-using RiseOp.Services.Trust;
+using DeOps.Services.Location;
+using DeOps.Services.Share;
+using DeOps.Services.Trust;
 
 
-namespace RiseOp.Services.IM
+namespace DeOps.Services.IM
 {
     internal delegate void IM_MessageHandler(ulong id, InstantMessage message);
     internal delegate void IM_StatusHandler(ulong id);

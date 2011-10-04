@@ -35,7 +35,7 @@
 	How settings and profiles are saved changed to windows defaults
 	
 1.0.4
-	Error logging now posts to riseop.com
+	Error logging now posts to c0re.net
 	Fixed status panel, null uplink bug
 	New Rudp connections can be made if socket still in finishing state
 	Drey bug test

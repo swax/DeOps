@@ -5,18 +5,18 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
-using RiseOp.Interface;
-using RiseOp.Interface.Views;
-using RiseOp.Interface.TLVex;
+using DeOps.Interface;
+using DeOps.Interface.Views;
+using DeOps.Interface.TLVex;
 
-using RiseOp.Services.IM;
-using RiseOp.Services.Location;
-using RiseOp.Services.Trust;
+using DeOps.Services.IM;
+using DeOps.Services.Location;
+using DeOps.Services.Trust;
 
 
-namespace RiseOp.Services.Buddy
+namespace DeOps.Services.Buddy
 {
     public class BuddyView : ContainerListViewEx
     {

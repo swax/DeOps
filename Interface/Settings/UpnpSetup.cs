@@ -8,10 +8,10 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation;
+using DeOps.Implementation.Transport;
 
-namespace RiseOp.Interface.Settings
+namespace DeOps.Interface.Settings
 {
     internal partial class UpnpSetup : CustomIconForm
     {
@@ -92,16 +92,16 @@ namespace RiseOp.Interface.Settings
             RefreshInterface();
         }
 
-        private void AddRiseOpLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void AddDeOpsLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            AddRiseOpLink.Text = "Resetting...";
+            AddDeOpsLink.Text = "Resetting...";
 
             UPnP.Initialize();
 
             if (Core.Context.Lookup != null)
                 Core.Context.Lookup.Network.UPnPControl.Initialize();
 
-            UPnP.ActionQueue.Enqueue(() => BeginInvoke(new Action(() => AddRiseOpLink.Text = "Reset RiseOp Ports")));
+            UPnP.ActionQueue.Enqueue(() => BeginInvoke(new Action(() => AddDeOpsLink.Text = "Reset DeOps Ports")));
 
             RefreshInterface();
         }
@@ -140,7 +140,7 @@ namespace RiseOp.Interface.Settings
 
             RefreshLink.Enabled = !active;
             RemoveLink.Enabled = !active;
-            AddRiseOpLink.Enabled = !active;
+            AddDeOpsLink.Enabled = !active;
             IPradio.Enabled = !active;
             PPPradio.Enabled = !active;
         }

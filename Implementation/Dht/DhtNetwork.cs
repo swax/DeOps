@@ -10,20 +10,20 @@ using System.Text;
 using System.Threading;
 
 
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Comm;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Protocol.Special;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Comm;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Protocol.Special;
+using DeOps.Implementation.Transport;
 
-using RiseOp.Services;
-using RiseOp.Services.Location;
-using RiseOp.Services.Transfer;
+using DeOps.Services;
+using DeOps.Services.Location;
+using DeOps.Services.Transfer;
 
-using RiseOp.Interface.Tools;
+using DeOps.Interface.Tools;
 
 
-namespace RiseOp.Implementation.Dht
+namespace DeOps.Implementation.Dht
 {
     internal delegate void StatusChange();
     

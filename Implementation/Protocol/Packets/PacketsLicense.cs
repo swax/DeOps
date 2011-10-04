@@ -5,7 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace RiseOp.Implementation.Protocol.Packets
+namespace DeOps.Implementation.Protocol.Packets
 {
     internal class LicensePacket
     {

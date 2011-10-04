@@ -8,13 +8,13 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Simulator;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Simulator;
 
 
-namespace RiseOp.Interface.Tools
+namespace DeOps.Interface.Tools
 {
     public partial class NetworkPanel : UserControl
     {

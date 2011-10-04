@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 
-namespace RiseOp.Services.Voice
+namespace DeOps.Services.Voice
 {
     class RecordAudio : IDisposable
     {

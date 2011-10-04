@@ -6,10 +6,10 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
 
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     internal partial class NewProjectForm : CustomIconForm
     {

@@ -6,9 +6,9 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace RiseOp.Services.Chat
+namespace DeOps.Services.Chat
 {
-    internal partial class CreateRoom :  RiseOp.Interface.CustomIconForm
+    internal partial class CreateRoom :  DeOps.Interface.CustomIconForm
     {
         internal CreateRoom()
         {

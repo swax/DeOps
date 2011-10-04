@@ -6,11 +6,11 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Services;
+using DeOps.Implementation;
+using DeOps.Services;
 
 
-namespace RiseOp.Simulator
+namespace DeOps.Simulator
 {
     internal partial class SelectServices : Form
     {
@@ -29,7 +29,7 @@ namespace RiseOp.Simulator
             foreach (ListInstanceItem item in Sim.ListInstances.Items)
                 if (item.Core != null)
                 {
-                    RiseOpContext sample = item.Core.Context;
+                    DeOpsContext sample = item.Core.Context;
 
                     foreach (uint id in sample.KnownServices.Keys)
                         ServiceList.Items.Add(new ServiceItem(id, sample.KnownServices[id]));

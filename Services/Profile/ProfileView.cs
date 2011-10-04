@@ -8,13 +8,13 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Services.Trust;
-using RiseOp.Implementation;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Interface;
+using DeOps.Services.Trust;
+using DeOps.Implementation;
+using DeOps.Implementation.Protocol;
+using DeOps.Interface;
 
 
-namespace RiseOp.Services.Profile
+namespace DeOps.Services.Profile
 {
     internal partial class ProfileView : ViewShell
     {

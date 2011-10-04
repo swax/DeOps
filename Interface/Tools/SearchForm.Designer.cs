@@ -1,4 +1,4 @@
-namespace RiseOp.Interface.Tools
+namespace DeOps.Interface.Tools
 {
     partial class SearchForm
     {

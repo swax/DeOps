@@ -6,9 +6,9 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-namespace RiseOp.Services.Profile
+namespace DeOps.Services.Profile
 {
-    internal partial class EditTemplate : RiseOp.Interface.CustomIconForm
+    internal partial class EditTemplate : DeOps.Interface.CustomIconForm
     {
         EditProfile EditForm;
         ProfileTemplate Template;

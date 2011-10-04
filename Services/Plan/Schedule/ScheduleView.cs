@@ -9,17 +9,17 @@ using System.Text;
 using System.Windows.Forms;
 
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
-using RiseOp.Interface;
-using RiseOp.Interface.TLVex;
-using RiseOp.Interface.Views;
+using DeOps.Interface;
+using DeOps.Interface.TLVex;
+using DeOps.Interface.Views;
 
-using RiseOp.Services.Assist;
-using RiseOp.Services.Trust;
+using DeOps.Services.Assist;
+using DeOps.Services.Trust;
 
 
-namespace RiseOp.Services.Plan
+namespace DeOps.Services.Plan
 {
     internal partial class ScheduleView : ViewShell
     {
@@ -203,7 +203,7 @@ namespace RiseOp.Services.Plan
 
             if (SaveButton.Visible)
             {
-                DialogResult result = MessageBox.Show(this, "Save Chages to Schedule?", "RiseOp", MessageBoxButtons.YesNoCancel);
+                DialogResult result = MessageBox.Show(this, "Save Chages to Schedule?", "DeOps", MessageBoxButtons.YesNoCancel);
 
                 if (result == DialogResult.Yes)
                     save = true;

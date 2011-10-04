@@ -8,16 +8,16 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
-using RiseOp.Interface;
-using RiseOp.Interface.TLVex;
-using RiseOp.Interface.Views;
+using DeOps.Interface;
+using DeOps.Interface.TLVex;
+using DeOps.Interface.Views;
 
-using RiseOp.Services.Transfer;
+using DeOps.Services.Transfer;
 
 
-namespace RiseOp.Services.Share
+namespace DeOps.Services.Share
 {
     internal partial class SharingView : ViewShell
     {

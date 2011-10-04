@@ -7,10 +7,10 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Services.Buddy;
+using DeOps.Implementation;
+using DeOps.Services.Buddy;
 
-namespace RiseOp.Interface.Settings
+namespace DeOps.Interface.Settings
 {
     internal partial class IgnoreForm : CustomIconForm
     {

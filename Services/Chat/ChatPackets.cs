@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-using RiseOp.Implementation.Protocol;
+using DeOps.Implementation.Protocol;
 
 
-namespace RiseOp.Services.Chat
+namespace DeOps.Services.Chat
 {
     internal class ChatPacket
     {

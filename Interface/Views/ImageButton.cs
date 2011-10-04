@@ -6,7 +6,7 @@ using System.Text;
 using System.Windows.Forms;
 
 
-namespace RiseOp.Interface.Views
+namespace DeOps.Interface.Views
 {
     enum ButtonState { Hot, Normal, Down }
 

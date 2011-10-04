@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace RiseOp.Services.Chat {
+namespace DeOps.Services.Chat {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace RiseOp.Services.Chat {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("RiseOp.Services.Chat.Res.ChatRes", typeof(ChatRes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Services.Chat.Res.ChatRes", typeof(ChatRes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

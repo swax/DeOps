@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Interface.Info
+﻿namespace DeOps.Interface.Info
 {
     partial class InfoView
     {
@@ -31,8 +31,8 @@
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(InfoView));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.networkPanel1 = new RiseOp.Interface.Tools.NetworkPanel();
-            this.webBrowser1 = new RiseOp.Interface.Views.WebBrowserEx();
+            this.networkPanel1 = new DeOps.Interface.Tools.NetworkPanel();
+            this.webBrowser1 = new DeOps.Interface.Views.WebBrowserEx();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.HelpButton = new System.Windows.Forms.ToolStripButton();
             this.NewsButton = new System.Windows.Forms.ToolStripButton();
@@ -164,12 +164,12 @@
         #endregion
 
         private System.Windows.Forms.SplitContainer splitContainer1;
-        private RiseOp.Interface.Views.WebBrowserEx webBrowser1;
+        private DeOps.Interface.Views.WebBrowserEx webBrowser1;
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.ToolStripButton NewsButton;
         private System.Windows.Forms.ToolStripButton HelpButton;
         private System.Windows.Forms.ToolStripButton NetworkButton;
-        private RiseOp.Interface.Tools.NetworkPanel networkPanel1;
+        private DeOps.Interface.Tools.NetworkPanel networkPanel1;
         private System.Windows.Forms.Timer SecondTimer;
     }
 }

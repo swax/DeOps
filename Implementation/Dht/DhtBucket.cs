@@ -5,11 +5,11 @@ using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography;
 
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
 
-namespace RiseOp.Implementation.Dht
+namespace DeOps.Implementation.Dht
 {
 	/// <summary>
 	/// Summary description for DhtBucket.

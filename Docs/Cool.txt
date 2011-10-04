@@ -8,9 +8,9 @@ Collaborative file system that automatically synchronizes and keeps a history of
 
 No server required, no complicated setup, works over the internet or a private LAN
 
-Keep your files local, syncronized, and secure, let RiseOp run from your home, work and mobile computers
+Keep your files local, syncronized, and secure, let DeOps run from your home, work and mobile computers
 
-RiseOp was built for easy mass coordination 10,000+ utilizing simple trust links
+DeOps was built for easy mass coordination 10,000+ utilizing simple trust links
 
 Chat, Schedules, the File System, Message Board, etc.. are built to work in a large structured group without
 	overwhelming anyone

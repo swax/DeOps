@@ -5,10 +5,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
 
-namespace RiseOp.Interface.Views
+namespace DeOps.Interface.Views
 {
     
     internal class TrayLock

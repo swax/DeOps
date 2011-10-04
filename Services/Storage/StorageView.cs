@@ -11,16 +11,16 @@ using System.Text;
 using System.Windows.Forms;
 using System.Collections.Specialized;
 
-using RiseOp.Interface;
-using RiseOp.Interface.TLVex;
-using RiseOp.Interface.Views;
+using DeOps.Interface;
+using DeOps.Interface.TLVex;
+using DeOps.Interface.Views;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Services.Trust;
+using DeOps.Implementation;
+using DeOps.Implementation.Protocol;
+using DeOps.Services.Trust;
 
 
-namespace RiseOp.Services.Storage
+namespace DeOps.Services.Storage
 {
     internal partial class StorageView : ViewShell
     {

@@ -4,10 +4,10 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
 
-namespace RiseOp.Interface.Views
+namespace DeOps.Interface.Views
 {
 	public class RichTextBoxEx : RichTextBox
 	{
@@ -295,7 +295,7 @@ namespace RiseOp.Interface.Views
 
         protected override void OnLinkClicked(LinkClickedEventArgs e)
         {
-            if(Core != null && e.LinkText.StartsWith("riseop://"))
+            if(Core != null && e.LinkText.StartsWith("deops://"))
                 Core.Context.ShowLogin(new string[] { e.LinkText });
             
             else
@@ -304,7 +304,7 @@ namespace RiseOp.Interface.Views
 
         internal void DetectLinksDefault()
         {
-            DetectLinks("riseop");
+            DetectLinks("deops");
             DetectLinks("http");
             DetectLinks("https");
             DetectLinks("file");

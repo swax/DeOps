@@ -8,27 +8,27 @@ using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Protocol.Special;
+using DeOps.Implementation;
+using DeOps.Implementation.Protocol.Special;
 
 
-namespace RiseOp.Interface.Startup
+namespace DeOps.Interface.Startup
 {
     internal partial class CreateUser : CustomIconForm
     {
-        RiseOpContext Context;
+        DeOpsContext Context;
         string OpName = "";
         AccessType OpAccess = AccessType.Public;
 
         InvitePackage Invite;
         internal bool GlobalIM;
 
-        internal CreateUser(RiseOpContext context, string opName, AccessType opAccess)
+        internal CreateUser(DeOpsContext context, string opName, AccessType opAccess)
         {
             InitializeComponent();
 
             Context = context;
-            OpName = opName.Replace("riseop://", "");
+            OpName = opName.Replace("deops://", "");
             OpAccess = opAccess;
 
             OpNameLabel.Text = OpName;
@@ -36,7 +36,7 @@ namespace RiseOp.Interface.Startup
             BrowseLink.Text = (context.Sim == null) ? ApplicationEx.UserAppDataPath() : context.Sim.Internet.LoadedPath;
         }
 
-        internal CreateUser(RiseOpContext context, InvitePackage invite)
+        internal CreateUser(DeOpsContext context, InvitePackage invite)
         {
             InitializeComponent();
 

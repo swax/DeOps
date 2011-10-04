@@ -6,13 +6,13 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Interface;
-using RiseOp.Interface.TLVex;
-using RiseOp.Services.Trust;
+using DeOps.Implementation;
+using DeOps.Interface;
+using DeOps.Interface.TLVex;
+using DeOps.Services.Trust;
 
 
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     internal partial class AddUsersDialog : CustomIconForm
     {

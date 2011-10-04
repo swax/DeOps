@@ -5,12 +5,12 @@ using System.Net.Sockets;
 using System.Text;
 using System.Security.Cryptography;
 
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Simulator;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Simulator;
 
-namespace RiseOp.Implementation.Transport
+namespace DeOps.Implementation.Transport
 {
 	/// <summary>
 	/// Summary description for UdpHandler.

@@ -7,11 +7,11 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Interface;
+using DeOps.Implementation;
+using DeOps.Interface;
 
 
-namespace RiseOp.Services.Location
+namespace DeOps.Services.Location
 {
     internal partial class StatusForm : CustomIconForm
     {

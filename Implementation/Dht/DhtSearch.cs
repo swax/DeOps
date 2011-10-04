@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 
-using RiseOp.Services;
-using RiseOp.Implementation.Transport;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Services;
+using DeOps.Implementation.Transport;
+using DeOps.Implementation.Protocol.Net;
 
-namespace RiseOp.Implementation.Dht
+namespace DeOps.Implementation.Dht
 {
 	/// <summary>
 	/// Summary description for DhtSearch.

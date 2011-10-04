@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Profile
+namespace DeOps.Services.Profile
 {
     partial class PreviewTemplate
     {
@@ -29,7 +29,7 @@ namespace RiseOp.Services.Profile
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(PreviewTemplate));
-            this.Browser = new RiseOp.Interface.Views.WebBrowserEx();
+            this.Browser = new DeOps.Interface.Views.WebBrowserEx();
             this.SuspendLayout();
             // 
             // Browser
@@ -62,6 +62,6 @@ namespace RiseOp.Services.Profile
 
         #endregion
 
-        private RiseOp.Interface.Views.WebBrowserEx Browser;
+        private DeOps.Interface.Views.WebBrowserEx Browser;
     }
 }

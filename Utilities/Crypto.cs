@@ -11,16 +11,16 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
-using RiseOp.Implementation.Protocol.Special;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
+using DeOps.Implementation.Protocol.Special;
 
-using RiseOp.Interface;
-using RiseOp.Interface.TLVex;
+using DeOps.Interface;
+using DeOps.Interface.TLVex;
 
-namespace RiseOp
+namespace DeOps
 {
 
     internal static partial class Utilities
@@ -63,7 +63,7 @@ namespace RiseOp
                 if (MemCompare(core.User.PasswordKey, key))
                     return true;
 
-                MessageBox.Show("Wrong passphrase", "RiseOp");
+                MessageBox.Show("Wrong passphrase", "DeOps");
             }
 
             return false;

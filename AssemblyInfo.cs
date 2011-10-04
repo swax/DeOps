@@ -20,12 +20,12 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 //
-[assembly: AssemblyTitle("RiseOp")]
+[assembly: AssemblyTitle("DeOps")]
 [assembly: AssemblyDescription("Decentralized Operations")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("JMG")]
-[assembly: AssemblyProduct("RiseOp")]
-[assembly: AssemblyCopyright("Copyright ©  2008")]
+[assembly: AssemblyCompany("c0re")]
+[assembly: AssemblyProduct("DeOps")]
+[assembly: AssemblyCopyright("Copyright ©  2011")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
  

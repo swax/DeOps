@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-namespace RiseOp.Interface.Views
+namespace DeOps.Interface.Views
 {
     class WebBrowserEx : WebBrowser
     {

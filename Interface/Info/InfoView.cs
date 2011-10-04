@@ -7,11 +7,11 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Interface.Views;
+using DeOps.Implementation;
+using DeOps.Interface.Views;
 
 
-namespace RiseOp.Interface.Info
+namespace DeOps.Interface.Info
 {
     internal partial class InfoView : ViewShell
     {
@@ -41,16 +41,16 @@ namespace RiseOp.Interface.Info
 Status: <?=status?><br>
 <br>
 <b>Getting Started</b><br>
-Everyone on RiseOp has an identity, yours can be found in the Manage menu above. Also in the 
+Everyone on DeOps has an identity, yours can be found in the Manage menu above. Also in the 
 Manage Menu you'll find the Invite option to bring more people into <?=op?>.<br>
 <br>
 <b>Whats the point?</b><br>
-RiseOp is a secure shell around your group, including their files, and communications.  Security
+DeOps is a secure shell around your group, including their files, and communications.  Security
 is derived from trust.  So once people join  <?=op?>, determine who trusts who to build the
 functional structure of your group.<br>
 <br>
 <b>What can I do?</b><br>
-Grow <?=op?>, use trust to build it up and keep it organized.  RiseOp has a number
+Grow <?=op?>, use trust to build it up and keep it organized.  DeOps has a number
 of services that make coordination easier.<br>
 <br>
 <b>What Services?</b><br>
@@ -63,14 +63,14 @@ Post on the Message Board to have a offline discussions with those around you<br
 <br>
 Start making a timeline of your plans in the Scheduler<br>
 <br>
-Use the 'side mode' button in the bottom-left corner to switch RiseOp into an IM interface.<br>
+Use the 'side mode' button in the bottom-left corner to switch DeOps into an IM interface.<br>
 <br>
 Update your profile info so if you're offline people know how to find you.<br>
 <br>
 As <?=op?> grows, use Projects to create specialized groups with their own Storage and Communication.
 <br>
 <br>
-<b>Grow <?=op?> and let RiseOp facilitate your large scale coordination.</b>
+<b>Grow <?=op?> and let DeOps facilitate your large scale coordination.</b>
                             </body>
                             </html>";
 
@@ -97,7 +97,7 @@ As <?=op?> grows, use Projects to create specialized groups with their own Stora
                                 <b>Welcome to <?=op?></b><br>
                                 Status: <?=status?><br>
                                 <br>
-When you create a new Op with RiseOp, use the Global IM to send people invitations.  The Global IM
+When you create a new Op with DeOps, use the Global IM to send people invitations.  The Global IM
 network is similar to AOL or Yahoo, but is different because it is fully decentralized and highly secure.<br>
 <br>
 <b>How do I start?</b><br>
@@ -105,7 +105,7 @@ Your Global IM identity can be found in the Options menu.  Give your identity to
 They will use your identity to create an invitation specifically for you.<br>
 <br>
 <b>What else can I do?</b><br>
-Global IM includes a couple of the services found in a full RiseOp network.  These services are chat rooms, file
+Global IM includes a couple of the services found in a full DeOps network.  These services are chat rooms, file
 transfer, and file sharing.  File transfers are automatically swarmed when multiple people are involved.<br>
                                 </body>
                             </html>";
@@ -151,12 +151,12 @@ transfer, and file sharing.  File transfers are automatically swarmed when multi
         {
             networkPanel1.Init(Core);
 
-            Core.Network.GuiStatusChange += new RiseOp.Implementation.Dht.StatusChange(Network_StatusChange);
+            Core.Network.GuiStatusChange += new DeOps.Implementation.Dht.StatusChange(Network_StatusChange);
         }
 
         internal override bool Fin()
         {
-            Core.Network.GuiStatusChange -= new RiseOp.Implementation.Dht.StatusChange(Network_StatusChange);
+            Core.Network.GuiStatusChange -= new DeOps.Implementation.Dht.StatusChange(Network_StatusChange);
             
             return true;
         }
@@ -190,7 +190,7 @@ transfer, and file sharing.  File transfers are automatically swarmed when multi
             if (NewsButton.Checked)
             {
                 HelpButton.Checked = false;
-                webBrowser1.Navigate("http://www.riseop.com/client/news.html?version=" + Application.ProductVersion);
+                webBrowser1.Navigate("http://www.c0re.net/deops/client/news.html?version=" + Application.ProductVersion);
             }
         }
 

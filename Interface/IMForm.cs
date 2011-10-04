@@ -7,18 +7,18 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
-using RiseOp.Interface.Info;
-using RiseOp.Interface.Views;
+using DeOps.Interface.Info;
+using DeOps.Interface.Views;
 
-using RiseOp.Services;
-using RiseOp.Services.Buddy;
-using RiseOp.Services.Share;
-using RiseOp.Services.Chat;
+using DeOps.Services;
+using DeOps.Services.Buddy;
+using DeOps.Services.Share;
+using DeOps.Services.Chat;
 
 
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     internal partial class IMForm : HostsExternalViews
     {

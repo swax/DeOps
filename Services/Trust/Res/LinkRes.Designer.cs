@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace RiseOp.Services.Trust {
+namespace DeOps.Services.Trust {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace RiseOp.Services.Trust {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("RiseOp.Services.Trust.Res.LinkRes", typeof(LinkRes).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DeOps.Services.Trust.Res.LinkRes", typeof(LinkRes).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

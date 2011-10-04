@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Interface
+﻿namespace DeOps.Interface
 {
     partial class IMForm
     {
@@ -30,14 +30,14 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(IMForm));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-            this.BuddyList = new RiseOp.Services.Buddy.BuddyView();
+            this.BuddyList = new DeOps.Services.Buddy.BuddyView();
             this.TopStrip = new System.Windows.Forms.ToolStrip();
             this.OptionsButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.HelpInfoButton = new System.Windows.Forms.ToolStripButton();
             this.SharedButton = new System.Windows.Forms.ToolStripButton();
             this.ChatButton = new System.Windows.Forms.ToolStripButton();
             this.AddButton = new System.Windows.Forms.ToolStripButton();
-            this.SelectionInfo = new RiseOp.Interface.StatusPanel();
+            this.SelectionInfo = new DeOps.Interface.StatusPanel();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
@@ -175,7 +175,7 @@
             this.ClientSize = new System.Drawing.Size(200, 426);
             this.Controls.Add(this.splitContainer1);
             this.Name = "IMForm";
-            this.Text = "RiseOp IM";
+            this.Text = "DeOps IM";
             this.SizeChanged += new System.EventHandler(this.IMForm_SizeChanged);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.IMForm_FormClosing);
             this.splitContainer1.Panel1.ResumeLayout(false);
@@ -191,7 +191,7 @@
         #endregion
 
         private System.Windows.Forms.SplitContainer splitContainer1;
-        private RiseOp.Services.Buddy.BuddyView BuddyList;
+        private DeOps.Services.Buddy.BuddyView BuddyList;
         private System.Windows.Forms.ToolStrip TopStrip;
         private StatusPanel SelectionInfo;
         private System.Windows.Forms.ToolStripButton AddButton;

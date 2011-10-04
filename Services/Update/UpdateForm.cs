@@ -7,10 +7,10 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Interface;
+using DeOps.Interface;
 
 
-namespace RiseOp.Services.Update
+namespace DeOps.Services.Update
 {
     internal partial class UpdateForm : CustomIconForm
     {
@@ -18,7 +18,7 @@ namespace RiseOp.Services.Update
         {
             InitializeComponent();
 
-            MessageLabel.Text = "RiseOp needs to be restarted to finish updating to version " + info.DottedVersion;
+            MessageLabel.Text = "DeOps needs to be restarted to finish updating to version " + info.DottedVersion;
             
             NotesBox.Text = info.Notes;
         }

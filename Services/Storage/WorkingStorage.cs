@@ -6,10 +6,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Protocol;
+using DeOps.Implementation;
+using DeOps.Implementation.Protocol;
 
-namespace RiseOp.Services.Storage
+namespace DeOps.Services.Storage
 {
     enum WorkingChange { Created, Updated, Removed };
 

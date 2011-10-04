@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 
 
-namespace RiseOp.Implementation.Protocol
+namespace DeOps.Implementation.Protocol
 {
 	internal enum G2ReadResult { PACKET_GOOD, PACKET_INCOMPLETE, PACKET_ERROR, STREAM_END };
 

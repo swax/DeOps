@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Interface
+﻿namespace DeOps.Interface
 {
     partial class ErrorReport
     {
@@ -117,7 +117,7 @@
             this.Label1.Name = "Label1";
             this.Label1.Size = new System.Drawing.Size(344, 44);
             this.Label1.TabIndex = 13;
-            this.Label1.Text = "RiseOp has closed due to an unexpected error.  Assist us in resolving this issue " +
+            this.Label1.Text = "DeOps has closed due to an unexpected error.  Assist us in resolving this issue " +
                 "by sending in an error report.";
             this.Label1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 

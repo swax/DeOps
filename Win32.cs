@@ -7,7 +7,7 @@ using System.Text;
 using NetFwTypeLib;
 
 
-namespace RiseOp
+namespace DeOps
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct SHFILEINFO

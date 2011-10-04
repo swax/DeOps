@@ -1,6 +1,6 @@
-using RiseOp.Interface;
+using DeOps.Interface;
 
-namespace RiseOp.Services.Chat
+namespace DeOps.Services.Chat
 {
     partial class RoomView
     {
@@ -33,11 +33,11 @@ namespace RiseOp.Services.Chat
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(RoomView));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.MessageTextBox = new RiseOp.Interface.Views.RichTextBoxEx();
-            this.InputControl = new RiseOp.Interface.TextInput();
+            this.MessageTextBox = new DeOps.Interface.Views.RichTextBoxEx();
+            this.InputControl = new DeOps.Interface.TextInput();
             this.BottomStrip = new System.Windows.Forms.ToolStrip();
             this.SendFileButton = new System.Windows.Forms.ToolStripButton();
-            this.MemberTree = new RiseOp.Interface.TLVex.TreeListViewEx();
+            this.MemberTree = new DeOps.Interface.TLVex.TreeListViewEx();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
@@ -190,9 +190,9 @@ namespace RiseOp.Services.Chat
 
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.SplitContainer splitContainer2;
-        private RiseOp.Interface.Views.RichTextBoxEx MessageTextBox;
+        private DeOps.Interface.Views.RichTextBoxEx MessageTextBox;
         private TextInput InputControl;
-        private RiseOp.Interface.TLVex.TreeListViewEx MemberTree;
+        private DeOps.Interface.TLVex.TreeListViewEx MemberTree;
         private System.Windows.Forms.ToolStrip BottomStrip;
         private System.Windows.Forms.ToolStripButton SendFileButton;
 

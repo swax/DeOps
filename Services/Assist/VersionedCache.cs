@@ -6,17 +6,17 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
-using RiseOp.Services;
-using RiseOp.Services.Location;
-using RiseOp.Services.Transfer;
+using DeOps.Services;
+using DeOps.Services.Location;
+using DeOps.Services.Transfer;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
 
-namespace RiseOp.Services.Assist
+namespace DeOps.Services.Assist
 {
     internal delegate void FileAquiredHandler(OpVersionedFile file);
     internal delegate void FileRemovedHandler(OpVersionedFile file);

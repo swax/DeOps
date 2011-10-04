@@ -11,14 +11,14 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Interface;
-using RiseOp.Interface.TLVex;
-using RiseOp.Interface.Views;
-using RiseOp.Services.Trust;
+using DeOps.Implementation;
+using DeOps.Interface;
+using DeOps.Interface.TLVex;
+using DeOps.Interface.Views;
+using DeOps.Services.Trust;
 
 
-namespace RiseOp.Services.Board
+namespace DeOps.Services.Board
 {
     internal partial class BoardView : ViewShell
     {

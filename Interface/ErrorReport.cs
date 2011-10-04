@@ -12,10 +12,10 @@ using System.Threading;
 using System.Web;
 using System.Windows.Forms;
 
-using RiseOp.Implementation.Protocol.Packets;
+using DeOps.Implementation.Protocol.Packets;
 
 
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     internal partial class ErrorReport : CustomIconForm
     {
@@ -39,7 +39,7 @@ namespace RiseOp.Interface
             {
                 FullLicense full = null;
                 LightLicense light = null;
-                RiseOpContext.LoadLicense(ref full, ref light);
+                DeOpsContext.LoadLicense(ref full, ref light);
 
                 Dictionary<string, string> post = new Dictionary<string, string>();
 
@@ -48,7 +48,7 @@ namespace RiseOp.Interface
                 post["stacktrace"] = Details.StackTrace;
                 post["notes"] = NotesBox.Text;
                 post["licensed"] = (full != null) ? "yes" : "no";
-                post["riseop"] = Application.ProductVersion;
+                post["deops"] = Application.ProductVersion;
                 post["windows"] = Environment.OSVersion.Version.ToString();
                 post["net"] = Environment.Version.ToString();
                 post["culture"] = Thread.CurrentThread.CurrentCulture.EnglishName;
@@ -57,7 +57,7 @@ namespace RiseOp.Interface
 
 
                 // Create a request using a URL that can receive a post. 
-                WebRequest request = WebRequest.Create("http://www.riseop.com/error/handler.php");
+                WebRequest request = WebRequest.Create("http://www.c0re.net/deops/error/handler.php");
                 request.Method = "POST";
                 request.ContentType = "application/x-www-form-urlencoded";
 

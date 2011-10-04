@@ -7,10 +7,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
-using RiseOp.Interface.Views;
+using DeOps.Interface.Views;
 
 
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     public partial class TextInput : UserControl
     {

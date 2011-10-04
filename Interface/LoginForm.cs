@@ -12,20 +12,20 @@ using System.IO;
 
 using Microsoft.Win32;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Special;
+using DeOps.Implementation;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Special;
 
-using RiseOp.Interface.Startup;
+using DeOps.Interface.Startup;
 
-using RiseOp.Simulator;
+using DeOps.Simulator;
 
 
-namespace RiseOp.Interface
+namespace DeOps.Interface
 {
     internal partial class LoginForm : CustomIconForm
     {
-        RiseOpContext Context;
+        DeOpsContext Context;
 
         string LastBrowse;
         string LastOpened;
@@ -34,7 +34,7 @@ namespace RiseOp.Interface
         internal G2Protocol Protocol = new G2Protocol();
 
 
-        internal LoginForm(RiseOpContext context, string arg)
+        internal LoginForm(DeOpsContext context, string arg)
         {
             Context = context;
             Arg = arg;
@@ -121,7 +121,7 @@ namespace RiseOp.Interface
                     user = ReadInvite(arg);
 
                 // public network
-                else if (arg.Replace("riseop://", "").IndexOf('/') == -1)
+                else if (arg.Replace("deops://", "").IndexOf('/') == -1)
                     user = new CreateUser(Context, arg, AccessType.Public);
 
                 // show create user dialog
@@ -205,7 +205,7 @@ namespace RiseOp.Interface
                 OpenFileDialog open = new OpenFileDialog();
 
                 open.InitialDirectory = LastBrowse;
-                open.Filter = "RiseOp Identity (*.rop)|*.rop";
+                open.Filter = "DeOps Identity (*.dop)|*.dop";
 
                 if (open.ShowDialog() == DialogResult.OK)
                 {
@@ -273,7 +273,7 @@ namespace RiseOp.Interface
                             Close(); // user thinks they logged back on, window just brought to front
                         }
                         else
-                            MessageBox.Show(this, "This profile is already loaded, check the system tray", "RiseOp");
+                            MessageBox.Show(this, "This profile is already loaded, check the system tray", "DeOps");
 
                         handled = true;
                     }
@@ -387,7 +387,7 @@ namespace RiseOp.Interface
         private void LicenseLabel_Click(object sender, EventArgs e)
         {
             if (Context.License == null)
-                Process.Start("http://www.riseop.com/index.php/download");
+                Process.Start("http://www.c0re.net/deops/download");
 
             else
                 new LicenseForm(Context.License).ShowDialog(this);

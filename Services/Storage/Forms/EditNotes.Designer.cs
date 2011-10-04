@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Storage
+namespace DeOps.Services.Storage
 {
     partial class EditNotes
     {

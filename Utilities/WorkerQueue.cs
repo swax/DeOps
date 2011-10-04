@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 
 
-namespace RiseOp.Utility
+namespace DeOps.Utility
 {
     internal class WorkerQueue : IDisposable 
     {

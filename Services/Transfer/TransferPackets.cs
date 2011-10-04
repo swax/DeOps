@@ -3,11 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Net;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Net;
 
 
-namespace RiseOp.Services.Transfer
+namespace DeOps.Services.Transfer
 {
     internal class TransferPacket
     {

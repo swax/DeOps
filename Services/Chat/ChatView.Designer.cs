@@ -1,4 +1,4 @@
-namespace RiseOp.Services.Chat
+namespace DeOps.Services.Chat
 {
     partial class ChatView
     {

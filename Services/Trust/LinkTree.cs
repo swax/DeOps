@@ -4,14 +4,14 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Text;
 
-using RiseOp.Implementation;
+using DeOps.Implementation;
 
-using RiseOp.Services.Assist;
-using RiseOp.Services.Location;
+using DeOps.Services.Assist;
+using DeOps.Services.Location;
 
-using RiseOp.Interface.TLVex;
+using DeOps.Interface.TLVex;
 
-namespace RiseOp.Services.Trust
+namespace DeOps.Services.Trust
 {
     public class LinkTree : TreeListViewEx 
     {

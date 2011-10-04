@@ -7,11 +7,11 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Transport;
+using DeOps.Implementation;
+using DeOps.Implementation.Transport;
 
 
-namespace RiseOp.Interface.Settings
+namespace DeOps.Interface.Settings
 {
     internal partial class UpnpLog : CustomIconForm
     {

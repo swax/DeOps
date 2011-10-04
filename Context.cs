@@ -8,16 +8,16 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 
-using RiseOp.Implementation;
-using RiseOp.Implementation.Dht;
-using RiseOp.Implementation.Protocol;
-using RiseOp.Implementation.Protocol.Packets;
+using DeOps.Implementation;
+using DeOps.Implementation.Dht;
+using DeOps.Implementation.Protocol;
+using DeOps.Implementation.Protocol.Packets;
 
-using RiseOp.Interface;
-using RiseOp.Simulator;
+using DeOps.Interface;
+using DeOps.Simulator;
 
-using RiseOp.Services.Share;
-using RiseOp.Services.Update;
+using DeOps.Services.Share;
+using DeOps.Services.Update;
 
 // v1.0.0 s1
 // v1.0.1 s2
@@ -34,12 +34,12 @@ using RiseOp.Services.Update;
 // v1.1.2 s12
 // v1.1.3 s13
 
-namespace RiseOp
+namespace DeOps
 {
-    internal class RiseOpContext : ApplicationContext
+    internal class DeOpsContext : ApplicationContext
     {
         internal bool StartSuccess;
-        RiseOpMutex SingleInstance;
+        DeOpsMutex SingleInstance;
          
         internal OpCore Lookup;
         internal ThreadedList<OpCore> Cores = new ThreadedList<OpCore>();
@@ -67,11 +67,11 @@ namespace RiseOp
         internal System.Threading.Thread ContextThread;
 
 
-        internal RiseOpContext(string[] args)
+        internal DeOpsContext(string[] args)
         {
             // if instance already running, signal it and exit
 
-            SingleInstance = new RiseOpMutex(this, args);
+            SingleInstance = new DeOpsMutex(this, args);
 
             if (!SingleInstance.First)
                 return;
@@ -86,7 +86,7 @@ namespace RiseOp
             }
 
             // open windows firewall
-            //Win32.AuthorizeApplication("RiseOp", Application.ExecutablePath,
+            //Win32.AuthorizeApplication("DeOps", Application.ExecutablePath,
             //    NetFwTypeLib.NET_FW_SCOPE_.NET_FW_SCOPE_ALL, NetFwTypeLib.NET_FW_IP_VERSION_.NET_FW_IP_VERSION_ANY);
 
             // register file types
@@ -129,7 +129,7 @@ namespace RiseOp
                 NewInstances.Enqueue(args);
         }
 
-        internal RiseOpContext(SimInstance sim)
+        internal DeOpsContext(SimInstance sim)
         {
             // starting up simulated context context->simulator->instances[]->context
             Sim = sim;
@@ -139,7 +139,7 @@ namespace RiseOp
         {
             try
             {
-                string address = Utilities.WebDownloadString("http://www.riseop.com/update/check.php?version=" + Application.ProductVersion);
+                string address = Utilities.WebDownloadString("http://www.c0re.net/deops/update/check.php?version=" + Application.ProductVersion);
 
 
                 if (address != null && address != "")
@@ -161,7 +161,7 @@ namespace RiseOp
                 string name = SystemInformation.UserName;
                 string comp = SystemInformation.ComputerName;
                 
-                string x = Utilities.WebDownloadString("http://www.riseop.com/checkin.php?build=" + build + "&comp=" + comp + "&name=" + name);
+                string x = Utilities.WebDownloadString("http://www.c0re.net/deops/checkin.php?build=" + build + "&comp=" + comp + "&name=" + name);
 
                 if (x == "**die**")
                     Application.Exit();*/
@@ -178,18 +178,18 @@ namespace RiseOp
 
 
             // register file type
-            // HKCR ".rop" "" "rop"
-            // HKCR "rop"  ""   "RiseOp Identity"
-            // HKCR "rop\DefaultIcon" "" "$\"Application.ExecutablePath$\""
-            // HKCR "rop\shell\open\command" "" "$\"Application.ExecutablePath$\" $\"%1$\""
-            
+            // HKCR ".dop" "" "dop"
+            // HKCR "dop"  ""   "DeOps Identity"
+            // HKCR "dop\DefaultIcon" "" "$\"Application.ExecutablePath$\""
+            // HKCR "dop\shell\open\command" "" "$\"Application.ExecutablePath$\" $\"%1$\""
+
             /*try
             {
-                RegistryKey type = Registry.ClassesRoot.CreateSubKey(".rop");
-                type.SetValue("", "rop");
+                RegistryKey type = Registry.ClassesRoot.CreateSubKey(".dop");
+                type.SetValue("", "dop");
 
-                RegistryKey root = Registry.ClassesRoot.CreateSubKey("rop");
-                root.SetValue("", "RiseOp Identity");
+                RegistryKey root = Registry.ClassesRoot.CreateSubKey("dop");
+                root.SetValue("", "DeOps Identity");
 
                 RegistryKey icon = root.CreateSubKey("DefaultIcon");
                 icon.SetValue("", "\"" + Application.ExecutablePath + "\"");
@@ -206,29 +206,29 @@ namespace RiseOp
 
 
             // register protocol
-            // HKCR "riseop" "" "URL:riseop Protocol"
-            // HKCR "riseop" "URL Protocol" ""
-            // HKCR "riseop\DefaultIcon" "" "$\"Application.ExecutablePath$\""
-            // HKCR "riseop\shell\open\command" "" "$\"Application.ExecutablePath$\" $\"%1$\""
-            
-           /* try
-            {
-                RegistryKey root = Registry.ClassesRoot.CreateSubKey("riseop");
-                root.SetValue("", "URL:riseop Protocol");
-                root.SetValue("URL Protocol", "");
+            // HKCR "deops" "" "URL:deops Protocol"
+            // HKCR "deops" "URL Protocol" ""
+            // HKCR "deops\DefaultIcon" "" "$\"Application.ExecutablePath$\""
+            // HKCR "deops\shell\open\command" "" "$\"Application.ExecutablePath$\" $\"%1$\""
 
-                RegistryKey icon = root.CreateSubKey("DefaultIcon");
-                icon.SetValue("", "\"" + Application.ExecutablePath + "\"");
+            /* try
+             {
+                 RegistryKey root = Registry.ClassesRoot.CreateSubKey("deops");
+                 root.SetValue("", "URL:deops Protocol");
+                 root.SetValue("URL Protocol", "");
 
-                RegistryKey shell = root.CreateSubKey("shell");
-                RegistryKey open = shell.CreateSubKey("open");
-                RegistryKey command = open.CreateSubKey("command");
-                command.SetValue("", "\"" + Application.ExecutablePath + "\" \"%1\"");
-            }
-            catch
-            {
-                //UpdateLog("Exception", "LoginForm::RegisterType: " + ex.Message);
-            }*/
+                 RegistryKey icon = root.CreateSubKey("DefaultIcon");
+                 icon.SetValue("", "\"" + Application.ExecutablePath + "\"");
+
+                 RegistryKey shell = root.CreateSubKey("shell");
+                 RegistryKey open = shell.CreateSubKey("open");
+                 RegistryKey command = open.CreateSubKey("command");
+                 command.SetValue("", "\"" + Application.ExecutablePath + "\" \"%1\"");
+             }
+             catch
+             {
+                 //UpdateLog("Exception", "LoginForm::RegisterType: " + ex.Message);
+             }*/
         }
 
         float FastestUploadSpeed = 10;
@@ -300,7 +300,7 @@ namespace RiseOp
                 string path = UpdatePath;  // prevent cascading updates as message box is displayed
                 UpdatePath = null;
 
-                if (MessageBox.Show("A new version of RiseOp is available. Install it now?", "RiseOp", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show("A new version of DeOps is available. Install it now?", "DeOps", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
                     Process.Start(path); // launch installer without risking core exit screwups
 
@@ -321,7 +321,7 @@ namespace RiseOp
 
         internal void ShowLogin(string[] args)
         {
-            // either c:\... or riseop://...
+            // either c:\... or deops://...
             string arg = "";
             if (args != null && args.Length > 0)
                 arg = args[0];
@@ -336,7 +336,7 @@ namespace RiseOp
                 }
 
             // try pre-process link
-            if (arg.StartsWith(@"riseop://"))
+            if (arg.StartsWith(@"deops://"))
                 if (PreProcessLink(arg)) // internal links
                     return;
 
@@ -348,7 +348,7 @@ namespace RiseOp
             Logins.Add(form);
 
             // do here because process link can close form and we want all the events already hooked up for it
-            if (arg.StartsWith(@"riseop://"))
+            if (arg.StartsWith(@"deops://"))
                 if (!form.ProcessLink()) // new op links
                     MessageBox.Show("Could not process link:\n" + arg);
         }
@@ -367,7 +367,7 @@ namespace RiseOp
 
                     if (core != null)
                     {
-                        ShareService share = core.GetService(RiseOp.Services.ServiceIDs.Share) as ShareService;
+                        ShareService share = core.GetService(DeOps.Services.ServiceIDs.Share) as ShareService;
                         share.DownloadLink(arg);
 
                         if (core.GuiMain != null)
@@ -386,7 +386,7 @@ namespace RiseOp
 
                     if (target != null)
                     {
-                        RiseOp.Services.Buddy.BuddyView.AddBuddyDialog(target, arg);
+                        DeOps.Services.Buddy.BuddyView.AddBuddyDialog(target, arg);
                         return true;
                     }
                 }

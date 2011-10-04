@@ -1,4 +1,4 @@
-﻿namespace RiseOp.Services.Transfer
+﻿namespace DeOps.Services.Transfer
 {
     partial class BitfieldControl
     {

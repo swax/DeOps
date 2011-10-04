@@ -1,6 +1,6 @@
-using RiseOp.Interface;
+using DeOps.Interface;
 
-namespace RiseOp.Services.IM
+namespace DeOps.Services.IM
 {
     partial class IM_View
     {
@@ -35,8 +35,8 @@ namespace RiseOp.Services.IM
             this.panel1 = new System.Windows.Forms.Panel();
             this.StatusImage = new System.Windows.Forms.PictureBox();
             this.StatusLabel = new System.Windows.Forms.Label();
-            this.MessageTextBox = new RiseOp.Interface.Views.RichTextBoxEx();
-            this.InputControl = new RiseOp.Interface.TextInput();
+            this.MessageTextBox = new DeOps.Interface.Views.RichTextBoxEx();
+            this.InputControl = new DeOps.Interface.TextInput();
             this.FlashTimer = new System.Windows.Forms.Timer(this.components);
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -150,7 +150,7 @@ namespace RiseOp.Services.IM
         #endregion
 
         private System.Windows.Forms.SplitContainer splitContainer1;
-        private RiseOp.Interface.Views.RichTextBoxEx MessageTextBox;
+        private DeOps.Interface.Views.RichTextBoxEx MessageTextBox;
         private TextInput InputControl;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.PictureBox StatusImage;
