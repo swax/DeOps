@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
 
-using NetFwTypeLib;
+//using NetFwTypeLib;
 
 
 namespace DeOps
@@ -70,7 +70,7 @@ namespace DeOps
         public static extern int FlashWindow(IntPtr Hwnd, bool Revert);
 
 
-        public static bool AuthorizeApplication(string title, string applicationPath, NET_FW_SCOPE_ scope, NET_FW_IP_VERSION_ ipVersion)
+        /*public static bool AuthorizeApplication(string title, string applicationPath, NET_FW_SCOPE_ scope, NET_FW_IP_VERSION_ ipVersion)
         {
             try
             {
@@ -97,7 +97,7 @@ namespace DeOps
             Type objectType = Type.GetTypeFromCLSID(new Guid("{304CE942-6E39-40D8-943A-B913C40C9CD4}"));
 
             return Activator.CreateInstance(objectType) as NetFwTypeLib.INetFwMgr;
-        }
+        }*/
 
 
     }
