@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using System.IO;
 using System.Security.Cryptography;
@@ -39,6 +40,8 @@ namespace DeOps.Simulator
 
         FileStream TimeFile;
 
+        public int UiThreadId;
+
         //bool Loaded;
         //string DelayLoadPath;
 
@@ -61,7 +64,9 @@ namespace DeOps.Simulator
 
             ListInstances.ListViewItemSorter = lvwColumnSorter;
 
-            Sim = new InternetSim(this);
+            UiThreadId = Thread.CurrentThread.ManagedThreadId;
+
+            Sim = new InternetSim();
 
         }
 
@@ -153,7 +158,7 @@ namespace DeOps.Simulator
                         instance = Sim.Instances.Where(i => i.Name == name && !i.Ops.Contains(op)).FirstOrDefault());
 
                     if (instance != null)
-                        Sim.Login(instance, path);
+                        Login(instance, path);
                     else
                         Sim.StartInstance(path);
                 }
@@ -162,6 +167,19 @@ namespace DeOps.Simulator
             }
 
             LoadProgress.Visible = false;
+        }
+
+        private void Login(SimInstance instance, string path)
+        {
+            try
+            {
+                Sim.Login(instance, path);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, instance.Name + ": " + ex.Message);
+                return;
+            }
         }
 
         private void SaveMenuItem_Click(object sender, EventArgs e)
@@ -202,6 +220,12 @@ namespace DeOps.Simulator
 
         void OnInstanceChange(SimInstance instance, InstanceChangeType type)
         {
+            if (Thread.CurrentThread.ManagedThreadId != UiThreadId)
+            {
+                BeginInvoke(Sim.InstanceChange, instance, type);
+                return;
+            }
+
             // add
             if (type == InstanceChangeType.Add)
             {
@@ -521,7 +545,7 @@ namespace DeOps.Simulator
         {
             foreach (ListInstanceItem item in ListInstances.SelectedItems)
                 if(item.Core == null)
-                    Sim.Login(item.Instance, item.Instance.LastPath);
+                    Login(item.Instance, item.Instance.LastPath);
 
             OnInstanceChange(null, InstanceChangeType.Refresh);
         }
@@ -670,7 +694,7 @@ namespace DeOps.Simulator
 
 
             // re-init
-            Sim = new InternetSim(this);
+            Sim = new InternetSim();
             Sim.InstanceChange += new InstanceChangeHandler(OnInstanceChange);
 
             OnInstanceChange(null, InstanceChangeType.Refresh);

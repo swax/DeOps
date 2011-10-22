@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 using DeOps.Services;
@@ -112,6 +113,12 @@ namespace DeOps.Simulator
 
         internal void OnUpdateView()
         {
+            if (Thread.CurrentThread.ManagedThreadId != Main.UiThreadId)
+            {
+                BeginInvoke(Sim.UpdateView);
+                return;
+            }
+
             Redraw = true;
             Invalidate();
         }

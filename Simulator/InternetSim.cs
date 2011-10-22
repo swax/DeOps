@@ -6,7 +6,6 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Diagnostics;
-using System.Windows.Forms;
 
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;
@@ -20,10 +19,6 @@ namespace DeOps.Simulator
 
     internal class InternetSim
     {
-        // super-class
-        SimForm Interface;
-
-
         internal ThreadedList<SimInstance> Instances = new ThreadedList<SimInstance>();
 
         Random RndGen = new Random(unchecked((int)DateTime.Now.Ticks));
@@ -89,10 +84,8 @@ namespace DeOps.Simulator
         int NextAffinity = 0;
 
 
-        internal InternetSim(SimForm form)
+        internal InternetSim()
         {
-            Interface = form;
-
             StartTime = new DateTime(2006, 1, 1, 0, 0, 0);
             TimeNow = StartTime;
 
@@ -142,7 +135,7 @@ namespace DeOps.Simulator
 
             Instances.SafeAdd(instance);
             
-            Interface.BeginInvoke(InstanceChange, instance, InstanceChangeType.Add);
+            InstanceChange(instance, InstanceChangeType.Add);
         }
 
         internal void DoFlux()
@@ -172,21 +165,15 @@ namespace DeOps.Simulator
 
             OpCore core = null;
 
-            try
-            {
-                string pass = name.Split(' ')[0].ToLower(); // lowercase firstname
-                core = new OpCore(instance.Context, path, pass);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(Interface, name + ": " + ex.Message);
-                return;
-            }
+            string pass = name.Split(' ')[0].ToLower(); // lowercase firstname
+            core = new OpCore(instance.Context, path, pass);
+
 
             instance.LastPath = path;
             instance.Context.AddCore(core);
 
-            Interface.BeginInvoke(InstanceChange, instance, InstanceChangeType.Update);
+            if(InstanceChange != null)
+                InstanceChange(instance, InstanceChangeType.Update);
         }
 
         internal void RegisterAddress(OpCore core)
@@ -219,7 +206,8 @@ namespace DeOps.Simulator
 
             core.Exit();
       
-            Interface.BeginInvoke(InstanceChange, core.Sim, InstanceChangeType.Update);
+            if(InstanceChange != null)
+                InstanceChange(core.Sim, InstanceChangeType.Update);
         }
 
         internal void UnregisterAddress(OpCore core)
@@ -436,7 +424,8 @@ namespace DeOps.Simulator
 
                     TimeNow = TimeNow.AddMilliseconds(1000 / PumpsPerSec);
 
-                    Interface.BeginInvoke(UpdateView, null);
+                    if (UpdateView != null) 
+                        UpdateView();
 
                     CurrentPump++;
 
@@ -527,7 +516,8 @@ namespace DeOps.Simulator
 
                      TimeNow = TimeNow.AddMilliseconds(1000 / pumps);
 
-                     Interface.BeginInvoke(UpdateView, null);
+                     if(UpdateView != null)
+                        UpdateView();
 
                      if (Step || Shutdown)
                      {
