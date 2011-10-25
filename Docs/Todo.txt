@@ -1,8 +1,7 @@
 
+is timer turned off when de-ops context is destroyed? use xray to verify instance is finalized ;)
 
-integrate back with svn folder
-commit
-test on linux/osx
+
 implement a console mode
 
 replace main graphic
@@ -11,9 +10,6 @@ test sim
 
 put alpha label in the name
 
-
-
-how will caching work?
 how will upgrading clients work?
 Keep private key, embed public on release?
 test on linux / osx

@@ -364,7 +364,7 @@ namespace DeOps.Simulator
                     Instances.SafeForEach(instance =>
                     {
                         if (instance.ThreadIndex == index)
-                            instance.Context.SecondTimer_Tick(null, null);
+                            instance.Context.SecondTimer_Tick(null);
                     });
   
                 PumpEnd[index].Set();

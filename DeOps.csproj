@@ -128,7 +128,8 @@
     <Compile Include="AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Context.cs" />
+    <Compile Include="WinContext.cs" />
+    <Compile Include="DeOpsContext.cs" />
     <Compile Include="Implementation\OpCache.cs" />
     <Compile Include="Implementation\Protocol\Packets\PacketsLicense.cs" />
     <Compile Include="Implementation\Transport\LanHandler.cs" />

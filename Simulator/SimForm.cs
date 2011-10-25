@@ -410,7 +410,7 @@ namespace DeOps.Simulator
 
                 if (core == null)
                 {
-                    item.Instance.Context.ShowLogin(null);
+                    item.Instance.Context.RaiseLogin(null);
                     return;
                 }
 

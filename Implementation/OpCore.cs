@@ -62,7 +62,7 @@ namespace DeOps.Implementation
 
 
     [DebuggerDisplay("{User.Settings.UserName}")]
-	internal class OpCore
+	public class OpCore
 	{
         // super-classes
         internal DeOpsContext Context;

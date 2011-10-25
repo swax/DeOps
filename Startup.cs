@@ -30,7 +30,7 @@ namespace DeOps
 
             try
             {
-                DeOpsContext context = new DeOpsContext(args);
+                var context = new WinContext(args);
 
                 if (context.StartSuccess)
                     Application.Run(context);
@@ -71,7 +71,7 @@ namespace DeOps
         internal bool First;
 
 
-        internal DeOpsMutex(DeOpsContext context, string[] args)
+        internal DeOpsMutex(WinContext context, string[] args)
         {
             try
             {

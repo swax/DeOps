@@ -280,7 +280,7 @@ namespace DeOps.Services.Update
             }
 
             if (success && Core.Context.CanUpdate())
-                Core.RunInGuiThread(new Func<bool>(Core.Context.NotifyUpdateReady));
+                Core.RunInGuiThread(Core.Context.NotifyUpdateReady);
         }
 
         internal static UpdateInfo LoadUpdate()

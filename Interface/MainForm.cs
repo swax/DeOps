@@ -467,12 +467,12 @@ namespace DeOps.Interface
             // main options
             items.Add(new ManageItem("Sign On", IMRes.greenled, delegate()
             {
-                Core.Context.ShowLogin(null);
+                Core.Context.RaiseLogin(null);
             }));
 
             items.Add(new ManageItem("Sign Off", IMRes.redled, delegate()
             {
-                Core.Context.ShowLogin(null);
+                Core.Context.RaiseLogin(null);
                 Core.GuiMain.Close();
             }));
         }

@@ -296,7 +296,7 @@ namespace DeOps.Interface.Views
         protected override void OnLinkClicked(LinkClickedEventArgs e)
         {
             if(Core != null && e.LinkText.StartsWith("deops://"))
-                Core.Context.ShowLogin(new string[] { e.LinkText });
+                Core.Context.RaiseLogin(new string[] { e.LinkText });
             
             else
                 System.Diagnostics.Process.Start(e.LinkText);

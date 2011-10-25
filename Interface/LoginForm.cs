@@ -25,7 +25,9 @@ namespace DeOps.Interface
 {
     internal partial class LoginForm : CustomIconForm
     {
+        WinContext App;
         DeOpsContext Context;
+        
 
         string LastBrowse;
         string LastOpened;
@@ -34,9 +36,10 @@ namespace DeOps.Interface
         internal G2Protocol Protocol = new G2Protocol();
 
 
-        internal LoginForm(DeOpsContext context, string arg)
+        internal LoginForm(WinContext app, string arg)
         {
-            Context = context;
+            App = app;
+            Context = app.Context;
             Arg = arg;
 
             InitializeComponent();
@@ -58,7 +61,7 @@ namespace DeOps.Interface
 
             // each profile (.rop) is in its own directory
             // /root/profiledirs[]/profile.rop
-            if (context.Sim == null)
+            if (App.Sim == null)
             {
                 LoadProfiles(ApplicationEx.UserAppDataPath());
                 LoadProfiles(Application.StartupPath);
@@ -68,7 +71,7 @@ namespace DeOps.Interface
                     LoadProfiles(Path.GetDirectoryName(Path.GetDirectoryName(arg)));
             }
             else
-                LoadProfiles(context.Sim.Internet.LoadedPath);
+                LoadProfiles(App.Sim.Internet.LoadedPath);
 
 
             OpComboItem select = null;
@@ -320,7 +323,7 @@ namespace DeOps.Interface
 
         private void EnterSimLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            Context.ShowSimulator();
+            App.ShowSimulator();
             Close();
         }
 
@@ -377,7 +380,7 @@ namespace DeOps.Interface
 
         private void LoginForm_Load(object sender, EventArgs e)
         {
-            if (Context.License != null)
+            if (App.License != null)
             {
                 LicenseLabel.Text = "supported - licensed";
                 LicenseLabel.BackColor = Color.Blue;
@@ -386,11 +389,11 @@ namespace DeOps.Interface
 
         private void LicenseLabel_Click(object sender, EventArgs e)
         {
-            if (Context.License == null)
+            if (App.License == null)
                 Process.Start("http://www.c0re.net/deops/download");
 
             else
-                new LicenseForm(Context.License).ShowDialog(this);
+                new LicenseForm(App.License).ShowDialog(this);
         }
 
         private void CreateGlobalLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
