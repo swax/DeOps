@@ -16,6 +16,7 @@ namespace DeOps.Services.Share
 {
     internal partial class SendFileForm : CustomIconForm
     {
+        CoreUI UI;
         OpCore Core;
         ulong User;
 
@@ -25,11 +26,12 @@ namespace DeOps.Services.Share
         internal Tuple<FileProcessedHandler, object> FileProcessed;
 
 
-        internal SendFileForm(OpCore core, ulong user)
+        internal SendFileForm(CoreUI ui, ulong user)
         {
             InitializeComponent();
 
-            Core = core;
+            UI = ui;
+            Core = ui.Core;
             User = user;
 
             Sharing = Core.GetService(ServiceIDs.Share) as ShareService;
@@ -94,9 +96,9 @@ namespace DeOps.Services.Share
 
             // show if processing otherwise, request immediately sent
             if(BrowseLink.Enabled)
-                if (!Core.GuiMain.ShowExistingView(typeof(SharingView)))
-                    Core.ShowExternal(new SharingView(Core, Core.UserID));
-            
+                if (!UI.GuiMain.ShowExistingView(typeof(SharingView)))
+                    UI.ShowView(new SharingView(Core, Core.UserID), true);
+   
 
             DialogResult = DialogResult.OK;
             Close();

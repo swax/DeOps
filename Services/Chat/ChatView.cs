@@ -15,6 +15,7 @@ namespace DeOps.Services.Chat
 {
     internal partial class ChatView : ViewShell
     {
+        internal CoreUI UI;
         ChatService Chat;
         uint ProjectID;
 
@@ -28,10 +29,11 @@ namespace DeOps.Services.Chat
         bool FlashMe;
 
 
-        internal ChatView(ChatService chat, uint project)
+        internal ChatView(CoreUI ui, ChatService chat, uint project)
         {
             InitializeComponent();
 
+            UI = ui;
             Chat = chat;
             ProjectID = project;
 
@@ -393,7 +395,7 @@ namespace DeOps.Services.Chat
             if(Custom == null)
                 return;
 
-            AddUsersDialog add = new AddUsersDialog(Chat.Core, ProjectID);
+            AddUsersDialog add = new AddUsersDialog(UI, ProjectID);
             add.Text = "Invite People";
             add.AddButton.Text = "Invite";
 

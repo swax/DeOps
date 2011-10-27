@@ -59,7 +59,6 @@ namespace DeOps
 
         public Action<string[]> ShowLogin;
         public Func<bool> NotifyUpdateReady;
-        public Action CheckExit;
 
 
         internal DeOpsContext()
@@ -131,30 +130,6 @@ namespace DeOps
             }
         }
 
-        public OpCore FindCore(byte[] pubOpID)
-        {
-            OpCore found = null;
-
-            Cores.LockReading(() =>
-            {
-                foreach (OpCore core in Cores)
-                    if (Utilities.MemCompare(core.User.Settings.PublicOpID, pubOpID))
-                    {
-                        found = core;
-                        break;
-                    }
-            });
-
-            return found;
-        }
-
-        internal void ShowCore(OpCore core)
-        {
-            AddCore(core);
-
-            core.ShowMainView();
-        }
-
         internal void AddCore(OpCore core)
         {
             Cores.SafeAdd(core);
@@ -162,7 +137,7 @@ namespace DeOps
             CheckLookup();
         }
 
-        void CheckLookup()
+        internal void CheckLookup()
         {
             // called from gui thread
 
@@ -190,25 +165,6 @@ namespace DeOps
             });
         }
 
-        internal void RemoveCore(OpCore removed)
-        {
-            if (removed == Lookup)
-                return;
-
-            Cores.LockWriting(delegate()
-            {
-                foreach (OpCore core in Cores)
-                    if (core == removed)
-                    {
-                        Cores.Remove(core);
-                        break;
-                    }
-            });
-
-            CheckLookup();
-            RaiseCheckExit();
-        }
-
         internal bool CanUpdate()
         {
             if (SignedUpdate == null)
@@ -227,12 +183,6 @@ namespace DeOps
         {
             if (NotifyUpdateReady != null)
                 NotifyUpdateReady();
-        }
-
-        public void RaiseCheckExit()
-        {
-            if (CheckExit != null)
-                CheckExit();
         }
     }
 }

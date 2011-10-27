@@ -15,6 +15,7 @@ namespace DeOps.Interface.Tools
 	/// </summary>
 	internal class ConsoleForm : DeOps.Interface.CustomIconForm
 	{
+        CoreUI UI;
         OpCore Core;
 
 		private System.Windows.Forms.RichTextBox RichTextBoxConsole;
@@ -24,22 +25,19 @@ namespace DeOps.Interface.Tools
 		/// </summary>
 		private System.ComponentModel.Container components = null;
 
-		internal delegate void UpdateConsoleHandler(string message);
-		internal UpdateConsoleHandler UpdateConsole;
 
 		bool ShowPackets;
 
 
-		internal ConsoleForm(OpCore core)
+		internal ConsoleForm(CoreUI ui)
 		{			
 			//
 			// Required for Windows Form Designer support
 			//
 			InitializeComponent();
 
-			Core = core;
-
-			UpdateConsole = new UpdateConsoleHandler(AsyncUpdateConsole);
+            UI = ui;
+			Core = ui.Core;
 
             if (Core.User == null)
                 Text = "Lookup Console (" + Core.LocalIP.ToString() + ")";
@@ -153,7 +151,7 @@ namespace DeOps.Interface.Tools
 						RichTextBoxConsole.AppendText(message + "\n");
 		}
 
-		internal void AsyncUpdateConsole(string message)
+		internal void UpdateConsole(string message)
 		{
 			//if( !entry.Packet || (entry.Packet && ShowPackets))
 			//{
@@ -169,7 +167,7 @@ namespace DeOps.Interface.Tools
 
 		private void ConsoleForm_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
-			Core.GuiConsole = null;
+			UI.GuiConsole = null;
 		}
 
 	}

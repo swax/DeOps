@@ -64,11 +64,6 @@ namespace DeOps.Services.Update
             Core.Transfers.FileRequest[ServiceID, 0] += new FileRequestHandler(Transfers_FileRequest);
         }
 
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-            return;
-        }
-
         public void SimTest()
         {
             return;

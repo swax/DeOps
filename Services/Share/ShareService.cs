@@ -132,33 +132,6 @@ namespace DeOps.Services.Share
             TempLocation.Dispose();
         }
 
-
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-            if (Core.Locations.ActiveClientCount(user) == 0)
-                return;
-
-            if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Data/Share", Res.ShareRes.Icon, new EventHandler(Menu_View)));
-
-            if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Share", Res.ShareRes.Icon, new EventHandler(Menu_View)));
-        }
-
-        internal void Menu_View(object sender, EventArgs args)
-        {
-            IViewParams node = sender as IViewParams;
-
-            if (node == null)
-                return;
-
-            SharingView view = new SharingView(Core, node.GetUser());
-
-            Core.InvokeView(node.IsExternal(), view);
-
-            GetPublicList(node.GetUser());
-        }
-
         public void SimTest()
         {
             
@@ -726,12 +699,8 @@ namespace DeOps.Services.Share
             
             Core.RunInGuiThread(GuiFileUpdate, file);
 
-            Core.MakeNews(file.Name + " Finished Downloading", Core.UserID, 0, false, Res.ShareRes.Icon, Menu_View);
+            Core.MakeNews(ServiceIDs.Share, file.Name + " Finished Downloading", Core.UserID, 0, false);
         }
-
-
-
-
 
         internal string GetFileLink(ulong user, SharedFile file)
         {

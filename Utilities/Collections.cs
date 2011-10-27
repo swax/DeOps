@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace DeOps
 {
-    internal static class GenericExtensions
+    public static class GenericExtensions
     {
         internal static void ForEach<T>(this T[] array, Action<T> code)
         {
@@ -16,7 +16,7 @@ namespace DeOps
         }
     }
 
-    internal class ThreadedDictionary<TKey, TValue> : Dictionary<TKey, TValue>
+    public class ThreadedDictionary<TKey, TValue> : Dictionary<TKey, TValue>
     {
         // default functions accessible but lock checked when accessed
 
@@ -238,7 +238,7 @@ namespace DeOps
 
     }
 
-    internal class ThreadedList<T> : List<T>
+    public class ThreadedList<T> : List<T>
     {
         internal ReaderWriterLock Access = new ReaderWriterLock();
 
@@ -381,7 +381,7 @@ namespace DeOps
         }
     }
 
-    internal class ThreadedSortedList<TKey, TValue> : SortedList<TKey, TValue>
+    public class ThreadedSortedList<TKey, TValue> : SortedList<TKey, TValue>
     {
         internal ReaderWriterLock Access = new ReaderWriterLock();
 
@@ -565,7 +565,7 @@ namespace DeOps
         }
     }
 
-    internal class ThreadedLinkedList<T> : LinkedList<T>
+    public class ThreadedLinkedList<T> : LinkedList<T>
     {
         internal ReaderWriterLock Access = new ReaderWriterLock();
 

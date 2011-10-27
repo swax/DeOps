@@ -11,16 +11,18 @@ using DeOps.Implementation;
 namespace DeOps.Interface.Views
 {
     
-    internal class TrayLock
+    public class TrayLock
     {
+        CoreUI UI;
         OpCore Core;
         NotifyIcon Tray = new NotifyIcon();
         bool PreserveSideMode;
 
 
-        internal TrayLock(OpCore core, bool sideMode)
+        public TrayLock(CoreUI ui, bool sideMode)
         {
-            Core = core;
+            UI = ui;
+            Core = ui.Core;
 
             PreserveSideMode = sideMode;
 
@@ -29,7 +31,7 @@ namespace DeOps.Interface.Views
             Tray.Visible = true;
 
             Tray.DoubleClick += new EventHandler(Tray_DoubleClick);
-            core.User.GuiIconUpdate += new IconUpdateHandler(Profile_IconUpdate);
+            Core.User.GuiIconUpdate += new IconUpdateHandler(Profile_IconUpdate);
 
             ContextMenuStripEx menu = new ContextMenuStripEx();
 
@@ -61,15 +63,15 @@ namespace DeOps.Interface.Views
         void Menu_Restore(object sender, EventArgs e)
         {
             // if IM window (minimized, not unloaded)
-            if (Core.GuiMain != null)
+            if (UI.GuiMain != null)
             {
-                Core.GuiMain.WindowState = FormWindowState.Normal;
+                UI.GuiMain.WindowState = FormWindowState.Normal;
                 return;
             }
 
             if (Utilities.VerifyPassphrase(Core, ThreatLevel.High))
             {
-                Core.ShowMainView(PreserveSideMode);
+                UI.ShowMainView(PreserveSideMode);
 
                 CleanupTray();
             }                
@@ -87,7 +89,7 @@ namespace DeOps.Interface.Views
         {
             Core.User.GuiIconUpdate -= new IconUpdateHandler(Profile_IconUpdate);
             Tray.Visible = false;
-            Core.GuiTray = null;
+            UI.GuiTray = null;
         }
     }
 }

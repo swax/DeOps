@@ -22,6 +22,7 @@ namespace DeOps.Services.Board
 {
     internal partial class BoardView : ViewShell
     {
+        CoreUI UI;
         OpCore Core;
         BoardService Boards;
         TrustService Trust;
@@ -70,10 +71,11 @@ namespace DeOps.Services.Board
                 </body>
             </html>";
 
-        internal BoardView(BoardService boards, ulong id, uint project)
+        internal BoardView(CoreUI ui, BoardService boards, ulong id, uint project)
         {
             InitializeComponent();
 
+            UI = ui;
             Core = boards.Core;
             Boards = boards;
             Trust = Core.Trust;
@@ -112,7 +114,7 @@ namespace DeOps.Services.Board
             PostView.NodeExpanding += new EventHandler(OnNodeExpanding);
             PostView.NodeCollapsed += new EventHandler(OnNodeCollapsed);
 
-            Boards.LoadView(this, UserID);
+            Boards.LoadView(GetHashCode(), UserID);
 
             RefreshBoard();
         }
@@ -140,7 +142,7 @@ namespace DeOps.Services.Board
             Boards.PostUpdate -= new PostUpdateHandler(Board_PostUpdate);
             Trust.GuiUpdate  -= new LinkGuiUpdateHandler(Trust_Update);
 
-            Boards.UnloadView(this, UserID);
+            Boards.UnloadView(GetHashCode(), UserID);
 
             return true;
         }
@@ -659,8 +661,7 @@ namespace DeOps.Services.Board
         {
             PostMessage post = new PostMessage(Boards, UserID, ProjectID);
 
-            Core.RunInGuiThread(Core.ShowExternal, post);
-
+            UI.ShowView(post, true);
         }
 
 
@@ -728,7 +729,7 @@ namespace DeOps.Services.Board
             PostMessage form = new PostMessage(Boards, parent.Header.TargetID, parent.Header.ProjectID);
             form.PostReply(parent);
 
-            Core.RunInGuiThread(Core.ShowExternal, form);
+            UI.ShowView(form, true);
         }
 
         void EditPost(OpPost post)
@@ -736,7 +737,7 @@ namespace DeOps.Services.Board
             PostMessage form = new PostMessage(Boards, post.Header.TargetID, post.Header.ProjectID);
             form.PostEdit(post, post.Header.ParentID, PostBody.Rtf, post.Info.Format == TextFormat.Plain);
 
-            Core.RunInGuiThread(Core.ShowExternal, form);
+            UI.ShowView(form, true);
         }
 
         private void ArchiveButton_Click(object sender, EventArgs e)

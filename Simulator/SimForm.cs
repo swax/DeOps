@@ -414,10 +414,10 @@ namespace DeOps.Simulator
                     return;
                 }
 
-                if (core.GuiMain == null)
-                    core.ShowMainView();
+                if (item.UI.GuiMain == null)
+                    item.UI.ShowMainView();
 
-                core.GuiMain.Activate();
+                item.UI.GuiMain.Activate();
             }
         }
         
@@ -452,20 +452,20 @@ namespace DeOps.Simulator
         {
             foreach (ListInstanceItem item in ListInstances.SelectedItems)
             {
-                OpCore core = item.Core;
+                CoreUI ui = item.UI;
 
-                if (core.GuiConsole == null)
-                    core.GuiConsole = new ConsoleForm(core);
+                if (ui.GuiConsole == null)
+                    ui.GuiConsole = new ConsoleForm(ui);
 
-                core.GuiConsole.Show();
-                core.GuiConsole.Activate();
+                ui.GuiConsole.Show();
+                ui.GuiConsole.Activate();
             }
         }
 
         private void Click_Internal(object sender, EventArgs e)
         {
             foreach (ListInstanceItem item in ListInstances.SelectedItems)
-                InternalsForm.Show(item.Core);
+                InternalsForm.Show(item.UI);
         }
 
         private void Click_Bandwidth(object sender, EventArgs e)
@@ -743,6 +743,7 @@ namespace DeOps.Simulator
     {
         internal SimInstance Instance;
         internal OpCore Core;
+        internal CoreUI UI;
 
         internal ListInstanceItem(SimInstance instance)
         {
@@ -755,9 +756,18 @@ namespace DeOps.Simulator
         internal ListInstanceItem(OpCore core)
         {
             Core = core;
+            UI = new CoreUI(core);
             Instance = core.Sim;
 
+            Core.Exited += new ExitedHandler(Core_Exited);
+
             Refresh();
+        }
+
+        void Core_Exited(OpCore core)
+        {
+            if (UI.GuiMain != null)
+                UI.GuiMain.Close();
         }
 
         internal void Refresh()

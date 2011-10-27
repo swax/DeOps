@@ -45,6 +45,9 @@ namespace DeOps.Services.Chat
         const uint DataTypeLocation = 0x02;
         TempCache TempLocation;
 
+        public delegate void NewInviteHandler(ulong userID, ChatRoom room);
+        public NewInviteHandler NewInvite;
+
 
         internal ChatService(OpCore core)
         {
@@ -90,34 +93,6 @@ namespace DeOps.Services.Chat
                 Trust.LinkUpdate -= new LinkUpdateHandler(Link_Update);
 
             TempLocation.Dispose();
-        }
-
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong key, uint proj)
-        {
-            if (key != Core.UserID)
-                return;
-
-            if(menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Comm/Chat", ChatRes.Icon, new EventHandler(Menu_View)));
-
-            if(menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Chat", ChatRes.Icon, new EventHandler(Menu_View)));
-        }
-
-        void Menu_View(object sender, EventArgs args)
-        {
-            IViewParams node = sender as IViewParams;
-
-            if (node == null)
-                return;
-
-            if (node.GetUser() != Core.UserID)
-                return;
-
-            // gui creates viewshell, component just passes view object
-            ChatView view = new ChatView(this, node.GetProject());
-
-            Core.InvokeView(node.IsExternal(), view);
         }
 
         void Core_KeepData()
@@ -662,7 +637,7 @@ namespace DeOps.Services.Chat
             if (!ChatNewsUpdate)
             {
                 ChatNewsUpdate = true;
-                Core.MakeNews(Core.GetName(session.UserID) + " is chatting", session.UserID, 0, false, ChatRes.Icon, Menu_View);
+                Core.MakeNews(ServiceIDs.Chat, Core.GetName(session.UserID) + " is chatting", session.UserID, 0, false);
             }
 
             ProcessMessage(room, new ChatMessage(Core, session, message));
@@ -1027,10 +1002,7 @@ namespace DeOps.Services.Chat
 
             if (showInvite)
             {
-                Core.RunInGuiThread((System.Windows.Forms.MethodInvoker)delegate
-                {
-                    new InviteForm(this, session.UserID, room).ShowDialog();
-                });
+                Core.RunInGuiThread(NewInvite, session.UserID, room);
             }
         }
 

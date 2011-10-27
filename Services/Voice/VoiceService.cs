@@ -93,11 +93,6 @@ namespace DeOps.Services.Voice
             // will auto be recreated
         }
 
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-            return;
-        }
-
         public void SimTest()
         {
             return;

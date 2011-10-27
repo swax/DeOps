@@ -29,8 +29,9 @@ namespace DeOps.Interface.Tools
 	/// <summary>
 	/// Summary description for InternalsForm.
 	/// </summary>
-    internal class InternalsForm : DeOps.Interface.CustomIconForm
+    public class InternalsForm : DeOps.Interface.CustomIconForm
 	{
+        CoreUI UI;
 		OpCore Core;
         BoardService Boards;
         MailService Mail;
@@ -46,27 +47,28 @@ namespace DeOps.Interface.Tools
 		private System.ComponentModel.Container components = null;
 
 
-        internal static void Show(OpCore core)
+        internal static void Show(CoreUI ui)
         {
-            if (core.GuiInternal == null)
-                core.GuiInternal = new InternalsForm(core);
+            if (ui.GuiInternal == null)
+                ui.GuiInternal = new InternalsForm(ui);
 
-            core.GuiInternal.Show();
-            core.GuiInternal.Activate();
+            ui.GuiInternal.Show();
+            ui.GuiInternal.Activate();
         }
 
-        internal InternalsForm(OpCore core)
+        internal InternalsForm(CoreUI ui)
 		{
 			//
 			// Required for Windows Form Designer support
 			//
 			InitializeComponent();
 
-			Core    = core;
+            UI = ui;
+            Core = ui.Core;
 
-            Boards = core.GetService(ServiceIDs.Board) as BoardService;
-            Mail = core.GetService(ServiceIDs.Mail) as MailService;
-            Profiles = core.GetService(ServiceIDs.Profile ) as ProfileService;
+            Boards = Core.GetService(ServiceIDs.Board) as BoardService;
+            Mail = Core.GetService(ServiceIDs.Mail) as MailService;
+            Profiles = Core.GetService(ServiceIDs.Profile) as ProfileService;
 
             Text = "Internals (" + Core.Network.GetLabel() + ")";
 
@@ -1333,7 +1335,7 @@ namespace DeOps.Interface.Tools
 
 		private void InternalsForm_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
-            Core.GuiInternal = null;
+            UI.GuiInternal = null;
 		}
 
 		string xStr(object o)

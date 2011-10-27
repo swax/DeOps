@@ -26,12 +26,18 @@ using DeOps.Interface.Setup;
 using DeOps.Interface.Tools;
 using DeOps.Interface.TLVex;
 using DeOps.Interface.Views;
+using DeOps.Services.Board;
+using DeOps.Services.Plan;
+using DeOps.Services.Profile;
+using DeOps.Services.Share;
+using DeOps.Services.Storage;
 
 
 namespace DeOps.Interface
 {
-    internal partial class MainForm : HostsExternalViews
+    public partial class MainForm : HostsExternalViews
     {
+        internal CoreUI UI;
         internal OpCore Core;
         internal TrustService Trust;
 
@@ -53,15 +59,15 @@ namespace DeOps.Interface
         bool NewsHideUpdates;
 
         
-        internal MainForm(OpCore core, bool sideMode) : base(core)
+        internal MainForm(CoreUI ui, bool sideMode) : base(ui.Core)
         {
             InitializeComponent();
 
-            Core = core;
+            UI = ui;
+            Core = ui.Core;
             Trust = Core.Trust;
 
-            Core.ShowExternal += new ShowExternalHandler(OnShowExternal);
-            Core.ShowInternal += new ShowInternalHandler(OnShowInternal);
+            UI.ShowView += ShowView;
 
             Core.NewsUpdate += new NewsUpdateHandler(Core_NewsUpdate);
             Core.KeepDataGui += new KeepDataHandler(Core_KeepData);
@@ -112,8 +118,9 @@ namespace DeOps.Interface
             CommandTree.Init(Trust);
             CommandTree.ShowProject(0);
 
-            BuddyList.Init(Core.Buddies, SelectionInfo, true);
-            SelectionInfo.Init(Core);
+            BuddyList.Init(UI, Core.Buddies, SelectionInfo, true);
+
+            SelectionInfo.Init(UI);
 
             OnSelectChange(Core.UserID, CommandTree.Project);
             UpdateStatusPanel();
@@ -159,14 +166,13 @@ namespace DeOps.Interface
                 return;
             }
 
-            Core.ShowExternal -= new ShowExternalHandler(OnShowExternal);
-            Core.ShowInternal -= new ShowInternalHandler(OnShowInternal);
+            UI.ShowView -= ShowView;
 
             Core.NewsUpdate -= new NewsUpdateHandler(Core_NewsUpdate);
             Core.KeepDataGui -= new KeepDataHandler(Core_KeepData);
             Trust.GuiUpdate -= new LinkGuiUpdateHandler(Trust_Update);
 
-            Core.GuiMain = null;
+            UI.GuiMain = null;
 
             if(LockForm)
             {
@@ -187,7 +193,7 @@ namespace DeOps.Interface
 
             Close();
 
-            Core.GuiTray = new TrayLock(Core, SideMode);
+            UI.GuiTray = new TrayLock(UI, SideMode);
         }
 
         private bool CleanInternal()
@@ -205,8 +211,15 @@ namespace DeOps.Interface
             return true;
         }
 
+        public void ShowView(ViewShell view, bool external)
+        {
+            if (external)
+                ShowExternal(view);
+            else
+                ShowInternal(view);
+        }
 
-        void OnShowExternal(ViewShell view)
+        void ShowExternal(ViewShell view)
         {
             ExternalView external = new ExternalView(this, ExternalViews, view);
 
@@ -218,7 +231,7 @@ namespace DeOps.Interface
             external.Show();
         }
 
-        void OnShowInternal(ViewShell view)
+        void ShowInternal(ViewShell view)
         {
             if (!CleanInternal())
                 return;
@@ -352,9 +365,9 @@ namespace DeOps.Interface
             List<MenuItemInfo> quickMenus = new List<MenuItemInfo>();
             List<MenuItemInfo> extMenus = new List<MenuItemInfo>();
 
-            foreach (OpService service in Core.ServiceMap.Values)
+            foreach (IServiceUI service in UI.Services.Values)
             {
-                if (service is TrustService || service is BuddyService)
+                if (service is TrustUI || service is BuddyUI)
                     continue;
 
                 service.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, item.Link.UserID, CommandTree.Project);
@@ -382,8 +395,8 @@ namespace DeOps.Interface
             // add trust/buddy menu at bottom under separator
             quickMenus.Clear();
 
-            Trust.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, item.Link.UserID, CommandTree.Project);
-            Core.Buddies.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, item.Link.UserID, CommandTree.Project);
+            UI.Services[ServiceIDs.Trust].GetMenuInfo(InterfaceMenuType.Quick, quickMenus, item.Link.UserID, CommandTree.Project);
+            UI.Services[ServiceIDs.Buddy].GetMenuInfo(InterfaceMenuType.Quick, quickMenus, item.Link.UserID, CommandTree.Project);
 
             if (quickMenus.Count > 0)
             {
@@ -399,48 +412,50 @@ namespace DeOps.Interface
                 treeMenu.Show(CommandTree, e.Location);
         }
 
-        internal static void FillManageMenu(OpCore Core, ToolStripItemCollection items)
+        internal static void FillManageMenu(CoreUI ui, ToolStripItemCollection items)
         {
-            items.Add(new ManageItem("My Identity", BuddyRes.buddy_who, () => new IdentityForm(Core, Core.UserID).Show(Core.GuiMain)));
+            OpCore core = ui.Core;
+
+            items.Add(new ManageItem("My Identity", BuddyRes.buddy_who, () => new IdentityForm(core, core.UserID).Show(ui.GuiMain)));
 
             // invite
-            if(!Core.User.Settings.GlobalIM)
+            if(!core.User.Settings.GlobalIM)
                 items.Add(new ManageItem("Invite", ChatRes.invite, delegate()
                 {
-                    if (Core.User.Settings.OpAccess == AccessType.Public)
-                        MessageBox.Show("Give out this link to invite others \r\n \r\n deops://" + Core.User.Settings.Operation, "DeOps");
+                    if (core.User.Settings.OpAccess == AccessType.Public)
+                        MessageBox.Show("Give out this link to invite others \r\n \r\n deops://" + core.User.Settings.Operation, "DeOps");
                     else
-                        new InviteForm(Core).Show(Core.GuiMain);
+                        new InviteForm(core).Show(ui.GuiMain);
                 }));
 
             // settings
             ToolStripMenuItem settings = new ToolStripMenuItem("Settings", InterfaceRes.settings);
 
-            settings.DropDownItems.Add(new ManageItem("User", null, () => new DeOps.Interface.Settings.User(Core).Show(Core.GuiMain)));
+            settings.DropDownItems.Add(new ManageItem("User", null, () => new DeOps.Interface.Settings.User(core).Show(ui.GuiMain)));
             
-            if(!Core.User.Settings.GlobalIM)
-                settings.DropDownItems.Add(new ManageItem("Operation", null, () => new DeOps.Interface.Settings.Operation(Core).Show(Core.GuiMain)));
+            if(!core.User.Settings.GlobalIM)
+                settings.DropDownItems.Add(new ManageItem("Operation", null, () => new DeOps.Interface.Settings.Operation(core).Show(ui.GuiMain)));
 
-            settings.DropDownItems.Add(new ManageItem("Connecting", null, () => new DeOps.Interface.Settings.Connecting(Core).Show(Core.GuiMain)));
-            settings.DropDownItems.Add(new ManageItem("Ignore", null, () => new DeOps.Interface.Settings.IgnoreForm(Core).Show(Core.GuiMain)));
+            settings.DropDownItems.Add(new ManageItem("Connecting", null, () => new DeOps.Interface.Settings.Connecting(core).Show(ui.GuiMain)));
+            settings.DropDownItems.Add(new ManageItem("Ignore", null, () => new DeOps.Interface.Settings.IgnoreForm(ui).Show(ui.GuiMain)));
 
             items.Add(settings);
 
             // tools
             ToolStripMenuItem tools = new ToolStripMenuItem("Tools", InterfaceRes.tools);
 
-            tools.DropDownItems.Add(new ManageItem("Bandwidth", null, () => BandwidthForm.Show(Core.Context)));
+            tools.DropDownItems.Add(new ManageItem("Bandwidth", null, () => BandwidthForm.Show(core.Context)));
 
-            if (Core.DebugWindowsActive)
+            if (core.DebugWindowsActive)
             {
-                tools.DropDownItems.Add(new ManageItem("Crawler", null, () => CrawlerForm.Show(Core.Network)));
+                tools.DropDownItems.Add(new ManageItem("Crawler", null, () => CrawlerForm.Show(core.Network)));
 
                 // global - crawler/graph/packets/search
-                if (Core.Context.Lookup != null)
+                if (core.Context.Lookup != null)
                 {
                     ToolStripMenuItem global = new ToolStripMenuItem("Lookup", null);
 
-                    DhtNetwork globalNetwork = Core.Context.Lookup.Network;
+                    DhtNetwork globalNetwork = core.Context.Lookup.Network;
 
                     global.DropDownItems.Add(new ManageItem("Crawler", null, () => CrawlerForm.Show(globalNetwork)));
                     global.DropDownItems.Add(new ManageItem("Graph", null, () => GraphForm.Show(globalNetwork)));
@@ -450,16 +465,15 @@ namespace DeOps.Interface
                     tools.DropDownItems.Add(global);
                 }
 
-                tools.DropDownItems.Add(new ManageItem("Graph", null, () => GraphForm.Show(Core.Network)));
-                tools.DropDownItems.Add(new ManageItem("Internals", null, () => InternalsForm.Show(Core)));
-                tools.DropDownItems.Add(new ManageItem("Packets", null, () => PacketsForm.Show(Core.Network)));
-                tools.DropDownItems.Add(new ManageItem("Search", null, () => SearchForm.Show(Core.Network)));
+                tools.DropDownItems.Add(new ManageItem("Graph", null, () => GraphForm.Show(core.Network)));
+                tools.DropDownItems.Add(new ManageItem("Internals", null, () => InternalsForm.Show(ui)));
+                tools.DropDownItems.Add(new ManageItem("Packets", null, () => PacketsForm.Show(core.Network)));
+                tools.DropDownItems.Add(new ManageItem("Search", null, () => SearchForm.Show(core.Network)));
             }
 
-            tools.DropDownItems.Add(new ManageItem("Transfers", null, () => TransferView.Show(Core.Network)));
+            tools.DropDownItems.Add(new ManageItem("Transfers", null, () => TransferView.Show(core.Network)));
 
             items.Add(tools);
-
 
             // split
             items.Add(new ToolStripSeparator());
@@ -467,13 +481,13 @@ namespace DeOps.Interface
             // main options
             items.Add(new ManageItem("Sign On", IMRes.greenled, delegate()
             {
-                Core.Context.RaiseLogin(null);
+                core.Context.RaiseLogin(null);
             }));
 
             items.Add(new ManageItem("Sign Off", IMRes.redled, delegate()
             {
-                Core.Context.RaiseLogin(null);
-                Core.GuiMain.Close();
+                core.Context.RaiseLogin(null);
+                ui.GuiMain.Close();
             }));
         }
 
@@ -501,17 +515,15 @@ namespace DeOps.Interface
 
             if (Core.Locations.ActiveClientCount(info.UserID) > 0)
             {
-                IMService IM = Core.GetService(ServiceIDs.IM) as IMService;
-
-                if (IM != null)
-                    IM.QuickMenu_View(info, null);
+                var im = UI.GetService(ServiceIDs.IM) as IMUI;
+                if (im != null)
+                    im.OpenIMWindow(info.UserID);
             }
             else
             {
-                MailService Mail = Core.GetService(ServiceIDs.Mail) as MailService;
-
-                if (Mail != null)
-                    Mail.QuickMenu_View(info, null);
+                var mail = UI.GetService(ServiceIDs.Mail) as MailUI;
+                if (mail != null)
+                    mail.OpenComposeWindow(info.UserID);
             }
         }
 
@@ -541,7 +553,7 @@ namespace DeOps.Interface
             ManageButton.Visible = (id == Core.UserID);
 
             ManageButton.DropDownItems.Clear();
-            FillManageMenu(Core, ManageButton.DropDownItems);
+            FillManageMenu(UI, ManageButton.DropDownItems);
 
             PlanButton.DropDownItems.Clear();
             CommButton.DropDownItems.Clear();
@@ -549,7 +561,7 @@ namespace DeOps.Interface
 
             List<MenuItemInfo> menuList = new List<MenuItemInfo>();
 
-            foreach (OpService service in Core.ServiceMap.Values)
+            foreach (var service in UI.Services.Values)
                 service.GetMenuInfo(InterfaceMenuType.Internal, menuList, id, project);
 
             foreach (MenuItemInfo info in menuList)
@@ -576,7 +588,7 @@ namespace DeOps.Interface
 
             // find previous component in drop down, activate click on it
             if(InternalView == null)
-                OnShowInternal(new Info.InfoView(Core, false, true));
+                ShowInternal(new Info.InfoView(Core, false, true));
 
             /*string previous = InternalView != null ? InternalView.GetTitle(true) : "Profile";
 
@@ -699,7 +711,7 @@ namespace DeOps.Interface
 
             List<MenuItemInfo> menuList = new List<MenuItemInfo>();
 
-            foreach (OpService service in Core.ServiceMap.Values)
+            foreach (var service in UI.Services.Values)
                 service.GetMenuInfo(InterfaceMenuType.Internal, menuList, CommandTree.SelectedLink, SelectedProject);
 
             foreach (MenuItemInfo info in menuList)
@@ -718,7 +730,7 @@ namespace DeOps.Interface
 
         private void PersonNavBrowse_Clicked(object sender, EventArgs e)
         {
-            AddUsersDialog add = new AddUsersDialog(Core, SelectedProject);
+            AddUsersDialog add = new AddUsersDialog(UI, SelectedProject);
             add.Text = "Select Person";
             add.AddButton.Text = "Select";
             add.MultiSelect = false;
@@ -993,7 +1005,7 @@ namespace DeOps.Interface
             InternalPanel.Controls.Clear();
 
             InternalView.BlockReinit = true;
-            OnShowExternal(InternalView);
+            ShowExternal(InternalView);
             InternalView = null;
 
             OnSelectChange(CommandTree.SelectedLink, SelectedProject);
@@ -1049,18 +1061,25 @@ namespace DeOps.Interface
                 NavStrip.Invalidate();
         }
 
-        void Core_NewsUpdate(NewsItemInfo info)
+        void Core_NewsUpdate(uint serviceID, string message, ulong userID, uint projectID, bool showRemote)
         {
-            NewsItem item = new NewsItem(info, Core.UserID); // pop out external view if in messenger mode
-            item.Text = Core.TimeNow.ToString("h:mm ") + info.Message;
+            if (!UI.Services.ContainsKey(serviceID))
+                return;
+
+            Icon symbol = null;
+            EventHandler onClick = null;
+            UI.Services[serviceID].GetNewsAction(ref symbol, ref onClick);
+
+            NewsItem item = new NewsItem(serviceID, message, userID, projectID, showRemote, symbol, onClick, Core.UserID); // pop out external view if in messenger mode
+            item.Text = Core.TimeNow.ToString("h:mm ") + message;
 
             // set color
-            if (Trust.IsLowerDirect(info.UserID, info.ProjectID))
+            if (Trust.IsLowerDirect(userID, projectID))
             {
                 item.DisplayColor = Color.LightBlue;
                 item.ForeColor = Color.Blue;
             }
-            else if (Trust.IsHigher(info.UserID, info.ProjectID))
+            else if (Trust.IsHigher(userID, projectID))
             {
                 item.DisplayColor = Color.FromArgb(255, 198, 198);
                 item.ForeColor = Color.Red;
@@ -1166,7 +1185,7 @@ namespace DeOps.Interface
             }
 
             // determine size of text
-            int reqWidth = (int)e.Graphics.MeasureString(NewsPending.Peek().Info.Message, BoldFont).Width;
+            int reqWidth = (int)e.Graphics.MeasureString(NewsPending.Peek().Message, BoldFont).Width;
 
             if (width < reqWidth)
             {
@@ -1176,7 +1195,7 @@ namespace DeOps.Interface
 
             // draw text
             x = x + width / 2 - reqWidth / 2;
-            e.Graphics.DrawString(NewsPending.Peek().Info.Message, BoldFont, NewsBrush, x, 5);
+            e.Graphics.DrawString(NewsPending.Peek().Message, BoldFont, NewsBrush, x, 5);
 
             NewsArea = new Rectangle(x, 5, reqWidth, 9);
         }
@@ -1194,7 +1213,7 @@ namespace DeOps.Interface
 
         private void NewsMouseMove(MouseEventArgs e)
         {
-            if (NewsArea.Contains(e.Location) && NewsPending.Count > 0 && NewsPending.Peek().Info.ClickEvent != null)
+            if (NewsArea.Contains(e.Location) && NewsPending.Count > 0 && NewsPending.Peek().ClickEvent != null)
                 Cursor.Current = Cursors.Hand;
             else
                 Cursor.Current = Cursors.Arrow;
@@ -1216,7 +1235,7 @@ namespace DeOps.Interface
             if (NewsArea.Contains(e.Location) && NewsPending.Peek() != null)
             {
                 NewsPending.Peek().External = external; // in window
-                NewsPending.Peek().Info.ClickEvent.Invoke(NewsPending.Peek(), null);
+                NewsPending.Peek().ClickEvent.Invoke(NewsPending.Peek(), null);
             }
         }
 
@@ -1228,7 +1247,7 @@ namespace DeOps.Interface
 
             // Manage
             ToolStripMenuItem manage = new ToolStripMenuItem("Manage", InterfaceRes.manage);
-            FillManageMenu(Core, manage.DropDownItems);
+            FillManageMenu(UI, manage.DropDownItems);
             SideViewsButton.DropDownItems.Add(manage);
             SideViewsButton.DropDownItems.Add(new ToolStripSeparator());
 
@@ -1257,7 +1276,7 @@ namespace DeOps.Interface
 
             List<MenuItemInfo> menuList = new List<MenuItemInfo>();
 
-            foreach (OpService service in Core.ServiceMap.Values)
+            foreach (var service in UI.Services.Values)
                 service.GetMenuInfo(InterfaceMenuType.Internal, menuList, Core.UserID, project);
 
             foreach (MenuItemInfo info in menuList)
@@ -1294,7 +1313,7 @@ namespace DeOps.Interface
 
         private void HelpButton_Click(object sender, EventArgs e)
         {
-            OnShowInternal(new Info.InfoView(Core, true, false));
+            ShowInternal(new Info.InfoView(Core, true, false));
         }
 
         private void NetworkButton_Click(object sender, EventArgs e)
@@ -1302,39 +1321,47 @@ namespace DeOps.Interface
             InfoView view = new InfoView(Core, false, false);
 
             if (SideMode)
-                OnShowExternal(view);
+                ShowExternal(view);
             else
-                OnShowInternal(view);
+                ShowInternal(view);
         }
 
         private void SideHelpButton_Click(object sender, EventArgs e)
         {
-            OnShowExternal(new InfoView(Core, true, false));
+            ShowExternal(new InfoView(Core, true, false));
         }
     }
 
     class NewsItem : ToolStripMenuItem, IViewParams
     {
-        internal NewsItemInfo Info;
+        internal bool ShowRemote;
+        internal ulong UserID;
+        internal uint ProjectID;
         internal Color DisplayColor;
         internal bool External;
+        internal string Message;
+        internal EventHandler ClickEvent;
         ulong LocalID;
 
-        internal NewsItem(NewsItemInfo info, ulong localid)
-            : base(info.Message, info.Symbol != null ? info.Symbol.ToBitmap() : null, info.ClickEvent)
+        internal NewsItem(uint serviceID, string message, ulong userID, uint project, bool showRemote, Icon symbol, EventHandler onClick, ulong localid)
+            : base(message, symbol != null ? symbol.ToBitmap() : null, onClick)
         {
-            Info = info;
+            Message = message;
+            ShowRemote = showRemote;
+            UserID = userID;
+            ProjectID = project;
             LocalID = localid;
+            ClickEvent = onClick;
         }
 
         public ulong GetUser()
         {
-            return Info.ShowRemote ? Info.UserID : LocalID;
+            return ShowRemote ? UserID : LocalID;
         }
 
         public uint GetProject()
         {
-            return Info.ProjectID;
+            return ProjectID;
         }
 
         public bool IsExternal()

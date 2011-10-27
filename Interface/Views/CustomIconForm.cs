@@ -9,7 +9,7 @@ using DeOps.Implementation;
 
 namespace DeOps.Interface
 {
-    internal class CustomIconForm : Form
+    public class CustomIconForm : Form
     {
         OpUser Profile;
 

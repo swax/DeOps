@@ -276,27 +276,6 @@ namespace DeOps.Services.Storage
             StorageMap.SafeRemove(file.UserID);
         }
 
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-            if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Data/File System", StorageRes.Icon, new EventHandler(Menu_View)));
-
-            if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("File System", StorageRes.Icon, new EventHandler(Menu_View)));
-        }
-
-        internal void Menu_View(object sender, EventArgs args)
-        {
-            IViewParams node = sender as IViewParams;
-
-            if (node == null)
-                return;
-
-            StorageView view = new StorageView(this, node.GetUser(), node.GetProject());
-
-            Core.InvokeView(node.IsExternal(), view);
-        }
-
         internal void CallFolderUpdate(uint project, string dir, ulong uid, WorkingChange action)
         {
             if (WorkingFolderUpdate != null)
@@ -446,7 +425,7 @@ namespace DeOps.Services.Storage
                 Core.RunInGuiThread(StorageUpdate, newStorage);
 
             if (Core.NewsWorthy(newStorage.UserID, 0, false))
-                Core.MakeNews("File System updated by " + Core.GetName(newStorage.UserID), newStorage.UserID, 0, false, StorageRes.Icon, Menu_View);
+                Core.MakeNews(ServiceIDs.Storage, "File System updated by " + Core.GetName(newStorage.UserID), newStorage.UserID, 0, false);
 
         }
 

@@ -14,16 +14,18 @@ namespace DeOps.Interface.Settings
 {
     internal partial class IgnoreForm : CustomIconForm
     {
+        CoreUI UI;
         OpCore Core;
 
         List<ulong> InList = new List<ulong>();
 
 
-        internal IgnoreForm(OpCore core)
+        internal IgnoreForm(CoreUI ui)
         {
             InitializeComponent();
 
-            Core = core;
+            UI = ui;
+            Core = ui.Core;
 
             Core.Buddies.IgnoreList.LockReading(() =>
             {
@@ -37,7 +39,7 @@ namespace DeOps.Interface.Settings
 
         private void AddLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            AddUsersDialog add = new AddUsersDialog(Core, 0);
+            AddUsersDialog add = new AddUsersDialog(UI, 0);
 
             if(add.ShowDialog() == DialogResult.OK)
                 foreach(ulong person in add.People)

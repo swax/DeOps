@@ -24,6 +24,7 @@ namespace DeOps.Services.Mail
     internal partial class MailView : ViewShell
     {
         internal OpCore Core;
+        internal MailUI UI;
         internal MailService Mail;
         internal TrustService Trust;
 
@@ -68,12 +69,13 @@ namespace DeOps.Services.Mail
             </html>";
 
 
-        internal MailView(MailService mail)
+        internal MailView(MailUI ui)
         {
             InitializeComponent();
 
-            Mail  = mail;
-            Core  = mail.Core;
+            UI = ui;
+            Mail = ui.Mail;
+            Core  = ui.Core;
             Trust = Core.Trust;
 
             MessageView.SmallImageList = new List<Image>();
@@ -215,7 +217,7 @@ namespace DeOps.Services.Mail
 
         private void ComposeButton_Click(object sender, EventArgs e)
         {
-            Mail.QuickMenu_View(null, null);
+            UI.OpenComposeWindow(0);
         }
 
         /*private void MessageList_ColumnClick(object sender, ColumnClickEventArgs e)

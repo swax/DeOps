@@ -459,8 +459,8 @@ namespace DeOps.Services.Plan
             if (item == null)
                 return;
 
-            if (View.External != null && View.Core.GuiMain.GetType() == typeof(MainForm))
-                foreach (ExternalView ext in ((MainForm)View.Core.GuiMain).ExternalViews)
+            if (View.External != null && View.UI.GuiMain.GetType() == typeof(MainForm))
+                foreach (ExternalView ext in ((MainForm)View.UI.GuiMain).ExternalViews)
                     if (ext.Shell.GetType() == typeof(ScheduleView))
                         if (((ScheduleView)ext.Shell).UserID == View.UserID && ((ScheduleView)ext.Shell).ProjectID == View.ProjectID)
                         {
@@ -468,14 +468,11 @@ namespace DeOps.Services.Plan
                             return;
                         }
 
-            ScheduleView view = new ScheduleView(Plans, View.UserID, View.ProjectID);
+            ScheduleView view = new ScheduleView(View.UI, Plans, View.UserID, View.ProjectID);
             view.LoadGoal = item.Goal.Ident;
             view.LoadGoalBranch = item.Goal.BranchUp;
 
-            if (View.External != null)
-                Core.RunInGuiThread(Core.ShowExternal, view);
-            else
-                Core.RunInGuiThread(Core.ShowInternal, view);
+            view.UI.ShowView(view, View.External != null);
         }
 
 

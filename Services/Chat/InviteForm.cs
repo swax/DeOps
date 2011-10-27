@@ -15,15 +15,17 @@ namespace DeOps.Services.Chat
 {
     internal partial class InviteForm : CustomIconForm
     {
+        CoreUI UI;
         OpCore Core;
         ChatService Chat;
         ChatRoom Room;
 
-        internal InviteForm(ChatService chat, ulong user, ChatRoom room)
+        internal InviteForm(CoreUI ui, ChatService chat, ulong user, ChatRoom room)
         {
             InitializeComponent();
 
-            Core = chat.Core;
+            UI = ui;
+            Core = ui.Core;
             Chat = chat;
             Room = room;
 
@@ -39,15 +41,16 @@ namespace DeOps.Services.Chat
             Chat.JoinRoom(Room);
 
             // show the user the transfer starting
-            if (Core.GuiMain is MainForm && !((MainForm)Core.GuiMain).SideMode)
-                Core.ShowInternal(new ChatView(Chat, 0) { Custom = Room });
+            if (UI.GuiMain is MainForm && !((MainForm)UI.GuiMain).SideMode)
+                UI.ShowView(new ChatView(UI, Chat, 0) { Custom = Room }, false);
 
             else
             {
-                ExternalView view = Core.GuiMain.FindViewType(typeof(ChatView));
+                ExternalView view = UI.GuiMain.FindViewType(typeof(ChatView));
 
                 if (view == null)
-                    Core.ShowExternal(new ChatView(Chat, 0) { Custom = Room });
+                    UI.ShowView(new ChatView(UI, Chat, 0) { Custom = Room }, true);
+
                 else
                 {
                     ((ChatView)view.Shell).SetCustomRoom(Room);

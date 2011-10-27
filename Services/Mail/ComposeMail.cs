@@ -16,6 +16,7 @@ namespace DeOps.Services.Mail
 {
     internal partial class ComposeMail : ViewShell
     {
+        CoreUI UI;
         MailService Mail;
         OpCore Core;
 
@@ -28,10 +29,11 @@ namespace DeOps.Services.Mail
         List<ulong> ToIDs = new List<ulong>();
 
 
-        internal ComposeMail(MailService mail, ulong id)
+        internal ComposeMail(CoreUI ui, MailService mail, ulong id)
         {
             InitializeComponent();
 
+            UI = ui;
             Mail = mail;
             Core = mail.Core;
             DefaultID = id;
@@ -168,7 +170,7 @@ namespace DeOps.Services.Mail
 
         private void BrowseTo_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            AddUsersDialog add = new AddUsersDialog(Core, 0);
+            AddUsersDialog add = new AddUsersDialog(UI, 0);
 
             string prefix = ToTextBox.Text.Length > 0 ? ", " : "";
 

@@ -16,31 +16,37 @@ using DeOps.Services;
 using DeOps.Services.Buddy;
 using DeOps.Services.Share;
 using DeOps.Services.Chat;
+using DeOps.Services.IM;
 
 
 namespace DeOps.Interface
 {
     internal partial class IMForm : HostsExternalViews
     {
+        CoreUI UI;
         OpCore Core;
+        IMUI IM;
 
-
-        internal IMForm(OpCore core)
-            : base(core)
+        internal IMForm(CoreUI ui)
+            : base(ui.Core)
         {
             InitializeComponent();
 
-            Core = core;
+            UI = ui;
+            Core = ui.Core;
 
             Utilities.SetupToolstrip(TopStrip, new OpusColorTable());
             Utilities.FixMonoDropDownOpening(OptionsButton, OptionsButton_DropDownOpening);
 
-            Core.ShowExternal += new ShowExternalHandler(OnShowExternal);
+            UI.ShowView += ShowExternal;
 
             Text = "IM - " + Core.GetName(Core.UserID);
 
-            BuddyList.Init(Core.Buddies, SelectionInfo, true);
-            SelectionInfo.Init(Core);
+            BuddyList.Init(UI, Core.Buddies, SelectionInfo, true);
+
+            IM = UI.GetService(ServiceIDs.IM) as IMUI;
+
+            SelectionInfo.Init(UI);
 
             SelectionInfo.ShowNetwork();
 
@@ -51,22 +57,21 @@ namespace DeOps.Interface
             }
 
             Rectangle screen = Screen.GetWorkingArea(this);
-            Location = new Point(screen.Width - Width, screen.Height / 2 - Height / 2); 
+            Location = new Point(screen.Width - Width, screen.Height / 2 - Height / 2);
 
-            
 
-            OnShowExternal(new Info.InfoView(core, false, true));
+            ShowExternal(new Info.InfoView(Core, false, true));
         }
 
-        void OnShowExternal(ViewShell view)
+        public void ShowExternal(ViewShell view, bool external=false)
         {
-            ExternalView external = new ExternalView(this, ExternalViews, view);
+            var extView = new ExternalView(this, ExternalViews, view);
 
-            ExternalViews.Add(external);
+            ExternalViews.Add(extView);
 
             view.Init();
 
-            external.Show();
+            extView.Show();
         }
 
         private void IMForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -79,9 +84,9 @@ namespace DeOps.Interface
                     return;
                 }
 
-            Core.ShowExternal -= new ShowExternalHandler(OnShowExternal);
+            UI.ShowView -= ShowExternal;
 
-            Core.GuiMain = null;
+            UI.GuiMain = null;
 
             if (Core.Sim == null)
                 Core.Exit();
@@ -105,7 +110,7 @@ namespace DeOps.Interface
                 InTray = true;
                 ShowInTaskbar = false;
 
-                Core.GuiTray = new TrayLock(Core, false);
+                UI.GuiTray = new TrayLock(UI, false);
             }
 
             else
@@ -113,21 +118,21 @@ namespace DeOps.Interface
                 InTray = false;
                 ShowInTaskbar = true;
 
-                if(Core.GuiTray != null)
-                    Core.GuiTray.CleanupTray();
+                if(UI.GuiTray != null)
+                    UI.GuiTray.CleanupTray();
             }
         }
 
         private void HelpInfoButton_Click(object sender, EventArgs e)
         {
             if(!ShowExistingView(typeof(InfoView)))
-                OnShowExternal(new InfoView(Core, true, false));
+                ShowExternal(new InfoView(Core, true, false));
         }
 
         private void SharedButton_Click(object sender, EventArgs e)
         {
             if (!ShowExistingView(typeof(SharingView)))
-                OnShowExternal(new SharingView(Core, Core.UserID));    
+                ShowExternal(new SharingView(Core, Core.UserID));    
         }
 
         private void ChatButton_Click(object sender, EventArgs e)
@@ -135,7 +140,7 @@ namespace DeOps.Interface
             if (!ShowExistingView(typeof(ChatView)))
             {
                 ChatService chat = Core.GetService(ServiceIDs.Chat) as ChatService;
-                OnShowExternal(new ChatView(chat, 0));
+                ShowExternal(new ChatView(UI, chat, 0));
             }
         }
 
@@ -143,7 +148,7 @@ namespace DeOps.Interface
         {
             OptionsButton.DropDownItems.Clear();
 
-            MainForm.FillManageMenu(Core, OptionsButton.DropDownItems);
+            MainForm.FillManageMenu(UI, OptionsButton.DropDownItems);
         }
     }
 }

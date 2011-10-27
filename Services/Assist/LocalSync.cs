@@ -83,10 +83,6 @@ namespace DeOps.Services.Assist
             Cache.Dispose();
         }
 
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-        }
-
         void Network_StatusChange()
         {
             // check that we have the latest version of local sync'd files in range

@@ -22,6 +22,7 @@ namespace DeOps.Services.Plan
 {
     internal partial class GoalsView : ViewShell
     {
+        internal CoreUI UI;
         internal OpCore Core;
         internal PlanService Plans;
         internal TrustService Trust;
@@ -119,12 +120,13 @@ namespace DeOps.Services.Plan
                                     </html>";
 
 
-        internal GoalsView(PlanService plans, ulong id, uint project)
+        internal GoalsView(CoreUI ui, PlanService plans, ulong id, uint project)
         {
             InitializeComponent();
 
+            UI = ui;
+            Core = ui.Core;
             Plans = plans;
-            Core = Plans.Core;
             Trust = Core.Trust;
 
             UserID = id;

@@ -16,6 +16,7 @@ namespace DeOps.Interface.Startup
 {
     internal partial class CreateUser : CustomIconForm
     {
+        AppContext App;
         DeOpsContext Context;
         string OpName = "";
         AccessType OpAccess = AccessType.Public;
@@ -23,24 +24,26 @@ namespace DeOps.Interface.Startup
         InvitePackage Invite;
         internal bool GlobalIM;
 
-        internal CreateUser(DeOpsContext context, string opName, AccessType opAccess)
+        internal CreateUser(AppContext app, string opName, AccessType opAccess)
         {
             InitializeComponent();
 
-            Context = context;
+            App = app;
+            Context = app.Context;
             OpName = opName.Replace("deops://", "");
             OpAccess = opAccess;
 
             OpNameLabel.Text = OpName;
 
-            BrowseLink.Text = (context.Sim == null) ? ApplicationEx.UserAppDataPath() : context.Sim.Internet.LoadedPath;
+            BrowseLink.Text = (Context.Sim == null) ? ApplicationEx.UserAppDataPath() : Context.Sim.Internet.LoadedPath;
         }
 
-        internal CreateUser(DeOpsContext context, InvitePackage invite)
+        internal CreateUser(AppContext app, InvitePackage invite)
         {
             InitializeComponent();
 
-            Context = context;
+            App = app;
+            Context = app.Context;
             Invite = invite;
             OpName = invite.Info.OpName;
             OpAccess = invite.Info.OpAccess;
@@ -48,7 +51,7 @@ namespace DeOps.Interface.Startup
             OpNameLabel.Text = OpName;
             TextName.Text = invite.Info.UserName;
 
-            BrowseLink.Text = (context.Sim == null) ? ApplicationEx.UserAppDataPath() : context.Sim.Internet.LoadedPath;
+            BrowseLink.Text = (Context.Sim == null) ? ApplicationEx.UserAppDataPath() : Context.Sim.Internet.LoadedPath;
         }
 
         private void BrowseLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -121,7 +124,7 @@ namespace DeOps.Interface.Startup
                 if (Invite != null)
                     core.ProcessInvite(Invite);
 
-                Context.ShowCore(core);
+                App.ShowCore(core);
 
                 DialogResult = DialogResult.OK;
                 Close();

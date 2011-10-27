@@ -127,55 +127,6 @@ namespace DeOps.Services.Trust
             Cache.Dispose();
         }
 
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-            if (menuType != InterfaceMenuType.Quick)
-                return;
-
-            bool unlink = false;
-
-            OpLink remoteLink = GetLink(user, project);
-            OpLink localLink = LocalTrust.GetLink(project);
-
-            if (remoteLink == null)
-                return;
-
-            // linkup
-            if (Core.UserID != user &&
-                (localLink == null || 
-                 localLink.Uplink == null || 
-                 localLink.Uplink.UserID != user)) // not already linked to
-                menus.Add(new MenuItemInfo("Trust", LinkRes.linkup, new EventHandler(Menu_Linkup)));
-
-            if (localLink == null)
-                return;
-
-            // confirm
-            if (localLink.Downlinks.Contains(remoteLink))
-            {
-                unlink = true;
-
-                if (!localLink.Confirmed.Contains(user)) // not already confirmed
-                    menus.Add(new MenuItemInfo("Accept Trust", LinkRes.linkup, new EventHandler(Menu_ConfirmLink)));
-            }
-
-            // unlink
-            if ((unlink && localLink.Confirmed.Contains(user)) ||
-                (localLink.Uplink != null && localLink.Uplink.UserID == user))
-                menus.Add(new MenuItemInfo("Revoke Trust", LinkRes.unlink, new EventHandler(Menu_Unlink)));
-        }
-
-        private void Menu_Linkup(object sender, EventArgs e)
-        {
-            if (!(sender is IViewParams) || Core.GuiMain == null)
-                return;
-
-            ulong user = ((IViewParams)sender).GetUser();
-            uint project = ((IViewParams)sender).GetProject();
-
-            LinkupTo(user, project);
-        }
-
         internal void LinkupTo(ulong user, uint project)
         {
             LocalTrust.AddProject(project, true);
@@ -191,12 +142,12 @@ namespace DeOps.Services.Trust
                 string who = Core.GetName(localLink.Uplink.UserID);
                 string message = "Transfer trust from " + who + " to " + Core.GetName(user) + "?";
 
-                if (MessageBox.Show(Core.GuiMain, message, "Confirm Trust", MessageBoxButtons.YesNo) == DialogResult.No)
+                if ( !Core.UserConfirm(message, "Confirm Trust"))
                     return;
             }
-            else if (MessageBox.Show("Are you sure you want to trust " + Core.GetName(user) + "?", "Trust", MessageBoxButtons.YesNo) == DialogResult.No)
+            else if ( !Core.UserConfirm("Are you sure you want to trust " + Core.GetName(user) + "?", "Trust") )
                 return;
- 
+
             try
             {
                 OpLink remoteLink = GetLink(user, project);
@@ -218,11 +169,11 @@ namespace DeOps.Services.Trust
                     string who = Core.GetName(remoteLink.UserID);
                     string message = "Trusting " + who + " will create a loop. Is this your intention?";
 
-                    if (MessageBox.Show(Core.GuiMain, message, "Loop Warning", MessageBoxButtons.YesNo) == DialogResult.No)
+                    if (!Core.UserConfirm(message, "Loop Warning"))
                         return;
                 }
 
-                if (!Utilities.VerifyPassphrase(Core, ThreatLevel.Medium))
+                if (!Core.UserVerifyPass(ThreatLevel.Medium))
                     return;
 
                 LocalTrust.AddProject(project, true);
@@ -235,7 +186,7 @@ namespace DeOps.Services.Trust
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Core.GuiMain, ex.Message);
+                Core.UserMessage(ex.Message);
             }
         }
 
@@ -278,21 +229,13 @@ namespace DeOps.Services.Trust
             Store.PublishDirect(locations, request.TargetID, ServiceID, DataTypeFile, signed);
         }
 
-        private void Menu_ConfirmLink(object sender, EventArgs e)
-        {
-            if (!(sender is IViewParams) || Core.GuiMain == null)
-                return;
-
-            ulong user = ((IViewParams)sender).GetUser();
-            uint project = ((IViewParams)sender).GetProject();
-
-            AcceptTrust(user, project);
-        }
-        
         internal void AcceptTrust(ulong user, uint project)
         {
             try
             {
+                if ( !Core.UserConfirm("Are you sure you want to accept trust from " + Core.GetName(user) + "?", "Accept Trust"))
+                    return;
+
                 OpLink remoteLink = GetLink(user, project);
                 OpLink localLink = LocalTrust.GetLink(project);
 
@@ -302,7 +245,7 @@ namespace DeOps.Services.Trust
                 if (!localLink.Downlinks.Contains(remoteLink))
                     throw new Exception(Core.GetName(user) + " does not trust you");
 
-                if (!Utilities.VerifyPassphrase(Core, ThreatLevel.Medium))
+                if (!Core.UserVerifyPass(ThreatLevel.Medium))
                     return;
 
 
@@ -313,19 +256,8 @@ namespace DeOps.Services.Trust
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Core.GuiMain, ex.Message);
+                Core.UserMessage(ex.Message);
             }
-        }
-
-        private void Menu_Unlink(object sender, EventArgs e)
-        {
-            if (!(sender is IViewParams) || Core.GuiMain == null)
-                return;
-
-            ulong user = ((IViewParams)sender).GetUser();
-            uint project = ((IViewParams)sender).GetProject();
-
-            UnlinkFrom(user, project);
         }
 
         internal void UnlinkFrom(ulong user, uint project)
@@ -350,10 +282,10 @@ namespace DeOps.Services.Trust
                 if (!unlinkUp && !unlinkDown)
                     throw new Exception("Cannot untrust person");
 
-                if (!Utilities.VerifyPassphrase(Core, ThreatLevel.Medium))
+                if( !Core.UserVerifyPass(ThreatLevel.Medium))
                     return;
 
-                if (MessageBox.Show("Are you sure you want to untrust " + Core.GetName(user) + "?", "Untrust", MessageBoxButtons.YesNo) != DialogResult.Yes)
+                if ( !Core.UserConfirm("Are you sure you want to untrust " + Core.GetName(user) + "?", "Untrust"))
                     return;
 
                 // make sure old links are notified of change
@@ -392,7 +324,7 @@ namespace DeOps.Services.Trust
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Core.GuiMain, ex.Message);
+                Core.UserMessage(ex.Message);
             }
         }
 
@@ -1078,7 +1010,7 @@ namespace DeOps.Services.Trust
                     LinkUpdate.Invoke(trust);
 
                 if (Core.NewsWorthy(trust.UserID, 0, false))
-                    Core.MakeNews("Trust updated by " + Core.GetName(trust.UserID), trust.UserID, 0, true, LinkRes.link, null);
+                    Core.MakeNews(ServiceIDs.Trust, "Trust updated by " + Core.GetName(trust.UserID), trust.UserID, 0, true);
 
 
                 // update subs

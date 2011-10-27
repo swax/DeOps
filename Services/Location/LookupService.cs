@@ -46,11 +46,6 @@ namespace DeOps.Services.Location
 
         }
 
-
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-        }
-
         public void SimTest()
         {
         }

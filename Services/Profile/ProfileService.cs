@@ -142,33 +142,6 @@ namespace DeOps.Services.Profile
             return profile;
         }
 
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-            if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Data/Profile", ProfileRes.IconX, new EventHandler(Menu_View)));
-
-            if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Profile", ProfileRes.IconX, new EventHandler(Menu_View)));
-        }
-
-        internal void Menu_View(object sender, EventArgs args)
-        {
-            IViewParams node = sender as IViewParams;
-
-            if (node == null)
-                return;
-
-            ulong key = node.GetUser();
-
-            if (Network.Responsive)
-                Research(key);
-
-            // gui creates viewshell, component just passes view object
-            ProfileView view = new ProfileView(this, key, node.GetProject());
-
-            Core.InvokeView(node.IsExternal(), view);
-        }
-
         internal void SaveLocal(string template, Dictionary<string, string> textFields, Dictionary<string, string> fileFields)
         {
             try
@@ -319,7 +292,7 @@ namespace DeOps.Services.Profile
                 Core.RunInGuiThread(ProfileUpdate, newProfile);
 
             if (Core.NewsWorthy(newProfile.UserID, 0, false))
-                Core.MakeNews("Profile updated by " + Core.GetName(newProfile.UserID), newProfile.UserID, 0, true, ProfileRes.IconX, Menu_View);
+                Core.MakeNews(ServiceIDs.Profile, "Profile updated by " + Core.GetName(newProfile.UserID), newProfile.UserID, 0, true);
         }
 
         internal void LoadProfile(ulong id)

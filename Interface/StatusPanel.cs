@@ -63,8 +63,11 @@ namespace DeOps.Interface
                 </body>
                 </html>";
 
-
-        OpCore Core;
+        internal CoreUI UI;
+        internal OpCore Core;
+        public IMUI IM;
+        public MailUI Mail;
+        public TrustUI Trust;
 
         enum StatusModeType { None, Network, User, Project, Group };
 
@@ -86,9 +89,14 @@ namespace DeOps.Interface
             StatusBrowser.DocumentText = ContentPage;
         }
 
-        internal void Init(OpCore core)
+        internal void Init(CoreUI ui)
         {
-            Core = core;
+            UI = ui;
+            Core = ui.Core;
+
+            Trust = UI.GetService(ServiceIDs.Trust) as TrustUI;
+            IM = UI.GetService(ServiceIDs.IM) as IMUI;
+            Mail = UI.GetService(ServiceIDs.Mail) as MailUI;
 
             Core.Locations.GuiUpdate += new LocationGuiUpdateHandler(Location_Update);
             Core.Buddies.GuiUpdate += new BuddyGuiUpdateHandler(Buddy_Update);
@@ -595,8 +603,7 @@ namespace DeOps.Interface
 
                 else if (url == "trust_accept")
                 {
-                    if (MessageBox.Show("Are you sure you want to accept trust from " + Core.GetName(UserID) + "?", "Accept Trust", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                        Core.Trust.AcceptTrust(UserID, ProjectID);
+                    Core.Trust.AcceptTrust(UserID, ProjectID);
                 }
 
                 else if (command[0] == "change_title")
@@ -639,8 +646,8 @@ namespace DeOps.Interface
                 {
                     uint id = uint.Parse(command[1]);
 
-                    if (Core.GuiMain != null && Core.GuiMain.GetType() == typeof(MainForm))
-                        ((MainForm)Core.GuiMain).ShowProject(id);
+                    if (UI.GuiMain != null && UI.GuiMain.GetType() == typeof(MainForm))
+                        ((MainForm)UI.GuiMain).ShowProject(id);
                 }
 
                 else if (command[0] == "use_name")
@@ -658,18 +665,14 @@ namespace DeOps.Interface
 
                 else if (url == "im")
                 {
-                    IMService im = Core.GetService(ServiceIDs.IM) as IMService;
-
-                    if (im != null)
-                        im.OpenIMWindow(UserID);
+                    if (IM != null)
+                        IM.OpenIMWindow(UserID);
                 }
 
                 else if (url == "mail")
                 {
-                    MailService mail = Core.GetService(ServiceIDs.Mail) as MailService;
-
-                    if (mail != null)
-                        mail.OpenComposeWindow(UserID);
+                    if (Mail != null)
+                        Mail.OpenComposeWindow(UserID);
                 }
 
                 else if (url == "buddy_who")

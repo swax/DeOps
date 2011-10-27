@@ -23,7 +23,7 @@ namespace DeOps.Services.Board
     internal delegate void PostUpdateHandler(OpPost post);
 
 
-    internal class BoardService : OpService
+    public class BoardService : OpService
     {
         public string Name { get { return "Board"; } }
         public uint ServiceID { get { return (uint)ServiceIDs.Board; } }
@@ -42,7 +42,7 @@ namespace DeOps.Services.Board
 
         internal List<ulong> SaveHeaders = new List<ulong>();
         internal ThreadedDictionary<ulong, OpBoard> BoardMap = new ThreadedDictionary<ulong, OpBoard>();    
-        internal ThreadedDictionary<ulong, List<BoardView>> WindowMap = new ThreadedDictionary<ulong, List<BoardView>>();
+        internal ThreadedDictionary<ulong, List<int>> WindowMap = new ThreadedDictionary<ulong, List<int>>();
 
 
         ThreadedDictionary<int, ushort> SavedReplyCount = new ThreadedDictionary<int, ushort>();
@@ -423,30 +423,6 @@ namespace DeOps.Services.Board
             }
         }
 
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-            if (menuType == InterfaceMenuType.Quick)
-                return;
-
-            if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Comm/Board", BoardRes.Icon, new EventHandler(Menu_View)));
-
-            if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Board", BoardRes.Icon, new EventHandler(Menu_View)));
-        }
-
-        void Menu_View(object sender, EventArgs args)
-        {
-            IViewParams node = sender as IViewParams;
-
-            if (node == null)
-                return;
-
-            BoardView view = new BoardView(this, node.GetUser(), node.GetProject());
-
-            Core.InvokeView(node.IsExternal(), view);
-        }
-
         internal void PostEdit(OpPost edit)
         {
             // used for archive/restore
@@ -731,7 +707,7 @@ namespace DeOps.Services.Board
             UpdateGui(post);
 
             if (Core.NewsWorthy(header.TargetID, header.ProjectID, true))
-                Core.MakeNews("Board updated by " + Core.GetName(header.SourceID), header.SourceID, 0, false, BoardRes.Icon, Menu_View);
+                Core.MakeNews(ServiceIDs.Board, "Board updated by " + Core.GetName(header.SourceID), header.SourceID, 0, false);
          
         }
 
@@ -1148,28 +1124,28 @@ namespace DeOps.Services.Board
         }
 
 
-        internal void LoadView(BoardView view, ulong id)
+        internal void LoadView(int viewId, ulong userId)
         {
             WindowMap.LockWriting(delegate()
             {
-                if (!WindowMap.ContainsKey(id))
-                    WindowMap[id] = new List<BoardView>();
+                if (!WindowMap.ContainsKey(userId))
+                    WindowMap[userId] = new List<int>();
 
-                WindowMap[id].Add(view);
+                WindowMap[userId].Add(viewId);
             });
         }
 
-        internal void UnloadView(BoardView view, ulong id)
+        internal void UnloadView(int viewId, ulong userId)
         {
             WindowMap.LockWriting(delegate()
            {
-               if (!WindowMap.ContainsKey(id))
+               if (!WindowMap.ContainsKey(userId))
                    return;
 
-               WindowMap[id].Remove(view);
+               WindowMap[userId].Remove(viewId);
 
-               if (WindowMap[id].Count == 0)
-                   WindowMap.Remove(id);
+               if (WindowMap[userId].Count == 0)
+                   WindowMap.Remove(userId);
            });
         }
 

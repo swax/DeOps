@@ -67,7 +67,7 @@ namespace DeOps.Services.Mail
     internal delegate void MailUpdateHandler(LocalMail message);
 
 
-    class MailService : OpService
+    public class MailService : OpService
     {
         public string Name { get { return "Mail"; } }
         public uint ServiceID { get { return (uint)ServiceIDs.Mail; } }
@@ -108,8 +108,10 @@ namespace DeOps.Services.Mail
 
         int PruneSize = 64;
 
-
         VersionedCache PendingCache;
+
+        internal delegate void ShowComposeHandler(ulong userID, LocalMail message, string title, string body);
+        internal ShowComposeHandler ShowCompose;
 
 
         internal MailService(OpCore core)
@@ -602,62 +604,6 @@ namespace DeOps.Services.Mail
                 return local;
 
             return null;
-        }
-
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-            if (menuType == InterfaceMenuType.Quick)
-            {
-                if (user == Core.UserID)
-                    return;
-
-                menus.Add(new MenuItemInfo("Send Mail", MailRes.SendMail, new EventHandler(QuickMenu_View)));
-                return;
-            }
-
-            if (user != Core.UserID)
-                return;
-
-            if (menuType == InterfaceMenuType.Internal)
-                menus.Add(new MenuItemInfo("Comm/Mail", MailRes.Icon, new EventHandler(Menu_View)));
-
-            if (menuType == InterfaceMenuType.External)
-                menus.Add(new MenuItemInfo("Mail", MailRes.Icon, new EventHandler(Menu_View)));
-        }
-
-        internal void QuickMenu_View(object sender, EventArgs args)
-        {
-            IViewParams node = sender as IViewParams;
-
-            ulong user = 0;
-
-            if (node != null)
-                user = node.GetUser();
-
-            OpenComposeWindow(user);
-        }
-
-        internal void OpenComposeWindow(ulong user)
-        {
-            // if window already exists to node, show it
-            ComposeMail compose = new ComposeMail(this, user);
-
-            Core.InvokeView(true, compose);
-        }
-
-        void Menu_View(object sender, EventArgs args)
-        {
-            IViewParams node = sender as IViewParams;
-
-            if (node == null)
-                return;
-
-            if (node.GetUser() != Core.UserID)
-                return;
-
-            MailView view = new MailView(this);
-
-            Core.InvokeView(node.IsExternal(), view);
         }
 
         internal void SendMail(List<ulong> to, List<AttachedFile> files, string subject, string body, TextFormat format, int threadID)
@@ -1259,7 +1205,7 @@ namespace DeOps.Services.Mail
             Store_LocalAck(new DataReq(null, header.SourceID, ServiceID, DataTypeAck, signedAck)); // cant direct process_header, because header var is being modified
             RunSaveHeaders = true;
             
-            Core.MakeNews("Mail Received from " + Core.GetName(message.From), message.From, 0, false, MailRes.Icon, Menu_View);
+            Core.MakeNews(ServiceIDs.Mail, "Mail Received from " + Core.GetName(message.From), message.From, 0, false);
          
         }
 
@@ -1810,30 +1756,12 @@ namespace DeOps.Services.Mail
 
         internal void Reply(LocalMail message, string body)
         {
-            ComposeMail compose = new ComposeMail(this, message.Header.SourceID);
-            compose.CustomTitle = "Reply to ";
-            compose.ThreadID = message.Header.ThreadID;
-
-            compose.SubjectTextBox.Text = message.Info.Subject;
-            compose.SubjectTextBox.Enabled = false;
-            compose.SubjectTextBox.BackColor = System.Drawing.Color.WhiteSmoke;
-
-            Core.RunInGuiThread(Core.ShowExternal, compose);
+            Core.RunInGuiThread(ShowCompose, message.Header.SourceID, message, "Reply to ", body);
         }
 
         internal void Forward(LocalMail message, string body)
         {
-            ComposeMail compose = new ComposeMail(this, 0);
-            compose.CustomTitle = "Forward to ";
-            compose.ThreadID = message.Header.ThreadID;
-
-            compose.SubjectTextBox.Text = message.Info.Subject;
-            compose.SubjectTextBox.Enabled = false;
-            compose.SubjectTextBox.BackColor = System.Drawing.Color.WhiteSmoke;
-
-            //crit attach files
-            
-            Core.RunInGuiThread(Core.ShowExternal, compose);
+            Core.RunInGuiThread(ShowCompose, 0, message, "Forward to ", body);
         }
 
         internal void DeleteLocal(LocalMail message)
@@ -1941,7 +1869,7 @@ namespace DeOps.Services.Mail
         }
     }
 
-    internal class LocalMail
+    public class LocalMail
     {
         internal MailInfo Info;
 

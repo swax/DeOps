@@ -12,25 +12,25 @@ using DeOps.Implementation.Transport;
 namespace DeOps.Services
 {
     // Built-in Service IDs
-    public enum ServiceIDs : uint
+    public static class ServiceIDs
     {
-        Dht = 0,
-        Trust = 1,
-        Location = 2,
-        Transfer = 3,
-        Profile = 4,
-        IM = 5,
-        Chat = 6,
-        Mail = 7,
-        Board = 8,
-        Plan = 9,
-        Storage = 10,
-        LocalSync = 11,
-        Lookup = 12,
-        Buddy = 13,
-        Share = 14,
-        Update = 15,
-        Voice = 16
+        public static uint Dht = 0;
+        public static uint Trust = 1;
+        public static uint Location = 2;
+        public static uint Transfer = 3;
+        public static uint Profile = 4;
+        public static uint IM = 5;
+        public static uint Chat = 6;
+        public static uint Mail = 7;
+        public static uint Board = 8;
+        public static uint Plan = 9;
+        public static uint Storage = 10;
+        public static uint LocalSync = 11;
+        public static uint Lookup = 12;
+        public static uint Buddy = 13;
+        public static uint Share = 14;
+        public static uint Update = 15;
+        public static uint Voice = 16;
     }
     
     public enum InterfaceMenuType { Internal, External, Settings, Quick };
@@ -56,26 +56,6 @@ namespace DeOps.Services
         }
     }
 
-    internal class NewsItemInfo
-    {
-        internal string Message;
-        internal ulong UserID;
-        internal uint ProjectID;
-        internal bool ShowRemote;
-        internal Icon Symbol;
-        internal EventHandler ClickEvent;
-
-        internal NewsItemInfo(string message, ulong id, uint project, bool showRemote, Icon symbol, EventHandler onClick)
-        {
-            Message = message;
-            UserID = id;
-            ProjectID = project;
-            Symbol = symbol;
-            ShowRemote = showRemote;
-            ClickEvent = onClick;
-        }
-    }
-
     internal interface IViewParams
     {
         ulong GetUser();
@@ -85,8 +65,6 @@ namespace DeOps.Services
 
     public interface OpService : IDisposable
     {
-        void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project);
-
         string Name { get; }
         uint ServiceID { get; }
 

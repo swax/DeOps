@@ -25,7 +25,7 @@ namespace DeOps.Interface
 {
     internal partial class LoginForm : CustomIconForm
     {
-        WinContext App;
+        AppContext App;
         DeOpsContext Context;
         
 
@@ -36,7 +36,7 @@ namespace DeOps.Interface
         internal G2Protocol Protocol = new G2Protocol();
 
 
-        internal LoginForm(WinContext app, string arg)
+        internal LoginForm(AppContext app, string arg)
         {
             App = app;
             Context = app.Context;
@@ -61,7 +61,7 @@ namespace DeOps.Interface
 
             // each profile (.rop) is in its own directory
             // /root/profiledirs[]/profile.rop
-            if (App.Sim == null)
+            if (App.Context.Sim == null)
             {
                 LoadProfiles(ApplicationEx.UserAppDataPath());
                 LoadProfiles(Application.StartupPath);
@@ -71,7 +71,7 @@ namespace DeOps.Interface
                     LoadProfiles(Path.GetDirectoryName(Path.GetDirectoryName(arg)));
             }
             else
-                LoadProfiles(App.Sim.Internet.LoadedPath);
+                LoadProfiles(App.Context.Sim.Internet.LoadedPath);
 
 
             OpComboItem select = null;
@@ -125,7 +125,7 @@ namespace DeOps.Interface
 
                 // public network
                 else if (arg.Replace("deops://", "").IndexOf('/') == -1)
-                    user = new CreateUser(Context, arg, AccessType.Public);
+                    user = new CreateUser(App, arg, AccessType.Public);
 
                 // show create user dialog
                 if (user != null)
@@ -147,7 +147,7 @@ namespace DeOps.Interface
             if (form.ShowDialog(this) != DialogResult.OK)
                 return;
 
-            CreateUser create = new CreateUser(Context, form.OpName, form.OpAccess);
+            CreateUser create = new CreateUser(App, form.OpName, form.OpAccess);
 
             if (create.ShowDialog(this) == DialogResult.OK)
                 Close();
@@ -164,7 +164,7 @@ namespace DeOps.Interface
 
             if (join.GlobalIM)
             {
-                user = new CreateUser(Context, "Global IM", AccessType.Secret);
+                user = new CreateUser(App, "Global IM", AccessType.Secret);
                 user.GlobalIM = true;
             }
 
@@ -174,7 +174,7 @@ namespace DeOps.Interface
 
             // public network
             else
-                user = new CreateUser(Context, join.OpLink, join.OpAccess);
+                user = new CreateUser(App, join.OpLink, join.OpAccess);
 
 
             // show create user dialog
@@ -191,7 +191,7 @@ namespace DeOps.Interface
                 InvitePackage invite = OpCore.OpenInvite(Context, Protocol, link);
 
                 if(invite != null)
-                    user = new CreateUser(Context, invite);
+                    user = new CreateUser(App, invite);
             }
             catch (Exception ex)
             {
@@ -263,15 +263,15 @@ namespace DeOps.Interface
             bool handled = false;
 
             // look for item in context cores, show mainGui, or notify user to check tray
-            Context.Cores.LockReading(delegate()
+            App.CoreUIs.LockReading(delegate()
             {
-                foreach (OpCore core in Context.Cores)
-                    if (core.User.ProfilePath == item.Fullpath)
+                foreach (var ui in App.CoreUIs)
+                    if (ui.Core.User.ProfilePath == item.Fullpath)
                     {
-                        if (core.GuiMain != null)
+                        if (ui.GuiMain != null)
                         {
-                            core.GuiMain.WindowState = FormWindowState.Normal;
-                            core.GuiMain.Activate();
+                            ui.GuiMain.WindowState = FormWindowState.Normal;
+                            ui.GuiMain.Activate();
 
                             Close(); // user thinks they logged back on, window just brought to front
                         }
@@ -291,7 +291,7 @@ namespace DeOps.Interface
             {
                 newCore = new OpCore(Context, item.Fullpath, TextPassword.Text);
 
-                Context.ShowCore(newCore);
+                App.ShowCore(newCore);
 
                 Properties.Settings.Default.LastOpened = item.Fullpath;
 
@@ -301,7 +301,7 @@ namespace DeOps.Interface
             {
                 // if interface threw exception, remove the added core
                 if (newCore != null)
-                    Context.RemoveCore(newCore);
+                    App.RemoveCore(newCore);
 
                 if (ex is System.Security.Cryptography.CryptographicException)
                     MessageBox.Show(this, "Wrong Passphrase");
@@ -398,7 +398,7 @@ namespace DeOps.Interface
 
         private void CreateGlobalLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            CreateUser form = new CreateUser(Context, "Global IM", AccessType.Secret);
+            CreateUser form = new CreateUser(App, "Global IM", AccessType.Secret);
             form.GlobalIM = true;
 
             if (form.ShowDialog(this) == DialogResult.OK)

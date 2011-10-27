@@ -84,45 +84,6 @@ namespace DeOps.Services.Plan
             Cache.Dispose();
         }
 
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-            if (menuType == InterfaceMenuType.Internal)
-            {
-                menus.Add(new MenuItemInfo("Plans/Schedule", PlanRes.Schedule, new EventHandler(Menu_ScheduleView)));
-                menus.Add(new MenuItemInfo("Plans/Goals", PlanRes.Goals, new EventHandler(Menu_GoalsView)));
-            }
-
-            if (menuType == InterfaceMenuType.External)
-            {
-                menus.Add(new MenuItemInfo("Schedule", PlanRes.Schedule, new EventHandler(Menu_ScheduleView)));
-                menus.Add(new MenuItemInfo("Goals", PlanRes.Goals, new EventHandler(Menu_GoalsView)));
-            }
-        }
-
-        void Menu_ScheduleView(object sender, EventArgs args)
-        {
-            IViewParams node = sender as IViewParams;
-
-            if (node == null)
-                return;
-
-            ScheduleView view = new ScheduleView(this, node.GetUser(), node.GetProject());
-
-            Core.InvokeView(node.IsExternal(), view);
-        }
-
-        void Menu_GoalsView(object sender, EventArgs args)
-        {
-            IViewParams node = sender as IViewParams;
-
-            if (node == null)
-                return;
-
-            GoalsView view = new GoalsView(this, node.GetUser(), node.GetProject());
-
-            Core.InvokeView(node.IsExternal(), view);
-        }
-
         void Core_SecondTimer()
         {
             // triggered on update estimates use time out so update doesnt cascade the network all the way up
@@ -336,7 +297,7 @@ namespace DeOps.Services.Plan
             Core.RunInGuiThread(PlanUpdate, newPlan);
 
             if (Core.NewsWorthy(newPlan.UserID, 0, false))
-                Core.MakeNews("Plan updated by " + Core.GetName(newPlan.UserID), newPlan.UserID, 0, false, PlanRes.Schedule, Menu_ScheduleView);
+                Core.MakeNews(ServiceIDs.Plan, "Plan updated by " + Core.GetName(newPlan.UserID), newPlan.UserID, 0, false);
                 
         }
 

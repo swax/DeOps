@@ -75,7 +75,7 @@ namespace DeOps.Services.Plan
 
         private void PickLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            AddUsersDialog add = new AddUsersDialog(Core, Editing.Project);
+            AddUsersDialog add = new AddUsersDialog(View.UI, Editing.Project);
 
             // force root to self, only if self is not in a loop, in which case anyone in loop can be assigned sub-goals
             //if(!Core.Links.LocalLink.LoopRoot.ContainsKey(Editing.Project)), assignment loops, not obvious behavior

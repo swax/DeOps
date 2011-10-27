@@ -569,8 +569,8 @@ namespace DeOps.Services.Plan
             if (menu == null)
                 return;
 
-            if (View.External != null && View.Core.GuiMain.GetType() == typeof(MainForm))
-                foreach(ExternalView ext in ((MainForm)View.Core.GuiMain).ExternalViews)
+            if (View.External != null && View.UI.GuiMain.GetType() == typeof(MainForm))
+                foreach (ExternalView ext in ((MainForm)View.UI.GuiMain).ExternalViews)
                     if(ext.Shell.GetType() == typeof(GoalsView))
                         if (((GoalsView)ext.Shell).UserID == View.UserID && ((GoalsView)ext.Shell).ProjectID == View.ProjectID)
                         {
@@ -579,14 +579,11 @@ namespace DeOps.Services.Plan
                         }
 
             // switch to goal view
-            GoalsView view = new GoalsView(View.Plans, View.UserID, View.ProjectID);
+            GoalsView view = new GoalsView(View.UI, View.Plans, View.UserID, View.ProjectID);
             view.LoadIdent = menu.Goal.Ident;
             view.LoadBranch = menu.Goal.BranchUp;
 
-            if (View.External != null)
-                View.Core.RunInGuiThread(View.Core.ShowExternal, view);
-            else
-                View.Core.RunInGuiThread(View.Core.ShowInternal, view);
+            view.UI.ShowView(view, view.External != null); 
         }
 
         private void BlockRow_MouseDoubleClick(object sender, MouseEventArgs e)

@@ -27,7 +27,7 @@ using DeOps.Interface.Views;
 namespace DeOps
 {
     // at high security, low threats and above must be checked
-    enum ThreatLevel { Low = 3, Medium = 5, High = 7 }
+    public enum ThreatLevel { Low = 3, Medium = 5, High = 7 }
     enum SecurityLevel { Low = 7, Medium = 5, High = 3 }
     enum TextFormat { Plain = 0, RTF = 1, HTML = 2 }
 

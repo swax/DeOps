@@ -20,7 +20,8 @@ namespace DeOps.Services.IM
 {
 
     internal partial class IM_View : ViewShell
-    {        
+    {
+        CoreUI          UI;
         IMService       IM;
         OpCore          Core;
         LocationService Locations;
@@ -40,14 +41,17 @@ namespace DeOps.Services.IM
         VoiceToolstripButton VoiceButton;
 
 
-        internal IM_View(IMService im, ulong key)
+        internal IM_View(CoreUI ui, IMService im, ulong key)
         {
             InitializeComponent();
 
+            UI = ui;
+            Core = ui.Core;
             IM    = im;
-            Core  = IM.Core;
             Locations = IM.Core.Locations;
             UserID = key;
+
+            IM.ActiveUsers.Add(UserID);
 
             UpdateName();
             
@@ -61,7 +65,6 @@ namespace DeOps.Services.IM
 
             TimestampMenu = new ToolStripMenuItem("Timestamps", ViewRes.timestamp, new EventHandler(Menu_Timestamps));
             MessageTextBox.ContextMenuStrip.Items.Insert(0, TimestampMenu);
-
         }
 
         private void UpdateName()
@@ -79,6 +82,7 @@ namespace DeOps.Services.IM
             InputControl.IgnoreUser += new MethodInvoker(InputControl_IgnoreUser);
             InputControl.AddBuddy += new MethodInvoker(InputControl_AddBuddy);
 
+            IM.ReSearchUser(UserID);
             IM_StatusUpdate(UserID);
             DisplayLog();
 
@@ -105,6 +109,8 @@ namespace DeOps.Services.IM
 
         internal override bool Fin()
         {
+            IM.ActiveUsers.Remove(UserID);
+
             InputControl.SendMessage -= new TextInput.SendMessageHandler(InputControl_SendMessage);
 
             IM.MessageUpdate -= new IM_MessageHandler(IM_MessageUpdate);
@@ -186,7 +192,7 @@ namespace DeOps.Services.IM
 
         internal void InputControl_SendFile()
         {
-            SendFileForm form = new SendFileForm(Core, UserID);
+            SendFileForm form = new SendFileForm(UI, UserID);
 
             form.FileProcessed = new Tuple<FileProcessedHandler, object>(new FileProcessedHandler(IM.Share_FileProcessed), (object)UserID);
             

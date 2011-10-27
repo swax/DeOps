@@ -49,12 +49,15 @@ namespace DeOps.Implementation
 	internal enum FirewallType { Blocked, NAT, Open };
     internal enum TransportProtocol { Tcp, Udp, LAN, Rudp, Tunnel };
 
-
-    internal delegate void LoadHandler();
-    internal delegate void ExitHandler();
+    internal delegate void ExitedHandler(OpCore core);
     internal delegate void TimerHandler();
-    internal delegate void NewsUpdateHandler(NewsItemInfo info);
+    internal delegate void NewsUpdateHandler(uint serviceID, string message, ulong userID, uint project, bool showRemote);
     internal delegate void KeepDataHandler();
+    internal delegate void UpdateConsoleHandler(string message);
+    internal delegate bool ShowConfirmHandler(string message, string title);
+    internal delegate void ShowMessageHandler(string message);
+    internal delegate bool VerifyPassHandler(ThreatLevel threatLevel);
+    internal delegate void RunInGuiHandler(Delegate method, params object[] args);
 
     internal delegate void ShowExternalHandler(ViewShell view);
     internal delegate void ShowInternalHandler(ViewShell view);
@@ -100,6 +103,7 @@ namespace DeOps.Implementation
         internal Dictionary<ulong, byte[]> KeyMap = new Dictionary<ulong, byte[]>();
 
         // events
+        internal event ExitedHandler Exited;
         internal event TimerHandler SecondTimerEvent;
 
         int MinuteCounter; // random so all of network doesnt burst at once
@@ -109,22 +113,20 @@ namespace DeOps.Implementation
         internal event KeepDataHandler KeepDataGui; // event for gui thread
         internal event KeepDataHandler KeepDataCore; // event for core thread
 
+        internal event ShowConfirmHandler ShowConfirm;
+        internal event ShowMessageHandler ShowMessage;
+        internal event VerifyPassHandler VerifyPass;
+
+        internal event RunInGuiHandler RunInGui;
+        internal event UpdateConsoleHandler UpdateConsole;
+
         // only safe to use this from core_minuteTimer because updated 2 secs before it
         // every min keep data is updated and then pruning is done on internal data structures
         // local data that is in use by views or we are caching and shouldn't be removed by the pruning process
         internal ThreadedDictionary<ulong, bool> KeepData = new ThreadedDictionary<ulong, bool>();
 
-        // interfaces
-        internal HostsExternalViews GuiMain;
-        internal TrayLock      GuiTray;
-        internal ConsoleForm   GuiConsole;
-        internal G2Protocol    GuiProtocol;
-        internal InternalsForm GuiInternal;
+        internal G2Protocol    GuiProtocol; // used for encoding from the gui thread
         internal bool DebugWindowsActive;
-
-        internal ShowExternalHandler ShowExternal;
-        internal ShowInternalHandler ShowInternal;
-
 
         // logs
         internal bool PauseLog;
@@ -290,10 +292,10 @@ namespace DeOps.Implementation
             return id.ToString();
         }
 
-        internal OpService GetService(ServiceIDs id)
+        internal OpService GetService(uint id)
         {
-            if (ServiceMap.ContainsKey((uint)id))
-                return ServiceMap[(uint)id];
+            if (ServiceMap.ContainsKey(id))
+                return ServiceMap[id];
 
             return null;
         }
@@ -573,8 +575,7 @@ namespace DeOps.Implementation
             while (ConsoleText.Count > 500)
                 ConsoleText.Dequeue();
 
-            if (GuiConsole != null)
-                GuiConsole.BeginInvoke(GuiConsole.UpdateConsole, message);
+            RunInGuiThread(UpdateConsole, message);
         }
 
         internal DateTime TimeNow
@@ -660,22 +661,8 @@ namespace DeOps.Implementation
 
         internal void RunInGuiThread(Delegate method, params object[] args)
         {
-            if (method == null || GuiMain == null)
-                return;
-
-            //LastEvents.Enqueue(method);
-            //while (LastEvents.Count > 10)
-            //    LastEvents.Dequeue();
-
-            GuiMain.BeginInvoke(method, args);
-        }
-
-        internal void InvokeView(bool external, ViewShell view)
-        {
-            if(external)
-                RunInGuiThread(ShowExternal, view);
-            else
-                RunInGuiThread(ShowInternal, view);
+            if (RunInGui != null)
+                RunInGui(method, args);
         }
 
         internal string GetTempPath()
@@ -699,9 +686,6 @@ namespace DeOps.Implementation
 
         internal bool NewsWorthy(ulong id, uint project, bool localRegionOnly)
         {
-            if (GuiMain == null)
-                return false;
-
             //crit - if in buddy list, if non-local self
             //should really be done per compontnt (board only cares about local, mail doesnt care at all, neither does chat)
     
@@ -725,21 +709,18 @@ namespace DeOps.Implementation
 
         }
 
-        internal void MakeNews(string message, ulong id, uint project, bool showRemote, System.Drawing.Icon symbol, EventHandler onClick)
+        internal void MakeNews(uint service, string message, ulong userID, uint project, bool showRemote)
         {
             // use self id because point of news is alerting user to changes in their *own* interfaces
-            RunInGuiThread(NewsUpdate, new NewsItemInfo(message, id, project, showRemote, symbol, onClick));
+            RunInGuiThread(NewsUpdate, service, message, userID, project, showRemote);
         }
 
         internal void Exit()
         {
             // if main interface not closed (triggered from auto-update) then properly close main window
             // let user save files etc..
-            if (GuiMain != null)
-            {
-                GuiMain.Close();
-                return;
-            }
+            if (Exited != null)
+                Exited(this);
 
 
             CoreRunning = false;
@@ -780,8 +761,6 @@ namespace DeOps.Implementation
             {
                 Debug.Assert(false);
             }
-
-            Context.RemoveCore(this);
         }
 
 
@@ -865,22 +844,6 @@ namespace DeOps.Implementation
 
             RecordBandwidthSeconds = seconds; // do this last to ensure all buffers set
         }
-
-        internal void ShowMainView()
-        {
-            ShowMainView(false);
-        }
-
-        internal void ShowMainView(bool sideMode)
-        {
-            if (User.Settings.GlobalIM)
-                GuiMain = new IMForm(this);
-            else
-                GuiMain = new MainForm(this, sideMode);
-
-            GuiMain.Show();
-        }
-
 
         internal void RenameUser(ulong user, string name)
         {
@@ -1094,6 +1057,28 @@ namespace DeOps.Implementation
 
             foreach (WebCache cache in invite.Caches)
                 Network.Cache.AddCache(cache);
+        }
+
+        internal bool UserConfirm(string message, string title)
+        {
+            if (ShowConfirm != null)
+                return ShowConfirm(message, title);
+
+            return false;
+        }
+
+        internal void UserMessage(string message)
+        {
+            if (ShowMessage != null)
+                ShowMessage(message);
+        }
+
+        internal bool UserVerifyPass(ThreatLevel threatLevel)
+        {
+            if (VerifyPass != null)
+                return VerifyPass(threatLevel);
+
+            return false;
         }
     }
 

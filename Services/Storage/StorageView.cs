@@ -24,6 +24,7 @@ namespace DeOps.Services.Storage
 {
     internal partial class StorageView : ViewShell
     {
+        internal CoreUI UI;
         internal OpCore Core;
         internal StorageService Storages;
         internal TrustService Trust;
@@ -64,12 +65,13 @@ namespace DeOps.Services.Storage
         ContainerListViewEx LastSelectedView;
 
 
-        internal StorageView(StorageService storages, ulong id, uint project)
+        internal StorageView(CoreUI ui, StorageService storages, ulong id, uint project)
         {
             InitializeComponent();
 
+            UI = ui;
+            Core = ui.Core;
             Storages = storages;
-            Core = Storages.Core;
             Trust = Core.Trust;
 
             UserID = id;
@@ -254,7 +256,7 @@ namespace DeOps.Services.Storage
 
             else if (DiffCombo.Text == "Custom...")
             {
-                AddUsersDialog form = new AddUsersDialog(Core, ProjectID);
+                AddUsersDialog form = new AddUsersDialog(UI, ProjectID);
 
                 if (form.ShowDialog(this) == DialogResult.OK)
                     CurrentDiffs.AddRange(form.People);

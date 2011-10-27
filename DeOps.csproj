@@ -128,7 +128,17 @@
     <Compile Include="AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="WinContext.cs" />
+    <Compile Include="Services\Board\BoardUI.cs" />
+    <Compile Include="Services\Buddy\BuddyUI.cs" />
+    <Compile Include="Services\Chat\ChatUI.cs" />
+    <Compile Include="Services\IM\IMUI.cs" />
+    <Compile Include="Services\Mail\MailUI.cs" />
+    <Compile Include="Services\Plan\PlanUI.cs" />
+    <Compile Include="Services\Profile\ProfileUI.cs" />
+    <Compile Include="Services\Share\ShareUI.cs" />
+    <Compile Include="Services\Storage\StorageUI.cs" />
+    <Compile Include="Services\Trust\TrustUI.cs" />
+    <Compile Include="AppContext.cs" />
     <Compile Include="DeOpsContext.cs" />
     <Compile Include="Implementation\OpCache.cs" />
     <Compile Include="Implementation\Protocol\Packets\PacketsLicense.cs" />

@@ -20,6 +20,7 @@ namespace DeOps.Services.Buddy
 {
     public class BuddyView : ContainerListViewEx
     {
+        CoreUI UI;
         OpCore Core;
         BuddyService Buddies;
         LocationService Locations;
@@ -45,8 +46,9 @@ namespace DeOps.Services.Buddy
             MultiSelect = true;
         }
 
-        internal void Init(BuddyService buddies, StatusPanel status, bool interactive)
+        internal void Init(CoreUI ui, BuddyService buddies, StatusPanel status, bool interactive)
         {
+            UI = ui;
             Buddies = buddies;
             Core = buddies.Core;
             Locations = Core.Locations;
@@ -308,10 +310,8 @@ namespace DeOps.Services.Buddy
 
             if (Core.Locations.ActiveClientCount(clicked.User) > 0)
             {
-                IMService IM = Core.GetService(ServiceIDs.IM) as IMService;
-
-                if (IM != null)
-                    IM.QuickMenu_View(clicked, null);
+                if(SelectionInfo.IM != null)
+                    SelectionInfo.IM.OpenIMWindow(clicked.User);
             }
         }
 
@@ -352,7 +352,7 @@ namespace DeOps.Services.Buddy
             List<MenuItemInfo> quickMenus = new List<MenuItemInfo>();
             List<MenuItemInfo> extMenus = new List<MenuItemInfo>();
 
-            foreach (OpService service in Core.ServiceMap.Values)
+            foreach (var service in UI.Services.Values)
             {
                 if (service is TrustService || service is BuddyService)
                     continue;
@@ -389,9 +389,8 @@ namespace DeOps.Services.Buddy
             // add trust options at bottom
             quickMenus.Clear();
 
-            Core.Buddies.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, clicked.User, project);
-            if (Core.Trust != null)
-                Core.Trust.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, clicked.User, project);
+            UI.Services[ServiceIDs.Buddy].GetMenuInfo(InterfaceMenuType.Quick, quickMenus, clicked.User, project);
+            UI.Services[ServiceIDs.Trust].GetMenuInfo(InterfaceMenuType.Quick, quickMenus, clicked.User, project);
 
             foreach (MenuItemInfo info in quickMenus)
                 treeMenu.Items.Add(new OpMenuItem(clicked.User, project, info.Path, info));

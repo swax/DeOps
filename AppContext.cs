@@ -14,18 +14,29 @@ using DeOps.Interface;
 using DeOps.Services.Share;
 using DeOps.Services.Buddy;
 using System.Diagnostics;
+using DeOps.Interface.Views;
+using DeOps.Services;
+using System.Drawing;
+using DeOps.Services.Board;
+using DeOps.Services.Chat;
+using DeOps.Services.IM;
+using DeOps.Services.Mail;
+using DeOps.Services.Plan;
+using DeOps.Services.Profile;
+using DeOps.Services.Storage;
+using DeOps.Services.Trust;
+using DeOps.Interface.Tools;
 
 namespace DeOps
 {
-    public class WinContext : ApplicationContext
+    public class AppContext : ApplicationContext
     {
         public bool StartSuccess;
         public DeOpsMutex SingleInstance;
         public DeOpsContext Context;
+        public ThreadedList<CoreUI> CoreUIs = new ThreadedList<CoreUI>();
 
         SimForm Simulator;
-
-        internal SimInstance Sim;
 
         internal FullLicense License;
 
@@ -36,7 +47,7 @@ namespace DeOps
         Timer FastTimer = new Timer();
 
 
-        public WinContext(string[] args)
+        public AppContext(string[] args)
         {
             // if instance already running, signal it and exit
 
@@ -74,7 +85,6 @@ namespace DeOps
             Context = new DeOpsContext();
             Context.ShowLogin = ShowLogin;
             Context.NotifyUpdateReady = NotifyUpdateReady;
-            Context.CheckExit = CheckExit;
 
             LoadLicense(ref License, ref Context.LicenseProof);
 
@@ -175,16 +185,15 @@ namespace DeOps
                 {
                     FileLink link = FileLink.Decode(arg, null);
 
-                    OpCore core = Context.FindCore(link.PublicOpID);
+                    var ui = FindCore(link.PublicOpID);
 
-                    if (core != null)
+                    if (ui != null)
                     {
-                        ShareService share = core.GetService(DeOps.Services.ServiceIDs.Share) as ShareService;
+                        ShareService share = ui.Core.GetService(DeOps.Services.ServiceIDs.Share) as ShareService;
                         share.DownloadLink(arg);
 
-                        if (core.GuiMain != null)
-                            if (!core.GuiMain.ShowExistingView(typeof(SharingView)))
-                                core.ShowExternal(new SharingView(core, core.UserID));
+                        if (ui.GuiMain != null && !ui.GuiMain.ShowExistingView(typeof(SharingView)))
+                            ui.ShowView(new SharingView(ui.Core, ui.Core.UserID), true);
 
                         return true;
                     }
@@ -194,11 +203,11 @@ namespace DeOps
                 {
                     IdentityLink link = IdentityLink.Decode(arg);
 
-                    OpCore target = Context.FindCore(link.PublicOpID);
+                    var target = FindCore(link.PublicOpID);
 
                     if (target != null)
                     {
-                        BuddyView.AddBuddyDialog(target, arg);
+                        BuddyView.AddBuddyDialog(target.Core, arg);
                         return true;
                     }
                 }
@@ -206,6 +215,15 @@ namespace DeOps
             catch { }
 
             return false;
+        }
+
+        public CoreUI FindCore(byte[] pubOpID)
+        {
+            foreach (var ui in CoreUIs)
+                if (Utilities.MemCompare(ui.Core.User.Settings.PublicOpID, pubOpID))
+                    return ui;
+
+            return null;
         }
 
         internal void ShowSimulator()
@@ -308,10 +326,56 @@ namespace DeOps
             return false;
         }
 
+        internal void ShowCore(OpCore core)
+        {
+            var ui = new CoreUI(core);
+            core.Exited += RemoveCore;
+
+            CoreUIs.SafeAdd(ui);
+            Context.AddCore(core);
+
+            ui.ShowMainView();
+        }
+
+        internal void RemoveCore(OpCore removed)
+        {
+            if (removed == Context.Lookup)
+                return;
+
+            Context.Cores.LockWriting(delegate()
+            {
+                foreach (OpCore core in Context.Cores)
+                    if (core == removed)
+                    {
+                        Context.Cores.Remove(core);
+                        break;
+                    }
+            });
+
+            CoreUI removeUI = null;
+
+            CoreUIs.SafeForEach(ui =>
+            {
+                if (ui.Core == removed)
+                    removeUI = ui;
+            });
+
+            if (removeUI != null)
+            {
+                if (removeUI.GuiMain != null)
+                    removeUI.GuiMain.Close();
+
+                CoreUIs.SafeRemove(removeUI);
+            }
+
+            Context.CheckLookup();
+            CheckExit();
+        }
+
         private void CheckExit()
         {
             // if context running inside a simulator dont exit thread
-            if (Sim != null)
+            if (Context.Sim != null)
                 return;
 
             if (Logins.Count == 0 && Context.Cores.SafeCount == 0)
@@ -319,7 +383,7 @@ namespace DeOps
                 if (Context.Lookup != null)
                     Context.Lookup.Exit();
 
-                if (Sim == null) // context not running inside a simulation
+                if (Context.Sim == null) // context not running inside a simulation
                 {
                     Properties.Settings.Default.Save();
 
@@ -327,7 +391,7 @@ namespace DeOps
                         ExitThread();
                 }
                 else
-                    Sim.Internet.ExitInstance(Sim);
+                    Context.Sim.Internet.ExitInstance(Context.Sim);
             }
         }
 
@@ -426,5 +490,127 @@ namespace DeOps
                  //UpdateLog("Exception", "LoginForm::RegisterType: " + ex.Message);
              }*/
         }
+    }
+
+    public class CoreUI
+    {
+        public OpCore Core;
+        public HostsExternalViews GuiMain;
+        public TrayLock GuiTray;
+        public InternalsForm GuiInternal;
+        internal ConsoleForm GuiConsole;
+
+        public Dictionary<uint, IServiceUI> Services = new Dictionary<uint, IServiceUI>();
+
+        public delegate void ShowViewHandler(ViewShell view, bool external);
+        public ShowViewHandler ShowView;
+
+
+        public CoreUI(OpCore core)
+        {
+            Core = core;
+
+            // load menus for loaded services
+            foreach (var service in Core.ServiceMap.Values)
+            {
+                var id = service.ServiceID;
+
+                if (id == ServiceIDs.Board)
+                    Services[id] = new BoardUI(this, service);
+
+                if (id == ServiceIDs.Buddy)
+                    Services[id] = new BuddyUI(this, service);
+
+                if (id == ServiceIDs.Chat)
+                    Services[id] = new ChatUI(this, service);
+
+                if (id == ServiceIDs.IM)
+                    Services[id] = new IMUI(this, service);
+
+                if (id == ServiceIDs.Mail)
+                    Services[id] = new MailUI(this, service);
+
+                if (id == ServiceIDs.Plan)
+                    Services[id] = new PlanUI(this, service);
+
+                if (id == ServiceIDs.Profile)
+                    Services[id] = new ProfileUI(this, service);
+
+                if (id == ServiceIDs.Share)
+                    Services[id] = new ShareUI(this, service);
+
+                if (id == ServiceIDs.Storage)
+                    Services[id] = new StorageUI(this, service);
+
+                if (id == ServiceIDs.Trust)
+                    Services[id] = new TrustUI(this, service);
+            }
+
+            Core.RunInGui += Core_RunInGui;
+            Core.UpdateConsole += Core_UpdateConsole;
+            Core.ShowConfirm += Core_ShowConfirm;
+            Core.ShowMessage += Core_ShowMessage;
+            Core.VerifyPass += Core_VerifyPass;
+        }
+
+        public void ShowMainView(bool sideMode = false)
+        {
+            if (Core.User.Settings.GlobalIM)
+                GuiMain = new IMForm(this);
+            else
+                GuiMain = new MainForm(this, sideMode);
+
+            GuiMain.Show();
+        }
+
+        public IServiceUI GetService(uint id)
+        {
+            if (Services.ContainsKey(id))
+                return Services[id];
+
+            return null;
+        }
+
+        public void Core_RunInGui(Delegate method, params object[] args)
+        {
+            if (method == null || GuiMain == null)
+                return;
+
+            //LastEvents.Enqueue(method);
+            //while (LastEvents.Count > 10)
+            //    LastEvents.Dequeue();
+
+            GuiMain.BeginInvoke(method, args);
+        }
+
+        public void Core_UpdateConsole(string message)
+        {
+            if (GuiConsole != null)
+                GuiConsole.UpdateConsole(message);
+        }
+
+        public bool Core_ShowConfirm(string message, string title)
+        {
+            var result = MessageBox.Show(message, title, MessageBoxButtons.YesNo);
+
+            return (result == DialogResult.Yes);
+        }
+
+        public void Core_ShowMessage(string message)
+        {
+            MessageBox.Show(GuiMain, message);
+        }
+
+        public bool Core_VerifyPass(ThreatLevel threat)
+        {
+            return Utilities.VerifyPassphrase(Core, ThreatLevel.Medium);
+        }
+    }
+
+    public interface IServiceUI
+    {
+        void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project);
+
+        void GetNewsAction(ref Icon symbol, ref EventHandler onClick);
     }
 }

@@ -39,7 +39,7 @@ namespace DeOps.Interface
             {
                 FullLicense full = null;
                 LightLicense light = null;
-                WinContext.LoadLicense(ref full, ref light);
+                AppContext.LoadLicense(ref full, ref light);
 
                 Dictionary<string, string> post = new Dictionary<string, string>();
 

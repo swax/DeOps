@@ -67,37 +67,6 @@ namespace DeOps.Services.Buddy
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
         }
 
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-            if (menuType != InterfaceMenuType.Quick)
-                return;
-
-            if (user != Core.UserID && !BuddyList.SafeContainsKey(user))
-                menus.Add(new MenuItemInfo("Add Buddy", BuddyRes.buddy_add, new EventHandler(Menu_Add)));
-
-           menus.Add(new MenuItemInfo("Identity", BuddyRes.buddy_who, new EventHandler(Menu_Identity)));
-        }
-
-        private void Menu_Add(object sender, EventArgs e)
-        {
-            if (!(sender is IViewParams) || Core.GuiMain == null)
-                return;
-
-            ulong user = ((IViewParams)sender).GetUser();
-
-            AddBuddy(user);
-        }
-
-        private void Menu_Identity(object sender, EventArgs e)
-        {
-            if (!(sender is IViewParams) || Core.GuiMain == null)
-                return;
-
-            ulong user = ((IViewParams)sender).GetUser();
-
-            ShowIdentity(user);
-        }
-
         internal void ShowIdentity(ulong user)
         {
             new IdentityForm(Core, user).ShowDialog();

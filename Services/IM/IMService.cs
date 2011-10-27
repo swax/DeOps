@@ -20,6 +20,7 @@ namespace DeOps.Services.IM
 {
     internal delegate void IM_MessageHandler(ulong id, InstantMessage message);
     internal delegate void IM_StatusHandler(ulong id);
+    internal delegate void CreateViewHandler(ulong id);
 
     internal class IMService : OpService
     {
@@ -33,9 +34,11 @@ namespace DeOps.Services.IM
         internal LocationService Locations;
 
         internal ThreadedDictionary<ulong, IMStatus> IMMap = new ThreadedDictionary<ulong, IMStatus>();
+        internal List<ulong> ActiveUsers = new List<ulong>();
 
         internal IM_MessageHandler MessageUpdate;
         internal IM_StatusHandler StatusUpdate;
+        internal CreateViewHandler CreateView;
 
 
         internal IMService(OpCore core)
@@ -56,7 +59,6 @@ namespace DeOps.Services.IM
 
             if (Core.Trust != null)
                 Core.Trust.LinkUpdate += new LinkUpdateHandler(Trust_Update);
-
         }
 
         public void Dispose()
@@ -85,17 +87,15 @@ namespace DeOps.Services.IM
             // send keep alives every x secs
             if (Core.TimeNow.Second % SessionTimeout == 0)
             {
-                List<IM_View> views = GetViews();
-
-                foreach (IM_View view in views)
+                foreach (var userID in ActiveUsers)
                 {
                     IMStatus status = null;
 
-                    if (IMMap.SafeTryGetValue(view.UserID, out status))
+                    if (IMMap.SafeTryGetValue(userID, out status))
                         foreach(ushort client in status.TTL.Keys)
                             if (status.TTL[client].Value > 0)
                             {
-                                RudpSession session = Network.RudpControl.GetActiveSession(view.UserID, client);
+                                RudpSession session = Network.RudpControl.GetActiveSession(userID, client);
 
                                 if (session != null)
                                 {
@@ -149,50 +149,6 @@ namespace DeOps.Services.IM
                         views.Add((IM_View)func.Target);
 
             return views;
-        }
-
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-            if (menuType == InterfaceMenuType.Quick)
-            {
-                if (user == Core.UserID)
-                    return;
-
-                if (Core.Locations.ActiveClientCount(user) == 0)
-                    return;
-
-                menus.Add(new MenuItemInfo("Send IM", IMRes.Icon, new EventHandler(QuickMenu_View)));
-            }
-        }
-
-        internal void QuickMenu_View(object sender, EventArgs args)
-        {
-            IViewParams node = sender as IViewParams;
-
-            if (node == null)
-                return;
-
-            ulong user = node.GetUser();
-
-            OpenIMWindow(user);
-           
-        }
-
-        internal void OpenIMWindow(ulong user)
-        {
-            // if window already exists to node, show it
-            IM_View view = FindView(user);
-
-            if (view != null && view.External != null)
-                view.External.BringToFront();
-
-            // else create new window
-            else
-            {
-                view = CreateView(user);
-
-                Connect(user);
-            }
         }
 
         internal void Connect(ulong user)
@@ -282,38 +238,9 @@ namespace DeOps.Services.IM
             Core.RunInGuiThread(StatusUpdate, status.UserID);
         }
 
-        private IM_View FindView(ulong key)
-        {
-            List<IM_View> views = GetViews();
-
-            foreach (IM_View view in views)
-                if (view.UserID == key)
-                    return view;
-
-            return null;
-        }
-
-        private IM_View CreateView(ulong key)
-        {
-            if (Core.GuiMain == null)
-                return null;
-
-            if (Core.Trust != null && Core.Trust.GetTrust(key) == null)
-                Core.Trust.Research(key, 0, false);
-
-            if (Locations.GetClients(key).Count == 0)
-                Locations.Research(key);
-
-            IM_View view = new IM_View(this, key);
-
-            Core.InvokeView(true, view);
-
-            return view;
-        }
-
         internal void Trust_Update(OpTrust trust)
         {
-            if (FindView(trust.UserID) == null)
+            if (!ActiveUsers.Contains(trust.UserID))
                 return;
 
             IMStatus status = null;
@@ -323,7 +250,7 @@ namespace DeOps.Services.IM
 
         internal void Location_Update(LocationData location)
         {
-            if (FindView(location.UserID) == null)
+            if (!ActiveUsers.Contains(location.UserID))
                 return;
 
             IMStatus status = null;
@@ -337,7 +264,7 @@ namespace DeOps.Services.IM
 
         internal void Session_Update(RudpSession session)
         {
-            if (FindView(session.UserID) == null)
+            if (!ActiveUsers.Contains(session.UserID))
                 return;
 
             IMStatus status = null;
@@ -443,21 +370,21 @@ namespace DeOps.Services.IM
             // log message - locks both dictionary and embedded list form reading
             status.MessageLog.SafeAdd(message);
 
-            // update interface
-            if (Core.GuiMain == null)
-                return;
-
-            Core.RunInGuiThread( new Action(() =>
-            {
-                IM_View view = FindView(status.UserID);
-
-                if (view == null)
-                    CreateView(status.UserID);
-                else
-                    MessageUpdate(status.UserID, message);
-            }));
+            if(ActiveUsers.Contains(status.UserID))
+                Core.RunInGuiThread(MessageUpdate, status.UserID, message);
+            else
+                Core.RunInGuiThread(CreateView, status.UserID);
 
             Update(status);
+        }
+
+        internal void ReSearchUser(ulong userID)
+        {
+            if (Core.Trust != null && Core.Trust.GetTrust(userID) == null)
+                Core.Trust.Research(userID, 0, false);
+
+            if (Locations.GetClients(userID).Count == 0)
+                Locations.Research(userID);
         }
 
         void Session_KeepActive(Dictionary<ulong, bool> active)

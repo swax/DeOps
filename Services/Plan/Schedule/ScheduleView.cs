@@ -23,6 +23,7 @@ namespace DeOps.Services.Plan
 {
     internal partial class ScheduleView : ViewShell
     {
+        internal CoreUI UI;
         internal OpCore Core;
         internal PlanService Plans;
         TrustService Trust;
@@ -97,12 +98,13 @@ namespace DeOps.Services.Plan
                                     </body>
                                     </html>";
 
-        internal ScheduleView(PlanService plans, ulong id, uint project)
+        internal ScheduleView(CoreUI ui, PlanService plans, ulong id, uint project)
         {
             InitializeComponent();
 
+            UI = ui;
+            Core = ui.Core;
             Plans = plans;
-            Core = Plans.Core;
             Trust = Core.Trust;
 
             UserID = id;

@@ -356,14 +356,14 @@ namespace DeOps.Services.Chat
             List<MenuItemInfo> quickMenus = new List<MenuItemInfo>();
             List<MenuItemInfo> extMenus = new List<MenuItemInfo>();
 
-            foreach (OpService component in Core.ServiceMap.Values)
+            foreach (var service in ParentView.UI.Services.Values)
             {
-                if (component is TrustService || component is BuddyService)
+                if (service is TrustService || service is BuddyService)
                     continue;
 
-                component.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, node.UserID, Room.ProjectID);
+                service.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, node.UserID, Room.ProjectID);
 
-                component.GetMenuInfo(InterfaceMenuType.External, extMenus, node.UserID, Room.ProjectID);
+                service.GetMenuInfo(InterfaceMenuType.External, extMenus, node.UserID, Room.ProjectID);
             }
 
             if (quickMenus.Count > 0 || extMenus.Count > 0)
@@ -386,9 +386,8 @@ namespace DeOps.Services.Chat
             // add trust/buddy options at bottom
             quickMenus.Clear();
 
-            Core.Buddies.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, node.UserID, Room.ProjectID);
-            if (Core.Trust != null)
-                Core.Trust.GetMenuInfo(InterfaceMenuType.Quick, quickMenus, node.UserID, Room.ProjectID);
+            ParentView.UI.Services[ServiceIDs.Buddy].GetMenuInfo(InterfaceMenuType.Quick, quickMenus, node.UserID, Room.ProjectID);
+            ParentView.UI.Services[ServiceIDs.Trust].GetMenuInfo(InterfaceMenuType.Quick, quickMenus, node.UserID, Room.ProjectID);
 
             if (quickMenus.Count > 0)
             {
@@ -413,17 +412,15 @@ namespace DeOps.Services.Chat
 
             if (Locations.ActiveClientCount(node.UserID) > 0)
             {
-                IMService IM = Core.GetService(ServiceIDs.IM) as IMService;
-
-                if (IM != null)
-                    IM.QuickMenu_View(info, null);
+                var im = ParentView.UI.GetService(ServiceIDs.IM) as IMUI;
+                if (im != null)
+                    im.OpenIMWindow(info.UserID);
             }
             else
             {
-                MailService Mail = Core.GetService(ServiceIDs.Mail) as MailService;
-
-                if (Mail != null)
-                    Mail.QuickMenu_View(info, null);
+                var mail = ParentView.UI.GetService(ServiceIDs.Mail) as MailUI;
+                if (mail != null)
+                    mail.OpenComposeWindow(info.UserID);
             }
         }
 
@@ -436,7 +433,7 @@ namespace DeOps.Services.Chat
 
         private void SendFileButton_Click(object sender, EventArgs e)
         {
-            SendFileForm form = new SendFileForm(Core, 0);
+            SendFileForm form = new SendFileForm(ParentView.UI, 0);
             form.FileProcessed = new Tuple<FileProcessedHandler, object>(new FileProcessedHandler(Chat.Share_FileProcessed), Room);
             form.ShowDialog();
         }

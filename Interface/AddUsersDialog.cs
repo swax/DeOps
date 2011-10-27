@@ -16,6 +16,7 @@ namespace DeOps.Interface
 {
     internal partial class AddUsersDialog : CustomIconForm
     {
+        CoreUI UI;
         OpCore Core;
 
         internal ulong Person;
@@ -32,12 +33,13 @@ namespace DeOps.Interface
         }
 
 
-        internal AddUsersDialog(OpCore core, uint project)
-            : base(core)
+        internal AddUsersDialog(CoreUI ui, uint project)
+            : base(ui.Core)
         {
             InitializeComponent();
 
-            Core = core;
+            UI = ui;
+            Core = ui.Core;
             ProjectID = project;
             
             // load up trust
@@ -46,7 +48,7 @@ namespace DeOps.Interface
 
             // load up buddies - last option
             BuddyList.FirstLineBlank = false;
-            BuddyList.Init(core.Buddies, null, false);
+            BuddyList.Init(ui, Core.Buddies, null, false);
             ProjectCombo.Items.Add(new AddProjectItem("Buddies"));
 
 

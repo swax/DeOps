@@ -254,10 +254,6 @@ namespace DeOps.Services.Location
         {
         }
 
-        public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
-        {
-        }
-
         internal void PublishGlobal()
         {
             Debug.Assert(Core.User.Settings.OpAccess != AccessType.Secret);

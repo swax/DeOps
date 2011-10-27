@@ -201,9 +201,6 @@ namespace DeOps.Simulator
 
         internal void Logout(OpCore core)
         {
-            if (core.GuiMain != null)
-                core.GuiMain.Close();
-
             core.Exit();
       
             if(InstanceChange != null)
@@ -752,8 +749,8 @@ namespace DeOps.Simulator
             {
                 instance.Context.Cores.LockReading(delegate()
                 {
-                    while (instance.Context.Cores.Count > 0)
-                        Logout(instance.Context.Cores[0]);
+                    foreach(var core in instance.Context.Cores)
+                        Logout(core);
                 });
             });
         }

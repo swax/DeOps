@@ -68,7 +68,7 @@ namespace DeOps.Interface
         }
     }
 
-    class HostsExternalViews : CustomIconForm
+    public class HostsExternalViews : CustomIconForm
     {
         internal List<ExternalView> ExternalViews = new List<ExternalView>();
 

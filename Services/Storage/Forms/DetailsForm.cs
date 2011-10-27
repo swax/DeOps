@@ -92,7 +92,7 @@ namespace DeOps.Services.Storage
 
         private void AddLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            AddUsersDialog form = new AddUsersDialog(Core, View.ProjectID);
+            AddUsersDialog form = new AddUsersDialog(View.UI, View.ProjectID);
 
 
             if (form.ShowDialog(this) == DialogResult.OK)
