@@ -102,7 +102,7 @@ namespace DeOps.Services.Buddy
 
         void BuddyView_MouseMove(object sender, MouseEventArgs e)
         {
-            if (DragStart != Point.Empty && !Dragging && Utilities.GetDistance(DragStart, e.Location) > 4)
+            if (DragStart != Point.Empty && !Dragging && GuiUtils.GetDistance(DragStart, e.Location) > 4)
             {
                 Dragging = true;
 

@@ -76,17 +76,17 @@ namespace DeOps.Interface
             CommandTree.SelectedLink = Core.UserID;
             CommandTree.SearchOnline = true;
 
-            Utilities.SetupToolstrip(TopToolStrip, new OpusColorTable());
-            Utilities.SetupToolstrip(NavStrip, new NavColorTable());
-            Utilities.SetupToolstrip(SideToolStrip, new OpusColorTable());
-            Utilities.SetupToolstrip(SideNavStrip, new NavColorTable());
+            GuiUtils.SetupToolstrip(TopToolStrip, new OpusColorTable());
+            GuiUtils.SetupToolstrip(NavStrip, new NavColorTable());
+            GuiUtils.SetupToolstrip(SideToolStrip, new OpusColorTable());
+            GuiUtils.SetupToolstrip(SideNavStrip, new NavColorTable());
 
-            Utilities.FixMonoDropDownOpening(SideViewsButton, SideViewsButton_DropDownOpening);
-            Utilities.FixMonoDropDownOpening(SideNewsButton, SideNewsButton_DropDownOpening);
-            Utilities.FixMonoDropDownOpening(NewsButton, NewsButton_DropDownOpening);
-            Utilities.FixMonoDropDownOpening(ProjectsButton, ProjectsButton_DropDownOpening);
+            GuiUtils.FixMonoDropDownOpening(SideViewsButton, SideViewsButton_DropDownOpening);
+            GuiUtils.FixMonoDropDownOpening(SideNewsButton, SideNewsButton_DropDownOpening);
+            GuiUtils.FixMonoDropDownOpening(NewsButton, NewsButton_DropDownOpening);
+            GuiUtils.FixMonoDropDownOpening(ProjectsButton, ProjectsButton_DropDownOpening);
 
-            if (Utilities.IsRunningOnMono())
+            if (GuiUtils.IsRunningOnMono())
             {
                 foreach (ToolStripItem item in SideToolStrip.Items)
                 {
@@ -865,7 +865,7 @@ namespace DeOps.Interface
 
             // create button for project
             ProjectButton = new ToolStripButton(Trust.GetProjectName(ProjectButtonID), null, new EventHandler(ShowProject));
-            ProjectButton.TextDirection = Utilities.IsRunningOnMono() ? ToolStripTextDirection.Horizontal : ToolStripTextDirection.Vertical90;
+            ProjectButton.TextDirection = GuiUtils.IsRunningOnMono() ? ToolStripTextDirection.Horizontal : ToolStripTextDirection.Vertical90;
             ProjectButton.CheckOnClick = true;
             ProjectButton.Checked = true;
             SideToolStrip.Items.Add(ProjectButton);

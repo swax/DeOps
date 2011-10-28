@@ -147,7 +147,7 @@ namespace DeOps.Services.Mail
 
                 string message = (MessageBody.TextFormat == TextFormat.Plain) ? MessageBody.InputBox.Text : MessageBody.InputBox.Rtf;
 
-                Mail.SendMail(ToIDs, files, SubjectTextBox.Text, message, MessageBody.TextFormat, ThreadID);
+                Mail.SendMail(ToIDs, files, SubjectTextBox.Text, message, MessageBody.TextFormat, GuiUtils.GetQuip(message, MessageBody.TextFormat), ThreadID);
             }
             catch (Exception ex)
             {

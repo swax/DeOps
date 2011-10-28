@@ -145,7 +145,7 @@ namespace DeOps.Interface.Settings
             if (Profile.OpSplash != SelectedSplash)
                 verify = true;
 
-            if (verify && Utilities.VerifyPassphrase(Profile.Core, ThreatLevel.Medium))
+            if (verify && GuiUtils.VerifyPassphrase(Profile.Core, ThreatLevel.Medium))
             {
                 Profile.Settings.Operation = OperationBox.Text;
                 Profile.OpIcon = SelectedIcon;

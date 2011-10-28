@@ -17,8 +17,6 @@ using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 using DeOps.Implementation.Protocol.Special;
 
-using DeOps.Interface;
-using DeOps.Interface.TLVex;
 
 namespace DeOps
 {
@@ -38,35 +36,6 @@ namespace DeOps
                 passBytes = sha256.ComputeHash(passBytes);
 
             return passBytes;
-        }
-
-        internal static bool VerifyPassphrase(OpCore core, ThreatLevel threat)
-        {
-            //crit revise
-            if (threat != ThreatLevel.High)
-                return true;
-
-            bool trying = true;
-
-            while (trying)
-            {
-                GetTextDialog form = new GetTextDialog(core, core.User.GetTitle(), "Enter Passphrase", "");
-
-                form.StartPosition = FormStartPosition.CenterScreen;
-                form.ResultBox.UseSystemPasswordChar = true;
-
-                if (form.ShowDialog() != DialogResult.OK)
-                    return false;
-
-                byte[] key = GetPasswordKey(form.ResultBox.Text, core.User.PasswordSalt);
-
-                if (MemCompare(core.User.PasswordKey, key))
-                    return true;
-
-                MessageBox.Show("Wrong passphrase", "DeOps");
-            }
-
-            return false;
         }
 
         internal static void ShaHashFile(string path, ref byte[] hash, ref long size)

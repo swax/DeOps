@@ -56,7 +56,7 @@ namespace DeOps.Services.Profile
                 Profile_Update(profile);
 
             // have to set twice (init document?) for page to show up
-            if (Utilities.IsRunningOnMono())
+            if (GuiUtils.IsRunningOnMono())
             {
                 if (profile == null)
                     DisplayLoading();
@@ -519,7 +519,7 @@ namespace DeOps.Services.Profile
         {
             string url = e.Url.OriginalString;
 
-            if (Utilities.IsRunningOnMono() && url.StartsWith("wyciwyg"))
+            if (GuiUtils.IsRunningOnMono() && url.StartsWith("wyciwyg"))
                 return;
 
             if (url.StartsWith("about:blank"))

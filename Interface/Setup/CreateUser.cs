@@ -35,7 +35,7 @@ namespace DeOps.Interface.Startup
 
             OpNameLabel.Text = OpName;
 
-            BrowseLink.Text = (Context.Sim == null) ? ApplicationEx.UserAppDataPath() : Context.Sim.Internet.LoadedPath;
+            BrowseLink.Text = (Context.Sim == null) ? Application.StartupPath : Context.Sim.Internet.LoadedPath;
         }
 
         internal CreateUser(AppContext app, InvitePackage invite)
@@ -51,7 +51,7 @@ namespace DeOps.Interface.Startup
             OpNameLabel.Text = OpName;
             TextName.Text = invite.Info.UserName;
 
-            BrowseLink.Text = (Context.Sim == null) ? ApplicationEx.UserAppDataPath() : Context.Sim.Internet.LoadedPath;
+            BrowseLink.Text = (Context.Sim == null) ? Application.StartupPath : Context.Sim.Internet.LoadedPath;
         }
 
         private void BrowseLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)

@@ -54,11 +54,10 @@ namespace DeOps.Interface.Tools
 
         internal static void Show(DhtNetwork network)
         {
-            if (network.GuiCrawler == null)
-                network.GuiCrawler = new CrawlerForm(network);
+            var form = new CrawlerForm(network);
 
-            network.GuiCrawler.Show();
-            network.GuiCrawler.Activate();
+            form.Show();
+            form.Activate();
         }
 
         internal CrawlerForm(DhtNetwork network)
@@ -72,8 +71,8 @@ namespace DeOps.Interface.Tools
             Network = network;
             Routing = Network.Routing;
 
-            SearchAck = new SearchAckHandler(Receive_SearchAck);
-			CrawlAck  = new CrawlAckHandler(Receive_CrawlAck);
+            Network.CrawlerSearchAck += Receive_SearchAck;
+			Network.CrawlerAck  += Receive_CrawlAck;
 
             Text = "Crawler (" + Network.GetLabel() + ")";
 
@@ -259,7 +258,8 @@ namespace DeOps.Interface.Tools
 
 		private void CrawlerForm_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
-            Network.GuiCrawler = null;
+            Network.CrawlerSearchAck -= Receive_SearchAck;
+            Network.CrawlerAck -= Receive_CrawlAck;
 		}
 
 		private void SecondTimer_Tick(object sender, System.EventArgs e)

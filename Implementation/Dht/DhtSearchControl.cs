@@ -337,9 +337,7 @@ namespace DeOps.Implementation.Dht
             // if response to initial pong or crawl
             if (ack.SearchID == 0)
             {
-                if (Network.GuiCrawler != null)
-                    Network.GuiCrawler.BeginInvoke(Network.GuiCrawler.SearchAck, ack, packet);
-
+                Core.RunInGuiThread(Network.CrawlerSearchAck, ack, packet);
                 return;
             }
 

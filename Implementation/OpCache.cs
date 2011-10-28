@@ -49,7 +49,7 @@ namespace DeOps.Implementation
             Core = network.Core;
             Network = network;
 
-            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimerEvent);
+            Core.MinuteTimerEvent += Core_MinuteTimerEvent;
 
             Retry = new RetryIntervals(Core);
             LookupearchInterval = new RetryIntervals(Core);

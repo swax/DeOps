@@ -10,7 +10,7 @@ using DeOps.Interface.Setup;
 
 namespace DeOps.Services.Buddy
 {
-    class BuddyUI : IServiceUI
+    public class BuddyUI : IServiceUI
     {
         CoreUI UI;
         OpCore Core;

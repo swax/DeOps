@@ -10,6 +10,8 @@ using System.Diagnostics;
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;
 using DeOps.Implementation.Transport;
+using DeOps.Interface;
+using System.Drawing;
 
 namespace DeOps.Simulator
 {
@@ -19,6 +21,9 @@ namespace DeOps.Simulator
 
     internal class InternetSim
     {
+        string StartupPath;
+        Icon DefaultIcon;
+
         internal ThreadedList<SimInstance> Instances = new ThreadedList<SimInstance>();
 
         Random RndGen = new Random(unchecked((int)DateTime.Now.Ticks));
@@ -84,8 +89,11 @@ namespace DeOps.Simulator
         int NextAffinity = 0;
 
 
-        internal InternetSim()
+        internal InternetSim(string startupPath, Icon defaultIcon)
         {
+            StartupPath = startupPath;
+            DefaultIcon = defaultIcon;
+
             StartTime = new DateTime(2006, 1, 1, 0, 0, 0);
             TimeNow = StartTime;
 
@@ -100,7 +108,7 @@ namespace DeOps.Simulator
         {
             SimInstance instance = new SimInstance(this, InstanceCount++);
 
-            instance.Context = new DeOpsContext(instance);
+            instance.Context = new DeOpsContext(instance, StartupPath, DefaultIcon);
 
             // ip
             byte[] ipbytes = new byte[4] { (byte)RndGen.Next(99), (byte)RndGen.Next(99), (byte)RndGen.Next(99), (byte)RndGen.Next(99) };

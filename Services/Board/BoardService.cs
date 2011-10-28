@@ -59,8 +59,8 @@ namespace DeOps.Services.Board
             Store    = Network.Store;
             Trust = Core.Trust;
 
-            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
-            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
+            Core.SecondTimerEvent += Core_SecondTimer;
+            Core.MinuteTimerEvent += Core_MinuteTimer;
 
             Network.CoreStatusChange += new StatusChange(Network_StatusChange);
 
@@ -114,8 +114,8 @@ namespace DeOps.Services.Board
 
         public void Dispose()
         {
-            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
-            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
+            Core.SecondTimerEvent -= Core_SecondTimer;
+            Core.MinuteTimerEvent -= Core_MinuteTimer;
 
             Network.CoreStatusChange -= new StatusChange(Network_StatusChange);
 
@@ -283,7 +283,7 @@ namespace DeOps.Services.Board
 
             message = Core.TextGen.GenerateParagraphs(1)[0];
 
-            PostMessage(user, project, parent, scope, subject, message, TextFormat.Plain, new List<AttachedFile>(), null);
+            PostMessage(user, project, parent, scope, subject, message, TextFormat.Plain, "", new List<AttachedFile>(), null);
         }
 
         public void SimCleanup()
@@ -434,7 +434,7 @@ namespace DeOps.Services.Board
             FinishPost(copy);
         }
 
-        internal void PostMessage(ulong user, uint project, uint parent, ScopeType scope, string subject, string message, TextFormat format, List<AttachedFile> files, OpPost edit)
+        internal void PostMessage(ulong user, uint project, uint parent, ScopeType scope, string subject, string message, TextFormat format, string quip, List<AttachedFile> files, OpPost edit)
         {
             // post header
             PostHeader header = new PostHeader();
@@ -475,7 +475,7 @@ namespace DeOps.Services.Board
                 int written = 0;
 
                 // write post file
-                written += Protocol.WriteToFile(new PostInfo(subject, format, Utilities.GetQuip(message, format), Core.RndGen), stream);
+                written += Protocol.WriteToFile(new PostInfo(subject, format, quip, Core.RndGen), stream);
 
                 byte[] msgBytes = UTF8Encoding.UTF8.GetBytes(message);
                 written += Protocol.WriteToFile(new PostFile("body", msgBytes.Length), stream);

@@ -58,7 +58,7 @@ namespace DeOps.Services.Chat
             Core = chat.Core;
             Locations = Core.Locations;
 
-            Utilities.SetupToolstrip(BottomStrip, new OpusColorTable());
+            GuiUtils.SetupToolstrip(BottomStrip, new OpusColorTable());
 
             if (room.Kind == RoomKind.Command_High || room.Kind == RoomKind.Live_High)
                 MessageTextBox.BackColor = Color.FromArgb(255, 250, 250);
@@ -170,7 +170,7 @@ namespace DeOps.Services.Chat
                         MemberNode node = new MemberNode(this, id);
                         NodeMap[id] = node;
                         UpdateNode(node);
-                        Utilities.InsertSubNode(root, node);
+                        GuiUtils.InsertSubNode(root, node);
                     }
 
             });
@@ -315,7 +315,7 @@ namespace DeOps.Services.Chat
                 MessageTextBox.SelectionFont = RegularFont;
 
                 if(message.Format == TextFormat.RTF)
-                    MessageTextBox.SelectedRtf = Utilities.RtftoColor(message.Text, MessageTextBox.SelectionColor);
+                    MessageTextBox.SelectedRtf = GuiUtils.RtftoColor(message.Text, MessageTextBox.SelectionColor);
                 else
                     MessageTextBox.AppendText(message.Text);
             }

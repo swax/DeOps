@@ -68,6 +68,7 @@ namespace DeOps.Interface
         public IMUI IM;
         public MailUI Mail;
         public TrustUI Trust;
+        public BuddyUI Buddy;
 
         enum StatusModeType { None, Network, User, Project, Group };
 
@@ -97,6 +98,7 @@ namespace DeOps.Interface
             Trust = UI.GetService(ServiceIDs.Trust) as TrustUI;
             IM = UI.GetService(ServiceIDs.IM) as IMUI;
             Mail = UI.GetService(ServiceIDs.Mail) as MailUI;
+            Buddy = UI.GetService(ServiceIDs.Buddy) as BuddyUI;
 
             Core.Locations.GuiUpdate += new LocationGuiUpdateHandler(Location_Update);
             Core.Buddies.GuiUpdate += new BuddyGuiUpdateHandler(Buddy_Update);
@@ -176,7 +178,7 @@ namespace DeOps.Interface
 
         internal void ShowNetwork()
         {
-            if(Utilities.IsRunningOnMono())
+            if (GuiUtils.IsRunningOnMono())
                 if(CurrentMode == StatusModeType.Network &&
                     PrevOp ==  Core.Network.Responsive &&
                     PrevFirewall == Core.Firewall &&
@@ -526,7 +528,7 @@ namespace DeOps.Interface
         {
             string url = e.Url.OriginalString;
 
-            if (Utilities.IsRunningOnMono() && url.StartsWith("wyciwyg"))
+            if (GuiUtils.IsRunningOnMono() && url.StartsWith("wyciwyg"))
                 return;
 
             if (url.StartsWith("about:blank"))
@@ -677,7 +679,8 @@ namespace DeOps.Interface
 
                 else if (url == "buddy_who")
                 {
-                    Core.Buddies.ShowIdentity(UserID);
+                    if(Buddy != null)
+                        Buddy.ShowIdentity(UserID);
                 }
 
                 else if (url == "trust")

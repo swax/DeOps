@@ -227,7 +227,7 @@ namespace DeOps.Services.Trust
                     //if(node.Link.IsLoopRoot)
                     //    node.Nodes.Insert(0, CreateNode(link));
                     //else
-                    Utilities.InsertSubNode(node, CreateNode(link));
+                    GuiUtils.InsertSubNode(node, CreateNode(link));
                 }
         }
 
@@ -474,7 +474,7 @@ namespace DeOps.Services.Trust
                 LinkNode newNode = CreateNode(node.Link);
 
                 if (newParent != null)
-                    Utilities.InsertSubNode(newParent, newNode);
+                    GuiUtils.InsertSubNode(newParent, newNode);
                 else
                     LoadRoot(newNode);
 

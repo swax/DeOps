@@ -19,6 +19,8 @@ namespace DeOps.Services.Storage
             UI = ui;
             Core = ui.Core;
             Storage = service as StorageService;
+
+            Storage.Disposing += Storage_Disposing;
         }
 
         public void GetMenuInfo(InterfaceMenuType menuType, List<MenuItemInfo> menus, ulong user, uint project)
@@ -45,6 +47,15 @@ namespace DeOps.Services.Storage
         {
             symbol = StorageRes.Icon;
             onClick = Menu_View;
+        }
+
+        public void Storage_Disposing()
+        {
+            if (Storage.HashFiles.Pending.Count > 0)
+            {
+                var status = new HashStatus(Storage);
+                status.ShowDialog();
+            }
         }
     }
 }

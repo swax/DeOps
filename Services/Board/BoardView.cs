@@ -91,7 +91,7 @@ namespace DeOps.Services.Board
                 ArchiveButton.Visible = false;
             }
 
-            Utilities.SetupToolstrip(toolStrip1, new OpusColorTable());
+            GuiUtils.SetupToolstrip(toolStrip1, new OpusColorTable());
 
             PostHeader.DocumentText = HeaderPage.ToString();
 
@@ -583,7 +583,7 @@ namespace DeOps.Services.Board
         {
             string url = e.Url.OriginalString;
 
-            if (Utilities.IsRunningOnMono() && url.StartsWith("wyciwyg"))
+            if (GuiUtils.IsRunningOnMono() && url.StartsWith("wyciwyg"))
                 return;
 
             url = url.Replace("http://", "");

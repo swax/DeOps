@@ -135,7 +135,7 @@ namespace DeOps.Interface
         {
             InitializeComponent();
 
-            Utilities.SetupToolstrip(FontToolStrip, new OpusColorTable());
+            GuiUtils.SetupToolstrip(FontToolStrip, new OpusColorTable());
 
 
             // need to init, so when we get the rtf there is color encoding info in it we can re-assign if need be

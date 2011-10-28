@@ -5,12 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Security.Cryptography;
-using System.Windows.Forms;
 
 using DeOps.Services;
 using DeOps.Services.Transfer;
-
-using DeOps.Interface;
 
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;
@@ -28,13 +25,16 @@ namespace DeOps.Services.Update
         public uint ServiceID { get { return (uint)ServiceIDs.Update; } }
 
         OpCore Core;
-  
+
+        LookupSettings LookupConfig;
 
         internal UpdateService(OpCore core)
         {
             Core = core;
 
             Core.Update = this;
+
+            LookupConfig = core.Context.LookupConfig;
 
             // gen key pair
             /*RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
@@ -82,6 +82,7 @@ namespace DeOps.Services.Update
             Core.Transfers.FileRequest[ServiceID, 0] -= new FileRequestHandler(Transfers_FileRequest);
         }
 
+        /*
 #if DEBUG
         void SignNewUpdate()
         {
@@ -89,7 +90,7 @@ namespace DeOps.Services.Update
             // release betas with higher sequential version
             // auto-update requires a signed sequential version, so betas can be safely relesaed
 
-            MessageBox.Show("Signing Update");
+            Core.UserMessage("Signing Update");
 
             try
             {
@@ -110,7 +111,7 @@ namespace DeOps.Services.Update
                 info.Key = crypt.Key;
 
                 string source = "..\\Protected\\DeOps.exe";
-                string final = Path.Combine(ApplicationEx.CommonAppDataPath(), "update.dat");
+                string final = Path.Combine(Application.StartupPath, "update.dat");
 
                 string tempPath = Core.GetTempPath();
                 Utilities.EncryptTagFile(source, tempPath, crypt, Core.Network.Protocol, ref info.Hash, ref info.Size);
@@ -143,21 +144,21 @@ namespace DeOps.Services.Update
                 Core.Context.SignedUpdate = info;
 
                 // write bootstrap
-                LookupSettings.WriteUpdateInfo(Core);
+                LookupConfig.WriteUpdateInfo(Core);
 
-                MessageBox.Show("Sign Update Success");
+                Core.UserMessage("Sign Update Success");
 
-                Process.Start("explorer.exe", ApplicationEx.CommonAppDataPath());
+                Process.Start("explorer.exe", Application.StartupPath);
                 Debug.Assert(false);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                Core.UserMessage(ex.Message);
             }
 
             Application.Exit();
         }
-#endif
+#endif*/
 
 
         internal void NewVersion(uint version, ulong user)
@@ -201,7 +202,7 @@ namespace DeOps.Services.Update
             if (Core.Context.SignedUpdate == null || Core.Context.SignedUpdate.SequentialVersion < info.SequentialVersion)
             {
                 Core.Context.SignedUpdate = info;
-                LookupSettings.WriteUpdateInfo(Core);
+                LookupConfig.WriteUpdateInfo(Core);
             }
 
             // version less than what we have
@@ -220,7 +221,7 @@ namespace DeOps.Services.Update
         {
             FileDetails details = new FileDetails(ServiceID, 0, Core.Context.SignedUpdate.Hash, Core.Context.SignedUpdate.Size, null);
 
-            Core.Transfers.StartDownload(target, details, LookupSettings.UpdatePath, new EndDownloadHandler(DownloadFinished), null);
+            Core.Transfers.StartDownload(target, details, LookupConfig.UpdatePath, new EndDownloadHandler(DownloadFinished), null);
         }
 
         bool Transfers_FileSearch(ulong key, FileDetails details)
@@ -244,7 +245,7 @@ namespace DeOps.Services.Update
                 // cant be replaced if it is locked up by the transfer service
 
                 if (!File.Exists(sharePath))
-                    File.Copy(LookupSettings.UpdatePath, sharePath, true);
+                    File.Copy(LookupConfig.UpdatePath, sharePath, true);
 
                 return sharePath;
             }
@@ -257,7 +258,7 @@ namespace DeOps.Services.Update
             bool success = false;
 
             // check size and beginning - ensure new signed update wasnt received before transfer finished
-            using (FileStream stream = File.OpenRead(LookupSettings.UpdatePath))
+            using (FileStream stream = File.OpenRead(LookupConfig.UpdatePath))
             {
                 UpdateInfo signed = Core.Context.SignedUpdate;
 
@@ -278,17 +279,17 @@ namespace DeOps.Services.Update
                 Core.RunInGuiThread(Core.Context.NotifyUpdateReady);
         }
 
-        internal static UpdateInfo LoadUpdate()
+        internal static UpdateInfo LoadUpdate(LookupSettings config)
         {
-            UpdateInfo info = LookupSettings.ReadUpdateInfo();
+            UpdateInfo info = config.ReadUpdateInfo();
 
             if (info == null)
                 return null;
 
-            if (!File.Exists(LookupSettings.UpdatePath))
+            if (!File.Exists(config.UpdatePath))
                 return null;
 
-            using (FileStream stream = new FileStream(LookupSettings.UpdatePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (FileStream stream = new FileStream(config.UpdatePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 byte[] check = new byte[info.Beginning.Length];
                 stream.Read(check, 0, check.Length);
@@ -336,7 +337,7 @@ namespace DeOps.Services.Update
         internal bool Loaded;
         internal string TempName;
 
-#if DEBUG
+/*#if DEBUG
         internal void SignUpdate(G2Protocol protocol)
         {
             // public/private key
@@ -372,7 +373,7 @@ namespace DeOps.Services.Update
 
             Signature = JMG_KEY.SignData(Embedded, new SHA1CryptoServiceProvider());
         }
-#endif
+#endif*/
 
         internal override byte[] Encode(G2Protocol protocol)
         {

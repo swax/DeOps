@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Windows.Forms;
 
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;
@@ -71,6 +70,9 @@ namespace DeOps.Services.Storage
         internal WorkerQueue CopyFiles = new WorkerQueue("Storage Copy");
         internal WorkerQueue HashFiles = new WorkerQueue("Storage Hash");
 
+        internal delegate void DisposingHandler();
+        internal DisposingHandler Disposing;
+
 
         internal StorageService(OpCore core)
         {
@@ -80,8 +82,8 @@ namespace DeOps.Services.Storage
             Store = Network.Store;
             Trust = Core.Trust;
 
-            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
-            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
+            Core.SecondTimerEvent += Core_SecondTimer;
+            Core.MinuteTimerEvent += Core_MinuteTimer;
 
             Network.CoreStatusChange += new StatusChange(Network_StatusChange);
 
@@ -143,12 +145,8 @@ namespace DeOps.Services.Storage
 
         public void Dispose()
         {
-
-            if (HashFiles.Pending.Count > 0)
-            {
-                HashStatus status = new HashStatus(this);
-                status.ShowDialog();
-            }
+            if (Disposing != null)
+                Disposing();
 
             HashFiles.Dispose();
             CopyFiles.Dispose();
@@ -198,12 +196,12 @@ namespace DeOps.Services.Storage
                     if (error.Type == LockErrorType.Blocked)
                         message += error.Path;
 
-                MessageBox.Show(message, "DeOps");
+                Core.UserMessage(message);
             }
 
             // kill events
-            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
-            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
+            Core.SecondTimerEvent -= Core_SecondTimer;
+            Core.MinuteTimerEvent -= Core_MinuteTimer;
 
             Network.CoreStatusChange -= new StatusChange(Network_StatusChange);
 

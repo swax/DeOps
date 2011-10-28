@@ -35,8 +35,8 @@ namespace DeOps.Interface
             UI = ui;
             Core = ui.Core;
 
-            Utilities.SetupToolstrip(TopStrip, new OpusColorTable());
-            Utilities.FixMonoDropDownOpening(OptionsButton, OptionsButton_DropDownOpening);
+            GuiUtils.SetupToolstrip(TopStrip, new OpusColorTable());
+            GuiUtils.FixMonoDropDownOpening(OptionsButton, OptionsButton_DropDownOpening);
 
             UI.ShowView += ShowExternal;
 
@@ -50,7 +50,7 @@ namespace DeOps.Interface
 
             SelectionInfo.ShowNetwork();
 
-            if (Utilities.IsRunningOnMono())
+            if (GuiUtils.IsRunningOnMono())
             {
                 AddButton.Text = "Add";
                 SharedButton.Text = "Files";

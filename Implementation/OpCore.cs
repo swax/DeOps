@@ -9,7 +9,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Web;
-using System.Windows.Forms;
 
 using DeOps.Services;
 using DeOps.Services.Assist;
@@ -35,10 +34,6 @@ using DeOps.Implementation.Protocol.Net;
 using DeOps.Implementation.Protocol.Special;
 using DeOps.Implementation.Transport;
 
-using DeOps.Interface;
-using DeOps.Interface.Tools;
-using DeOps.Interface.Views;
-
 using DeOps.Simulator;
 
 using NLipsum.Core;
@@ -49,18 +44,9 @@ namespace DeOps.Implementation
 	internal enum FirewallType { Blocked, NAT, Open };
     internal enum TransportProtocol { Tcp, Udp, LAN, Rudp, Tunnel };
 
-    internal delegate void ExitedHandler(OpCore core);
-    internal delegate void TimerHandler();
     internal delegate void NewsUpdateHandler(uint serviceID, string message, ulong userID, uint project, bool showRemote);
     internal delegate void KeepDataHandler();
-    internal delegate void UpdateConsoleHandler(string message);
-    internal delegate bool ShowConfirmHandler(string message, string title);
-    internal delegate void ShowMessageHandler(string message);
-    internal delegate bool VerifyPassHandler(ThreatLevel threatLevel);
-    internal delegate void RunInGuiHandler(Delegate method, params object[] args);
 
-    internal delegate void ShowExternalHandler(ViewShell view);
-    internal delegate void ShowInternalHandler(ViewShell view);
     internal delegate List<MenuItemInfo> MenuRequestHandler(InterfaceMenuType menuType, ulong key, uint proj);
 
 
@@ -103,22 +89,22 @@ namespace DeOps.Implementation
         internal Dictionary<ulong, byte[]> KeyMap = new Dictionary<ulong, byte[]>();
 
         // events
-        internal event ExitedHandler Exited;
-        internal event TimerHandler SecondTimerEvent;
+        internal event Action<OpCore> Exited;
+        internal event Action SecondTimerEvent;
 
         int MinuteCounter; // random so all of network doesnt burst at once
-        internal event TimerHandler MinuteTimerEvent;
+        internal event Action MinuteTimerEvent;
         internal event NewsUpdateHandler NewsUpdate;
 
         internal event KeepDataHandler KeepDataGui; // event for gui thread
         internal event KeepDataHandler KeepDataCore; // event for core thread
 
-        internal event ShowConfirmHandler ShowConfirm;
-        internal event ShowMessageHandler ShowMessage;
-        internal event VerifyPassHandler VerifyPass;
+        internal event Func<string, string, bool> ShowConfirm;
+        internal event Action<string> ShowMessage;
+        internal event Func<ThreatLevel, bool> VerifyPass;
 
-        internal event RunInGuiHandler RunInGui;
-        internal event UpdateConsoleHandler UpdateConsole;
+        internal event Action<Delegate, object[]> RunInGui;
+        internal event Action<string> UpdateConsole;
 
         // only safe to use this from core_minuteTimer because updated 2 secs before it
         // every min keep data is updated and then pruning is done on internal data structures
@@ -147,7 +133,7 @@ namespace DeOps.Implementation
 
 
         // initializing operation network
-        internal OpCore(DeOpsContext context, string path, string pass)
+        internal OpCore(DeOpsContext context, string userPath, string pass)
         {
             Context = context;
             Sim = context.Sim;
@@ -155,9 +141,7 @@ namespace DeOps.Implementation
             StartTime = TimeNow;
             GuiProtocol = new G2Protocol();
 
-            ConsoleLog("DeOps " + Application.ProductVersion);
-
-            User = new OpUser(path, pass, this);
+            User = new OpUser(userPath, pass, this);
             User.Load(LoadModeType.Settings);
 
             Network = new DhtNetwork(this, false);
@@ -198,7 +182,7 @@ namespace DeOps.Implementation
             AddService(new ChatService(this));
             AddService(new ShareService(this));
 
-            if(!Utilities.IsRunningOnMono())
+            if (Type.GetType("Mono.Runtime") == null)
                 AddService(new VoiceService(this));
             
             if (!User.Settings.GlobalIM)
@@ -236,7 +220,7 @@ namespace DeOps.Implementation
             Network = new DhtNetwork(this, true);
 
             // for each core, re-load the lookup cache items
-            Context.Cores.LockReading(delegate()
+            Context.Cores.LockReading(() =>
             {
                 foreach (OpCore core in Context.Cores)
                     core.User.Load(LoadModeType.LookupCache);
@@ -267,18 +251,6 @@ namespace DeOps.Implementation
             ServiceBandwidth[service.ServiceID] = new BandwidthLog(RecordBandwidthSeconds);
 
             Context.KnownServices[service.ServiceID] = service.Name;
-        }
-
-        private void RemoveService(uint id)
-        {
-            if (!ServiceMap.ContainsKey(id))
-                return;
-
-            ServiceMap[id].Dispose();
-
-            ServiceMap.Remove(id);
-
-            ServiceBandwidth.Remove(id);
         }
 
         internal string GetServiceName(uint id)
@@ -416,7 +388,7 @@ namespace DeOps.Implementation
 			}
 			catch(Exception ex)
 			{
-				ConsoleLog("Exception KimCore::SecondTimer_Tick: " + ex.Message);
+				ConsoleLog("Exception OpCore::SecondTimer_Tick: " + ex.Message);
 			}
 		}
 
@@ -624,7 +596,7 @@ namespace DeOps.Implementation
         // user ids
         internal void SaveKeyIndex(PacketStream stream)
         {
-            NameMap.LockReading(delegate()
+            NameMap.LockReading(() =>
             {
                 foreach (ulong user in KeyMap.Keys)
                     if (NameMap.ContainsKey(user))
@@ -690,7 +662,7 @@ namespace DeOps.Implementation
             //should really be done per compontnt (board only cares about local, mail doesnt care at all, neither does chat)
     
             // if not self, higher, adjacent or lower direct then true
-            if (id == UserID)
+            if (id == UserID || Trust.LocalTrust == null)
                 return false;
 
             if(!localRegionOnly && Trust.IsHigher(id, project))
@@ -949,83 +921,9 @@ namespace DeOps.Implementation
             return link + Utilities.ToBase64String(final);
         }
 
-        internal static InvitePackage OpenInvite(DeOpsContext context, G2Protocol protocol, string link)
+        internal static InvitePackage OpenInvite(byte[] decrypted, G2Protocol protocol)
         {
-            string[] mainParts = link.Replace("deops://", "").Split('/');
-
-            if (mainParts.Length < 4)
-                throw new Exception("Invalid Link");
-
-            // Select John Marshall's Global IM Profile
-            string[] nameParts = mainParts[2].Split('@');
-            string name = HttpUtility.UrlDecode(nameParts[0]);
-            string op = HttpUtility.UrlDecode(nameParts[1]);
-
-            byte[] data = Utilities.FromBase64String(mainParts[3]);
-            byte[] pubOpID = Utilities.ExtractBytes(data, 0, 8);
-            byte[] encrypted = Utilities.ExtractBytes(data, 8, data.Length - 8);
-            byte[] decrypted = null;
-
-            // try opening invite with a currently loaded core
-            context.Cores.LockReading(delegate()
-            {
-                foreach (OpCore core in context.Cores)
-                    try
-                    {
-                        if (Utilities.MemCompare(pubOpID, core.User.Settings.PublicOpID))
-                            decrypted = core.User.Settings.KeyPair.Decrypt(encrypted, false);
-                    }
-                    catch { }
-            });
-
-            // have user select profile associated with the invite
-            while (decrypted == null)
-            {
-                OpenFileDialog open = new OpenFileDialog();
-
-                open.Title = "Open " + name + "'s " + op + " Profile to Verify Invitation";
-                open.InitialDirectory = ApplicationEx.UserAppDataPath();
-                open.Filter = "DeOps Identity (*.dop)|*.dop";
-
-                if (open.ShowDialog() != DialogResult.OK)
-                    return null; // user doesnt want to try any more
-
-                GetTextDialog pass = new GetTextDialog("Passphrase", "Enter the passphrase for thise profile", "");
-                pass.ResultBox.UseSystemPasswordChar = true;
-
-                if (pass.ShowDialog() != DialogResult.OK)
-                    continue; // let user choose another profile
-
-                try
-                {
-                    // open profile
-                    OpUser user = new OpUser(open.FileName, pass.ResultBox.Text, null);
-                    user.Load(LoadModeType.Settings);
-
-                    // ensure the invitation is for this op specifically
-                    if (!Utilities.MemCompare(pubOpID, user.Settings.PublicOpID))
-                    {
-                        MessageBox.Show("This is not a " + op + " profile");
-                        continue;
-                    }
-
-                    // try to decrypt the invitation
-                    try
-                    {
-                        decrypted = user.Settings.KeyPair.Decrypt(encrypted, false);
-                    }
-                    catch
-                    {
-                        MessageBox.Show("Could not open the invitation with this profile");
-                        continue;
-                    }
-                }
-                catch
-                {
-                    MessageBox.Show("Wrong password");
-                }
-            }
-
+            
             // if we get down here, opening invite was success
 
             MemoryStream mem = new MemoryStream(decrypted);

@@ -10,7 +10,7 @@ namespace DeOps.Interface.Views
     {
         internal ContextMenuStripEx()
         {
-            Utilities.SetupToolstrip(this, new OpusColorTable());
+            GuiUtils.SetupToolstrip(this, new OpusColorTable());
         }
     }
 }

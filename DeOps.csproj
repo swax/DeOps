@@ -806,6 +806,7 @@
     <Compile Include="Startup.cs" />
     <Compile Include="Utilities\Crypto.cs" />
     <Compile Include="Utilities\CryptoStreams.cs" />
+    <Compile Include="Utilities\GuiUtils.cs" />
     <Compile Include="Utilities\Test.cs">
       <SubType>Code</SubType>
     </Compile>

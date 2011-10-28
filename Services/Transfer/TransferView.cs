@@ -32,11 +32,10 @@ namespace DeOps.Services.Transfer
 
         internal static void Show(DhtNetwork network)
         {
-            if (network.GuiTransfers == null)
-                network.GuiTransfers = new TransferView(network.Core.Transfers);
+            var form = new TransferView(network.Core.Transfers);
 
-            network.GuiTransfers.Show();
-            network.GuiTransfers.Activate();
+            form.Show();
+            form.Activate();
         }
 
         internal TransferView(TransferService service)
@@ -161,7 +160,6 @@ namespace DeOps.Services.Transfer
         private void TransferView_FormClosing(object sender, FormClosingEventArgs e)
         {
             Service.Logging = false;
-            Service.Core.Network.GuiTransfers = null;
         }
 
         private void ExpandLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)

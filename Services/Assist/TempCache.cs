@@ -33,7 +33,7 @@ namespace DeOps.Services.Assist
             ServiceID = service;
             DataType = type;
 
-            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
+            Core.MinuteTimerEvent += Core_MinuteTimer;
 
             Network.Store.StoreEvent[ServiceID, DataType] += new StoreHandler(Store_Local);
             Network.Searches.SearchEvent[ServiceID, DataType] += new SearchRequestHandler(Search_Local);
@@ -45,7 +45,7 @@ namespace DeOps.Services.Assist
 
         public void Dispose()
         {
-            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
+            Core.MinuteTimerEvent -= Core_MinuteTimer;
 
             Network.Store.StoreEvent[ServiceID, DataType] -= new StoreHandler(Store_Local);
             Network.Searches.SearchEvent[ServiceID, DataType] -= new SearchRequestHandler(Search_Local);

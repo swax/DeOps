@@ -75,8 +75,8 @@ namespace DeOps.Services.Location
 
             Core.Locations = this;
 
-            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
-            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
+            Core.SecondTimerEvent += Core_SecondTimer;
+            Core.MinuteTimerEvent += Core_MinuteTimer;
 
             Network.CoreStatusChange += new StatusChange(Network_StatusChange);
 
@@ -97,8 +97,8 @@ namespace DeOps.Services.Location
 
         public void Dispose()
         {
-            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
-            Core.SecondTimerEvent -= new TimerHandler(Core_MinuteTimer);
+            Core.SecondTimerEvent -= Core_SecondTimer;
+            Core.SecondTimerEvent -= Core_MinuteTimer;
 
             Network.CoreStatusChange -= new StatusChange(Network_StatusChange);
 

@@ -47,7 +47,7 @@ namespace DeOps.Services.IM
             Network = Core.Network;
             Locations = core.Locations;
 
-            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.SecondTimerEvent += Core_SecondTimer;
             Core.KeepDataCore += new KeepDataHandler(Core_KeepData);
 
             Network.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
@@ -66,7 +66,7 @@ namespace DeOps.Services.IM
             if (MessageUpdate != null)
                 throw new Exception("IM Events not fin'd");
 
-            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.SecondTimerEvent -= Core_SecondTimer;
             Core.KeepDataCore -= new KeepDataHandler(Core_KeepData);
 
             Network.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);

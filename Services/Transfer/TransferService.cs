@@ -73,7 +73,7 @@ namespace DeOps.Services.Transfer
             Network = Core.Network;
             Core.Transfers = this;
 
-            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.SecondTimerEvent += Core_SecondTimer;
 
             Network.Searches.SearchEvent[ServiceID, 0] += new SearchRequestHandler(Search_Local);
 
@@ -105,7 +105,7 @@ namespace DeOps.Services.Transfer
         {
             VerifyTransfers.Dispose();
 
-            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.SecondTimerEvent -= Core_SecondTimer;
 
             Core.Network.Searches.SearchEvent[ServiceID, 0] -= new SearchRequestHandler(Search_Local);
 

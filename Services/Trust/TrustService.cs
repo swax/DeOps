@@ -63,8 +63,8 @@ namespace DeOps.Services.Trust
             Store = Core.Network.Store;
             Network = Core.Network;
 
-            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
-            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
+            Core.SecondTimerEvent += Core_SecondTimer;
+            Core.MinuteTimerEvent += Core_MinuteTimer;
             Core.KeepDataCore += new KeepDataHandler(Core_KeepData);
 
             Cache = new VersionedCache(Network, ServiceID, DataTypeFile, false);
@@ -112,8 +112,8 @@ namespace DeOps.Services.Trust
         public void Dispose()
         {
             
-            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
-            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
+            Core.SecondTimerEvent -= Core_SecondTimer;
+            Core.MinuteTimerEvent -= Core_MinuteTimer;
             Core.KeepDataCore -= new KeepDataHandler(Core_KeepData);
 
             Network.CoreStatusChange -= new StatusChange(Network_StatusChange);

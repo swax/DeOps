@@ -40,7 +40,7 @@ namespace DeOps.Services.Share
 
             Sharing = core.GetService(ServiceIDs.Share) as ShareService;
 
-            Utilities.SetupToolstrip(TopStrip, new OpusColorTable());
+            GuiUtils.SetupToolstrip(TopStrip, new OpusColorTable());
             
             SharedFiles.SmallImageList = FileIcons;
 

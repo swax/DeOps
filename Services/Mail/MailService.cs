@@ -121,8 +121,8 @@ namespace DeOps.Services.Mail
             Protocol = Network.Protocol;
             Store = Network.Store;
 
-            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
-            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
+            Core.SecondTimerEvent += Core_SecondTimer;
+            Core.MinuteTimerEvent += Core_MinuteTimer;
 
             Network.CoreStatusChange += new StatusChange(Network_StatusChange);
 
@@ -168,8 +168,8 @@ namespace DeOps.Services.Mail
 
         public void Dispose()
         {
-            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
-            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
+            Core.SecondTimerEvent -= Core_SecondTimer;
+            Core.MinuteTimerEvent -= Core_MinuteTimer;
 
             Network.CoreStatusChange -= new StatusChange(Network_StatusChange);
 
@@ -311,7 +311,7 @@ namespace DeOps.Services.Mail
             //foreach (string paragraph in Core.TextGen.GenerateParagraphs(Core.RndGen.Next(1,3)))
             //   body += paragraph + "\r\n\r\n";
 
-            SendMail(new List<ulong>() { target.UserID }, new List<AttachedFile>(), subject, body, TextFormat.Plain, thread);
+            SendMail(new List<ulong>() { target.UserID }, new List<AttachedFile>(), subject, body, TextFormat.Plain, "", thread);
         }
 
         public void SimCleanup()
@@ -606,11 +606,11 @@ namespace DeOps.Services.Mail
             return null;
         }
 
-        internal void SendMail(List<ulong> to, List<AttachedFile> files, string subject, string body, TextFormat format, int threadID)
+        internal void SendMail(List<ulong> to, List<AttachedFile> files, string subject, string body, TextFormat format, string quip, int threadID)
         {
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreBlocked(delegate() { SendMail(to, files, subject, body, format, threadID); });
+                Core.RunInCoreBlocked(delegate() { SendMail(to, files, subject, body, format, quip, threadID); });
                 return;
             }
 
@@ -628,7 +628,7 @@ namespace DeOps.Services.Mail
                 long written = 0;
 
                 // build mail file
-                written += Protocol.WriteToFile(new MailInfo(subject, format, Utilities.GetQuip(body, format), Core.TimeNow.ToUniversalTime(), files.Count > 0), stream);
+                written += Protocol.WriteToFile(new MailInfo(subject, format, quip, Core.TimeNow.ToUniversalTime(), files.Count > 0), stream);
 
                 foreach (ulong id in to)
                     written += Protocol.WriteToFile(new MailDestination(Core.KeyMap[id], false), stream);

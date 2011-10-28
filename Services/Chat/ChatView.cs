@@ -39,8 +39,8 @@ namespace DeOps.Services.Chat
 
             Chat.Refresh += new RefreshHandler(Chat_Refresh);
 
-            Utilities.SetupToolstrip(toolStrip1, new OpusColorTable());
-            Utilities.FixMonoDropDownOpening(RoomsButton, RoomsButton_DropDownOpening);
+            GuiUtils.SetupToolstrip(toolStrip1, new OpusColorTable());
+            GuiUtils.FixMonoDropDownOpening(RoomsButton, RoomsButton_DropDownOpening);
 
             RoomsButton.Visible  = true;
             RoomSeparator.Visible = true;

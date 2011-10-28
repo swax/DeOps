@@ -46,7 +46,7 @@ namespace DeOps.Services.Buddy
             Network.CoreStatusChange += new StatusChange(Network_StatusChange);
             Core.KeepDataCore += new KeepDataHandler(Core_KeepData);
             Core.Locations.KnowOnline += new KnowOnlineHandler(Location_KnowOnline);
-            Core.MinuteTimerEvent += new TimerHandler(Core_MinuteTimer);
+            Core.MinuteTimerEvent += Core_MinuteTimer;
             Cache = new VersionedCache(Network, ServiceID, 0, false);
 
             Cache.FileAquired += new FileAquiredHandler(Cache_FileAquired);
@@ -63,13 +63,8 @@ namespace DeOps.Services.Buddy
             Network.CoreStatusChange     -= new StatusChange(Network_StatusChange);
             Core.KeepDataCore      -= new KeepDataHandler(Core_KeepData);
             Core.Locations.KnowOnline -= new KnowOnlineHandler(Location_KnowOnline);
-            Core.MinuteTimerEvent -= new TimerHandler(Core_MinuteTimer);
+            Core.MinuteTimerEvent -= Core_MinuteTimer;
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
-        }
-
-        internal void ShowIdentity(ulong user)
-        {
-            new IdentityForm(Core, user).ShowDialog();
         }
 
         public void SimTest()

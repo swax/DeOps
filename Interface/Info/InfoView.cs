@@ -120,7 +120,7 @@ transfer, and file sharing.  File transfers are automatically swarmed when multi
             
             InitializeComponent();
 
-            Utilities.SetupToolstrip(toolStrip1, new OpusColorTable());
+            GuiUtils.SetupToolstrip(toolStrip1, new OpusColorTable());
 
 
             if (help)

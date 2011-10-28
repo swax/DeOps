@@ -92,7 +92,7 @@ namespace DeOps.Services.Share
             DownloadPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Downloads" + Path.DirectorySeparatorChar;
 
 
-            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.SecondTimerEvent += Core_SecondTimer;
          
             // data
             Network.RudpControl.SessionUpdate += new SessionUpdateHandler(Session_Update);
@@ -120,7 +120,7 @@ namespace DeOps.Services.Share
             ProcessFiles.Dispose();
             OpenFiles.Dispose();
 
-            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.SecondTimerEvent -= Core_SecondTimer;
  
             // file
             Network.RudpControl.SessionUpdate -= new SessionUpdateHandler(Session_Update);

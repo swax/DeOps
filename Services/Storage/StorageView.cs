@@ -93,7 +93,7 @@ namespace DeOps.Services.Storage
             MenuDelete = new ToolStripMenuItem("Delete", StorageRes.Reject, FileView_Delete);
             MenuDetails = new ToolStripMenuItem("Details", StorageRes.details, FileView_Details);
 
-            Utilities.SetupToolstrip(toolStrip1, new OpusColorTable());
+            GuiUtils.SetupToolstrip(toolStrip1, new OpusColorTable());
 
             RescanLabel.Text = "";
             StatusLabel.Text = "";
@@ -788,7 +788,7 @@ namespace DeOps.Services.Storage
             }
 
             if (!folder.Info.IsFlagged(StorageFlags.Archived) || GhostsButton.Checked)
-                Utilities.InsertSubNode(parent, node);
+                GuiUtils.InsertSubNode(parent, node);
 
             if (parent.GetType() == typeof(FolderNode))
             {
@@ -2219,7 +2219,7 @@ namespace DeOps.Services.Storage
                 }
             }
 
-            if (Utilities.IsRunningOnMono())
+            if (GuiUtils.IsRunningOnMono())
             {
                 // buttons aren't positioned when they aren't visible
                 StatusLabel.Location = new Point(3, Height - 18);
@@ -2500,7 +2500,7 @@ namespace DeOps.Services.Storage
         
         private void FileListView_MouseMove(object sender, MouseEventArgs e)
         {
-            if (DragStart != Point.Empty && !Dragging && Utilities.GetDistance(DragStart, e.Location) > 4)
+            if (DragStart != Point.Empty && !Dragging && GuiUtils.GetDistance(DragStart, e.Location) > 4)
             {
                 Dragging = true;
 
@@ -2554,7 +2554,7 @@ namespace DeOps.Services.Storage
 
         private void FolderTreeView_MouseMove(object sender, MouseEventArgs e)
         {
-            if (DragStart != Point.Empty && !Dragging && Utilities.GetDistance(DragStart, e.Location) > 4)
+            if (DragStart != Point.Empty && !Dragging && GuiUtils.GetDistance(DragStart, e.Location) > 4)
             {
                
                 Dragging = true;
@@ -2744,7 +2744,7 @@ namespace DeOps.Services.Storage
                 Folders[info.UID] = new FolderNode(View, info, this, remote);
 
                 if (!info.IsFlagged(StorageFlags.Archived) || View.GhostsButton.Checked)
-                    Utilities.InsertSubNode(this, Folders[info.UID]);
+                    GuiUtils.InsertSubNode(this, Folders[info.UID]);
             }
 
             FolderNode folder = Folders[info.UID];

@@ -1,8 +1,11 @@
 
 is timer turned off when de-ops context is destroyed? use xray to verify instance is finalized ;)
 
-free core of forms.control dependencies
-break core into its on dll
+
+Properties to json
+change internal to public
+
+break core into its own dll
 create simple console version of de-ops
 load in IM profile and run on server
 

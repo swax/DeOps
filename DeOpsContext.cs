@@ -18,6 +18,7 @@ using DeOps.Simulator;
 
 using DeOps.Services.Share;
 using DeOps.Services.Update;
+using System.Drawing;
 
 // v1.0.0 s1
 // v1.0.1 s2
@@ -39,6 +40,7 @@ namespace DeOps
     public class DeOpsContext
     {
         internal OpCore Lookup;
+        internal LookupSettings LookupConfig;
         internal ThreadedList<OpCore> Cores = new ThreadedList<OpCore>();
 
         Timer SecondTimer;
@@ -58,11 +60,19 @@ namespace DeOps
         internal LightLicense LicenseProof;
 
         public Action<string[]> ShowLogin;
-        public Func<bool> NotifyUpdateReady;
+        public Func<LookupSettings, bool> NotifyUpdateReady;
 
+        public string StartupPath;
 
-        internal DeOpsContext()
+        public Icon DefaultIcon;
+
+        internal DeOpsContext(string startupPath, Icon defaultIcon)
         {
+            StartupPath = startupPath;
+            DefaultIcon = defaultIcon;
+
+            LookupConfig = new LookupSettings(startupPath);
+
             ContextThread = Thread.CurrentThread;
 
             // start timers
@@ -70,11 +80,16 @@ namespace DeOps
 
             // check for updates - update through network, use news page to notify user of updates
             //new System.Threading.Thread(CheckForUpdates).Start();
-            SignedUpdate = UpdateService.LoadUpdate();
+            SignedUpdate = UpdateService.LoadUpdate(LookupConfig);
         }
 
-        internal DeOpsContext(SimInstance sim)
+        internal DeOpsContext(SimInstance sim, string startupPath, Icon defaultIcon)
         {
+            StartupPath = startupPath;
+            DefaultIcon = defaultIcon;
+
+            LookupConfig = new LookupSettings(startupPath);
+
             // starting up simulated context context->simulator->instances[]->context
             Sim = sim;
         }
@@ -179,10 +194,10 @@ namespace DeOps
                 ShowLogin(args);
         }
 
-        public void RaiseUpdateReady()
+        public void RaiseUpdateReady(LookupSettings config)
         {
             if (NotifyUpdateReady != null)
-                NotifyUpdateReady();
+                NotifyUpdateReady(config);
         }
     }
 }

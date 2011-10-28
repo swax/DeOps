@@ -47,7 +47,7 @@ namespace DeOps.Services.Voice
             Core = core;
             Network = core.Network;
 
-            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.SecondTimerEvent += Core_SecondTimer;
             
             Network.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
             Network.LightComm.Data[ServiceID, 0] += new LightDataHandler(LightComm_ReceiveData);
@@ -57,7 +57,7 @@ namespace DeOps.Services.Voice
 
         public void Dispose()
         {
-            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.SecondTimerEvent -= Core_SecondTimer;
             
             Network.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
             Network.LightComm.Data[ServiceID, 0] -= new LightDataHandler(LightComm_ReceiveData);

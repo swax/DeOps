@@ -230,7 +230,7 @@ namespace DeOps.Services.Board
 
                 string message = (MessageBody.TextFormat == TextFormat.Plain) ? MessageBody.InputBox.Text : MessageBody.InputBox.Rtf;
 
-                Board.PostMessage(UserID, ProjectID, ParentID, scope, subject, message, MessageBody.TextFormat, files, EditPost);
+                Board.PostMessage(UserID, ProjectID, ParentID, scope, subject, message, MessageBody.TextFormat, GuiUtils.GetQuip(message, MessageBody.TextFormat), files, EditPost);
             }
             catch (Exception ex)
             {

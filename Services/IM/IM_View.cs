@@ -313,7 +313,7 @@ namespace DeOps.Services.IM
                 MessageTextBox.SelectionFont = RegularFont;
 
                 if (message.Format == TextFormat.RTF)
-                    MessageTextBox.SelectedRtf = Utilities.RtftoColor(message.Text, MessageTextBox.SelectionColor);
+                    MessageTextBox.SelectedRtf = GuiUtils.RtftoColor(message.Text, MessageTextBox.SelectionColor);
                 
                 else if (message.Format == TextFormat.Plain)
                     MessageTextBox.AppendText(message.Text);

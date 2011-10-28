@@ -66,7 +66,7 @@ namespace DeOps.Simulator
 
             UiThreadId = Thread.CurrentThread.ManagedThreadId;
 
-            Sim = new InternetSim();
+            Sim = new InternetSim(Application.StartupPath, InterfaceRes.deops);
 
         }
 
@@ -694,7 +694,7 @@ namespace DeOps.Simulator
 
 
             // re-init
-            Sim = new InternetSim();
+            Sim = new InternetSim(Application.StartupPath, InterfaceRes.deops);
             Sim.InstanceChange += new InstanceChangeHandler(OnInstanceChange);
 
             OnInstanceChange(null, InstanceChangeType.Refresh);
@@ -759,7 +759,7 @@ namespace DeOps.Simulator
             UI = new CoreUI(core);
             Instance = core.Sim;
 
-            Core.Exited += new ExitedHandler(Core_Exited);
+            Core.Exited += Core_Exited;
 
             Refresh();
         }

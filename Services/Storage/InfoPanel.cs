@@ -1029,7 +1029,7 @@ namespace DeOps.Services.Storage
 
             string url = e.Url.OriginalString;
 
-            if (Utilities.IsRunningOnMono() && url.StartsWith("wyciwyg"))
+            if (GuiUtils.IsRunningOnMono() && url.StartsWith("wyciwyg"))
                 return;
 
             if (url.StartsWith("about:blank"))

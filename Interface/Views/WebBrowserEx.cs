@@ -15,7 +15,7 @@ namespace DeOps.Interface.Views
 
         public WebBrowserEx()
         {
-            MonoRunning = Utilities.IsRunningOnMono();
+            MonoRunning = GuiUtils.IsRunningOnMono();
 
             if(MonoRunning)
                 Stop(); // apparently makes .Document not null
@@ -102,7 +102,7 @@ namespace DeOps.Interface.Views
 
         internal void SetDocNoClick(string html)
         {
-            if (Utilities.IsRunningOnMono())
+            if (GuiUtils.IsRunningOnMono())
                 DocumentText = html;
             else
             {

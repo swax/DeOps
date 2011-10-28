@@ -58,7 +58,7 @@ namespace DeOps.Services.Plan
             if (Core.Sim != null)
                 SaveInterval = 30;
             
-            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.SecondTimerEvent += Core_SecondTimer;
 
             Cache = new VersionedCache(Network, ServiceID, DataTypeFile, false);  
          
@@ -77,7 +77,7 @@ namespace DeOps.Services.Plan
 
         public void Dispose()
         {
-            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.SecondTimerEvent -= Core_SecondTimer;
 
             Cache.FileAquired -= new FileAquiredHandler(Cache_FileAquired);
             Cache.FileRemoved -= new FileRemovedHandler(Cache_FileRemoved);

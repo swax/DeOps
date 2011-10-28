@@ -28,9 +28,6 @@ namespace DeOps.Interface.Tools
 		
 		SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
 
-		internal delegate void UpdateLogHandler(PacketLogEntry logEntry);
-		internal UpdateLogHandler UpdateLog;
-
 		private System.Windows.Forms.Splitter splitter1;
 		private System.Windows.Forms.ListView ListViewPackets;
         private System.Windows.Forms.ColumnHeader columnHeaderProtocol;
@@ -54,11 +51,10 @@ namespace DeOps.Interface.Tools
 
         internal static void Show(DhtNetwork network)
         {
-            if (network.GuiPackets == null)
-                network.GuiPackets = new PacketsForm(network);
+            var form = new PacketsForm(network);
 
-            network.GuiPackets.Show();
-            network.GuiPackets.Activate();
+            form.Show();
+            form.Activate();
         }
 
         internal PacketsForm(DhtNetwork network)
@@ -72,11 +68,11 @@ namespace DeOps.Interface.Tools
 
 			Protocol = new G2Protocol();
 
-			UpdateLog = new UpdateLogHandler(AsyncUpdateLog);
-
             Text = "Packets (" + Network.GetLabel() + ")";
 
             RefreshView();
+
+            Network.UpdatePacketLog += AsyncUpdateLog;
 		}
 
 		/// <summary>
@@ -281,10 +277,11 @@ namespace DeOps.Interface.Tools
 			
 		}
 
-		private void PacketsForm_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-		{
-            Network.GuiPackets = null;
-		}
+
+        private void PacketsForm_Closing(object sender, System.EventArgs e)
+        {
+            Network.UpdatePacketLog -= AsyncUpdateLog;
+        }
 
 		internal void AsyncUpdateLog(PacketLogEntry logEntry)
 		{

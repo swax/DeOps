@@ -9,7 +9,6 @@ using System.Net;
 using System.Security;
 using System.Security.Cryptography;
 using System.Text;
-using System.Windows.Forms;
 using System.Xml;
 
 using DeOps.Implementation;
@@ -26,8 +25,6 @@ namespace DeOps
     internal enum LoadModeType { Settings, AllCaches, LookupCache };
 
     internal enum AccessType { Public, Private, Secret };
-
-    internal delegate void IconUpdateHandler();
 
 
 	/// <summary>
@@ -51,7 +48,7 @@ namespace DeOps
         internal Bitmap OpIcon;
         internal Bitmap OpSplash;
 
-        internal IconUpdateHandler GuiIconUpdate;
+        internal Action GuiIconUpdate;
    
 
         // loading identity, or temp load for processing invite
@@ -283,7 +280,7 @@ namespace DeOps
                 if (Core != null)
                     Core.ConsoleLog("Exception Identity::Save() " + ex.Message);
                 else
-                    System.Windows.Forms.MessageBox.Show("Profile Save Error:\n" + ex.Message + "\nBackup Restored");
+                    Core.UserMessage("Profile Save Error:\n" + ex.Message + "\nBackup Restored");
 
                 // restore backup
                 if (File.Exists(backupPath))
@@ -364,7 +361,7 @@ namespace DeOps
                 return Icon.FromHandle(OpIcon.GetHicon());
 
             else
-                return Interface.InterfaceRes.deops;
+                return Core.Context.DefaultIcon;
         }
     }
 
@@ -700,7 +697,7 @@ namespace DeOps
                         break;
 
                     case Packet_SecurityLevel:
-                        settings.Security = (SecurityLevel) BitConverter.ToInt32(child.Data, child.PayloadPos);
+                        settings.Security = (SecurityLevel)BitConverter.ToInt32(child.Data, child.PayloadPos);
                         break;
 
                     case Packet_Location:
@@ -769,60 +766,46 @@ namespace DeOps
     }
 
     // save independently so all operations use same lookup settings for quick startup and lookup network stability
-    internal class LookupSettings
+    public class LookupSettings
     {
         internal ulong  UserID;
         internal ushort TcpPort;
         internal ushort UdpPort;
 
+        internal string StartupPath;
+        internal byte[] BootstrapKey;
+        internal string BootstrapPath;
+        internal string UpdatePath;
 
-        static byte[] BootstrapKey
+        internal LookupSettings(string startupPath)
         {
-            get
-            {
-                return new SHA256Managed().ComputeHash(UTF8Encoding.UTF8.GetBytes("bootstrap"));
-            }
+            StartupPath = startupPath;
+            BootstrapKey = new SHA256Managed().ComputeHash(UTF8Encoding.UTF8.GetBytes("bootstrap"));
+            BootstrapPath = Path.Combine(startupPath, "bootstrap.dat");
+            UpdatePath = Path.Combine(startupPath, "update.dat");
         }
 
-        static string BootstrapPath
-        {
-            get
-            {
-                return Path.Combine(ApplicationEx.CommonAppDataPath(), "bootstrap.dat");
-            }
-        }
-
-        static internal string UpdatePath
-        {
-            get
-            {
-                return Path.Combine(ApplicationEx.CommonAppDataPath(), "update.dat");
-            }
-        }
-
-        internal static LookupSettings Load(DhtNetwork network)
+        internal void Load(DhtNetwork network)
         {
             // if the user has multiple ops, the lookup network is setup with the same settings
             // so it is easy to find and predictable for other's bootstrapping
             // we put it in local settings so we safe-guard these settings from moving to other computers
             // and having dupe dht lookup ids on the network
 
-            LookupSettings settings = new LookupSettings();
-
             try
             {
-                settings.UserID = Properties.Settings.Default.LookupID;
-                if (settings.UserID == 0 || network.Core.Sim != null)
-                    settings.UserID = Utilities.StrongRandUInt64(network.Core.StrongRndGen);
+                UserID = Properties.Settings.Default.LookupID;
+                if (UserID == 0 || network.Core.Sim != null)
+                    UserID = Utilities.StrongRandUInt64(network.Core.StrongRndGen);
 
                 // keep tcp/udp the same by default
-                settings.TcpPort = Properties.Settings.Default.LookupTcp;
-                if (settings.TcpPort == 0 || network.Core.Sim != null)
-                    settings.TcpPort = (ushort)network.Core.RndGen.Next(3000, 15000);
+                TcpPort = Properties.Settings.Default.LookupTcp;
+                if (TcpPort == 0 || network.Core.Sim != null)
+                    TcpPort = (ushort)network.Core.RndGen.Next(3000, 15000);
 
-                settings.UdpPort = Properties.Settings.Default.LookupUdp;
-                if (settings.UdpPort == 0 || network.Core.Sim != null)
-                    settings.UdpPort = settings.TcpPort;
+                UdpPort = Properties.Settings.Default.LookupUdp;
+                if (UdpPort == 0 || network.Core.Sim != null)
+                    UdpPort = TcpPort;
             }
             catch { }
 
@@ -853,8 +836,6 @@ namespace DeOps
                     network.UpdateLog("Exception", "LookupSettings::Load " + ex.Message);
                 }
             }
-
-            return settings;
         }
 
         internal void Save(OpCore core)
@@ -893,12 +874,12 @@ namespace DeOps
             }
         }
 
-        internal static void WriteUpdateInfo(OpCore core)
+        internal void WriteUpdateInfo(OpCore core)
         {
             // non lookup core, embedding update packet
             Debug.Assert(!core.Network.IsLookup);
 
-            string temp = Path.Combine(ApplicationEx.CommonAppDataPath(), "temp.dat");
+            string temp = Path.Combine(StartupPath, "temp.dat");
 
             try
             {
@@ -927,7 +908,7 @@ namespace DeOps
             }
         }
 
-        internal static UpdateInfo ReadUpdateInfo()
+        internal UpdateInfo ReadUpdateInfo()
         {
             if (!File.Exists(BootstrapPath))
                 return null;

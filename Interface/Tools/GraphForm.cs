@@ -36,11 +36,10 @@ namespace DeOps.Interface.Tools
 
         internal static void Show(DhtNetwork network)
         {
-            if (network.GuiGraph == null)
-                network.GuiGraph = new GraphForm(network);
+            var form = new GraphForm(network);
 
-            network.GuiGraph.Show();
-            network.GuiGraph.Activate();
+            form.Show();
+            form.Activate();
 
         }
 
@@ -55,7 +54,7 @@ namespace DeOps.Interface.Tools
             Core = Network.Core;
             Routing = Network.Routing;
 
-			UpdateGraph = new UpdateGraphHandler(AsyncUpdateGraph);
+            Network.UpdateBandwidthGraph += AsyncUpdateGraph;
 
             Text = "Graph (" + Network.GetLabel() + ")";
 
@@ -226,7 +225,7 @@ namespace DeOps.Interface.Tools
 
 		private void GraphForm_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
-			Network.GuiGraph = null;
+            Network.UpdateBandwidthGraph -= AsyncUpdateGraph;
 		}
 
 		private void GraphForm_Resize(object sender, System.EventArgs e)

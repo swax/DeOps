@@ -132,9 +132,9 @@ namespace DeOps.Services.Plan
             UserID = id;
             ProjectID = project;
 
-            Utilities.SetupToolstrip(toolStrip1, new OpusColorTable());
+            GuiUtils.SetupToolstrip(toolStrip1, new OpusColorTable());
 
-            Utilities.FixMonoDropDownOpening(SelectGoalButton, SelectGoal_DropDownOpening);
+            GuiUtils.FixMonoDropDownOpening(SelectGoalButton, SelectGoal_DropDownOpening);
 
             splitContainer1.Panel2Collapsed = true;
 
@@ -278,7 +278,7 @@ namespace DeOps.Services.Plan
 
             splitContainer1.Height = Height - toolStrip1.Height - SaveButton.Height - 8;
 
-            if (Utilities.IsRunningOnMono())
+            if (GuiUtils.IsRunningOnMono())
             {
                 // buttons aren't positioned when they aren't visible
                 SaveButton.Location = new Point(Width - 156, Height - 22);

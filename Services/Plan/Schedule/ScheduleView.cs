@@ -113,7 +113,7 @@ namespace DeOps.Services.Plan
             StartTime = Core.TimeNow;
             EndTime   = Core.TimeNow.AddMonths(3);
 
-            Utilities.SetupToolstrip(TopStrip, new OpusColorTable());
+            GuiUtils.SetupToolstrip(TopStrip, new OpusColorTable());
 
             MainSplit.Panel2Collapsed = true;
 
@@ -321,7 +321,7 @@ namespace DeOps.Services.Plan
 
                             LoadNode(node);
 
-                            Utilities.InsertSubNode(PlanStructure.virtualParent, node);
+                            GuiUtils.InsertSubNode(PlanStructure.virtualParent, node);
 
                             ExpandPath(node, Uplinks);
                         }
@@ -339,7 +339,7 @@ namespace DeOps.Services.Plan
 
                                     LoadNode(node);
 
-                                    Utilities.InsertSubNode(PlanStructure.virtualParent, node);
+                                    GuiUtils.InsertSubNode(PlanStructure.virtualParent, node);
 
                                     ExpandPath(node, Uplinks);
                                 }
@@ -393,7 +393,7 @@ namespace DeOps.Services.Plan
 
                 Plans.Research(link.UserID);
 
-                Utilities.InsertSubNode(node, CreateNode(link));
+                GuiUtils.InsertSubNode(node, CreateNode(link));
             }
         }
 
@@ -844,7 +844,7 @@ namespace DeOps.Services.Plan
             PlanStructure.Height = height - PlanStructure.Top - SaveButton.Height - 8;
 
 
-            if (Utilities.IsRunningOnMono())
+            if (GuiUtils.IsRunningOnMono())
             {
                 // buttons aren't positioned when they aren't visible
                 SaveButton.Location = new Point(Width - 156, height - 22);

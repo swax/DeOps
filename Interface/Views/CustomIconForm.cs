@@ -18,7 +18,7 @@ namespace DeOps.Interface
         {
             Icon = InterfaceRes.deops;
 
-            if (Application.RenderWithVisualStyles && !Utilities.IsRunningOnMono())
+            if (Application.RenderWithVisualStyles && !GuiUtils.IsRunningOnMono())
                 BackColor = System.Drawing.Color.WhiteSmoke;
         }
 
@@ -32,12 +32,12 @@ namespace DeOps.Interface
 
 
             // dialog background color
-            if (Application.RenderWithVisualStyles && !Utilities.IsRunningOnMono())
+            if (Application.RenderWithVisualStyles && !GuiUtils.IsRunningOnMono())
                 BackColor = System.Drawing.Color.WhiteSmoke;
 
 
             // signup for icon updates
-            core.User.GuiIconUpdate += new IconUpdateHandler(Profile_IconUpdate);
+            core.User.GuiIconUpdate += Profile_IconUpdate;
         }
 
         void Profile_IconUpdate()
@@ -48,7 +48,7 @@ namespace DeOps.Interface
         protected override void Dispose(bool disposing)
         {
             if(Profile != null)
-                Profile.GuiIconUpdate -= new IconUpdateHandler(Profile_IconUpdate);
+                Profile.GuiIconUpdate -= Profile_IconUpdate;
 
             base.Dispose(disposing);
         }

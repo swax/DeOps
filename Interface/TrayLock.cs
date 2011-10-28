@@ -31,7 +31,7 @@ namespace DeOps.Interface.Views
             Tray.Visible = true;
 
             Tray.DoubleClick += new EventHandler(Tray_DoubleClick);
-            Core.User.GuiIconUpdate += new IconUpdateHandler(Profile_IconUpdate);
+            Core.User.GuiIconUpdate += Profile_IconUpdate;
 
             ContextMenuStripEx menu = new ContextMenuStripEx();
 
@@ -69,7 +69,7 @@ namespace DeOps.Interface.Views
                 return;
             }
 
-            if (Utilities.VerifyPassphrase(Core, ThreatLevel.High))
+            if (GuiUtils.VerifyPassphrase(Core, ThreatLevel.High))
             {
                 UI.ShowMainView(PreserveSideMode);
 
@@ -87,7 +87,7 @@ namespace DeOps.Interface.Views
 
         internal void CleanupTray()
         {
-            Core.User.GuiIconUpdate -= new IconUpdateHandler(Profile_IconUpdate);
+            Core.User.GuiIconUpdate -= Profile_IconUpdate;
             Tray.Visible = false;
             UI.GuiTray = null;
         }

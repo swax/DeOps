@@ -19,6 +19,7 @@ using DeOps.Implementation.Protocol.Special;
 using DeOps.Interface.Startup;
 
 using DeOps.Simulator;
+using System.Web;
 
 
 namespace DeOps.Interface
@@ -55,7 +56,7 @@ namespace DeOps.Interface
             if (Context.Sim != null) // prevent sim recursion
                 EnterSimLink.Visible = false;
 
-            LastBrowse = ApplicationEx.UserAppDataPath();
+            LastBrowse = Application.StartupPath;
 
             LastOpened = (arg != "") ? arg : Properties.Settings.Default.LastOpened;
 
@@ -63,7 +64,6 @@ namespace DeOps.Interface
             // /root/profiledirs[]/profile.rop
             if (App.Context.Sim == null)
             {
-                LoadProfiles(ApplicationEx.UserAppDataPath());
                 LoadProfiles(Application.StartupPath);
 
                 // if started with file argument, load profiles around the same location
@@ -184,21 +184,96 @@ namespace DeOps.Interface
 
         private CreateUser ReadInvite(string link)
         {
-            CreateUser user = null;
+            string[] mainParts = link.Replace("deops://", "").Split('/');
+
+            if (mainParts.Length < 4)
+                throw new Exception("Invalid Link");
+
+            // Select John Marshall's Global IM Profile
+            string[] nameParts = mainParts[2].Split('@');
+            string name = HttpUtility.UrlDecode(nameParts[0]);
+            string op = HttpUtility.UrlDecode(nameParts[1]);
+
+            byte[] data = Utilities.FromBase64String(mainParts[3]);
+            byte[] pubOpID = Utilities.ExtractBytes(data, 0, 8);
+            byte[] encrypted = Utilities.ExtractBytes(data, 8, data.Length - 8);
+            byte[] decrypted = null;
+
+            // try opening invite with a currently loaded core
+            Context.Cores.LockReading(delegate()
+            {
+                foreach (var core in Context.Cores)
+                    try
+                    {
+                        if (Utilities.MemCompare(pubOpID, core.User.Settings.PublicOpID))
+                            decrypted = core.User.Settings.KeyPair.Decrypt(encrypted, false);
+                    }
+                    catch { }
+            });
+
+            // have user select profile associated with the invite
+            while (decrypted == null)
+            {
+                OpenFileDialog open = new OpenFileDialog();
+
+                open.Title = "Open " + name + "'s " + op + " Profile to Verify Invitation";
+                open.InitialDirectory = Application.StartupPath;
+                open.Filter = "DeOps Identity (*.dop)|*.dop";
+
+                if (open.ShowDialog() != DialogResult.OK)
+                    return null; // user doesnt want to try any more
+
+                GetTextDialog pass = new GetTextDialog("Passphrase", "Enter the passphrase for this profile", "");
+                pass.ResultBox.UseSystemPasswordChar = true;
+
+                if (pass.ShowDialog() != DialogResult.OK)
+                    continue; // let user choose another profile
+
+                try
+                {
+                    // open profile
+                    var user = new OpUser(open.FileName, pass.ResultBox.Text, null);
+                    user.Load(LoadModeType.Settings);
+
+                    // ensure the invitation is for this op specifically
+                    if (!Utilities.MemCompare(pubOpID, user.Settings.PublicOpID))
+                    {
+                        MessageBox.Show("This is not a " + op + " profile");
+                        continue;
+                    }
+
+                    // try to decrypt the invitation
+                    try
+                    {
+                        decrypted = user.Settings.KeyPair.Decrypt(encrypted, false);
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Could not open the invitation with this profile");
+                        continue;
+                    }
+                }
+                catch
+                {
+                    MessageBox.Show("Wrong password");
+                }
+            }
+
+            CreateUser created = null;
 
             try
             {
-                InvitePackage invite = OpCore.OpenInvite(Context, Protocol, link);
+                InvitePackage invite = OpCore.OpenInvite(decrypted, Protocol);
 
                 if(invite != null)
-                    user = new CreateUser(App, invite);
+                    created = new CreateUser(App, invite);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);        
             }
 
-            return user;
+            return created;
         }
 
         private void BrowseLink_LinkClicked()

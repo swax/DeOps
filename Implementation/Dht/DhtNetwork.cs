@@ -9,7 +9,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 
-
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Comm;
 using DeOps.Implementation.Protocol.Net;
@@ -19,8 +18,6 @@ using DeOps.Implementation.Transport;
 using DeOps.Services;
 using DeOps.Services.Location;
 using DeOps.Services.Transfer;
-
-using DeOps.Interface.Tools;
 
 
 namespace DeOps.Implementation.Dht
@@ -81,10 +78,10 @@ namespace DeOps.Implementation.Dht
         internal Dictionary<string, Queue<string>> LogTable = new Dictionary<string, Queue<string>>();
 
         // gui
-        internal PacketsForm  GuiPackets;
-        internal CrawlerForm  GuiCrawler;
-        internal GraphForm    GuiGraph;
-        internal TransferView GuiTransfers;
+        internal Action<PacketLogEntry> UpdatePacketLog;
+        internal Action<CrawlAck, G2ReceivedPacket> CrawlerAck;
+        internal Action<SearchAck, G2ReceivedPacket> CrawlerSearchAck;
+        internal Action UpdateBandwidthGraph;
 
 
         internal DhtNetwork(OpCore core, bool lookup)
@@ -95,7 +92,10 @@ namespace DeOps.Implementation.Dht
             Cache = new OpCache(this); // lookup config loads cache entries
 
             if (IsLookup)
-                LookupConfig = LookupSettings.Load(this);
+            {
+                Core.Context.LookupConfig.Load(this);
+                LookupConfig = Core.Context.LookupConfig;
+            }
 
             Local = new DhtClient();
             Local.UserID = IsLookup ? LookupConfig.UserID : Utilities.KeytoID(Core.User.Settings.KeyPublic);
@@ -510,7 +510,7 @@ namespace DeOps.Implementation.Dht
             }
             catch (Exception ex)
             {
-                UpdateLog("Exception", "KimCore::ReceiveCommPacket: " + ex.Message);
+                UpdateLog("Exception", "DhtNetwork::ReceiveCommPacket: " + ex.Message);
             }
         }
 
@@ -1095,7 +1095,7 @@ namespace DeOps.Implementation.Dht
             CrawlAck ack = new CrawlAck();
 
             ack.Source = GetLocalSource();
-            ack.Version = System.Windows.Forms.Application.ProductVersion;
+            ack.Version = Core.Context.LocalSeqVersion.ToString();
             ack.Uptime = (Core.TimeNow - Core.StartTime).Seconds;
 
 
@@ -1119,9 +1119,7 @@ namespace DeOps.Implementation.Dht
         {
             CrawlAck ack = CrawlAck.Decode(packet);
 
-            if (GuiCrawler != null)
-                GuiCrawler.BeginInvoke(GuiCrawler.CrawlAck, ack, packet);
-
+            Core.RunInGuiThread(CrawlerAck, ack, packet);
         }
 
         internal Queue<Tuple<DateTime, string>> GeneralLog = new Queue<Tuple<DateTime, string>>();
@@ -1174,8 +1172,7 @@ namespace DeOps.Implementation.Dht
                     LoggedPackets.Dequeue();
             }
 
-            if (GuiPackets != null)
-                GuiPackets.BeginInvoke(GuiPackets.UpdateLog, logEntry);
+            Core.RunInGuiThread(UpdatePacketLog, logEntry);
         }
 
         internal bool UseLookupProxies;

@@ -59,7 +59,7 @@ namespace DeOps.Services.Chat
             Network.RudpControl.SessionData[ServiceID, 0] += new SessionDataHandler(Session_Data);
             Network.RudpControl.KeepActive += new KeepActiveHandler(Session_KeepActive);
 
-            Core.SecondTimerEvent += new TimerHandler(Core_SecondTimer);
+            Core.SecondTimerEvent += Core_SecondTimer;
             Core.KeepDataCore += new KeepDataHandler(Core_KeepData);
 
             Core.Locations.KnowOnline += new KnowOnlineHandler(Location_KnowOnline);
@@ -83,7 +83,7 @@ namespace DeOps.Services.Chat
             Network.RudpControl.SessionData[ServiceID, 0] -= new SessionDataHandler(Session_Data);
             Network.RudpControl.KeepActive -= new KeepActiveHandler(Session_KeepActive);
 
-            Core.SecondTimerEvent -= new TimerHandler(Core_SecondTimer);
+            Core.SecondTimerEvent -= Core_SecondTimer;
             Core.KeepDataCore -= new KeepDataHandler(Core_KeepData);
 
             Core.Locations.KnowOnline -= new KnowOnlineHandler(Location_KnowOnline);

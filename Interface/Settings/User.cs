@@ -47,7 +47,7 @@ namespace DeOps.Interface.Settings
                 verify = true;
 
             // save
-            if (verify && Utilities.VerifyPassphrase(Profile.Core, ThreatLevel.High))
+            if (verify && GuiUtils.VerifyPassphrase(Profile.Core, ThreatLevel.High))
             {
                 Profile.Settings.UserName = NameBox.Text;
 

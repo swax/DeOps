@@ -63,14 +63,6 @@ namespace DeOps
             // register file types
             RegisterType();
 
-
-            // create directories if need be
-            try { Directory.CreateDirectory(ApplicationEx.CommonAppDataPath()); }
-            catch { }
-            try { Directory.CreateDirectory(ApplicationEx.UserAppDataPath()); }
-            catch { }
-
-
             // upgrade properties if we need to 
             if (Properties.Settings.Default.NeedUpgrade)
             {
@@ -82,13 +74,13 @@ namespace DeOps
             FastTimer.Tick += new EventHandler(FastTimer_Tick);
             FastTimer.Enabled = true;
 
-            Context = new DeOpsContext();
+            Context = new DeOpsContext(Application.StartupPath, InterfaceRes.deops);
             Context.ShowLogin = ShowLogin;
             Context.NotifyUpdateReady = NotifyUpdateReady;
 
             LoadLicense(ref License, ref Context.LicenseProof);
 
-            if (Context.CanUpdate() && NotifyUpdateReady())
+            if (Context.CanUpdate() && NotifyUpdateReady(Context.LookupConfig))
                 return;
 
             // display login form
@@ -284,7 +276,7 @@ namespace DeOps
             }
         }
 
-        internal bool NotifyUpdateReady()
+        internal bool NotifyUpdateReady(LookupSettings config)
         {
             var signedUpdate = Context.SignedUpdate;
 
@@ -295,9 +287,9 @@ namespace DeOps
 
             try
             {
-                string finalpath = ApplicationEx.CommonAppDataPath() + Path.DirectorySeparatorChar + signedUpdate.Name;
+                string finalpath = Application.StartupPath + Path.DirectorySeparatorChar + signedUpdate.Name;
 
-                Utilities.DecryptTagFile(LookupSettings.UpdatePath, finalpath, signedUpdate.Key, null);
+                Utilities.DecryptTagFile(config.UpdatePath, finalpath, signedUpdate.Key, null);
 
                 try
                 {
@@ -502,8 +494,7 @@ namespace DeOps
 
         public Dictionary<uint, IServiceUI> Services = new Dictionary<uint, IServiceUI>();
 
-        public delegate void ShowViewHandler(ViewShell view, bool external);
-        public ShowViewHandler ShowView;
+        public Action<ViewShell, bool> ShowView;
 
 
         public CoreUI(OpCore core)
@@ -551,6 +542,8 @@ namespace DeOps
             Core.ShowConfirm += Core_ShowConfirm;
             Core.ShowMessage += Core_ShowMessage;
             Core.VerifyPass += Core_VerifyPass;
+
+            Core_UpdateConsole("DeOps " + Application.ProductVersion);
         }
 
         public void ShowMainView(bool sideMode = false)
@@ -603,7 +596,7 @@ namespace DeOps
 
         public bool Core_VerifyPass(ThreatLevel threat)
         {
-            return Utilities.VerifyPassphrase(Core, ThreatLevel.Medium);
+            return GuiUtils.VerifyPassphrase(Core, ThreatLevel.Medium);
         }
     }
 

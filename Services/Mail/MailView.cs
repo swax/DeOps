@@ -84,7 +84,7 @@ namespace DeOps.Services.Mail
 
             MessageHeader.DocumentText = HeaderPage.ToString();
 
-            Utilities.SetupToolstrip(toolStrip1, new OpusColorTable());
+            GuiUtils.SetupToolstrip(toolStrip1, new OpusColorTable());
 
             MessageBody.Core = Core;
         }
@@ -369,7 +369,7 @@ namespace DeOps.Services.Mail
         {
             string url = e.Url.OriginalString;
 
-            if (Utilities.IsRunningOnMono() && url.StartsWith("wyciwyg"))
+            if (GuiUtils.IsRunningOnMono() && url.StartsWith("wyciwyg"))
                 return;
 
             url = url.Replace("http://", "");

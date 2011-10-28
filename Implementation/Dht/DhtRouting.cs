@@ -487,10 +487,8 @@ namespace DeOps.Implementation.Dht
 
             if (replicate)
                 Network.Store.Replicate(newContact);
-        
 
-            if(Network.GuiGraph != null)
-                Network.GuiGraph.BeginInvoke(Network.GuiGraph.UpdateGraph);
+            Core.RunInGuiThread(Network.UpdateBandwidthGraph);
 		}
 
         private void AddtoBucket(DhtContact newContact)
