@@ -45,7 +45,7 @@ namespace DeOps.Implementation.Dht
 
 
         internal bool IsLookup;
-        internal LookupSettings LookupConfig;
+        internal LookupSettings Lookup;
         internal bool LanMode = true;
 
         internal DhtClient Local;
@@ -94,11 +94,11 @@ namespace DeOps.Implementation.Dht
             if (IsLookup)
             {
                 Core.Context.LookupConfig.Load(this);
-                LookupConfig = Core.Context.LookupConfig;
+                Lookup = Core.Context.LookupConfig;
             }
 
             Local = new DhtClient();
-            Local.UserID = IsLookup ? LookupConfig.UserID : Utilities.KeytoID(Core.User.Settings.KeyPublic);
+            Local.UserID = IsLookup ? Lookup.Ports.UserID : Utilities.KeytoID(Core.User.Settings.KeyPublic);
             Local.ClientID = (ushort)Core.RndGen.Next(1, ushort.MaxValue);
 
             OpID = Utilities.KeytoID(IsLookup ? LookupKey : Core.User.Settings.OpKey);
@@ -1248,8 +1248,8 @@ namespace DeOps.Implementation.Dht
 
             if (IsLookup)
             {
-                LookupConfig.TcpPort = tcp;
-                LookupConfig.UdpPort = udp;
+                Lookup.Ports.Tcp = tcp;
+                Lookup.Ports.Udp = udp;
             }
             else
             {
@@ -1274,7 +1274,7 @@ namespace DeOps.Implementation.Dht
 
             // save lookup config
             if (IsLookup)
-                LookupConfig.Save(Core);
+                Lookup.Save(Core);
         }
 
 

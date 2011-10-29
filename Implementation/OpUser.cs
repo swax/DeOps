@@ -17,6 +17,7 @@ using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 using DeOps.Implementation.Protocol.Special;
 using DeOps.Services.Update;
+using System.Xml.Serialization;
 
 
 namespace DeOps
@@ -768,14 +769,21 @@ namespace DeOps
     // save independently so all operations use same lookup settings for quick startup and lookup network stability
     public class LookupSettings
     {
-        internal ulong  UserID;
-        internal ushort TcpPort;
-        internal ushort UdpPort;
+        [Serializable]
+        public class PortsConfig
+        {
+            internal ulong UserID;
+            internal ushort Tcp;
+            internal ushort Udp;
+        }
 
+        internal PortsConfig Ports;
         internal string StartupPath;
         internal byte[] BootstrapKey;
         internal string BootstrapPath;
         internal string UpdatePath;
+        internal string PortsConfigPath;
+
 
         internal LookupSettings(string startupPath)
         {
@@ -783,6 +791,7 @@ namespace DeOps
             BootstrapKey = new SHA256Managed().ComputeHash(UTF8Encoding.UTF8.GetBytes("bootstrap"));
             BootstrapPath = Path.Combine(startupPath, "bootstrap.dat");
             UpdatePath = Path.Combine(startupPath, "update.dat");
+            PortsConfigPath = Path.Combine(startupPath, "lookup.xml");
         }
 
         internal void Load(DhtNetwork network)
@@ -791,23 +800,28 @@ namespace DeOps
             // so it is easy to find and predictable for other's bootstrapping
             // we put it in local settings so we safe-guard these settings from moving to other computers
             // and having dupe dht lookup ids on the network
-
             try
             {
-                UserID = Properties.Settings.Default.LookupID;
-                if (UserID == 0 || network.Core.Sim != null)
-                    UserID = Utilities.StrongRandUInt64(network.Core.StrongRndGen);
+                var serializer = new XmlSerializer(typeof(PortsConfig));
 
-                // keep tcp/udp the same by default
-                TcpPort = Properties.Settings.Default.LookupTcp;
-                if (TcpPort == 0 || network.Core.Sim != null)
-                    TcpPort = (ushort)network.Core.RndGen.Next(3000, 15000);
-
-                UdpPort = Properties.Settings.Default.LookupUdp;
-                if (UdpPort == 0 || network.Core.Sim != null)
-                    UdpPort = TcpPort;
+                using (var reader = new StreamReader(PortsConfigPath))
+                    Ports = (PortsConfig)serializer.Deserialize(reader);
             }
-            catch { }
+            catch 
+            {
+                Ports = new PortsConfig();
+            }
+
+            if (Ports.UserID == 0 || network.Core.Sim != null)
+                Ports.UserID = Utilities.StrongRandUInt64(network.Core.StrongRndGen);
+
+            // keep tcp/udp the same by default
+            if (Ports.Tcp == 0 || network.Core.Sim != null)
+                Ports.Tcp = (ushort)network.Core.RndGen.Next(3000, 15000);
+
+            if (Ports.Udp == 0 || network.Core.Sim != null)
+                Ports.Udp = Ports.Tcp;
+   
 
             // dont want instances saving and loading same lookup file
             if (network.Core.Sim == null && File.Exists(BootstrapPath))
@@ -827,7 +841,6 @@ namespace DeOps
 
                             if (root.Name == IdentityPacket.LookupCachedWeb)
                                 network.Cache.AddCache(WebCache.Decode(root));
-
                         }
                     }
                 }
@@ -844,9 +857,10 @@ namespace DeOps
 
             try
             {
-                Properties.Settings.Default.LookupID = UserID;
-                Properties.Settings.Default.LookupTcp = TcpPort;
-                Properties.Settings.Default.LookupUdp = UdpPort;
+                var serializer = new XmlSerializer(typeof(PortsConfig));
+
+                using (var writer = new StreamWriter(PortsConfigPath))
+                    serializer.Serialize(writer, Ports);
             }
             catch { }
 

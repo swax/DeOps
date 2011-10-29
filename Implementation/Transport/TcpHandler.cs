@@ -48,7 +48,7 @@ namespace DeOps.Implementation.Transport
 
         internal void Initialize()
         {
-            ListenPort = Network.IsLookup ? Network.LookupConfig.TcpPort : Core.User.Settings.TcpPort;
+            ListenPort = Network.IsLookup ? Network.Lookup.Ports.Tcp : Core.User.Settings.TcpPort;
 
             if (Core.Sim != null)
                 return;

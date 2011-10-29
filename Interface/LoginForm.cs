@@ -58,7 +58,7 @@ namespace DeOps.Interface
 
             LastBrowse = Application.StartupPath;
 
-            LastOpened = (arg != "") ? arg : Properties.Settings.Default.LastOpened;
+            LastOpened = (arg != "") ? arg : App.Settings.LastOpened;
 
             // each profile (.rop) is in its own directory
             // /root/profiledirs[]/profile.rop
@@ -366,9 +366,9 @@ namespace DeOps.Interface
             {
                 newCore = new OpCore(Context, item.Fullpath, TextPassword.Text);
 
-                App.ShowCore(newCore);
+                App.LoadCore(newCore);
 
-                Properties.Settings.Default.LastOpened = item.Fullpath;
+                App.Settings.LastOpened = item.Fullpath;
 
                 Close();
             }

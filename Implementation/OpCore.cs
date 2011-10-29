@@ -707,7 +707,7 @@ namespace DeOps.Implementation
             try
             {
                 if (Network.IsLookup)
-                    Network.LookupConfig.Save(this);
+                    Network.Lookup.Save(this);
                 else
                     User.Save();
 

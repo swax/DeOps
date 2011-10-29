@@ -82,7 +82,7 @@ namespace DeOps.Implementation
             if (Core.TimeNow > NextSave)
             {
                 if (Network.IsLookup)
-                    Network.LookupConfig.Save(Core);
+                    Network.Lookup.Save(Core);
                 else
                     Core.User.Save();
 

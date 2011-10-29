@@ -32,6 +32,7 @@ namespace DeOps.Simulator
 
     internal partial class SimForm : CustomIconForm
     {
+        internal AppContext App;
         internal InternetSim Sim;
 
         private ListViewColumnSorter lvwColumnSorter = new ListViewColumnSorter();
@@ -46,15 +47,18 @@ namespace DeOps.Simulator
         //string DelayLoadPath;
 
 
-        internal SimForm()
+        internal SimForm(AppContext app)
         {
             Construct();
+
+            App = app;
         }
 
-        internal SimForm(string path)
+        internal SimForm(string path, AppContext app)
         {
             Construct();
 
+            App = app;
             //DelayLoadPath = path;
         }
 
@@ -97,7 +101,7 @@ namespace DeOps.Simulator
             {
                 FolderBrowserDialog browse = new FolderBrowserDialog();
 
-                string path = Properties.Settings.Default.LastSimPath;
+                string path = App.Settings.LastSimPath;
 
                 if (path == null)
                     path = Application.StartupPath;
@@ -109,7 +113,7 @@ namespace DeOps.Simulator
                    
                 LoadDirectory(browse.SelectedPath);
 
-                Properties.Settings.Default.LastSimPath = browse.SelectedPath;
+                App.Settings.LastSimPath = browse.SelectedPath;
             }
             catch (Exception ex)
             {

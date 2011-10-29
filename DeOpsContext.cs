@@ -152,6 +152,24 @@ namespace DeOps
             CheckLookup();
         }
 
+        internal void RemoveCore(OpCore removed)
+        {
+            if (removed == Lookup)
+                return;
+
+            Cores.LockWriting(delegate()
+            {
+                foreach (OpCore core in Cores)
+                    if (core == removed)
+                    {
+                        Cores.Remove(core);
+                        break;
+                    }
+            });
+
+            CheckLookup();
+        }
+
         internal void CheckLookup()
         {
             // called from gui thread

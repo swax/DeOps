@@ -20,7 +20,7 @@ namespace DeOps
     {
         internal static bool IsRunningOnMono()
         {
-            return (Type.GetType("Mono.Runtime") != null && Properties.Settings.Default.MonoHelp);
+            return (Type.GetType("Mono.Runtime") != null);//&& Properties.Settings.Default.MonoHelp);
         }
 
         internal static void SetupToolstrip(ToolStrip strip, OpusColorTable colorTable)

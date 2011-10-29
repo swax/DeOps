@@ -124,7 +124,7 @@ namespace DeOps.Interface.Startup
                 if (Invite != null)
                     core.ProcessInvite(Invite);
 
-                App.ShowCore(core);
+                App.LoadCore(core);
 
                 DialogResult = DialogResult.OK;
                 Close();

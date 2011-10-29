@@ -35,6 +35,7 @@ namespace DeOps
         public DeOpsMutex SingleInstance;
         public DeOpsContext Context;
         public ThreadedList<CoreUI> CoreUIs = new ThreadedList<CoreUI>();
+        public AppSettings Settings;
 
         SimForm Simulator;
 
@@ -64,19 +65,15 @@ namespace DeOps
             RegisterType();
 
             // upgrade properties if we need to 
-            if (Properties.Settings.Default.NeedUpgrade)
-            {
-                Properties.Settings.Default.Upgrade();
-                Properties.Settings.Default.NeedUpgrade = false;
-            }
+            Settings = AppSettings.Load(Path.Combine(Application.StartupPath, "app.xml"));
 
             FastTimer.Interval = 250;
             FastTimer.Tick += new EventHandler(FastTimer_Tick);
             FastTimer.Enabled = true;
 
             Context = new DeOpsContext(Application.StartupPath, InterfaceRes.deops);
-            Context.ShowLogin = ShowLogin;
-            Context.NotifyUpdateReady = NotifyUpdateReady;
+            Context.ShowLogin += ShowLogin;
+            Context.NotifyUpdateReady += NotifyUpdateReady;
 
             LoadLicense(ref License, ref Context.LicenseProof);
 
@@ -177,7 +174,7 @@ namespace DeOps
                 {
                     FileLink link = FileLink.Decode(arg, null);
 
-                    var ui = FindCore(link.PublicOpID);
+                    var ui = FindCoreUI(link.PublicOpID);
 
                     if (ui != null)
                     {
@@ -195,7 +192,7 @@ namespace DeOps
                 {
                     IdentityLink link = IdentityLink.Decode(arg);
 
-                    var target = FindCore(link.PublicOpID);
+                    var target = FindCoreUI(link.PublicOpID);
 
                     if (target != null)
                     {
@@ -209,7 +206,7 @@ namespace DeOps
             return false;
         }
 
-        public CoreUI FindCore(byte[] pubOpID)
+        public CoreUI FindCoreUI(byte[] pubOpID)
         {
             foreach (var ui in CoreUIs)
                 if (Utilities.MemCompare(ui.Core.User.Settings.PublicOpID, pubOpID))
@@ -226,7 +223,7 @@ namespace DeOps
                 return;
             }
 
-            Simulator = new SimForm();
+            Simulator = new SimForm(this);
             Simulator.FormClosed += new FormClosedEventHandler(Window_FormClosed);
             Simulator.Show();
         }
@@ -318,7 +315,7 @@ namespace DeOps
             return false;
         }
 
-        internal void ShowCore(OpCore core)
+        internal void LoadCore(OpCore core)
         {
             var ui = new CoreUI(core);
             core.Exited += RemoveCore;
@@ -331,18 +328,7 @@ namespace DeOps
 
         internal void RemoveCore(OpCore removed)
         {
-            if (removed == Context.Lookup)
-                return;
-
-            Context.Cores.LockWriting(delegate()
-            {
-                foreach (OpCore core in Context.Cores)
-                    if (core == removed)
-                    {
-                        Context.Cores.Remove(core);
-                        break;
-                    }
-            });
+            Context.RemoveCore(removed);
 
             CoreUI removeUI = null;
 
@@ -360,7 +346,6 @@ namespace DeOps
                 CoreUIs.SafeRemove(removeUI);
             }
 
-            Context.CheckLookup();
             CheckExit();
         }
 
@@ -377,7 +362,7 @@ namespace DeOps
 
                 if (Context.Sim == null) // context not running inside a simulation
                 {
-                    Properties.Settings.Default.Save();
+                    Settings.Save();
 
                     if (Simulator == null) // simulation interface closed
                         ExitThread();

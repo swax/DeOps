@@ -194,8 +194,8 @@ namespace DeOps.Simulator
 
             if (core.Network.IsLookup)
             {
-                AddAddress(new IPEndPoint(core.Sim.RealIP, core.Network.LookupConfig.TcpPort), core.Network, true);
-                AddAddress(new IPEndPoint(core.Sim.RealIP, core.Network.LookupConfig.UdpPort), core.Network, false);
+                AddAddress(new IPEndPoint(core.Sim.RealIP, core.Network.Lookup.Ports.Tcp), core.Network, true);
+                AddAddress(new IPEndPoint(core.Sim.RealIP, core.Network.Lookup.Ports.Udp), core.Network, false);
             }
             else
             {
@@ -219,8 +219,8 @@ namespace DeOps.Simulator
         {
             if (core.Network.IsLookup)
             {
-                TcpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.Network.LookupConfig.TcpPort));
-                UdpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.Network.LookupConfig.UdpPort));
+                TcpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.Network.Lookup.Ports.Tcp));
+                UdpEndPoints.Remove(new IPEndPoint(core.Sim.RealIP, core.Network.Lookup.Ports.Udp));
             }
             else
             {

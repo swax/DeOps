@@ -125,6 +125,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppSettings.cs" />
     <Compile Include="AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -733,11 +734,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-      <DependentUpon>Settings.settings</DependentUpon>
-    </Compile>
     <Compile Include="Services\Trust\TrustPackets.cs" />
     <Compile Include="Services\Update\UpdateForm.cs">
       <SubType>Form</SubType>
@@ -765,7 +761,6 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Services\Voice\WinMM.cs" />
-    <Compile Include="Settings.cs" />
     <Compile Include="Simulator\GenerateUsers.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -976,10 +971,6 @@
     <None Include="Interface\Res\plans.png" />
     <None Include="Graphics\leftarrow.png" />
     <None Include="Graphics\rightarrow.png" />
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
     <EmbeddedResource Include="Interface\ErrorReport.resx">
       <DependentUpon>ErrorReport.cs</DependentUpon>
       <SubType>Designer</SubType>
