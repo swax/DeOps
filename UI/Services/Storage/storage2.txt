@@ -1,0 +1,378 @@
+
+integration
+
+	Auto-Integrate (id)
+		For each file/folder uid
+			If file/folder not flagged as modified
+				Set current file to our latest
+				from self to highest
+					if current is integrated (files only)
+						set current file to higher's latest
+						break
+					for each file/folder in higher's archive
+						if itemdiff is same and date is equal or newer than now
+							set current file to higher's latest
+							break
+						else
+							break
+							
+				if current file/folder is not our own (itemdiff)
+					Call update function which
+						replace our current with this new file
+						if unlocked, overwrites
+						replace should also use this function
+						merges integration list for nodes adjacent to ourselves
+						
+					only 'save' if file system in a saved state
+						still merge with unsaved file system, just won't be made permanent till save is clicked
+						
+	RefreshHigherChanges(id)
+		remove current cached entries
+		for each uid
+				cache archive archive files newer than current file
+				cache latest integrated file from node on path to ourselves
+				if uid does not exist
+					check all uids to see if dupe exists with diff uid (itemdiff)
+					if exists, replace our uid, with higher's uid
+					else if name conflict create locally, remame local .old.
+					else create locally
+					
+	on link update
+		remove all cache enties
+		load higher nodes
+	
+	cache header
+		forech project
+			if header is higher or equal to self
+				RefreshCacheEntries
+				if not startup
+					run auto-integrate
+			
+	on startup
+		run auto-integrate (really needs to be multi-threaded)
+
+	why
+		this method lets branches work on their own projects without highers of higher's changes overwrite local stufff
+		enforces  integration chain leading up to top
+		if middle higher offline, can still inherit files that middle higher never touched
+		always in sync with files that local doesnt work with, but higher changes
+		red triangle will be reserved for real conflicts
+
+
+
+
+notes		
+	gotta have file system locked when de-ops closes - this is because we cant track modifications to file system when de-ops is closed
+		if files are deleted / renamed / modified when de-ops is closed re-synching is messy, like we wouldnt know if renamed file
+		was deleted or rename, which files should be rehashed
+
+	control has working structure that dupes loaded strucutre
+		folders tagged with locked/unlocked
+		unlocking anything puts watcher at root
+
+	default sync to directory my files (unlock)
+		load storage interface shows syncing progress bar, also represeents up / down comparing, triggered on refresh
+		sync to directory could work for remote storages as well
+		interface watches for changes, updates relevant files when event raised
+		mark where sync / storage file differ
+			use html info interface to give user intelligent options
+				keep / discard file
+				simple icon overlays, not too much interpretation, leave that to html info
+		secure by packing / encrypting sync directory on exit
+		dont need temp location for hashs, stick them in working
+		only overlapping files need to be hashed, not creates or even renames
+		do changes to working in control
+		
+	ghosts are files that were either deleted or moved, they serve as markers for others
+		when syncronizing their file system to yours
+		delete permanently if no history exists of file
+
+
+application 
+	close
+		delete opened file system / temp files
+
+interface
+	Variables 
+		Dictionary<FolderID, FolderItem> FolderMap
+
+	loading 
+		Refresh
+	
+	Update Storage
+		if in local area
+			Refresh
+			
+	Refresh
+		save current view, folder id list / selected file or folder id
+		clear everything
+			
+		if local LoadBase working Storage File, if none use cached
+			unlocked - use in memory storage file
+		
+		call Compare Storage for supers / self(cached) / adj / subs
+		
+		expand to any changed folders
+		
+	LoadBase
+		unencrypt storage file
+		root is dummy folder id 0
+		load up FolderMap / FileMap
+		show folders expand first level
+		select root folder, show files
+		just non archived of course
+		
+	Compare Storage
+		unencrypt file / set focused
+		
+		recurse from root (folder id list passed through)
+			foreach folder
+				read attributes (check if should be compared)
+				
+				if local folder ID present locally
+					FolderItem.NewChange = remote action date > local action date
+					add remote StorageFolder packet to changes of local FolderItem
+				else if remote folder not archived but belongs here
+					create new FolderItem, set remote to true, put in changes as well
+				
+				foreach file
+					read attributes (check if should be compared)
+					
+					if local file ID present
+						if hashes the same, no change
+						else
+							add StorageFile to FileItem.Changes
+							FileItem.NewChange = remote action date > local action date
+
+					else if remote file not archived
+						create new FileItem, set remote to true
+
+	unlocked working folder update
+		find file / folder
+			re-apply diffs from supers / self(cached) adj / subs
+
+
+	Move file / folder
+		leaves single archived file in place with move flag
+		all other archives moved to new location
+		use same key for file id
+		
+	Delete file / folder
+		remove current, only thing left is archived tagged
+		
+	open file
+		creates that file in right spot in <user project storage> dir
+	
+	Top area
+		Unlock icon - pressed checks down, tells users where files will be going Browse.., OK, Cancel
+			only for local, remote stores can use extract if want to see directory on file system
+		Show archived button - shows archived files from local / working file
+		Compare Storage to <ComboBox> -> None, *Local Area, Higher, Lower, Select..(link browser)
+
+	folder pane
+		icon - reflect file changes
+		grey text if file is not part of storage system
+		
+		right click (if local)
+			local - lock / unlock, remote extract
+			history
+			if flagged, accept change
+				rename - rename
+				create - create
+				delete - remove
+				move - find folder id
+				
+	file pane
+		display files for selected folder
+		columns name / size / attributes
+		icon - red / blue / grey corner triangles for up/down changes
+			green / orange center triangles for commits / conflicts
+		translucent icon for non commited
+		grey text if file is not part of storage system,
+		
+		right click
+			history
+			attributes
+			if flagged, accept change
+			if file item Temp
+				Add File to Common Storage
+		
+		double click extracts to correct position and opens
+		
+	info pane
+		information ( what ever icon / status explain)
+			folder flag
+				moved/deleted/renamed/created
+			folder unlocked to (location)
+			locked?
+		
+		pending changes list - color coded
+			who / date / change / open / diff / accept
+			
+	history
+		listbox of archived files / folders
+			allow user to edit note for each archived entry
+			right click
+				delete archived item
+		box at bottom allows maximum to be put on archived versions
+			
+	bottom area
+		save / discard changes
+		sync
+		
+	Structures
+		FolderItem
+			FolderItem Parent
+			StorageFolder Packet
+			bool Remote - if true, the storage packet above is not local, meaning not in our local store, meaning grey out the text when displaying
+			bool NewChange - falgged if object modified, also set on localfile/folder events
+			dictionary<whoID, StorageFolder> Changes
+				displayed in info pane, allow user to choose which to commit
+			List<FileItem> Files
+			
+		FileItem
+			Temp
+			StorageFile File
+			dictionary<whoID, StorageFile> Changes
+		
+control
+	Variables
+		<ulong, OpStorage> StorageMap
+		<ulong, OpFile> FileMap
+
+		LocalFolder LocalRoot
+
+
+	Generic
+		Core_Load
+			LoadHeaders
+			
+			LoadLocalStorage()
+				
+		Close
+			LockLocalStorage
+			ask to re-lock storage msg user that certain changes will be unable to be tracked
+				
+		Core_Timer
+			Save headers if requested
+			Prune StorageMap
+			Check FileMap
+				If reference count zero delete
+			
+		Load Headers
+			Read header file
+			Process_StorageHeader for each header
+		
+		Save Headers
+			Read StorageMap
+			Write headers to file
+			
+		Process_StorageHeader
+			Check version
+			
+		Cache Storage
+			if doesnt exist
+				DownloadStorage() and return
+				
+			remove old FileMap entries
+				decrease reference count
+				
+			put header into StorageMap
+			trigger SaveHeaders
+			
+			foreach file
+				Cache File()
+
+		DownloadStorage
+			Do storage search at targets location with storage type and version parameters
+
+		Cache File
+			if hash entry not in FileMap
+				DownloadFile() and return
+					
+			put into FileMap
+				increase reference count
+		
+		DownloadFile
+			Do storage search at targets location with hash parameter
+			
+		Search_Local
+			look up key in StorageMap
+			
+		Transfers_FileSearch
+			Read parameters
+				storage type, lookup in StorageMap
+				file type, lookup in FileMap
+				
+		Transfers_FileRequest
+			Read parameters
+				storage type, lookup path in StorageMap
+				file type, lookup path in FileMap
+			
+	Special
+		LoadLocalStorage
+			load working storage file
+				if no working, load cached
+		
+			init LocalRoot which is a LocalFolder type
+		
+			foreach folder
+				create LocalFolder
+				
+				foreach file
+					create LocalFile
+	
+		Unlock local storage
+			unpack working file
+				packet file ids, and non cached files
+				
+			Compare directories / files with public LocalRoot structure
+			
+			Setup watch
+			
+		Lock
+			Save Working Storage File
+				load working file, get latest file ids from cached stoarge file
+			
+			pack working directory
+			
+			Stop watch
+			
+		Watch
+			Add file - add entry to public structure, set added = false
+			
+		Storage Cache entry update
+			If above or self
+				Auto merge in changes, conflicts arise when local commit date > remote commit date
+		
+			if unlocked - replace files, respect commit, ensure backups
+
+	
+structures
+	OpStorage
+		StorageHeader Header
+		Dht info
+	
+	OpFile
+		Reference count 
+		
+	LocalFolder
+		StorageFolder Packet
+	
+	LocalFile
+		StorageFile Packet
+		archives
+		
+	packets
+		StorageFolder
+			Archived
+			action moved/deleted/created/rename
+			acttion date
+			note - moved from x to y, etc..
+			ID
+			Name
+			
+		
+future 
+	publish to network at location of the file hash a small structure pointing to self as a location for the file
+		make sure its a low level priority publish

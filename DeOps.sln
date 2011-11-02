@@ -1,6 +1,8 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeOps", "DeOps.csproj", "{83CFFBE4-8EB9-446D-851A-3874799F3172}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UI", "UI\UI.csproj", "{83CFFBE4-8EB9-446D-851A-3874799F3172}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{1896627D-18E4-4687-AE49-35226EC91540}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,6 +14,10 @@ Global
 		{83CFFBE4-8EB9-446D-851A-3874799F3172}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{83CFFBE4-8EB9-446D-851A-3874799F3172}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{83CFFBE4-8EB9-446D-851A-3874799F3172}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1896627D-18E4-4687-AE49-35226EC91540}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1896627D-18E4-4687-AE49-35226EC91540}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1896627D-18E4-4687-AE49-35226EC91540}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1896627D-18E4-4687-AE49-35226EC91540}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,242 @@
+
+temp local files not kept in tree because it would screw up folder/file events if they were
+
+rewrite docs 
+	delete / create only done through de-ops interface, not file system
+
+
+Goals
+
+	50,000 dictionary entries at 50b each uses 2.5 MB of memory ~100b each
+
+	keep history of files
+	
+	able to lock / unlock specific directory structures
+
+	*update / diff interface
+
+
+Plan
+	Detail process, then flesh out spec
+	
+	Default - Storage unlocked, linked to <project> Files folder
+
+	Startup - watch folder, check for initial updates
+	
+	Load local storage file into memory
+	
+	File system change
+		Find target file entry
+		Add job to work queue
+	
+	New file
+		File created triggered
+	
+			File interface event
+				Interface refresh directory view
+				Reflect file add in storage interface
+			
+	Rename File
+		file rename trigger
+			
+			
+	Work queue item
+		Type: created/ ..
+		Path
+	
+	Work queue
+		switch type
+			created <revise> / change
+				encrypt / hash file / put in temp dir
+					put link to file in commit map <int, fileheder>
+					
+					if doesnt exist in local storage file
+						create new File header
+						put in local storage map
+					if exists in filemap if exact same that was deleted, do move
+						mark as moved to whatever new loc
+						
+						
+			renamed
+				find file in local storage file
+				archive previous entry
+				create new enntry
+				
+			
+			delete
+				archive latest version of files
+			
+		Hash file
+		modify public storage file
+		
+		
+	Commit 
+		Saves public storage file to external / publishes
+		
+	Discard
+		Ask user about clearing unlocked directory of changes
+		Restore old files encrypted cache
+		
+
+Application
+	Open
+		Load local storage file
+			Unlock files
+			
+	Close
+		Lock files
+		If commit flagged
+			Save current storage file as 'working copy'
+
+
+Structures
+	Local Settings
+		Storage Link
+			ProjectID / Directory
+
+	Storage Header
+		Size
+		Key
+		Hash
+		
+	Storage File (stored in stoarge ID folder)
+		Directory Packets
+		File Header Packets
+
+	Directory
+		Parent UID
+		UID
+		Date
+		Name (cannot contain '\', spaces trimmed)
+	
+	File Header
+		Directory ID
+		UID
+		User ID
+		Date
+		Name
+		Size
+		Hash
+		Key (each file has diff key) (updated versions / files should be inaccessible to those without access to latest version of storage file)
+		Archived
+		Keep x Revisions
+	
+	Cached File (in FileMap<int, CachedFile> )
+		Hash
+		Size
+		References
+	
+Control
+
+	Load Headers
+		Foreach storage file
+			Call Cache Storage
+
+
+	Loading Storage file for Browsing
+		Unencrypt storage file, put in temp dir
+		Read Root Dir / Files / Sub dirs
+			Save file pointers at subdirs
+		Load sub dir
+			Go to file pointer, load dirs/files
+			Save file pointers to subs
+		
+		Delete temp file when no longer 'focused'
+
+
+	Monitoring changes
+		Modify/Rename/Delete/Create
+		Signals Commit
+	
+	
+	Local
+		Starting up (loading local storage file)
+			Check that structure matchest dir structure if unlocked
+	
+		Default Unlocked
+			directory is /<Project> Files/
+		
+		Unlock (directory)
+			Show progress bar
+			tag working stoarge file directory as unlocked, watch for changes
+			Create directory path to that directory
+				Fill directory with unencrytped files
+			Ask if sub directories should be monitored
+				
+		Lock
+			Ask to commit changes
+			Delete directory	
+		
+		Commit
+			show progress bar which reflects hashing of new files				
+			encrypt new / changed files into general stoarge
+			rewrite local storage file
+						
+						
+	Network 
+		Cache Storage
+			If new version, and in cache range download new file
+			
+			Unload old storage file, decrease references
+			
+			Load remote storage file for caching
+				Foreach file
+					call cache file
+			
+		Cache File (file header)
+			if doesnt exist on system
+				download / return
+			
+			if doesnt exist in map
+				put into file map <hash, path>
+				
+			increase reference on CachedFile object
+					
+	Time
+		Foreach CachedFile in FileMap	
+			If File has 0 references remove
+	
+	Limits
+		Max MB to cache over all
+		Number of MBs of unqiues files to cache per node
+			preference newer files (outstanding MB is space unique to particular node)
+	
+	
+On Disk
+	Storage Directory
+		Header Files
+		
+		File Directory
+			Files - name is hash encoded with local key
+
+	
+Interface
+	Left side folders, right side files
+		right side bottom pane, extended file info
+			Downloaded %, type, past versions, commit/update
+	
+	Open Remote Storage
+		Search for remote storage header, download file
+		Load storage file, display directories / files
+		
+	File Icon
+		Translucent if not locally available
+		
+	File Extended Info Panel
+		Download Status
+		
+	Link local folder to storage root
+		Watch it for changes
+		Signal it for commit on change
+		
+	Refresh directory view
+		Show files from storage file
+		Show files in unlocked directory
+		
+	File Archive Interface
+		Show previous versions of file/directory with same UID
+		translucent for files not cached
+		if local allow user to delete files from the archive
+		
+	Columns
+		Icon / Name / Size / Last Commit

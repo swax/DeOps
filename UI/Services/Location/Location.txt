@@ -1,0 +1,88 @@
+
+old location scheme
+	every 3 mins node publishes loc info on network
+	peers keep their buddy lists alive by searching the network before location data expires
+	goal was to prevent someone with 1,000,000 buddies from being flooded off the network - their loc was replicated
+	resulted in too much continual researching
+			
+			
+new scheme
+
+
+	timer
+		ping those interested in when timeout reached
+		timeout expired interested
+		update localInterested
+		if loc not local or remote interested - remove
+		
+	send ping
+		latest remote loc version
+		
+	receive ping
+		put node on interested list
+		calc timeout
+		send notification 
+		
+		
+	send notify
+		with loc info if required, and timeout
+		signed location with UTC time embedded and version #
+		
+	receive notification
+		update node as being on/offline
+		
+	on address change
+		send notification to those interested
+		ping naturally sent will auto-include new loc info
+		re-publish new version of location info
+		
+	going offline
+		send notifactions to all those interested
+		
+	remote offline
+		recive notify dead
+		or, send ping and no notify reply - do a search
+		** if network not established, pause adding/removing
+		
+	loc list <routing id>
+		bool remoteInterested - we sent notifications to
+		bool localInterested - we send pings to
+		
+		int lastLocalVersionSent - send pings with loc info if out of date (not signed)
+		
+	replicate
+		auto replicate to new closer nodes. or not, save bandwidth, wait till situated on network
+		
+	notes
+		tags, local services updated another reason to run notification
+		search mechanism stays, but used as last resort
+		
+		remote interested is dict<routing, timeout> if nodes in remote interested, notifications sent through lightcomm
+			on recv end, ping timeouts reset
+	
+	local interest
+		loc service provides hook, asks services who are we interested in
+		trust component returns local region, 2 up, 2 down, revise l8r
+		chat returns those in rooms
+		buddies component returns buddies
+		
+		when person in tree list view is clicked (main interface only) check online is called
+			sets local interest, but probably removed on next pass that queries components
+		
+		those who have lost interest are not pinged, kept in cache but oldest pushed off after 64
+		
+		trust view - click
+			asks location service FindOnline(userID), set interest is temporary
+			if loc is good return true
+			if loc out of date, pinged
+			if unknown searched
+			once found it is pinged, not pinged after that, only if transfer view renews interest (manually)
+		
+		services should tell loc who they're interested in
+		when pruning needs to happen, loc asks them for updated list
+		
+	inteface
+		in person info, show online/offline/searching - research option
+		with green/red led graphic
+		
+	

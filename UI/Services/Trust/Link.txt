@@ -1,0 +1,93 @@
+
+
+IsTrusted(id) returns yes, no, checking - all componenents should implement
+
+
+
+------------------------------------
+minimal loading, not really necessary 50 isnt that much to have in tree, rest are auto pruned already
+
+load roots
+	expand to self
+	expand to selected
+update root links
+expand roots
+
+on expand
+	show child nodes
+	load but hide children of children
+	update child links
+		
+on collapse
+	remove nodes 2 levels down
+
+on select
+	update link
+
+interface link update
+	if removed, and on tree, remove from tree
+	if node's parent visible
+		add as hidden child	
+	
+
+-----------------------------------------------
+
+new link system
+	startup
+		load link files, as opposed to store data from profile
+		if local link file doesnt exist, create
+		connect to network...
+
+	post link header
+		find nodes closest to local id
+		send store req
+		
+	receive store req
+		if new 
+			update link header
+			get link file
+		if old
+			send current link header
+	
+	link search complete
+		post with closest node that didnt have link header
+	
+	receive search req
+		min version specified
+		
+	linkup/confirm/unlink
+		rebuild / post new link header
+
+	link header
+		version
+		file hash
+		
+	link file
+		header
+		project packets
+			id
+			name
+			title
+		link packets
+			uplink
+			user name?
+			project id
+
+
+replicated 
+	notify components of patch to be built
+	components built their own patch strucuture
+	
+	receive patch -> component
+		if dont have item in patch
+			start search for data specific to hash, stop when 1 found
+			bootstrap search with patch node
+			donwnload data on result
+
+ttl
+	components sign up for timer notification
+	handle their own data
+
+
+
+

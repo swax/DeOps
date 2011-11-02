@@ -1,0 +1,388 @@
+﻿
+	plot how bandwidth scales with latency - test with 3mb file
+		pumps	 ms		rate kb/s
+		 4		500		  35
+		 8 		250
+		20		100
+		40		 50
+	
+	**** debug 8 pump transfers, for some reason there are large spikes and then nothing, debug
+	
+	test limiting upload rate in context
+	test hard limit in simulator that drops udp / blocks tcp packets
+	
+	
+bugs
+	sim clean command storage / transfers
+	
+	peer bandwidth limits, investigation?
+	speeds at diff latencies? time total file transfer time
+		a 100 ping would be 50ms each way or 20 pulse rate
+	
+	light comm overflow
+	investigate data comm error
+
+	lan mode breakpoint?
+
+	remove trash files from service folder because delete can fail if file in use, next load clean
+
+	
+testing
+	change concurrent to 3 and ensure that transfers are queued 
+	kill a source mid transfer and ensure transfer gets moved back to pending
+	when sources gone ensure moved to partials
+	
+	publish new file in storage at top of network
+	time how long it takes to distribute file across entire network
+	
+	large random linked network, time how long file propagates, sim clean up to run test again quickly
+
+	transfers work between 2 open, open/nat, 2 nat, 2 blocked, global proxy
+	5mb file on 8 peer network, peers limited in bandwidth, does multisource work
+	5mb file on 128 peer network, how bogged down does source get? optimize for min bog
+	100 mp3s, syncing around network of 32
+
+	test with nats and firewalls
+		
+
+light comm
+	on end transfer search
+		add locations to light comm
+		
+	timer
+		prune 100 locations
+		prune locations not talked to in 30 minutes
+		
+		foreach location
+			if packets in queue
+			try send
+		
+	send packet
+		queue packet - give ID
+		try send
+		
+	location.trysend
+		send to first address
+		move address to back on list
+		set nextTry 3 seconds
+		increase attempts
+		
+		if attempts = addresses.length * 2 then send failed
+			remove packet from queue
+			location/addresses not removed (we or they could be temp disconnected, let caller decide when to stop comm)
+		
+	on ack
+		move addresss to front of list
+		remove packet from queue
+		
+	receive packet
+		add source addresses to lightComm
+		notify above service (transfer can add peer and pong back without worrying about addresses)
+			(send alts could send top 2 addresses from lightComm for each random peer)
+
+	remove net custom service packet
+
+multi-source d/l
+
+	transfer - if downloading or being uploaded from, the file is loaded as a transfer
+		bit field representing parts
+		peers
+			bitfield
+			bitfield out-of-date
+			last seen
+			next update
+			timeout
+			
+	search 
+		target service replies with completed files
+		transfer service replies with partial files
+		** search should cache - recent results - timeout after 1 min, multiple searches for samefile hosted at same id
+		
+	end search
+		locations searched for
+		added to transfer
+		add transfer locations
+		(maybe transfer response should just be addresses not locations) (as long as we get file with proper hash no security problem)
+		
+	add location
+		add loc to peers list for transfer
+		ping location
+		continually send transfer pings those around in mesh (60 sec default timeout)
+
+	send ping
+		time out 60 secs default
+		bitfield changed tag - when bitfield has changed since last ping - if remote host interested they will request updated bitfield
+		give alts tag - only on first ping (add location)
+		(pings only sent from incomplete hosts)
+		file hash/size
+	
+	recv ping
+		(host must be incomplete to recv ping)
+		check if we have file and that it should be loaded
+		on error return pong - error 
+		add/update host in peers list
+		mark peer's bitfield out-of-date
+		if haven't sent alts - send random 3 alts (upon first contact will send more alts)
+		calc min timeout for no more than 1 ping ever 3 seconds (similar to webcache response)
+		send pong ok
+		
+	recv  pong
+		ok - set min ping timeout
+		error - remove location from peers
+		process alts (add locations)
+		
+	mini-dht
+		have entire file
+			dht consists of those closest who need the file
+		have part of file
+			dht consts of closests with/without entire file
+		max 16 closest. those outside dont ping,  if they ping us keey them in
+			dont need up/down closest because if someone pings us we keep them in our peer list
+		
+	on timer
+		for each transfer
+			if pending transfers - limit 20 incomplete active transfers for now
+				if donwload bandwidth available, and waited the longest, move to active
+		
+			ping those in transfer list who need to be pinged
+				only if not completed, if completed dont ping at all, require remotes to ping us stay alive
+					?? preference transfers that are closest to completed to send pings to
+					?? dont send a ping to the same host twice for 2 different transfers
+				
+			remove peers that haven't pinged us - 
+				no peers and complete discard, incomplete - notify failure
+			
+		if no transfers loaded
+			set WaitingSince to now
+			
+		else if active transfer slots exist (total transfers across context must be less than  u/l bw / 7kb)
+			bandwidth available for upload and 
+			we have the oldest WaitingSince of whole context and
+			select piece returns true
+			
+			add piece/host to active transfers list
+				
+			set WaitingSince to now
+		
+	
+	select piece
+		preference local incomplete transfers\
+		preference last  piece (contains sub-hashes)
+		pick transfer that has waited the longest (zero wait, next iter will be next transfer)
+		pick host that has waited the longest (zero wait, next iter will be next host)
+		pick piece that is the rarest that the remote host needs
+		if we dont have a piece to send (loop hosts, then loop transfers)
+		return true host/piece
+		
+		loop host that has waited the longest
+			loop until piece found
+				transfer the rarest piece the host needs for its most near-complete file
+					near-complete (bytes until completion) small files preferenced first (link files get through) 
+		
+	current host map - preference file that host last transferred?
+	
+	add piece/host to active transfers
+		connect to host
+		if bit-field out of date request
+		re-evaluate piece to send
+		send header (start byte)
+		start transferring
+		on close connect - remove from active transfer
+		
+	recv header
+		if already transferring piece, send cancel (try again / dont try if nothing else to send)
+		mark piece as transferring by tagging byte ranges (might be able to do sub-part transfers by modding byte range)
+			once byterange of chunk finished / verified its added to local bitfield
+		remote allows 3 retries before cancelling transfers
+		
+	recv data
+		on last data piece
+			if contains sub-hashes - process sub-hashes (how many sub-hashes can 256kb chunk contain?)
+			sub-hash data (if bad mark host, 3 bad pieces tag host)
+	on close
+		send 'going offline' to hosts in mesh
+		save partial transfers
+		do not auto-download on restart - but keep in case requested again
+		partials are not saved a second time unless utilized during next run
+	
+	how to know bandwidth is available to send? set a mark at first, and then auto-figure out
+		max upload rate hit when transfers at full speed
+		record this high mark, and use to determine if room for concurrent transfers
+		default rate is 15 (starts with 1 transfer and quickly ramps up), min is 10
+		decrease high mark over time
+		allocate min of 7kb/s to each transfer (if we think we have 70kb up no more than 10 uploads)
+		implement max bandwidth in sim (drop packets over rate)
+		
+	partials	
+		serialize partials list every 15 seconds if changed
+		dont keep active list, just count local empty / incomplete in transfers
+		if havent received data for 3 mins, move transfer to back of pending (cycle quick back to active)
+			when moving transfer from pending to active, reset last seen so peers not auto removed
+		0 peers, and incomplete move to partials list
+		ensure when transfer started from partials that args and endevent are reset
+		on load, load partial info file, mark partial for removal on close
+			all otherm files in transfer dir deleted
+		if trasfer on a partial started, remove the mark
+		partials can be 'pulled out' by starting a new transfer
+		otherwise, never saved and deleted
+
+	tests 
+		3 node network
+		if transfer stalled for more than a 3 minutes and other transfers are pending switch it out
+		64 node network
+			disable most services
+			turn logging off
+			random linkup
+			distribute file from top
+		
+
+-------------------------------------------------------------------------------------------
+
+	analyze current algorithm
+		how to pause re-request file transfers? encapsulate in g2?
+		are there different 'streams' for file transfers control and data?
+		round robin low level  udp send buffer?
+
+		current algorithm dl/ul
+				Start d/l puts file in pending queue
+				Move to active when less than 5 active
+				New active searches for target
+				
+
+	a transfer doesn't keep track of more than 20 peers
+		peer list like mini-dht every 2 slots is xor closer to local
+		empty slots are filled with closest xor nodes, 2 up, and 2 down
+		a node will always be gaurenteed a community in file transfer
+		support web cache in mesh
+		
+		
+	on connection
+		peers exchange caches of those close to each other
+		peers exhcange bitfields
+		keep master bytefield of rarity of parts, add/subtract to it as need be
+		part hashes if requested
+		
+	client starts sending remote rarest piece remote doesnt have
+		remote acknowledges and starts writing, or cancles transfer if receiving already from faster source
+		cancel message includes preference for particular or no piece at all
+		
+	who to send to 
+		clients are sent chunks round robin to who needs them
+		no need to client to signal choked, server decides when to send based on if remote is interested
+		give u/l pref to partial-files (files local host is downloading)
+		
+	what do we know
+		we know our send rate total and per node based on acknowledgements
+		we know we want 5kb/s at least as overhead for network comm
+		we know if remote is dropping packets because they are re-requested
+		
+	bandwidth test (needed?)
+		once connected to network
+		select 10 closests nodes
+		send at full speed to all hosts for 10 seconds
+		record u/l speed
+		re-test every hour
+	
+		once u/l speed determined 
+			if > 10kb/s ensure transfers remain at that level minus 7kb/s
+			if < 10kb/s transfers remain at half determined speed
+		
+	how many and how fast to send to
+		slot speed set at 7 so 256kb block transferred in 30secs slowest
+		transfer slots maxed at u/l speed / 7
+		if u/l speed < 85% of determined max allow another slot
+		stop allowing more slots if average u/l speed < 4kbs
+		
+		transfer control is aware of pending transfers
+		decisions are managed context wide
+		when slot avaialable transfer is selected by component (round robin), then FCFS for multiple transfers in component
+			transfer awarded slot, transfers chunk
+			when finished requests from control to keep slot
+
+
+	securing files
+		encrypt file to temp
+		hash 256kb parts and total
+		attachlist of parts to end of file
+		attached encypted size to end of file
+		
+		when decrypting file back size read to figure how much to decrypt
+		transfer reads back of file for size/parts and sends to client when requested
+
+		large partial files should be saved between runs
+
+	if blocked favor open hosts, dont want to double bw d/ling from NAT/blocked
+
+	transfers interface
+		show current files considered as transfers in tree view no diff up/down
+		option to show context wide
+		main: hash, size, parts graphic
+		subs: name, status (pending / 5kb/s), parts graphic
+		
+	testing 
+		in network view, seed file and watch, implement bw limits in simulator
+		each node shows a progress bar of the files completion
+		optimize for max propagation through network
+		
+		
+		
+		
+OLD multi-source d/l
+	a transfer doesn't keep track of more than 20 peers
+		peer list like mini-dht every 2 slots is xor closer to local
+		empty slots are filled with closest xor nodes, 2 up, and 2 down
+		a node will always be gaurenteed a community in file transfer
+		
+	on connection
+		peers exchange caches of those close to each other
+		peers exhcange bitfields
+		
+	client starts sending remote rarest piece remote doesnt have
+		remote acknowledges and starts writing, or cancles transfer if receiving already from faster source
+		cancel message includes preference for particular or no piece at all
+		
+	who to send to 
+		clients are sent chunks round robin to who needs them
+		no need to client to signal choked, server decides when to send based on if remote is interested
+		
+	what do we know
+		we know our send rate total and per node based on acknowledgements
+		we know we want 5kb/s at least as overhead for network comm
+		we know if remote is dropping packets because they are re-requested
+		
+	bandwidth test
+		once connected to network
+		select 10 closests nodes
+		send at full speed to all hosts for 10 seconds
+		record u/l speed
+		re-test every hour
+	
+		once u/l speed determined 
+			if > 10kb/s ensure transfers remain at that level minus 7kb/s
+			if < 10kb/s transfers remain at half determined speed
+		
+	how many and how fast to send to
+		slot speed set at 7 so 256kb block transferred in 30secs slowest
+		transfer slots maxed at u/l speed / 7
+		if u/l speed < 85% of determined max allow another slot
+		stop allowing more slots if average u/l speed < 4kbs
+		
+		transfer control is aware of pending transfers
+		when slot avaialable transfer is selected by component (round robin), then FCFS for multiple transfers in component
+			transfer awarded slot, transfers chunk
+			when finished requests from control to keep slot
+
+	securing files
+		encrypt file to temp
+		hash 256kb parts and total
+		attachlist of parts to end of file
+		attached encypted size to end of file
+		
+		when decrypting file back size read to figure how much to decrypt
+		transfer reads back of file for size/parts and sends to client when requested
+
+	testing 
+		seed large file at 20 hosts
+		watch test node d/l the file
+	
+	
