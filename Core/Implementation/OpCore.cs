@@ -691,6 +691,7 @@ namespace DeOps.Implementation
         {
             // if main interface not closed (triggered from auto-update) then properly close main window
             // let user save files etc..
+            // do this before shutting down services so they're still available to do clean up
             if (Exited != null)
                 Exited(this);
 

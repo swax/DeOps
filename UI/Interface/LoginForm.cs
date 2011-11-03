@@ -45,6 +45,8 @@ namespace DeOps.Interface
 
             InitializeComponent();
 
+            Text = "DeOps Alpha v" + app.Context.LocalSeqVersion.ToString();
+
             SplashBox.Controls.Add(VersionLabel);
             VersionLabel.Left = SplashBox.Width - VersionLabel.Width;
             VersionLabel.Top = SplashBox.Height - VersionLabel.Height;
@@ -99,7 +101,7 @@ namespace DeOps.Interface
         private void LoadProfiles(string root)
         {
             foreach (string directory in Directory.GetDirectories(root))
-                foreach (string file in Directory.GetFiles(directory, "*.rop"))
+                foreach (string file in Directory.GetFiles(directory, "*.dop"))
                 {
                     foreach (OpComboItem item in OpCombo.Items)
                         if (item.Fullpath == file)
@@ -364,9 +366,7 @@ namespace DeOps.Interface
 
             try
             {
-                newCore = new OpCore(Context, item.Fullpath, TextPassword.Text);
-
-                App.LoadCore(newCore);
+                App.LoadCore(item.Fullpath, TextPassword.Text);
 
                 App.Settings.LastOpened = item.Fullpath;
 

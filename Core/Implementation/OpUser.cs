@@ -199,7 +199,7 @@ namespace DeOps
                 return;
             }
 
-            string backupPath = ProfilePath.Replace(".rop", ".bak");
+            string backupPath = ProfilePath.Replace(".dop", ".bak");
 
 			if( !File.Exists(backupPath) && File.Exists(ProfilePath))
 				File.Copy(ProfilePath, backupPath, true);

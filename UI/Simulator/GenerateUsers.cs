@@ -114,7 +114,7 @@ namespace DeOps.Simulator
                 int index = Rnd.Next(0, orgs);
 
                 string filename = OpNames[index] + " - " + name;
-                string path = OutputFolderLink.Text + Path.DirectorySeparatorChar + filename + Path.DirectorySeparatorChar + filename + ".rop";
+                string path = OutputFolderLink.Text + Path.DirectorySeparatorChar + filename + Path.DirectorySeparatorChar + filename + ".dop";
                 Directory.CreateDirectory(OutputFolderLink.Text + Path.DirectorySeparatorChar + filename);
                 string password = name.Split(' ')[0].ToLower(); // lower case first name is password
 
@@ -123,7 +123,7 @@ namespace DeOps.Simulator
                 if (CreateGlobal.Checked)
                 {
                     filename = "Global IM - " + name;
-                    path = OutputFolderLink.Text + Path.DirectorySeparatorChar + filename + Path.DirectorySeparatorChar + filename + ".rop";
+                    path = OutputFolderLink.Text + Path.DirectorySeparatorChar + filename + Path.DirectorySeparatorChar + filename + ".dop";
                     Directory.CreateDirectory(OutputFolderLink.Text + Path.DirectorySeparatorChar + filename);
                     OpUser.CreateNew(path, "Global IM", name, password, AccessType.Secret, null, true);
                 }

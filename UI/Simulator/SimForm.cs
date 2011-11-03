@@ -146,7 +146,7 @@ namespace DeOps.Simulator
 
             foreach (string dir in dirs)
             {
-                string[] paths = Directory.GetFiles(dir, "*.rop");
+                string[] paths = Directory.GetFiles(dir, "*.dop");
 
                 foreach (string path in paths)
                 {

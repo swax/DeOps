@@ -34,7 +34,7 @@ using DeOps.Services.Update;
 
 namespace DeOps
 {
-    public class DeOpsContext
+    public class DeOpsContext : IDisposable
     {
         public OpCore Lookup;
         public LookupSettings LookupConfig;
@@ -63,6 +63,7 @@ namespace DeOps
 
         public Icon DefaultIcon;
 
+
         public DeOpsContext(string startupPath, Icon defaultIcon)
         {
             StartupPath = startupPath;
@@ -89,6 +90,16 @@ namespace DeOps
 
             // starting up simulated context context->simulator->instances[]->context
             Sim = sim;
+        }
+
+        public void Dispose()
+        {
+            if (Lookup != null)
+                Lookup.Exit();
+
+            var copyList = new List<OpCore>();
+            Cores.SafeForEach(c => copyList.Add(c));
+            copyList.ForEach(c => c.Exit());
         }
 
         float FastestUploadSpeed = 10;
@@ -142,11 +153,17 @@ namespace DeOps
             }
         }
 
-        public void AddCore(OpCore core)
+        public OpCore LoadCore(string userPath, string pass)
         {
+            var core = new OpCore(this, userPath, pass);
+
             Cores.SafeAdd(core);
 
+            core.Exited += RemoveCore;
+
             CheckLookup();
+
+            return core;
         }
 
         public void RemoveCore(OpCore removed)
@@ -169,6 +186,7 @@ namespace DeOps
 
         public void CheckLookup()
         {
+            // adds or removes the lookup core
             // called from gui thread
 
             bool runLookup = false;
@@ -184,6 +202,8 @@ namespace DeOps
                 if (runLookup && Lookup == null)
                 {
                     Lookup = new OpCore(this);
+
+                    FindLocalIP();
                 }
 
                 // else destroy global context
@@ -193,6 +213,45 @@ namespace DeOps
                     Lookup = null;
                 }
             });
+        }
+
+        private void FindLocalIP()
+        {
+            if (Sim != null)
+                return;
+
+            try
+            {
+                WebClient client = new WebClient();
+                client.DownloadStringCompleted += FindLocalIP_DownloadStringCompleted;
+                client.DownloadStringAsync(new Uri("http://checkip.dyndns.org/"));
+            }
+            catch { }
+        }
+
+        void FindLocalIP_DownloadStringCompleted(object sender, DownloadStringCompletedEventArgs e)
+        {
+            try
+            {
+                var result = e.Result;
+
+                if (result == null)
+                    return;
+
+                int first = result.IndexOf("Address: ") + 9;
+                int last = result.LastIndexOf("</body>");
+
+                string ip = null;
+                if (first != -1 && last != -1 && first < last)
+                    ip = result.Substring(first, last - first);
+
+                if (Lookup != null)
+                {
+                    Lookup.LocalIP = IPAddress.Parse(ip);
+                    Lookup.Network.SetLanMode(false);
+                }
+            }
+            catch { }
         }
 
         public bool CanUpdate()

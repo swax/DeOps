@@ -85,7 +85,7 @@ namespace DeOps.Interface.Startup
 
                 string path = BrowseLink.Text + Path.DirectorySeparatorChar + 
                     filename + Path.DirectorySeparatorChar + 
-                    filename + ".rop";
+                    filename + ".dop";
 
                 Directory.CreateDirectory(BrowseLink.Text + Path.DirectorySeparatorChar + filename);
 
@@ -119,12 +119,10 @@ namespace DeOps.Interface.Startup
 
                 OpUser.CreateNew(path, OpName, TextName.Text, TextPassword.Text, OpAccess, opKey, GlobalIM);
 
-                OpCore core = new OpCore(Context, path, TextPassword.Text);
+                var ui = App.LoadCore(path, TextPassword.Text);
 
                 if (Invite != null)
-                    core.ProcessInvite(Invite);
-
-                App.LoadCore(core);
+                    ui.Core.ProcessInvite(Invite);
 
                 DialogResult = DialogResult.OK;
                 Close();

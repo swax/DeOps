@@ -315,21 +315,20 @@ namespace DeOps
             return false;
         }
 
-        public void LoadCore(OpCore core)
+        public CoreUI LoadCore(string userPath, string pass)
         {
-            var ui = new CoreUI(core);
+            var core = Context.LoadCore(userPath, pass);
             core.Exited += RemoveCore;
 
+            var ui = new CoreUI(core);
             CoreUIs.SafeAdd(ui);
-            Context.AddCore(core);
-
             ui.ShowMainView();
+
+            return ui;
         }
 
         public void RemoveCore(OpCore removed)
         {
-            Context.RemoveCore(removed);
-
             CoreUI removeUI = null;
 
             CoreUIs.SafeForEach(ui =>
@@ -357,12 +356,10 @@ namespace DeOps
 
             if (Logins.Count == 0 && Context.Cores.SafeCount == 0)
             {
-                if (Context.Lookup != null)
-                    Context.Lookup.Exit();
-
                 if (Context.Sim == null) // context not running inside a simulation
                 {
                     Settings.Save();
+                    Context.Dispose();
 
                     if (Simulator == null) // simulation interface closed
                         ExitThread();
@@ -391,20 +388,7 @@ namespace DeOps
 
             UpdatePath = path;
         }
-    */
-
-        /* call home for alpha security
-        string build = Application.ProductName + "_" + Application.ProductVersion;
-        string name = SystemInformation.UserName;
-        string comp = SystemInformation.ComputerName;
-                
-        string x = Utilities.WebDownloadString("http://www.c0re.net/deops/checkin.php?build=" + build + "&comp=" + comp + "&name=" + name);
-
-        if (x == "**die**")
-            Application.Exit();*/
-        /*
-        }
-        catch { }
+    
     }*/
 
         void RegisterType()

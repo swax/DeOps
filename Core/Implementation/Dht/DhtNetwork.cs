@@ -937,7 +937,7 @@ namespace DeOps.Implementation.Dht
             }
         }
 
-        private void SetLocalIP(IPAddress localIP, G2ReceivedPacket packet)
+        public void SetLocalIP(IPAddress localIP, G2ReceivedPacket packet)
         {
             if (localIP != null && !packet.Tunneled)
             {
@@ -951,7 +951,7 @@ namespace DeOps.Implementation.Dht
             }
         }
 
-        private void SetLanMode(bool mode)
+        public void SetLanMode(bool mode)
         {
             if (LanMode == mode)
                 return;

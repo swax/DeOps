@@ -174,11 +174,9 @@ namespace DeOps.Simulator
             OpCore core = null;
 
             string pass = name.Split(' ')[0].ToLower(); // lowercase firstname
-            core = new OpCore(instance.Context, path, pass);
-
 
             instance.LastPath = path;
-            instance.Context.AddCore(core);
+            instance.Context.LoadCore(path, pass);
 
             if(InstanceChange != null)
                 InstanceChange(instance, InstanceChangeType.Update);
