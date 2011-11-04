@@ -171,8 +171,6 @@ namespace DeOps.Simulator
             instance.Name = name;
             instance.Ops.Add(op);
 
-            OpCore core = null;
-
             string pass = name.Split(' ')[0].ToLower(); // lowercase firstname
 
             instance.LastPath = path;

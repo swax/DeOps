@@ -7,6 +7,8 @@ using System.Text;
 using DeOps;
 using DeOps.Implementation;
 using System.IO;
+using System.Threading;
+using System.Security.AccessControl;
 
 
 namespace DeOpsConsole
@@ -15,93 +17,182 @@ namespace DeOpsConsole
     {
         static void Main(string[] args)
         {
-            string help = 
+            try
+            {
+                using (var app = new ConsoleApp())
+                    app.Run();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("App Error: " + ex.Message);
+            }
+        }
+    }
+
+    class ConsoleApp : IDisposable
+    {
+        TextWriter LogFile;
+
+        string HelpText =
 @"list  - shows a numbered list of loadable profiles
 load   - eg: load <profile#> <pass>
 ident  - de-ops user id for loaded profiles
 status - status of loaded profiles
+sleep  - suspends console for x seconds
 exit   - exit deops
 help   - show command list";
 
-            string startupPath = AppDomain.CurrentDomain.BaseDirectory;
+        DeOpsContext Context;
 
-            using (var context = new DeOpsContext(startupPath, null))
+        string StartupPath;
+
+
+        public void Dispose()
+        {
+            Context.Dispose();
+            LogFile.Dispose();
+        }
+
+        public void Run()
+        {
+            StartupPath = AppDomain.CurrentDomain.BaseDirectory;
+
+            try
             {
-                Console.WriteLine("DeOps Alpha v" + context.LocalSeqVersion.ToString());
+                LogFile = new StreamWriter(new FileStream("log.txt", FileMode.Create, FileAccess.Write, FileShare.Read));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error creating output file: " + ex.Message);
+                return;
+            }
 
-                while (true)
+            Context = new DeOpsContext(StartupPath, null);
+            
+            WriteOut("DeOps Alpha v" + Context.LocalSeqVersion.ToString());
+
+            if (File.Exists("init.txt"))
+            {
+                using (var init = new StreamReader(File.OpenRead("init.txt")))
                 {
-                    try
+                    string line = init.ReadLine();
+                    while (line != null)
                     {
-                        Console.Write("> ");
-                        string input = Console.ReadLine();
+                        Console.WriteLine("> " + line);
 
-                        if (input.CompareNoCase("exit"))
-                            break;
+                        if (!ProcessInput(line))
+                            return;
 
-                        else if (input.CompareNoCase("list"))
-                        {
-                            var profiles = GetProfiles(startupPath);
-
-                            for (int i = 0; i < profiles.Length; i++)
-                                Console.WriteLine("{0}. {1}", i + 1, Path.GetFileName(profiles[i]));
-
-                            if (profiles.Length == 0)
-                                Console.WriteLine("No profiles in startup directory found");
-                        }
-
-                        else if (input.StartsWith("load", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var parts = input.Split(' ');
-
-                            var profiles = GetProfiles(startupPath);
-
-                            var userPath = profiles[int.Parse(parts[1]) - 1];
-                            var pass = parts[2];
-
-                            var core = context.LoadCore(userPath, pass);
-
-                            Console.Clear();
-                            Console.WriteLine("Loaded op: {0}, user: {1}", core.User.Settings.Operation, core.User.Settings.UserName);
-                        }
-
-                        else if (input.CompareNoCase("ident"))
-                        {
-                            context.Cores.SafeForEach(c =>
-                                Console.WriteLine(c.GetIdentity(c.UserID))
-                            );
-                        }
-
-                        else if (input.CompareNoCase("status"))
-                        {
-                            Action<OpCore> showStatus = c => 
-                                {
-                                    Console.WriteLine("{0} - {1}:{2}:{3} - {4}", 
-                                        (c.User != null) ? c.User.Settings.Operation : "Lookup", 
-                                        c.LocalIP, 
-                                        c.Network.TcpControl.ListenPort, 
-                                        c.Network.UdpControl.ListenPort, 
-                                        c.Network.Established ? "Connected" : "Connecting...");
-                                };
-
-                            if (context.Lookup != null)
-                                showStatus(context.Lookup);
-
-                            context.Cores.SafeForEach(c => showStatus(c));
-                        }
-
-                        else if (input.CompareNoCase("help"))
-                            Console.WriteLine(help);
-
-                        else
-                            Console.WriteLine("unknown command: " + input);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine("Exception: " + ex.Message);
+                        line = init.ReadLine();
                     }
                 }
             }
+
+            while (true)
+            {
+                Console.Write("> ");
+                string input = Console.ReadLine();
+
+                // input is null if daemon so just loopity loop
+                if (input == null)
+                {
+                    Thread.Sleep(5000);
+                    continue;
+                }
+
+                if (!ProcessInput(input))
+                    return;
+            }
+            
+        }
+
+        bool ProcessInput(string input)
+        {
+            try
+            {
+                LogFile.WriteLine("> " + input);
+                LogFile.Flush();
+
+                if (input.CompareNoCase("exit"))
+                    return false;
+
+                else if (input.CompareNoCase("list"))
+                {
+                    var profiles = GetProfiles(StartupPath);
+
+                    for (int i = 0; i < profiles.Length; i++)
+                        WriteOut("{0}. {1}", i + 1, Path.GetFileName(profiles[i]));
+
+                    if (profiles.Length == 0)
+                        WriteOut("No profiles in startup directory found");
+                }
+
+                else if (input.StartsWith("load", StringComparison.OrdinalIgnoreCase))
+                {
+                    var parts = input.Split(' ');
+
+                    var profiles = GetProfiles(StartupPath);
+
+                    var userPath = profiles[int.Parse(parts[1]) - 1];
+                    var pass = parts[2];
+
+                    var core = Context.LoadCore(userPath, pass);
+
+                    WriteOut("Loaded op: {0}, user: {1}", core.User.Settings.Operation, core.User.Settings.UserName);
+                }
+
+                else if (input.CompareNoCase("ident"))
+                {
+                    Context.Cores.SafeForEach(c =>
+                        WriteOut(c.GetIdentity(c.UserID))
+                    );
+                }
+
+                else if (input.CompareNoCase("status"))
+                {
+                    Action<OpCore> showStatus = c =>
+                    {
+                        WriteOut("{0} - {1}:{2}:{3} - {4}",
+                            (c.User != null) ? c.User.Settings.Operation : "Lookup",
+                            c.LocalIP,
+                            c.Network.TcpControl.ListenPort,
+                            c.Network.UdpControl.ListenPort,
+                            c.Network.Established ? "Connected" : "Connecting...");
+                    };
+
+                    if (Context.Lookup != null)
+                        showStatus(Context.Lookup);
+
+                    Context.Cores.SafeForEach(c => showStatus(c));
+                }
+
+                else if (input.StartsWith("sleep"))
+                {
+                    var parts = input.Split(' ');
+
+                    Thread.Sleep(int.Parse(parts[1]) * 1000);
+                }
+
+                else if (input.CompareNoCase("help"))
+                    WriteOut(HelpText);
+
+                else
+                    WriteOut("unknown command: " + input);
+            }
+            catch (Exception ex)
+            {
+                WriteOut("Exception: " + ex.Message);
+            }
+
+            return true;
+        }
+
+        void WriteOut(string format, params object[] args)
+        {
+            Console.WriteLine(format, args);
+
+            LogFile.WriteLine(format, args);
+            LogFile.Flush();
         }
 
         static string[] GetProfiles(string rootPath)

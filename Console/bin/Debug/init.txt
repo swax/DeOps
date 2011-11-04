@@ -1,0 +1,4 @@
+load 1 john
+sleep 3
+ident
+status
