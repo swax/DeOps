@@ -1,3 +1,6 @@
+# use script to setup a lookup server
+# be careful using it as a server for your own network because password here is in plain text'
+
 load 1 john
 sleep 3
 ident

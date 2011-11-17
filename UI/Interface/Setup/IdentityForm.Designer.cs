@@ -91,8 +91,8 @@
             this.HelpLabel.Name = "HelpLabel";
             this.HelpLabel.Size = new System.Drawing.Size(323, 66);
             this.HelpLabel.TabIndex = 21;
-            this.HelpLabel.Text = "This can be used to send op invites to <name> or to add <name> to your buddy list" +
-                " or let other people know of <name> by publishing this link on the internet.";
+            this.HelpLabel.Text = "Give this link to people so that they can invite you to their organization secure" +
+                "ly.  It is safe to publish this link publicly.";
             this.HelpLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // IdentityForm

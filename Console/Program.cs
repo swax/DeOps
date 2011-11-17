@@ -34,13 +34,14 @@ namespace DeOpsConsole
         TextWriter LogFile;
 
         string HelpText =
-@"list  - shows a numbered list of loadable profiles
-load   - eg: load <profile#> <pass>
-ident  - de-ops user id for loaded profiles
-status - status of loaded profiles
-sleep  - suspends console for x seconds
-exit   - exit deops
-help   - show command list";
+@"list    - shows a numbered list of loadable profiles
+load     - eg: load <profile#> <pass>
+ident    - de-ops user id for loaded profiles
+adddress - address url of ops to be used for bootstrapping
+status   - status of loaded profiles
+sleep    - suspends console for x seconds
+exit     - exit deops
+help     - show command list";
 
         DeOpsContext Context;
 
@@ -75,16 +76,23 @@ help   - show command list";
             {
                 using (var init = new StreamReader(File.OpenRead("init.txt")))
                 {
-                    string line = init.ReadLine();
-                    while (line != null)
+                    string line = null;
+
+                    do
                     {
+                        line = init.ReadLine();
+                        if (line == null)
+                            break;
+
+                        if (line.StartsWith("#"))
+                            continue;
+
                         Console.WriteLine("> " + line);
 
                         if (!ProcessInput(line))
                             return;
 
-                        line = init.ReadLine();
-                    }
+                    } while (line != null);
                 }
             }
 
@@ -108,6 +116,9 @@ help   - show command list";
 
         bool ProcessInput(string input)
         {
+            if (string.IsNullOrEmpty(input))
+                return true;
+
             try
             {
                 LogFile.WriteLine("> " + input);
@@ -145,6 +156,13 @@ help   - show command list";
                 {
                     Context.Cores.SafeForEach(c =>
                         WriteOut(c.GetIdentity(c.UserID))
+                    );
+                }
+
+                else if (input.CompareNoCase("address"))
+                {
+                    Context.Cores.SafeForEach(c =>
+                        WriteOut(c.GetMyAddress())
                     );
                 }
 

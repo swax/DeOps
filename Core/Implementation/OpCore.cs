@@ -873,6 +873,37 @@ namespace DeOps.Implementation
             return link.Encode();
         }
 
+        public string GetMyAddress()
+        {
+            // deops://opname/address/pubOpId:userId:ip:tcp:udp
+
+            string link = string.Format("deops://{0}/bootstrap/{1}:{2}/{3}:{4}:{5}",
+                                        HttpUtility.UrlEncode(User.Settings.Operation), 
+                                        Utilities.BytestoHex(User.Settings.PublicOpID), 
+                                        Utilities.BytestoHex(BitConverter.GetBytes(UserID)), 
+                                        LocalIP, 
+                                        Network.TcpControl.ListenPort, 
+                                        Network.UdpControl.ListenPort);
+
+            return link;
+        }
+
+        public void AddBootstrapLink(string link)
+        {
+           /* if (link.StartsWith("deops://"))
+                link = link.Substring(9);
+            else
+                throw new Exception("Invalid Link");
+
+            string[] mainParts = link.Split('/', ':');
+            if (mainParts.Length < 4 || mainParts[1] != "bootstrap")
+                throw new Exception("Invalid Link");
+
+            // match op pub key with key in link, tell user if its for the wrong app
+
+            Network.Cache.AddContact(new DhtContact(user, 0, address, tcpPort, udpPort);*/
+        }
+
         public string GenerateInvite(string pubLink, out string name)
         {
             IdentityLink ident = IdentityLink.Decode(pubLink);
@@ -955,7 +986,7 @@ namespace DeOps.Implementation
                 Network.Cache.AddContact(contact);
 
             foreach (WebCache cache in invite.Caches)
-                Network.Cache.AddCache(cache);
+                Network.Cache.AddWebCache(cache);
         }
 
         public bool UserConfirm(string message, string title)
@@ -993,11 +1024,13 @@ namespace DeOps.Implementation
 
         public string Encode()
         {
-            string link = "deops://" + HttpUtility.UrlEncode(OpName) + "/ident/" + HttpUtility.UrlEncode(Name) + "/";
+            string link = string.Format("deops://{0}/identity/{1}/{2}:{3}",
+                                        HttpUtility.UrlEncode(OpName),
+                                        HttpUtility.UrlEncode(Name),
+                                        Utilities.BytestoHex(PublicOpID),
+                                        Utilities.BytestoHex(PublicKey));
 
-            byte[] totalKey = Utilities.CombineArrays(PublicOpID, PublicKey);
-
-            return link + Utilities.ToBase64String(totalKey);
+            return link;
         }
 
         public static IdentityLink Decode(string link)
@@ -1007,18 +1040,16 @@ namespace DeOps.Implementation
             else
                 throw new Exception("Invalid Link");
 
-            string[] mainParts = link.Split('/');
-            if (mainParts.Length < 4 || mainParts[1] != "ident")
+            string[] mainParts = link.Split('/', ':');
+            if (mainParts.Length < 4 || mainParts[1] != "identity")
                 throw new Exception("Invalid Link");
 
             IdentityLink ident = new IdentityLink();
 
-            ident.Name = HttpUtility.UrlDecode(mainParts[2]);
             ident.OpName = HttpUtility.UrlDecode(mainParts[0]);
-
-            byte[] totalKey = Utilities.FromBase64String(mainParts[3]);
-            ident.PublicOpID = Utilities.ExtractBytes(totalKey, 0, 8);
-            ident.PublicKey = Utilities.ExtractBytes(totalKey, 8, totalKey.Length - 8);
+            ident.Name = HttpUtility.UrlDecode(mainParts[2]);
+            ident.PublicOpID = Utilities.HextoBytes(mainParts[3]);
+            ident.PublicKey = Utilities.HextoBytes(mainParts[4]);
 
             return ident;
         }

@@ -207,10 +207,10 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Name = "Operation";
+            this.Name = "Organization";
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Operation";
+            this.Text = "Organization";
             this.Load += new System.EventHandler(this.Operation_Load);
             ((System.ComponentModel.ISupportInitialize)(this.IconPicture)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.SplashPicture)).EndInit();

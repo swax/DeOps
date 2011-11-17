@@ -47,17 +47,17 @@ namespace DeOps.Interface
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label1.Location = new System.Drawing.Point(12, 20);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(98, 13);
+            this.label1.Size = new System.Drawing.Size(114, 13);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Operation Name";
+            this.label1.Text = "Organization Name";
             // 
             // OpNameBox
             // 
             this.OpNameBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.OpNameBox.Location = new System.Drawing.Point(116, 17);
+            this.OpNameBox.Location = new System.Drawing.Point(132, 17);
             this.OpNameBox.Name = "OpNameBox";
-            this.OpNameBox.Size = new System.Drawing.Size(204, 20);
+            this.OpNameBox.Size = new System.Drawing.Size(188, 20);
             this.OpNameBox.TabIndex = 0;
             // 
             // ButtonCancel
@@ -143,8 +143,8 @@ namespace DeOps.Interface
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(245, 27);
             this.label4.TabIndex = 14;
-            this.label4.Text = "Only those invited can join. Utilizes the lookup network to aid in finding peers." +
-                "";
+            this.label4.Text = "Only those invited can join. Utilizes the lookup network to aid in finding member" +
+                "s.";
             // 
             // label5
             // 
@@ -182,7 +182,7 @@ namespace DeOps.Interface
             this.Name = "CreateOp";
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Create Operation";
+            this.Text = "Create Organization";
             this.ResumeLayout(false);
             this.PerformLayout();
 

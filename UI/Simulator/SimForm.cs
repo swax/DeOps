@@ -374,7 +374,7 @@ namespace DeOps.Simulator
                     global.MenuItems.Add(new MenuItem("Search", new EventHandler(Click_GlobalSearch)));
                 }
 
-                MenuItem operation = new MenuItem("Operation");
+                MenuItem operation = new MenuItem("Organization");
                 operation.MenuItems.Add(new MenuItem("Crawler", new EventHandler(Click_OpCrawler)));
                 operation.MenuItems.Add(new MenuItem("Graph", new EventHandler(Click_OpGraph)));
                 operation.MenuItems.Add(new MenuItem("Packets", new EventHandler(Click_OpPackets)));

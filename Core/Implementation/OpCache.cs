@@ -63,7 +63,7 @@ namespace DeOps.Implementation
                 WebCache cache = new WebCache();
                 cache.Address = "http://www.c0re.net/deops/cache/update.php";
                 cache.AccessKey = Convert.FromBase64String("O+6IRs7GY1r/JIk+DFY/VK+i8pFTWhsDfNH9R3j3f9Q=");
-                AddCache(cache);
+                AddWebCache(cache);
             }
         }
 
@@ -646,7 +646,7 @@ namespace DeOps.Implementation
                 stream.WritePacket(cache);
         }
 
-        public void AddCache(WebCache add)
+        public void AddWebCache(WebCache add)
         {
             // look for exact match
             foreach (WebCache cache in WebCaches)
@@ -685,18 +685,18 @@ namespace DeOps.Implementation
             return result;
         }
 
-        public void AddCache(List<WebCache> caches)
+        public void AddWebCache(List<WebCache> caches)
         {
             if (Core.InvokeRequired)
             {
-                Core.RunInCoreAsync(delegate() { AddCache(caches); });
+                Core.RunInCoreAsync(delegate() { AddWebCache(caches); });
                 return;
             }
 
             WebCaches.Clear();
 
             foreach (WebCache cache in caches)
-                AddCache(cache);
+                AddWebCache(cache);
         }
     }
 

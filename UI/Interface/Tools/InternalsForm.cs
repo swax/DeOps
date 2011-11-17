@@ -100,8 +100,8 @@ namespace DeOps.Interface.Tools
             // networks
             if(Core.Context.Lookup != null)
                 LoadNetwork(coreNode.Nodes, "Lookup", Core.Context.Lookup.Network);
-            
-            LoadNetwork(coreNode.Nodes, "Operation", Core.Network);
+
+            LoadNetwork(coreNode.Nodes, "Organization", Core.Network);
 
             // components
             StructureNode componentsNode = new StructureNode("Components", new ShowDelegate(ShowNone), null);
@@ -128,8 +128,8 @@ namespace DeOps.Interface.Tools
 
                     case 2://ServiceID.Location:  
                         StructureNode locNode = new StructureNode("Locations", new ShowDelegate(ShowLocations), null);
-                        locNode.Nodes.Add(new StructureNode("Lookup", new ShowDelegate(ShowLocGlobal), null)); 
-                        locNode.Nodes.Add(new StructureNode("Operation", new ShowDelegate(ShowLocOperation), null));
+                        locNode.Nodes.Add(new StructureNode("Lookup", new ShowDelegate(ShowLocGlobal), null));
+                        locNode.Nodes.Add(new StructureNode("Organization", new ShowDelegate(ShowLocOperation), null));
                         componentsNode.Nodes.Add(locNode);
                         break;
 
@@ -293,7 +293,7 @@ namespace DeOps.Interface.Tools
             listValues.Columns.Add("Value", 300, HorizontalAlignment.Left);
 
             listValues.Items.Add(new ListViewItem(new string[] { "ProfilePath", xStr(Core.User.ProfilePath) }));
-            listValues.Items.Add(new ListViewItem(new string[] { "Operation", xStr(Core.User.Settings.Operation) }));
+            listValues.Items.Add(new ListViewItem(new string[] { "Organization", xStr(Core.User.Settings.Operation) }));
             listValues.Items.Add(new ListViewItem(new string[] { "ScreenName", xStr(Core.User.Settings.UserName) }));
             listValues.Items.Add(new ListViewItem(new string[] { "OpPortTcp", xStr(Core.User.Settings.TcpPort) }));
             listValues.Items.Add(new ListViewItem(new string[] { "OpPortUdp", xStr(Core.User.Settings.UdpPort) }));

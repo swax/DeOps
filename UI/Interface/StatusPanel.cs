@@ -698,7 +698,7 @@ namespace DeOps.Interface
             {
                 if (url == "settings")
                 {
-                    new DeOps.Interface.Settings.Connecting(Core).ShowDialog();
+                    new DeOps.Interface.Settings.Connection(Core).ShowDialog(this);
                 }
             }
 

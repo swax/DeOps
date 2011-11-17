@@ -69,8 +69,9 @@ namespace DeOps.Interface
             this.HelpLabel.Name = "HelpLabel";
             this.HelpLabel.Size = new System.Drawing.Size(343, 49);
             this.HelpLabel.TabIndex = 17;
-            this.HelpLabel.Text = "To invite someone to <op>, you need to have their user identity from any op they " +
-                "are already apart of. For example their global IM identity. ";
+            this.HelpLabel.Text = "Ask the person you want to invite for their deops:// identity link. It can be fou" +
+                "nd by clicking on \'My Identity\' from the menu for any organization they are alre" +
+                "ady apart of.";
             this.HelpLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // IdentityBox

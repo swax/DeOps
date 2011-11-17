@@ -434,9 +434,9 @@ namespace DeOps.Interface
             settings.DropDownItems.Add(new ManageItem("User", null, () => new DeOps.Interface.Settings.User(core).Show(ui.GuiMain)));
             
             if(!core.User.Settings.GlobalIM)
-                settings.DropDownItems.Add(new ManageItem("Operation", null, () => new DeOps.Interface.Settings.Operation(core).Show(ui.GuiMain)));
+                settings.DropDownItems.Add(new ManageItem("Organization", null, () => new DeOps.Interface.Settings.Operation(core).Show(ui.GuiMain)));
 
-            settings.DropDownItems.Add(new ManageItem("Connecting", null, () => new DeOps.Interface.Settings.Connecting(core).Show(ui.GuiMain)));
+            settings.DropDownItems.Add(new ManageItem("Connection", null, () => new DeOps.Interface.Settings.Connection(core).Show(ui.GuiMain)));
             settings.DropDownItems.Add(new ManageItem("Ignore", null, () => new DeOps.Interface.Settings.IgnoreForm(ui).Show(ui.GuiMain)));
 
             items.Add(settings);

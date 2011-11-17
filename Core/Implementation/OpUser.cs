@@ -154,7 +154,7 @@ namespace DeOps
                                     lookup.Network.Cache.AddContact(CachedIP.Decode(root).Contact);
 
                                 if (root.Name == IdentityPacket.LookupCachedWeb)
-                                    lookup.Network.Cache.AddCache(WebCache.Decode(root));
+                                    lookup.Network.Cache.AddWebCache(WebCache.Decode(root));
                             }
 
                             if (loadMode == LoadModeType.AllCaches)
@@ -163,7 +163,7 @@ namespace DeOps
                                     Core.Network.Cache.AddContact(CachedIP.Decode(root).Contact);
 
                                 if (root.Name == IdentityPacket.OpCachedWeb)
-                                    Core.Network.Cache.AddCache(WebCache.Decode(root));
+                                    Core.Network.Cache.AddWebCache(WebCache.Decode(root));
                             }
                         }
                     }
@@ -840,7 +840,7 @@ namespace DeOps
                                 network.Cache.AddContact(CachedIP.Decode(root).Contact);
 
                             if (root.Name == IdentityPacket.LookupCachedWeb)
-                                network.Cache.AddCache(WebCache.Decode(root));
+                                network.Cache.AddWebCache(WebCache.Decode(root));
                         }
                     }
                 }

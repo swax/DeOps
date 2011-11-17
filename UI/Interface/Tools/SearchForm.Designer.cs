@@ -57,7 +57,7 @@ namespace DeOps.Interface.Tools
             this.RadioOp.Size = new System.Drawing.Size(71, 17);
             this.RadioOp.TabIndex = 1;
             this.RadioOp.TabStop = true;
-            this.RadioOp.Text = "Operation";
+            this.RadioOp.Text = "Organization";
             this.RadioOp.UseVisualStyleBackColor = true;
             // 
             // TextSearch

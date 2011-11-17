@@ -948,7 +948,7 @@ namespace DeOps.Services.Trust
                         }
 
                         else if (packetRoot.Name == TrustPacket.WebCache)
-                            Network.Cache.AddCache(WebCache.Decode(packetRoot));
+                            Network.Cache.AddWebCache(WebCache.Decode(packetRoot));
 
                         else if (packetRoot.Name == TrustPacket.Icon)
                             inheritIcon = IconPacket.Decode(packetRoot).OpIcon;
