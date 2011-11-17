@@ -38,6 +38,9 @@ namespace DeOps.Implementation.Transport
             Network = network;
             Core = network.Core;
 
+            // we need to listen on a static lan port common to all nodes in the operation
+            // use the opkey to derive this common port
+
             byte[] hash = new SHA1Managed().ComputeHash(Network.OpCrypt.Key);
 
             ListenPort = BitConverter.ToUInt16(hash, 0);
