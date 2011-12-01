@@ -224,6 +224,57 @@ namespace DeOps.Interface.Settings
         {
             new UpnpSetup(Core).ShowDialog();
         }
+
+        private void MyAddressLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            new MyAddress(Core).ShowDialog(this);
+        }
+
+        private void AddBootstrapLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            var dialog = new GetTextDialog("Add Bootstrap", "Enter a deops:// bootstrap link", "");
+
+            dialog.ShowDialog();
+
+            if (dialog.DialogResult != DialogResult.OK)
+                return;
+
+            // deops://opname/bootstrap/pubOpId:userId/ip:tcp:udp
+            string link = dialog.ResultBox.Text;
+
+            // find core to add cache to
+            if (link.StartsWith("deops://"))
+                link = link.Substring(9);
+            else
+                throw new Exception("Invalid Link");
+
+            string[] mainParts = link.Split('/', ':');
+            if (mainParts.Length < 7 || mainParts[1] != "bootstrap")
+                throw new Exception("Invalid Link");
+
+            // match op pub key with key in link, tell user if its for the wrong app
+            var pubOpId = Utilities.HextoBytes(mainParts[2]);
+
+            if(Utilities.MemCompare(pubOpId, new byte[] {0}) && Core.Context.Lookup != null)
+                ; // add to lookup network cache
+            else
+            {
+                Core.Context.Cores.SafeForEach(c => 
+                    {
+                        if(Utilities.MemCompare(pubOpId, c.User.Settings.PublicOpID))
+                            ; // add cache to that core
+                    });
+            }
+
+            // alert user if bootstrap address does not match any available networks, give network name
+            
+            Network.Cache.AddContact(new DhtContact(user, 0, address, tcpPort, udpPort);
+
+
+            // add bootstrap value to cache?
+
+            // mark in cache as 'bootstrap', dont remove, list in the list
+        }
     }
 
     public class CacheItem

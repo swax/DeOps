@@ -126,6 +126,12 @@
     <Compile Include="AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Interface\Settings\MyAddress.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\Settings\MyAddress.Designer.cs">
+      <DependentUpon>MyAddress.cs</DependentUpon>
+    </Compile>
     <Compile Include="Services\Board\BoardUI.cs" />
     <Compile Include="Services\Buddy\BuddyUI.cs" />
     <Compile Include="Services\Chat\ChatUI.cs" />
@@ -900,6 +906,9 @@
     <EmbeddedResource Include="Interface\Settings\IgnoreForm.resx">
       <DependentUpon>IgnoreForm.cs</DependentUpon>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\Settings\MyAddress.resx">
+      <DependentUpon>MyAddress.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\Settings\Operation.resx">
       <DependentUpon>Operation.cs</DependentUpon>

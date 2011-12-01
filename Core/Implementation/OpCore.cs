@@ -850,7 +850,6 @@ namespace DeOps.Implementation
             }
         }
 
-
         public string GetIdentity(ulong user)
         {
             if (!KeyMap.ContainsKey(user))
@@ -875,33 +874,17 @@ namespace DeOps.Implementation
 
         public string GetMyAddress()
         {
-            // deops://opname/address/pubOpId:userId:ip:tcp:udp
+            // deops://opname/bootstrap/pubOpId:userId/ip:tcp:udp
 
             string link = string.Format("deops://{0}/bootstrap/{1}:{2}/{3}:{4}:{5}",
-                                        HttpUtility.UrlEncode(User.Settings.Operation), 
-                                        Utilities.BytestoHex(User.Settings.PublicOpID), 
+                                        (User != null) ? HttpUtility.UrlEncode(User.Settings.Operation) : "lookup", 
+                                        (User != null) ? Utilities.BytestoHex(User.Settings.PublicOpID) : "0", 
                                         Utilities.BytestoHex(BitConverter.GetBytes(UserID)), 
                                         LocalIP, 
                                         Network.TcpControl.ListenPort, 
                                         Network.UdpControl.ListenPort);
 
             return link;
-        }
-
-        public void AddBootstrapLink(string link)
-        {
-           /* if (link.StartsWith("deops://"))
-                link = link.Substring(9);
-            else
-                throw new Exception("Invalid Link");
-
-            string[] mainParts = link.Split('/', ':');
-            if (mainParts.Length < 4 || mainParts[1] != "bootstrap")
-                throw new Exception("Invalid Link");
-
-            // match op pub key with key in link, tell user if its for the wrong app
-
-            Network.Cache.AddContact(new DhtContact(user, 0, address, tcpPort, udpPort);*/
         }
 
         public string GenerateInvite(string pubLink, out string name)
@@ -1019,8 +1002,7 @@ namespace DeOps.Implementation
         public byte[] PublicOpID;
         public byte[] PublicKey;
 
-        // deops://opname/ident/name/opid~publickey
-
+        // deops://opname/ident/name/opid:publickey
 
         public string Encode()
         {
