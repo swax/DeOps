@@ -355,7 +355,8 @@ namespace DeOps.Simulator
                             }
                         };
 
-                        runMessages(instance.Context.Lookup);
+                        if(instance.Context.Lookup != null)
+                            runMessages(instance.Context.Lookup);
 
                         instance.Context.Cores.SafeForEach(c => runMessages(c));
                     });
@@ -751,11 +752,16 @@ namespace DeOps.Simulator
 
             Instances.SafeForEach(instance =>
             {
-                instance.Context.Cores.LockReading(delegate()
+                List<OpCore> copyList = new List<OpCore>();
+
+                instance.Context.Cores.LockReading(() =>
                 {
-                    foreach(var core in instance.Context.Cores)
-                        Logout(core);
+                    foreach (var core in instance.Context.Cores)
+                        copyList.Add(core);
                 });
+
+                foreach (var core in copyList)
+                    Logout(core);
             });
         }
     }

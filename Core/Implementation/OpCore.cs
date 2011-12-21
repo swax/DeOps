@@ -874,15 +874,25 @@ namespace DeOps.Implementation
 
         public string GetMyAddress()
         {
+            return CreateBootstrapLink(UserID, LocalIP, Network.TcpControl.ListenPort, Network.UdpControl.ListenPort);
+        }
+
+        public string CreateBootstrapLink(DhtContact contact)
+        {
+            return CreateBootstrapLink(contact.UserID, contact.IP, contact.TcpPort, contact.UdpPort);
+        }
+
+        public string CreateBootstrapLink(ulong userid, IPAddress ip, ushort tcpPort, ushort udpPort)
+        {
             // deops://opname/bootstrap/pubOpId:userId/ip:tcp:udp
 
             string link = string.Format("deops://{0}/bootstrap/{1}:{2}/{3}:{4}:{5}",
-                                        (User != null) ? HttpUtility.UrlEncode(User.Settings.Operation) : "lookup", 
-                                        (User != null) ? Utilities.BytestoHex(User.Settings.PublicOpID) : "0", 
-                                        Utilities.BytestoHex(BitConverter.GetBytes(UserID)), 
-                                        LocalIP, 
-                                        Network.TcpControl.ListenPort, 
-                                        Network.UdpControl.ListenPort);
+                                        (User != null) ? HttpUtility.UrlEncode(User.Settings.Operation) : "lookup",
+                                        (User != null) ? Utilities.BytestoHex(User.Settings.PublicOpID) : "0",
+                                        Utilities.BytestoHex(BitConverter.GetBytes(userid)),
+                                        ip,
+                                        tcpPort,
+                                        udpPort);
 
             return link;
         }
@@ -897,8 +907,10 @@ namespace DeOps.Implementation
             
             // deops://firesoft/invite/person@GlobalIM/originalopID~invitedata {op key web caches ips}
 
-            string link = "deops://" + HttpUtility.UrlEncode(User.Settings.Operation) + "/invite/";
-            link += HttpUtility.UrlEncode(ident.Name) + "@" + HttpUtility.UrlEncode(ident.OpName) + "/";
+            string link = string.Format("deops://{0}/invite/{1}@{2}/", 
+                            HttpUtility.UrlEncode(User.Settings.Operation), 
+                            HttpUtility.UrlEncode(ident.Name), 
+                            HttpUtility.UrlEncode(ident.OpName));
 
             // encode invite info in user's public key
             byte[] data = new byte[4096];
@@ -933,7 +945,7 @@ namespace DeOps.Implementation
             // ensure that this link is opened from the original operation remote's public key came from
             byte[] final = Utilities.CombineArrays(ident.PublicOpID, encrypted);
 
-            return link + Utilities.ToBase64String(final);
+            return link + Utilities.BytestoHex(final);
         }
 
         public static InvitePackage OpenInvite(byte[] decrypted, G2Protocol protocol)
@@ -1018,7 +1030,7 @@ namespace DeOps.Implementation
         public static IdentityLink Decode(string link)
         {
             if (link.StartsWith("deops://"))
-                link = link.Substring(9);
+                link = link.Substring(8);
             else
                 throw new Exception("Invalid Link");
 
@@ -1067,7 +1079,7 @@ namespace DeOps.Implementation
             if (!link.StartsWith("deops://"))
                throw new Exception("Invalid Link");
 
-            string[] mainParts = link.Substring(9).Split('/');
+            string[] mainParts = link.Substring(8).Split('/');
 
             if (mainParts.Length < 5 || mainParts[1] != "ident")
                 throw new Exception("Invalid Link");

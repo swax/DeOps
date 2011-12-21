@@ -164,6 +164,9 @@ help     - show command list";
                     Context.Cores.SafeForEach(c =>
                         WriteOut(c.GetMyAddress())
                     );
+
+                    if (Context.Lookup != null)
+                        WriteOut(Context.Lookup.GetMyAddress());
                 }
 
                 else if (input.CompareNoCase("status"))

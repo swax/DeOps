@@ -53,10 +53,11 @@
             this.LookupLanBox = new System.Windows.Forms.TextBox();
             this.panel1 = new System.Windows.Forms.Panel();
             this.label5 = new System.Windows.Forms.Label();
-            this.listBox1 = new System.Windows.Forms.ListBox();
+            this.BootstrapList = new System.Windows.Forms.ListBox();
             this.MyAddressLink = new System.Windows.Forms.LinkLabel();
             this.AddBootstrapLink = new System.Windows.Forms.LinkLabel();
             this.RemoveBootstrapLink = new System.Windows.Forms.LinkLabel();
+            this.CopyBootstrapLink = new System.Windows.Forms.LinkLabel();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -203,9 +204,9 @@
             // 
             // CacheList
             // 
-            this.CacheList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.CacheList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+                        | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
             this.CacheList.FormattingEnabled = true;
             this.CacheList.IntegralHeight = false;
             this.CacheList.Location = new System.Drawing.Point(6, 18);
@@ -328,24 +329,24 @@
             this.label5.TabIndex = 31;
             this.label5.Text = "Bootstrap";
             // 
-            // listBox1
+            // BootstrapList
             // 
-            this.listBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.listBox1.FormattingEnabled = true;
-            this.listBox1.IntegralHeight = false;
-            this.listBox1.Location = new System.Drawing.Point(18, 27);
-            this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(269, 78);
-            this.listBox1.TabIndex = 32;
+            this.BootstrapList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+                        | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.BootstrapList.FormattingEnabled = true;
+            this.BootstrapList.IntegralHeight = false;
+            this.BootstrapList.Location = new System.Drawing.Point(18, 27);
+            this.BootstrapList.Name = "BootstrapList";
+            this.BootstrapList.Size = new System.Drawing.Size(269, 78);
+            this.BootstrapList.TabIndex = 32;
             // 
             // MyAddressLink
             // 
             this.MyAddressLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.MyAddressLink.AutoSize = true;
             this.MyAddressLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.MyAddressLink.Location = new System.Drawing.Point(225, 11);
+            this.MyAddressLink.Location = new System.Drawing.Point(225, 9);
             this.MyAddressLink.Name = "MyAddressLink";
             this.MyAddressLink.Size = new System.Drawing.Size(62, 13);
             this.MyAddressLink.TabIndex = 35;
@@ -358,7 +359,7 @@
             this.AddBootstrapLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.AddBootstrapLink.AutoSize = true;
             this.AddBootstrapLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.AddBootstrapLink.Location = new System.Drawing.Point(140, 11);
+            this.AddBootstrapLink.Location = new System.Drawing.Point(102, 9);
             this.AddBootstrapLink.Name = "AddBootstrapLink";
             this.AddBootstrapLink.Size = new System.Drawing.Size(26, 13);
             this.AddBootstrapLink.TabIndex = 33;
@@ -371,12 +372,26 @@
             this.RemoveBootstrapLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.RemoveBootstrapLink.AutoSize = true;
             this.RemoveBootstrapLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.RemoveBootstrapLink.Location = new System.Drawing.Point(172, 11);
+            this.RemoveBootstrapLink.Location = new System.Drawing.Point(172, 9);
             this.RemoveBootstrapLink.Name = "RemoveBootstrapLink";
             this.RemoveBootstrapLink.Size = new System.Drawing.Size(47, 13);
             this.RemoveBootstrapLink.TabIndex = 34;
             this.RemoveBootstrapLink.TabStop = true;
             this.RemoveBootstrapLink.Text = "Remove";
+            this.RemoveBootstrapLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.RemoveBootstrapLink_LinkClicked);
+            // 
+            // CopyBootstrapLink
+            // 
+            this.CopyBootstrapLink.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.CopyBootstrapLink.AutoSize = true;
+            this.CopyBootstrapLink.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
+            this.CopyBootstrapLink.Location = new System.Drawing.Point(135, 9);
+            this.CopyBootstrapLink.Name = "CopyBootstrapLink";
+            this.CopyBootstrapLink.Size = new System.Drawing.Size(31, 13);
+            this.CopyBootstrapLink.TabIndex = 36;
+            this.CopyBootstrapLink.TabStop = true;
+            this.CopyBootstrapLink.Text = "Copy";
+            this.CopyBootstrapLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.CopyBootstrapLink_LinkClicked);
             // 
             // Connection
             // 
@@ -385,8 +400,9 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.CloseButton;
             this.ClientSize = new System.Drawing.Size(296, 246);
+            this.Controls.Add(this.CopyBootstrapLink);
             this.Controls.Add(this.label5);
-            this.Controls.Add(this.listBox1);
+            this.Controls.Add(this.BootstrapList);
             this.Controls.Add(this.MyAddressLink);
             this.Controls.Add(this.AddBootstrapLink);
             this.Controls.Add(this.RemoveBootstrapLink);
@@ -450,9 +466,10 @@
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.ListBox listBox1;
+        private System.Windows.Forms.ListBox BootstrapList;
         private System.Windows.Forms.LinkLabel MyAddressLink;
         private System.Windows.Forms.LinkLabel AddBootstrapLink;
         private System.Windows.Forms.LinkLabel RemoveBootstrapLink;
+        private System.Windows.Forms.LinkLabel CopyBootstrapLink;
     }
 }

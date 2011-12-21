@@ -196,7 +196,7 @@ namespace DeOps.Interface
             string name = HttpUtility.UrlDecode(nameParts[0]);
             string op = HttpUtility.UrlDecode(nameParts[1]);
 
-            byte[] data = Utilities.FromBase64String(mainParts[3]);
+            byte[] data = Utilities.HextoBytes(mainParts[3]);
             byte[] pubOpID = Utilities.ExtractBytes(data, 0, 8);
             byte[] encrypted = Utilities.ExtractBytes(data, 8, data.Length - 8);
             byte[] decrypted = null;

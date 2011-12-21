@@ -40,6 +40,7 @@
             this.label3 = new System.Windows.Forms.Label();
             this.GenProgress = new System.Windows.Forms.ProgressBar();
             this.CreateGlobal = new System.Windows.Forms.CheckBox();
+            this.SecretNetworkCheckBox = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.OrgNumeric)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.UsersNumeric)).BeginInit();
             this.SuspendLayout();
@@ -47,7 +48,7 @@
             // ExitButton
             // 
             this.ExitButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.ExitButton.Location = new System.Drawing.Point(123, 228);
+            this.ExitButton.Location = new System.Drawing.Point(123, 247);
             this.ExitButton.Name = "ExitButton";
             this.ExitButton.Size = new System.Drawing.Size(75, 23);
             this.ExitButton.TabIndex = 0;
@@ -58,7 +59,7 @@
             // GenerateButton
             // 
             this.GenerateButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.GenerateButton.Location = new System.Drawing.Point(42, 228);
+            this.GenerateButton.Location = new System.Drawing.Point(42, 247);
             this.GenerateButton.Name = "GenerateButton";
             this.GenerateButton.Size = new System.Drawing.Size(75, 23);
             this.GenerateButton.TabIndex = 1;
@@ -162,7 +163,7 @@
             // 
             this.GenProgress.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.GenProgress.Location = new System.Drawing.Point(12, 199);
+            this.GenProgress.Location = new System.Drawing.Point(12, 218);
             this.GenProgress.Name = "GenProgress";
             this.GenProgress.Size = new System.Drawing.Size(186, 18);
             this.GenProgress.Step = 1;
@@ -180,11 +181,22 @@
             this.CreateGlobal.Text = "Create Global IM Profile as well";
             this.CreateGlobal.UseVisualStyleBackColor = true;
             // 
+            // SecretNetworkCheckBox
+            // 
+            this.SecretNetworkCheckBox.AutoSize = true;
+            this.SecretNetworkCheckBox.Location = new System.Drawing.Point(15, 193);
+            this.SecretNetworkCheckBox.Name = "SecretNetworkCheckBox";
+            this.SecretNetworkCheckBox.Size = new System.Drawing.Size(100, 17);
+            this.SecretNetworkCheckBox.TabIndex = 12;
+            this.SecretNetworkCheckBox.Text = "Secret Network";
+            this.SecretNetworkCheckBox.UseVisualStyleBackColor = true;
+            // 
             // GenerateUsers
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(210, 263);
+            this.ClientSize = new System.Drawing.Size(210, 282);
+            this.Controls.Add(this.SecretNetworkCheckBox);
             this.Controls.Add(this.CreateGlobal);
             this.Controls.Add(this.GenProgress);
             this.Controls.Add(this.label4);
@@ -222,5 +234,6 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.ProgressBar GenProgress;
         private System.Windows.Forms.CheckBox CreateGlobal;
+        private System.Windows.Forms.CheckBox SecretNetworkCheckBox;
     }
 }

@@ -151,7 +151,7 @@ namespace DeOps
                             if (lookup != null && (loadMode == LoadModeType.AllCaches || loadMode == LoadModeType.LookupCache))
                             {
                                 if (root.Name == IdentityPacket.LookupCachedIP)
-                                    lookup.Network.Cache.AddContact(CachedIP.Decode(root).Contact);
+                                    lookup.Network.Cache.AddSavedContact(CachedIP.Decode(root));
 
                                 if (root.Name == IdentityPacket.LookupCachedWeb)
                                     lookup.Network.Cache.AddWebCache(WebCache.Decode(root));
@@ -160,7 +160,7 @@ namespace DeOps
                             if (loadMode == LoadModeType.AllCaches)
                             {
                                 if (root.Name == IdentityPacket.OpCachedIP)
-                                    Core.Network.Cache.AddContact(CachedIP.Decode(root).Contact);
+                                    Core.Network.Cache.AddSavedContact(CachedIP.Decode(root));
 
                                 if (root.Name == IdentityPacket.OpCachedWeb)
                                     Core.Network.Cache.AddWebCache(WebCache.Decode(root));
@@ -407,20 +407,23 @@ namespace DeOps
     {
         public const byte Packet_Contact = 0x10;
         public const byte Packet_LastSeen = 0x20;
+        public const byte Packet_Bootstrap = 0x30;
 
 
         public byte Name;
         public DateTime LastSeen;
         public DhtContact Contact;
+        public bool Bootstrap;
 
 
         public CachedIP() { }
 
-        public CachedIP(byte name, DhtContact contact)
+        public CachedIP(byte name, DhtContact contact, bool bootstrap)
         {
             Name = name;
             LastSeen = contact.LastSeen;
             Contact = contact;
+            Bootstrap = bootstrap;
         }
 
         public override byte[] Encode(G2Protocol protocol)
@@ -432,6 +435,7 @@ namespace DeOps
                 Contact.WritePacket(protocol, saved, Packet_Contact);
 
                 protocol.WritePacket(saved, Packet_LastSeen, BitConverter.GetBytes(LastSeen.ToBinary()));
+                protocol.WritePacket(saved, Packet_Bootstrap, BitConverter.GetBytes(Bootstrap));
 
                 return protocol.WriteFinish();
             }
@@ -456,6 +460,10 @@ namespace DeOps
 
                     case Packet_LastSeen:
                         saved.LastSeen = DateTime.FromBinary(BitConverter.ToInt64(child.Data, child.PayloadPos));
+                        break;
+
+                    case Packet_Bootstrap:
+                        saved.Bootstrap = BitConverter.ToBoolean(child.Data, child.PayloadPos);
                         break;
                 }
             }
@@ -837,7 +845,7 @@ namespace DeOps
                         while (stream.ReadPacket(ref root))
                         {
                             if (root.Name == IdentityPacket.LookupCachedIP)
-                                network.Cache.AddContact(CachedIP.Decode(root).Contact);
+                                network.Cache.AddSavedContact(CachedIP.Decode(root));
 
                             if (root.Name == IdentityPacket.LookupCachedWeb)
                                 network.Cache.AddWebCache(WebCache.Decode(root));

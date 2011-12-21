@@ -36,6 +36,7 @@ namespace DeOps.Implementation
         // ips
         public LinkedList<DhtContact> IPs = new LinkedList<DhtContact>();
         public Dictionary<int, LinkedListNode<DhtContact>> IPTable = new Dictionary<int, LinkedListNode<DhtContact>>();
+        public Dictionary<int, DhtContact> BootstrapContacts = new Dictionary<int, DhtContact>();
 
         // lan
         public int BroadcastTimeout = 0;
@@ -188,6 +189,16 @@ namespace DeOps.Implementation
             return unresponsive;
         }
 
+        public void AddSavedContact(CachedIP cached)
+        {
+            var contact = cached.Contact;
+
+            AddContact(contact);
+
+            if(cached.Bootstrap)
+                BootstrapContacts[contact.CacheHash()] = contact;
+        }
+
         public void AddContact(DhtContact entry)
         {
             lock (IPs)
@@ -308,6 +319,9 @@ namespace DeOps.Implementation
                 // if not connected to global use web cache
                 if (Core.Sim == null)
                 {
+                    // download cache from amazon, add contacts for loaded ops as bootstrap nodes
+                    "https://s3.amazonaws.com/deops/bootstrap.txt";
+
                      foreach (WebCache cache in WebCaches)
                          if (Core.TimeNow > cache.NextQuery)
                              StartThread("WebCache Query", WebQuery, cache);
@@ -623,10 +637,13 @@ namespace DeOps.Implementation
         {
             byte type = Network.IsLookup ? IdentityPacket.LookupCachedIP : IdentityPacket.OpCachedIP;
 
+            foreach (var contact in BootstrapContacts.Values)
+                stream.WritePacket(new CachedIP(type, contact, true));
+
             lock (IPs)
-                foreach (DhtContact entry in IPs)
-                    if (entry.TunnelClient == null)
-                        stream.WritePacket(new CachedIP(type, entry));
+                foreach (var contact in IPs)
+                    if (contact.TunnelClient == null)
+                        stream.WritePacket(new CachedIP(type, contact, false));
         }
 
         public void SaveWeb(PacketStream stream)

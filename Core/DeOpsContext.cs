@@ -215,10 +215,13 @@ namespace DeOps
             });
         }
 
-        private void FindLocalIP()
+        public void FindLocalIP()
         {
             if (Sim != null)
+            {
+                SetLocalIP(Sim.RealIP);
                 return;
+            }
 
             try
             {
@@ -245,13 +248,27 @@ namespace DeOps
                 if (first != -1 && last != -1 && first < last)
                     ip = result.Substring(first, last - first);
 
-                if (Lookup != null)
-                {
-                    Lookup.LocalIP = IPAddress.Parse(ip);
-                    Lookup.Network.SetLanMode(false);
-                }
+                SetLocalIP(IPAddress.Parse(ip));
             }
             catch { }
+        }
+
+        void SetLocalIP(IPAddress ip)
+        {
+            if (Lookup != null)
+            {
+                Lookup.LocalIP = ip;
+                Lookup.Network.SetLanMode(false);
+            }
+
+            Cores.LockReading(() =>
+            {
+                foreach (var core in Cores)
+                {
+                    core.LocalIP = ip;
+                    core.Network.SetLanMode(false);
+                }
+            });
         }
 
         public bool CanUpdate()

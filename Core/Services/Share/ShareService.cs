@@ -937,7 +937,7 @@ namespace DeOps.Services.Share
             if (!text.StartsWith("deops://"))
                 throw new Exception("Invalid Link");
 
-            string[] parts = text.Substring(9).Split('/');
+            string[] parts = text.Substring(8).Split('/');
 
             if (parts.Length < 5)
                 throw new Exception("Invalid Link");

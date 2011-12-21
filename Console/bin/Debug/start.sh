@@ -1,1 +1,1 @@
-daemonize -c /home/mj/deops /usr/bin/mono DeOpsConsole.exe
+daemonize -c /home/swax/deops /usr/bin/mono DeOpsConsole.exe

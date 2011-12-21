@@ -118,7 +118,9 @@ namespace DeOps.Simulator
                 Directory.CreateDirectory(OutputFolderLink.Text + Path.DirectorySeparatorChar + filename);
                 string password = name.Split(' ')[0].ToLower(); // lower case first name is password
 
-                OpUser.CreateNew(path, OpNames[index], name, password, AccessType.Private, OpKeys[index], false);
+                var access = SecretNetworkCheckBox.Checked ? AccessType.Secret : AccessType.Private;
+
+                OpUser.CreateNew(path, OpNames[index], name, password, access, OpKeys[index], false);
 
                 if (CreateGlobal.Checked)
                 {
