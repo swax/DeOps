@@ -110,7 +110,7 @@
             this.HelpButton.Image = ((System.Drawing.Image)(resources.GetObject("HelpButton.Image")));
             this.HelpButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.HelpButton.Name = "HelpButton";
-            this.HelpButton.Size = new System.Drawing.Size(48, 22);
+            this.HelpButton.Size = new System.Drawing.Size(52, 22);
             this.HelpButton.Text = "Help";
             this.HelpButton.CheckedChanged += new System.EventHandler(this.HelpButton_CheckedChanged);
             // 
@@ -121,7 +121,7 @@
             this.NewsButton.Image = ((System.Drawing.Image)(resources.GetObject("NewsButton.Image")));
             this.NewsButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.NewsButton.Name = "NewsButton";
-            this.NewsButton.Size = new System.Drawing.Size(53, 22);
+            this.NewsButton.Size = new System.Drawing.Size(56, 22);
             this.NewsButton.Text = "News";
             this.NewsButton.CheckedChanged += new System.EventHandler(this.NewsButton_CheckedChanged);
             // 
@@ -133,7 +133,7 @@
             this.NetworkButton.Image = ((System.Drawing.Image)(resources.GetObject("NetworkButton.Image")));
             this.NetworkButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.NetworkButton.Name = "NetworkButton";
-            this.NetworkButton.Size = new System.Drawing.Size(67, 22);
+            this.NetworkButton.Size = new System.Drawing.Size(72, 22);
             this.NetworkButton.Text = "Network";
             this.NetworkButton.CheckedChanged += new System.EventHandler(this.NetworkButton_CheckedChanged);
             // 

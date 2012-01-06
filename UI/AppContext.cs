@@ -26,6 +26,7 @@ using DeOps.Services.Profile;
 using DeOps.Services.Storage;
 using DeOps.Services.Trust;
 using DeOps.Interface.Tools;
+using System.Net;
 
 namespace DeOps
 {
@@ -47,6 +48,8 @@ namespace DeOps
 
         Timer FastTimer = new Timer();
 
+        //string UpdatePath; // news page used to alert users of non-autoupdates
+
 
         public AppContext(string[] args)
         {
@@ -60,9 +63,11 @@ namespace DeOps
             // open windows firewall
             //Win32.AuthorizeApplication("DeOps", Application.ExecutablePath,
             //    NetFwTypeLib.NET_FW_SCOPE_.NET_FW_SCOPE_ALL, NetFwTypeLib.NET_FW_IP_VERSION_.NET_FW_IP_VERSION_ANY);
+            
+            //CheckForUpdates();
 
             // register file types
-            RegisterType();
+            //RegisterType();
 
             // upgrade properties if we need to 
             Settings = AppSettings.Load(Path.Combine(Application.StartupPath, "app.xml"));
@@ -369,28 +374,38 @@ namespace DeOps
             }
         }
 
-        /*public void CheckForUpdates()
-{
-    try
-    {
-        string address = Utilities.WebDownloadString("http://www.c0re.net/deops/update/check.php?version=" + Application.ProductVersion);
-
-
-        if (address != null && address != "")
+        /*
+        public void CheckForUpdates()
         {
-            string path = Application.StartupPath + Path.DirectorySeparatorChar + Path.GetFileName(address);
+
+            try
+            {
+                var web = new WebClient();
+                web.DownloadStringCompleted += CheckForUpdates_CacheDownloaded;
+                web.DownloadStringAsync(new Uri("http://www.c0re.net/deops/update/check.php?version=" + Application.ProductVersion));
+            }
+            catch { }
+        }
+
+        void CheckForUpdates_CacheDownloaded(object sender, DownloadStringCompletedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(e.Result))
+                return;
+
+            var updateUrl = e.Result;
+
+            string path = Application.StartupPath + Path.DirectorySeparatorChar + Path.GetFileName(updateUrl);
 
             if (!File.Exists(path))
             {
                 WebClient client = new WebClient();
-                client.DownloadFile(address, path);
+                client.DownloadFile(updateUrl, path);
             }
 
             UpdatePath = path;
         }
-    
-    }*/
-
+            
+        
         void RegisterType()
         {
             // taken out and added to nullsoft installer because as MS specifies, all HKLM entries
@@ -449,8 +464,8 @@ namespace DeOps
              catch
              {
                  //UpdateLog("Exception", "LoginForm::RegisterType: " + ex.Message);
-             }*/
-        }
+             }
+        }*/
     }
 
     public class CoreUI

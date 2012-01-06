@@ -268,50 +268,7 @@ namespace DeOps.Interface.Settings
                 // deops://opname/bootstrap/pubOpId:userId/ip:tcp:udp
                 string link = dialog.ResultBox.Text;
 
-                // find core to add cache to
-                if (link.StartsWith("deops://"))
-                    link = link.Substring(8);
-                else
-                    throw new Exception("Invalid Link");
-
-                string[] parts = link.Split('/', ':');
-                if (parts.Length < 7 || parts[1] != "bootstrap")
-                    throw new Exception("Invalid Link");
-
-                // match op pub key with key in link, tell user if its for the wrong app
-                var pubOpId = Utilities.HextoBytes(parts[2]);
-
-                OpCore found = null;
-
-                if (pubOpId == null && Core.Context.Lookup != null)
-                    found = Core.Context.Lookup; // add to lookup network cache
-                else
-                {
-                    Core.Context.Cores.SafeForEach(c =>
-                    {
-                        if (Utilities.MemCompare(pubOpId, c.User.Settings.PublicOpID))
-                            found = c; // add cache to that core
-                    });
-                }
-
-                // alert user if bootstrap address does not match any available networks, give network name
-                if (found == null)
-                {
-                    var opName = HttpUtility.UrlDecode(parts[0]);
-
-                    MessageBox.Show(string.Format("The link entered is for the {0} network which is not loaded.", opName));
-                    return;
-                }
-
-                var userid = BitConverter.ToUInt64(Utilities.HextoBytes(parts[3]), 0);
-                var address = IPAddress.Parse(parts[4]);
-                var tcpPort = ushort.Parse(parts[5]);
-                var udpPort = ushort.Parse(parts[6]);
-
-                byte type = found.Network.IsLookup ? IdentityPacket.LookupCachedIP : IdentityPacket.OpCachedIP;
-
-                found.Network.Cache.AddSavedContact(
-                    new CachedIP(type, new DhtContact(userid, 0, address, tcpPort, udpPort), true));
+                Core.Context.AddCache(link);
 
                 RefreshBootstrapList();
             }

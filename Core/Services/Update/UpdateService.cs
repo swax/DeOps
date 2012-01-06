@@ -392,9 +392,9 @@ namespace DeOps.Services.Update
 
         public static UpdateInfo Decode(G2Header root)
         {
-             // public key
+            // public key
             RSACryptoServiceProvider JMG_KEY = new RSACryptoServiceProvider() ;
-            JMG_KEY.FromXmlString("<RSAKeyValue><Modulus>pTmHLSxyM9TDOM4tZzI5dld9JvPsHlHC/M5i0+Qtjid1DiefGAVubPToEhK9Im4Ohy37h5Ax6J3vt2pxLG4rnIDuKBJt70YH6W6XrJewQ6tid5BvVnNEzPUOIJHGMpOnyi0VjPpzZzWgp4JK6Yuh6LtsYwCyqIIJIBt9iQ/9XN0=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>");
+            //JMG_KEY.FromXmlString("<RSAKeyValue><Modulus>pTmHLSxyM9TDOM4tZzI5dld9JvPsHlHC/M5i0+Qtjid1DiefGAVubPToEhK9Im4Ohy37h5Ax6J3vt2pxLG4rnIDuKBJt70YH6W6XrJewQ6tid5BvVnNEzPUOIJHGMpOnyi0VjPpzZzWgp4JK6Yuh6LtsYwCyqIIJIBt9iQ/9XN0=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>");
 
 
             UpdateInfo info = new UpdateInfo();

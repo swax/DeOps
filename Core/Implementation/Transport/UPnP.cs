@@ -92,7 +92,7 @@ namespace DeOps.Implementation.Transport
             StopThread = true;
 
             if (WorkingThread != null)
-                WorkingThread.Join(5000);
+                WorkingThread.Join(1000);
         }
 
         public void SecondTimer()
@@ -438,7 +438,7 @@ namespace DeOps.Implementation.Transport
 
 
                 WebRequest wr = WebRequest.Create(device.URL);
-
+                wr.Timeout = 5000;
                 wr.Method = "POST";
                 wr.Headers.Add("SOAPAction", "\"urn:schemas-upnp-org:service:" + device.Name + ":1#" + action + "\"");
                 wr.ContentType = "text/xml;charset=\"utf-8\"";

@@ -80,6 +80,8 @@ namespace DeOps.Implementation.Transport
         // outbound
         public TcpConnect(TcpHandler control, DhtAddress address, ushort tcpPort)
 		{
+            Debug.Assert(address.UserID != 0);
+
             TcpControl = control;
             Network = TcpControl.Network;
             Core = TcpControl.Core;
@@ -332,6 +334,11 @@ namespace DeOps.Implementation.Transport
             if (State != TcpState.Connected)
                 return 0;
 
+            // usually when an inbound connection (dont know remote userId) is determined to be a loopback, we close the connection
+            // even before the userId is set, if the userId is not set then the encryptor cant be init'd to send the 'close' packet
+            if (UserID == 0)
+                return 0;
+
             if (Core.Sim == null || Core.Sim.Internet.TestEncryption)
                 if(Encryptor == null)
                     CreateEncryptor();
@@ -569,6 +576,8 @@ namespace DeOps.Implementation.Transport
             ReceivePackets();
         }
 
+        G2ReceivedPacket LastPacket; //crit delete
+
 		void ReceivePackets()
 		{
 			int Start  = 0;
@@ -591,6 +600,8 @@ namespace DeOps.Implementation.Transport
                 byte[] extracted = Utilities.ExtractBytes(packet.Root.Data, packet.Root.PacketPos, packet.Root.PacketSize);
                 packet.Root = new G2Header(extracted);
                 G2Protocol.ReadPacket(packet.Root);
+
+                LastPacket = packet;
 
                 PacketLogEntry logEntry = new PacketLogEntry(Core.TimeNow, TransportProtocol.Tcp, DirectionType.In, packet.Source, packet.Root.Data);
                 Network.LogPacket(logEntry);

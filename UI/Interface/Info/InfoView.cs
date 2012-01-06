@@ -190,6 +190,8 @@ transfer, and file sharing.  File transfers are automatically swarmed when multi
             if (NewsButton.Checked)
             {
                 HelpButton.Checked = false;
+
+                // news page can show update link if it detects the client is old
                 webBrowser1.Navigate("http://www.c0re.net/deops/client/news.html?version=" + Application.ProductVersion);
             }
         }

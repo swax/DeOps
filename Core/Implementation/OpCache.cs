@@ -11,6 +11,7 @@ using DeOps.Implementation.Protocol.Net;
 
 using DeOps.Services;
 using DeOps.Services.Location;
+using System.IO;
 
 
 namespace DeOps.Implementation
@@ -29,10 +30,11 @@ namespace DeOps.Implementation
         RetryIntervals Retry;
 
         // web 
-        public DateTime NextQueryAny;
+        public DateTime NextWebQuery;
         public DateTime NextPublishAny;
         public List<WebCache> WebCaches = new List<WebCache>(); // sorted by distance to self
-        
+        public bool WebCacheDownloaded;
+
         // ips
         public LinkedList<DhtContact> IPs = new LinkedList<DhtContact>();
         public Dictionary<int, LinkedListNode<DhtContact>> IPTable = new Dictionary<int, LinkedListNode<DhtContact>>();
@@ -58,14 +60,14 @@ namespace DeOps.Implementation
             NextPublishAny = Core.TimeNow.AddMinutes(30);
 
 
-            if (Network.IsLookup ||
+            /*if (Network.IsLookup ||
                 (Core.User != null && Core.User.Settings.GlobalIM))
             {
                 WebCache cache = new WebCache();
                 cache.Address = "http://www.c0re.net/deops/cache/update.php";
                 cache.AccessKey = Convert.FromBase64String("O+6IRs7GY1r/JIk+DFY/VK+i8pFTWhsDfNH9R3j3f9Q=");
                 AddWebCache(cache);
-            }
+            }*/
         }
 
         public void SecondTimer()
@@ -314,26 +316,57 @@ namespace DeOps.Implementation
 
 
             // give a few seconds at startup to try to connect to Dht networks from the cache
-            if (Core.TimeNow > NextQueryAny && AllowWebTry)
+            if (Core.TimeNow > NextWebQuery && AllowWebTry)
             {
                 // if not connected to global use web cache
                 if (Core.Sim == null)
                 {
-                    // download cache from amazon, add contacts for loaded ops as bootstrap nodes
-                    "https://s3.amazonaws.com/deops/bootstrap.txt";
+                    NextWebQuery = Core.TimeNow.AddSeconds(10);
 
-                     foreach (WebCache cache in WebCaches)
+                    // download cache from amazon, add contacts for loaded ops as bootstrap nodes
+                    if (!WebCacheDownloaded)
+                    {
+                        try
+                        {
+                            var web = new WebClient();
+                            web.DownloadStringCompleted += TryWebCache_CacheDownloaded;
+                            web.DownloadStringAsync(new Uri("https://s3.amazonaws.com/deops/bootstrap.txt"));
+                        }
+                        catch { }
+                    }
+
+                    /*foreach (WebCache cache in WebCaches)
                          if (Core.TimeNow > cache.NextQuery)
-                             StartThread("WebCache Query", WebQuery, cache);
+                             StartThread("WebCache Query", WebQuery, cache);*/
                 }
 
                 // only can d/l from global cache in sim, or a secret network with private web cache
                 else if (Network.IsLookup || Core.User.Settings.OpAccess == AccessType.Secret)
                 {
-                    NextQueryAny = Retry.NextTry;
+                    NextWebQuery = Retry.NextTry;
                     Core.Sim.Internet.DownloadCache(Network);
                 }
             }
+        }
+
+        void TryWebCache_CacheDownloaded(object sender, DownloadStringCompletedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(e.Result))
+                return;
+
+            WebCacheDownloaded = true; // because there's only 1 web cache, if sucessful, dont try again
+
+            var lines = e.Result.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var line in lines)
+                try
+                {
+                    Core.Context.AddCache(line);
+                }
+                catch (Exception ex)
+                {
+                    Core.ConsoleLog("Error adding cache: " + line + ", " + ex.Message);
+                }
         }
 
         void WebQuery(object parameter)
@@ -361,7 +394,7 @@ namespace DeOps.Implementation
             // else success
             cache.LastSeen = Core.TimeNow;
 
-            NextQueryAny = Core.TimeNow.AddSeconds(10);  // cache.nextry will keep any individual cache from being tried too often 
+            NextWebQuery = Core.TimeNow.AddSeconds(10);  // cache.nextry will keep any individual cache from being tried too often 
 
             // if cache is low this will be restarted
             Core.RunInCoreAsync(delegate() { WebQueryResponse(cache, response); });
@@ -622,7 +655,7 @@ namespace DeOps.Implementation
         {
             Retry.Reset();
             LookupearchInterval.Reset();
-            NextQueryAny = new DateTime(0);
+            NextWebQuery = new DateTime(0);
             BroadcastTimeout = 0;
 
             foreach (WebCache cache in WebCaches)

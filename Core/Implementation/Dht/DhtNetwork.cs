@@ -846,12 +846,13 @@ namespace DeOps.Implementation.Dht
             bool validSource = (!lanIP || LanMode && lanIP);
 
             // check if remote has a newer version cached
-            if (!IsLookup && pong.Version != 0)
+            if (!IsLookup && pong.Version != 0 && Core.Update != null)
                 if (Core.Context.SignedUpdate == null ||
                     !Core.Context.SignedUpdate.Loaded ||
                     Core.Context.SignedUpdate.SequentialVersion < pong.Version)
                 {
-                    Core.Update.NewVersion(pong.Version, pong.Source.UserID);
+                    // ota update disabled for now
+                    //Core.Update.NewVersion(pong.Version, pong.Source.UserID);
                 }
 
             // if received tcp

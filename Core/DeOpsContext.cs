@@ -8,6 +8,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using System.Web;
 
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;
@@ -42,8 +43,6 @@ namespace DeOps
 
         Timer SecondTimer;
 
-        //string UpdatePath; // news page used to alert users of non-autoupdates
-
         public UpdateInfo SignedUpdate;
         public uint LocalSeqVersion = 13;
 
@@ -76,8 +75,6 @@ namespace DeOps
             // start timers
             SecondTimer = new Timer(SecondTimer_Tick, null, 0, 1000);
 
-            // check for updates - update through network, use news page to notify user of updates
-            //new System.Threading.Thread(CheckForUpdates).Start();
             SignedUpdate = UpdateService.LoadUpdate(LookupConfig);
         }
 
@@ -289,6 +286,53 @@ namespace DeOps
         {
             if (NotifyUpdateReady != null)
                 NotifyUpdateReady(config);
+        }
+
+        public void AddCache(string link)
+        {
+            // find core to add cache to
+            if (link.StartsWith("deops://"))
+                link = link.Substring(8);
+            else
+                throw new Exception("Invalid Link");
+
+            string[] parts = link.Split('/', ':');
+            if (parts.Length < 7 || parts[1] != "bootstrap")
+                throw new Exception("Invalid Link");
+
+            // match op pub key with key in link, tell user if its for the wrong app
+            var pubOpId = Utilities.HextoBytes(parts[2]);
+
+            OpCore found = null;
+
+            if (pubOpId == null && Lookup != null)
+                found = Lookup; // add to lookup network cache
+            else
+            {
+                Cores.SafeForEach(c =>
+                {
+                    if (Utilities.MemCompare(pubOpId, c.User.Settings.PublicOpID))
+                        found = c; // add cache to that core
+                });
+            }
+
+            // alert user if bootstrap address does not match any available networks, give network name
+            if (found == null)
+            {
+                var opName = HttpUtility.UrlDecode(parts[0]);
+
+                throw new Exception(string.Format("The link entered is for the {0} network which is not loaded.", opName));
+            }
+
+            var userid = BitConverter.ToUInt64(Utilities.HextoBytes(parts[3]), 0);
+            var address = IPAddress.Parse(parts[4]);
+            var tcpPort = ushort.Parse(parts[5]);
+            var udpPort = ushort.Parse(parts[6]);
+
+            byte type = found.Network.IsLookup ? IdentityPacket.LookupCachedIP : IdentityPacket.OpCachedIP;
+
+            found.Network.Cache.AddSavedContact(
+                new CachedIP(type, new DhtContact(userid, 0, address, tcpPort, udpPort), true));
         }
     }
 }
