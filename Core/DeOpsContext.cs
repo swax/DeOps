@@ -13,7 +13,6 @@ using System.Web;
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
-using DeOps.Implementation.Protocol.Packets;
 using DeOps.Simulator;
 using DeOps.Services.Share;
 using DeOps.Services.Update;
@@ -52,8 +51,6 @@ namespace DeOps
         public Thread ContextThread;
 
         public SimInstance Sim;
-
-        public LightLicense LicenseProof;
 
         public Action<string[]> ShowLogin;
         public Func<LookupSettings, bool> NotifyUpdateReady;

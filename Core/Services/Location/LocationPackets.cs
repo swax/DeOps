@@ -5,7 +5,6 @@ using System.Text;
 
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
-using DeOps.Implementation.Protocol.Packets;
 
 namespace DeOps.Services.Location
 {
@@ -31,7 +30,6 @@ namespace DeOps.Services.Location
         const byte Packet_Tag       = 0xB0;
         const byte Packet_TunnelClient  = 0xC0;
         const byte Packet_TunnelServers = 0xD0;
-        const byte Packet_License = 0xE0;
 
 
         public byte[] Key;
@@ -50,8 +48,6 @@ namespace DeOps.Services.Location
         public bool Away;
         public string AwayMessage = "";
 
-        public LightLicense License;
-
         public ulong UserID;
         public ulong RoutingID
         {
@@ -60,10 +56,6 @@ namespace DeOps.Services.Location
 
         public override byte[] Encode(G2Protocol protocol)
         {
-            byte[] license = null;
-            if(License != null)
-                license = License.Encode(protocol);
-
             lock (protocol.WriteSection)
             {
                 G2Frame loc = protocol.WritePacket(null, LocationPacket.Data, null);
@@ -89,9 +81,6 @@ namespace DeOps.Services.Location
 
                 foreach (DhtAddress server in TunnelServers)
                     server.WritePacket(protocol, loc, Packet_TunnelServers);
-
-                if(license != null)
-                    protocol.WritePacket(loc, Packet_License, license);
 
                 return protocol.WriteFinish();
             }
@@ -190,10 +179,6 @@ namespace DeOps.Services.Location
 
                     case Packet_TunnelServers:
                         loc.TunnelServers.Add(DhtAddress.ReadPacket(child));
-                        break;
-
-                    case Packet_License:
-                        loc.License = LightLicense.Decode(Utilities.ExtractBytes(child.Data, child.PayloadPos, child.PayloadSize));
                         break;
                 }
             }

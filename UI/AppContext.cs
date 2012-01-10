@@ -9,7 +9,6 @@ using DeOps.Implementation.Protocol;
 using DeOps.Implementation;
 using DeOps.Services.Update;
 using DeOps.Simulator;
-using DeOps.Implementation.Protocol.Packets;
 using DeOps.Interface;
 using DeOps.Services.Share;
 using DeOps.Services.Buddy;
@@ -39,8 +38,6 @@ namespace DeOps
         public AppSettings Settings;
 
         SimForm Simulator;
-
-        public FullLicense License;
 
         List<LoginForm> Logins = new List<LoginForm>();
 
@@ -79,8 +76,6 @@ namespace DeOps
             Context = new DeOpsContext(Application.StartupPath, InterfaceRes.deops);
             Context.ShowLogin += ShowLogin;
             Context.NotifyUpdateReady += NotifyUpdateReady;
-
-            LoadLicense(ref License, ref Context.LicenseProof);
 
             if (Context.CanUpdate() && NotifyUpdateReady(Context.LookupConfig))
                 return;
@@ -246,36 +241,6 @@ namespace DeOps
                 Simulator = null;
 
             CheckExit();
-        }
-
-        public static void LoadLicense(ref FullLicense full, ref LightLicense light)
-        {
-            try
-            {
-                DirectoryInfo info = new DirectoryInfo(Application.StartupPath);
-                FileInfo[] files = info.GetFiles("license-*.dat");
-
-                if (files.Length == 0)
-                    return;
-
-                byte[] licenseKey = Convert.FromBase64String("4mdBmbUIjh2p6sff42O9AfYdWKZfVUgeK6vOv514XVw=");
-
-                using (IVCryptoStream crypto = IVCryptoStream.Load(files[0].FullName, licenseKey))
-                {
-                    PacketStream stream = new PacketStream(crypto, new G2Protocol(), FileAccess.Read);
-
-                    G2Header root = null;
-
-                    while (stream.ReadPacket(ref root))
-                        if (root.Name == LicensePacket.Full)
-                            full = FullLicense.Decode(root);
-                        else if (root.Name == LicensePacket.Light)
-                            light = LightLicense.Decode(root);
-                }
-            }
-            catch
-            {
-            }
         }
 
         public bool NotifyUpdateReady(LookupSettings config)

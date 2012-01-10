@@ -12,7 +12,6 @@ namespace DeOps.Interface.Startup
     {
         public string OpLink = "";
         public AccessType OpAccess = AccessType.Public;
-        public bool GlobalIM;
 
         public JoinOp()
         {
@@ -29,14 +28,6 @@ namespace DeOps.Interface.Startup
 
         private void ButtonCancel_Click(object sender, EventArgs e)
         {
-            Close();
-        }
-
-        private void JoinGlobalLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            GlobalIM = true;
-
-            DialogResult = DialogResult.OK;
             Close();
         }
     }

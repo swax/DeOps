@@ -12,8 +12,6 @@ using System.Threading;
 using System.Web;
 using System.Windows.Forms;
 
-using DeOps.Implementation.Protocol.Packets;
-
 
 namespace DeOps.Interface
 {
@@ -37,17 +35,12 @@ namespace DeOps.Interface
 
             try
             {
-                FullLicense full = null;
-                LightLicense light = null;
-                AppContext.LoadLicense(ref full, ref light);
-
                 Dictionary<string, string> post = new Dictionary<string, string>();
 
 
                 post["message"] = Details.Message;
                 post["stacktrace"] = Details.StackTrace;
                 post["notes"] = NotesBox.Text;
-                post["licensed"] = (full != null) ? "yes" : "no";
                 post["deops"] = Application.ProductVersion;
                 post["windows"] = Environment.OSVersion.Version.ToString();
                 post["net"] = Environment.Version.ToString();

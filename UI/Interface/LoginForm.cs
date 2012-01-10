@@ -45,15 +45,9 @@ namespace DeOps.Interface
 
             InitializeComponent();
 
-            Text = "DeOps Alpha v" + app.Context.LocalSeqVersion.ToString();
+            Text = "DeOps Alpha v" + Application.ProductVersion.Substring(0, Application.ProductVersion.Length - 2); //+ app.Context.LocalSeqVersion.ToString();
 
-            SplashBox.Controls.Add(VersionLabel);
-            VersionLabel.Left = SplashBox.Width - VersionLabel.Width;
-            VersionLabel.Top = SplashBox.Height - VersionLabel.Height;
-            VersionLabel.BackColor = Color.FromArgb(0, VersionLabel.BackColor);
-            VersionLabel.Text = "v" + Application.ProductVersion.Substring(0, Application.ProductVersion.Length - 2);
-
-            SplashBox.Image = InterfaceRes.splash;
+            //SplashBox.Image = InterfaceRes.splash;
 
             if (Context.Sim != null) // prevent sim recursion
                 EnterSimLink.Visible = false;
@@ -88,9 +82,6 @@ namespace DeOps.Interface
 
             else if (OpCombo.Items.Count > 0)
                 OpCombo.SelectedIndex = 0;
-
-            else
-                CreateGlobalLink.Visible = true;
 
             OpCombo.Items.Add("Browse...");
 
@@ -164,14 +155,8 @@ namespace DeOps.Interface
 
             CreateUser user = null;
 
-            if (join.GlobalIM)
-            {
-                user = new CreateUser(App, "Global IM", AccessType.Secret);
-                user.GlobalIM = true;
-            }
-
             // private or secret network
-            else if (join.OpLink.Contains("/invite/"))
+            if (join.OpLink.Contains("/invite/"))
                 user = ReadInvite(join.OpLink);
 
             // public network
@@ -409,7 +394,7 @@ namespace DeOps.Interface
             {
                 OpComboItem item = OpCombo.SelectedItem as OpComboItem;
 
-                item.UpdateSplash();
+                //item.UpdateSplash();
 
                 TextPassword.Enabled = File.Exists(item.Fullpath);
 
@@ -426,7 +411,7 @@ namespace DeOps.Interface
 
             if (OpCombo.SelectedItem is string)
             {
-                SplashBox.Image = InterfaceRes.splash;
+                //SplashBox.Image = InterfaceRes.splash;
 
                 BrowseLink_LinkClicked();
             }
@@ -445,30 +430,9 @@ namespace DeOps.Interface
                 ButtonLoad.Enabled = false;
         }
 
-        private void pictureBox1_DoubleClick(object sender, EventArgs e)
-        {
-#if DEBUG
-            if (Context.Sim == null)
-                EnterSimLink.Visible = !EnterSimLink.Visible;
-#endif
-        }
-
         private void LoginForm_Load(object sender, EventArgs e)
         {
-            if (App.License != null)
-            {
-                LicenseLabel.Text = "supported - licensed";
-                LicenseLabel.BackColor = Color.Blue;
-            }
-        }
 
-        private void LicenseLabel_Click(object sender, EventArgs e)
-        {
-            if (App.License == null)
-                Process.Start("http://www.c0re.net/deops/download");
-
-            else
-                new LicenseForm(App.License).ShowDialog(this);
         }
 
         private void CreateGlobalLink_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -505,7 +469,7 @@ namespace DeOps.Interface
             return Name;
         }
 
-        public void UpdateSplash()
+       /* public void UpdateSplash()
         {
             if(Splash != null)
             {
@@ -547,6 +511,6 @@ namespace DeOps.Interface
                         Login.SplashBox.Image = Splash;
                     }
                 }
-        }
+        }*/
     }
 }

@@ -471,7 +471,6 @@ namespace DeOps.Services.Location
             location.AwayMessage = LocalAway ? Core.User.Settings.AwayMessage : "";
 
             location.Version = LocationVersion++;
-            location.License = Core.Context.LicenseProof;
 
             foreach (uint service in GetTag.HandlerMap.Keys)
                 foreach (uint datatype in GetTag.HandlerMap[service].Keys)

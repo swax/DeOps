@@ -10,7 +10,6 @@ using System.Text;
 using System.Windows.Forms;
 
 using DeOps.Implementation;
-using DeOps.Implementation.Protocol.Packets;
 
 using DeOps.Services;
 using DeOps.Services.Trust;
@@ -77,8 +76,6 @@ namespace DeOps.Interface
         ulong UserID;
         uint  ProjectID;
         string BuddyGroup;
-
-        LightLicense LastLicense;
 
         string IMImg, MailImg, BuddyWhoImg, TrustImg, UntrustImg, RegImg;
 
@@ -419,8 +416,6 @@ namespace DeOps.Interface
             //    Mobile: Online, Local Time 2:30pm
             //    Server: Last Seen 10/2/2007
 
-            LastLicense = null;
-
             string aliases = "";
             string locations = "";
 
@@ -457,14 +452,7 @@ namespace DeOps.Interface
                     locations += ", Local Time " + Core.TimeNow.ToUniversalTime().AddMinutes(info.Data.GmtOffset).ToString("t");
 
                 locations += "<br>";
-
-                if (info.Data.License != null)
-                    LastLicense = info.Data.License;
             }
-
-            if (LastLicense != null)
-                header = "<a href='http://license'><img style='margin:0px;' src='" + RegImg + "' border=0></a> " + header;
-        
 
             if (locations == "")
                 content += "<b>Offline</b><br>";
@@ -658,11 +646,6 @@ namespace DeOps.Interface
 
                     if (MessageBox.Show("Change " + Core.GetName(UserID) + "'s name to " + name + "?", "Change Name", MessageBoxButtons.YesNo) == DialogResult.Yes)
                         Core.RenameUser(UserID, name);
-                }
-
-                else if (url == "license")
-                {
-                    new LicenseForm(LastLicense).ShowDialog(); 
                 }
 
                 else if (url == "im")

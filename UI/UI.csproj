@@ -143,12 +143,6 @@
     <Compile Include="Services\Storage\StorageUI.cs" />
     <Compile Include="Services\Trust\TrustUI.cs" />
     <Compile Include="AppContext.cs" />
-    <Compile Include="Interface\LicenseForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\LicenseForm.Designer.cs">
-      <DependentUpon>LicenseForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="Interface\Settings\IgnoreForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -889,10 +883,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\Info\InfoView.resx">
       <DependentUpon>InfoView.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\LicenseForm.resx">
-      <DependentUpon>LicenseForm.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\Settings\Connection.resx">

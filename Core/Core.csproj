@@ -58,7 +58,6 @@
     <Compile Include="Implementation\Protocol\G2Header.cs" />
     <Compile Include="Implementation\Protocol\G2Protocol.cs" />
     <Compile Include="Implementation\Protocol\Packets\PacketsComm.cs" />
-    <Compile Include="Implementation\Protocol\Packets\PacketsLicense.cs" />
     <Compile Include="Implementation\Protocol\Packets\PacketsNet.cs" />
     <Compile Include="Implementation\Protocol\Packets\PacketsSpecial.cs" />
     <Compile Include="Implementation\Transport\LanHandler.cs" />

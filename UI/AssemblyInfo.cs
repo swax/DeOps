@@ -3,9 +3,6 @@
 	De-Ops: Decentralized Operations
 	Copyright (C) 2006 John Marshall Group, Inc.
 
-	By contributing code you grant John Marshall Group an unlimited, non-exclusive
-	license to your contribution.
-
 	For support, questions, commercial use, etc...
 	E-Mail: swabby@c0re.net
 
