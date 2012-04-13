@@ -45,7 +45,7 @@ namespace DeOps.Interface
 
             InitializeComponent();
 
-            Text = "DeOps Alpha v" + Application.ProductVersion.Substring(0, Application.ProductVersion.Length - 2); //+ app.Context.LocalSeqVersion.ToString();
+            Text = "DeOps Alpha v" + Context.LocalSeqVersion; //+ app.Context.LocalSeqVersion.ToString();
 
             //SplashBox.Image = InterfaceRes.splash;
 

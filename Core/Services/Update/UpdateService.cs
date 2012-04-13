@@ -96,8 +96,8 @@ namespace DeOps.Services.Update
             {
                 UpdateInfo info = new UpdateInfo();
 
-                info.Name = "DeOps_1.1.3.exe";
-                info.DottedVersion = "1.1.3";
+                info.Name = "DeOps_13.exe";
+                //info.DottedVersion = "1.1.3";
 
                 // want to prevent infinite update loop, ensure the seq verison in the intaller, and the
                 // signed seq version in the update are equal
@@ -392,9 +392,9 @@ namespace DeOps.Services.Update
 
         public static UpdateInfo Decode(G2Header root)
         {
-            // public key
-            RSACryptoServiceProvider JMG_KEY = new RSACryptoServiceProvider() ;
-            //JMG_KEY.FromXmlString("<RSAKeyValue><Modulus>pTmHLSxyM9TDOM4tZzI5dld9JvPsHlHC/M5i0+Qtjid1DiefGAVubPToEhK9Im4Ohy37h5Ax6J3vt2pxLG4rnIDuKBJt70YH6W6XrJewQ6tid5BvVnNEzPUOIJHGMpOnyi0VjPpzZzWgp4JK6Yuh6LtsYwCyqIIJIBt9iQ/9XN0=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>");
+            // embedded public key of source we allow updates from
+            RSACryptoServiceProvider UpdateSourcePublicKey = new RSACryptoServiceProvider() ;
+            //UpdateSourcePublicKey.FromXmlString("<RSAKeyValue><Modulus>pTmHLSxyM9TDOM4tZzI5dld9JvPsHlHC/M5i0+Qtjid1DiefGAVubPToEhK9Im4Ohy37h5Ax6J3vt2pxLG4rnIDuKBJt70YH6W6XrJewQ6tid5BvVnNEzPUOIJHGMpOnyi0VjPpzZzWgp4JK6Yuh6LtsYwCyqIIJIBt9iQ/9XN0=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>");
 
 
             UpdateInfo info = new UpdateInfo();
@@ -413,8 +413,8 @@ namespace DeOps.Services.Update
 
 
             // verify signature
-            byte[] jmgPublic = JMG_KEY.ExportParameters(false).Modulus;
-            if (!Utilities.CheckSignedData(jmgPublic, info.Embedded, info.Signature))
+            byte[] pubKey = UpdateSourcePublicKey.ExportParameters(false).Modulus;
+            if (!Utilities.CheckSignedData(pubKey, info.Embedded, info.Signature))
                 return null;
 
 

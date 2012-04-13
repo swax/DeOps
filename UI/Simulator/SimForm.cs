@@ -79,21 +79,6 @@ namespace DeOps.Simulator
             Sim.InstanceChange += new InstanceChangeHandler(OnInstanceChange);
         }
 
-        void DownloadStringCallback(object sender, DownloadStringCompletedEventArgs e)
-        {
-            try
-            {
-                if (e.Result.Contains("**die**"))
-                {
-                    MessageBox.Show("Expired, contact JMG");
-                    Close();
-                }
-            }
-            catch
-            {
-            }
-        }
-
         private void LoadMenuItem_Click(object sender, EventArgs e)
         {
             // choose folder to load from

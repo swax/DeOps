@@ -17,20 +17,6 @@ using DeOps.Simulator;
 using DeOps.Services.Share;
 using DeOps.Services.Update;
 
-// v1.0.0 s1
-// v1.0.1 s2
-// v1.0.2 s3
-// v1.0.3 s4
-// v1.0.4 s5
-// v1.0.5 s6
-// v1.0.6 s7
-// v1.0.7 s8
-// v1.0.8 s9
-// v1.0.9
-// v1.1.0 s10
-// v1.1.1 s11
-// v1.1.2 s12
-// v1.1.3 s13
 
 namespace DeOps
 {
