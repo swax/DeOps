@@ -208,11 +208,19 @@ namespace DeOps
 
         public CoreUI FindCoreUI(byte[] pubOpID)
         {
-            foreach (var ui in CoreUIs)
-                if (Utilities.MemCompare(ui.Core.User.Settings.PublicOpID, pubOpID))
-                    return ui;
+            CoreUI found = null;
 
-            return null;
+            CoreUIs.LockReading(() =>
+            {
+                foreach (var ui in CoreUIs)
+                    if (Utilities.MemCompare(ui.Core.User.Settings.PublicOpID, pubOpID))
+                    {
+                        found = ui;
+                        break;
+                    }
+            });
+
+            return found;
         }
 
         public void ShowSimulator()

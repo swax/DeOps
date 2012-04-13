@@ -387,7 +387,9 @@ namespace DeOps.Services.Chat
             quickMenus.Clear();
 
             ParentView.UI.Services[ServiceIDs.Buddy].GetMenuInfo(InterfaceMenuType.Quick, quickMenus, node.UserID, Room.ProjectID);
-            ParentView.UI.Services[ServiceIDs.Trust].GetMenuInfo(InterfaceMenuType.Quick, quickMenus, node.UserID, Room.ProjectID);
+
+            if (ParentView.UI.Services.ContainsKey(ServiceIDs.Trust)) 
+                ParentView.UI.Services[ServiceIDs.Trust].GetMenuInfo(InterfaceMenuType.Quick, quickMenus, node.UserID, Room.ProjectID);
 
             if (quickMenus.Count > 0)
             {

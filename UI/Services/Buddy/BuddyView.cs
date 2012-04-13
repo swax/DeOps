@@ -390,7 +390,9 @@ namespace DeOps.Services.Buddy
             quickMenus.Clear();
 
             UI.Services[ServiceIDs.Buddy].GetMenuInfo(InterfaceMenuType.Quick, quickMenus, clicked.User, project);
-            UI.Services[ServiceIDs.Trust].GetMenuInfo(InterfaceMenuType.Quick, quickMenus, clicked.User, project);
+
+            if (UI.Services.ContainsKey(ServiceIDs.Trust))
+                UI.Services[ServiceIDs.Trust].GetMenuInfo(InterfaceMenuType.Quick, quickMenus, clicked.User, project);
 
             foreach (MenuItemInfo info in quickMenus)
                 treeMenu.Items.Add(new OpMenuItem(clicked.User, project, info.Path, info));
