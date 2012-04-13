@@ -1,0 +1,506 @@
+
+onion address support
+	would need to replace everywhere IPs are used in the app
+
+vox not cutting out
+closing IM/Chat cutting voice? still transmitting
+
+compartmentalization
+	each file/folder has access list
+		entry can be 
+			group (higher/lower
+			specific person
+		for group - filekey is encoded with group key
+		for person - filekey is encoded with persons public key
+	
+		file header just contains who has access, no encrypted keys
+			except if directory or files are encrypted and we dont want those outside group to see..
+		file itself appended with access list and keys
+
+
+Voice Activated (Headphones)
+Push to Talk (Speakers)
+Remove Mute
+
+test lan transfer speed, how big does sliding window get?
+implement history 
+
+prioritize trust - search / transfer over buddy/profile, etc..
+
+windows key capture hook?
+
+copy clipboard crash
+
+
+storage view not changing when changing projects on nav bar
+	nav bar not completely working
+clicking during connect
+needs unknown section to show trust nodes that are not resolved yet
+multiple clients in chat room - when signed off - all sign off
+link trust kill switch
+really try to get offline messages sent out
+set plain/rich text checked in drop down
+set text red when new version of component updated in region, so user knows what to check
+
+
+warn user files unlocked on close
+
+limit proxy throughput, add proxy breakdown to bandwidth window
+
+link
+	options to show unloaded trust fragmetns
+	option to show just trusted structure, red filtered
+
+op associations - put in diff sturcture buddyinfo data type/file?
+
+
+drag/drop IM/Chat window
+drag out file from share
+IM msg sounds - high, mid, low beep - put in im/chat
+Right-click clear IM/Chat log
+
+
+look at store caching
+
+design realignment
+add lockdown to IM manage menu
+add move/save profile to manage menu?
+
+
+share
+	show lock/unlock icons for shared files, only delete if path is downloadpath
+	put same options in web interface
+			
+other
+	person net open/nat/blocked, not finding local untrusted, losing buddy loc
+	lookup not connecting on LAN network?
+	storage unlock should be threaded like sharing
+	also status if killed
+	sortable columns that are either auto, or take a delegate comparer as a parameter
+	when switching rooms, put focus on chat inputrooo
+	drag/drop file into IM, ask user if like to send
+	write mupdate to bootstrap.dat even if it doesnt exist
+	status panel icons not transparent?'
+	moving folders around in fs, discarding changes, causes crash
+	prioritize user generated search/transfer over cache replication s/t
+	move load event to the first thing the core thread does on load so that interface loads faster
+	save IM mode, buddies or structure view on close
+	project coming before primary in nar bar drop down
+	dropped packet stats, sliding window stats, add to internal
+	ReaderWriterLockSlim
+	
+quick look at live comm
+	login search for highest that is online
+	create a persistant connection with them
+	keep tabs on higher's higher as well
+	**heart beats flow down periodically from top to bottom of live comm
+	people always know the current live comm structure
+	dont need to worry about highers getting flooded in loc component
+	signed location notify is the 'heart beat'
+
+having trouble with getting location offline message to user during logout in the sim
+
+design re-alignment
+
+store caching 
+	keep track of when last result was sent
+		if greater than a minute, cache entry is up for pruning
+	
+	if greater than x requests in time period, signal in search result to republish
+		if search result tagged with republish, republish result at closest node that didnt have data
+
+	used when high load
+	how to keep cache entries up to date?
+	cache entries only last for like 5 mins
+	requester do the caching, or should requested auto-cache if load too high
+		auto-caching might not hit the nodes that requesting nodes would be likely to hit
+	index file hashes on network for files over 10 meg, otherwise file can be multisourced from default replicators of file
+	always get content once found from node closest to SELF, pull content away from source, ensure it doesn't get flooded
+		node publishes data (he is focal point), diseminates to adjacent peers (focal point splits in two, etc..)
+	How to prevent publishing overload? ex. 100 members in op all publishing global loc data at same 8 nodes closest to OpID
+		need publish search type with acks that return current storage volume, publish closest not full
+			
+	testing
+		compare node load in 64 network with on off
+		create auto link routine where nodes make random linkup to someone, gen a root
+		create auto post / mail / files / chat use for screen shots
+		compare bandwidth at levels
+		bandwidth for root node with everyone updating its loc every 2 secs
+
+live
+	build test algorithms
+	acts as continously active real-time conduit between all members in trusted system (might want to pipe system msgs through this)
+	live based on rudp links, if no rudp link, live connect to next canidate, even if loc for someone exists
+	rapidly alert up/down links when going offilne so that live structure can be patched quickly wihout nodes thinking location file is still active
+	downlink determined by closest sub, if equal, highest rank where 2 nodes split tracks
+	uplink determined by highest offline where not challenged
+	show trusted/untrusted in live
+	ensure when random subset of nodes removed all links/chat rooms still connected through live
+	regular heart beats from the top? each link signs (itself and online subs) on way down tree
+		everyone in org now knows who's online
+		
+	instead of lowers continually pinging higher nodes
+	every minute highers broadcase location notify to subs
+		notifies should be signed in this instance
+		receive notify from higher, broadcast to lower
+	this also acts as the heart beat of the continually active live comm structure
+	
+		
+bandwidth
+	client
+		burst protection
+			no more than 1kb/s of non rudp packets
+		
+
+test
+	set fw to open and send back pong that reflects that
+	op fw changed t
+	nextTryIP the best way 2 solve the problem?
+	catch thrown expceptions
+	
+	in sim show web cache requests / publishes, ensure not too often
+	web cache pruning - create a / b / c /d /e / f caches
+	
+	automated tests - 2open, 1open1nat,  2op1open1nat, 2op2open... , run each until connected
+	
+	
+other
+	publisher unknown
+	re-publish of local sync is off the hook!
+
+	if file deleted on file sys, should auto go back to locked state
+		what if user deletes to recycle bin, warn?
+
+	intead of (accept trust) after name, grey name, and when clicked make header below yellow instead of purple
+	
+	sim AI
+		right click sim 
+			Service
+				Run test -> select service box	
+				Cleanup menu -> select service box
+					foreach service selected / run asyncronously
+			
+	
+			chat on / chat off
+			Linkup
+			Mail -> rand send / reply
+			Post -> rand post / reply
+			Plan -> 
+			
+		Clean menu -> cleans cached object
+		chat - put chat text in active room, qa - received by members?
+		trust - trust / change trust, qa - ensure accepted
+		mail - send mail, qa - was received
+		board - make post / reply to posts, qa - post reached all in region
+		storage - create / add random files / folders with scopes
+		profile - randomly change, qa ensure network up to date
+		location - change loc name, etc.. qa - network up to date
+		schedules, goals, storage, trust, mail can be checked to see if remotes have lastest versions
+		
+	change goals so goals have id and deligation follows org lines
+		that way someone changes positions, switches super / sup, goals remain basically the same
+		goal deligation is like a request, once accepted the task remains no matter what happens to above?
+
+	on linkup, trigger inherit from top node
+	doesnt seem like trust icon/splash changes are propagated to subs quickly should auto post
+
+	sending large block of text crashes, test other places where string input is unchecked size
+	
+	list box header color is awful
+
+	chat not selecting default input box
+	dont show update when in room
+
+	keep list of keys contacted over broadcast - on rudp connect to key send LAN address
+		also for rudp over global proxy, send our local IP specified in global network
+
+	one more stab at security in settings, tray, link changes
+
+	test message board - doesnt seem like refresh is thread safe
+
+	
+re-alignment
+	leave old network once all subs confirmed to be re-aligned
+	publish new tagged trust on re-align confirming current network
+	if we get an updated trust from parent with new op key, re-align to that
+	automatically cascades down in the background
+	on re-align warn if any current subs have not be re-aligned to current yet
+	only allow re-alignment if user is root 
+	on receieve re-align request, confirm parents parent's up to root have been realigned
+	public keys, names, files all stay the same
+	anything new created is with new file keys that anyone left out doesnt have access to
+	
+
+	
+3 trust chain
+	adding files to storage causes re-download of unrelated file
+	change middle teir file, high level integrates with original verion, but not inherited by subs
+	working not saved between runs sometimes
+	
+global proxying
+	have sim print warning in status if global proxy nodes exist in routing table, to ensure they're weeded out
+	any way to replace published location with a new version?
+	replicating - after knowing all global data types
+	ensure 2 global proxied NATs udp hole punch rudp
+
+	rainy day bug 
+		2 client network, A client blocked, the B client has open global port, blocked op port
+		blocked B op being added to A as open causing tunnel to break, links not synced, packet chaos
+
+next
+	use packetstream instead of protocl.writetofile	
+
+	do check tags on node click, or local sync search...
+
+	bandwidth limits / auditing
+		when bandwidth chart, figure out why bandwidth quadrupiles with 30% NATs
+		really need priority search, some of these startup searches should be done during idle time
+		use a packet outbound queue, similar to incoming one used in core thread
+			outbound packets throttled there over multiple networks
+			implement when bandwidth management is done
+		
+test
+	debug places where searches etc.. are happening, when client knows its not connected
+	prevent searches from piling up in disconnected state
+	
+	combine responsive / established - might want to do with proxying to ensure stuff is published over proxy
+	change established to CanRepublish? map out process
+	
+	ensure search for lastest version of service doesnt get hung up on old versions and return prematurely
+	a superior 5 levels up, on other side of network, updating plan should reflect on lower on next location update
+	links timing out when traversing strucuture
+	link.getlocs / getlocsbelow / use live links?
+	link/plan research timer
+	**thread per core in sim
+
+other
+	news message when connected / disconnected from op
+	if news area too small for update, scroll across
+	test32 nodes 3 lvls down disposing trust of adjacent link node
+	assert in deconstructors that events are set back to null
+	GetActiveSessions not threaded for gui, try not to thread dictionary
+		
+	use last seen date in localSync - show day, not time
+	alert user of desyncs detected in localSync, maybe as news alert,
+		if local versions are newer than those specified in localSync
+
+	publishing / pruing / re-publishing / replicating uplink requests
+	posts, outbound mail re-published on startup?
+	use common assist for posts/mail/uplinkReqs?
+	crawler - bandwidth, location storage load
+
+	nav bar work with loops?
+
+Interface
+	General
+		Sorting of listviews
+		status panel needs to update as network connects network_statusupdate, trigger news as well
+		unload tray icon on exit?
+		dont allow nav bar person switch on mail/chat components
+		multiline text in tree list row exceeds clip bounds
+		
+	graphics
+		storage - restore
+		plans   - edit
+		goals	- edit
+		tray	- restore, exit
+	
+	public 
+		expand a little more (names associated with sessions/transfers/searches/publish)
+		browsing using nav bar needs to trigger searches 
+		create function to search through externals for type/id/project, when popping external look for existing window?
+
+	Link
+		Online - Show as currently online nodes structured into makeshift hierarchy
+			chat/voice uses this hierarchy for high/low - done so that realtime communication is not fragmented when people go offline
+		
+	News
+		crazy refreshes when news not visible and button clicked
+		show connected / disconnected
+		chat msg (if chat not visible or visited in last minute, or alerted in last minute)
+			<project> Chat activityk, Betty: hey group....
+		new people online 
+		
+		more refined, if care about user, do detailed diff between new and old file
+			show self only if local didn't make the change, if non-local self change show as white
+			detect diff between changed schedule / changed goals or both
+
+	input interface
+		move to html from rtf? smaller data format, everything plaintext by default, augmented by html where desired
+		customizable style sheet for IM that user can edit
+		embed pictures/videos, etc.. in email / posts / chat / IMs
+		ability to right-click switch from normal to html view
+
+Components
+	General
+		Refactor Components with delegates or something, refactor while building visual component
+			invokeInterface control->gui, gui->interface control functions handle locking of objects (NO locking from gui code)
+		break control into interface comm / control comm so that multiple guis (mobile/mono/wpf) can be implemented easily
+		Many actions in gui isnt piped down into control to fire events back to the interface to signal updates for multiple interface instances
+		component plug-ins / view plugins for private components
+		Remove references to LinkMap, use GetLink
+		when component handles exit, assert that all events are emptied of references to debug gui's not releasing event handles
+		
+		Setting up and editing operation can also change the type/strength of the encryption used
+		People can choose the strength/type of the encryption on their profile
+		only load secret key on demand somehow, once used replace with zero's so not sitting static in memory
+		
+	Trust
+		components
+			links   - getlocs .. check cache functions
+			chat    - high level chat is others in loop,
+		New function to 'find in link map' so that mail,board,chat can provide the user with an option to 'find' a user
+		Key termination command if private key compromised - auto-deletes all data associated with id
+
+	
+	IM 
+		Saved/Loaded my main IM interface
+		public interface
+		Log Interface - in chat log
+		Crash on close IM, fin being called? unhooking from IMcontrol events? 
+		sending file / picture - other side sees link click to accept, starts d/l with progress real time update to window
+			result showed inline pic, or link to open file, file put in personal storage?
+			
+	Chat 
+		show unfocused label as red on new messages
+		only send full status on connect, otherwise send mini status updates for join/leaves
+		figure out why invites don't work a lot, ensure that on connect invites are sent
+		host going offline and coming back causes room members to not be synchronized
+		double click member - IM, right click  - views, single click - send status, who
+		room option - show locations, also for IM, make location font smaller
+		check size of signed invite field
+		name change should change name in chat logs as well for chat/IM/window title
+		implement live rooms / network
+		set default cursor in input box
+		test that our own link changes are reflected in link changes
+		if room custom and no members, kill
+		untrusted rooms discussed in chat.txt
+		
+		in future nodes marked as server can have rooms registered there so only one node to query for full room list
+		log does chat/im - setup like yahoo chat log
+		on join chat, node asks other nodes for previous singed messages before specified time
+		
+	Mail 
+		soon - sync local mail between users
+		tagging messages, filter by tags
+		double clicking on name loacates them in link tree in panel
+		use labels for organization - for example a project label could be tagged on, so we could filter regarding project x
+		delete mail not refreshing view
+		test/do re-publishing mail
+		*re-publish local outbound un-acked mail on network established
+
+	Board 
+		 board scope sub-levels down, auto search highers for posts that have source==target, and show if in scope
+		 attaching files
+		 detect if post success, if not (not connected) ensure re-post when network.established
+		 posts with subs not marked with +
+		 ***posts/replies not updating quickly or at all :(
+			replies not propagating
+		 
+	Profile
+		time out loading - better searching interface use smoke color and better font, more info searching/dling/etc..
+		Search / Transfer process painfully slow in real time mode, analyze
+		Rename to Sites? Allow public interlinked sub-pages
+
+	Plans
+		old plans not being deleted? seems like extra files in dir, try loading solo and updating local plan file
+		shutdown in the middle of the causing load corruption?			
+		transfer branch path when goal <-> schedule
+		***probably want a custom renderer for the progress bar, default xp has it green
+		***schedule slider should respond to mouse scrolls
+		
+	Storage
+		drag into secure storage gives user option to replace what is already there, either on disk or locked
+		
+		review file references system
+		drag files folder over highlights target
+		secure copy / paste can use same folder commands as drag/drop
+			copy/paste will be used as psuedo-fork to create local copy of groups build to work on in a seperate dir
+			ensure really fast, because no 'real' files being created, all dupes in file system
+
+		save storage snapshots (past header file versions) - display at root node	
+		signal on comparison page if all files are replicated on network (can go offline and files still exist)
+
+Core
+    old projects not cleared from components during savelocal, save / ditch / option?
+    each component's minute action should have unique interrupt given by core class
+     
+	Rudp
+		route data over session if desination the same	
+		nat/block keep list of recent search ids/kadids so duplicate results arent sent out
+		use rudp when available to transmit link / loc data
+
+		investigate LAN max transfer speed / CPU usuage and see what limits current setup imposes
+		send packets directly from udp to rudp without switching to core thread
+		rudpSession receive packet activate core thread		
+		rudp socket send/recv buffer should use packet list instead of static buffers
+		rudp session send/ecrypt buffers should be dynamically created for larger sizes
+
+	Search 
+		give components priority?? link over location, etc..
+		make sure search result locations get to file download
+		make sure store locations get to file download direct search -> store response works through firewalls
+		both have the ability to be proxied
+
+		record source kaddi with value
+		on download try source, id isnt in location list, search for it, need that ID key to connect
+
+		by the time key gets checked for download, profile / link headers should have right key if source is the same, if not gotta search
+
+		search/download priority high (view) normal (network) low (research)
+		forward searches to proxies
+		if blocked send acks tcp to be forwarded
+		analyze contact info sent in acks
+		ensure correct contact info gets to transfer control, if blocked/natted/open ensure all work
+		make sure download isnt started without sources
+
+		search results need to transfer location info over to downloader
+		what does search result from firewalled host look like?
+		search results seem to only go out udp
+		
+		location info should include array of latest versions of each component
+			so local area can update for everyone on login to the network
+			storage, plans, profile - need latest fetched data of local area
+			location data needs to be stored when user is offline for this to work
+
+	udp packet throttle especially for patches
+		backlog for packets, for patches, etc.. not for rudp
+		packet cache for more than 4k sent in second
+		cache should go for 60 seconds make, 240k, bleed cache out, first in first out
+		Alert if packet cache has any entries at all
+		check in sim if node sending more than x packets per sec
+		
+	ensure small nets / starting nets can be proxied through global net
+		tcp proxies for non-local ops should be bandwidth throttled
+		connect status should specify proxied through global
+		5 connections in same op but all blocked able to form active op network by proxying throgh global
+		
+	privacy from untrusted
+		mail grey if from untrusted source
+		no posts allowed from untrusted
+		IM settings allow host to not allow messages from untrusted
+		refuse replication of network pieces to blacklisted, inherit blacklist from higher
+			dont not replicate to untrusted because then each id needs to be trust verified continually
+		heartbeat from top down with unique key, wont talk to 'unknown' nodes in dht without it
+		if user is ignored, chat invites are ignored as well
+		storage quotas per id to prevent flooding
+		public key kill switch	
+			if encountered, all local files and profile deleted, app closed
+	
+Simulator
+	track memory / allocated objects
+	figure out why IO writes in FiresoftDemo so high, getting 2min/sec through, pretty damn good
+	record max udp burst sizes, or do packet size distribution histogram
+
+	***checksigned / idtokey throw exceptions, maybe just return false or something?	
+			
+quick
+	test with null global, even have option for secret at this point?
+	ensure callers know what to do when tcpcontrol.sendpacket is overloaded
+	use localfilekey for all file names so name diff per computer
+	finish self search and then start bucket replication so startup doesnt spit out massive patches
+	component dir also encoded with local key / trimmed to 8 chars
+	cache files missing from component header - do in load header
+			dont delete old path in Cache<component> function, until new header saved: move - save headers - delete old files
+	run save headers every 10 secs - every sec is too often, and slows simmy
+	

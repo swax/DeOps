@@ -715,12 +715,6 @@
     <Compile Include="Utilities\GuiUtils.cs" />
     <Compile Include="Win32.cs" />
     <Content Include="deops.ico" />
-    <Content Include="Docs\build.txt" />
-    <Content Include="Docs\ChangeLog.txt" />
-    <Content Include="Docs\Cool.txt" />
-    <Content Include="Docs\future.txt" />
-    <Content Include="Docs\mono.txt" />
-    <Content Include="Docs\testing.txt" />
     <None Include="app.config" />
     <None Include="Services\Buddy\res\buddy_add.png" />
     <None Include="Services\Buddy\res\buddy_remove.png" />
@@ -817,17 +811,7 @@
     <None Include="Services\Storage\Res\add.gif" />
     <Content Include="Services\Storage\storage.txt" />
     <Content Include="Services\Storage\storage2.txt" />
-    <Content Include="Docs\better web.txt" />
-    <Content Include="Docs\Events.txt" />
     <Content Include="Services\Mail\Mail.txt" />
-    <Content Include="Docs\notes.txt" />
-    <Content Include="Docs\Patent.txt" />
-    <Content Include="Docs\People.txt" />
-    <Content Include="Docs\Protocol.txt" />
-    <Content Include="Docs\Random.txt" />
-    <Content Include="Docs\Investment.txt" />
-    <Content Include="Docs\Security.txt" />
-    <Content Include="Docs\Todo.txt" />
     <None Include="Graphics\locked.png" />
     <None Include="Graphics\unlocked.png" />
     <None Include="Graphics\archive.png" />
@@ -1315,6 +1299,7 @@
       <Name>Core</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>

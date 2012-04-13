@@ -14,7 +14,7 @@ using DeOps.Implementation.Dht;
 using DeOps.Implementation.Protocol;
 using DeOps.Implementation.Protocol.Net;
 
-
+/* A service that allows signed updates to be distributed over the network */
 
 
 namespace DeOps.Services.Update

@@ -88,7 +88,8 @@ namespace DeOps
                     ChannelServices.RegisterChannel(IpcChannel, false);
                     RemotingConfiguration.RegisterWellKnownServiceType(typeof(IpcObject), objectName, WellKnownObjectMode.Singleton);
 
-                    IpcObject obj = new IpcObject(new NewInstanceHandler(context.SecondInstanceStarted));
+                    IpcObject obj = new IpcObject();
+                    obj.NewInstance += context.SecondInstanceStarted;
 
                     RemotingServices.Marshal(obj, objectName);
                 }
@@ -113,12 +114,8 @@ namespace DeOps
 
     public class IpcObject : MarshalByRefObject
     {
-        event NewInstanceHandler NewInstance;
+        public event NewInstanceHandler NewInstance;
 
-        public IpcObject(NewInstanceHandler handler)
-        {
-            NewInstance += handler;
-        }
 
         public void SignalNewInstance(string[] args)
         {
