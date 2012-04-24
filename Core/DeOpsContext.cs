@@ -29,7 +29,7 @@ namespace DeOps
         Timer SecondTimer;
 
         public UpdateInfo SignedUpdate;
-        public uint LocalSeqVersion = 13;
+        public static uint LocalSeqVersion = 14;
 
         public BandwidthLog Bandwidth = new BandwidthLog(10);
         public Dictionary<uint, string> KnownServices = new Dictionary<uint, string>();

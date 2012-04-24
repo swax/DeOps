@@ -351,9 +351,22 @@ namespace DeOps.Implementation
 
         void TryWebCache_CacheDownloaded(object sender, DownloadStringCompletedEventArgs e)
         {
-            if (string.IsNullOrEmpty(e.Result))
-                return;
+            string result = "";
 
+            try
+            {
+                // just getting result can raise a 'name could not be resolved' exception
+                result = e.Result;
+            }
+            catch(Exception ex)
+            {
+                Core.ConsoleLog("Error downloading cache: " + ex.Message);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(result))
+                return;
+            
             WebCacheDownloaded = true; // because there's only 1 web cache, if sucessful, dont try again
 
             var lines = e.Result.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);

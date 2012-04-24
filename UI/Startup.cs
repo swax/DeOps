@@ -67,7 +67,7 @@ namespace DeOps
     public class DeOpsMutex
     {
         private Mutex TheMutex;
-        private IChannel IpcChannel;
+        private IChannel DeOpsChannel;
         public bool First;
 
 
@@ -75,31 +75,34 @@ namespace DeOps
         {
             try
             {
-                string name = "DeOps" + Application.ProductVersion;
+                string host = "DeOps_" + DeOpsContext.LocalSeqVersion.ToString();
 
-                TheMutex = new Mutex(true, name, out First);
+                TheMutex = new Mutex(true, host, out First);
 
-                string objectName = "SingleInstanceProxy";
-                string objectUri = "ipc://" + name + "/" + objectName;
+                string objectUri = "SingleInstanceProxy";
+                string url = "ipc://" + host + "/" + objectUri;
+
+               
 
                 if (First)
                 {
-                    IpcChannel = new IpcServerChannel(name);
-                    ChannelServices.RegisterChannel(IpcChannel, false);
-                    RemotingConfiguration.RegisterWellKnownServiceType(typeof(IpcObject), objectName, WellKnownObjectMode.Singleton);
+                    DeOpsChannel = new IpcServerChannel(host);
+
+                    ChannelServices.RegisterChannel(DeOpsChannel, false);
+                    RemotingConfiguration.RegisterWellKnownServiceType(typeof(IpcObject), objectUri, WellKnownObjectMode.Singleton);
 
                     IpcObject obj = new IpcObject();
                     obj.NewInstance += context.SecondInstanceStarted;
 
-                    RemotingServices.Marshal(obj, objectName);
+                    RemotingServices.Marshal(obj, objectUri);
                 }
 
                 else
                 {
-                    IpcChannel = new IpcClientChannel();
-                    ChannelServices.RegisterChannel(IpcChannel, false);
-
-                    IpcObject obj = Activator.GetObject(typeof(IpcObject), objectUri) as IpcObject;
+                    DeOpsChannel = new IpcClientChannel();
+                    ChannelServices.RegisterChannel(DeOpsChannel, false);
+                    
+                    IpcObject obj = Activator.GetObject(typeof(IpcObject), url) as IpcObject;
 
                     obj.SignalNewInstance(args);
                 }

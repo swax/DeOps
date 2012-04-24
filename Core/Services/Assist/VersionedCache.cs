@@ -618,7 +618,7 @@ namespace DeOps.Services.Assist
 
             StartSearch(key, version);
 
-            NextResearch[key] = Core.TimeNow.AddSeconds(30);
+            NextResearch[key] = Core.TimeNow.AddSeconds(3);
         }
 
         private void StartSearch(ulong user, uint version)

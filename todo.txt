@@ -1,4 +1,6 @@
 
+password with spaces not working
+
 onion address support
 	would need to replace everywhere IPs are used in the app
 
@@ -16,7 +18,6 @@ compartmentalization
 		file header just contains who has access, no encrypted keys
 			except if directory or files are encrypted and we dont want those outside group to see..
 		file itself appended with access list and keys
-
 
 Voice Activated (Headphones)
 Push to Talk (Speakers)
