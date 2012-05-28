@@ -1,0 +1,246 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>10.0.0</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{632CB290-4368-4171-A576-D39FC1FD8286}</ProjectGuid>
+    <ProjectTypeGuids>{EFBA0AD7-5A72-4C68-AF49-83D382785DCF};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Core</RootNamespace>
+    <MonoAndroidAssetsPrefix>Assets</MonoAndroidAssetsPrefix>
+    <MonoAndroidResourcePrefix>Resources</MonoAndroidResourcePrefix>
+    <AssemblyName>Core</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <AndroidLinkMode>None</AndroidLinkMode>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
+    <ConsolePause>false</ConsolePause>
+    <AndroidLinkMode>SdkOnly</AndroidLinkMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Core" />
+    <Reference Include="Mono.Android" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
+  <ItemGroup>
+    <Compile Include="..\..\Core\DeOpsContext.cs">
+      <Link>DeOpsContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\OpCache.cs">
+      <Link>Implementation\OpCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\OpCore.cs">
+      <Link>Implementation\OpCore.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\OpUser.cs">
+      <Link>Implementation\OpUser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Dht\DhtBucket.cs">
+      <Link>Implementation\Dht\DhtBucket.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Dht\DhtNetwork.cs">
+      <Link>Implementation\Dht\DhtNetwork.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Dht\DhtRouting.cs">
+      <Link>Implementation\Dht\DhtRouting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Dht\DhtSearch.cs">
+      <Link>Implementation\Dht\DhtSearch.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Dht\DhtSearchControl.cs">
+      <Link>Implementation\Dht\DhtSearchControl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Dht\DhtStore.cs">
+      <Link>Implementation\Dht\DhtStore.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Protocol\G2Header.cs">
+      <Link>Implementation\Protocol\G2Header.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Protocol\G2Protocol.cs">
+      <Link>Implementation\Protocol\G2Protocol.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Protocol\Packets\PacketsComm.cs">
+      <Link>Implementation\Protocol\Packets\PacketsComm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Protocol\Packets\PacketsNet.cs">
+      <Link>Implementation\Protocol\Packets\PacketsNet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Protocol\Packets\PacketsSpecial.cs">
+      <Link>Implementation\Protocol\Packets\PacketsSpecial.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Transport\LanHandler.cs">
+      <Link>Implementation\Transport\LanHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Transport\LightCommHandler.cs">
+      <Link>Implementation\Transport\LightCommHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Transport\RudpHandler.cs">
+      <Link>Implementation\Transport\RudpHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Transport\RudpSession.cs">
+      <Link>Implementation\Transport\RudpSession.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Transport\RudpSocket.cs">
+      <Link>Implementation\Transport\RudpSocket.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Transport\TcpConnect.cs">
+      <Link>Implementation\Transport\TcpConnect.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Transport\TcpHandler.cs">
+      <Link>Implementation\Transport\TcpHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Transport\UdpHandler.cs">
+      <Link>Implementation\Transport\UdpHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Implementation\Transport\UPnP.cs">
+      <Link>Implementation\Transport\UPnP.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\OpService.cs">
+      <Link>Services\OpService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Assist\LocalSync.cs">
+      <Link>Services\Assist\LocalSync.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Assist\TempCache.cs">
+      <Link>Services\Assist\TempCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Assist\VersionedCache.cs">
+      <Link>Services\Assist\VersionedCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Board\BoardPackets.cs">
+      <Link>Services\Board\BoardPackets.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Board\BoardService.cs">
+      <Link>Services\Board\BoardService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Buddy\BuddyService.cs">
+      <Link>Services\Buddy\BuddyService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Chat\ChatPackets.cs">
+      <Link>Services\Chat\ChatPackets.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Chat\ChatService.cs">
+      <Link>Services\Chat\ChatService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\IM\IMPackets.cs">
+      <Link>Services\IM\IMPackets.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\IM\IMService.cs">
+      <Link>Services\IM\IMService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Location\LocationPackets.cs">
+      <Link>Services\Location\LocationPackets.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Location\LocationService.cs">
+      <Link>Services\Location\LocationService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Location\LookupService.cs">
+      <Link>Services\Location\LookupService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Mail\MailPackets.cs">
+      <Link>Services\Mail\MailPackets.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Mail\MailService.cs">
+      <Link>Services\Mail\MailService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Plan\PlanPackets.cs">
+      <Link>Services\Plan\PlanPackets.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Plan\PlanService.cs">
+      <Link>Services\Plan\PlanService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Profile\ProfilePackets.cs">
+      <Link>Services\Profile\ProfilePackets.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Profile\ProfileService.cs">
+      <Link>Services\Profile\ProfileService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Share\ShareService.cs">
+      <Link>Services\Share\ShareService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Storage\StoragePackets.cs">
+      <Link>Services\Storage\StoragePackets.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Storage\StorageService.cs">
+      <Link>Services\Storage\StorageService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Storage\WorkingStorage.cs">
+      <Link>Services\Storage\WorkingStorage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Transfer\TransferPackets.cs">
+      <Link>Services\Transfer\TransferPackets.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Transfer\TransferService.cs">
+      <Link>Services\Transfer\TransferService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Trust\TrustPackets.cs">
+      <Link>Services\Trust\TrustPackets.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Trust\TrustService.cs">
+      <Link>Services\Trust\TrustService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Update\UpdateService.cs">
+      <Link>Services\Update\UpdateService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Voice\PlayAudio.cs">
+      <Link>Services\Voice\PlayAudio.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Voice\RecordAudio.cs">
+      <Link>Services\Voice\RecordAudio.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Voice\Speex.cs">
+      <Link>Services\Voice\Speex.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Voice\VoiceService.cs">
+      <Link>Services\Voice\VoiceService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Services\Voice\WinMM.cs">
+      <Link>Services\Voice\WinMM.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Simulator\InternetSim.cs">
+      <Link>Simulator\InternetSim.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Utilities\Collections.cs">
+      <Link>Utilities\Collections.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Utilities\Crypto.cs">
+      <Link>Utilities\Crypto.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Utilities\CryptoStreams.cs">
+      <Link>Utilities\CryptoStreams.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Utilities\Test.cs">
+      <Link>Utilities\Test.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Utilities\Utilities.cs">
+      <Link>Utilities\Utilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Utilities\WorkerQueue.cs">
+      <Link>Utilities\WorkerQueue.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Core\Implementation\Design.txt">
+      <Link>Implementation\Design.txt</Link>
+    </None>
+  </ItemGroup>
+</Project>
