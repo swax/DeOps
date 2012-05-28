@@ -29,7 +29,7 @@ namespace DeOps
         Timer SecondTimer;
 
         public UpdateInfo SignedUpdate;
-        public static uint LocalSeqVersion = 14;
+        public static uint CoreVersion = 14;
 
         public BandwidthLog Bandwidth = new BandwidthLog(10);
         public Dictionary<uint, string> KnownServices = new Dictionary<uint, string>();
@@ -256,7 +256,7 @@ namespace DeOps
             if (SignedUpdate == null)
                 return false; // nothing to update with
 
-            return (SignedUpdate.Loaded && SignedUpdate.SequentialVersion > LocalSeqVersion);
+            return (SignedUpdate.Loaded && SignedUpdate.SequentialVersion > CoreVersion);
         }
 
         public void RaiseLogin(string[] args)

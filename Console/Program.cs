@@ -70,7 +70,7 @@ help     - show command list";
 
             Context = new DeOpsContext(StartupPath, null);
 
-            WriteOut("DeOps Alpha v" + DeOpsContext.LocalSeqVersion.ToString());
+            WriteOut("DeOps Alpha v" + DeOpsContext.CoreVersion.ToString());
 
             if (File.Exists("init.txt"))
             {

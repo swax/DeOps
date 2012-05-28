@@ -75,7 +75,7 @@ namespace DeOps
         {
             try
             {
-                string host = "DeOps_" + DeOpsContext.LocalSeqVersion.ToString();
+                string host = "DeOps_" + DeOpsContext.CoreVersion.ToString();
 
                 TheMutex = new Mutex(true, host, out First);
 

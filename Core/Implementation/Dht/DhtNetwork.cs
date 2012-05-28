@@ -1096,7 +1096,7 @@ namespace DeOps.Implementation.Dht
             CrawlAck ack = new CrawlAck();
 
             ack.Source = GetLocalSource();
-            ack.Version = DeOpsContext.LocalSeqVersion.ToString();
+            ack.Version = DeOpsContext.CoreVersion.ToString();
             ack.Uptime = (Core.TimeNow - Core.StartTime).Seconds;
 
 
