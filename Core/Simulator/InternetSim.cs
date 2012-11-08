@@ -26,7 +26,7 @@ namespace DeOps.Simulator
 
         public ThreadedList<SimInstance> Instances = new ThreadedList<SimInstance>();
 
-        Random RndGen = new Random(unchecked((int)DateTime.Now.Ticks));
+        Random RndGen = new Random();
 
         public InstanceChangeHandler InstanceChange;
         public UpdateViewHandler UpdateView;

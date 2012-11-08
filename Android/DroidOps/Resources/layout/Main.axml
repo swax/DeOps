@@ -2,13 +2,30 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    >
-<Button  
-    android:id="@+id/myButton"
-    android:layout_width="fill_parent" 
-    android:layout_height="wrap_content" 
-    android:text="@string/hello"
-    />
+    android:layout_height="fill_parent">
+    <TextView
+        android:id="@+id/StatusTextView"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="" />
+    <Button
+        android:id="@+id/CreateUserButton"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Create User" />
+    <Button
+        android:id="@+id/LoginButton"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Login" />
+    <Button
+        android:id="@+id/LogoffButton"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Logoff" />
+    <TextView
+        android:id="@+id/LogTextView"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="" />
 </LinearLayout>
-

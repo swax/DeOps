@@ -98,7 +98,7 @@ namespace DeOps
 
             Directory.CreateDirectory(TempPath);
 
-            Random rndGen = new Random(unchecked((int)DateTime.Now.Ticks));
+            Random rndGen = new Random();
 
 			// default settings, set tcp/udp the same so forwarding is easier
             Settings.TcpPort = (ushort)rndGen.Next(5000, 9000);

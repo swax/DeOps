@@ -1,0 +1,16 @@
+/Android/Core/bin
+/Android/Core/obj
+/Android/DroidOps/obj
+/Android/DroidOps/bin
+/Console/obj
+/Console/bin
+/Core/obj
+/Core/bin
+/UI/obj
+
+/Android/Android.suo
+/Android/Android.userprefs
+/DeOps.suo
+
+!/Console/bin/Debug/init.txt
+!/Console/bin/Debug/start.sh

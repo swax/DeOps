@@ -120,7 +120,7 @@ namespace DeOps.Implementation
       
 
         // other
-        public Random RndGen = new Random(unchecked((int)DateTime.Now.Ticks));
+        public Random RndGen = new Random();
         public RNGCryptoServiceProvider StrongRndGen = new RNGCryptoServiceProvider();
         public LipsumGenerator TextGen = new LipsumGenerator();
 

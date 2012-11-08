@@ -35,7 +35,11 @@
     <AndroidLinkMode>SdkOnly</AndroidLinkMode>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="NLipsum.Core">
+      <HintPath>..\..\Core\Include\NLipsum.Core.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Web.Services" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
     <Reference Include="Mono.Android" />
@@ -237,6 +241,7 @@
     <Compile Include="..\..\Core\Utilities\WorkerQueue.cs">
       <Link>Utilities\WorkerQueue.cs</Link>
     </Compile>
+    <Compile Include="AndroidShims.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Core\Implementation\Design.txt">

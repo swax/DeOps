@@ -64,8 +64,6 @@ namespace DeOps.Implementation.Transport
         // bandwidth
         public BandwidthLog Bandwidth;
 
-        int TotalIn; //crit - delete
-
 
         // inbound
         public TcpConnect(TcpHandler control)
@@ -514,7 +512,6 @@ namespace DeOps.Implementation.Transport
                 Disconnect();
                 return;
             }
-            TotalIn += length;
 
             Bandwidth.InPerSec += length;
             BytesReceivedinSec += length;
