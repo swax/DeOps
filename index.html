@@ -18,12 +18,11 @@
         <header class="inner">
           <a id="forkme_banner" href="https://github.com/swax/DeOps">Fork Me on GitHub</a>
 
-          <h1 id="project_title">DeOps Alpha</h1>
+          <h1 id="project_title">DeOps</h1>
           <h2 id="project_tagline">Decentralized Operations</h2>
 
           <section id="downloads">
-            <a class="zip_download_link" href="https://github.com/swax/DeOps/zipball/master">Download this project as a .zip file</a>
-            <a class="tar_download_link" href="https://github.com/swax/DeOps/tarball/master">Download this project as a tar.gz file</a>
+            <a class="zip_download_link" href="https://github.com/downloads/swax/DeOps/DeOps.zip">Download this project as a .zip file</a>
           </section>
         </header>
     </div>
@@ -31,13 +30,38 @@
     <!-- MAIN CONTENT -->
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
-        <p><a href="https://github.com/downloads/swax/DeOps/DeOps.zip">Download DeOps v13</a></p>
+	  
+		<h2>The Vision</h2>
+		<p>I found this minute long clip of Steve Jobs in 1990 describing exactly the vision behind DeOps.</p> 
+		
+		<iframe width="560" height="315" src="http://www.youtube.com/embed/2nMD6sjAe8I?
+			rel=0&start=383&end=458" frameborder="0" allowfullscreen></iframe>
+	  
+		<p>It's been over 20 years and Steve Job's vision of a dynamic organization has not been
+		realized (successfully) yet. DeOps is my attempt at pushing the vision forward.</p>
 
-<p>If 20,000 people on the internet decide they want to start organizing something it is difficult with forums and chatrooms to fully utilize everyone. De-Ops is coordination software that allows people to create a bottom-up hierarchy of trust. By declaring the structure of the organization in software and giving its members control of the structure, the organization becomes a living thing that can change and adapt rapidly, while providing full transparency to its members.</p>
-
+		<p>My own vision of DeOps stemmed from organizing development of my open source Gnutella 
+		client Gnucleus way back in 2003. My idea was to create a hierarchical version control system
+		where changes would be reviewed as they were pushed up the hierarchy, and flow back down to
+		other contributors. Since then, Git has made a lot of this vision reality for developers.</p>
+		
+		<p>In 2006 I started development of DeOps as a more general user tool for creating the 
+		'dynamic hierarchical organization' where people could coordinate themselves securely 
+		in a scalable, decentralized, fault tolerate network that could survive network outages and
+		fragmentation in different scenarios. As well as being able to work 'offline' coordinating 
+		behind firewalls and in places with limted internet access like in disaster areas.</p>
+		
+		<p>DeOps is coordination 
+		software that allows people to create a bottom-up hierarchy of trust. By declaring the 
+		structure of the organization in software and giving its members control of the structure, 
+		the organization becomes a living thing that can change and adapt rapidly, while providing 
+		full transparency to its members.</p>
+		
 <h2>Services</h2>
 
-<p>On top of the organizational structure there are traditional services like storage, communication, and planning - built with a hierarchical twist and leveraging a P2P network to maintain persistence and synchronization.</p>
+<p>On top of the organizational structure there are traditional services like storage, communication, 
+and planning - built with a hierarchical twist and leveraging a P2P network to maintain persistence 
+and synchronization.</p>
 
 <h3>Hierarchical File System</h3>
 
@@ -51,21 +75,25 @@
 
 <ul>
 <li>The idea is that in a real-time situation important information is able to climb from the lowest levels rapidly.</li>
-<li>The right headphone is your superior and his/her subordinates, the left headphone is your subordinates.</li>
-<li>For example in a one million person organization, 6 levels, each person with 10 subs, then
-your right headphone would be 10 people, and your left headphone would be 10 people.<br>
+<li>The right headphone is your superior and his/her subordinates, the left headphone are your subordinates.</li>
+<li>For example in a 10,000 person organization, 4 levels, each person with 10 subs, then
+your right headphone would be 10 people, and your left headphone would be 10 people. 
+Which is a lot more managable than a 10,000 person conference call.<br>
 </li>
-</ul><h3>Other Communication</h3>
+</ul><h3>Other Services</h3>
 
 <ul>
 <li>Hierarchical real-time - Chat split into high/low levels, also private chat rooms</li>
 <li>Hierarchical persistant - Message boards</li>
 <li>Direct real-time - Instant messaging</li>
 <li>Direct persistant - EMail</li>
+<li>Calendar - An interactive matrix of time by users. Plans are inherited by subordinates.</li>
 </ul><h3>Demo</h3>
+<p>This is an run through of the services included with DeOps. Sorry about the audio, I need to re-record it.</p>
 <p>
 <iframe width="420" height="315" src="http://www.youtube.com/embed/YX-sDlqFnU0" frameborder="0" allowfullscreen></iframe>
 </p>
+
 
 <h2>The Core</h2>
 
@@ -76,7 +104,7 @@ your right headphone would be 10 people, and your left headphone would be 10 peo
 <h3>The Network</h3>
 
 <ul>
-<li>Decentralized, secure, p2p, similar to <a href="http://waste.sourceforge.net">WASTE</a> but scalable.</li>
+<li>Decentralized, secure, P2P, similar to <a href="http://waste.sourceforge.net">WASTE</a> but scalable.</li>
 <li>Each organization is its own network.</li>
 <li>Each node on a network is identified by a public key.</li>
 <li>A 'Global IM' network is available for inter-organization communication.</li>
@@ -90,17 +118,30 @@ your right headphone would be 10 people, and your left headphone would be 10 peo
 
 <ul>
 <li>Windows graphical client</li>
-<li>Console client - Can be run on linux as a daemon to give a network more persistance</li>
-<li>DeOps Library - Backend that can be used for building clients for any platform</li>
+<li>Android client in Beta</li>
+<li>Console client - Can be run on linux as a daemon to give a network more persistance .</li>
+<li>DeOps Library - Backend that can be used for building clients for any platform.</li>
+<li><a href="https://github.com/downloads/swax/DeOps/DeOps.zip">Download the Windows and Console clients</a></li>
 </ul>
+
+
+
       </section>
     </div>
 
     <!-- FOOTER  -->
     <div id="footer_wrap" class="outer">
       <footer class="inner">
-        <p class="copyright">DeOps Alpha maintained by <a href="https://github.com/swax">swax</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+		<p style="float:right;"><a href="#">Back to top</a></p>
+
+		<p>DeOps<br>
+		<b>All suggestions and comments are welcome.</b></p>
+
+		<p>
+			Contact John Marshall <br>
+			<a href="mailto:john.m.marshall@gmail.com" target="_blank">Email</a> | <a href="http://twitter.com/swax" target="_blank">Twitter</a> | <a href="http://www.linkedin.com/in/johnmarshall82" target="_blank">Linkedin</a> | <a href="https://github.com/swax" target="_blank">Github</a>
+		</p>
+         
       </footer>
     </div>
 
