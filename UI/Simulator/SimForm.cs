@@ -342,45 +342,45 @@ namespace DeOps.Simulator
             if (item == null)
                 return;
 
-            ContextMenu menu = new ContextMenu();
+            ContextMenuStrip menu = new ContextMenuStrip();
 
             if(item.Core == null)
-                menu.MenuItems.Add(new MenuItem("Login", new EventHandler(Click_Connect)));
+                menu.Items.Add("Login", null, new EventHandler(Click_Connect));
             else
             {
-                MenuItem global = null;
+                ToolStripMenuItem global = null;
 
                 if (item.Instance.Context.Lookup != null)
                 {
-                    global = new MenuItem("Lookup");
-                    global.MenuItems.Add(new MenuItem("Crawler", new EventHandler(Click_GlobalCrawler)));
-                    global.MenuItems.Add(new MenuItem("Graph", new EventHandler(Click_GlobalGraph)));
-                    global.MenuItems.Add(new MenuItem("Packets", new EventHandler(Click_GlobalPackets)));
-                    global.MenuItems.Add(new MenuItem("Search", new EventHandler(Click_GlobalSearch)));
+                    global = new ToolStripMenuItem("Lookup");
+                    global.DropDownItems.Add("Crawler", null, new EventHandler(Click_GlobalCrawler));
+                    global.DropDownItems.Add("Graph", null, new EventHandler(Click_GlobalGraph));
+                    global.DropDownItems.Add("Packets", null, new EventHandler(Click_GlobalPackets));
+                    global.DropDownItems.Add("Search", null, new EventHandler(Click_GlobalSearch));
                 }
 
-                MenuItem operation = new MenuItem("Organization");
-                operation.MenuItems.Add(new MenuItem("Crawler", new EventHandler(Click_OpCrawler)));
-                operation.MenuItems.Add(new MenuItem("Graph", new EventHandler(Click_OpGraph)));
-                operation.MenuItems.Add(new MenuItem("Packets", new EventHandler(Click_OpPackets)));
-                operation.MenuItems.Add(new MenuItem("Search", new EventHandler(Click_OpSearch)));
+                ToolStripMenuItem operation = new ToolStripMenuItem("Organization");
+                operation.DropDownItems.Add("Crawler", null, new EventHandler(Click_OpCrawler));
+                operation.DropDownItems.Add("Graph", null, new EventHandler(Click_OpGraph));
+                operation.DropDownItems.Add("Packets", null, new EventHandler(Click_OpPackets));
+                operation.DropDownItems.Add("Search", null, new EventHandler(Click_OpSearch));
 
-                MenuItem firewall = new MenuItem("Firewall");
-                firewall.MenuItems.Add(new MenuItem("Open", new EventHandler(Click_FwOpen)));
-                firewall.MenuItems.Add(new MenuItem("NAT", new EventHandler(Click_FwNAT)));
-                firewall.MenuItems.Add(new MenuItem("Blocked", new EventHandler(Click_FwBlocked)));
+                ToolStripMenuItem firewall = new ToolStripMenuItem("Firewall");
+                firewall.DropDownItems.Add("Open", null, new EventHandler(Click_FwOpen));
+                firewall.DropDownItems.Add("NAT", null, new EventHandler(Click_FwNAT));
+                firewall.DropDownItems.Add("Blocked", null, new EventHandler(Click_FwBlocked));
 
 
-                menu.MenuItems.Add(new MenuItem("Main", new EventHandler(Click_Main)));
-                menu.MenuItems.Add(new MenuItem("Internal", new EventHandler(Click_Internal)));
-                menu.MenuItems.Add(new MenuItem("Bandwidth", new EventHandler(Click_Bandwidth)));
-                menu.MenuItems.Add(new MenuItem("Transfers", new EventHandler(Click_Transfers)));
-                if(global != null) menu.MenuItems.Add(global);
-                menu.MenuItems.Add(operation);
-                menu.MenuItems.Add(firewall);
-                menu.MenuItems.Add(new MenuItem("Console", new EventHandler(Click_Console)));
-                menu.MenuItems.Add(new MenuItem("-"));
-                menu.MenuItems.Add(new MenuItem("Logout", new EventHandler(Click_Disconnect)));
+                menu.Items.Add("Main", null, new EventHandler(Click_Main));
+                menu.Items.Add("Internal", null, new EventHandler(Click_Internal));
+                menu.Items.Add("Bandwidth", null, new EventHandler(Click_Bandwidth));
+                menu.Items.Add("Transfers", null, new EventHandler(Click_Transfers));
+                if(global != null) menu.Items.Add(global);
+                menu.Items.Add(operation);
+                menu.Items.Add(firewall);
+                menu.Items.Add("Console", null, new EventHandler(Click_Console));
+                menu.Items.Add("-");
+                menu.Items.Add("Logout", null, new EventHandler(Click_Disconnect));
             }
 
             menu.Show(ListInstances, e.Location);

@@ -1,10 +1,12 @@
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UI", "UI\UI.csproj", "{83CFFBE4-8EB9-446D-851A-3874799F3172}"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32825.248
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UI", "UI\UI.csproj", "{83CFFBE4-8EB9-446D-851A-3874799F3172}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{1896627D-18E4-4687-AE49-35226EC91540}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core", "Core\Core.csproj", "{1896627D-18E4-4687-AE49-35226EC91540}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Console", "Console\Console.csproj", "{8C11CCBE-1D9F-433F-A524-7F416D96615C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Console", "Console\Console.csproj", "{8C11CCBE-1D9F-433F-A524-7F416D96615C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1C575E8C-66DF-4FCF-BA08-E0E768EFD36B}"
 	ProjectSection(SolutionItems) = preProject
@@ -42,10 +44,10 @@ Global
 		{1896627D-18E4-4687-AE49-35226EC91540}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{1896627D-18E4-4687-AE49-35226EC91540}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{1896627D-18E4-4687-AE49-35226EC91540}.Release|x86.ActiveCfg = Release|Any CPU
-		{8C11CCBE-1D9F-433F-A524-7F416D96615C}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{8C11CCBE-1D9F-433F-A524-7F416D96615C}.Debug|Any CPU.Build.0 = Debug|x86
-		{8C11CCBE-1D9F-433F-A524-7F416D96615C}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
-		{8C11CCBE-1D9F-433F-A524-7F416D96615C}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{8C11CCBE-1D9F-433F-A524-7F416D96615C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C11CCBE-1D9F-433F-A524-7F416D96615C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C11CCBE-1D9F-433F-A524-7F416D96615C}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{8C11CCBE-1D9F-433F-A524-7F416D96615C}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{8C11CCBE-1D9F-433F-A524-7F416D96615C}.Debug|x86.ActiveCfg = Debug|x86
 		{8C11CCBE-1D9F-433F-A524-7F416D96615C}.Debug|x86.Build.0 = Debug|x86
 		{8C11CCBE-1D9F-433F-A524-7F416D96615C}.Release|Any CPU.ActiveCfg = Release|x86
@@ -56,5 +58,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {86529978-4592-4472-AC5C-4FB578B08B56}
 	EndGlobalSection
 EndGlobal

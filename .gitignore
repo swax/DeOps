@@ -14,3 +14,6 @@
 
 !/Console/bin/Debug/init.txt
 !/Console/bin/Debug/start.sh
+.vs/
+UI/bin/
+*.user

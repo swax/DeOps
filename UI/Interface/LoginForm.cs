@@ -19,8 +19,7 @@ using DeOps.Implementation.Protocol.Special;
 using DeOps.Interface.Startup;
 
 using DeOps.Simulator;
-using System.Web;
-
+using System.Net;
 
 namespace DeOps.Interface
 {
@@ -178,8 +177,8 @@ namespace DeOps.Interface
 
             // Select John Marshall's Global IM Profile
             string[] nameParts = mainParts[2].Split('@');
-            string name = HttpUtility.UrlDecode(nameParts[0]);
-            string op = HttpUtility.UrlDecode(nameParts[1]);
+            string name = WebUtility.UrlDecode(nameParts[0]);
+            string op = WebUtility.UrlDecode(nameParts[1]);
 
             byte[] data = Utilities.HextoBytes(mainParts[3]);
             byte[] pubOpID = Utilities.ExtractBytes(data, 0, 8);

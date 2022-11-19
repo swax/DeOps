@@ -18,7 +18,7 @@ using DeOps.Implementation.Protocol.Net;
 using DeOps.Implementation.Protocol.Special;
 using DeOps.Services.Update;
 using System.Xml.Serialization;
-
+using System.Linq;
 
 namespace DeOps
 {
@@ -243,6 +243,8 @@ namespace DeOps
 
                         if (OpIcon != null)
                             stream.WritePacket(new IconPacket(IdentityPacket.Icon, OpIcon));
+
+                        crypto.Close();
                     }
                 }
 

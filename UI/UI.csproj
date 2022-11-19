@@ -1,12 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <ProjectType>Local</ProjectType>
-    <ProductVersion>9.0.21022</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{83CFFBE4-8EB9-446D-851A-3874799F3172}</ProjectGuid>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ApplicationIcon>deops.ico</ApplicationIcon>
     <AssemblyKeyContainerName>
     </AssemblyKeyContainerName>
@@ -21,14 +16,7 @@
     <RootNamespace>DeOps</RootNamespace>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
     <StartupObject>DeOps.Startup</StartupObject>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <UpgradeBackupLocation>
-    </UpgradeBackupLocation>
-    <SignAssembly>false</SignAssembly>
-    <OldToolsVersion>3.5</OldToolsVersion>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -40,81 +28,30 @@
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <ApplicationVersion>1.0.0.3</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <OutputPath>bin\Debug\</OutputPath>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <BaseAddress>285212672</BaseAddress>
-    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-    <ConfigurationOverrideFile>
-    </ConfigurationOverrideFile>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DocumentationFile>
-    </DocumentationFile>
-    <DebugSymbols>true</DebugSymbols>
-    <FileAlignment>4096</FileAlignment>
-    <NoStdLib>false</NoStdLib>
-    <NoWarn>
-    </NoWarn>
-    <Optimize>false</Optimize>
-    <RegisterForComInterop>false</RegisterForComInterop>
-    <RemoveIntegerChecks>false</RemoveIntegerChecks>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <WarningLevel>4</WarningLevel>
-    <DebugType>full</DebugType>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <PlatformTarget>x86</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <OutputPath>bin\Release\</OutputPath>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <BaseAddress>285212672</BaseAddress>
-    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
-    <ConfigurationOverrideFile>
-    </ConfigurationOverrideFile>
-    <DefineConstants>TRACE</DefineConstants>
-    <DocumentationFile>
-    </DocumentationFile>
-    <DebugSymbols>false</DebugSymbols>
-    <FileAlignment>4096</FileAlignment>
-    <NoStdLib>false</NoStdLib>
-    <NoWarn>
-    </NoWarn>
-    <Optimize>true</Optimize>
-    <RegisterForComInterop>false</RegisterForComInterop>
-    <RemoveIntegerChecks>false</RemoveIntegerChecks>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <WarningLevel>4</WarningLevel>
-    <DebugType>none</DebugType>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System">
+    <Reference Update="System">
       <Name>System</Name>
     </Reference>
-    <Reference Include="System.Core">
+    <Reference Update="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
       <Private>True</Private>
     </Reference>
-    <Reference Include="System.Data">
+    <Reference Update="System.Data">
       <Name>System.Data</Name>
     </Reference>
     <Reference Include="System.Design" />
-    <Reference Include="System.Drawing">
+    <Reference Update="System.Drawing">
       <Name>System.Drawing</Name>
     </Reference>
     <Reference Include="System.Runtime.Remoting" />
-    <Reference Include="System.Web" />
-    <Reference Include="System.Windows.Forms">
-      <Name>System.Windows.Forms</Name>
-    </Reference>
-    <Reference Include="System.Xml">
+    <Reference Update="System.Xml">
       <Name>System.XML</Name>
     </Reference>
     <Reference Include="ZedGraph, Version=5.1.4.31904, Culture=neutral, PublicKeyToken=02a83cbd123fcd60, processorArchitecture=MSIL">
@@ -123,1149 +60,108 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AppSettings.cs" />
-    <Compile Include="AssemblyInfo.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Interface\Settings\MyAddress.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Settings\MyAddress.Designer.cs">
-      <DependentUpon>MyAddress.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Board\BoardUI.cs" />
-    <Compile Include="Services\Buddy\BuddyUI.cs" />
-    <Compile Include="Services\Chat\ChatUI.cs" />
-    <Compile Include="Services\IM\IMUI.cs" />
-    <Compile Include="Services\Mail\MailUI.cs" />
-    <Compile Include="Services\Plan\PlanUI.cs" />
-    <Compile Include="Services\Profile\ProfileUI.cs" />
-    <Compile Include="Services\Share\ShareUI.cs" />
-    <Compile Include="Services\Storage\StorageUI.cs" />
-    <Compile Include="Services\Trust\TrustUI.cs" />
-    <Compile Include="AppContext.cs" />
-    <Compile Include="Interface\Settings\IgnoreForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Settings\IgnoreForm.Designer.cs">
-      <DependentUpon>IgnoreForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\UpnpLog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Settings\UpnpLog.Designer.cs">
-      <DependentUpon>UpnpLog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\UpnpSetup.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Settings\UpnpSetup.Designer.cs">
-      <DependentUpon>UpnpSetup.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Views\CustomIconForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\ErrorReport.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\ErrorReport.Designer.cs">
-      <DependentUpon>ErrorReport.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\IMForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\IMForm.Designer.cs">
-      <DependentUpon>IMForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Info\InfoView.cs">
+    <Compile Update="Interface\Info\InfoView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Interface\Info\InfoView.Designer.cs">
-      <DependentUpon>InfoView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\Connection.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Settings\Connection.Designer.cs">
-      <DependentUpon>Connection.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\CacheSetup.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Settings\CacheSetup.Designer.cs">
-      <DependentUpon>CacheSetup.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\Operation.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Settings\Operation.Designer.cs">
-      <DependentUpon>Operation.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Settings\User.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Settings\User.Designer.cs">
-      <DependentUpon>User.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Setup\CreateUser.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Setup\CreateUser.Designer.cs">
-      <DependentUpon>CreateUser.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Setup\JoinOp.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Setup\JoinOp.Designer.cs">
-      <DependentUpon>JoinOp.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Setup\IdentityForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Setup\IdentityForm.Designer.cs">
-      <DependentUpon>IdentityForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\StatusPanel.cs">
+    <Compile Update="Interface\StatusPanel.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Interface\StatusPanel.Designer.cs">
-      <DependentUpon>StatusPanel.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Tools\BandwidthForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Tools\BandwidthForm.Designer.cs">
-      <DependentUpon>BandwidthForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Info\NetworkPanel.cs">
+    <Compile Update="Interface\Info\NetworkPanel.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Interface\Info\NetworkPanel.Designer.cs">
-      <DependentUpon>NetworkPanel.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Views\ImageButton.cs">
+    <Compile Update="Interface\Views\ImageButton.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Interface\Views\Res\ViewRes.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ViewRes.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Views\RichTextBoxEx.cs">
+    <Compile Update="Interface\Views\RichTextBoxEx.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Interface\Views\WebBrowserEx.cs">
+    <Compile Update="Interface\Views\WebBrowserEx.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Services\Buddy\BuddyView.cs">
+    <Compile Update="Services\Buddy\BuddyView.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Services\Buddy\res\BuddyRes.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>BuddyRes.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Chat\InviteForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Chat\InviteForm.Designer.cs">
-      <DependentUpon>InviteForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Location\StatusForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Location\StatusForm.Designer.cs">
-      <DependentUpon>StatusForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Share\AcceptFileForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Share\AcceptFileForm.Designer.cs">
-      <DependentUpon>AcceptFileForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Share\Res\ShareRes.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ShareRes.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Share\SendFileForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Share\SendFileForm.Designer.cs">
-      <DependentUpon>SendFileForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Share\ShareInfoPanel.cs">
+    <Compile Update="Services\Share\ShareInfoPanel.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Share\ShareInfoPanel.Designer.cs">
-      <DependentUpon>ShareInfoPanel.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Share\SharingView.cs">
+    <Compile Update="Services\Share\SharingView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Share\SharingView.Designer.cs">
-      <DependentUpon>SharingView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Transfer\BitfieldControl.cs">
+    <Compile Update="Services\Transfer\BitfieldControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Transfer\BitfieldControl.Designer.cs">
-      <DependentUpon>BitfieldControl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Board\Res\BoardRes.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>BoardRes.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Board\BoardView.cs">
+    <Compile Update="Services\Board\BoardView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Board\BoardView.Designer.cs">
-      <DependentUpon>BoardView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Board\PostMessage.cs">
+    <Compile Update="Services\Board\PostMessage.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Board\PostMessage.Designer.cs">
-      <DependentUpon>PostMessage.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Chat\CreateRoom.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Chat\CreateRoom.Designer.cs">
-      <DependentUpon>CreateRoom.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Chat\Res\ChatRes.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ChatRes.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Services\IM\Res\IMRes.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>IMRes.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Trust\LinkTree.cs">
+    <Compile Update="Services\Trust\LinkTree.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Services\Trust\RemoveLinks.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Trust\RemoveLinks.Designer.cs">
-      <DependentUpon>RemoveLinks.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Trust\Res\LinkRes.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>LinkRes.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Mail\Res\MailRes.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>MailRes.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Plan\Goals\EditGoal.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Plan\Goals\EditGoal.Designer.cs">
-      <DependentUpon>EditGoal.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Plan\Goals\EditPlanItem.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Plan\Goals\EditPlanItem.Designer.cs">
-      <DependentUpon>EditPlanItem.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Plan\Goals\GoalPanel.cs">
+    <Compile Update="Services\Plan\Goals\GoalPanel.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Plan\Goals\GoalPanel.Designer.cs">
-      <DependentUpon>GoalPanel.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Plan\Goals\GoalsView.cs">
+    <Compile Update="Services\Plan\Goals\GoalsView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Plan\Goals\GoalsView.Designer.cs">
-      <DependentUpon>GoalsView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Plan\Goals\ProgressText.cs">
+    <Compile Update="Services\Plan\Goals\ProgressText.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Plan\Goals\ProgressText.Designer.cs">
-      <DependentUpon>ProgressText.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Plan\Res\PlanRes.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>PlanRes.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Plan\Schedule\BlockRow.cs">
+    <Compile Update="Services\Plan\Schedule\BlockRow.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Plan\Schedule\BlockRow.Designer.cs">
-      <DependentUpon>BlockRow.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Plan\Schedule\DateArrows.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>DateArrows.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Plan\Schedule\EditBlock.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Plan\Schedule\EditBlock.Designer.cs">
-      <DependentUpon>EditBlock.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Plan\Schedule\DateSlider.cs">
+    <Compile Update="Services\Plan\Schedule\DateSlider.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Plan\Schedule\DateSlider.Designer.cs">
-      <DependentUpon>DateSlider.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Plan\Schedule\ScheduleView.cs">
+    <Compile Update="Services\Plan\Schedule\ScheduleView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Plan\Schedule\ScheduleView.Designer.cs">
-      <DependentUpon>ScheduleView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\AddUsersDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\AddUsersDialog.Designer.cs">
-      <DependentUpon>AddUsersDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Profile\EditTemplate.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Profile\EditTemplate.Designer.cs">
-      <DependentUpon>EditTemplate.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Profile\EditProfile.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Profile\EditProfile.Designer.cs">
-      <DependentUpon>EditProfile.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Profile\PreviewTemplate.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Profile\PreviewTemplate.Designer.cs">
-      <DependentUpon>PreviewTemplate.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Profile\Res\ProfileRes.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ProfileRes.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Storage\Forms\DetailsForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Storage\Forms\DetailsForm.Designer.cs">
-      <DependentUpon>DetailsForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Storage\Forms\DiffForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Storage\Forms\DiffForm.Designer.cs">
-      <DependentUpon>DiffForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Storage\Forms\EditNotes.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Storage\Forms\EditNotes.Designer.cs">
-      <DependentUpon>EditNotes.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Storage\Forms\HashStatus.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Storage\Forms\HashStatus.Designer.cs">
-      <DependentUpon>HashStatus.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Storage\InfoPanel.cs">
+    <Compile Update="Services\Storage\InfoPanel.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Storage\InfoPanel.Designer.cs">
-      <DependentUpon>InfoPanel.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Storage\Forms\LockMessage.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Storage\Forms\LockMessage.Designer.cs">
-      <DependentUpon>LockMessage.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Storage\StorageView.cs">
+    <Compile Update="Services\Storage\StorageView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Storage\StorageView.Designer.cs">
-      <DependentUpon>StorageView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Storage\Res\StorageRes.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>StorageRes.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Storage\Forms\UnlockForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Storage\Forms\UnlockForm.Designer.cs">
-      <DependentUpon>UnlockForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Transfer\TransferView.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Transfer\TransferView.Designer.cs">
-      <DependentUpon>TransferView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Chat\RoomView.cs">
+    <Compile Update="Services\Chat\RoomView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Chat\RoomView.Designer.cs">
-      <DependentUpon>RoomView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Chat\ChatView.cs">
+    <Compile Update="Services\Chat\ChatView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Chat\ChatView.Designer.cs">
-      <DependentUpon>ChatView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\IM\IM_View.cs">
+    <Compile Update="Services\IM\IM_View.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\IM\IM_View.Designer.cs">
-      <DependentUpon>IM_View.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Mail\ComposeMail.cs">
+    <Compile Update="Services\Mail\ComposeMail.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Mail\ComposeMail.Designer.cs">
-      <DependentUpon>ComposeMail.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Mail\MailView.cs">
+    <Compile Update="Services\Mail\MailView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Mail\MailView.Designer.cs">
-      <DependentUpon>MailView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Views\ContextMenuStripEx.cs">
+    <Compile Update="Interface\Views\ContextMenuStripEx.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Interface\Views\GetTextDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Views\GetTextDialog.Designer.cs">
-      <DependentUpon>GetTextDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Setup\NewProjectForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Setup\NewProjectForm.Designer.cs">
-      <DependentUpon>NewProjectForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Profile\ProfileView.cs">
+    <Compile Update="Services\Profile\ProfileView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Services\Profile\ProfileView.Designer.cs">
-      <DependentUpon>ProfileView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Res\InterfaceRes.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>InterfaceRes.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\TrayLock.cs" />
-    <Compile Include="Interface\Views\ColorTable.cs" />
-    <Compile Include="Interface\Views\TreeListViewEx\ContainerListView.cs">
+    <Compile Update="Interface\Views\TreeListViewEx\ContainerListView.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Interface\Views\TreeListViewEx\IParentChildList.cs" />
-    <Compile Include="Interface\Views\TreeListViewEx\StringTools.cs" />
-    <Compile Include="Interface\Views\TreeListViewEx\TreeListView.cs">
+    <Compile Update="Interface\Views\TreeListViewEx\TreeListView.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Interface\Views\ViewShell.cs">
+    <Compile Update="Interface\Views\ViewShell.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Interface\Views\ViewShell.Designer.cs">
-      <DependentUpon>ViewShell.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Views\TextInput.cs">
+    <Compile Update="Interface\Views\TextInput.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Interface\Views\TextInput.Designer.cs">
-      <DependentUpon>TextInput.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Views\ExternalView.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Views\ExternalView.Designer.cs">
-      <DependentUpon>ExternalView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Trust\EditLink.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Trust\EditLink.Designer.cs">
-      <DependentUpon>EditLink.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Tools\ConsoleForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Tools\CrawlerForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Tools\GraphForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Tools\InternalsForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Tools\PacketsForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Setup\InviteForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Setup\InviteForm.Designer.cs">
-      <DependentUpon>InviteForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\MainForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\MainForm.Designer.cs">
-      <DependentUpon>MainForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\LoginForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\LoginForm.Designer.cs">
-      <DependentUpon>LoginForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Setup\CreateOp.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Setup\CreateOp.Designer.cs">
-      <DependentUpon>CreateOp.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\Tools\SearchForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Interface\Tools\SearchForm.Designer.cs">
-      <DependentUpon>SearchForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Update\UpdateForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Update\UpdateForm.Designer.cs">
-      <DependentUpon>UpdateForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Voice\Res\VoiceRes.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>VoiceRes.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Voice\VoiceSettings.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Services\Voice\VoiceSettings.Designer.cs">
-      <DependentUpon>VoiceSettings.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Services\Voice\VoiceToolstripButton.cs">
+    <Compile Update="Services\Voice\VoiceToolstripButton.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Simulator\GenerateUsers.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Simulator\GenerateUsers.Designer.cs">
-      <DependentUpon>GenerateUsers.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Simulator\LegendForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Simulator\LegendForm.Designer.cs">
-      <DependentUpon>LegendForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Simulator\NetView.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Simulator\NetView.Designer.cs">
-      <DependentUpon>NetView.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Simulator\SelectServices.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Simulator\SelectServices.Designer.cs">
-      <DependentUpon>SelectServices.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Simulator\SimForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Simulator\SimForm.Designer.cs">
-      <DependentUpon>SimForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Simulator\TrackFile.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Simulator\TrackFile.Designer.cs">
-      <DependentUpon>TrackFile.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Startup.cs" />
-    <Compile Include="Utilities\GuiUtils.cs" />
-    <Compile Include="Win32.cs" />
-    <Content Include="deops.ico" />
-    <None Include="app.config" />
-    <None Include="Services\Buddy\res\buddy_add.png" />
-    <None Include="Services\Buddy\res\buddy_remove.png" />
-    <None Include="Services\Buddy\res\group.png" />
-    <None Include="Services\Buddy\res\group_add.png" />
-    <None Include="Services\Buddy\res\group_remove.png" />
-    <None Include="Services\Buddy\res\buddy.png" />
-    <None Include="Interface\Res\project.png" />
-    <None Include="Interface\Res\project add.png" />
-    <None Include="Interface\Res\project remove.png" />
-    <None Include="Services\Buddy\res\buddy_who.png" />
-    <None Include="Services\Share\Res\share.png" />
     <None Include="Services\Storage\Res\storage.png" />
-    <None Include="Services\Share\Res\share.ico" />
-    <None Include="Services\Share\Res\sendfile.png" />
-    <None Include="Services\Buddy\res\away.png" />
-    <None Include="Services\Buddy\res\blocked.png" />
     <None Include="Interface\Res\reg.jpg" />
-    <None Include="Interface\Res\reg.gif" />
-    <None Include="Interface\Res\reg.png" />
-    <None Include="Interface\Res\splash.png" />
-    <Content Include="Interface\Views\Res\bold.ico" />
-    <Content Include="Interface\Views\Res\colors.png" />
-    <Content Include="Interface\Views\Res\copy.png" />
-    <Content Include="Interface\Views\Res\cut.png" />
-    <Content Include="Interface\Views\Res\font.png" />
-    <Content Include="Interface\Views\Res\fontbig.ico" />
-    <Content Include="Interface\Views\Res\fontnormal.ico" />
-    <Content Include="Interface\Views\Res\fontsmall.ico" />
-    <Content Include="Interface\Views\Res\italic.ico" />
-    <Content Include="Interface\Views\Res\normal.png" />
-    <Content Include="Interface\Views\Res\paste.png" />
-    <Content Include="Interface\Views\Res\richtext.png" />
-    <None Include="Interface\Views\Res\timestamp.png" />
-    <Content Include="Interface\Views\Res\underlne.ico" />
-    <Content Include="Services\Transfer\transfers.txt" />
-    <None Include="Interface\Res\settings.png" />
-    <None Include="Interface\Res\tools.png" />
-    <None Include="Interface\Res\manage.png" />
-    <None Include="Interface\Res\riseop.ico">
-    </None>
-    <None Include="Interface\Res\splash.jpg" />
-    <None Include="Interface\Res\save.png" />
-    <None Include="Interface\Res\discard.png" />
-    <None Include="Interface\Res\save_hot.png" />
-    <None Include="Interface\Res\save_norm.png" />
-    <None Include="Interface\Res\discard_down.png" />
-    <None Include="Interface\Res\discard_hot.png" />
-    <None Include="Interface\Res\discard_norm.png" />
-    <None Include="Interface\Res\save_down.png" />
-    <Content Include="Services\Board\Board.txt" />
-    <None Include="Services\Chat\Res\chat.ico" />
-    <None Include="Services\Board\Res\lower.png" />
-    <None Include="Services\Board\Res\post.png" />
-    <None Include="Services\Board\Res\high_scope.png" />
-    <None Include="Services\Board\Res\higher.png" />
-    <None Include="Services\Board\Res\low_scope.png" />
-    <None Include="Services\Board\Res\compose.ico" />
-    <Content Include="Services\Chat\Chat.txt" />
-    <None Include="Services\IM\Res\im.ico" />
-    <None Include="Services\Trust\Res\confirmlink.ico" />
-    <None Include="Services\Trust\Res\link.ico" />
-    <None Include="Services\IM\Res\redled.png" />
-    <None Include="Services\IM\Res\greenled.png" />
-    <None Include="Services\IM\Res\yellowled.png" />
-    <None Include="Services\Chat\Res\invite.png" />
-    <None Include="Services\Mail\Res\recvmail.png" />
-    <None Include="Services\Mail\Res\sentmail.png" />
-    <None Include="Services\Plan\Res\details1.png" />
-    <None Include="Services\Plan\Res\details2.png" />
-    <Content Include="Services\Trust\Link.txt" />
-    <None Include="Services\Trust\Res\unlink.ico" />
-    <Content Include="Services\Location\Location.txt" />
-    <None Include="Services\Plan\Res\goals.ico" />
-    <None Include="Services\Mail\Res\mail.ico" />
-    <None Include="Services\Mail\Res\mail.png" />
-    <None Include="Services\Mail\Res\mail_attach.png" />
-    <None Include="Services\Mail\Res\compose.ico" />
-    <None Include="Services\Mail\Res\delete.gif" />
-    <Content Include="Services\Plan\Plan.txt" />
-    <None Include="Services\Plan\Res\schedule.ico" />
-    <None Include="Services\Profile\Res\profile.ico" />
-    <None Include="Services\Plan\Res\archive.png" />
-    <None Include="Services\Plan\Res\reject.gif" />
-    <None Include="Services\Plan\Res\details.png" />
-    <None Include="Services\Profile\Res\DefaultPhoto.jpg" />
-    <None Include="Services\Plan\Res\low_goal.png" />
-    <None Include="Services\Plan\Res\star.png" />
-    <None Include="Services\Plan\Res\high_goal.png" />
-    <Content Include="Services\Profile\Profile.txt" />
-    <None Include="Services\Storage\Res\storage.ico" />
-    <None Include="Services\Storage\Res\details.png" />
-    <None Include="Services\Storage\Res\add.png" />
-    <None Include="Services\Storage\Res\add.gif" />
-    <Content Include="Services\Storage\storage.txt" />
-    <Content Include="Services\Storage\storage2.txt" />
-    <Content Include="Services\Mail\Mail.txt" />
-    <None Include="Graphics\locked.png" />
-    <None Include="Graphics\unlocked.png" />
-    <None Include="Graphics\archive.png" />
-    <None Include="Graphics\folder.png" />
-    <None Include="Graphics\locked.gif" />
-    <None Include="Graphics\unlocked.gif" />
-    <None Include="Graphics\edit.gif" />
-    <None Include="Graphics\open.gif" />
-    <None Include="Graphics\diff.gif" />
-    <None Include="Graphics\archfolder.png" />
-    <None Include="Graphics\storage\download.gif" />
     <None Include="Graphics\storage\dl_cancel.gif" />
-    <None Include="Graphics\storage\downloadCancel.gif" />
-    <None Include="Graphics\storage\Higher.png" />
-    <None Include="Graphics\storage\Lower.png" />
-    <None Include="Graphics\storage\DownloadSmall.png" />
-    <None Include="Graphics\storage\GhostFolder.png" />
-    <None Include="Graphics\storage\Folder.png" />
-    <None Include="Graphics\storage\Ghost.png" />
-    <None Include="Graphics\storage\Temp.png" />
-    <None Include="Graphics\storage\reject.gif" />
-    <None Include="Graphics\storage\replace.gif" />
-    <None Include="Graphics\storage\extend1.gif" />
-    <None Include="Graphics\storage\close.gif" />
-    <None Include="Graphics\storage\extend2.gif" />
-    <None Include="Graphics\storage\accept.gif" />
-    <None Include="Graphics\storage\InHigher.png" />
-    <None Include="Graphics\storage\InLower.png" />
-    <None Include="Services\Voice\Res\VoicePTT.png" />
-    <None Include="Services\Voice\Res\VoiceOff.png" />
-    <None Include="Services\Voice\Res\VoiceMute.png" />
-    <None Include="Services\Voice\Res\VoiceVAD.png" />
-    <None Include="Services\Voice\Res\VoiceSettings.png" />
-    <None Include="Services\Trust\Res\unlink.png" />
-    <None Include="Services\Trust\Res\linkup.png" />
-    <None Include="Interface\Res\views.png" />
-    <None Include="Interface\Res\star.png" />
-    <None Include="Interface\Res\keyhole.png" />
-    <None Include="Interface\Res\news.png" />
-    <None Include="Interface\Res\news_hot.png" />
-    <None Include="Interface\Res\data.png" />
-    <None Include="Interface\Res\comm.png" />
-    <None Include="Interface\Res\plans.png" />
-    <None Include="Graphics\leftarrow.png" />
-    <None Include="Graphics\rightarrow.png" />
-    <EmbeddedResource Include="Interface\ErrorReport.resx">
-      <DependentUpon>ErrorReport.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\IMForm.resx">
-      <DependentUpon>IMForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Info\InfoView.resx">
-      <DependentUpon>InfoView.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Settings\Connection.resx">
-      <DependentUpon>Connection.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Settings\CacheSetup.resx">
-      <DependentUpon>CacheSetup.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Settings\IgnoreForm.resx">
-      <DependentUpon>IgnoreForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Settings\MyAddress.resx">
-      <DependentUpon>MyAddress.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Settings\Operation.resx">
-      <DependentUpon>Operation.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Settings\UpnpLog.resx">
-      <DependentUpon>UpnpLog.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Settings\UpnpSetup.resx">
-      <DependentUpon>UpnpSetup.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Settings\User.resx">
-      <DependentUpon>User.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Setup\CreateUser.resx">
-      <DependentUpon>CreateUser.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Setup\JoinOp.resx">
-      <DependentUpon>JoinOp.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Setup\IdentityForm.resx">
-      <DependentUpon>IdentityForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\StatusPanel.resx">
-      <DependentUpon>StatusPanel.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Tools\BandwidthForm.resx">
-      <DependentUpon>BandwidthForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Info\NetworkPanel.resx">
-      <DependentUpon>NetworkPanel.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Views\Res\ViewRes.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>ViewRes.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Board\Res\BoardRes.resx">
-      <SubType>Designer</SubType>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>BoardRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>DeOps.Services.Board</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Board\BoardView.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>BoardView.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Board\PostMessage.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>PostMessage.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Buddy\res\BuddyRes.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>BuddyRes.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-      <CustomToolNamespace>DeOps.Services.Buddy</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Chat\CreateRoom.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>CreateRoom.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Chat\InviteForm.resx">
-      <DependentUpon>InviteForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Chat\Res\ChatRes.resx">
-      <SubType>Designer</SubType>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>ChatRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>DeOps.Services.Chat</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Chat\RoomView.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>RoomView.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Chat\ChatView.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>ChatView.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\IM\Res\IMRes.resx">
-      <SubType>Designer</SubType>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>IMRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>DeOps.Services.IM</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\IM\IM_View.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>IM_View.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Location\StatusForm.resx">
-      <DependentUpon>StatusForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Share\AcceptFileForm.resx">
-      <DependentUpon>AcceptFileForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Share\Res\ShareRes.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>ShareRes.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Share\SendFileForm.resx">
-      <DependentUpon>SendFileForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Share\ShareInfoPanel.resx">
-      <DependentUpon>ShareInfoPanel.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Share\SharingView.resx">
-      <DependentUpon>SharingView.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Transfer\BitfieldControl.resx">
-      <DependentUpon>BitfieldControl.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Trust\RemoveLinks.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>RemoveLinks.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Trust\Res\LinkRes.resx">
-      <SubType>Designer</SubType>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>LinkRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>DeOps.Services.Trust</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Mail\ComposeMail.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>ComposeMail.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Mail\Res\MailRes.resx">
-      <SubType>Designer</SubType>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>MailRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>DeOps.Services.Mail</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Mail\MailView.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>MailView.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Plan\Goals\EditGoal.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>EditGoal.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Plan\Goals\EditPlanItem.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>EditPlanItem.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Plan\Goals\GoalPanel.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>GoalPanel.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Plan\Goals\GoalsView.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>GoalsView.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Plan\Goals\ProgressText.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>ProgressText.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Plan\Res\PlanRes.resx">
-      <SubType>Designer</SubType>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>PlanRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>DeOps.Services.Plan</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Plan\Schedule\BlockRow.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>BlockRow.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Plan\Schedule\DateArrows.resx">
-      <SubType>Designer</SubType>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>DateArrows.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Plan\Schedule\EditBlock.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>EditBlock.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Plan\Schedule\DateSlider.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>DateSlider.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Plan\Schedule\ScheduleView.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>ScheduleView.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\AddUsersDialog.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>AddUsersDialog.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Profile\EditProfile.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>EditProfile.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Profile\EditTemplate.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>EditTemplate.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Profile\PreviewTemplate.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>PreviewTemplate.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Profile\Res\ProfileRes.resx">
-      <SubType>Designer</SubType>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>ProfileRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>DeOps.Services.Profile</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Storage\Forms\DetailsForm.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>DetailsForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Storage\Forms\DiffForm.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>DiffForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Storage\Forms\EditNotes.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>EditNotes.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Storage\Forms\HashStatus.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>HashStatus.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Storage\InfoPanel.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>InfoPanel.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Storage\Forms\LockMessage.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>LockMessage.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Storage\StorageView.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>StorageView.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Storage\Res\StorageRes.resx">
-      <SubType>Designer</SubType>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>StorageRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>DeOps.Services.Storage</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Storage\Forms\UnlockForm.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>UnlockForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Transfer\TransferView.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>TransferView.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Views\GetTextDialog.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>GetTextDialog.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Setup\NewProjectForm.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>NewProjectForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Profile\ProfileView.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>ProfileView.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Res\InterfaceRes.resx">
-      <SubType>Designer</SubType>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>InterfaceRes.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>DeOps.Interface</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Views\TreeListViewEx\ContainerListView.resx">
-      <DependentUpon>ContainerListView.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Views\TreeListViewEx\TreeListView.resx">
-      <DependentUpon>TreeListView.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Views\TextInput.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>TextInput.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Views\ExternalView.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>ExternalView.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Trust\EditLink.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>EditLink.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Tools\ConsoleForm.resx">
-      <DependentUpon>ConsoleForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Tools\CrawlerForm.resx">
-      <DependentUpon>CrawlerForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Tools\GraphForm.resx">
-      <DependentUpon>GraphForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Tools\InternalsForm.resx">
-      <DependentUpon>InternalsForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Tools\PacketsForm.resx">
-      <DependentUpon>PacketsForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Setup\InviteForm.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>InviteForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\LoginForm.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>LoginForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\MainForm.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>MainForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Setup\CreateOp.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>CreateOp.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\Tools\SearchForm.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>SearchForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <SubType>Designer</SubType>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Update\UpdateForm.resx">
-      <DependentUpon>UpdateForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Voice\Res\VoiceRes.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>VoiceRes.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Services\Voice\VoiceSettings.resx">
-      <DependentUpon>VoiceSettings.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Simulator\GenerateUsers.resx">
-      <DependentUpon>GenerateUsers.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Simulator\LegendForm.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>LegendForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Simulator\NetView.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>NetView.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Simulator\SelectServices.resx">
-      <DependentUpon>SelectServices.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Simulator\SimForm.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>SimForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Simulator\TrackFile.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>TrackFile.cs</DependentUpon>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
@@ -1295,17 +191,30 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Core\Core.csproj">
-      <Project>{1896627D-18E4-4687-AE49-35226EC91540}</Project>
-      <Name>Core</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\Core\Core.csproj" />
   </ItemGroup>
-  <ItemGroup />
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PreBuildEvent>
-    </PreBuildEvent>
-    <PostBuildEvent>
-    </PostBuildEvent>
-  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Services\Share\SharingService.cs" />
+    <Compile Remove="Services\Trust\LinkChooser.cs" />
+    <Compile Remove="Services\Trust\LinkChooser.Designer.cs" />
+    <Compile Remove="Update\MainForm.cs" />
+    <Compile Remove="Update\MainForm.Designer.cs" />
+    <Compile Remove="Update\Program.cs" />
+    <Compile Remove="Update\Properties\AssemblyInfo.cs" />
+    <Compile Remove="Update\Properties\Resources.Designer.cs" />
+    <Compile Remove="Update\Properties\Settings.Designer.cs" />
+    <EmbeddedResource Remove="Services\Trust\LinkChooser.resx" />
+    <EmbeddedResource Remove="Update\MainForm.resx" />
+    <EmbeddedResource Remove="Update\Properties\Resources.resx" />
+  </ItemGroup>
+  <PropertyGroup />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.346201">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 </Project>

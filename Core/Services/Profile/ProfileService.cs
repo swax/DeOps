@@ -366,7 +366,7 @@ namespace DeOps.Services.Profile
 
             uint project = 0;
             
-            textFields["MOTD-" + project] = Core.TextGen.GenerateParagraphs(1, NLipsum.Core.Paragraph.Short)[0];
+            textFields["MOTD-" + project] = Core.TextGen.GenerateParagraphs(1)[0];
 
             string phone = "";
             for (int i = 0; i < 3; i++)

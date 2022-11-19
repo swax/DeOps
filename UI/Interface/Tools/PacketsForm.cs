@@ -36,16 +36,16 @@ namespace DeOps.Interface.Tools
 		private System.Windows.Forms.ColumnHeader columnHeaderSize;
 		private System.Windows.Forms.TreeView TreeViewPacket;
 		private System.Windows.Forms.ColumnHeader columnHeaderHash;
-		private System.Windows.Forms.MainMenu mainMenu1;
-		private System.Windows.Forms.MenuItem menuItemCommands;
-        private System.Windows.Forms.MenuItem menuItemPause;
-        private MenuItem MenuItemTcp;
-        private MenuItem MenuItemUdp;
-        private MenuItem MenuItemRudp;
+		private System.Windows.Forms.MenuStrip mainMenu1;
+		private System.Windows.Forms.ToolStripMenuItem menuItemCommands;
+        private System.Windows.Forms.ToolStripMenuItem menuItemPause;
+        private ToolStripMenuItem MenuItemTcp;
+        private ToolStripMenuItem MenuItemUdp;
+        private ToolStripMenuItem MenuItemRudp;
         private ColumnHeader columnHeaderTime;
-        private MenuItem ClearMenuItem;
-        private MenuItem MenuItemTunnel;
-        private MenuItem MenuItemLAN;
+        private ToolStripMenuItem ClearMenuItem;
+        private ToolStripMenuItem MenuItemTunnel;
+        private ToolStripMenuItem MenuItemLAN;
         private IContainer components;
 
 
@@ -107,15 +107,15 @@ namespace DeOps.Interface.Tools
             this.columnHeaderType = new System.Windows.Forms.ColumnHeader();
             this.columnHeaderSize = new System.Windows.Forms.ColumnHeader();
             this.columnHeaderHash = new System.Windows.Forms.ColumnHeader();
-            this.mainMenu1 = new System.Windows.Forms.MainMenu(this.components);
-            this.menuItemCommands = new System.Windows.Forms.MenuItem();
-            this.ClearMenuItem = new System.Windows.Forms.MenuItem();
-            this.menuItemPause = new System.Windows.Forms.MenuItem();
-            this.MenuItemTcp = new System.Windows.Forms.MenuItem();
-            this.MenuItemUdp = new System.Windows.Forms.MenuItem();
-            this.MenuItemLAN = new System.Windows.Forms.MenuItem();
-            this.MenuItemRudp = new System.Windows.Forms.MenuItem();
-            this.MenuItemTunnel = new System.Windows.Forms.MenuItem();
+            this.mainMenu1 = new System.Windows.Forms.MenuStrip();
+            this.menuItemCommands = new System.Windows.Forms.ToolStripMenuItem();
+            this.ClearMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuItemPause = new System.Windows.Forms.ToolStripMenuItem();
+            this.MenuItemTcp = new System.Windows.Forms.ToolStripMenuItem();
+            this.MenuItemUdp = new System.Windows.Forms.ToolStripMenuItem();
+            this.MenuItemLAN = new System.Windows.Forms.ToolStripMenuItem();
+            this.MenuItemRudp = new System.Windows.Forms.ToolStripMenuItem();
+            this.MenuItemTunnel = new System.Windows.Forms.ToolStripMenuItem();
             this.SuspendLayout();
             // 
             // TreeViewPacket
@@ -192,13 +192,12 @@ namespace DeOps.Interface.Tools
             // 
             // mainMenu1
             // 
-            this.mainMenu1.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+            this.mainMenu1.Items.AddRange(new System.Windows.Forms.ToolStripMenuItem[] {
             this.menuItemCommands});
             // 
             // menuItemCommands
             // 
-            this.menuItemCommands.Index = 0;
-            this.menuItemCommands.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] {
+            this.menuItemCommands.DropDownItems.AddRange(new System.Windows.Forms.ToolStripMenuItem[] {
             this.ClearMenuItem,
             this.menuItemPause,
             this.MenuItemTcp,
@@ -210,48 +209,41 @@ namespace DeOps.Interface.Tools
             // 
             // ClearMenuItem
             // 
-            this.ClearMenuItem.Index = 0;
             this.ClearMenuItem.Text = "Clear";
             this.ClearMenuItem.Click += new System.EventHandler(this.ClearMenuItem_Click);
             // 
             // menuItemPause
             // 
-            this.menuItemPause.Index = 1;
             this.menuItemPause.Text = "Pause";
             this.menuItemPause.Click += new System.EventHandler(this.menuItemPause_Click);
             // 
             // MenuItemTcp
             // 
             this.MenuItemTcp.Checked = true;
-            this.MenuItemTcp.Index = 2;
             this.MenuItemTcp.Text = "Tcp";
             this.MenuItemTcp.Click += new System.EventHandler(this.MenuItemTcp_Click);
             // 
             // MenuItemUdp
             // 
             this.MenuItemUdp.Checked = true;
-            this.MenuItemUdp.Index = 3;
             this.MenuItemUdp.Text = "Udp";
             this.MenuItemUdp.Click += new System.EventHandler(this.MenuItemUdp_Click);
             // 
             // MenuItemLAN
             // 
             this.MenuItemLAN.Checked = true;
-            this.MenuItemLAN.Index = 4;
             this.MenuItemLAN.Text = "LAN";
             this.MenuItemLAN.Click += new System.EventHandler(this.MenuItemLAN_Click);
             // 
             // MenuItemRudp
             // 
             this.MenuItemRudp.Checked = true;
-            this.MenuItemRudp.Index = 5;
             this.MenuItemRudp.Text = "Rudp";
             this.MenuItemRudp.Click += new System.EventHandler(this.MenuItemRudp_Click);
             // 
             // MenuItemTunnel
             // 
             this.MenuItemTunnel.Checked = true;
-            this.MenuItemTunnel.Index = 6;
             this.MenuItemTunnel.Text = "Tunnel";
             this.MenuItemTunnel.Click += new System.EventHandler(this.MenuItemTunnel_Click);
             // 
@@ -262,7 +254,7 @@ namespace DeOps.Interface.Tools
             this.Controls.Add(this.ListViewPackets);
             this.Controls.Add(this.splitter1);
             this.Controls.Add(this.TreeViewPacket);
-            this.Menu = this.mainMenu1;
+            this.MainMenuStrip = this.mainMenu1;
             this.Name = "PacketsForm";
             this.Text = "Packets";
             this.Load += new System.EventHandler(this.PacketsForm_Load);
@@ -676,18 +668,18 @@ namespace DeOps.Interface.Tools
             if (node == null || e.Button != MouseButtons.Right)
                 return;
 
-            ContextMenu menu = new ContextMenu();
+            ContextMenuStrip menu = new ContextMenuStrip();
 
             if(node.Data.Length == 8)
-                menu.MenuItems.Add("To Binary", new EventHandler(Menu_ToBinary));
+                menu.Items.Add("To Binary", null, new EventHandler(Menu_ToBinary));
 
             if (node.Data.Length == 8 || node.Data.Length == 4 || node.Data.Length == 2 || node.Data.Length == 1)
-                menu.MenuItems.Add("To Decimal", new EventHandler(Menu_ToDecimal));
+                menu.Items.Add("To Decimal", null, new EventHandler(Menu_ToDecimal));
             
-            menu.MenuItems.Add("To Hex", new EventHandler(Menu_ToHex));
+            menu.Items.Add("To Hex", null, new EventHandler(Menu_ToHex));
 
             if (node.Data.Length == 4)
-                menu.MenuItems.Add("To IP", new EventHandler(Menu_ToIP));
+                menu.Items.Add("To IP", null, new EventHandler(Menu_ToIP));
 
             menu.Show(TreeViewPacket, e.Location);
         }

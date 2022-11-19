@@ -1,126 +1,21 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{1896627D-18E4-4687-AE49-35226EC91540}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DeOpsCore</RootNamespace>
     <AssemblyName>DeOpsCore</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NLipsum.Core">
-      <HintPath>Include\NLipsum.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Web" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+    <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.4.346201">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DeOpsContext.cs" />
-    <Compile Include="Implementation\Dht\DhtBucket.cs" />
-    <Compile Include="Implementation\Dht\DhtNetwork.cs" />
-    <Compile Include="Implementation\Dht\DhtRouting.cs" />
-    <Compile Include="Implementation\Dht\DhtSearch.cs" />
-    <Compile Include="Implementation\Dht\DhtSearchControl.cs" />
-    <Compile Include="Implementation\Dht\DhtStore.cs" />
-    <Compile Include="Implementation\OpCache.cs" />
-    <Compile Include="Implementation\OpCore.cs" />
-    <Compile Include="Implementation\OpUser.cs" />
-    <Compile Include="Implementation\Protocol\G2Header.cs" />
-    <Compile Include="Implementation\Protocol\G2Protocol.cs" />
-    <Compile Include="Implementation\Protocol\Packets\PacketsComm.cs" />
-    <Compile Include="Implementation\Protocol\Packets\PacketsNet.cs" />
-    <Compile Include="Implementation\Protocol\Packets\PacketsSpecial.cs" />
-    <Compile Include="Implementation\Transport\LanHandler.cs" />
-    <Compile Include="Implementation\Transport\LightCommHandler.cs" />
-    <Compile Include="Implementation\Transport\RudpHandler.cs" />
-    <Compile Include="Implementation\Transport\RudpSession.cs" />
-    <Compile Include="Implementation\Transport\RudpSocket.cs" />
-    <Compile Include="Implementation\Transport\TcpConnect.cs" />
-    <Compile Include="Implementation\Transport\TcpHandler.cs" />
-    <Compile Include="Implementation\Transport\UdpHandler.cs" />
-    <Compile Include="Implementation\Transport\UPnP.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Services\Assist\LocalSync.cs" />
-    <Compile Include="Services\Assist\TempCache.cs" />
-    <Compile Include="Services\Assist\VersionedCache.cs" />
-    <Compile Include="Services\Board\BoardPackets.cs" />
-    <Compile Include="Services\Board\BoardService.cs" />
-    <Compile Include="Services\Buddy\BuddyService.cs" />
-    <Compile Include="Services\Chat\ChatPackets.cs" />
-    <Compile Include="Services\Chat\ChatService.cs" />
-    <Compile Include="Services\IM\IMPackets.cs" />
-    <Compile Include="Services\IM\IMService.cs" />
-    <Compile Include="Services\Location\LocationPackets.cs" />
-    <Compile Include="Services\Location\LocationService.cs" />
-    <Compile Include="Services\Location\LookupService.cs" />
-    <Compile Include="Services\Mail\MailPackets.cs" />
-    <Compile Include="Services\Mail\MailService.cs" />
-    <Compile Include="Services\OpService.cs" />
-    <Compile Include="Services\Plan\PlanPackets.cs" />
-    <Compile Include="Services\Plan\PlanService.cs" />
-    <Compile Include="Services\Profile\ProfilePackets.cs" />
-    <Compile Include="Services\Profile\ProfileService.cs" />
-    <Compile Include="Services\Share\ShareService.cs" />
-    <Compile Include="Services\Storage\StoragePackets.cs" />
-    <Compile Include="Services\Storage\StorageService.cs" />
-    <Compile Include="Services\Storage\WorkingStorage.cs" />
-    <Compile Include="Services\Transfer\TransferPackets.cs" />
-    <Compile Include="Services\Transfer\TransferService.cs" />
-    <Compile Include="Services\Trust\TrustPackets.cs" />
-    <Compile Include="Services\Trust\TrustService.cs" />
-    <Compile Include="Services\Update\UpdateService.cs" />
-    <Compile Include="Services\Voice\PlayAudio.cs" />
-    <Compile Include="Services\Voice\RecordAudio.cs" />
-    <Compile Include="Services\Voice\Speex.cs" />
-    <Compile Include="Services\Voice\VoiceService.cs" />
-    <Compile Include="Services\Voice\WinMM.cs" />
-    <Compile Include="Simulator\InternetSim.cs" />
-    <Compile Include="Utilities\Collections.cs" />
-    <Compile Include="Utilities\Crypto.cs" />
-    <Compile Include="Utilities\CryptoStreams.cs" />
-    <Compile Include="Utilities\Test.cs" />
-    <Compile Include="Utilities\Utilities.cs" />
-    <Compile Include="Utilities\WorkerQueue.cs" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="Implementation\Design.txt" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

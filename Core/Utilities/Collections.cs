@@ -240,7 +240,8 @@ namespace DeOps
 
     public class ThreadedList<T> : List<T>
     {
-        public ReaderWriterLock Access = new ReaderWriterLock();
+        // Converted from ReaderWriterLock() because there were threading related exceptions being thrown when running under simulation
+        public ReaderWriterLockSlim Access = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         public delegate void VoidType();
 
@@ -250,7 +251,7 @@ namespace DeOps
 
             get
             {
-                Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+                Debug.Assert(Access.IsReadLockHeld || Access.IsWriteLockHeld);
 
                 return base.Count;
             }
@@ -258,47 +259,47 @@ namespace DeOps
 
         public new List<T>.Enumerator GetEnumerator()
         {
-            Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+            Debug.Assert(Access.IsReadLockHeld || Access.IsWriteLockHeld);
 
             return base.GetEnumerator();
         }
 
         public new bool Contains(T value)
         {
-            Debug.Assert(Access.IsReaderLockHeld || Access.IsWriterLockHeld);
+            Debug.Assert(Access.IsReadLockHeld || Access.IsWriteLockHeld);
 
             return base.Contains(value);
         }
 
         public new void Add(T value)
         {
-            Debug.Assert(Access.IsWriterLockHeld);
+            Debug.Assert(Access.IsWriteLockHeld);
 
             base.Add(value);
         }
 
         public new void Remove(T value)
         {
-            Debug.Assert(Access.IsWriterLockHeld);
+            Debug.Assert(Access.IsWriteLockHeld);
 
             base.Remove(value);
         }
 
         public new void Clear()
         {
-            Debug.Assert(Access.IsWriterLockHeld);
+            Debug.Assert(Access.IsWriteLockHeld);
 
             base.Clear();
         }
 
         public void LockReading(VoidType code)
         {
-            Access.AcquireReaderLock(-1);
+            Access.EnterReadLock();
             try
             {
                 code();
             }
-            finally { Access.ReleaseReaderLock(); }
+            finally { Access.ExitReadLock(); }
         }
 
         public void SafeForEach(Action<T> action)
@@ -312,24 +313,24 @@ namespace DeOps
 
         public void LockWriting(VoidType code)
         {
-            if (Access.IsReaderLockHeld)
+            if (Access.IsReadLockHeld)
             {
-                LockCookie cookie = Access.UpgradeToWriterLock(-1);
+                Access.EnterWriteLock(); // LockCookie cookie =  //.UpgradeToWriterLock(-1);
                 try
                 {
                     code();
                 }
-                finally { Access.DowngradeFromWriterLock(ref cookie); }
+                finally { Access.ExitWriteLock(); } // DowngradeFromWriterLock(ref cookie); }
             }
 
             else
             {
-                Access.AcquireWriterLock(-1);
+                Access.EnterWriteLock();
                 try
                 {
                     code();
                 }
-                finally { Access.ReleaseWriterLock(); }
+                finally { Access.ExitWriteLock(); }
             }
         }
 
@@ -351,24 +352,24 @@ namespace DeOps
 
         public bool SafeContains(T value)
         {
-            Access.AcquireReaderLock(-1);
+            Access.EnterReadLock();
             try
             {
                 return base.Contains(value);
             }
-            finally { Access.ReleaseReaderLock(); }
+            finally { Access.ExitReadLock(); }
         }
 
         public int SafeCount
         {
             get
             {
-                Access.AcquireReaderLock(-1);
+                Access.EnterReadLock();
                 try
                 {
                     return base.Count;
                 }
-                finally { Access.ReleaseReaderLock(); }
+                finally { Access.ExitReadLock(); }
             }
         }
 

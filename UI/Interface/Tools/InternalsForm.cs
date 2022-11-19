@@ -1383,8 +1383,8 @@ namespace DeOps.Interface.Tools
 
             copytext = item.Text;
 
-            ContextMenu menu = new ContextMenu();
-            menu.MenuItems.Add( new MenuItem("Copy", new EventHandler(ItemCopy_Click)));
+            ContextMenuStrip menu = new ContextMenuStrip();
+            menu.Items.Add("Copy", null, new EventHandler(ItemCopy_Click));
 
             menu.Show(listValues, e.Location);
         }

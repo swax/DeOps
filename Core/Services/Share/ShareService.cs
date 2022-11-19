@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using System.Web;
 
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;
@@ -911,9 +911,9 @@ namespace DeOps.Services.Share
         {
             //  deops://opName/file/name/size/opId~size~hash~key/sources
 
-            string link = "deops://" + HttpUtility.UrlEncode(OpName) +
-                            "/file/" + HttpUtility.UrlEncode(FileName) + "/" + 
-                            HttpUtility.UrlEncode(Utilities.ByteSizetoString(Size)) + "/";
+            string link = "deops://" + WebUtility.UrlEncode(OpName) +
+                            "/file/" + WebUtility.UrlEncode(FileName) + "/" +
+                            WebUtility.UrlEncode(Utilities.ByteSizetoString(Size)) + "/";
 
             byte[] cryptTag = BitConverter.GetBytes(Size);  // 8
             cryptTag = Utilities.CombineArrays(cryptTag, Hash); // 20
@@ -945,7 +945,7 @@ namespace DeOps.Services.Share
             if (parts[1] != "file")
                 throw new Exception("Invalid Link");
 
-            link.FileName = HttpUtility.UrlDecode(parts[2]);
+            link.FileName = WebUtility.UrlDecode(parts[2]);
 
             byte[] endtag = Utilities.FromBase64String(parts[4]);
 

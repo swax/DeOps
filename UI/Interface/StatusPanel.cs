@@ -17,7 +17,7 @@ using DeOps.Services.Buddy;
 using DeOps.Services.IM;
 using DeOps.Services.Location;
 using DeOps.Services.Mail;
-
+using System.Net;
 
 namespace DeOps.Interface
 {
@@ -642,7 +642,7 @@ namespace DeOps.Interface
 
                 else if (command[0] == "use_name")
                 {
-                    string name = System.Web.HttpUtility.UrlDecode(command[1]);
+                    string name = WebUtility.UrlDecode(command[1]);
 
                     if (MessageBox.Show("Change " + Core.GetName(UserID) + "'s name to " + name + "?", "Change Name", MessageBoxButtons.YesNo) == DialogResult.Yes)
                         Core.RenameUser(UserID, name);

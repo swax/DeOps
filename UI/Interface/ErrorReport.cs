@@ -9,7 +9,6 @@ using System.Net;
 using System.Net.Mail;
 using System.Text;
 using System.Threading;
-using System.Web;
 using System.Windows.Forms;
 
 
@@ -57,7 +56,7 @@ namespace DeOps.Interface
                 StringBuilder report = new StringBuilder(4096);
 
                 foreach (var pair in post)
-                    report.Append(pair.Key + "=" + HttpUtility.UrlEncode(pair.Value) + "&");
+                    report.Append(pair.Key + "=" + WebUtility.UrlEncode(pair.Value) + "&");
 
                 byte[] data = UTF8Encoding.UTF8.GetBytes(report.ToString());
                 request.ContentLength = data.Length;

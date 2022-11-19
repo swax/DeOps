@@ -16,8 +16,6 @@ using DeOps.Services.Trust;
 using DeOps.Services.Location;
 using DeOps.Services.Share;
 
-using NLipsum.Core;
-
 
 namespace DeOps.Services.Chat
 {
@@ -168,7 +166,7 @@ namespace DeOps.Services.Chat
                 });
 
                 if (rooms.Count > 0)
-                    SendMessage(rooms[Core.RndGen.Next(rooms.Count)], Core.TextGen.GenerateSentences(1, Sentence.Short)[0], TextFormat.Plain);
+                    SendMessage(rooms[Core.RndGen.Next(rooms.Count)], Core.TextGen.GenerateSentences(1)[0], TextFormat.Plain);
             }
         }
 

@@ -81,6 +81,7 @@ namespace DeOps.Services.Trust
             Cache.Load();
 
             ProjectNames.SafeAdd(0, Core.User.Settings.Operation);
+            ProjectRoots.SafeAdd(0, new ThreadedList<OpLink>());
 
             LinkPath = Core.User.RootPath + Path.DirectorySeparatorChar + "Data" + Path.DirectorySeparatorChar + ServiceID.ToString();
             Directory.CreateDirectory(LinkPath);

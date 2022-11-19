@@ -8,7 +8,6 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using System.Web;
 
 using DeOps.Services;
 using DeOps.Services.Assist;
@@ -36,8 +35,7 @@ using DeOps.Implementation.Transport;
 
 using DeOps.Simulator;
 
-using NLipsum.Core;
-
+using DeOpsCore.Utilities;
 
 namespace DeOps.Implementation
 {
@@ -887,7 +885,7 @@ namespace DeOps.Implementation
             // deops://opname/bootstrap/pubOpId:userId/ip:tcp:udp
 
             string link = string.Format("deops://{0}/bootstrap/{1}:{2}/{3}:{4}:{5}",
-                                        (User != null) ? HttpUtility.UrlEncode(User.Settings.Operation) : "lookup",
+                                        (User != null) ? WebUtility.UrlEncode(User.Settings.Operation) : "lookup",
                                         (User != null) ? Utilities.BytestoHex(User.Settings.PublicOpID) : "0",
                                         Utilities.BytestoHex(BitConverter.GetBytes(userid)),
                                         ip,
@@ -907,10 +905,10 @@ namespace DeOps.Implementation
             
             // deops://firesoft/invite/person@GlobalIM/originalopID~invitedata {op key web caches ips}
 
-            string link = string.Format("deops://{0}/invite/{1}@{2}/", 
-                            HttpUtility.UrlEncode(User.Settings.Operation), 
-                            HttpUtility.UrlEncode(ident.Name), 
-                            HttpUtility.UrlEncode(ident.OpName));
+            string link = string.Format("deops://{0}/invite/{1}@{2}/",
+                            WebUtility.UrlEncode(User.Settings.Operation),
+                            WebUtility.UrlEncode(ident.Name),
+                            WebUtility.UrlEncode(ident.OpName));
 
             // encode invite info in user's public key
             byte[] data = new byte[4096];
@@ -1019,8 +1017,8 @@ namespace DeOps.Implementation
         public string Encode()
         {
             string link = string.Format("deops://{0}/identity/{1}/{2}:{3}",
-                                        HttpUtility.UrlEncode(OpName),
-                                        HttpUtility.UrlEncode(Name),
+                                        WebUtility.UrlEncode(OpName),
+                                        WebUtility.UrlEncode(Name),
                                         Utilities.BytestoHex(PublicOpID),
                                         Utilities.BytestoHex(PublicKey));
 
@@ -1040,8 +1038,8 @@ namespace DeOps.Implementation
 
             IdentityLink ident = new IdentityLink();
 
-            ident.OpName = HttpUtility.UrlDecode(mainParts[0]);
-            ident.Name = HttpUtility.UrlDecode(mainParts[2]);
+            ident.OpName = WebUtility.UrlDecode(mainParts[0]);
+            ident.Name = WebUtility.UrlDecode(mainParts[2]);
             ident.PublicOpID = Utilities.HextoBytes(mainParts[3]);
             ident.PublicKey = Utilities.HextoBytes(mainParts[4]);
 

@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.Remoting;
-using System.Runtime.Remoting.Channels;
-using System.Runtime.Remoting.Channels.Ipc;
+//using System.Runtime.Remoting.Channels;
+//using System.Runtime.Remoting.Channels.Ipc;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -67,7 +67,7 @@ namespace DeOps
     public class DeOpsMutex
     {
         private Mutex TheMutex;
-        private IChannel DeOpsChannel;
+        //private IChannel DeOpsChannel;
         public bool First;
 
 
@@ -84,7 +84,7 @@ namespace DeOps
 
                
 
-                if (First)
+                /*if (First)
                 {
                     DeOpsChannel = new IpcServerChannel(host);
 
@@ -105,7 +105,7 @@ namespace DeOps
                     IpcObject obj = Activator.GetObject(typeof(IpcObject), url) as IpcObject;
 
                     obj.SignalNewInstance(args);
-                }
+                }*/
             }
             catch { }
         }

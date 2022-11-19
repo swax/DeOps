@@ -8,7 +8,6 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using System.Web;
 
 using DeOps.Implementation;
 using DeOps.Implementation.Dht;
@@ -302,7 +301,7 @@ namespace DeOps
             // alert user if bootstrap address does not match any available networks, give network name
             if (found == null)
             {
-                var opName = HttpUtility.UrlDecode(parts[0]);
+                var opName = WebUtility.UrlDecode(parts[0]);
 
                 throw new Exception(string.Format("The link entered is for the {0} network which is not loaded.", opName));
             }

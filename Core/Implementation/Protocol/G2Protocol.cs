@@ -450,26 +450,32 @@ namespace DeOps.Implementation.Protocol
         {
             root = new G2Header(ReadBuffer);
 
-            // continue from left off, read another goo packete
+            // continue from left off, read another good packet
             if (ReadNext(root))
                 return true;
 
-            if (ReadStatus != G2ReadResult.PACKET_INCOMPLETE)
-                return false;
+            // fixed a breaking change here with .net 6 where given a complete buffer, a read in one shot is not gaurenteed
+            // https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/6.0/partial-byte-reads-in-streams
+            while (ReadStatus == G2ReadResult.PACKET_INCOMPLETE)
+            {
+                // re-align buffer
+                if (ReadSize > 0 && Start != 0)
+                    Buffer.BlockCopy(ReadBuffer, Start, ReadBuffer, 0, ReadSize);
 
-            // re-align
-            if (ReadSize > 0)
-                Buffer.BlockCopy(ReadBuffer, Start, ReadBuffer, 0, ReadSize);
+                // incomplete, or just started, read some more from file
+                Start = 0;
 
-            // incomplete, or just started, read some more from file
-            Start = 0;
-            
-            int read = ParentStream.Read(ReadBuffer, ReadSize, ReadBuffer.Length - ReadSize);
-            Pos += read;
-            ReadSize += read;
+                int read = ParentStream.Read(ReadBuffer, ReadSize, ReadBuffer.Length - ReadSize);
 
-            if (ReadNext(root))
-                return true;
+                if (read == 0)
+                    return false;
+
+                Pos += read;
+                ReadSize += read;
+
+                if (ReadNext(root))
+                    return true;
+            }
 
             return false;
         }

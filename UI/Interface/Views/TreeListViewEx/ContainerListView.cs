@@ -894,7 +894,7 @@ namespace DeOps.Interface.TLVex
 				PopMenu(headerMenu, e);
 		}
 
-		protected void PopMenu(System.Windows.Forms.ContextMenu theMenu, MouseEventArgs e)
+		protected void PopMenu(ContextMenuStrip theMenu, MouseEventArgs e)
 		{
 			if (theMenu != null)
 				theMenu.Show(this, new Point(e.X, e.Y));
@@ -983,7 +983,7 @@ namespace DeOps.Interface.TLVex
 
 		protected bool captureFocusClick = false;
 
-		protected ContextMenu headerMenu, itemMenu, contextMenu;
+		protected ContextMenuStrip headerMenu, itemMenu, contextMenu;
 		protected HScrollBar hscrollBar;
 		protected VScrollBar vscrollBar;
 
@@ -1109,7 +1109,7 @@ namespace DeOps.Interface.TLVex
 		Category("Behavior"),
 		Description("The context menu displayed when the header is right-clicked.")
 		]
-		public ContextMenu HeaderMenu
+		public ContextMenuStrip HeaderMenu
 		{
 			get { return headerMenu; }
 			set { headerMenu = value; }
@@ -1119,7 +1119,7 @@ namespace DeOps.Interface.TLVex
 		Category("Behavior"),
 		Description("The context menu displayed when an item is right-clicked.")
 		]
-		public ContextMenu ItemMenu
+		public ContextMenuStrip ItemMenu
 		{
 			get { return itemMenu; }
 			set { itemMenu = value; }
@@ -1129,7 +1129,7 @@ namespace DeOps.Interface.TLVex
 		Category("Behavior"),
 		Description("The context menu displayed when the control is right-clicked.")
 		]
-		public override ContextMenu ContextMenu
+		public override ContextMenuStrip ContextMenuStrip
 		{
 			get { return contextMenu; }
 			set { contextMenu = value; }

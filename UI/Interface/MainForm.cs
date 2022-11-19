@@ -259,15 +259,17 @@ namespace DeOps.Interface
                 UpdateTitle();
 
             if (ProjectButton != null)
+            {
                 ProjectButton.Text = Core.Trust.GetProjectName(ProjectButtonID);
 
-            if (!Trust.ProjectRoots.SafeContainsKey(CommandTree.Project))
-            {
-                if (ProjectButton.Checked)
-                    OperationButton.Checked = true;
+                if (!Trust.ProjectRoots.SafeContainsKey(CommandTree.Project))
+                {
+                    if (ProjectButton.Checked)
+                        OperationButton.Checked = true;
 
-                SideToolStrip.Items.Remove(ProjectButton);
-                ProjectButton = null;
+                    SideToolStrip.Items.Remove(ProjectButton);
+                    ProjectButton = null;
+                }
             }
 
             UpdateNavBar();

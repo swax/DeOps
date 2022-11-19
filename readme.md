@@ -1,5 +1,5 @@
 
-##DeOps - Decentralized Operations
+## DeOps - Decentralized Operations
 
 An experiment in creating a person to person hierarchy of trust, over which services like file systems, communication, and planning can be overlaid.  The network is decentralized and users are identified and communicated with though public key encryption.
 
